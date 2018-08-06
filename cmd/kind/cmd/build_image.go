@@ -40,7 +40,6 @@ func newBuildImageCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&flags.Source, "source", "", "path to the node image sources")
-	cmd.MarkFlagRequired("source")
 	return cmd
 }
 

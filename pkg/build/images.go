@@ -25,6 +25,8 @@ import (
 	"path/filepath"
 
 	"github.com/golang/glog"
+
+	"k8s.io/test-infra/kind/pkg/build/sources"
 )
 
 // NodeImageBuildContext is used to build the kind node image, and contains
@@ -66,26 +68,38 @@ func copyDir(src, dst string) error {
 // the NodeImageBuildContext
 func (c *NodeImageBuildContext) Build() (err error) {
 	// create tempdir to build in
-	dir, err := ioutil.TempDir("", "kind-build")
+	tmpDir, err := ioutil.TempDir("", "kind-build")
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(dir)
+	defer os.RemoveAll(tmpDir)
 
 	// populate with image sources
-	err = copyDir(c.SourceDir, dir)
-	if err != nil {
-		glog.Errorf("failed to copy sources to build dir %v", err)
-		return err
+	// if SourceDir is unset, use the baked in sources
+	buildDir := tmpDir
+	if c.SourceDir == "" {
+		// populate with image sources
+		err = sources.RestoreAssets(buildDir, "images/node")
+		if err != nil {
+			return err
+		}
+		buildDir = filepath.Join(buildDir, "images", "node")
+
+	} else {
+		err = copyDir(c.SourceDir, buildDir)
+		if err != nil {
+			glog.Errorf("failed to copy sources to build dir %v", err)
+			return err
+		}
 	}
 
-	glog.Infof("Building node image in: %s", dir)
+	glog.Infof("Building node image in: %s", buildDir)
 
 	// build entrypoint binary
 	// NOTE: this binary only uses the go1 stdlib, and is a single file
 	glog.Info("Building entrypoint binary ...")
-	entrypointSrc := filepath.Join(dir, "entrypoint", "main.go")
-	entrypointDest := filepath.Join(dir, "entrypoint", "entrypoint")
+	entrypointSrc := filepath.Join(buildDir, "entrypoint", "main.go")
+	entrypointDest := filepath.Join(buildDir, "entrypoint", "entrypoint")
 	cmd := exec.Command(c.GoCmd, "build", "-o", entrypointDest, entrypointSrc)
 	// TODO(bentheelder): we may need to map between docker image arch and GOARCH
 	cmd.Env = []string{"GOOS=linux", "GOARCH=" + c.Arch}
@@ -98,7 +112,7 @@ func (c *NodeImageBuildContext) Build() (err error) {
 
 	glog.Info("Starting Docker build ...")
 	// build the image, tagged as tagImageAs, using the our tempdir as the context
-	err = runCmd(exec.Command("docker", "build", "-t", c.ImageTag, dir))
+	err = runCmd(exec.Command("docker", "build", "-t", c.ImageTag, buildDir))
 	if err != nil {
 		glog.Errorf("Docker build Failed! %v", err)
 		return err
