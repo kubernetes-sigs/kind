@@ -18,11 +18,9 @@ limitations under the License.
 package cluster
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
-	"os"
-	"os/exec"
+
+	"k8s.io/test-infra/kind/pkg/exec"
 )
 
 // ClusterLabelKey is applied to each "node" docker container for identification
@@ -145,8 +143,7 @@ func (c *Context) createNode(name string) error {
 		"kind-node", // use our image, TODO: make this configurable
 	)
 	// TODO(bentheelder): collect output instead of connecting these
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
+	cmd.InheritOutput = true
 	return cmd.Run()
 }
 
@@ -173,8 +170,7 @@ func (c *Context) runOnNode(nameOrID string, command []string) error {
 		command..., // finally, run the command supplied by the user
 	)
 	// TODO(bentheelder): collect output instead of connecting these
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
+	cmd.InheritOutput = true
 	return cmd.Run()
 }
 
@@ -188,8 +184,7 @@ func (c *Context) actuallyStartNode(name string) error {
 		name,
 	)
 	// TODO(bentheelder): collect output instead of connecting these
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
+	cmd.InheritOutput = true
 	return cmd.Run()
 }
 
@@ -206,20 +201,5 @@ func (c *Context) ListNodes(alsoStopped bool) (containerIDs []string, err error)
 	if alsoStopped {
 		cmd.Args = append(cmd.Args, "-a")
 	}
-	return cmdLines(cmd)
-}
-
-func cmdLines(cmd *exec.Cmd) (lines []string, err error) {
-	var buff bytes.Buffer
-	cmd.Stdout = &buff
-	cmd.Stderr = &buff
-	err = cmd.Run()
-	if err != nil {
-		return nil, err
-	}
-	scanner := bufio.NewScanner(&buff)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	return lines, nil
+	return cmd.CombinedOutputLines()
 }

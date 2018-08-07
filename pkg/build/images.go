@@ -21,12 +21,12 @@ package build
 import (
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/golang/glog"
 
 	"k8s.io/test-infra/kind/pkg/build/sources"
+	"k8s.io/test-infra/kind/pkg/exec"
 )
 
 // NodeImageBuildContext is used to build the kind node image, and contains
@@ -46,22 +46,6 @@ func NewNodeImageBuildContext() *NodeImageBuildContext {
 		GoCmd:    "go",
 		Arch:     "amd64",
 	}
-}
-
-func runCmd(cmd *exec.Cmd) error {
-	glog.Infof("Running: %v %v", cmd.Path, cmd.Args)
-	// TODO(bentheelder): reconsider this / make it configurable
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	return cmd.Run()
-}
-
-// TODO(bentheelder): vendor a portable go library for this and use instead
-func copyDir(src, dst string) error {
-	src = filepath.Clean(src) + string(filepath.Separator) + "."
-	dst = filepath.Clean(dst)
-	cmd := exec.Command("cp", "-r", src, dst)
-	return runCmd(cmd)
 }
 
 // Build builds the cluster node image, the sourcedir must be set on
@@ -95,28 +79,59 @@ func (c *NodeImageBuildContext) Build() (err error) {
 
 	glog.Infof("Building node image in: %s", buildDir)
 
-	// build entrypoint binary
+	// build the entrypoint binary first
+	if err := c.buildEntrypoint(buildDir); err != nil {
+		return err
+	}
+
+	// then the actual docker image
+	return c.buildImage(buildDir)
+}
+
+// builds the entrypoint binary
+func (c *NodeImageBuildContext) buildEntrypoint(dir string) error {
 	// NOTE: this binary only uses the go1 stdlib, and is a single file
-	glog.Info("Building entrypoint binary ...")
-	entrypointSrc := filepath.Join(buildDir, "entrypoint", "main.go")
-	entrypointDest := filepath.Join(buildDir, "entrypoint", "entrypoint")
+	entrypointSrc := filepath.Join(dir, "entrypoint", "main.go")
+	entrypointDest := filepath.Join(dir, "entrypoint", "entrypoint")
+
 	cmd := exec.Command(c.GoCmd, "build", "-o", entrypointDest, entrypointSrc)
 	// TODO(bentheelder): we may need to map between docker image arch and GOARCH
 	cmd.Env = []string{"GOOS=linux", "GOARCH=" + c.Arch}
-	err = runCmd(cmd)
-	if err != nil {
+
+	// actually build
+	glog.Info("Building entrypoint binary ...")
+	cmd.Debug = true
+	cmd.InheritOutput = true
+	if err := cmd.Run(); err != nil {
 		glog.Errorf("Entrypoint build Failed! %v", err)
 		return err
 	}
 	glog.Info("Entrypoint build completed.")
+	return nil
+}
+
+func (c *NodeImageBuildContext) buildImage(dir string) error {
+	// build the image, tagged as tagImageAs, using the our tempdir as the context
+	cmd := exec.Command("docker", "build", "-t", c.ImageTag, dir)
+	cmd.Debug = true
+	cmd.InheritOutput = true
 
 	glog.Info("Starting Docker build ...")
-	// build the image, tagged as tagImageAs, using the our tempdir as the context
-	err = runCmd(exec.Command("docker", "build", "-t", c.ImageTag, buildDir))
+	err := cmd.Run()
 	if err != nil {
 		glog.Errorf("Docker build Failed! %v", err)
 		return err
 	}
 	glog.Info("Docker build completed.")
 	return nil
+}
+
+// TODO(bentheelder): vendor a portable go library for this and use instead
+func copyDir(src, dst string) error {
+	src = filepath.Clean(src) + string(filepath.Separator) + "."
+	dst = filepath.Clean(dst)
+	cmd := exec.Command("cp", "-r", src, dst)
+	cmd.Debug = true
+	cmd.InheritOutput = true
+	return cmd.Run()
 }
