@@ -29,7 +29,7 @@
 # For now this is still an ARG so we can reuse it throughout the build
 # without persisting it to the container.
 ARG ARCH="amd64"
-ARG BASE_IMAGE_VERSION="0.3"
+ARG BASE_IMAGE_VERSION="0.3.1"
 ARG BASE_IMAGE="k8s.gcr.io/debian-base-${ARCH}:${BASE_IMAGE_VERSION}"
 FROM ${BASE_IMAGE}
 
