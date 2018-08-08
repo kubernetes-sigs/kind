@@ -21,18 +21,23 @@ import (
 	"flag"
 
 	"github.com/spf13/cobra"
+
+	"k8s.io/test-infra/kind/cmd/kind/cmd/build"
+	"k8s.io/test-infra/kind/cmd/kind/cmd/create"
+	"k8s.io/test-infra/kind/cmd/kind/cmd/delete"
 )
 
-func newRootCommand() *cobra.Command {
+// NewCommand returns a new cobra.Command implementing the root command for kind
+func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "kind",
 		Short: "kind is a tool for managing local multi-node Kubernetes clusters",
 		Long:  "kind creates and manages local multi-node Kubernetes clusters using Docker containers",
 	}
-	// add all top level commands
-	cmd.AddCommand(newBuildCommand())
-	cmd.AddCommand(newCreateCommand())
-	cmd.AddCommand(newDeleteCommand())
+	// add all top level subcommands
+	cmd.AddCommand(build.NewCommand())
+	cmd.AddCommand(create.NewCommand())
+	cmd.AddCommand(delete.NewCommand())
 	return cmd
 }
 
@@ -43,10 +48,10 @@ func Run() error {
 	// glog logs to files by default, grr
 	flag.Set("logtostderr", "true")
 
-	rootCmd := newRootCommand()
+	cmd := NewCommand()
 	// glog registers global flags on flag.CommandLine...
-	rootCmd.Flags().AddGoFlagSet(flag.CommandLine)
+	cmd.Flags().AddGoFlagSet(flag.CommandLine)
 
 	// actually execute the cobra commands now...
-	return rootCmd.Execute()
+	return cmd.Execute()
 }

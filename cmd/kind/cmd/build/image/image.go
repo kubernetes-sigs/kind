@@ -14,34 +14,41 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package image
 
 import (
 	"os"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 
-	"k8s.io/test-infra/kind/pkg/cluster"
+	"k8s.io/test-infra/kind/pkg/build"
 )
 
-func newDeleteCommand() *cobra.Command {
-	return &cobra.Command{
-		// TODO(bentheelder): more detailed usage
-		Use:   "delete",
-		Short: "Deletes a cluster",
-		Long:  "Deletes a Kubernetes cluster",
-		Run:   runDelete,
-	}
+type flags struct {
+	Source string
 }
 
-func runDelete(cmd *cobra.Command, args []string) {
-	// TODO(bentheelder): make this configurable
-	config := cluster.NewConfig("")
-	ctx := cluster.NewContext(config)
-	err := ctx.Delete()
+func NewCommand() *cobra.Command {
+	flags := &flags{}
+	cmd := &cobra.Command{
+		// TODO(bentheelder): more detailed usage
+		Use:   "image",
+		Short: "build the node image",
+		Long:  "build the node image",
+		Run: func(cmd *cobra.Command, args []string) {
+			run(flags, cmd, args)
+		},
+	}
+	cmd.Flags().StringVar(&flags.Source, "source", "", "path to the node image sources")
+	return cmd
+}
+
+func run(flags *flags, cmd *cobra.Command, args []string) {
+	// TODO(bentheelder): make this more configurable
+	ctx := build.NewNodeImageBuildContext()
+	ctx.SourceDir = flags.Source
+	err := ctx.Build()
 	if err != nil {
-		glog.Errorf("Failed to delete cluster: %v", err)
 		os.Exit(-1)
 	}
 }

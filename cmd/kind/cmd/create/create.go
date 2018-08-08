@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+// Package create implements the `create` command
+package create
 
 import (
 	"os"
@@ -25,19 +26,29 @@ import (
 	"k8s.io/test-infra/kind/pkg/cluster"
 )
 
-func newCreateCommand() *cobra.Command {
-	return &cobra.Command{
+type flags struct {
+	Name string
+}
+
+// NewCommand returns a new cobra.Command for cluster creation
+func NewCommand() *cobra.Command {
+	flags := &flags{}
+	cmd := &cobra.Command{
 		// TODO(bentheelder): more detailed usage
 		Use:   "create",
 		Short: "Creates a cluster",
 		Long:  "Creates a Kubernetes cluster",
-		Run:   runCreate,
+		Run: func(cmd *cobra.Command, args []string) {
+			run(flags, cmd, args)
+		},
 	}
+	cmd.Flags().StringVar(&flags.Name, "name", "", "the cluster name")
+	return cmd
 }
 
-func runCreate(cmd *cobra.Command, args []string) {
-	// TODO(bentheelder): make this configurable
-	config := cluster.NewConfig("")
+func run(flags *flags, cmd *cobra.Command, args []string) {
+	// TODO(bentheelder): make this more configurable
+	config := cluster.NewConfig(flags.Name)
 	ctx := cluster.NewContext(config)
 	err := ctx.Create()
 	if err != nil {

@@ -14,41 +14,45 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+// Package delete implements the `delete` command
+package delete
 
 import (
 	"os"
 
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 
-	"k8s.io/test-infra/kind/pkg/build"
+	"k8s.io/test-infra/kind/pkg/cluster"
 )
 
-type buildImageCommandFlags struct {
-	Source string
+type flags struct {
+	Name string
 }
 
-func newBuildImageCommand() *cobra.Command {
-	flags := &buildImageCommandFlags{}
+// NewCommand returns a new cobra.Command for cluster creation
+func NewCommand() *cobra.Command {
+	flags := &flags{}
 	cmd := &cobra.Command{
 		// TODO(bentheelder): more detailed usage
-		Use:   "image",
-		Short: "build the node image",
-		Long:  "build the node image",
+		Use:   "delete",
+		Short: "Deletes a cluster",
+		Long:  "Deletes a Kubernetes cluster",
 		Run: func(cmd *cobra.Command, args []string) {
-			runBuildImage(flags, cmd, args)
+			run(flags, cmd, args)
 		},
 	}
-	cmd.Flags().StringVar(&flags.Source, "source", "", "path to the node image sources")
+	cmd.Flags().StringVar(&flags.Name, "name", "", "the cluster name")
 	return cmd
 }
 
-func runBuildImage(flags *buildImageCommandFlags, cmd *cobra.Command, args []string) {
+func run(flags *flags, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
-	ctx := build.NewNodeImageBuildContext()
-	ctx.SourceDir = flags.Source
-	err := ctx.Build()
+	config := cluster.NewConfig(flags.Name)
+	ctx := cluster.NewContext(config)
+	err := ctx.Delete()
 	if err != nil {
+		glog.Errorf("Failed to delete cluster: %v", err)
 		os.Exit(-1)
 	}
 }

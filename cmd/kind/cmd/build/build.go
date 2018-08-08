@@ -14,19 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+// Package build implements the `build` command
+package build
 
 import (
 	"github.com/spf13/cobra"
+
+	"k8s.io/test-infra/kind/cmd/kind/cmd/build/image"
 )
 
-func newBuildCommand() *cobra.Command {
+// NewCommand returns a new cobra.Command for building
+func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		// TODO(bentheelder): more detailed usage
 		Use:   "build",
 		Short: "build",
 		Long:  "build",
 	}
-	cmd.AddCommand(newBuildImageCommand())
+	// add subcommands
+	cmd.AddCommand(image.NewCommand())
 	return cmd
 }
