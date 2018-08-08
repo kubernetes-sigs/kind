@@ -2,13 +2,11 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["root.go"],
-    importpath = "k8s.io/test-infra/kind/cmd/kind/cmd",
+    srcs = ["image.go"],
+    importpath = "k8s.io/test-infra/kind/cmd/kind/cmd/build/image",
     visibility = ["//visibility:public"],
     deps = [
-        "//kind/cmd/kind/cmd/build:go_default_library",
-        "//kind/cmd/kind/cmd/create:go_default_library",
-        "//kind/cmd/kind/cmd/delete:go_default_library",
+        "//kind/pkg/build:go_default_library",
         "//vendor/github.com/spf13/cobra:go_default_library",
     ],
 )
@@ -22,12 +20,7 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [
-        ":package-srcs",
-        "//kind/cmd/kind/cmd/build:all-srcs",
-        "//kind/cmd/kind/cmd/create:all-srcs",
-        "//kind/cmd/kind/cmd/delete:all-srcs",
-    ],
+    srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )
