@@ -42,15 +42,24 @@ func NewCommand() *cobra.Command {
 			run(flags, cmd, args)
 		},
 	}
-	cmd.Flags().StringVar(&flags.Name, "name", "", "the cluster name")
+	cmd.Flags().StringVar(&flags.Name, "name", "1", "the cluster name")
 	return cmd
 }
 
 func run(flags *flags, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
 	config := cluster.NewConfig(flags.Name)
+	err := config.Validate()
+	if err != nil {
+		glog.Error("Invalid Configuration!")
+		configErrors := err.(cluster.ConfigErrors)
+		for _, problem := range configErrors.Errors() {
+			glog.Error(problem)
+		}
+		os.Exit(-1)
+	}
 	ctx := cluster.NewContext(config)
-	err := ctx.Create()
+	err = ctx.Create()
 	if err != nil {
 		glog.Errorf("Failed to create cluster: %v", err)
 		os.Exit(-1)

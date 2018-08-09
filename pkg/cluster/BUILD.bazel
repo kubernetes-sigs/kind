@@ -2,7 +2,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["cluster.go"],
+    srcs = [
+        "cluster.go",
+        "config.go",
+    ],
     importpath = "k8s.io/test-infra/kind/pkg/cluster",
     visibility = ["//visibility:public"],
     deps = ["//kind/pkg/exec:go_default_library"],

@@ -23,43 +23,26 @@ import (
 	"k8s.io/test-infra/kind/pkg/exec"
 )
 
-// ClusterLabelKey is applied to each "node" docker container for identification
-const ClusterLabelKey = "io.k8s.kind-cluster"
-
-// Config contains cluster options
-type Config struct {
-	clusterID string
-	// TODO(bentheelder): fill this in
-}
-
-// NewConfig returns a new Config with default settings,
-// if clusterID is "" the cluster ID will be "1"
-func NewConfig(clusterID string) Config {
-	// TODO(bentheelder): validation
-	if clusterID == "" {
-		clusterID = "1"
-	}
-	return Config{
-		clusterID: clusterID,
-	}
-}
-
 // Context contains Config and is used to create / manipulate
 // kubernetes-in-docker clusters
 type Context struct {
-	Config
+	config Config
 	// TODO(bentheelder): fill this in
 }
 
 // NewContext returns a new cluster management context with Config config
 func NewContext(config Config) *Context {
 	return &Context{
-		Config: config,
+		config: config,
 	}
 }
 
 // Create provisions and starts a kubernetes-in-docker cluster
 func (c *Context) Create() error {
+	// validate config first
+	if err := c.config.Validate(); err != nil {
+		return err
+	}
 	// TODO(bentheelder): more advanced provisioning
 	// TODO(bentheelder): multiple nodes
 	return c.provisionNode()
@@ -77,7 +60,7 @@ func (c *Context) Delete() error {
 
 func (c *Context) provisionNode() error {
 	// TODO(bentheelder): multiple nodes...
-	nodeName := "kind-" + c.Config.clusterID + "-master"
+	nodeName := "kind-" + c.config.Name + "-control-plane"
 	// create the "node" container (docker run, but it is paused, see createNode)
 	if err := c.createNode(nodeName); err != nil {
 		return err
@@ -105,10 +88,6 @@ func (c *Context) provisionNode() error {
 	}
 
 	return nil
-}
-
-func (c *Config) clusterLabel() string {
-	return fmt.Sprintf("%s=%s", ClusterLabelKey, c.clusterID)
 }
 
 // createNode `docker run`s the node image, note that due to
@@ -139,7 +118,7 @@ func (c *Context) createNode(name string) error {
 		"--hostname", name, // make hostname match container name
 		"--name", name, // ... and set the container name
 		// label the node with the cluster ID
-		"--label", c.Config.clusterLabel(),
+		"--label", c.config.clusterLabel(),
 		"kind-node", // use our image, TODO: make this configurable
 	)
 	// TODO(bentheelder): collect output instead of connecting these
@@ -195,7 +174,7 @@ func (c *Context) ListNodes(alsoStopped bool) (containerIDs []string, err error)
 		// quiet output for parsing
 		"-q",
 		// filter for nodes with the cluster label
-		"--filter", "label="+c.Config.clusterLabel(),
+		"--filter", "label="+c.config.clusterLabel(),
 	)
 	// optionally show nodes that are stopped
 	if alsoStopped {
