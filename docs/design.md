@@ -5,35 +5,68 @@ This is the root design documentation for `kind`. See also the project
 
 ## Overview
 
-`kind` or **k**ubernetes **in** **d**docker is a suite of tooling for local kubernetes
-"clusters" where each "node" in the cluster is a docker container running on the
-same local machine.
+`kind` or **k**ubernetes **in** **d**ocker is a suite of tooling for local 
+Kubernetes "clusters" where each "node" is a Docker container.
+`kind` is targeted at testing Kubernetes.
 
-kind is divided into go packages implementing most of the functionality, a
+`kind` is divided into go packages implementing most of the functionality, a
 command line for users, and a "node" base image. The intent is that the `kind`
 the suite of packages should eventually be importable and reusable by other
 tools (e.g. [kubetest](https://github.com/kubernetes/test-infra/tree/master/kubetest))
 while the CLI provides a quick way to use and debug these packages.
 
-## The Node Image
+For [the original proposal](https://docs.google.com/document/d/1VL0shYfKl7goy5Zj4Rghpixbye4M8zs_N2gWoQTSKh0/) by [Q-Lee](https://github.com/q-lee) see [the kubernetes-sig-testing post](https://groups.google.com/d/msg/kubernetes-sig-testing/uVkosorBnVc/8DDC3qvMAwAJ) (NOTE: this document is shared with [kubernetes-sig-testing](https://groups.google.com/forum/#!forum/kubernetes-sig-testing)).
 
-The ["node" image](./../images/node) is a small-ish Docker image for running
-nested containers, systemd, and kubernetes components.
+In short `kind` targets local clusters for testing purposes. While not all 
+testing can be performed without "real" clusters in "the cloud" with provider 
+enabled CCMs, enough can that we want something that:
 
-To do this we need to set up an environment that will meet the CRI 
-(currently just docker) and systemd's particular needs. Documentation for this
-is fairly detailed inline to the image's [Dockerfile](./../images/node/Dockerfile)),
-but essentially:
+ - runs very cheap clusters that any developer can locally replicate
+ - integrates with our tooling
+ - is thoroughly documented and maintainable
+ - is very stable, and has extensive error handling and sanity checking
+ - passes all conformance tests
 
-- we preinstall tools / packages expected by systemd/docker/kubernetes other
-than Kubernetes itself.
+## Clusters
 
-- we install a custom entrypoint that allows us to perform some actions before
-the container truly boots
+Clusters are managed by logic in [`pkg/cluster`](./../pkg/cluster), which the
+`kind` cli wraps.
 
-- we set up a systemd service to forward journal logs to the container tty
+Each "cluster" is identified by an internal but well-known [docker object label](https://docs.docker.com/config/labels-custom-metadata/) key, with the cluster
+name / ID as the value on each "node" container.
 
-- we do a few tricks to minimize unnecessary services and inform systemd that it
-is in docker. (see the [Dockerfile](./../images/node/Dockerfile))
+We initially offload this type of state into the containers and Docker. 
+Similarly the container names are automatically managed by `kind`, though
+we will select over labels instead of names because these are less brittle and
+are properly namespaced. Doing this also avoids us needing to manage anything
+on the host filesystem, but should not degrade usage.
 
-# TODO(bentheelder): fill in further docs as things stabilize / functionality is checked in, particularly around node management
+The `KUBECONFIG` will be bind-mounted to a temp directory, with the tooling 
+capable of detecting this from the containers and providing helpers to use it.
+
+## Images
+
+To run Kubernetes in a container, we first need suitable container image(s).
+A single standard base layer is used, containing basic utilities like systemd,
+certificates, mount, etc. 
+
+Installing Kubernetes etc. is performed on top of this image, and may be cached
+in pre-built images. We expect to provide images with releases already installed
+for use in integrating against Kubernetes.
+
+For more see [node-image.md](./node-image.md).
+
+## Nodes
+
+### Lifecycle 
+
+Each "node" runs as a docker container. Each container initially boots to a
+pseudo "paused" state, with [the entrypoint](./images/node/entrypoint) 
+waiting for `SIGUSR1`. This allows us to manipulate and inspect the container 
+with `docker exec ...` and other tools prior to starting systemd and 
+all of the components.
+
+Once the nodes are sufficiently prepared, we signal the entrypoint to actually
+"boot" the node.
+
+# TODO(bentheelder): elaborate on bootup, installation as this stabilizes

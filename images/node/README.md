@@ -15,4 +15,3 @@ If you make any changes to this image, please continue to document exactly
 why we do what we do, citing upstream documentation where possible.
 
 See also [`pkg/cluster`](./../../pkg/cluster) for logic that interacts directly with this image.
- 
