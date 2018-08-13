@@ -21,11 +21,11 @@ REPO_ROOT=$(git rev-parse --show-toplevel)
 
 # install go-bindata from vendor locally
 OUTPUT_GOBIN="${REPO_ROOT}/_output/bin"
+cd "${REPO_ROOT}"
 GOBIN="${OUTPUT_GOBIN}" go install ./vendor/github.com/jteeuwen/go-bindata/go-bindata
 
 # go generate (using go-bindata)
 # NOTE: go will only take package paths, not absolute directories
-cd "${REPO_ROOT}"
 PATH="${OUTPUT_GOBIN}:${PATH}" go generate ./kind/...
 # gofmt the generated file
-find ./kind -name "*.go" | xargs gofmt -s -w
+find ./kind -name "*.go" -type f -print0 | xargs -0 gofmt -s -w
