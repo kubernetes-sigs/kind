@@ -50,7 +50,6 @@ func (c *Context) Create() error {
 
 // Delete tears down a kubernetes-in-docker cluster
 func (c *Context) Delete() error {
-	// TODO(bentheelder): find and delete nodes
 	nodes, err := c.ListNodes(true)
 	if err != nil {
 		return fmt.Errorf("error listing nodes: %v", err)
