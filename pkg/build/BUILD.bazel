@@ -2,7 +2,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["images.go"],
+    srcs = ["node_images.go"],
     importpath = "k8s.io/test-infra/kind/pkg/build",
     visibility = ["//visibility:public"],
     deps = [
