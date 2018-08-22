@@ -9,7 +9,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//kind/images/node/entrypoint:all-srcs",
+        "//kind/images/base:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

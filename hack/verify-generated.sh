@@ -22,8 +22,8 @@ TESTINFRA_ROOT=$(git rev-parse --show-toplevel)
 
 bazel build //kind/pkg/build/sources:bindata
 
-BAZEL_GENERATED_BINDATA="bazel-genfiles/kind/pkg/build/sources/images_node_sources.go"
-GO_GENERATED_BINDATA="kind/pkg/build/sources/images_node_sources.go"
+BAZEL_GENERATED_BINDATA="bazel-genfiles/kind/pkg/build/sources/images_sources.go"
+GO_GENERATED_BINDATA="kind/pkg/build/sources/images_sources.go"
 
 DIFF="$(diff <(cat "${GO_GENERATED_BINDATA}") <(gofmt -s "${BAZEL_GENERATED_BINDATA}"))"
 if [ ! -z "$DIFF" ]; then

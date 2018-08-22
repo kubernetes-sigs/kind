@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package image
+package base
 
 import (
 	"os"
@@ -32,20 +32,20 @@ func NewCommand() *cobra.Command {
 	flags := &flags{}
 	cmd := &cobra.Command{
 		// TODO(bentheelder): more detailed usage
-		Use:   "image",
-		Short: "build the node image",
-		Long:  "build the node image",
+		Use:   "base",
+		Short: "build the base node image",
+		Long:  "build the base node image",
 		Run: func(cmd *cobra.Command, args []string) {
 			run(flags, cmd, args)
 		},
 	}
-	cmd.Flags().StringVar(&flags.Source, "source", "", "path to the node image sources")
+	cmd.Flags().StringVar(&flags.Source, "source", "", "path to the base image sources")
 	return cmd
 }
 
 func run(flags *flags, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
-	ctx := build.NewNodeImageBuildContext()
+	ctx := build.NewBaseImageBuildContext()
 	ctx.SourceDir = flags.Source
 	err := ctx.Build()
 	if err != nil {

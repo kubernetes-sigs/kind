@@ -5,12 +5,12 @@ load("//kind/hack:bindata.bzl", "go_bindata")
 go_bindata(
     name = "bindata",
     srcs = [
-        "//kind/images/node:all-srcs",
+        "//kind/images:all-srcs",
     ],
     outs = [
-        "images_node_sources.go",
+        "images_sources.go",
     ],
-    bindata_srcs = "./../../../images/node/...",
+    bindata_srcs = "./../../../images/...",
     generate_directive_file = "generate.go",
     ignores = ["(\.*README\.md)|(\.*BUILD\.bazel)"],
     include_metadata = False,
@@ -23,7 +23,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "generate.go",
-        "images_node_sources.go",
+        "images_sources.go",
     ],
     importpath = "k8s.io/test-infra/kind/pkg/build/sources",
     visibility = ["//visibility:public"],

@@ -1,9 +1,9 @@
 <!--TODO(bentheelder): fill this in much more thoroughly-->
-# images/node
+# images/base
 
-This directory contains sources for building the `kind` "node" image.
+This directory contains sources for building the `kind` base "node" image.
 
-The image can be built with `kind build image`.
+The image can be built with `kind build base`.
 
 ## Maintenance
 
@@ -14,4 +14,4 @@ is documented inline in the [Dockerfile](./Dockerfile).
 If you make any changes to this image, please continue to document exactly 
 why we do what we do, citing upstream documentation where possible.
 
-See also [`pkg/cluster`](./../../pkg/cluster) for logic that interacts directly with this image.
+See also [`pkg/cluster`](./../../pkg/cluster) for logic that interacts with this image.

@@ -20,7 +20,7 @@ package build
 import (
 	"github.com/spf13/cobra"
 
-	"k8s.io/test-infra/kind/cmd/kind/cmd/build/image"
+	"k8s.io/test-infra/kind/cmd/kind/cmd/build/base"
 )
 
 // NewCommand returns a new cobra.Command for building
@@ -32,6 +32,6 @@ func NewCommand() *cobra.Command {
 		Long:  "build",
 	}
 	// add subcommands
-	cmd.AddCommand(image.NewCommand())
+	cmd.AddCommand(base.NewCommand())
 	return cmd
 }
