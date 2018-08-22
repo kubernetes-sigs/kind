@@ -42,7 +42,7 @@ type BaseImageBuildContext struct {
 // default configuration
 func NewBaseImageBuildContext() *BaseImageBuildContext {
 	return &BaseImageBuildContext{
-		ImageTag: "kind-node",
+		ImageTag: "kind-base",
 		GoCmd:    "go",
 		Arch:     "amd64",
 	}
@@ -52,7 +52,7 @@ func NewBaseImageBuildContext() *BaseImageBuildContext {
 // the NodeImageBuildContext
 func (c *BaseImageBuildContext) Build() (err error) {
 	// create tempdir to build in
-	tmpDir, err := ioutil.TempDir("", "kind-build")
+	tmpDir, err := ioutil.TempDir("", "kind-base-image")
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func (c *BaseImageBuildContext) Build() (err error) {
 		}
 	}
 
-	glog.Infof("Building node image in: %s", buildDir)
+	glog.Infof("Building base image in: %s", buildDir)
 
 	// build the entrypoint binary first
 	if err := c.buildEntrypoint(buildDir); err != nil {
@@ -124,14 +124,4 @@ func (c *BaseImageBuildContext) buildImage(dir string) error {
 	}
 	glog.Info("Docker build completed.")
 	return nil
-}
-
-// TODO(bentheelder): vendor a portable go library for this and use instead
-func copyDir(src, dst string) error {
-	src = filepath.Clean(src) + string(filepath.Separator) + "."
-	dst = filepath.Clean(dst)
-	cmd := exec.Command("cp", "-r", src, dst)
-	cmd.Debug = true
-	cmd.InheritOutput = true
-	return cmd.Run()
 }

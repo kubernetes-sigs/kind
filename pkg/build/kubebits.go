@@ -22,14 +22,10 @@ import (
 )
 
 // KubeBits provides the locations of Kubernetes Binaries / Images
-// needed on the cluster nodes and logic to install them properly
+// needed on the cluster nodes
 type KubeBits interface {
 	// Paths returns a map of path on host to desired path in the image
 	Paths() map[string]string
-	// Install should install all of the bits (EG debian packages) given:
-	// - the paths are populated in the image
-	// - NodeInstall provides access to install on some node
-	Install(NodeInstall) error
 }
 
 // NodeInstall should be implemented by users of KubeBitsProvider

@@ -16,22 +16,37 @@ limitations under the License.
 
 package build
 
-type LocalBuildBits struct {
+import "path/filepath"
+
+// BazelBuildBits implements KubeBits for a local Bazel build
+type BazelBuildBits struct {
 	paths map[string]string
 }
 
-func (l *LocalBuildBits) Paths() map[string]string {
+var _ KubeBits = &BazelBuildBits{}
+
+func (l *BazelBuildBits) Paths() map[string]string {
+	// TODO(bentheelder): maybe copy the map before returning /shrug
 	return l.paths
 }
 
-func (l *LocalBuildBits) Install(nodeInstall NodeInstall) error {
-	return nil
-}
-
-func NewLocalBuildBits(dir string) (bits KubeBits, err error) {
-	//binDir := path.Join(dir, "_output")
-	bits = &LocalBuildBits{
-		paths: map[string]string{},
+func NewBazelBuildBits(kubeRoot string) (bits KubeBits, err error) {
+	// https://docs.bazel.build/versions/master/output_directories.html
+	binDir := filepath.Join(kubeRoot, "bazel-bin")
+	bits = &BazelBuildBits{
+		paths: map[string]string{
+			// debians
+			filepath.Join(binDir, "build", "debs", "kubeadm.deb"):        "debs/kubeadm.deb",
+			filepath.Join(binDir, "build", "debs", "kubelet.deb"):        "debs/kubelet.deb",
+			filepath.Join(binDir, "build", "debs", "kubectl.deb"):        "debs/kubectl.deb",
+			filepath.Join(binDir, "build", "debs", "kubernetes-cni.deb"): "debs/kubernetes-cni.deb",
+			filepath.Join(binDir, "build", "debs", "cri-tools.deb"):      "debs/cri-tools.deb",
+			// docker images
+			filepath.Join(binDir, "build", "kube-proxy.tar"):              "images/kube-proxy.tar",
+			filepath.Join(binDir, "build", "kube-controller-manager.tar"): "images/kube-controller-manager.tar",
+			filepath.Join(binDir, "build", "kube-scheduler.tar"):          "images/kube-scheduler.tar",
+			filepath.Join(binDir, "build", "kube-apiserver.tar"):          "images/kube-apiserver.tar",
+		},
 	}
 	return bits, nil
 }

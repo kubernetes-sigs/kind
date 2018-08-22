@@ -14,26 +14,41 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package build implements the `build` command
-package build
+package node
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 
-	"k8s.io/test-infra/kind/cmd/kind/cmd/build/base"
-	"k8s.io/test-infra/kind/cmd/kind/cmd/build/node"
+	"k8s.io/test-infra/kind/pkg/build"
 )
 
-// NewCommand returns a new cobra.Command for building
+type flags struct {
+	Source string
+}
+
 func NewCommand() *cobra.Command {
+	flags := &flags{}
 	cmd := &cobra.Command{
 		// TODO(bentheelder): more detailed usage
-		Use:   "build",
-		Short: "build",
-		Long:  "build",
+		Use:   "node",
+		Short: "build the node image",
+		Long:  "build the node image",
+		Run: func(cmd *cobra.Command, args []string) {
+			run(flags, cmd, args)
+		},
 	}
-	// add subcommands
-	cmd.AddCommand(base.NewCommand())
-	cmd.AddCommand(node.NewCommand())
+	cmd.Flags().StringVar(&flags.Source, "source", "", "path to the base image sources")
 	return cmd
+}
+
+func run(flags *flags, cmd *cobra.Command, args []string) {
+	// TODO(bentheelder): make this more configurable
+	ctx := build.NewNodeImageBuildContext()
+	ctx.SourceDir = flags.Source
+	err := ctx.Build()
+	if err != nil {
+		os.Exit(-1)
+	}
 }
