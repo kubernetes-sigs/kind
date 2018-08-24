@@ -17,11 +17,25 @@ limitations under the License.
 package build
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"k8s.io/test-infra/kind/pkg/exec"
 )
+
+// TempDir is like ioutil.TempDir, but more docker friendly
+func TempDir(dir, prefix string) (name string, err error) {
+	name, err = ioutil.TempDir(dir, prefix)
+	if err != nil {
+		return "", err
+	}
+	if runtime.GOOS == "darwin" {
+		name = filepath.Join("/private", name)
+	}
+	return name, nil
+}
 
 // TODO(bentheelder): vendor a portable go library for this and use instead
 func copyDir(src, dst string) error {

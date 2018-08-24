@@ -19,6 +19,9 @@ package cluster
 
 import (
 	"fmt"
+	"time"
+
+	"github.com/pkg/errors"
 
 	"k8s.io/test-infra/kind/pkg/exec"
 )
@@ -43,6 +46,8 @@ func (c *Context) Create() error {
 	if err := c.config.Validate(); err != nil {
 		return err
 	}
+	// create a temp dir to stick kubeconfig in
+
 	// TODO(bentheelder): more advanced provisioning
 	// TODO(bentheelder): multiple nodes
 	return c.provisionNode()
@@ -73,6 +78,7 @@ func (c *Context) provisionNode() error {
 		"mount", "-o", "remount,ro", "/sys",
 	}); err != nil {
 		// TODO(bentheelder): logging here
+		// TODO(bentheelder): add a flag to retain the broken nodes for debugging
 		c.deleteNodes(nodeName)
 		return err
 	}
@@ -86,7 +92,47 @@ func (c *Context) provisionNode() error {
 		return err
 	}
 
+	// wait for docker to be ready
+	if !tryUntil(time.Now().Add(time.Second*30), func() bool {
+		out, err := c.outputOnNode(nodeName, []string{"systemctl", "is-active", "docker"})
+		if err != nil {
+			return false
+		}
+		return len(out) == 1 && out[0] == "active"
+	}) {
+		c.deleteNodes(nodeName)
+		return fmt.Errorf("timed out waiting for docker to be ready on node")
+	}
+
+	// run kubeadm init
+	// TODO(bentheelder): configure properly, ensure it uses images we built...
+	if err := c.runOnNode(nodeName, []string{
+		// kubeadm init because this is the control plane node
+		"kubeadm", "init",
+		// preflight errors are expected, in particular for swap
+		"--ignore-preflight-errors=all",
+		// on docker for mac we have to expose the api server on localhost
+		"--apiserver-cert-extra-sans=localhost",
+	}); err != nil {
+		c.deleteNodes(nodeName)
+		return errors.Wrap(err, "failed to init node with kubeadm")
+	}
+
+	// TODO(bentheelder): apply an overlay network
+
 	return nil
+}
+
+// call `try()`` in a loop until the deadline `until` has passed or `try()`
+// returns true, returns wether try every returned true
+func tryUntil(until time.Time, try func() bool) bool {
+	now := time.Now()
+	for until.After(now) {
+		if try() {
+			return true
+		}
+	}
+	return false
 }
 
 // createNode `docker run`s the node image, note that due to
@@ -118,6 +164,9 @@ func (c *Context) createNode(name string) error {
 		"--name", name, // ... and set the container name
 		// label the node with the cluster ID
 		"--label", c.config.clusterLabel(),
+		// expose API server
+		// TODO(bentheelder): this should probably be configurable
+		"-p", "6443:6443",
 		"kind-node", // use our image, TODO: make this configurable
 	)
 	// TODO(bentheelder): collect output instead of connecting these
@@ -136,8 +185,6 @@ func (c *Context) deleteNodes(names ...string) error {
 
 // runOnNode execs command on the named node
 func (c *Context) runOnNode(nameOrID string, command []string) error {
-	// TODO(bentheelder): use config
-	// TODO(bentheelder): logging
 	cmd := exec.Command("docker", "exec")
 	cmd.Args = append(cmd.Args,
 		"-t",           // use a tty so we can get output
@@ -150,6 +197,21 @@ func (c *Context) runOnNode(nameOrID string, command []string) error {
 	// TODO(bentheelder): collect output instead of connecting these
 	cmd.InheritOutput = true
 	return cmd.Run()
+}
+
+// outputOnNode execs command on the named node, returning the output lines
+func (c *Context) outputOnNode(nameOrID string, command []string) ([]string, error) {
+	cmd := exec.Command("docker", "exec")
+	cmd.Args = append(cmd.Args,
+		"-t",           // use a tty so we can get output
+		"--privileged", // run with priliges so we can remount etc..
+		nameOrID,       // ... against the "node" container
+	)
+	cmd.Args = append(cmd.Args,
+		command..., // finally, run the command supplied by the user
+	)
+	// TODO(bentheelder): collect output instead of connecting these
+	return cmd.CombinedOutputLines()
 }
 
 // signal our entrypoint (images/node/entrypoint) to boot

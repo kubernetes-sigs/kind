@@ -87,6 +87,10 @@ func (cmd *Cmd) runLoggingOutputOnFail() error {
 // except instead of returning the byte buffer of stderr + stdout,
 // it scans these for lines and returns a slice of output line strings
 func (cmd *Cmd) CombinedOutputLines() (lines []string, err error) {
+	if cmd.Debug {
+		glog.Infof("Running: %v %v", cmd.Path, cmd.Args)
+	}
+
 	var buff bytes.Buffer
 	cmd.Stdout = &buff
 	cmd.Stderr = &buff

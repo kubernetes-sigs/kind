@@ -20,7 +20,6 @@ package build
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -63,13 +62,13 @@ func (c *NodeImageBuildContext) Build() (err error) {
 
 	// ensure kubernetes build is up to date first
 	glog.Infof("Starting to build Kubernetes")
-	c.buildKube(kubeRoot)
+	//c.buildKube(kubeRoot)
 	glog.Infof("Finished building Kubernetes")
 	// TODO(bentheelder): allow other types of bits
 	bits, err := NewBazelBuildBits(kubeRoot)
 
 	// create tempdir to build in
-	tmpDir, err := ioutil.TempDir("", "kind-node-image")
+	tmpDir, err := TempDir("", "kind-node-image")
 	if err != nil {
 		return err
 	}
@@ -158,6 +157,7 @@ func (c *NodeImageBuildContext) buildImage(dir string) error {
 	// if docker gets proper squash support, we can rm them instead
 	containerID, err := c.createBuildContainer(dir)
 	if err != nil {
+		glog.Errorf("Image build Failed! %v", err)
 		return err
 	}
 
@@ -201,6 +201,14 @@ func (c *NodeImageBuildContext) buildImage(dir string) error {
 		return err
 	}
 
+	// ensure we don't fail if swap is enabled on the host
+	if err = execInBuild("/bin/sh", "-c",
+		`echo "KUBELET_EXTRA_ARGS=--fail-swap-on=false" >> /etc/default/kubelet`,
+	); err != nil {
+		glog.Errorf("Image build Failed! %v", err)
+		return err
+	}
+
 	// Save the image changes to a new image
 	cmd := exec.Command("docker", "commit", containerID, c.ImageTag)
 	cmd.Debug = true
@@ -219,10 +227,11 @@ func (c *NodeImageBuildContext) createBuildContainer(buildDir string) (id string
 	cmd.Args = append(cmd.Args,
 		"-d", // make the client exit while the container continues to run
 		// label the container to make them easier to track
-		"--label", fmt.Sprintf("%s=%s", BuildContainerLabelKey, time.Now()),
+		"--label", fmt.Sprintf("%s=%s", BuildContainerLabelKey, time.Now().Format(time.RFC3339Nano)),
 		"-v", fmt.Sprintf("%s:/build", buildDir),
 		c.BaseImage,
 	)
+	cmd.Debug = true
 	lines, err := cmd.CombinedOutputLines()
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create build container")
