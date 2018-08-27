@@ -1,6 +1,6 @@
 ## images/node
 
-See: [./../../pkg/build/node_image.go](./../../pkg.build/node_image.go), this
+See: [./../../pkg/build/node_image.go](./../../pkg/build/node_image.go), this
 image is built programmatically with docker run / exec / commit for performance
 reasons with large artifacts.
 
