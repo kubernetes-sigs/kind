@@ -32,21 +32,32 @@ func TestConfigValidate(t *testing.T) {
 		{
 			Name: "Invalid name - commas",
 			Config: Config{
-				Name: ",,,,,,",
+				Name:     ",,,,,,",
+				NumNodes: 1,
 			},
 			ExpectedErrors: 1,
 		},
 		{
 			Name: "Invalid name - zero length",
 			Config: Config{
-				Name: "",
+				Name:     "",
+				NumNodes: 1,
 			},
 			ExpectedErrors: 1,
 		},
 		{
 			Name: "Invalid name - invalid character in the middle",
 			Config: Config{
-				Name: "almost-valid@nope",
+				Name:     "almost-valid@nope",
+				NumNodes: 1,
+			},
+			ExpectedErrors: 1,
+		},
+		{
+			Name: "Invalid number of nodes (not yet supported",
+			Config: Config{
+				Name:     "2",
+				NumNodes: 2,
 			},
 			ExpectedErrors: 1,
 		},
