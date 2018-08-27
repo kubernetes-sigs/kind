@@ -17,4 +17,5 @@ limitations under the License.
 package kubeadm
 
 // APIServerPort is the expected default APIServerPort on the control plane node(s)
+// https://kubernetes.io/docs/reference/access-authn-authz/controlling-access/#api-server-ports-and-ips
 const APIServerPort = 6443

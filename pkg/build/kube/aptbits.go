@@ -57,7 +57,7 @@ func (b *AptBits) Install(install InstallContext) error {
 deb http://apt.kubernetes.io/ kubernetes-xenial main
 EOF`
 	if err := install.Run("/bin/sh", "-c", addKey); err != nil {
-		glog.Errorf("Adding Kubernetes apt repository failed! %v", err)
+		glog.Errorf("Adding Kubernetes apt key failed! %v", err)
 		return err
 	}
 	if err := install.Run("/bin/sh", "-c", addSources); err != nil {
