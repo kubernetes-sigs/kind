@@ -14,8 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package build implements functionality to build the kind images
-// TODO(bentheelder): and k8s
 package build
 
 import (
@@ -28,6 +26,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
+	"k8s.io/test-infra/kind/pkg/build/kube"
 	"k8s.io/test-infra/kind/pkg/build/sources"
 	"k8s.io/test-infra/kind/pkg/exec"
 )
@@ -39,35 +38,46 @@ type NodeImageBuildContext struct {
 	ImageTag  string
 	Arch      string
 	BaseImage string
+	KubeRoot  string
+	Bits      kube.Bits
 }
 
 // NewNodeImageBuildContext creates a new NodeImageBuildContext with
 // default configuration
-func NewNodeImageBuildContext() *NodeImageBuildContext {
+func NewNodeImageBuildContext(mode string) (ctx *NodeImageBuildContext, err error) {
+	kubeRoot := ""
+	// apt should not fail on finding kube root as it does not use it
+	if mode != "apt" {
+		kubeRoot, err = kube.FindSource()
+		if err != nil {
+			return nil, fmt.Errorf("error finding kuberoot: %v", err)
+		}
+	}
+	bits, err := kube.NewNamedBits(mode, kubeRoot)
+	if err != nil {
+		return nil, err
+	}
 	return &NodeImageBuildContext{
 		ImageTag:  "kind-node",
 		Arch:      "amd64",
 		BaseImage: "kind-base",
-	}
+		KubeRoot:  kubeRoot,
+		Bits:      bits,
+	}, nil
 }
 
 // Build builds the cluster node image, the sourcedir must be set on
 // the NodeImageBuildContext
 func (c *NodeImageBuildContext) Build() (err error) {
-	// get k8s source
-	kubeRoot, err := FindKubeSource()
-	if err != nil {
-		return errors.Wrap(err, "could not find kubernetes source")
-	}
-
 	// ensure kubernetes build is up to date first
 	glog.Infof("Starting to build Kubernetes")
-	//c.buildKube(kubeRoot)
+	if err = c.Bits.Build(); err != nil {
+		glog.Errorf("Failed to build Kubernetes: %v", err)
+		return errors.Wrap(err, "failed to build kubernetes")
+	}
 	glog.Infof("Finished building Kubernetes")
-	// TODO(bentheelder): allow other types of bits
-	bits, err := NewBazelBuildBits(kubeRoot)
 
-	// create tempdir to build in
+	// create tempdir to build the image in
 	tmpDir, err := TempDir("", "kind-node-image")
 	if err != nil {
 		return err
@@ -96,48 +106,25 @@ func (c *NodeImageBuildContext) Build() (err error) {
 	glog.Infof("Building node image in: %s", buildDir)
 
 	// populate the kubernetes artifacts first
-	if err := c.populateBits(buildDir, bits); err != nil {
+	if err := c.populateBits(buildDir); err != nil {
 		return err
 	}
 
-	// then the actual docker image
+	// then the perform the actual docker image build
 	return c.buildImage(buildDir)
 }
 
-func (c *NodeImageBuildContext) buildKube(kubeRoot string) error {
-	// TODO(bentheelder): support other modes of building
-	// cd to k8s source
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
+func (c *NodeImageBuildContext) populateBits(buildDir string) error {
+	// always create bits dir
+	bitsDir := path.Join(buildDir, "bits")
+	if err := os.Mkdir(bitsDir, 0777); err != nil {
+		return errors.Wrap(err, "failed to make bits dir")
 	}
-	os.Chdir(kubeRoot)
-	// make sure we cd back when done
-	defer os.Chdir(cwd)
-
-	// TODO(bentheelder): move this out and next to the KubeBits impl
-	cmd := exec.Command("bazel", "build")
-	cmd.Args = append(cmd.Args,
-		// TODO(bentheelder): we assume linux amd64, but we could select
-		// this based on Arch etc. throughout, this flag supports GOOS/GOARCH
-		"--platforms=@io_bazel_rules_go//go/toolchain:linux_amd64",
-		// we want the debian packages
-		"//build/debs:debs",
-		// and the docker images
-		"//build:docker-artifacts",
-	)
-
-	cmd.Debug = true
-	cmd.InheritOutput = true
-	return cmd.Run()
-}
-
-func (c *NodeImageBuildContext) populateBits(buildDir string, bits KubeBits) error {
 	// copy all bits from their source path to where we will COPY them into
 	// the dockerfile, see images/node/Dockerfile
-	bitPaths := bits.Paths()
+	bitPaths := c.Bits.Paths()
 	for src, dest := range bitPaths {
-		realDest := path.Join(buildDir, "files", dest)
+		realDest := path.Join(bitsDir, dest)
 		if err := copyFile(src, realDest); err != nil {
 			return errors.Wrap(err, "failed to copy build artifact")
 		}
@@ -148,6 +135,33 @@ func (c *NodeImageBuildContext) populateBits(buildDir string, bits KubeBits) err
 // BuildContainerLabelKey is applied to each build container
 const BuildContainerLabelKey = "io.k8s.test-infra.kind-build"
 
+// private kube.InstallContext implementation, local to the image build
+type installContext struct {
+	basePath    string
+	containerID string
+}
+
+var _ kube.InstallContext = &installContext{}
+
+func (ic *installContext) BasePath() string {
+	return ic.basePath
+}
+
+func (ic *installContext) Run(command string, args ...string) error {
+	cmd := exec.Command("docker", "exec", ic.containerID, command)
+	cmd.Args = append(cmd.Args, args...)
+	cmd.Debug = true
+	cmd.InheritOutput = true
+	return cmd.Run()
+}
+
+func (ic *installContext) CombinedOutputLines(command string, args ...string) ([]string, error) {
+	cmd := exec.Command("docker", "exec", ic.containerID, command)
+	cmd.Args = append(cmd.Args, args...)
+	cmd.Debug = true
+	return cmd.CombinedOutputLines()
+}
+
 func (c *NodeImageBuildContext) buildImage(dir string) error {
 	// build the image, tagged as tagImageAs, using the our tempdir as the context
 	glog.Info("Starting image build ...")
@@ -155,6 +169,8 @@ func (c *NodeImageBuildContext) buildImage(dir string) error {
 	// NOTE: we are using docker run + docker commit so we can install
 	// debians without permanently copying them into the image.
 	// if docker gets proper squash support, we can rm them instead
+	// This also allows the KubeBit implementations to perform programmatic
+	// isntall in the image
 	containerID, err := c.createBuildContainer(dir)
 	if err != nil {
 		glog.Errorf("Image build Failed! %v", err)
@@ -176,27 +192,23 @@ func (c *NodeImageBuildContext) buildImage(dir string) error {
 	}
 
 	// make artifacts directory
-	if err = execInBuild("mkdir", "-p", "/kind/bits"); err != nil {
+	if err = execInBuild("mkdir", "/kind/"); err != nil {
 		glog.Errorf("Image build Failed! %v", err)
 		return err
 	}
 
 	// copy artifacts in
-	if err = execInBuild("rsync", "-r", "/build/files/", "/kind/bits/"); err != nil {
+	if err = execInBuild("rsync", "-r", "/build/bits/", "/kind/"); err != nil {
 		glog.Errorf("Image build Failed! %v", err)
 		return err
 	}
 
-	// install debs
-	if err = execInBuild("/bin/sh", "-c", "dpkg -i /kind/bits/debs/*.deb"); err != nil {
-		glog.Errorf("Image build Failed! %v", err)
-		return err
+	// install the kube bits
+	ic := &installContext{
+		basePath:    "/kind/",
+		containerID: containerID,
 	}
-
-	// clean up after debs / remove them, this saves a couple hundred MB
-	if err = execInBuild("/bin/sh", "-c",
-		"rm -rf /kind/bits/debs/*.deb /var/cache/debconf/* /var/lib/apt/lists/* /var/log/*kg",
-	); err != nil {
+	if err = c.Bits.Install(ic); err != nil {
 		glog.Errorf("Image build Failed! %v", err)
 		return err
 	}

@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"k8s.io/test-infra/kind/pkg/exec"
 )
@@ -31,7 +32,9 @@ func TempDir(dir, prefix string) (name string, err error) {
 	if err != nil {
 		return "", err
 	}
-	if runtime.GOOS == "darwin" {
+	// on macOS $TMPDIR is typically /var/..., which is not mountable
+	// /private/var/... is the mountable equivilant
+	if runtime.GOOS == "darwin" && strings.HasPrefix(name, "/var/") {
 		name = filepath.Join("/private", name)
 	}
 	return name, nil

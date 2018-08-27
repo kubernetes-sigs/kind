@@ -28,6 +28,7 @@ type flags struct {
 	Source string
 }
 
+// NewCommand returns a new cobra.Command for building the base image
 func NewCommand() *cobra.Command {
 	flags := &flags{}
 	cmd := &cobra.Command{

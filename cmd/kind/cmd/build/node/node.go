@@ -19,15 +19,18 @@ package node
 import (
 	"os"
 
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 
 	"k8s.io/test-infra/kind/pkg/build"
 )
 
 type flags struct {
-	Source string
+	Source    string
+	BuildType string
 }
 
+// NewCommand returns a new cobra.Command for building the node image
 func NewCommand() *cobra.Command {
 	flags := &flags{}
 	cmd := &cobra.Command{
@@ -39,16 +42,20 @@ func NewCommand() *cobra.Command {
 			run(flags, cmd, args)
 		},
 	}
-	cmd.Flags().StringVar(&flags.Source, "source", "", "path to the base image sources")
+	cmd.Flags().StringVar(&flags.BuildType, "type", "docker", "build type, one of [bazel, docker, apt]")
 	return cmd
 }
 
 func run(flags *flags, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
-	ctx := build.NewNodeImageBuildContext()
-	ctx.SourceDir = flags.Source
-	err := ctx.Build()
+	ctx, err := build.NewNodeImageBuildContext(flags.BuildType)
 	if err != nil {
+		glog.Errorf("Error creating build context: %v", err)
+		os.Exit(-1)
+	}
+	err = ctx.Build()
+	if err != nil {
+		glog.Errorf("Error building node image: %v", err)
 		os.Exit(-1)
 	}
 }

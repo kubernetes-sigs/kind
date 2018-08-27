@@ -14,33 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package build
+package kube
 
 import (
 	"fmt"
-	gobuild "go/build"
+	"go/build"
 )
 
-// KubeBits provides the locations of Kubernetes Binaries / Images
-// needed on the cluster nodes
-type KubeBits interface {
-	// Paths returns a map of path on host to desired path in the image
-	Paths() map[string]string
-}
+// ImportPath is the canonical import path for the kubernetes root package
+// this is used by FindSource
+const ImportPath = "k8s.io/kubernetes"
 
-// NodeInstall should be implemented by users of KubeBitsProvider
-// to allow installing the bits
-type NodeInstall interface {
-	// RunOnNode execs (cmd, ...args) on a node and returns error
-	RunOnNode(string, ...string) error
-}
-
-const kubeImportPath = "k8s.io/kubernetes"
-
-// FindKubeSource attempts to locate a kubernetes checkout using go's build package
-func FindKubeSource() (root string, err error) {
+// FindSource attempts to locate a kubernetes checkout using go's build package
+func FindSource() (root string, err error) {
 	// look up the source the way go build would
-	pkg, err := gobuild.Default.Import(kubeImportPath, ".", gobuild.FindOnly)
+	pkg, err := build.Default.Import(ImportPath, ".", build.FindOnly)
 	if err == nil && maybeKubeDir(pkg.Dir) {
 		return pkg.Dir, nil
 	}

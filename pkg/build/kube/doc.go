@@ -14,11 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package sources contains the baked in sources kind needs to build.
-// Primarily this includes the node-image Dockerfile, which should rarely
-// change.
-// These can be overridden with newer files at build-time, see ./../build
-package sources
-
-// We pull in the sources with go-bindata
-//go:generate go-bindata -nometadata -mode=0666 -pkg=$GOPACKAGE -o=images_sources.go -ignore=(\.*README\.md)|(\.*BUILD\.bazel) -prefix=./../../../ ./../../../images/...
+// Package kube implements functionality to build Kubernetes for the purposes
+// of installing into the kind node image
+package kube
