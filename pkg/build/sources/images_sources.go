@@ -3,7 +3,6 @@
 // ../../../images/base/Dockerfile
 // ../../../images/base/entrypoint/main.go
 // ../../../images/base/journalctl-to-tty.service
-// ../../../images/node/Dockerfile
 // DO NOT EDIT!
 
 package sources
@@ -131,26 +130,6 @@ func imagesBaseJournalctlToTtyService() (*asset, error) {
 	return a, nil
 }
 
-var _imagesNodeDockerfile = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x6c\x8f\x51\x4b\xc3\x30\x14\x85\xdf\xf3\x2b\x8e\x9b\x0c\x1d\x74\x79\x17\x7c\x98\x3a\x87\x0f\xb3\x32\xf5\x41\x54\x24\x6d\x6e\xdb\xcb\xb2\xa4\x24\xd9\xa0\x38\xff\xbb\xa4\x0e\x1c\xce\x40\x20\xb9\xdf\x39\xf9\xc8\x10\x4f\xf9\x4d\x7e\x56\x90\x8d\x0d\x91\xd1\xe4\xcf\x2f\xd0\x1a\x55\x12\x62\x43\x81\xc0\x16\x0a\x9e\x6a\x0e\xd1\x77\x62\xba\x9c\xe3\x6a\xfa\x38\xfb\xb8\x5b\x4c\xe7\xb3\xcb\xc1\x8a\xad\xce\x0a\x15\x68\x20\x6e\x97\xf9\x02\xa7\x9f\xbf\xf4\x4b\x88\x21\x4a\xd7\x76\x50\xc6\x40\xf9\xc8\x95\x2a\x63\x40\xeb\xdd\x96\x35\x69\x14\x5d\x72\xa0\xd8\xb0\xd1\x88\xce\x19\xb6\x35\xd8\x46\xd7\x8f\x79\xad\x6a\x12\xd7\xf9\xc3\x0b\x26\xb2\x62\x43\x41\x42\x26\x9f\x14\x62\xf9\x7c\x0f\xbd\x41\xd6\xfc\x4c\x92\x88\x6d\x88\xbd\xc7\x98\xbe\xae\xa9\x08\xe0\x2a\x9d\x3d\x41\xa5\x6d\xbb\xbe\xf8\x8a\x13\x64\x7a\xff\x56\x8a\x49\xbc\x63\xb7\xc3\x9b\x00\x00\xdd\xae\x6a\x64\x7c\x88\xc7\x13\x4d\x05\x46\xa3\x7d\xc2\xaf\x91\xf9\x6a\x7f\x49\xeb\x28\x7a\x80\xb6\xca\xcb\x52\x95\x0d\x25\x5e\x3a\x5b\xc9\xf1\x5f\x6c\xb8\x90\xaa\x8d\xd2\x70\x88\xe1\x1f\xec\x6a\x39\x3e\xfe\xf2\x77\x00\x00\x00\xff\xff\x4a\x03\x5c\x74\xb9\x01\x00\x00")
-
-func imagesNodeDockerfileBytes() ([]byte, error) {
-	return bindataRead(
-		_imagesNodeDockerfile,
-		"images/node/Dockerfile",
-	)
-}
-
-func imagesNodeDockerfile() (*asset, error) {
-	bytes, err := imagesNodeDockerfileBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "images/node/Dockerfile", size: 0, mode: os.FileMode(438), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -206,7 +185,6 @@ var _bindata = map[string]func() (*asset, error){
 	"images/base/Dockerfile":                imagesBaseDockerfile,
 	"images/base/entrypoint/main.go":        imagesBaseEntrypointMainGo,
 	"images/base/journalctl-to-tty.service": imagesBaseJournalctlToTtyService,
-	"images/node/Dockerfile":                imagesNodeDockerfile,
 }
 
 // AssetDir returns the file names below a certain
@@ -257,9 +235,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 				"main.go": {imagesBaseEntrypointMainGo, map[string]*bintree{}},
 			}},
 			"journalctl-to-tty.service": {imagesBaseJournalctlToTtyService, map[string]*bintree{}},
-		}},
-		"node": {nil, map[string]*bintree{
-			"Dockerfile": {imagesNodeDockerfile, map[string]*bintree{}},
 		}},
 	}},
 }}
