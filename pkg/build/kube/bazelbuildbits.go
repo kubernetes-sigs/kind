@@ -79,7 +79,6 @@ func (b *BazelBuildBits) Build() error {
 
 	// capture version info
 	buildVersionFile(b.kubeRoot)
-	return nil
 
 	// build artifacts
 	cmd := exec.Command("bazel", "build")
