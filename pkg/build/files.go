@@ -33,7 +33,7 @@ func TempDir(dir, prefix string) (name string, err error) {
 		return "", err
 	}
 	// on macOS $TMPDIR is typically /var/..., which is not mountable
-	// /private/var/... is the mountable equivilant
+	// /private/var/... is the mountable equivalent
 	if runtime.GOOS == "darwin" && strings.HasPrefix(name, "/var/") {
 		name = filepath.Join("/private", name)
 	}

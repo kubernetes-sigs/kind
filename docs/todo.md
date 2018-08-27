@@ -32,6 +32,6 @@ Longer term / continually appealing items:
 - Improved documentation
 - Support for architectures / platforms other than linux / amd64 for the node images
 - Support for client platforms other than docker on linux / docker for mac
-- Less priviliged containers or sharing a CRI via something like [containerd namespaces](https://github.com/containerd/containerd/blob/master/docs/namespaces.md), generally
+- Less privileged containers or sharing a CRI via something like [containerd namespaces](https://github.com/containerd/containerd/blob/master/docs/namespaces.md), generally
  better isolation
 - HA kubeadm / multiple control plane nodes

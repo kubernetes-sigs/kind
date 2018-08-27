@@ -4,7 +4,7 @@
 ## WARNING: `kind` is still a work in progress! See [docs/todo.md](./docs/todo.md)
 
 `kind` is a toolset for running local Kubernetes clusters using Docker container "nodes".
-`kind` is designed to be suitable for testing Kubernetes, initally targetting the conformance suite.
+`kind` is designed to be suitable for testing Kubernetes, initially targeting the conformance suite.
 
 It consists of:
  - Go [packages](./pkg) implementing [cluster creation](./pkg/cluster), [image build](./pkg/build), etc.
