@@ -2,12 +2,11 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["create.go"],
-    importpath = "k8s.io/test-infra/kind/cmd/kind/cmd/create",
+    srcs = ["base.go"],
+    importpath = "k8s.io/test-infra/kind/cmd/kind/build/base",
     visibility = ["//visibility:public"],
     deps = [
-        "//kind/pkg/cluster:go_default_library",
-        "//vendor/github.com/golang/glog:go_default_library",
+        "//kind/pkg/build:go_default_library",
         "//vendor/github.com/spf13/cobra:go_default_library",
     ],
 )

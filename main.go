@@ -14,19 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// This package is a stub main wrapping cmd.Run()
+// This package is a stub main wrapping kind.Main()
 package main
 
 import (
-	"fmt"
-	"os"
-
-	"k8s.io/test-infra/kind/cmd/kind/cmd"
+	"k8s.io/test-infra/kind/cmd/kind"
 )
 
 func main() {
-	if err := cmd.Run(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	kind.Main()
 }

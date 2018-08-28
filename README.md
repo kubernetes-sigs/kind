@@ -18,7 +18,7 @@ For more details see [the design documentation](./docs/design.md).
 
 ## Building
 
-You can build `kind` with `go install k8s.io/test-infra/kind/cmd/kind` or `bazel build //kind/cmd/kind`.
+You can install `kind` with `go install k8s.io/test-infra/kind`.
 
 ## Usage
 

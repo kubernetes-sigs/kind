@@ -14,17 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package cmd implements the kidna cobra command CLI
-package cmd
+// Package kind implements the root kind cobra command, and the cli Main()
+package kind
 
 import (
 	"flag"
+	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
-	"k8s.io/test-infra/kind/cmd/kind/cmd/build"
-	"k8s.io/test-infra/kind/cmd/kind/cmd/create"
-	"k8s.io/test-infra/kind/cmd/kind/cmd/delete"
+	"k8s.io/test-infra/kind/cmd/kind/build"
+	"k8s.io/test-infra/kind/cmd/kind/create"
+	"k8s.io/test-infra/kind/cmd/kind/delete"
 )
 
 // NewCommand returns a new cobra.Command implementing the root command for kind
@@ -54,4 +56,12 @@ func Run() error {
 
 	// actually execute the cobra commands now...
 	return cmd.Execute()
+}
+
+// Main wraps Run, adding an Exit(1) on error
+func Main() {
+	if err := Run(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }

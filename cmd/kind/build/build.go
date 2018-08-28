@@ -20,8 +20,8 @@ package build
 import (
 	"github.com/spf13/cobra"
 
-	"k8s.io/test-infra/kind/cmd/kind/cmd/build/base"
-	"k8s.io/test-infra/kind/cmd/kind/cmd/build/node"
+	"k8s.io/test-infra/kind/cmd/kind/build/base"
+	"k8s.io/test-infra/kind/cmd/kind/build/node"
 )
 
 // NewCommand returns a new cobra.Command for building
