@@ -3,6 +3,7 @@
 A non-exhaustive list of tasks (in no-particular order) includes:
 - [x] basic single "node" clusters
 - [x] multiple clusters per host / named clusters
+- [ ] preflight checks
 - [ ] multi-node clusters
 - [x] support for multiple kubernetes builds:
   - [x] bazel build from source
@@ -24,6 +25,8 @@ A non-exhaustive list of tasks (in no-particular order) includes:
 - [ ] more advanced network configuration (not docker0)
 - [ ] support for other CRI within the "node" containers (containerd, cri-o)
 - [ ] switch from `exec.Command("docker", ...)` to the Docker client library
+- [ ] log dumping functionality
+  - [ ] support audit logging
 
 # Wishlist
 
