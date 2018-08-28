@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"regexp"
 	"time"
 
 	"github.com/golang/glog"
@@ -30,29 +32,73 @@ import (
 	"k8s.io/test-infra/kind/pkg/exec"
 )
 
-// Context contains Config and is used to create / manipulate
-// kubernetes-in-docker clusters
+// ClusterLabelKey is applied to each "node" docker container for identification
+const ClusterLabelKey = "io.k8s.test-infra.kind-cluster"
+
+// Context is used to create / manipulate kubernetes-in-docker clusters
 type Context struct {
-	config Config
+	Name string
 }
 
-// NewContext returns a new cluster management context with Config config
-func NewContext(config Config) *Context {
-	return &Context{
-		config: config,
+// similar to valid docker container names, but since we will prefix
+// and suffix this name, we can relax it a little
+// see NewContext() for usage
+// https://godoc.org/github.com/docker/docker/daemon/names#pkg-constants
+var validNameRE = regexp.MustCompile(`^[a-zA-Z0-9_.-]+$`)
+
+// NewContext returns a new cluster management context
+// if name is "" the default ("1") will be used
+func NewContext(name string) (ctx *Context, err error) {
+	if name == "" {
+		name = "1"
 	}
+	// validate the name
+	if !validNameRE.MatchString(name) {
+		return nil, fmt.Errorf(
+			"'%s' is not a valid cluster name, cluster names must match `%s`",
+			name, validNameRE.String(),
+		)
+	}
+	return &Context{
+		Name: name,
+	}, nil
+}
+
+// ClusterLabel returns the docker object label that will be applied
+// to cluster "node" containers
+func (c *Context) ClusterLabel() string {
+	return fmt.Sprintf("%s=%s", ClusterLabelKey, c.Name)
+}
+
+// ClusterName returns the Kubernetes cluster name based on the context name
+// currently this is .Name prefixed with "kind-"
+func (c *Context) ClusterName() string {
+	return fmt.Sprintf("kind-%s", c.Name)
+}
+
+// KubeConfigPath returns the path to where the Kubeconfig would be placed
+// by kind based on the configuration.
+func (c *Context) KubeConfigPath() string {
+	// TODO(bentheelder): Windows?
+	// configDir matches the standard directory expected by kubectl etc
+	configDir := filepath.Join(os.Getenv("HOME"), ".kube")
+	// note that the file name however does not, we do not want to overwite
+	// the standard config, though in the future we may (?) merge them
+	fileName := fmt.Sprintf("kind-config-%s", c.Name)
+	return filepath.Join(configDir, fileName)
 }
 
 // Create provisions and starts a kubernetes-in-docker cluster
-func (c *Context) Create() error {
+func (c *Context) Create(config CreateConfig) error {
 	// validate config first
-	if err := c.config.Validate(); err != nil {
+	if err := config.Validate(); err != nil {
 		return err
 	}
 
 	// TODO(bentheelder): multiple nodes ...
 	kubeadmConfig, err := c.provisionControlPlane(
-		fmt.Sprintf("kind-%s-control-plane", c.config.Name),
+		fmt.Sprintf("kind-%s-control-plane", c.Name),
+		config,
 	)
 
 	// clean up the kubeadm config file
@@ -66,7 +112,7 @@ func (c *Context) Create() error {
 	}
 
 	println("\nYou can now use the cluster with:\n")
-	println("export KUBECONFIG=\"" + c.config.KubeConfigPath() + "\"")
+	println("export KUBECONFIG=\"" + c.KubeConfigPath() + "\"")
 	println("kubectl cluster-info\n")
 
 	return nil
@@ -83,9 +129,9 @@ func (c *Context) Delete() error {
 
 // provisionControlPlane provisions the control plane node
 // and the cluster kubeadm config
-func (c *Context) provisionControlPlane(name string) (kubeadmConfigPath string, err error) {
+func (c *Context) provisionControlPlane(nodeName string, config CreateConfig) (kubeadmConfigPath string, err error) {
 	// create the "node" container (docker run, but it is paused, see createNode)
-	node, err := createNode(name, c.config.clusterLabel())
+	node, err := createNode(nodeName, c.ClusterLabel())
 	if err != nil {
 		return "", err
 	}
@@ -131,7 +177,7 @@ func (c *Context) provisionControlPlane(name string) (kubeadmConfigPath string, 
 
 	// create kubeadm config file
 	kubeadmConfig, err := c.createKubeadmConfig("", kubeadm.ConfigData{
-		ClusterName:       c.config.ClusterName(),
+		ClusterName:       c.ClusterName(),
 		KubernetesVersion: kubeVersion,
 	})
 
@@ -160,7 +206,7 @@ func (c *Context) provisionControlPlane(name string) (kubeadmConfigPath string, 
 	}
 
 	// set up the $KUBECONFIG
-	kubeConfigPath := c.config.KubeConfigPath()
+	kubeConfigPath := c.KubeConfigPath()
 	if err = node.WriteKubeConfig(kubeConfigPath); err != nil {
 		// TODO(bentheelder): logging here
 		// TODO(bentheelder): add a flag to retain the broken nodes for debugging
@@ -178,7 +224,7 @@ func (c *Context) provisionControlPlane(name string) (kubeadmConfigPath string, 
 
 	// if we are only provisioning one node, remove the master taint
 	// https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#master-isolation
-	if c.config.NumNodes == 1 {
+	if config.NumNodes == 1 {
 		if err = node.Run(
 			"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf",
 			"taint", "nodes", "--all", "node-role.kubernetes.io/master-",
@@ -231,7 +277,7 @@ func (c *Context) ListNodes(alsoStopped bool) (containerIDs []string, err error)
 		// quiet output for parsing
 		"-q",
 		// filter for nodes with the cluster label
-		"--filter", "label="+c.config.clusterLabel(),
+		"--filter", "label="+c.ClusterLabel(),
 	)
 	// optionally list nodes that are stopped
 	if alsoStopped {

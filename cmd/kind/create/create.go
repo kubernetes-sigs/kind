@@ -48,18 +48,22 @@ func NewCommand() *cobra.Command {
 
 func run(flags *flags, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
-	config := cluster.NewConfig(flags.Name)
+	config := cluster.NewCreateConfig()
 	err := config.Validate()
 	if err != nil {
-		glog.Error("Invalid Configuration!")
+		glog.Error("Invalid configuration!")
 		configErrors := err.(cluster.ConfigErrors)
 		for _, problem := range configErrors.Errors() {
 			glog.Error(problem)
 		}
 		os.Exit(-1)
 	}
-	ctx := cluster.NewContext(config)
-	err = ctx.Create()
+	ctx, err := cluster.NewContext(flags.Name)
+	if err != nil {
+		glog.Error("Failed to create cluster context! %v", err)
+		os.Exit(-1)
+	}
+	err = ctx.Create(config)
 	if err != nil {
 		glog.Errorf("Failed to create cluster: %v", err)
 		os.Exit(-1)

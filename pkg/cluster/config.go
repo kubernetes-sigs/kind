@@ -19,46 +19,25 @@ package cluster
 import (
 	"bytes"
 	"fmt"
-	"os"
-	"path/filepath"
-	"regexp"
 )
 
-// ClusterLabelKey is applied to each "node" docker container for identification
-const ClusterLabelKey = "io.k8s.test-infra.kind-cluster"
-
-// similar to valid docker container names, but since we will prefix
-// and suffix this name, we can relax it a little
-// see Validate() for usage
-var validNameRE = regexp.MustCompile(`^[a-zA-Z0-9_.-]+$`)
-
-// Config contains cluster options
-type Config struct {
-	// the cluster name
-	Name string
-	// the number of nodes (currently only one is supported)
+// CreateConfig contains cluster creation config
+type CreateConfig struct {
+	// NumNodes is the number of nodes to create (currently only one is supported)
 	NumNodes int
-	// TODO(bentheelder): fill this in
 }
 
-// NewConfig returns a new cluster config with name
-func NewConfig(name string) Config {
-	return Config{
-		Name:     name,
+// NewCreateConfig returns a new default CreateConfig
+func NewCreateConfig() CreateConfig {
+	return CreateConfig{
 		NumNodes: 1,
 	}
 }
 
 // Validate returns a ConfigErrors with an entry for each problem
 // with the config, or nil if there are none
-func (c *Config) Validate() error {
+func (c *CreateConfig) Validate() error {
 	errs := []error{}
-	if !validNameRE.MatchString(c.Name) {
-		errs = append(errs, fmt.Errorf(
-			"'%s' is not a valid cluster name, cluster names must match `%s`",
-			c.Name, validNameRE.String(),
-		))
-	}
 	// TODO(bentheelder): support multiple nodes
 	if c.NumNodes != 1 {
 		errs = append(errs, fmt.Errorf(
@@ -93,27 +72,4 @@ func (c ConfigErrors) Error() string {
 // Errors returns the slice of errors contained by ConfigErrors
 func (c ConfigErrors) Errors() []error {
 	return c.errors
-}
-
-// internal helper used to identify the cluster containers based on config
-func (c *Config) clusterLabel() string {
-	return fmt.Sprintf("%s=%s", ClusterLabelKey, c.Name)
-}
-
-// ClusterName returns the Kubernetes cluster name based on the config
-// currently this is .Name prefixed with "kind-"
-func (c *Config) ClusterName() string {
-	return fmt.Sprintf("kind-%s", c.Name)
-}
-
-// KubeConfigPath returns the path to where the Kubeconfig would be placed
-// by kind based on the configuration.
-func (c *Config) KubeConfigPath() string {
-	// TODO(bentheelder): Windows?
-	// configDir matches the standard directory expected by kubectl etc
-	configDir := filepath.Join(os.Getenv("HOME"), ".kube")
-	// note that the file name however does not, we do not want to overwite
-	// the standard config, though in the future we may (?) merge them
-	fileName := fmt.Sprintf("kind-config-%s", c.Name)
-	return filepath.Join(configDir, fileName)
 }
