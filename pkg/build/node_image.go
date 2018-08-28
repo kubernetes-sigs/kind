@@ -20,21 +20,18 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"path/filepath"
 	"time"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
 	"k8s.io/test-infra/kind/pkg/build/kube"
-	"k8s.io/test-infra/kind/pkg/build/sources"
 	"k8s.io/test-infra/kind/pkg/exec"
 )
 
 // NodeImageBuildContext is used to build the kind node image, and contains
 // build configuration
 type NodeImageBuildContext struct {
-	SourceDir string
 	ImageTag  string
 	Arch      string
 	BaseImage string
@@ -78,30 +75,11 @@ func (c *NodeImageBuildContext) Build() (err error) {
 	glog.Infof("Finished building Kubernetes")
 
 	// create tempdir to build the image in
-	tmpDir, err := TempDir("", "kind-node-image")
+	buildDir, err := TempDir("", "kind-node-image")
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(tmpDir)
-
-	// populate with image sources
-	// if SourceDir is unset, use the baked in sources
-	buildDir := tmpDir
-	if c.SourceDir == "" {
-		// populate with image sources
-		err = sources.RestoreAssets(buildDir, "images/node")
-		if err != nil {
-			return err
-		}
-		buildDir = filepath.Join(buildDir, "images", "node")
-
-	} else {
-		err = copyDir(c.SourceDir, buildDir)
-		if err != nil {
-			glog.Errorf("failed to copy sources to build dir %v", err)
-			return err
-		}
-	}
+	defer os.RemoveAll(buildDir)
 
 	glog.Infof("Building node image in: %s", buildDir)
 
