@@ -9,6 +9,7 @@ go_library(
         "//kind/cmd/kind/build:go_default_library",
         "//kind/cmd/kind/create:go_default_library",
         "//kind/cmd/kind/delete:go_default_library",
+        "//vendor/github.com/sirupsen/logrus:go_default_library",
         "//vendor/github.com/spf13/cobra:go_default_library",
     ],
 )

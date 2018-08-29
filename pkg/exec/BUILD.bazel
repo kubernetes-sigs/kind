@@ -5,7 +5,7 @@ go_library(
     srcs = ["exec.go"],
     importpath = "k8s.io/test-infra/kind/pkg/exec",
     visibility = ["//visibility:public"],
-    deps = ["//vendor/github.com/golang/glog:go_default_library"],
+    deps = ["//vendor/github.com/sirupsen/logrus:go_default_library"],
 )
 
 filegroup(

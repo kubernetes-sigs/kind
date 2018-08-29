@@ -14,8 +14,8 @@ go_library(
         "//kind/pkg/cluster/kubeadm:go_default_library",
         "//kind/pkg/exec:go_default_library",
         "//vendor/github.com/ghodss/yaml:go_default_library",
-        "//vendor/github.com/golang/glog:go_default_library",
         "//vendor/github.com/pkg/errors:go_default_library",
+        "//vendor/github.com/sirupsen/logrus:go_default_library",
     ],
 )
 
