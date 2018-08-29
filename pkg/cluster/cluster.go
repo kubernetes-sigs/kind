@@ -24,7 +24,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/pkg/errors"
 
@@ -111,9 +111,10 @@ func (c *Context) Create(config *CreateConfig) error {
 		return err
 	}
 
-	println("\nYou can now use the cluster with:\n")
-	println("export KUBECONFIG=\"" + c.KubeConfigPath() + "\"")
-	println("kubectl cluster-info\n")
+	log.Infof(
+		"You can now use the cluster with:\n\nexport KUBECONFIG=\"%s\"\nkubectl cluster-info",
+		c.KubeConfigPath(),
+	)
 
 	return nil
 }
@@ -255,7 +256,7 @@ func (c *Context) createKubeadmConfig(template string, data kubeadm.ConfigData) 
 		os.Remove(path)
 		return "", err
 	}
-	glog.Infof("Using KubeadmConfig:\n\n%s\n", config)
+	log.Infof("Using KubeadmConfig:\n\n%s\n", config)
 	_, err = f.WriteString(config)
 	if err != nil {
 		os.Remove(path)

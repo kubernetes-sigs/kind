@@ -20,7 +20,7 @@ package delete
 import (
 	"os"
 
-	"github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"k8s.io/test-infra/kind/pkg/cluster"
@@ -50,12 +50,12 @@ func run(flags *flags, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
 	ctx, err := cluster.NewContext(flags.Name)
 	if err != nil {
-		glog.Error("Failed to create cluster context! %v", err)
+		log.Errorf("Failed to create cluster context! %v", err)
 		os.Exit(-1)
 	}
 	err = ctx.Delete()
 	if err != nil {
-		glog.Errorf("Failed to delete cluster: %v", err)
+		log.Errorf("Failed to delete cluster: %v", err)
 		os.Exit(-1)
 	}
 }

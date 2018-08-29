@@ -19,7 +19,7 @@ package node
 import (
 	"os"
 
-	"github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"k8s.io/test-infra/kind/pkg/build"
@@ -50,12 +50,12 @@ func run(flags *flags, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
 	ctx, err := build.NewNodeImageBuildContext(flags.BuildType)
 	if err != nil {
-		glog.Errorf("Error creating build context: %v", err)
+		log.Errorf("Error creating build context: %v", err)
 		os.Exit(-1)
 	}
 	err = ctx.Build()
 	if err != nil {
-		glog.Errorf("Error building node image: %v", err)
+		log.Errorf("Error building node image: %v", err)
 		os.Exit(-1)
 	}
 }

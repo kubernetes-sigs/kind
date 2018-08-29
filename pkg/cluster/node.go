@@ -25,8 +25,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 
 	"k8s.io/test-infra/kind/pkg/cluster/kubeadm"
 	"k8s.io/test-infra/kind/pkg/exec"
@@ -163,7 +163,7 @@ func (nh *nodeHandle) LoadImages() {
 		"-name", "*.tar",
 		"-exec", "docker", "load", "-i", "{}", ";",
 	); err != nil {
-		glog.Warningf("Failed to preload docker images: %v", err)
+		log.Warningf("Failed to preload docker images: %v", err)
 		return
 	}
 	// retag images that are missing -amd64 as image:tag -> image-amd64:tag
@@ -173,7 +173,7 @@ func (nh *nodeHandle) LoadImages() {
 		"/bin/bash", "-c",
 		`docker images --format='{{.Repository}}:{{.Tag}}' | grep -v amd64 | xargs -L 1 -I '{}' /bin/bash -c 'docker tag "{}" "$(echo "{}" | sed s/:/-amd64:/)"'`,
 	); err != nil {
-		glog.Warningf("Failed to re-tag docker images: %v", err)
+		log.Warningf("Failed to re-tag docker images: %v", err)
 	}
 
 	nh.Run("docker", "images")

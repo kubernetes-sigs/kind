@@ -21,8 +21,7 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/golang/glog"
-
+	log "github.com/sirupsen/logrus"
 	"k8s.io/test-infra/kind/pkg/exec"
 )
 
@@ -110,7 +109,7 @@ func (b *BazelBuildBits) Install(install InstallContext) error {
 	debs := path.Join(base, "debs", "*.deb")
 
 	if err := install.Run("/bin/sh", "-c", "dpkg -i "+debs); err != nil {
-		glog.Errorf("Image install failed! %v", err)
+		log.Errorf("Image install failed! %v", err)
 		return err
 	}
 
@@ -118,7 +117,7 @@ func (b *BazelBuildBits) Install(install InstallContext) error {
 		"rm -rf /kind/bits/debs/*.deb"+
 			" /var/cache/debconf/* /var/lib/apt/lists/* /var/log/*kg",
 	); err != nil {
-		glog.Errorf("Image install failed! %v", err)
+		log.Errorf("Image install failed! %v", err)
 		return err
 	}
 

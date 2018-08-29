@@ -18,10 +18,7 @@ limitations under the License.
 package kind
 
 import (
-	"flag"
-	"fmt"
-	"os"
-
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"k8s.io/test-infra/kind/cmd/kind/build"
@@ -45,23 +42,18 @@ func NewCommand() *cobra.Command {
 
 // Run runs the `kind` root command
 func Run() error {
-	// Trick to avoid glog's 'logging before flag.Parse' warning
-	flag.CommandLine.Parse([]string{})
-	// glog logs to files by default, grr
-	flag.Set("logtostderr", "true")
-
-	cmd := NewCommand()
-	// glog registers global flags on flag.CommandLine...
-	cmd.Flags().AddGoFlagSet(flag.CommandLine)
-
-	// actually execute the cobra commands now...
-	return cmd.Execute()
+	return NewCommand().Execute()
 }
 
-// Main wraps Run, adding an Exit(1) on error
+// Main wraps Run, adding a log.Fatal(err) on error, and setting the log formatter
 func Main() {
+	// this formatter is the default, but the timestamps output aren't
+	// particularly useful, they're relative to the command start
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp:   true,
+		TimestampFormat: "15:04:05-0700",
+	})
 	if err := Run(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }

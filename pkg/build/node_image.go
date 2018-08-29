@@ -22,8 +22,8 @@ import (
 	"path"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 
 	"k8s.io/test-infra/kind/pkg/build/kube"
 	"k8s.io/test-infra/kind/pkg/exec"
@@ -67,12 +67,12 @@ func NewNodeImageBuildContext(mode string) (ctx *NodeImageBuildContext, err erro
 // the NodeImageBuildContext
 func (c *NodeImageBuildContext) Build() (err error) {
 	// ensure kubernetes build is up to date first
-	glog.Infof("Starting to build Kubernetes")
+	log.Infof("Starting to build Kubernetes")
 	if err = c.Bits.Build(); err != nil {
-		glog.Errorf("Failed to build Kubernetes: %v", err)
+		log.Errorf("Failed to build Kubernetes: %v", err)
 		return errors.Wrap(err, "failed to build kubernetes")
 	}
-	glog.Infof("Finished building Kubernetes")
+	log.Infof("Finished building Kubernetes")
 
 	// create tempdir to build the image in
 	buildDir, err := TempDir("", "kind-node-image")
@@ -81,7 +81,7 @@ func (c *NodeImageBuildContext) Build() (err error) {
 	}
 	defer os.RemoveAll(buildDir)
 
-	glog.Infof("Building node image in: %s", buildDir)
+	log.Infof("Building node image in: %s", buildDir)
 
 	// populate the kubernetes artifacts first
 	if err := c.populateBits(buildDir); err != nil {
@@ -142,7 +142,7 @@ func (ic *installContext) CombinedOutputLines(command string, args ...string) ([
 
 func (c *NodeImageBuildContext) buildImage(dir string) error {
 	// build the image, tagged as tagImageAs, using the our tempdir as the context
-	glog.Info("Starting image build ...")
+	log.Info("Starting image build ...")
 	// create build container
 	// NOTE: we are using docker run + docker commit so we can install
 	// debians without permanently copying them into the image.
@@ -151,7 +151,7 @@ func (c *NodeImageBuildContext) buildImage(dir string) error {
 	// isntall in the image
 	containerID, err := c.createBuildContainer(dir)
 	if err != nil {
-		glog.Errorf("Image build Failed! %v", err)
+		log.Errorf("Image build Failed! %v", err)
 		return err
 	}
 
@@ -171,13 +171,13 @@ func (c *NodeImageBuildContext) buildImage(dir string) error {
 
 	// make artifacts directory
 	if err = execInBuild("mkdir", "/kind/"); err != nil {
-		glog.Errorf("Image build Failed! %v", err)
+		log.Errorf("Image build Failed! %v", err)
 		return err
 	}
 
 	// copy artifacts in
 	if err = execInBuild("rsync", "-r", "/build/bits/", "/kind/"); err != nil {
-		glog.Errorf("Image build Failed! %v", err)
+		log.Errorf("Image build Failed! %v", err)
 		return err
 	}
 
@@ -187,7 +187,7 @@ func (c *NodeImageBuildContext) buildImage(dir string) error {
 		containerID: containerID,
 	}
 	if err = c.Bits.Install(ic); err != nil {
-		glog.Errorf("Image build Failed! %v", err)
+		log.Errorf("Image build Failed! %v", err)
 		return err
 	}
 
@@ -195,7 +195,7 @@ func (c *NodeImageBuildContext) buildImage(dir string) error {
 	if err = execInBuild("/bin/sh", "-c",
 		`echo "KUBELET_EXTRA_ARGS=--fail-swap-on=false" >> /etc/default/kubelet`,
 	); err != nil {
-		glog.Errorf("Image build Failed! %v", err)
+		log.Errorf("Image build Failed! %v", err)
 		return err
 	}
 
@@ -204,11 +204,11 @@ func (c *NodeImageBuildContext) buildImage(dir string) error {
 	cmd.Debug = true
 	cmd.InheritOutput = true
 	if err = cmd.Run(); err != nil {
-		glog.Errorf("Image build Failed! %v", err)
+		log.Errorf("Image build Failed! %v", err)
 		return err
 	}
 
-	glog.Info("Image build completed.")
+	log.Info("Image build completed.")
 	return nil
 }
 

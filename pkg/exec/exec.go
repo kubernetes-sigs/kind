@@ -23,7 +23,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 )
 
 // Cmd wraps os/exec.Cmd, with extra options for logging etc. when running
@@ -54,7 +54,7 @@ func Command(name string, arg ...string) *Cmd {
 // Run wraps cmd.Run(), respecting CmdOpts
 func (cmd *Cmd) Run() error {
 	if cmd.Debug {
-		glog.Infof("Running: %v %v", cmd.Path, cmd.Args)
+		log.Infof("Running: %v %v", cmd.Path, cmd.Args)
 	}
 
 	if cmd.LogOutputOnFail {
@@ -74,10 +74,10 @@ func (cmd *Cmd) runLoggingOutputOnFail() error {
 	cmd.Stderr = &buff
 	err := cmd.Cmd.Run()
 	if cmd.LogOutputOnFail {
-		glog.Error("failed with:")
+		log.Error("failed with:")
 		scanner := bufio.NewScanner(&buff)
 		for scanner.Scan() {
-			glog.Error(scanner.Text())
+			log.Error(scanner.Text())
 		}
 	}
 	return err
@@ -88,7 +88,7 @@ func (cmd *Cmd) runLoggingOutputOnFail() error {
 // it scans these for lines and returns a slice of output line strings
 func (cmd *Cmd) CombinedOutputLines() (lines []string, err error) {
 	if cmd.Debug {
-		glog.Infof("Running: %v %v", cmd.Path, cmd.Args)
+		log.Infof("Running: %v %v", cmd.Path, cmd.Args)
 	}
 
 	var buff bytes.Buffer

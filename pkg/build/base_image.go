@@ -23,7 +23,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 
 	"k8s.io/test-infra/kind/pkg/build/sources"
 	"k8s.io/test-infra/kind/pkg/exec"
@@ -72,12 +72,12 @@ func (c *BaseImageBuildContext) Build() (err error) {
 	} else {
 		err = copyDir(c.SourceDir, buildDir)
 		if err != nil {
-			glog.Errorf("failed to copy sources to build dir %v", err)
+			log.Errorf("failed to copy sources to build dir %v", err)
 			return err
 		}
 	}
 
-	glog.Infof("Building base image in: %s", buildDir)
+	log.Infof("Building base image in: %s", buildDir)
 
 	// build the entrypoint binary first
 	if err := c.buildEntrypoint(buildDir); err != nil {
@@ -99,14 +99,14 @@ func (c *BaseImageBuildContext) buildEntrypoint(dir string) error {
 	cmd.Env = []string{"GOOS=linux", "GOARCH=" + c.Arch}
 
 	// actually build
-	glog.Info("Building entrypoint binary ...")
+	log.Info("Building entrypoint binary ...")
 	cmd.Debug = true
 	cmd.InheritOutput = true
 	if err := cmd.Run(); err != nil {
-		glog.Errorf("Entrypoint build Failed! %v", err)
+		log.Errorf("Entrypoint build Failed! %v", err)
 		return err
 	}
-	glog.Info("Entrypoint build completed.")
+	log.Info("Entrypoint build completed.")
 	return nil
 }
 
@@ -116,12 +116,12 @@ func (c *BaseImageBuildContext) buildImage(dir string) error {
 	cmd.Debug = true
 	cmd.InheritOutput = true
 
-	glog.Info("Starting Docker build ...")
+	log.Info("Starting Docker build ...")
 	err := cmd.Run()
 	if err != nil {
-		glog.Errorf("Docker build Failed! %v", err)
+		log.Errorf("Docker build Failed! %v", err)
 		return err
 	}
-	glog.Info("Docker build completed.")
+	log.Info("Docker build completed.")
 	return nil
 }

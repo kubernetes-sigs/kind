@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 )
 
 // AptBits implements Bits for the official upstream debian packages
@@ -57,32 +57,32 @@ func (b *AptBits) Install(install InstallContext) error {
 deb http://apt.kubernetes.io/ kubernetes-xenial main
 EOF`
 	if err := install.Run("/bin/sh", "-c", addKey); err != nil {
-		glog.Errorf("Adding Kubernetes apt key failed! %v", err)
+		log.Errorf("Adding Kubernetes apt key failed! %v", err)
 		return err
 	}
 	if err := install.Run("/bin/sh", "-c", addSources); err != nil {
-		glog.Errorf("Adding Kubernetes apt repository failed! %v", err)
+		log.Errorf("Adding Kubernetes apt repository failed! %v", err)
 		return err
 	}
 	// install packages
 	if err := install.Run("/bin/sh", "-c", `clean-install kubelet kubeadm kubectl`); err != nil {
-		glog.Errorf("Installing Kubernetes packages failed! %v", err)
+		log.Errorf("Installing Kubernetes packages failed! %v", err)
 		return err
 	}
 	// get version to version file
 	lines, err := install.CombinedOutputLines("/bin/sh", "-c", `kubelet --version`)
 	if err != nil {
-		glog.Errorf("Failed to get Kubernetes version! %v", err)
+		log.Errorf("Failed to get Kubernetes version! %v", err)
 		return err
 	}
 	// the output should be one line of the form `Kubernetes ${VERSION}`
 	if len(lines) != 1 {
-		glog.Errorf("Failed to parse Kubernetes version with unexpected output: %v", lines)
+		log.Errorf("Failed to parse Kubernetes version with unexpected output: %v", lines)
 		return fmt.Errorf("failed to parse Kubernetes version")
 	}
 	version := strings.SplitN(lines[0], " ", 2)[1]
 	if err := install.Run("/bin/sh", "-c", fmt.Sprintf(`echo "%s" >> /kind/version`, version)); err != nil {
-		glog.Errorf("Failed to get Kubernetes version! %v", err)
+		log.Errorf("Failed to get Kubernetes version! %v", err)
 		return err
 	}
 	return nil

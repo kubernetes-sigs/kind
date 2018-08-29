@@ -20,7 +20,7 @@ package create
 import (
 	"os"
 
-	"github.com/golang/glog"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"k8s.io/test-infra/kind/pkg/cluster"
@@ -53,28 +53,28 @@ func run(flags *flags, cmd *cobra.Command, args []string) {
 	// load the config
 	config, err := cluster.LoadCreateConfig(flags.Config)
 	if err != nil {
-		glog.Errorf("Error loading config: %v", err)
+		log.Errorf("Error loading config: %v", err)
 		os.Exit(-1)
 	}
 	// validate the config
 	err = config.Validate()
 	if err != nil {
-		glog.Error("Invalid configuration!")
+		log.Error("Invalid configuration!")
 		configErrors := err.(cluster.ConfigErrors)
 		for _, problem := range configErrors.Errors() {
-			glog.Error(problem)
+			log.Error(problem)
 		}
 		os.Exit(-1)
 	}
 	// create a cluster context and create the cluster
 	ctx, err := cluster.NewContext(flags.Name)
 	if err != nil {
-		glog.Error("Failed to create cluster context! %v", err)
+		log.Errorf("Failed to create cluster context! %v", err)
 		os.Exit(-1)
 	}
 	err = ctx.Create(config)
 	if err != nil {
-		glog.Errorf("Failed to create cluster: %v", err)
+		log.Errorf("Failed to create cluster: %v", err)
 		os.Exit(-1)
 	}
 }
