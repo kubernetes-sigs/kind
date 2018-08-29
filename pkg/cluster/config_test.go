@@ -18,45 +18,20 @@ package cluster
 
 import "testing"
 
-func TestConfigValidate(t *testing.T) {
+func TestCreateConfigValidate(t *testing.T) {
 	cases := []struct {
-		Name           string
-		Config         Config
+		TestName       string
+		Config         *CreateConfig
 		ExpectedErrors int
 	}{
 		{
-			Name:           "Canonical config",
-			Config:         NewConfig("1"),
+			TestName:       "Canonical config",
+			Config:         NewCreateConfig(),
 			ExpectedErrors: 0,
 		},
 		{
-			Name: "Invalid name - commas",
-			Config: Config{
-				Name:     ",,,,,,",
-				NumNodes: 1,
-			},
-			ExpectedErrors: 1,
-		},
-		{
-			Name: "Invalid name - zero length",
-			Config: Config{
-				Name:     "",
-				NumNodes: 1,
-			},
-			ExpectedErrors: 1,
-		},
-		{
-			Name: "Invalid name - invalid character in the middle",
-			Config: Config{
-				Name:     "almost-valid@nope",
-				NumNodes: 1,
-			},
-			ExpectedErrors: 1,
-		},
-		{
-			Name: "Invalid number of nodes (not yet supported",
-			Config: Config{
-				Name:     "2",
+			TestName: "Invalid number of nodes (not yet supported",
+			Config: &CreateConfig{
 				NumNodes: 2,
 			},
 			ExpectedErrors: 1,
@@ -69,20 +44,20 @@ func TestConfigValidate(t *testing.T) {
 		// - nil, in which case we should expect no errors or fail
 		if err == nil {
 			if tc.ExpectedErrors != 0 {
-				t.Errorf("received no errors but expected errors for case %s", tc.Name)
+				t.Errorf("received no errors but expected errors for case %s", tc.TestName)
 			}
 			continue
 		}
 		// - not castable to ConfigErrors, in which case we have the wrong error type ...
 		configErrors, ok := err.(ConfigErrors)
 		if !ok {
-			t.Errorf("config.Validate should only return nil or ConfigErrors{...}, got: %v for case: %s", err, tc.Name)
+			t.Errorf("config.Validate should only return nil or ConfigErrors{...}, got: %v for case: %s", err, tc.TestName)
 			continue
 		}
 		// - ConfigErrors, in which case expect a certain number of errors
 		errors := configErrors.Errors()
 		if len(errors) != tc.ExpectedErrors {
-			t.Errorf("expected %d errors but got len(%v) = %d for case: %s", tc.ExpectedErrors, errors, len(errors), tc.Name)
+			t.Errorf("expected %d errors but got len(%v) = %d for case: %s", tc.ExpectedErrors, errors, len(errors), tc.TestName)
 		}
 	}
 }

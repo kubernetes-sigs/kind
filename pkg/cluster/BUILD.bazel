@@ -38,6 +38,9 @@ filegroup(
 
 go_test(
     name = "go_default_test",
-    srcs = ["config_test.go"],
+    srcs = [
+        "cluster_test.go",
+        "config_test.go",
+    ],
     embed = [":go_default_library"],
 )
