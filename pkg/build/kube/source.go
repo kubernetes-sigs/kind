@@ -32,7 +32,7 @@ func FindSource() (root string, err error) {
 	if err == nil && maybeKubeDir(pkg.Dir) {
 		return pkg.Dir, nil
 	}
-	return "", fmt.Errorf("could not find kubenetes source")
+	return "", fmt.Errorf("could not find kubernetes source")
 }
 
 // maybeKubeDir returns true if the dir looks plausibly like a kubernetes
