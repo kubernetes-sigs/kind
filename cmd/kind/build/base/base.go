@@ -17,8 +17,7 @@ limitations under the License.
 package base
 
 import (
-	"os"
-
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"k8s.io/test-infra/kind/pkg/build"
@@ -50,6 +49,6 @@ func run(flags *flags, cmd *cobra.Command, args []string) {
 	ctx.SourceDir = flags.Source
 	err := ctx.Build()
 	if err != nil {
-		os.Exit(-1)
+		log.Fatalf("Build failed! %v", err)
 	}
 }

@@ -17,8 +17,6 @@ limitations under the License.
 package node
 
 import (
-	"os"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -50,12 +48,10 @@ func run(flags *flags, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
 	ctx, err := build.NewNodeImageBuildContext(flags.BuildType)
 	if err != nil {
-		log.Errorf("Error creating build context: %v", err)
-		os.Exit(-1)
+		log.Fatalf("Error creating build context: %v", err)
 	}
 	err = ctx.Build()
 	if err != nil {
-		log.Errorf("Error building node image: %v", err)
-		os.Exit(-1)
+		log.Fatalf("Error building node image: %v", err)
 	}
 }

@@ -18,8 +18,6 @@ limitations under the License.
 package delete
 
 import (
-	"os"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -50,12 +48,10 @@ func run(flags *flags, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
 	ctx, err := cluster.NewContext(flags.Name)
 	if err != nil {
-		log.Errorf("Failed to create cluster context! %v", err)
-		os.Exit(-1)
+		log.Fatalf("Failed to create cluster context! %v", err)
 	}
 	err = ctx.Delete()
 	if err != nil {
-		log.Errorf("Failed to delete cluster: %v", err)
-		os.Exit(-1)
+		log.Fatalf("Failed to delete cluster: %v", err)
 	}
 }

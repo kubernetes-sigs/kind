@@ -18,8 +18,6 @@ limitations under the License.
 package create
 
 import (
-	"os"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -53,8 +51,7 @@ func run(flags *flags, cmd *cobra.Command, args []string) {
 	// load the config
 	config, err := cluster.LoadCreateConfig(flags.Config)
 	if err != nil {
-		log.Errorf("Error loading config: %v", err)
-		os.Exit(-1)
+		log.Fatalf("Error loading config: %v", err)
 	}
 	// validate the config
 	err = config.Validate()
@@ -64,17 +61,15 @@ func run(flags *flags, cmd *cobra.Command, args []string) {
 		for _, problem := range configErrors.Errors() {
 			log.Error(problem)
 		}
-		os.Exit(-1)
+		log.Fatal("Aborting due to invalid configuration.")
 	}
 	// create a cluster context and create the cluster
 	ctx, err := cluster.NewContext(flags.Name)
 	if err != nil {
-		log.Errorf("Failed to create cluster context! %v", err)
-		os.Exit(-1)
+		log.Fatalf("Failed to create cluster context! %v", err)
 	}
 	err = ctx.Create(config)
 	if err != nil {
-		log.Errorf("Failed to create cluster: %v", err)
-		os.Exit(-1)
+		log.Fatalf("Failed to create cluster: %v", err)
 	}
 }
