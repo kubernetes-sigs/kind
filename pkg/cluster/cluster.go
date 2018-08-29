@@ -89,7 +89,7 @@ func (c *Context) KubeConfigPath() string {
 }
 
 // Create provisions and starts a kubernetes-in-docker cluster
-func (c *Context) Create(config CreateConfig) error {
+func (c *Context) Create(config *CreateConfig) error {
 	// validate config first
 	if err := config.Validate(); err != nil {
 		return err
@@ -129,7 +129,7 @@ func (c *Context) Delete() error {
 
 // provisionControlPlane provisions the control plane node
 // and the cluster kubeadm config
-func (c *Context) provisionControlPlane(nodeName string, config CreateConfig) (kubeadmConfigPath string, err error) {
+func (c *Context) provisionControlPlane(nodeName string, config *CreateConfig) (kubeadmConfigPath string, err error) {
 	// create the "node" container (docker run, but it is paused, see createNode)
 	node, err := createNode(nodeName, c.ClusterLabel())
 	if err != nil {
@@ -176,10 +176,13 @@ func (c *Context) provisionControlPlane(nodeName string, config CreateConfig) (k
 	}
 
 	// create kubeadm config file
-	kubeadmConfig, err := c.createKubeadmConfig("", kubeadm.ConfigData{
-		ClusterName:       c.ClusterName(),
-		KubernetesVersion: kubeVersion,
-	})
+	kubeadmConfig, err := c.createKubeadmConfig(
+		config.KubeadmConfigTemplate,
+		kubeadm.ConfigData{
+			ClusterName:       c.ClusterName(),
+			KubernetesVersion: kubeVersion,
+		},
+	)
 
 	// copy the config to the node
 	if err := node.CopyTo(kubeadmConfig, "/kind/kubeadm.conf"); err != nil {

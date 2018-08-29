@@ -27,7 +27,8 @@ import (
 )
 
 type flags struct {
-	Name string
+	Name   string
+	Config string
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
@@ -43,13 +44,20 @@ func NewCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&flags.Name, "name", "1", "the cluster name")
+	cmd.Flags().StringVar(&flags.Config, "config", "", "path to create config file")
 	return cmd
 }
 
 func run(flags *flags, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
-	config := cluster.NewCreateConfig()
-	err := config.Validate()
+	// load the config
+	config, err := cluster.LoadCreateConfig(flags.Config)
+	if err != nil {
+		glog.Errorf("Error loading config: %v", err)
+		os.Exit(-1)
+	}
+	// validate the config
+	err = config.Validate()
 	if err != nil {
 		glog.Error("Invalid configuration!")
 		configErrors := err.(cluster.ConfigErrors)
@@ -58,6 +66,7 @@ func run(flags *flags, cmd *cobra.Command, args []string) {
 		}
 		os.Exit(-1)
 	}
+	// create a cluster context and create the cluster
 	ctx, err := cluster.NewContext(flags.Name)
 	if err != nil {
 		glog.Error("Failed to create cluster context! %v", err)

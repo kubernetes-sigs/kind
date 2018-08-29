@@ -20,8 +20,8 @@ A non-exhaustive list of tasks (in no-particular order) includes:
   - [ ] etcd
   - [ ] overlay network images?
 - [ ] support multiple overlay networks
-- [ ] support advanced configuration via config file
-  - [ ] kubeadm config template override
+- [x] support advanced configuration via config file
+  - [x] kubeadm config template override
 - [ ] more advanced network configuration (not docker0)
 - [ ] support for other CRI within the "node" containers (containerd, cri-o)
 - [ ] switch from `exec.Command("docker", ...)` to the Docker client library

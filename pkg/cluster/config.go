@@ -18,20 +18,55 @@ package cluster
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+
+	"github.com/ghodss/yaml"
 )
 
 // CreateConfig contains cluster creation config
 type CreateConfig struct {
 	// NumNodes is the number of nodes to create (currently only one is supported)
-	NumNodes int
+	NumNodes int `json:"numNodes"`
+	// KubeadmConfigTemplate allows overriding the default template in
+	// cluster/kubeadm
+	KubeadmConfigTemplate string `json:"kubeadmConfigTemplate"`
 }
 
 // NewCreateConfig returns a new default CreateConfig
-func NewCreateConfig() CreateConfig {
-	return CreateConfig{
+func NewCreateConfig() *CreateConfig {
+	return &CreateConfig{
 		NumNodes: 1,
 	}
+}
+
+// LoadCreateConfig reads the file at path and attempts to load it as
+// a yaml encoding of CreateConfig, falling back to json if this fails.
+// It returns an error if reading the files fails, or if both yaml and json fail
+// If path is "" then a default config is returned instead
+func LoadCreateConfig(path string) (config *CreateConfig, err error) {
+	if path == "" {
+		return NewCreateConfig(), nil
+	}
+	// read in file
+	contents, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	// first try yaml
+	config = &CreateConfig{}
+	yamlErr := yaml.Unmarshal(contents, config)
+	if yamlErr == nil {
+		return config, nil
+	}
+	// then try json
+	config = &CreateConfig{}
+	jsonErr := json.Unmarshal(contents, config)
+	if jsonErr == nil {
+		return config, nil
+	}
+	return nil, fmt.Errorf("could not read as yaml: %v or json: %v", yamlErr, jsonErr)
 }
 
 // Validate returns a ConfigErrors with an entry for each problem
