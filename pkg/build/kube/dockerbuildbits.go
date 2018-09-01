@@ -27,7 +27,9 @@ import (
 	"k8s.io/test-infra/kind/pkg/exec"
 )
 
-// DockerBuildBits implements Bits for a local docke-ized make / bash build
+// TODO(bentheelder): plumb through arch
+
+// DockerBuildBits implements Bits for a local docker-ized make / bash build
 type DockerBuildBits struct {
 	kubeRoot string
 	paths    map[string]string
@@ -75,7 +77,6 @@ func NewDockerBuildBits(kubeRoot string) (bits Bits, err error) {
 
 // Build implements Bits.Build
 func (b *DockerBuildBits) Build() error {
-	// TODO(bentheelder): support other modes of building
 	// cd to k8s source
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -91,43 +92,94 @@ func (b *DockerBuildBits) Build() error {
 		return err
 	}
 
+	// the PR that added `make quick-release-images` added this script,
+	// we can use it's presence to detect if that target exists
+	// TODO(bentheelder): drop support for building without this once we've
+	// dropped older releases or gotten support for `make quick-release-iamges`
+	// back ported to them ...
+	releaseImagesSH := filepath.Join(
+		b.kubeRoot, "build", "release-images.sh",
+	)
+	// if we can't find the script, use the non `make quick-release-images` build
+	if _, err := os.Stat(releaseImagesSH); err != nil {
+		return b.buildBash()
+	}
+	// otherwise leverage `make quick-release-images`
+	return b.build()
+}
+
+// binary and image build when we have `make quick-release-images` support
+func (b *DockerBuildBits) build() error {
 	// build binaries
 	cmd := exec.Command("build/run.sh", "make", "all")
 	what := []string{
+		// binaries we use directly
 		"cmd/kubeadm",
 		"cmd/kubectl",
 		"cmd/kubelet",
+	}
+	cmd.Args = append(cmd.Args,
+		"WHAT="+strings.Join(what, " "),
+		"KUBE_BUILD_PLATFORMS=linux/amd64",
+		// ensure the build isn't especially noisy..
+		"KUBE_VERBOSE=0",
+	)
+	cmd.Env = append(cmd.Env, os.Environ()...)
+	cmd.Debug = true
+	cmd.InheritOutput = true
+	if err := cmd.Run(); err != nil {
+		return errors.Wrap(err, "failed to build binaries")
+	}
+
+	// build images
+	cmd = exec.Command("make", "quick-release-images", "KUBE_BUILD_HYPERKUBE=n")
+	cmd.Env = append(cmd.Env, os.Environ()...)
+	cmd.Debug = true
+	cmd.InheritOutput = true
+	if err := cmd.Run(); err != nil {
+		return errors.Wrap(err, "failed to build images")
+	}
+	return nil
+}
+
+// binary and image build when we don't have `make quick-release-images` support
+func (b *DockerBuildBits) buildBash() error {
+	// build binaries
+	cmd := exec.Command("build/run.sh", "make", "all")
+	what := []string{
+		// binaries we use directly
+		"cmd/kubeadm",
+		"cmd/kubectl",
+		"cmd/kubelet",
+		// docker image wrapped binaries
 		"cmd/cloud-controller-manager",
 		"cmd/kube-apiserver",
 		"cmd/kube-controller-manager",
 		"cmd/kube-scheduler",
 		"cmd/kube-proxy",
+		// we don't need this one, but the image build wraps it...
+		"vendor/k8s.io/kube-aggregator",
 	}
 	cmd.Args = append(cmd.Args,
 		"WHAT="+strings.Join(what, " "), "KUBE_BUILD_PLATFORMS=linux/amd64",
 	)
 	cmd.Env = append(cmd.Env, os.Environ()...)
+	// ensure the build isn't especially noisy..
 	cmd.Env = append(cmd.Env, "KUBE_VERBOSE=0")
 	cmd.Debug = true
 	cmd.InheritOutput = true
-	err = cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		return errors.Wrap(err, "failed to build binaries")
 	}
 
-	// TODO(bentheelder): this is perhaps a bit overkill
-	// the build will fail if they are already present though
-	// We should find what `make quick-release` does and mimic that
-	err = os.RemoveAll(filepath.Join(
+	// mimic `make quick-release` internals, clear previous images
+	if err := os.RemoveAll(filepath.Join(
 		".", "_output", "release-images", "amd64",
-	))
-	if err != nil {
+	)); err != nil {
 		return errors.Wrap(err, "failed to remove old release-images")
 	}
 
 	// build images
-	// TODO(bentheelder): there has to be a better way to do this, but the
-	// closest seems to be make quick-release, which builds more than we need
 	buildImages := []string{
 		"source build/common.sh;",
 		"source hack/lib/version.sh;",
@@ -140,11 +192,9 @@ func (b *DockerBuildBits) Build() error {
 	cmd.Env = append(cmd.Env, "KUBE_BUILD_HYPERKUBE=n")
 	cmd.Debug = true
 	cmd.InheritOutput = true
-	err = cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		return errors.Wrap(err, "failed to build images")
 	}
-
 	return nil
 }
 
