@@ -53,9 +53,9 @@ type InstallContext interface {
 
 // NewNamedBits returns a new Bits by named implementation
 // currently this includes:
+// "apt" -> NewAptBits(kubeRoot)
 // "bazel" -> NewBazelBuildBits(kubeRoot)
 // "docker" or "make" -> NewDockerBuildBits(kubeRoot)
-// "apt" -> NewAptBits(kubeRoot)
 func NewNamedBits(name string, kubeRoot string) (bits Bits, err error) {
 	bitsImpls.Lock()
 	fn, ok := bitsImpls.impls[name]

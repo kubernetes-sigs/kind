@@ -69,7 +69,7 @@ EOF`
 		log.Errorf("Installing Kubernetes packages failed! %v", err)
 		return err
 	}
-	// get version to version file
+	// get version for version file
 	lines, err := install.CombinedOutputLines("/bin/sh", "-c", `kubelet --version`)
 	if err != nil {
 		log.Errorf("Failed to get Kubernetes version! %v", err)
@@ -80,6 +80,7 @@ EOF`
 		log.Errorf("Failed to parse Kubernetes version with unexpected output: %v", lines)
 		return fmt.Errorf("failed to parse Kubernetes version")
 	}
+	// write version file
 	version := strings.SplitN(lines[0], " ", 2)[1]
 	if err := install.Run("/bin/sh", "-c", fmt.Sprintf(`echo "%s" >> /kind/version`, version)); err != nil {
 		log.Errorf("Failed to get Kubernetes version! %v", err)
