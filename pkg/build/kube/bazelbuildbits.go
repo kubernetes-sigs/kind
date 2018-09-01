@@ -28,7 +28,6 @@ import (
 // BazelBuildBits implements Bits for a local Bazel build
 type BazelBuildBits struct {
 	kubeRoot string
-	paths    map[string]string
 }
 
 var _ Bits = &BazelBuildBits{}
@@ -40,28 +39,9 @@ func init() {
 // NewBazelBuildBits returns a new Bits backed by bazel build,
 // given kubeRoot, the path to the kubernetes source directory
 func NewBazelBuildBits(kubeRoot string) (bits Bits, err error) {
-	// https://docs.bazel.build/versions/master/output_directories.html
-	binDir := filepath.Join(kubeRoot, "bazel-bin")
-	buildDir := filepath.Join(binDir, "build")
-	bits = &BazelBuildBits{
+	return &BazelBuildBits{
 		kubeRoot: kubeRoot,
-		paths: map[string]string{
-			// debians
-			filepath.Join(buildDir, "debs", "kubeadm.deb"):        "debs/kubeadm.deb",
-			filepath.Join(buildDir, "debs", "kubelet.deb"):        "debs/kubelet.deb",
-			filepath.Join(buildDir, "debs", "kubectl.deb"):        "debs/kubectl.deb",
-			filepath.Join(buildDir, "debs", "kubernetes-cni.deb"): "debs/kubernetes-cni.deb",
-			filepath.Join(buildDir, "debs", "cri-tools.deb"):      "debs/cri-tools.deb",
-			// docker images
-			filepath.Join(buildDir, "kube-apiserver.tar"):          "images/kube-apiserver.tar",
-			filepath.Join(buildDir, "kube-controller-manager.tar"): "images/kube-controller-manager.tar",
-			filepath.Join(buildDir, "kube-scheduler.tar"):          "images/kube-scheduler.tar",
-			filepath.Join(buildDir, "kube-proxy.tar"):              "images/kube-proxy.tar",
-			// version files
-			filepath.Join(kubeRoot, "_output", "git_version"): "version",
-		},
-	}
-	return bits, nil
+	}, nil
 }
 
 // Build implements Bits.Build
@@ -98,8 +78,24 @@ func (b *BazelBuildBits) Build() error {
 
 // Paths implements Bits.Paths
 func (b *BazelBuildBits) Paths() map[string]string {
-	// TODO(bentheelder): maybe copy the map before returning /shrug
-	return b.paths
+	// https://docs.bazel.build/versions/master/output_directories.html
+	binDir := filepath.Join(b.kubeRoot, "bazel-bin")
+	buildDir := filepath.Join(binDir, "build")
+	return map[string]string{
+		// debians
+		filepath.Join(buildDir, "debs", "kubeadm.deb"):        "debs/kubeadm.deb",
+		filepath.Join(buildDir, "debs", "kubelet.deb"):        "debs/kubelet.deb",
+		filepath.Join(buildDir, "debs", "kubectl.deb"):        "debs/kubectl.deb",
+		filepath.Join(buildDir, "debs", "kubernetes-cni.deb"): "debs/kubernetes-cni.deb",
+		filepath.Join(buildDir, "debs", "cri-tools.deb"):      "debs/cri-tools.deb",
+		// docker images
+		filepath.Join(buildDir, "kube-apiserver.tar"):          "images/kube-apiserver.tar",
+		filepath.Join(buildDir, "kube-controller-manager.tar"): "images/kube-controller-manager.tar",
+		filepath.Join(buildDir, "kube-scheduler.tar"):          "images/kube-scheduler.tar",
+		filepath.Join(buildDir, "kube-proxy.tar"):              "images/kube-proxy.tar",
+		// version file
+		filepath.Join(b.kubeRoot, "_output", "git_version"): "version",
+	}
 }
 
 // Install implements Bits.Install

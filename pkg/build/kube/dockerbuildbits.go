@@ -32,7 +32,6 @@ import (
 // DockerBuildBits implements Bits for a local docker-ized make / bash build
 type DockerBuildBits struct {
 	kubeRoot string
-	paths    map[string]string
 }
 
 var _ Bits = &DockerBuildBits{}
@@ -45,34 +44,9 @@ func init() {
 // NewDockerBuildBits returns a new Bits backed by the docker-ized build,
 // given kubeRoot, the path to the kubernetes source directory
 func NewDockerBuildBits(kubeRoot string) (bits Bits, err error) {
-	// https://docs.Docker.build/versions/master/output_directories.html
-	binDir := filepath.Join(kubeRoot,
-		"_output", "dockerized", "bin", "linux", "amd64",
-	)
-	imageDir := filepath.Join(kubeRoot,
-		"_output", "release-images", "amd64",
-	)
-	bits = &DockerBuildBits{
+	return &DockerBuildBits{
 		kubeRoot: kubeRoot,
-		paths: map[string]string{
-			// binaries (hyperkube)
-			filepath.Join(binDir, "kubeadm"): "bin/kubeadm",
-			filepath.Join(binDir, "kubelet"): "bin/kubelet",
-			filepath.Join(binDir, "kubectl"): "bin/kubectl",
-			// docker images
-			filepath.Join(imageDir, "kube-apiserver.tar"):          "images/kube-apiserver.tar",
-			filepath.Join(imageDir, "kube-controller-manager.tar"): "images/kube-controller-manager.tar",
-			filepath.Join(imageDir, "kube-scheduler.tar"):          "images/kube-scheduler.tar",
-			filepath.Join(imageDir, "kube-proxy.tar"):              "images/kube-proxy.tar",
-			// version files
-			filepath.Join(kubeRoot, "_output", "git_version"): "version",
-			// borrow kubelet service files from bazel debians
-			// TODO(bentheelder): probably we should use our own config instead :-)
-			filepath.Join(kubeRoot, "build", "debs", "kubelet.service"): "systemd/kubelet.service",
-			filepath.Join(kubeRoot, "build", "debs", "10-kubeadm.conf"): "systemd/10-kubeadm.conf",
-		},
-	}
-	return bits, nil
+	}, nil
 }
 
 // Build implements Bits.Build
@@ -200,8 +174,29 @@ func (b *DockerBuildBits) buildBash() error {
 
 // Paths implements Bits.Paths
 func (b *DockerBuildBits) Paths() map[string]string {
-	// TODO(bentheelder): maybe copy the map before returning /shrug
-	return b.paths
+	binDir := filepath.Join(b.kubeRoot,
+		"_output", "dockerized", "bin", "linux", "amd64",
+	)
+	imageDir := filepath.Join(b.kubeRoot,
+		"_output", "release-images", "amd64",
+	)
+	return map[string]string{
+		// binaries (hyperkube)
+		filepath.Join(binDir, "kubeadm"): "bin/kubeadm",
+		filepath.Join(binDir, "kubelet"): "bin/kubelet",
+		filepath.Join(binDir, "kubectl"): "bin/kubectl",
+		// docker images
+		filepath.Join(imageDir, "kube-apiserver.tar"):          "images/kube-apiserver.tar",
+		filepath.Join(imageDir, "kube-controller-manager.tar"): "images/kube-controller-manager.tar",
+		filepath.Join(imageDir, "kube-scheduler.tar"):          "images/kube-scheduler.tar",
+		filepath.Join(imageDir, "kube-proxy.tar"):              "images/kube-proxy.tar",
+		// version file
+		filepath.Join(b.kubeRoot, "_output", "git_version"): "version",
+		// borrow kubelet service files from bazel debians
+		// TODO(bentheelder): probably we should use our own config instead :-)
+		filepath.Join(b.kubeRoot, "build", "debs", "kubelet.service"): "systemd/kubelet.service",
+		filepath.Join(b.kubeRoot, "build", "debs", "10-kubeadm.conf"): "systemd/10-kubeadm.conf",
+	}
 }
 
 // Install implements Bits.Install
