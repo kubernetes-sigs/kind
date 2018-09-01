@@ -1,24 +1,40 @@
 # The Node Image
 
-The ["node" image](./../images/node) is a small-ish Docker image for running
-nested containers, systemd, and kubernetes components.
+The ["node" image][node image] is a Docker image for running
+nested containers, systemd, and Kubernetes components.
 
-To do this we need to set up an environment that will meet the CRI 
-(currently just docker) and systemd's particular needs. Documentation for each
-step we take is inline to the image's [Dockerfile](./../images/node/Dockerfile)),
-but essentially:
+This image is built on top of the ["base" image][base image].
 
-- we preinstall tools / packages expected by systemd / Docker / Kubernetes other
-than Kubernetes itself
+Logic for building both can be found in [`pkg/build`][build package],
+and they can be built with `kind build base` and `kind build node` respectively.
 
-- we install a custom entrypoint that allows us to perform some actions before
-the container truly boots
+## Design
 
-- we set up a systemd service to forward journal logs to the container tty
+Other than the requirement that this image inherits from the "base" image, which
+provides most of the tools statically needed for a kubernetes deployment
+(eg `systemd`), variants of this image have the following properties:
 
-- we do a few tricks to minimize unnecessary services and inform systemd that it
-is in docker (see the [Dockerfile](./../images/node/Dockerfile))
+- `/kind/images/` contains various `*.tar` files which are 
+[Docker image archives][docker image archives],
+these images will be loaded by the cluster tooling prior to running `kubeadm`
 
-This image is based on a minimal debian image (currently `k8s.gcr.io/debian-base`)
-due to high availability of tooling.  
-We strive to minimize the image size where possible.
+- `kubeadm`, `kubectl`, `kubelet` are in the path
+
+- A [systemd service][systemd service] is enabled for `kubelet`, and is
+configured to not fail on swap being enabled. (we must do the latter because 
+swap is inherited from the host and we don't want to force users to disable swap 
+before using `kind`)
+
+- `/kind/version` is a regular text file containing the `gitVersion` of the
+installed Kubernetes build
+
+These properties are used by the [cluster][cluster package] tooling to boot
+each "node" container with [kubeadm][kubeadm].
+
+[node image]: ./../images/node
+[base image]: ./base-image.md
+[build package]: ./../pkg/build
+[cluster package]: ./../pkg/cluster
+[docker image archives]: https://docs.docker.com/engine/reference/commandline/save/
+[systemd service]: https://www.freedesktop.org/software/systemd/man/systemd.service.html
+[kubeadm]: https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/
