@@ -31,19 +31,21 @@ type ConfigData struct {
 	KubernetesVersion string
 	// UnifiedControlPlaneImage - optional
 	UnifiedControlPlaneImage string
-	// AutoDerivedConfigData is populated by DeriveFields()
-	AutoDerivedConfigData
+	// DerivedConfigData is populated by Derive()
+	// These auto-generated fields are available to Config templates,
+	// but not meant to be set by hand
+	DerivedConfigData
 }
 
-// AutoDerivedConfigData fields are automatically derived by
-// ConfigData.DeriveFieldsif they are not specified / zero valued
-type AutoDerivedConfigData struct {
+// DerivedConfigData fields are automatically derived by
+// ConfigData.Derive if they are not specified / zero valued
+type DerivedConfigData struct {
 	// DockerStableTag is automatically derived from KubernetesVersion
 	DockerStableTag string
 }
 
-// DeriveFields automatically derives DockerStableTag if not specified
-func (c *ConfigData) DeriveFields() {
+// Derive automatically derives DockerStableTag if not specified
+func (c *ConfigData) Derive() {
 	if c.DockerStableTag == "" {
 		c.DockerStableTag = strings.Replace(c.KubernetesVersion, "+", "_", -1)
 	}
@@ -77,7 +79,7 @@ func Config(templateSource string, data ConfigData) (config string, err error) {
 		return "", errors.Wrap(err, "failed to parse config template")
 	}
 	// derive any automatic fields if not supplied
-	data.DeriveFields()
+	data.Derive()
 	// execute the template
 	var buff bytes.Buffer
 	err = t.Execute(&buff, data)

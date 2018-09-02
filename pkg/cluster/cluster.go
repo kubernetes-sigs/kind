@@ -24,10 +24,10 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/pkg/errors"
-
+	"k8s.io/test-infra/kind/pkg/cluster/config"
 	"k8s.io/test-infra/kind/pkg/cluster/kubeadm"
 	"k8s.io/test-infra/kind/pkg/exec"
 )
@@ -37,7 +37,7 @@ const ClusterLabelKey = "io.k8s.test-infra.kind-cluster"
 
 // Context is used to create / manipulate kubernetes-in-docker clusters
 type Context struct {
-	Name string
+	name string
 }
 
 // similar to valid docker container names, but since we will prefix
@@ -60,20 +60,25 @@ func NewContext(name string) (ctx *Context, err error) {
 		)
 	}
 	return &Context{
-		Name: name,
+		name: name,
 	}, nil
 }
 
 // ClusterLabel returns the docker object label that will be applied
 // to cluster "node" containers
 func (c *Context) ClusterLabel() string {
-	return fmt.Sprintf("%s=%s", ClusterLabelKey, c.Name)
+	return fmt.Sprintf("%s=%s", ClusterLabelKey, c.name)
+}
+
+// Name returns the context's name
+func (c *Context) Name() string {
+	return c.name
 }
 
 // ClusterName returns the Kubernetes cluster name based on the context name
 // currently this is .Name prefixed with "kind-"
 func (c *Context) ClusterName() string {
-	return fmt.Sprintf("kind-%s", c.Name)
+	return fmt.Sprintf("kind-%s", c.name)
 }
 
 // KubeConfigPath returns the path to where the Kubeconfig would be placed
@@ -84,12 +89,12 @@ func (c *Context) KubeConfigPath() string {
 	configDir := filepath.Join(os.Getenv("HOME"), ".kube")
 	// note that the file name however does not, we do not want to overwite
 	// the standard config, though in the future we may (?) merge them
-	fileName := fmt.Sprintf("kind-config-%s", c.Name)
+	fileName := fmt.Sprintf("kind-config-%s", c.name)
 	return filepath.Join(configDir, fileName)
 }
 
 // Create provisions and starts a kubernetes-in-docker cluster
-func (c *Context) Create(config *CreateConfig) error {
+func (c *Context) Create(config *config.Config) error {
 	// validate config first
 	if err := config.Validate(); err != nil {
 		return err
@@ -97,7 +102,7 @@ func (c *Context) Create(config *CreateConfig) error {
 
 	// TODO(bentheelder): multiple nodes ...
 	kubeadmConfig, err := c.provisionControlPlane(
-		fmt.Sprintf("kind-%s-control-plane", c.Name),
+		fmt.Sprintf("kind-%s-control-plane", c.name),
 		config,
 	)
 
@@ -130,7 +135,10 @@ func (c *Context) Delete() error {
 
 // provisionControlPlane provisions the control plane node
 // and the cluster kubeadm config
-func (c *Context) provisionControlPlane(nodeName string, config *CreateConfig) (kubeadmConfigPath string, err error) {
+func (c *Context) provisionControlPlane(
+	nodeName string,
+	config *config.Config,
+) (kubeadmConfigPath string, err error) {
 	// create the "node" container (docker run, but it is paused, see createNode)
 	node, err := createNode(nodeName, c.ClusterLabel())
 	if err != nil {

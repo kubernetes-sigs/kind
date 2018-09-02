@@ -1,0 +1,10 @@
+kind: Config
+apiVersion: kind.sigs.k8s.io/v1alpha1
+nodeLifecycle:
+  preKubeadm:
+  - name: "pull an image"
+    command: "docker"
+    args: [ "pull", "ubuntu" ]
+  - name: "pull another image"
+    command: "docker"
+    args: [ "pull", "debian" ]

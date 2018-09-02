@@ -22,6 +22,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/test-infra/kind/pkg/cluster"
+	"k8s.io/test-infra/kind/pkg/cluster/config"
+	"k8s.io/test-infra/kind/pkg/cluster/config/encoding"
 )
 
 type flags struct {
@@ -49,15 +51,15 @@ func NewCommand() *cobra.Command {
 func run(flags *flags, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
 	// load the config
-	config, err := cluster.LoadCreateConfig(flags.Config)
+	cfg, err := encoding.Load(flags.Config)
 	if err != nil {
 		log.Fatalf("Error loading config: %v", err)
 	}
 	// validate the config
-	err = config.Validate()
+	err = cfg.Validate()
 	if err != nil {
 		log.Error("Invalid configuration!")
-		configErrors := err.(cluster.ConfigErrors)
+		configErrors := err.(*config.Errors)
 		for _, problem := range configErrors.Errors() {
 			log.Error(problem)
 		}
@@ -68,7 +70,7 @@ func run(flags *flags, cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalf("Failed to create cluster context! %v", err)
 	}
-	err = ctx.Create(config)
+	err = ctx.Create(cfg.ToCurrent())
 	if err != nil {
 		log.Fatalf("Failed to create cluster: %v", err)
 	}

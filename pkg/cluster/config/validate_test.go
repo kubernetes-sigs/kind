@@ -14,26 +14,73 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package config
 
 import "testing"
 
-func TestCreateConfigValidate(t *testing.T) {
+func TestConfigValidate(t *testing.T) {
 	cases := []struct {
 		TestName       string
-		Config         *CreateConfig
+		Config         *Config
 		ExpectedErrors int
 	}{
 		{
 			TestName:       "Canonical config",
-			Config:         NewCreateConfig(),
+			Config:         New(),
 			ExpectedErrors: 0,
 		},
 		{
 			TestName: "Invalid number of nodes (not yet supported",
-			Config: &CreateConfig{
+			Config: &Config{
 				NumNodes: 2,
 			},
+			ExpectedErrors: 1,
+		},
+		{
+			TestName: "Invalid PreBoot hook",
+			Config: func() *Config {
+				cfg := New()
+				cfg.NodeLifecycle = &NodeLifecycle{
+					PreBoot: []LifecycleHook{
+						{
+							Command: "",
+						},
+					},
+				}
+				return cfg
+			}(),
+			ExpectedErrors: 1,
+		},
+		{
+			TestName: "Invalid PreKubeadm hook",
+			Config: func() *Config {
+				cfg := New()
+				cfg.NodeLifecycle = &NodeLifecycle{
+					PreKubeadm: []LifecycleHook{
+						{
+							Name:    "pull an image",
+							Command: "",
+						},
+					},
+				}
+				return cfg
+			}(),
+			ExpectedErrors: 1,
+		},
+		{
+			TestName: "Invalid PostKubeadm hook",
+			Config: func() *Config {
+				cfg := New()
+				cfg.NodeLifecycle = &NodeLifecycle{
+					PostKubeadm: []LifecycleHook{
+						{
+							Name:    "pull an image",
+							Command: "",
+						},
+					},
+				}
+				return cfg
+			}(),
 			ExpectedErrors: 1,
 		},
 	}
@@ -48,8 +95,8 @@ func TestCreateConfigValidate(t *testing.T) {
 			}
 			continue
 		}
-		// - not castable to ConfigErrors, in which case we have the wrong error type ...
-		configErrors, ok := err.(ConfigErrors)
+		// - not castable to *Errors, in which case we have the wrong error type ...
+		configErrors, ok := err.(*Errors)
 		if !ok {
 			t.Errorf("config.Validate should only return nil or ConfigErrors{...}, got: %v for case: %s", err, tc.TestName)
 			continue
