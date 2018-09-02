@@ -4,16 +4,15 @@ go_library(
     name = "go_default_library",
     srcs = [
         "cluster.go",
-        "config.go",
         "doc.go",
         "node.go",
     ],
     importpath = "k8s.io/test-infra/kind/pkg/cluster",
     visibility = ["//visibility:public"],
     deps = [
+        "//kind/pkg/cluster/config:go_default_library",
         "//kind/pkg/cluster/kubeadm:go_default_library",
         "//kind/pkg/exec:go_default_library",
-        "//vendor/github.com/ghodss/yaml:go_default_library",
         "//vendor/github.com/pkg/errors:go_default_library",
         "//vendor/github.com/sirupsen/logrus:go_default_library",
     ],
@@ -30,6 +29,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//kind/pkg/cluster/config:all-srcs",
         "//kind/pkg/cluster/kubeadm:all-srcs",
     ],
     tags = ["automanaged"],
@@ -38,9 +38,6 @@ filegroup(
 
 go_test(
     name = "go_default_test",
-    srcs = [
-        "cluster_test.go",
-        "config_test.go",
-    ],
+    srcs = ["cluster_test.go"],
     embed = [":go_default_library"],
 )
