@@ -56,9 +56,6 @@ func (b *BazelBuildBits) Build() error {
 	// make sure we cd back when done
 	defer os.Chdir(cwd)
 
-	// capture version info
-	buildVersionFile(b.kubeRoot)
-
 	// build artifacts
 	cmd := exec.Command("bazel", "build")
 	cmd.Args = append(cmd.Args,
@@ -73,7 +70,12 @@ func (b *BazelBuildBits) Build() error {
 	)
 	cmd.Debug = true
 	cmd.InheritOutput = true
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	// capture version info
+	return buildVersionFile(b.kubeRoot)
 }
 
 // Paths implements Bits.Paths

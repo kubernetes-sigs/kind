@@ -60,12 +60,6 @@ func (b *DockerBuildBits) Build() error {
 	// make sure we cd back when done
 	defer os.Chdir(cwd)
 
-	// capture version info
-	err = buildVersionFile(b.kubeRoot)
-	if err != nil {
-		return err
-	}
-
 	// the PR that added `make quick-release-images` added this script,
 	// we can use it's presence to detect if that target exists
 	// TODO(bentheelder): drop support for building without this once we've
@@ -76,10 +70,18 @@ func (b *DockerBuildBits) Build() error {
 	)
 	// if we can't find the script, use the non `make quick-release-images` build
 	if _, err := os.Stat(releaseImagesSH); err != nil {
-		return b.buildBash()
+		if err := b.buildBash(); err != nil {
+			return err
+		}
+	} else {
+		// otherwise leverage `make quick-release-images`
+		if err := b.build(); err != nil {
+			return err
+		}
 	}
-	// otherwise leverage `make quick-release-images`
-	return b.build()
+
+	// capture version info
+	return buildVersionFile(b.kubeRoot)
 }
 
 // binary and image build when we have `make quick-release-images` support
