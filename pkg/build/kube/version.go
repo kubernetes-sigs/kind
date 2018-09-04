@@ -23,6 +23,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+
 	"k8s.io/test-infra/kind/pkg/exec"
 )
 
@@ -47,18 +50,27 @@ func buildVersionFile(kubeRoot string) error {
 	}
 	outputDir := filepath.Join(kubeRoot, "_output")
 	// parse it, and populate it into _output/git_version
+	wroteVersion := false
 	for _, line := range output {
 		parts := strings.SplitN(line, " ", 2)
 		if len(parts) != 2 {
+			log.Errorf("Could not parse kubernetes version, output: %s", strings.Join(output, "\n"))
 			return fmt.Errorf("could not parse kubernetes version")
 		}
 		if parts[0] == "gitVersion" {
-			ioutil.WriteFile(
+			if err := ioutil.WriteFile(
 				filepath.Join(outputDir, "git_version"),
 				[]byte(parts[1]),
 				0777,
-			)
+			); err != nil {
+				return errors.Wrap(err, "failed to write version file")
+			}
+			wroteVersion = true
 		}
+	}
+	if !wroteVersion {
+		log.Errorf("Could not obtain kubernetes version, output: %s", strings.Join(output, "\n"))
+		return fmt.Errorf("could not obtain kubernetes version")
 	}
 	return nil
 }
