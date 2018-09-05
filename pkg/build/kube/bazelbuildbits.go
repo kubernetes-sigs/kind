@@ -104,18 +104,25 @@ func (b *BazelBuildBits) Paths() map[string]string {
 func (b *BazelBuildBits) Install(install InstallContext) error {
 	base := install.BasePath()
 
+	// install debians
 	debs := path.Join(base, "debs", "*.deb")
-
 	if err := install.Run("/bin/sh", "-c", "dpkg -i "+debs); err != nil {
-		log.Errorf("Image install failed! %v", err)
+		log.Errorf("Debian install failed! %v", err)
 		return err
 	}
 
+	// clean up after debian install
 	if err := install.Run("/bin/sh", "-c",
 		"rm -rf /kind/bits/debs/*.deb"+
 			" /var/cache/debconf/* /var/lib/apt/lists/* /var/log/*kg",
 	); err != nil {
-		log.Errorf("Image install failed! %v", err)
+		log.Errorf("Debian cleanup failed! %v", err)
+		return err
+	}
+
+	// enable kubelet service
+	if err := install.Run("systemctl", "enable", "kubelet.service"); err != nil {
+		log.Errorf("Enabling kubelet.service failed! %v", err)
 		return err
 	}
 
