@@ -93,11 +93,6 @@ RUN curl -sSL --retry 5 --output /tmp/cni.tgz "${CNI_URL}" \
     && mkdir -p /opt/cni/bin \
     && tar -C /opt/cni/bin -xzf /tmp/cni.tgz
 
-# Add a systemd unit to echo journalctl to the container tty so we get logs
-# from systemd / the services.
-COPY journalctl-to-tty.service /etc/systemd/system/
-RUN systemctl enable journalctl-to-tty
-
 # tell systemd that it is in docker (it will check for the container env)
 # https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
 ENV container docker
@@ -111,7 +106,7 @@ STOPSIGNAL SIGRTMIN+3
 # for how we leverage this, see pkg/cluster
 COPY [ "entrypoint/entrypoint", "/usr/local/bin/" ]
 # We need systemd to be PID1 to run the various services (docker, kubelete, etc.)
-ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init", "--log-target=console" ]
+ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]
 
 # TODO(bentheelder): add a systemd unit to run our node bootup logic
 # https://bugzilla.redhat.com/show_bug.cgi?id=809132
