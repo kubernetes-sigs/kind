@@ -48,7 +48,15 @@ func buildVersionFile(kubeRoot string) error {
 	if err != nil {
 		return err
 	}
+
+	// we will place the file in _output with other build artifacts
 	outputDir := filepath.Join(kubeRoot, "_output")
+	// ensure output dir, if we are using bazel it may not exist...
+	// we can ignore the error because it either exists and we don't care
+	// or if it fails to create the dir we'll see the file write error below
+	// we do not use MkdirAll because kubeRoot better already exist..
+	_ = os.Mkdir(outputDir, os.ModePerm)
+
 	// parse it, and populate it into _output/git_version
 	wroteVersion := false
 	for _, line := range output {
