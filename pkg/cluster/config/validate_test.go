@@ -45,7 +45,7 @@ func TestConfigValidate(t *testing.T) {
 				cfg.NodeLifecycle = &NodeLifecycle{
 					PreBoot: []LifecycleHook{
 						{
-							Command: "",
+							Command: []string{},
 						},
 					},
 				}
@@ -61,7 +61,7 @@ func TestConfigValidate(t *testing.T) {
 					PreKubeadm: []LifecycleHook{
 						{
 							Name:    "pull an image",
-							Command: "",
+							Command: []string{},
 						},
 					},
 				}
@@ -77,7 +77,7 @@ func TestConfigValidate(t *testing.T) {
 					PostKubeadm: []LifecycleHook{
 						{
 							Name:    "pull an image",
-							Command: "",
+							Command: []string{},
 						},
 					},
 				}

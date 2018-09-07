@@ -127,11 +127,10 @@ apiVersion: kind.sigs.k8s.io/v1alpha1
 nodeLifecycle:
   preKubeadm:
   - name: "pull an image"
-    command: "docker"
-    args: [ "pull", "ubuntu" ]
+    command: [ "docker", "pull", "ubuntu" ]
   - name: "pull another image"
-    command: "docker"
-    args: [ "pull", "debian" ]
+    command: [ "docker", "pull", "debian" ]
+    mustSucceed: true
 `),
 			ExpectedConfig: func() config.Any {
 				cfg := &config.Config{
@@ -139,13 +138,12 @@ nodeLifecycle:
 						PreKubeadm: []config.LifecycleHook{
 							{
 								Name:    "pull an image",
-								Command: "docker",
-								Args:    []string{"pull", "ubuntu"},
+								Command: []string{"docker", "pull", "ubuntu"},
 							},
 							{
-								Name:    "pull another image",
-								Command: "docker",
-								Args:    []string{"pull", "debian"},
+								Name:        "pull another image",
+								Command:     []string{"docker", "pull", "debian"},
+								MustSucceed: true,
 							},
 						},
 					},

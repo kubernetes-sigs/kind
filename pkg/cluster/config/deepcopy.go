@@ -59,6 +59,12 @@ func (in *NodeLifecycle) DeepCopy() *NodeLifecycle {
 			out.PostKubeadm[i] = *(in.PostKubeadm[i].DeepCopy())
 		}
 	}
+	if in.PostSetup != nil {
+		out.PostSetup = make([]LifecycleHook, len(in.PostSetup))
+		for i := range in.PostSetup {
+			out.PostSetup[i] = *(in.PostSetup[i].DeepCopy())
+		}
+	}
 	return out
 }
 
@@ -69,10 +75,10 @@ func (in *LifecycleHook) DeepCopy() *LifecycleHook {
 	}
 	out := new(LifecycleHook)
 	*out = *in
-	if in.Args != nil {
-		out.Args = make([]string, len(in.Args))
-		for i := range in.Args {
-			out.Args[i] = in.Args[i]
+	if in.Command != nil {
+		out.Command = make([]string, len(in.Command))
+		for i := range in.Command {
+			out.Command[i] = in.Command[i]
 		}
 	}
 	return out

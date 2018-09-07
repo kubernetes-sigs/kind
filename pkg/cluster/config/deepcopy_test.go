@@ -37,22 +37,26 @@ func TestDeepCopy(t *testing.T) {
 				cfg.NodeLifecycle = &NodeLifecycle{
 					PreBoot: []LifecycleHook{
 						{
-							Command: "ps",
-							Args:    []string{"aux"},
+							Command: []string{"ps", "aux"},
 						},
 					},
 					PreKubeadm: []LifecycleHook{
 						{
 							Name:    "docker ps",
-							Command: "docker",
-							Args:    []string{"ps"},
+							Command: []string{"docker", "ps"},
 						},
 					},
 					PostKubeadm: []LifecycleHook{
 						{
 							Name:    "docker ps again",
-							Command: "docker",
-							Args:    []string{"ps", "-a"},
+							Command: []string{"docker", "ps", "-a"},
+						},
+					},
+					PostSetup: []LifecycleHook{
+						{
+							Name:        "docker ps again again",
+							Command:     []string{"docker", "ps", "-a"},
+							MustSucceed: true,
 						},
 					},
 				}

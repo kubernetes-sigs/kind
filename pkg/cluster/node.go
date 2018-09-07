@@ -27,9 +27,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	"k8s.io/test-infra/kind/pkg/cluster/config"
 	"k8s.io/test-infra/kind/pkg/cluster/kubeadm"
 	"k8s.io/test-infra/kind/pkg/exec"
 )
@@ -103,6 +106,28 @@ func (nh *nodeHandle) Run(command string, args ...string) error {
 	)
 	cmd.InheritOutput = true
 	return cmd.Run()
+}
+
+// RunHook runs a LifecycleHook on the node
+// It will only return an error if hook.MustSucceed is true
+func (nh *nodeHandle) RunHook(hook *config.LifecycleHook, phase string) error {
+	logger := logrus.WithFields(logrus.Fields{
+		"node":  nh.nameOrID,
+		"phase": phase,
+	})
+	if hook.Name != "" {
+		logger.Infof("Running LifecycleHook \"%s\" ...", hook.Name)
+	} else {
+		logger.Info("Running LifecycleHook ...")
+	}
+	if err := nh.Run(hook.Command[0], hook.Command[1:]...); err != nil {
+		if hook.MustSucceed {
+			logger.WithError(err).Error("LifecycleHook failed")
+			return err
+		}
+		logger.WithError(err).Warn("LifecycleHook failed, continuing ...")
+	}
+	return nil
 }
 
 // CombinedOutputLines execs command, args... on the node, returning the output lines

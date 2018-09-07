@@ -43,10 +43,12 @@ var _ Any = &Config{}
 type NodeLifecycle struct {
 	// PreBoot hooks run before starting systemd
 	PreBoot []LifecycleHook `json:"preBoot,omitempty"`
-	// PreKubeadm hooks run before `kubeadm`
+	// PreKubeadm hooks run immediately before `kubeadm`
 	PreKubeadm []LifecycleHook `json:"preKubeadm,omitempty"`
-	// PostKubeadm hooks run after `kubeadm`
+	// PostKubeadm hooks run immediately after `kubeadm`
 	PostKubeadm []LifecycleHook `json:"postKubeadm,omitempty"`
+	// PostSetup hooks run after any standard `kind` setup on the node
+	PostSetup []LifecycleHook `json:"postSetup,omitempty"`
 }
 
 // LifecycleHook represents a command to run at points in the node lifecycle
@@ -54,7 +56,9 @@ type LifecycleHook struct {
 	// Name is used to improve logging (optional)
 	Name string `json:"name,omitempty"`
 	// Command is the command to run on the node
-	Command string `json:"command"`
-	// Args are the arguments to the command (optional)
-	Args []string `json:"args,omitempty"`
+	Command []string `json:"command"`
+	// MustSucceed - if true then the hook / command failing will cause
+	// cluster creation to fail, otherwise the error will just be logged and
+	// the boot process will continue
+	MustSucceed bool `json:"mustSucceed,omitempty"`
 }

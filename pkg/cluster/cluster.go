@@ -94,16 +94,16 @@ func (c *Context) KubeConfigPath() string {
 }
 
 // Create provisions and starts a kubernetes-in-docker cluster
-func (c *Context) Create(config *config.Config) error {
+func (c *Context) Create(cfg *config.Config) error {
 	// validate config first
-	if err := config.Validate(); err != nil {
+	if err := cfg.Validate(); err != nil {
 		return err
 	}
 
 	// TODO(bentheelder): multiple nodes ...
 	kubeadmConfig, err := c.provisionControlPlane(
 		fmt.Sprintf("kind-%s-control-plane", c.name),
-		config,
+		cfg,
 	)
 
 	// clean up the kubeadm config file
@@ -137,10 +137,10 @@ func (c *Context) Delete() error {
 // and the cluster kubeadm config
 func (c *Context) provisionControlPlane(
 	nodeName string,
-	config *config.Config,
+	cfg *config.Config,
 ) (kubeadmConfigPath string, err error) {
 	// create the "node" container (docker run, but it is paused, see createNode)
-	node, err := createNode(nodeName, config.Image, c.ClusterLabel())
+	node, err := createNode(nodeName, cfg.Image, c.ClusterLabel())
 	if err != nil {
 		return "", err
 	}
@@ -154,6 +154,15 @@ func (c *Context) provisionControlPlane(
 		// TODO(bentheelder): add a flag to retain the broken nodes for debugging
 		c.deleteNodes(node.nameOrID)
 		return "", err
+	}
+
+	// run any pre-boot hooks
+	if cfg.NodeLifecycle != nil {
+		for _, hook := range cfg.NodeLifecycle.PreBoot {
+			if err := node.RunHook(&hook, "preBoot"); err != nil {
+				return "", err
+			}
+		}
 	}
 
 	// signal the node entrypoint to continue booting into systemd
@@ -186,7 +195,7 @@ func (c *Context) provisionControlPlane(
 
 	// create kubeadm config file
 	kubeadmConfig, err := c.createKubeadmConfig(
-		config.KubeadmConfigTemplate,
+		cfg.KubeadmConfigTemplate,
 		kubeadm.ConfigData{
 			ClusterName:       c.ClusterName(),
 			KubernetesVersion: kubeVersion,
@@ -199,6 +208,15 @@ func (c *Context) provisionControlPlane(
 		// TODO(bentheelder): add a flag to retain the broken nodes for debugging
 		c.deleteNodes(node.nameOrID)
 		return kubeadmConfig, errors.Wrap(err, "failed to copy kubeadm config to node")
+	}
+
+	// run any pre-kubeadm hooks
+	if cfg.NodeLifecycle != nil {
+		for _, hook := range cfg.NodeLifecycle.PreKubeadm {
+			if err := node.RunHook(&hook, "preKubeadm"); err != nil {
+				return kubeadmConfig, err
+			}
+		}
 	}
 
 	// run kubeadm
@@ -215,6 +233,15 @@ func (c *Context) provisionControlPlane(
 		// TODO(bentheelder): add a flag to retain the broken nodes for debugging
 		c.deleteNodes(node.nameOrID)
 		return kubeadmConfig, errors.Wrap(err, "failed to init node with kubeadm")
+	}
+
+	// run any pre-kubeadm hooks
+	if cfg.NodeLifecycle != nil {
+		for _, hook := range cfg.NodeLifecycle.PostKubeadm {
+			if err := node.RunHook(&hook, "postKubeadm"); err != nil {
+				return kubeadmConfig, err
+			}
+		}
 	}
 
 	// set up the $KUBECONFIG
@@ -236,12 +263,21 @@ func (c *Context) provisionControlPlane(
 
 	// if we are only provisioning one node, remove the master taint
 	// https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#master-isolation
-	if config.NumNodes == 1 {
+	if cfg.NumNodes == 1 {
 		if err = node.Run(
 			"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf",
 			"taint", "nodes", "--all", "node-role.kubernetes.io/master-",
 		); err != nil {
 			return kubeadmConfig, errors.Wrap(err, "failed to remove master taint")
+		}
+	}
+
+	// run any post-overlay hooks
+	if cfg.NodeLifecycle != nil {
+		for _, hook := range cfg.NodeLifecycle.PostSetup {
+			if err := node.RunHook(&hook, "postSetup"); err != nil {
+				return kubeadmConfig, err
+			}
 		}
 	}
 
