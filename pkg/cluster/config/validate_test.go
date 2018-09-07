@@ -31,9 +31,11 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			TestName: "Invalid number of nodes (not yet supported",
-			Config: &Config{
-				NumNodes: 2,
-			},
+			Config: func() *Config {
+				cfg := New()
+				cfg.NumNodes = 2
+				return cfg
+			}(),
 			ExpectedErrors: 1,
 		},
 		{
@@ -79,6 +81,15 @@ func TestConfigValidate(t *testing.T) {
 						},
 					},
 				}
+				return cfg
+			}(),
+			ExpectedErrors: 1,
+		},
+		{
+			TestName: "Empty image field",
+			Config: func() *Config {
+				cfg := New()
+				cfg.Image = ""
 				return cfg
 			}(),
 			ExpectedErrors: 1,
