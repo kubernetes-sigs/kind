@@ -40,9 +40,9 @@ type BaseImageBuildContext struct {
 
 // NewBaseImageBuildContext creates a new BaseImageBuildContext with
 // default configuration
-func NewBaseImageBuildContext() *BaseImageBuildContext {
+func NewBaseImageBuildContext(imageName string) *BaseImageBuildContext {
 	return &BaseImageBuildContext{
-		ImageTag: "kind-base",
+		ImageTag: imageName,
 		GoCmd:    "go",
 		Arch:     "amd64",
 	}

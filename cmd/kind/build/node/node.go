@@ -24,8 +24,10 @@ import (
 )
 
 type flags struct {
-	Source    string
-	BuildType string
+	Source        string
+	BuildType     string
+	ImageName     string
+	BaseImageName string
 }
 
 // NewCommand returns a new cobra.Command for building the node image
@@ -41,12 +43,14 @@ func NewCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&flags.BuildType, "type", "docker", "build type, one of [bazel, docker, apt]")
+	cmd.Flags().StringVar(&flags.ImageName, "image", "kind-node", "name of the resulting image to be built")
+	cmd.Flags().StringVar(&flags.BaseImageName, "base-image", "kind-base", "name of the base image to use for the build")
 	return cmd
 }
 
 func run(flags *flags, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
-	ctx, err := build.NewNodeImageBuildContext(flags.BuildType)
+	ctx, err := build.NewNodeImageBuildContext(flags.BuildType, flags.ImageName, flags.BaseImageName)
 	if err != nil {
 		log.Fatalf("Error creating build context: %v", err)
 	}

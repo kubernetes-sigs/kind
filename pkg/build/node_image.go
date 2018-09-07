@@ -41,7 +41,7 @@ type NodeImageBuildContext struct {
 
 // NewNodeImageBuildContext creates a new NodeImageBuildContext with
 // default configuration
-func NewNodeImageBuildContext(mode string) (ctx *NodeImageBuildContext, err error) {
+func NewNodeImageBuildContext(mode, imageName, baseImageName string) (ctx *NodeImageBuildContext, err error) {
 	kubeRoot := ""
 	// apt should not fail on finding kube root as it does not use it
 	if mode != "apt" {
@@ -55,9 +55,9 @@ func NewNodeImageBuildContext(mode string) (ctx *NodeImageBuildContext, err erro
 		return nil, err
 	}
 	return &NodeImageBuildContext{
-		ImageTag:  "kind-node",
+		ImageTag:  imageName,
 		Arch:      "amd64",
-		BaseImage: "kind-base",
+		BaseImage: baseImageName,
 		KubeRoot:  kubeRoot,
 		Bits:      bits,
 	}, nil
