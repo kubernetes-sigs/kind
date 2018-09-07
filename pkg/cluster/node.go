@@ -225,6 +225,7 @@ func (nh *nodeHandle) WriteKubeConfig(dest string) error {
 	}
 
 	// create the directory to contain the KUBECONFIG file.
+	// 0755 is taken from client-go's config handling logic: https://github.com/kubernetes/client-go/blob/5d107d4ebc00ee0ea606ad7e39fd6ce4b0d9bf9e/tools/clientcmd/loader.go#L412
 	err = os.MkdirAll(filepath.Dir(dest), 0755)
 	if err != nil {
 		return errors.Wrap(err, "failed to create kubeconfig output directory")
