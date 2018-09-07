@@ -4,7 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = ["main.go"],
     importpath = "k8s.io/test-infra/kind",
-    visibility = ["//visibility:private"],
+    visibility = ["//visibility:public"],
     deps = ["//kind/cmd/kind:go_default_library"],
 )
 
