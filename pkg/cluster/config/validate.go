@@ -22,6 +22,9 @@ import "fmt"
 // with the config, or nil if there are none
 func (c *Config) Validate() error {
 	errs := []error{}
+	if c.Image == "" {
+		errs = append(errs, fmt.Errorf("image is a required field"))
+	}
 	// TODO(bentheelder): support multiple nodes
 	if c.NumNodes != 1 {
 		errs = append(errs, fmt.Errorf(
