@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -220,6 +222,12 @@ func (nh *nodeHandle) WriteKubeConfig(dest string) error {
 		}
 		buff.WriteString(line)
 		buff.WriteString("\n")
+	}
+
+	// create the directory to contain the KUBECONFIG file.
+	err = os.MkdirAll(filepath.Dir(dest), 0755)
+	if err != nil {
+		return errors.Wrap(err, "failed to create kubeconfig output directory")
 	}
 
 	return ioutil.WriteFile(dest, buff.Bytes(), 0600)
