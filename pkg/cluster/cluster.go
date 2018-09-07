@@ -140,7 +140,7 @@ func (c *Context) provisionControlPlane(
 	config *config.Config,
 ) (kubeadmConfigPath string, err error) {
 	// create the "node" container (docker run, but it is paused, see createNode)
-	node, err := createNode(nodeName, c.ClusterLabel())
+	node, err := createNode(nodeName, config.Image, c.ClusterLabel())
 	if err != nil {
 		return "", err
 	}

@@ -23,6 +23,8 @@ package config
 // This is the current internal config type used by cluster
 // Other API versions can be converted to this struct with Convert()
 type Config struct {
+	// Image is the node image to use when running the cluster
+	Image string `json:"image,omitempty"`
 	// NumNodes is the number of nodes to create (currently only one is supported)
 	NumNodes int `json:"numNodes,omitempty"`
 	// KubeadmConfigTemplate allows overriding the default template in

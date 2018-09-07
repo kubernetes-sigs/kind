@@ -40,7 +40,7 @@ type nodeHandle struct {
 // createNode `docker run`s the node image, note that due to
 // images/node/entrypoint being the entrypoint, this container will
 // effectively be paused until we call actuallyStartNode(...)
-func createNode(name, clusterLabel string) (handle *nodeHandle, err error) {
+func createNode(name, image, clusterLabel string) (handle *nodeHandle, err error) {
 	cmd := exec.Command("docker", "run")
 	cmd.Args = append(cmd.Args,
 		"-d", // run the container detached
@@ -64,7 +64,7 @@ func createNode(name, clusterLabel string) (handle *nodeHandle, err error) {
 		"--expose", "6443", // expose API server port
 		// pick a random ephemeral port to forward to the API server
 		"--publish-all",
-		"kind-node", // use our image, TODO: make this configurable
+		image,
 	)
 	cmd.Debug = true
 	err = cmd.Run()
