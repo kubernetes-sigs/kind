@@ -51,7 +51,7 @@ func Main() {
 	// particularly useful, they're relative to the command start
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:   true,
-		TimestampFormat: "15:04:05-0700",
+		TimestampFormat: "0102-15:04:05",
 	})
 	if err := Run(); err != nil {
 		log.Fatal(err)
