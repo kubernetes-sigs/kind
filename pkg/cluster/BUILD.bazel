@@ -7,7 +7,7 @@ go_library(
         "doc.go",
         "node.go",
     ],
-    importpath = "k8s.io/test-infra/kind/pkg/cluster",
+    importpath = "sigs.k8s.io/kind/pkg/cluster",
     visibility = ["//visibility:public"],
     deps = [
         "//kind/pkg/cluster/config:go_default_library",

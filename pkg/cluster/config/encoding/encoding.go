@@ -25,7 +25,7 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	"k8s.io/test-infra/kind/pkg/cluster/config"
+	"sigs.k8s.io/kind/pkg/cluster/config"
 )
 
 // Load reads the file at path and attempts to load it as a yaml Config

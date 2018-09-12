@@ -18,7 +18,7 @@ For more details see [the design documentation][design doc].
 
 ## Building
 
-You can install `kind` with `go install k8s.io/test-infra/kind`.
+You can install `kind` with `go install sigs.k8s.io/kind`.
 
 ## Usage
 

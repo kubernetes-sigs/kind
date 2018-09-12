@@ -25,7 +25,7 @@ go_library(
         "generate.go",
         "images_sources.go",
     ],
-    importpath = "k8s.io/test-infra/kind/pkg/build/sources",
+    importpath = "sigs.k8s.io/kind/pkg/build/sources",
     visibility = ["//visibility:public"],
 )
 

@@ -8,7 +8,7 @@ go_library(
         "files.go",
         "node_image.go",
     ],
-    importpath = "k8s.io/test-infra/kind/pkg/build",
+    importpath = "sigs.k8s.io/kind/pkg/build",
     visibility = ["//visibility:public"],
     deps = [
         "//kind/pkg/build/kube:go_default_library",

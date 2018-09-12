@@ -11,7 +11,7 @@ go_library(
         "source.go",
         "version.go",
     ],
-    importpath = "k8s.io/test-infra/kind/pkg/build/kube",
+    importpath = "sigs.k8s.io/kind/pkg/build/kube",
     visibility = ["//visibility:public"],
     deps = [
         "//kind/pkg/exec:go_default_library",

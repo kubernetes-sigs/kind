@@ -21,9 +21,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/test-infra/kind/pkg/cluster"
-	"k8s.io/test-infra/kind/pkg/cluster/config"
-	"k8s.io/test-infra/kind/pkg/cluster/config/encoding"
+	"sigs.k8s.io/kind/pkg/cluster"
+	"sigs.k8s.io/kind/pkg/cluster/config"
+	"sigs.k8s.io/kind/pkg/cluster/config/encoding"
 )
 
 type flags struct {

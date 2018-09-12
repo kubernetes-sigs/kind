@@ -18,7 +18,7 @@ limitations under the License.
 package main
 
 import (
-	"k8s.io/test-infra/kind/cmd/kind"
+	"sigs.k8s.io/kind/cmd/kind"
 )
 
 func main() {

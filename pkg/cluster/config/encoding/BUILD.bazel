@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = ["encoding.go"],
-    importpath = "k8s.io/test-infra/kind/pkg/cluster/config/encoding",
+    importpath = "sigs.k8s.io/kind/pkg/cluster/config/encoding",
     visibility = ["//visibility:public"],
     deps = [
         "//kind/pkg/cluster/config:go_default_library",
