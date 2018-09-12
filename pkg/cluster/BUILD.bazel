@@ -1,0 +1,43 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "cluster.go",
+        "doc.go",
+        "node.go",
+    ],
+    importpath = "k8s.io/test-infra/kind/pkg/cluster",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//kind/pkg/cluster/config:go_default_library",
+        "//kind/pkg/cluster/kubeadm:go_default_library",
+        "//kind/pkg/exec:go_default_library",
+        "//vendor/github.com/pkg/errors:go_default_library",
+        "//vendor/github.com/sirupsen/logrus:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//kind/pkg/cluster/config:all-srcs",
+        "//kind/pkg/cluster/kubeadm:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["cluster_test.go"],
+    embed = [":go_default_library"],
+)

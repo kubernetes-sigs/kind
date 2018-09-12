@@ -1,0 +1,38 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "base_image.go",
+        "doc.go",
+        "files.go",
+        "node_image.go",
+    ],
+    importpath = "k8s.io/test-infra/kind/pkg/build",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//kind/pkg/build/kube:go_default_library",
+        "//kind/pkg/build/sources:go_default_library",
+        "//kind/pkg/exec:go_default_library",
+        "//vendor/github.com/pkg/errors:go_default_library",
+        "//vendor/github.com/sirupsen/logrus:go_default_library",
+    ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//kind/pkg/build/kube:all-srcs",
+        "//kind/pkg/build/sources:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

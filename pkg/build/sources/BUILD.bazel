@@ -1,0 +1,44 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//kind/hack:bindata.bzl", "go_bindata")
+
+# IMPORTANT: if you make any cahnges here, you must also update hack/generate.sh
+go_bindata(
+    name = "bindata",
+    srcs = [
+        "//kind/images:all-srcs",
+    ],
+    outs = [
+        "images_sources.go",
+    ],
+    bindata_srcs = "./../../../images/...",
+    generate_directive_file = "generate.go",
+    ignores = ["(\.*README\.md)|(\.*BUILD\.bazel)"],
+    include_metadata = False,
+    mode = "0666",
+    pkg = "sources",
+    prefix = "./../../../",
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "generate.go",
+        "images_sources.go",
+    ],
+    importpath = "k8s.io/test-infra/kind/pkg/build/sources",
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)
