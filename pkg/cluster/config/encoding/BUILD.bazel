@@ -6,7 +6,7 @@ go_library(
     importpath = "sigs.k8s.io/kind/pkg/cluster/config/encoding",
     visibility = ["//visibility:public"],
     deps = [
-        "//kind/pkg/cluster/config:go_default_library",
+        "//pkg/cluster/config:go_default_library",
         "//vendor/github.com/ghodss/yaml:go_default_library",
     ],
 )
@@ -16,7 +16,7 @@ go_test(
     srcs = ["encoding_test.go"],
     data = glob(["testdata/**"]),
     embed = [":go_default_library"],
-    deps = ["//kind/pkg/cluster/config:go_default_library"],
+    deps = ["//pkg/cluster/config:go_default_library"],
 )
 
 filegroup(

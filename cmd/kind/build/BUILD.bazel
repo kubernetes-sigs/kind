@@ -6,8 +6,8 @@ go_library(
     importpath = "sigs.k8s.io/kind/cmd/kind/build",
     visibility = ["//visibility:public"],
     deps = [
-        "//kind/cmd/kind/build/base:go_default_library",
-        "//kind/cmd/kind/build/node:go_default_library",
+        "//cmd/kind/build/base:go_default_library",
+        "//cmd/kind/build/node:go_default_library",
         "//vendor/github.com/spf13/cobra:go_default_library",
     ],
 )
@@ -23,8 +23,8 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//kind/cmd/kind/build/base:all-srcs",
-        "//kind/cmd/kind/build/node:all-srcs",
+        "//cmd/kind/build/base:all-srcs",
+        "//cmd/kind/build/node:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

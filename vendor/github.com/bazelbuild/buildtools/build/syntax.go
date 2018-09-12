@@ -82,7 +82,6 @@ func (c *Comments) Comment() *Comments {
 // A File represents an entire BUILD file.
 type File struct {
 	Path string // file path, relative to workspace directory
-	Build bool
 	Comments
 	Stmt []Expr
 }
@@ -107,28 +106,18 @@ func (x *CommentBlock) Span() (start, end Position) {
 	return x.Start, x.Start
 }
 
-// An Ident represents an identifier.
-type Ident struct {
+// A PythonBlock represents a blob of Python code, typically a def or for loop.
+type PythonBlock struct {
 	Comments
-	NamePos Position
-	Name    string
+	Start Position
+	Token string // raw Python code, including final newline
 }
 
-func (x *Ident) Span() (start, end Position) {
-	return x.NamePos, x.NamePos.add(x.Name)
+func (x *PythonBlock) Span() (start, end Position) {
+	return x.Start, x.Start.add(x.Token)
 }
 
-func (x *Ident) asString() *StringExpr {
-	_, end := x.Span()
-	return &StringExpr{
-		Comments: x.Comments,
-		Start:    x.NamePos,
-		Value:    x.Name,
-		End:      end,
-	}
-}
-
-// A LiteralExpr represents a literal number.
+// A LiteralExpr represents a literal identifier or number.
 type LiteralExpr struct {
 	Comments
 	Start Position
@@ -199,32 +188,32 @@ func (x *DotExpr) Span() (start, end Position) {
 	return start, x.NamePos.add(x.Name)
 }
 
-// A Comprehension represents a list comprehension expression: [X for ... if ...].
-type Comprehension struct {
+// A ListForExpr represents a list comprehension expression: [X for ... if ...].
+type ListForExpr struct {
 	Comments
-	Curly          bool // curly braces (as opposed to square brackets)
-	Lbrack         Position
-	Body           Expr
-	Clauses        []Expr // = *ForClause | *IfClause
 	ForceMultiLine bool   // split expression across multiple lines
+	Brack          string // "", "()", or "[]"
+	Start          Position
+	X              Expr
+	For            []*ForClauseWithIfClausesOpt
 	End
 }
 
-func (x *Comprehension) Span() (start, end Position) {
-	return x.Lbrack, x.End.Pos.add("]")
+func (x *ListForExpr) Span() (start, end Position) {
+	return x.Start, x.End.Pos.add("]")
 }
 
 // A ForClause represents a for clause in a list comprehension: for Var in Expr.
 type ForClause struct {
 	Comments
 	For  Position
-	Vars Expr
+	Var  []Expr
 	In   Position
-	X    Expr
+	Expr Expr
 }
 
 func (x *ForClause) Span() (start, end Position) {
-	_, end = x.X.Span()
+	_, end = x.Expr.Span()
 	return x.For, end
 }
 
@@ -238,6 +227,23 @@ type IfClause struct {
 func (x *IfClause) Span() (start, end Position) {
 	_, end = x.Cond.Span()
 	return x.If, end
+}
+
+// A ForClauseWithIfClausesOpt represents a for clause in a list comprehension followed by optional
+// if expressions: for ... in ... [if ... if ...]
+type ForClauseWithIfClausesOpt struct {
+	Comments
+	For *ForClause
+	Ifs []*IfClause
+}
+
+func (x *ForClauseWithIfClausesOpt) Span() (start, end Position) {
+	start, end = x.For.Span()
+	if len(x.Ifs) > 0 {
+		_, end = x.Ifs[len(x.Ifs)-1].Span()
+	}
+
+	return start, end
 }
 
 // A KeyValueExpr represents a dictionary entry: Key: Value.
@@ -258,7 +264,8 @@ func (x *KeyValueExpr) Span() (start, end Position) {
 type DictExpr struct {
 	Comments
 	Start Position
-	List  []Expr // all *KeyValueExprs
+	List  []Expr   // all *KeyValueExprs
+	Comma Position // position of trailing comma, if any
 	End
 	ForceMultiLine bool // force multiline form when printing
 }
@@ -272,6 +279,7 @@ type ListExpr struct {
 	Comments
 	Start Position
 	List  []Expr
+	Comma Position // position of trailing comma, if any
 	End
 	ForceMultiLine bool // force multiline form when printing
 }
@@ -285,6 +293,7 @@ type SetExpr struct {
 	Comments
 	Start Position
 	List  []Expr
+	Comma Position // position of trailing comma, if any
 	End
 	ForceMultiLine bool // force multiline form when printing
 }
@@ -296,21 +305,16 @@ func (x *SetExpr) Span() (start, end Position) {
 // A TupleExpr represents a tuple literal: (List)
 type TupleExpr struct {
 	Comments
-	NoBrackets bool // true if a tuple has no brackets, e.g. `a, b = x`
-	Start      Position
-	List       []Expr
+	Start Position
+	List  []Expr
+	Comma Position // position of trailing comma, if any
 	End
 	ForceCompact   bool // force compact (non-multiline) form when printing
 	ForceMultiLine bool // force multiline form when printing
 }
 
 func (x *TupleExpr) Span() (start, end Position) {
-	if !x.NoBrackets {
-		return x.Start, x.End.Pos.add(")")
-	}
-	start, _ = x.List[0].Span()
-	_, end = x.List[len(x.List)-1].Span()
-	return start, end
+	return x.Start, x.End.Pos.add(")")
 }
 
 // A UnaryExpr represents a unary expression: Op X.
@@ -387,27 +391,18 @@ func (x *IndexExpr) Span() (start, end Position) {
 	return start, x.End
 }
 
-// A Function represents the common parts of LambdaExpr and DefStmt
-type Function struct {
-	Comments
-	StartPos Position // position of DEF or LAMBDA token
-	Params   []Expr
-	Body     []Expr
-}
-
-func (x *Function) Span() (start, end Position) {
-	_, end = x.Body[len(x.Body)-1].Span()
-	return x.StartPos, end
-}
-
 // A LambdaExpr represents a lambda expression: lambda Var: Expr.
 type LambdaExpr struct {
 	Comments
-	Function
+	Lambda Position
+	Var    []Expr
+	Colon  Position
+	Expr   Expr
 }
 
 func (x *LambdaExpr) Span() (start, end Position) {
-	return x.Function.Span()
+	_, end = x.Expr.Span()
+	return x.Lambda, end
 }
 
 // ConditionalExpr represents the conditional: X if TEST else ELSE.
@@ -428,87 +423,73 @@ func (x *ConditionalExpr) Span() (start, end Position) {
 	return start, end
 }
 
-// A LoadStmt loads another module and binds names from it:
-// load(Module, "x", y="foo").
-//
-// The AST is slightly unfaithful to the concrete syntax here because
-// Skylark's load statement, so that it can be implemented in Python,
-// binds some names (like y above) with an identifier and some (like x)
-// without.  For consistency we create fake identifiers for all the
-// strings.
-type LoadStmt struct {
-	Comments
-	Load         Position
-	Module       *StringExpr
-	From         []*Ident // name defined in loading module
-	To           []*Ident // name in loaded module
-	Rparen       End
-	ForceCompact bool // force compact (non-multiline) form when printing
+// A CodeBlock represents an indented code block.
+type CodeBlock struct {
+	Statements []Expr
+	Start      Position
+	End
 }
 
-func (x *LoadStmt) Span() (start, end Position) {
-	return x.Load, x.Rparen.Pos
+func (x *CodeBlock) Span() (start, end Position) {
+	return x.Start, x.End.Pos
 }
 
-// A DefStmt represents a function definition expression: def foo(List):.
-type DefStmt struct {
+// A FuncDef represents a function definition expression: def foo(List):.
+type FuncDef struct {
 	Comments
-	Function
+	Start          Position // position of def
 	Name           string
-	ForceCompact   bool // force compact (non-multiline) form when printing the arguments
-	ForceMultiLine bool // force multiline form when printing the arguments
+	ListStart      Position // position of (
+	Args           []Expr
+	Body           CodeBlock
+	End                 // position of the end
+	ForceCompact   bool // force compact (non-multiline) form when printing
+	ForceMultiLine bool // force multiline form when printing
 }
 
-func (x *DefStmt) Span() (start, end Position) {
-	return x.Function.Span()
+func (x *FuncDef) Span() (start, end Position) {
+	return x.Start, x.End.Pos
 }
 
-// A ReturnStmt represents a return statement: return f(x).
-type ReturnStmt struct {
+// A ReturnExpr represents a return statement: return f(x).
+type ReturnExpr struct {
 	Comments
-	Return Position
-	Result Expr // may be nil
+	Start Position
+	X     Expr
+	End   Position
 }
 
-func (x *ReturnStmt) Span() (start, end Position) {
-	if x.Result == nil {
-		return x.Return, x.Return.add("return")
-	}
-	_, end = x.Result.Span()
-	return x.Return, end
+func (x *ReturnExpr) Span() (start, end Position) {
+	return x.Start, x.End
 }
 
-// A ForStmt represents a for loop block: for x in range(10):.
-type ForStmt struct {
+// A ForLoop represents a for loop block: for x in range(10):.
+type ForLoop struct {
 	Comments
-	Function
-	For  Position // position of for
-	Vars Expr
-	X    Expr
-	Body []Expr
+	Start    Position // position of for
+	LoopVars []Expr
+	Iterable Expr
+	Body     CodeBlock
+	End      // position of the end
 }
 
-func (x *ForStmt) Span() (start, end Position) {
-	_, end = x.Body[len(x.Body)-1].Span()
-	return x.For, end
+func (x *ForLoop) Span() (start, end Position) {
+	return x.Start, x.End.Pos
 }
 
-// An IfStmt represents an if-else block: if x: ... else: ... .
-// `elif`s are treated as a chain of `IfStmt`s.
-type IfStmt struct {
+// An IfElse represents an if-else blocks sequence: if x: ... elif y: ... else: ... .
+type IfElse struct {
 	Comments
-	If      Position // position of if
-	Cond    Expr
-	True    []Expr
-	ElsePos End    // position of else or elif
-	False   []Expr // optional
+	Start      Position // position of if
+	Conditions []Condition
+	End        // position of the end
 }
 
-func (x *IfStmt) Span() (start, end Position) {
-	body := x.False
-	if body == nil {
-		body = x.True
-	}
-	_, end = body[len(body)-1].Span()
-	return x.If, end
+type Condition struct {
+	If   Expr
+	Then CodeBlock
+}
+
+func (x *IfElse) Span() (start, end Position) {
+	return x.Start, x.End.Pos
 }

@@ -6,7 +6,7 @@ go_library(
     importpath = "sigs.k8s.io/kind/cmd/kind/build/base",
     visibility = ["//visibility:public"],
     deps = [
-        "//kind/pkg/build:go_default_library",
+        "//pkg/build:go_default_library",
         "//vendor/github.com/sirupsen/logrus:go_default_library",
         "//vendor/github.com/spf13/cobra:go_default_library",
     ],

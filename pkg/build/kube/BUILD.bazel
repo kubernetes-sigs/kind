@@ -14,7 +14,7 @@ go_library(
     importpath = "sigs.k8s.io/kind/pkg/build/kube",
     visibility = ["//visibility:public"],
     deps = [
-        "//kind/pkg/exec:go_default_library",
+        "//pkg/exec:go_default_library",
         "//vendor/github.com/pkg/errors:go_default_library",
         "//vendor/github.com/sirupsen/logrus:go_default_library",
     ],

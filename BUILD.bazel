@@ -1,3 +1,4 @@
+# gazelle:prefix sigs.k8s.io/kind
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 go_library(
@@ -5,7 +6,7 @@ go_library(
     srcs = ["main.go"],
     importpath = "sigs.k8s.io/kind",
     visibility = ["//visibility:public"],
-    deps = ["//kind/cmd/kind:go_default_library"],
+    deps = ["//cmd/kind:go_default_library"],
 )
 
 go_binary(
@@ -16,7 +17,7 @@ go_binary(
 
 filegroup(
     name = "package-srcs",
-    srcs = glob(["**"]),
+    srcs = glob(["**"], exclude=["bazel-*/**", ".git/**"]),
     tags = ["automanaged"],
     visibility = ["//visibility:private"],
 )
@@ -25,12 +26,13 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//kind/cmd/kind:all-srcs",
-        "//kind/hack:all-srcs",
-        "//kind/images:all-srcs",
-        "//kind/pkg/build:all-srcs",
-        "//kind/pkg/cluster:all-srcs",
-        "//kind/pkg/exec:all-srcs",
+        "//cmd/kind:all-srcs",
+        "//hack:all-srcs",
+        "//images:all-srcs",
+        "//pkg/build:all-srcs",
+        "//pkg/cluster:all-srcs",
+        "//pkg/exec:all-srcs",
+        "//vendor:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

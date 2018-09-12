@@ -10,9 +10,9 @@ go_library(
     importpath = "sigs.k8s.io/kind/pkg/cluster",
     visibility = ["//visibility:public"],
     deps = [
-        "//kind/pkg/cluster/config:go_default_library",
-        "//kind/pkg/cluster/kubeadm:go_default_library",
-        "//kind/pkg/exec:go_default_library",
+        "//pkg/cluster/config:go_default_library",
+        "//pkg/cluster/kubeadm:go_default_library",
+        "//pkg/exec:go_default_library",
         "//vendor/github.com/pkg/errors:go_default_library",
         "//vendor/github.com/sirupsen/logrus:go_default_library",
     ],
@@ -29,8 +29,8 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//kind/pkg/cluster/config:all-srcs",
-        "//kind/pkg/cluster/kubeadm:all-srcs",
+        "//pkg/cluster/config:all-srcs",
+        "//pkg/cluster/kubeadm:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

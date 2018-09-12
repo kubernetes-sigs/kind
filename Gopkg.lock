@@ -22,15 +22,14 @@
   version = "0.11.0"
 
 [[projects]]
-  digest = "1:605c81785dc6d6abd385bb2bfe4df8195d916199d7f7c08e2ea802eb8540fd1d"
+  digest = "1:03679414789b10f815a33667d29e3c77e57c8096bd32457fd1682a4222f25806"
   name = "github.com/bazelbuild/buildtools"
   packages = [
     "build",
     "tables",
   ]
   pruneopts = "NUT"
-  revision = "4a7914a1466ff7388c934bfcd43a3852928536f6"
-  version = "0.15.0"
+  revision = "80c7f0d45d7e40fa1f7362852697d4a03df557b3"
 
 [[projects]]
   digest = "1:81466b4218bf6adddac2572a30ac733a9255919bc2f470b4827a317bd4ee1756"
@@ -39,6 +38,14 @@
   pruneopts = "NUT"
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
   version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:e2b86e41f3d669fc36b50d31d32d22c8ac656c75aa5ea89717ce7177e134ff2a"
+  name = "github.com/golang/glog"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
 
 [[projects]]
   digest = "1:406338ad39ab2e37b7f4452906442a3dbf0eb3379dd1f06aafb5c07e769a5fbb"
@@ -57,6 +64,14 @@
   ]
   pruneopts = "NUT"
   revision = "6025e8de665b31fa74ab1a66f2cddd8c0abf887e"
+
+[[projects]]
+  branch = "master"
+  digest = "1:f60b33d29fc000402656efc11c760f3881d5360a28a47021649f32e770e4b064"
+  name = "github.com/kubernetes/repo-infra"
+  packages = ["kazel"]
+  pruneopts = "NUT"
+  revision = "84d52408a061e87d45aebf5a0867246bdf66d180"
 
 [[projects]]
   digest = "1:51ea800cff51752ff68e12e04106f5887b4daec6f9356721238c28019f0b42db"
@@ -140,6 +155,7 @@
     "github.com/bazelbuild/bazel-gazelle/cmd/gazelle",
     "github.com/ghodss/yaml",
     "github.com/jteeuwen/go-bindata/go-bindata",
+    "github.com/kubernetes/repo-infra/kazel",
     "github.com/pkg/errors",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",

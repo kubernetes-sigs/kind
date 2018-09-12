@@ -6,9 +6,9 @@ go_library(
     importpath = "sigs.k8s.io/kind/cmd/kind/create",
     visibility = ["//visibility:public"],
     deps = [
-        "//kind/pkg/cluster:go_default_library",
-        "//kind/pkg/cluster/config:go_default_library",
-        "//kind/pkg/cluster/config/encoding:go_default_library",
+        "//pkg/cluster:go_default_library",
+        "//pkg/cluster/config:go_default_library",
+        "//pkg/cluster/config/encoding:go_default_library",
         "//vendor/github.com/sirupsen/logrus:go_default_library",
         "//vendor/github.com/spf13/cobra:go_default_library",
     ],
