@@ -1,0 +1,11 @@
+# See the OWNERS docs: https://git.k8s.io/community/contributors/guide/owners.md
+
+reviewers:
+  - amwat
+  - BenTheElder
+  - krzyzacy
+  - munnerz
+approvers:
+  - BenTheElder
+  - munnerz
+  - steering-committee
