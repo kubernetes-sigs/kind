@@ -20,7 +20,7 @@ import (
 	"reflect"
 	"testing"
 
-	"k8s.io/test-infra/kind/pkg/cluster/config"
+	"sigs.k8s.io/kind/pkg/cluster/config"
 )
 
 // TODO(bentheelder): once we have multiple config API versions we

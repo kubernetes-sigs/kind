@@ -1,0 +1,43 @@
+# dev-time dependencies
+# ensure they aren't pruned
+required = [
+  "github.com/bazelbuild/bazel-gazelle/cmd/gazelle",
+  "github.com/jteeuwen/go-bindata/go-bindata",
+]
+
+# prune out unused content from vendor
+[prune]
+  go-tests = true
+  non-go = true
+  unused-packages = true
+
+# overrides for dev-time dependencies 
+
+[[override]]
+  name = "github.com/jteeuwen/go-bindata"
+  # latest, unlikely to change as go-bindata is no longer maintained
+  revision = "6025e8de665b31fa74ab1a66f2cddd8c0abf887e"
+
+[[override]]
+  name = "github.com/bazelbuild/bazel-gazelle"
+  version = "0.11.0"
+
+
+# normal constraints below
+
+[[constraint]]
+  name = "github.com/ghodss/yaml"
+  version = "1.0.0"
+
+[[constraint]]
+  name = "github.com/pkg/errors"
+  version = "0.8.0"
+
+[[constraint]]
+  name = "github.com/sirupsen/logrus"
+  version = "1.0.6"
+
+[[constraint]]
+  name = "github.com/spf13/cobra"
+  version = "0.0.3"
+

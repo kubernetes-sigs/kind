@@ -27,9 +27,9 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"k8s.io/test-infra/kind/pkg/cluster/config"
-	"k8s.io/test-infra/kind/pkg/cluster/kubeadm"
-	"k8s.io/test-infra/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/cluster/config"
+	"sigs.k8s.io/kind/pkg/cluster/kubeadm"
+	"sigs.k8s.io/kind/pkg/exec"
 )
 
 // ClusterLabelKey is applied to each "node" docker container for identification

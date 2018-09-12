@@ -7,7 +7,7 @@ go_library(
         "const.go",
         "doc.go",
     ],
-    importpath = "k8s.io/test-infra/kind/pkg/cluster/kubeadm",
+    importpath = "sigs.k8s.io/kind/pkg/cluster/kubeadm",
     visibility = ["//visibility:public"],
     deps = ["//vendor/github.com/pkg/errors:go_default_library"],
 )

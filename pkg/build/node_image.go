@@ -25,8 +25,8 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"k8s.io/test-infra/kind/pkg/build/kube"
-	"k8s.io/test-infra/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/build/kube"
+	"sigs.k8s.io/kind/pkg/exec"
 )
 
 // NodeImageBuildContext is used to build the kind node image, and contains

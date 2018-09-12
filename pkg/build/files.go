@@ -23,7 +23,7 @@ import (
 	"runtime"
 	"strings"
 
-	"k8s.io/test-infra/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/exec"
 )
 
 // TempDir is like ioutil.TempDir, but more docker friendly

@@ -21,7 +21,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/test-infra/kind/pkg/cluster"
+	"sigs.k8s.io/kind/pkg/cluster"
 )
 
 type flags struct {

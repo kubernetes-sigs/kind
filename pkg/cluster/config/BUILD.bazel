@@ -13,7 +13,7 @@ go_library(
         "validate.go",
         "version.go",
     ],
-    importpath = "k8s.io/test-infra/kind/pkg/cluster/config",
+    importpath = "sigs.k8s.io/kind/pkg/cluster/config",
     visibility = ["//visibility:public"],
 )
 

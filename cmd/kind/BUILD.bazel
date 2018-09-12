@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["kind.go"],
-    importpath = "k8s.io/test-infra/kind/cmd/kind",
+    importpath = "sigs.k8s.io/kind/cmd/kind",
     visibility = ["//visibility:public"],
     deps = [
         "//kind/cmd/kind/build:go_default_library",

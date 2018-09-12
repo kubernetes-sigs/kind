@@ -21,9 +21,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/test-infra/kind/cmd/kind/build"
-	"k8s.io/test-infra/kind/cmd/kind/create"
-	"k8s.io/test-infra/kind/cmd/kind/delete"
+	"sigs.k8s.io/kind/cmd/kind/build"
+	"sigs.k8s.io/kind/cmd/kind/create"
+	"sigs.k8s.io/kind/cmd/kind/delete"
 )
 
 // NewCommand returns a new cobra.Command implementing the root command for kind

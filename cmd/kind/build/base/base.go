@@ -20,7 +20,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"k8s.io/test-infra/kind/pkg/build"
+	"sigs.k8s.io/kind/pkg/build"
 )
 
 type flags struct {

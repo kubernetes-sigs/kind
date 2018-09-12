@@ -25,8 +25,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"k8s.io/test-infra/kind/pkg/build/sources"
-	"k8s.io/test-infra/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/build/sources"
+	"sigs.k8s.io/kind/pkg/exec"
 )
 
 // BaseImageBuildContext is used to build the kind node base image, and contains
