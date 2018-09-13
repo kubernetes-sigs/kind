@@ -19,8 +19,8 @@ distributed under the License is distributed on an "AS IS" BASIS,
 package build
 
 import (
-	"path/filepath"
 	"strings"
+	"path/filepath"
 )
 
 // A Rule represents a single BUILD rule.
@@ -43,26 +43,15 @@ func (f *File) Rules(kind string) []*Rule {
 	var all []*Rule
 
 	for _, stmt := range f.Stmt {
-		Walk(stmt, func(x Expr, stk []Expr) {
-			call, ok := x.(*CallExpr)
-			if !ok {
-				return
-			}
-
-			// Skip nested calls.
-			for _, frame := range stk {
-				if _, ok := frame.(*CallExpr); ok {
-					return
-				}
-			}
-
-			// Check if the rule kind is correct.
-			rule := f.Rule(call)
-			if kind != "" && rule.Kind() != kind {
-				return
-			}
-			all = append(all, rule)
-		})
+		call, ok := stmt.(*CallExpr)
+		if !ok {
+			continue
+		}
+		rule := f.Rule(call)
+		if kind != "" && rule.Kind() != kind {
+			continue
+		}
+		all = append(all, rule)
 	}
 
 	return all
@@ -156,11 +145,11 @@ func (r *Rule) Kind() string {
 		names = append(names, x.Name)
 		expr = x.X
 	}
-	x, ok := expr.(*Ident)
+	x, ok := expr.(*LiteralExpr)
 	if !ok {
 		return ""
 	}
-	names = append(names, x.Name)
+	names = append(names, x.Token)
 	// Reverse the elements since the deepest expression contains the leading literal
 	for l, r := 0, len(names)-1; l < r; l, r = l+1, r-1 {
 		names[l], names[r] = names[r], names[l]
@@ -172,7 +161,7 @@ func (r *Rule) Kind() string {
 func (r *Rule) SetKind(kind string) {
 	names := strings.Split(kind, ".")
 	var expr Expr
-	expr = &Ident{Name: names[0]}
+	expr = &LiteralExpr{Token: names[0]}
 	for _, name := range names[1:] {
 		expr = &DotExpr{X: expr, Name: name}
 	}
@@ -194,8 +183,8 @@ func (r *Rule) AttrKeys() []string {
 	var keys []string
 	for _, expr := range r.Call.List {
 		if binExpr, ok := expr.(*BinaryExpr); ok && binExpr.Op == "=" {
-			if keyExpr, ok := binExpr.X.(*Ident); ok {
-				keys = append(keys, keyExpr.Name)
+			if keyExpr, ok := binExpr.X.(*LiteralExpr); ok {
+				keys = append(keys, keyExpr.Token)
 			}
 		}
 	}
@@ -211,8 +200,8 @@ func (r *Rule) AttrDefn(key string) *BinaryExpr {
 		if !ok || as.Op != "=" {
 			continue
 		}
-		k, ok := as.X.(*Ident)
-		if !ok || k.Name != key {
+		k, ok := as.X.(*LiteralExpr)
+		if !ok || k.Token != key {
 			continue
 		}
 		return as
@@ -240,8 +229,8 @@ func (r *Rule) DelAttr(key string) Expr {
 		if !ok || as.Op != "=" {
 			continue
 		}
-		k, ok := as.X.(*Ident)
-		if !ok || k.Name != key {
+		k, ok := as.X.(*LiteralExpr)
+		if !ok || k.Token != key {
 			continue
 		}
 		copy(list[i:], list[i+1:])
@@ -263,7 +252,7 @@ func (r *Rule) SetAttr(key string, val Expr) {
 
 	r.Call.List = append(r.Call.List,
 		&BinaryExpr{
-			X:  &Ident{Name: key},
+			X:  &LiteralExpr{Token: key},
 			Op: "=",
 			Y:  val,
 		},
@@ -276,14 +265,11 @@ func (r *Rule) SetAttr(key string, val Expr) {
 // If the rule has no such attribute or the attribute is not an identifier or number,
 // AttrLiteral returns "".
 func (r *Rule) AttrLiteral(key string) string {
-	value := r.Attr(key)
-	if ident, ok := value.(*Ident); ok {
-		return ident.Name
+	lit, ok := r.Attr(key).(*LiteralExpr)
+	if !ok {
+		return ""
 	}
-	if literal, ok := value.(*LiteralExpr); ok {
-		return literal.Token
-	}
-	return ""
+	return lit.Token
 }
 
 // AttrString returns the value of the rule's attribute

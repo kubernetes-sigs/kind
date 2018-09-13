@@ -37,7 +37,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//kind/pkg/cluster/config/encoding:all-srcs",
+        "//pkg/cluster/config/encoding:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

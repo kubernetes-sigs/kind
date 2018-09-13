@@ -3,6 +3,7 @@
 required = [
   "github.com/bazelbuild/bazel-gazelle/cmd/gazelle",
   "github.com/jteeuwen/go-bindata/go-bindata",
+  "github.com/kubernetes/repo-infra/kazel",
 ]
 
 # prune out unused content from vendor

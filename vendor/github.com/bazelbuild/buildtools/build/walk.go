@@ -30,7 +30,7 @@ func Walk(v Expr, f func(x Expr, stk []Expr)) {
 	})
 }
 
-// Edit walks the expression tree v, calling f on all subexpressions
+// WalkAndUpdate walks the expression tree v, calling f on all subexpressions
 // in a preorder traversal. If f returns a non-nil value, the tree is mutated.
 // The new value replaces the old one.
 //
@@ -42,7 +42,12 @@ func Edit(v Expr, f func(x Expr, stk []Expr) Expr) Expr {
 	return walk1(&v, &stack, f)
 }
 
-// walk1 is a helper function for Walk, WalkWithPostfix, and Edit.
+// walk1 is the actual implementation of Walk and WalkAndUpdate.
+// It has the same signature and meaning as Walk,
+// except that it maintains in *stack the current stack
+// of nodes. Using a pointer to a slice here ensures that
+// as the stack grows and shrinks the storage can be
+// reused for the next growth.
 func walk1(v *Expr, stack *[]Expr, f func(x Expr, stk []Expr) Expr) Expr {
 	if v == nil {
 		return nil
@@ -52,114 +57,79 @@ func walk1(v *Expr, stack *[]Expr, f func(x Expr, stk []Expr) Expr) Expr {
 		*v = res
 	}
 	*stack = append(*stack, *v)
-
-	WalkOnce(*v, func(x *Expr) {
-		walk1(x, stack, f)
-	})
-
-	*stack = (*stack)[:len(*stack)-1]
-	return *v
-}
-
-// WalkOnce calls f on every child of v.
-func WalkOnce(v Expr, f func(x *Expr)) {
-	switch v := v.(type) {
+	switch v := (*v).(type) {
 	case *File:
 		for _, stmt := range v.Stmt {
-			f(&stmt)
+			walk1(&stmt, stack, f)
 		}
 	case *DotExpr:
-		f(&v.X)
+		walk1(&v.X, stack, f)
 	case *IndexExpr:
-		f(&v.X)
-		f(&v.Y)
+		walk1(&v.X, stack, f)
+		walk1(&v.Y, stack, f)
 	case *KeyValueExpr:
-		f(&v.Key)
-		f(&v.Value)
+		walk1(&v.Key, stack, f)
+		walk1(&v.Value, stack, f)
 	case *SliceExpr:
-		f(&v.X)
+		walk1(&v.X, stack, f)
 		if v.From != nil {
-			f(&v.From)
+			walk1(&v.From, stack, f)
 		}
 		if v.To != nil {
-			f(&v.To)
+			walk1(&v.To, stack, f)
 		}
 		if v.Step != nil {
-			f(&v.Step)
+			walk1(&v.Step, stack, f)
 		}
 	case *ParenExpr:
-		f(&v.X)
+		walk1(&v.X, stack, f)
 	case *UnaryExpr:
-		f(&v.X)
+		walk1(&v.X, stack, f)
 	case *BinaryExpr:
-		f(&v.X)
-		f(&v.Y)
+		walk1(&v.X, stack, f)
+		walk1(&v.Y, stack, f)
 	case *LambdaExpr:
-		for i := range v.Params {
-			f(&v.Params[i])
+		for i := range v.Var {
+			walk1(&v.Var[i], stack, f)
 		}
-		for i := range v.Body {
-			f(&v.Body[i])
-		}
+		walk1(&v.Expr, stack, f)
 	case *CallExpr:
-		f(&v.X)
+		walk1(&v.X, stack, f)
 		for i := range v.List {
-			f(&v.List[i])
+			walk1(&v.List[i], stack, f)
 		}
 	case *ListExpr:
 		for i := range v.List {
-			f(&v.List[i])
+			walk1(&v.List[i], stack, f)
 		}
 	case *SetExpr:
 		for i := range v.List {
-			f(&v.List[i])
+			walk1(&v.List[i], stack, f)
 		}
 	case *TupleExpr:
 		for i := range v.List {
-			f(&v.List[i])
+			walk1(&v.List[i], stack, f)
 		}
 	case *DictExpr:
 		for i := range v.List {
-			f(&v.List[i])
+			walk1(&v.List[i], stack, f)
 		}
-	case *Comprehension:
-		f(&v.Body)
-		for _, c := range v.Clauses {
-			f(&c)
+	case *ListForExpr:
+		walk1(&v.X, stack, f)
+		for _, c := range v.For {
+			for j := range c.For.Var {
+				walk1(&c.For.Var[j], stack, f)
+			}
+			walk1(&c.For.Expr, stack, f)
+			for _, i := range c.Ifs {
+				walk1(&i.Cond, stack, f)
+			}
 		}
-	case *IfClause:
-		f(&v.Cond)
-	case *ForClause:
-		f(&v.Vars)
-		f(&v.X)
 	case *ConditionalExpr:
-		f(&v.Then)
-		f(&v.Test)
-		f(&v.Else)
-	case *DefStmt:
-		for _, p := range v.Params {
-			f(&p)
-		}
-		for _, s := range v.Body {
-			f(&s)
-		}
-	case *IfStmt:
-		f(&v.Cond)
-		for _, s := range v.True {
-			f(&s)
-		}
-		for _, s := range v.False {
-			f(&s)
-		}
-	case *ForStmt:
-		f(&v.Vars)
-		f(&v.X)
-		for _, s := range v.Body {
-			f(&s)
-		}
-	case *ReturnStmt:
-		if v.Result != nil {
-			f(&v.Result)
-		}
+		walk1(&v.Then, stack, f)
+		walk1(&v.Test, stack, f)
+		walk1(&v.Else, stack, f)
 	}
+	*stack = (*stack)[:len(*stack)-1]
+	return *v
 }

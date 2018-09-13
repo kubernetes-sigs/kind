@@ -1,11 +1,11 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
-load("//kind/hack:bindata.bzl", "go_bindata")
+load("//hack:bindata.bzl", "go_bindata")
 
 # IMPORTANT: if you make any cahnges here, you must also update hack/generate.sh
 go_bindata(
     name = "bindata",
     srcs = [
-        "//kind/images:all-srcs",
+        "//images:all-srcs",
     ],
     outs = [
         "images_sources.go",

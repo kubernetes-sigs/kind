@@ -6,7 +6,7 @@ go_library(
     importpath = "sigs.k8s.io/kind/cmd/kind/delete",
     visibility = ["//visibility:public"],
     deps = [
-        "//kind/pkg/cluster:go_default_library",
+        "//pkg/cluster:go_default_library",
         "//vendor/github.com/sirupsen/logrus:go_default_library",
         "//vendor/github.com/spf13/cobra:go_default_library",
     ],
