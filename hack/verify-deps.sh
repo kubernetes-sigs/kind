@@ -21,16 +21,16 @@ set -o xtrace
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
-bazel build //kind/pkg/build/sources:bindata
+# run vendor update script
+hack/update-deps.sh
 
-BAZEL_GENERATED_BINDATA="bazel-genfiles/kind/pkg/build/sources/images_sources.go"
-GO_GENERATED_BINDATA="kind/pkg/build/sources/images_sources.go"
-
-DIFF="$(diff <(cat "${GO_GENERATED_BINDATA}") <(gofmt -s "${BAZEL_GENERATED_BINDATA}"))"
-if [ ! -z "$DIFF" ]; then
-  echo "${GO_GENERATED_BINDATA} does not match ${BAZEL_GENERATED_BINDATA}"
-  echo "please run and commit: kind/hack/generate.sh"
-  echo "if you have changed the generation, please ensure these remain identical" 
-  echo "see: hack/bindata.bzl, pkg/build/sources/BUILD.bazel, pkg/build/sources/generate.go"
+# make sure the tree is clean
+status="$(git status -s)"
+if [[ -n "${status}" ]]; then
+  echo "unexpectedly dirty working directory after hack/update-deps.sh"
+  echo "${status}"
+  echo ""
+  echo "please run and commit: hack/update-deps.sh"
   exit 1
 fi
+
