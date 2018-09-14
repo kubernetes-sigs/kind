@@ -18,7 +18,8 @@ set -o nounset
 set -o pipefail
 set -o xtrace
 
-TESTINFRA_ROOT=$(git rev-parse --show-toplevel)
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "${REPO_ROOT}"
 
 bazel build //kind/pkg/build/sources:bindata
 
@@ -30,5 +31,6 @@ if [ ! -z "$DIFF" ]; then
     echo "${GO_GENERATED_BINDATA} does not match ${BAZEL_GENERATED_BINDATA}"
     echo "please run kind/hack/generate.sh"
     echo "if you have changed the generation, please ensure these remain identical"
+    echo "see: hack/bindata.bzl, pkg/build/sources/BUILD.bazel, pkg/build/sources/generate.go"
     exit 1
 fi
