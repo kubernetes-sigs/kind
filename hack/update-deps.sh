@@ -26,17 +26,15 @@ set -o errexit
 set -o pipefail
 set -o xtrace
 
+# cd to the repo root
 REPO_ROOT=$(git rev-parse --show-toplevel)
-
-trap 'echo "FAILED" >&2' ERR
-
 cd "${REPO_ROOT}"
 
-# plase to stick temp binaries
-BIN_DIR="${REPO_ROOT}/_output/bin"
+# place to stick temp binaries
+BINDIR="${REPO_ROOT}/_output/bin"
 
 # obtain dep either from existing bazel build (in case of running in an sh_binary)
-# or install it from vendor into BIN_DIR
+# or install it from vendor into BINDIR
 get_dep() {
     # look for local bazel built dep first
     local dep
@@ -47,8 +45,8 @@ get_dep() {
         return 0
     fi
     # otherwise build dep from vendor and use that ...
-    GOBIN="${BIN_DIR}" go install ./vendor/github.com/golang/dep/cmd/dep
-    echo "${BIN_DIR}/dep"
+    GOBIN="${BINDIR}" go install ./vendor/github.com/golang/dep/cmd/dep
+    echo "${BINDIR}/dep"
 }
 
 # select dep binary to use

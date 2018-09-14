@@ -17,6 +17,11 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+# cd to the repo root
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "${REPO_ROOT}"
+
+# check for gofmt diffs
 diff=$(find . -name "*.go" | grep -v "\/vendor\/" | xargs gofmt -s -d 2>&1)
 if [[ -n "${diff}" ]]; then
   echo "${diff}"

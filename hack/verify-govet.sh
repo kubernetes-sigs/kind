@@ -19,4 +19,8 @@ set -o nounset
 set -o pipefail
 set -o verbose
 
+# cd to the repo root
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "${REPO_ROOT}"
+
 go vet ./...
