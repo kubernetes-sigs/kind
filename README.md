@@ -1,10 +1,15 @@
 <!--TODO(bentheelder): fill this in much more thoroughly-->
-# `kind` - **K**ubernetes **IN** **D**ocker
+# `kind` - `k`ubernetes `in` `d`ocker
 
-## WARNING: `kind` is still a work in progress! See [docs/todo.md][todo]
+<!--testgrid test status badge, prow build badge, and go report card-->
+<!--TODO(bentheelder): switch these jobs out once we've added more CI jobs-->
+<a href="https://k8s-testgrid.appspot.com/conformance-providerless#kind,%20master%20(dev)"><img src="https://k8s-testgrid.appspot.com/q/summary/conformance-providerless/kind,%20master%20(dev)/tests_status" /></a> <a href="https://prow.k8s.io/?job=ci-kubernetes-kind-conformance">
+<img alt="Build" src="https://prow.k8s.io/badge.svg?jobs=ci-kubernetes-kind-conformance">
+</a> <a href="https://goreportcard.com/report/sigs.k8s.io/kind"><img alt="Go Report Card" src="https://goreportcard.com/badge/sigs.k8s.io/kind" /></a>
 
-`kind` is a toolset for running local Kubernetes clusters using Docker container "nodes".
-`kind` is designed to be suitable for testing Kubernetes, initially targeting the conformance suite.
+
+`kind` is a tool for running local Kubernetes clusters using Docker container "nodes".  
+`kind` is primarily designed for testing Kubernetes 1.11+, initially targeting the [conformance tests].
 
 It consists of:
  - Go [packages][packages] implementing [cluster creation][cluster package], [image build][build package], etc.
@@ -12,43 +17,51 @@ It consists of:
  - Docker [image(s)][images] written to run systemd, Kubernetes, etc.
  - [`kubetest`][kubetest] integration also built on these packages (WIP)
 
-Kind bootstraps each "node" with [kubeadm][kubeadm].
+`kind` bootstraps each "node" with [kubeadm][kubeadm]. For more details see [the design documentation][design doc].  
 
-For more details see [the design documentation][design doc].
+**NOTE**: `kind` is still a work in progress, see [docs/todo.md].
 
-## Building
+## Installation and usage
 
-You can install `kind` with `go install sigs.k8s.io/kind`.
+You can install `kind` with `go get sigs.k8s.io/kind`
 
-## Usage
+To use `kind`, you will need to [install docker].  
+Once you have docker running you can create a cluster with `kind create`  
+To delete your cluster use `kind delete`
 
-`kind create` will create a cluster.
+<!--TODO(bentheelder): improve this part of the guide-->
+To create a cluster from Kubernetes source:
+- ensure that Kubernetes is cloned in `$(go env GOPATH)/src/k8s.io/kubernetes`
+- build a node image and create a cluster with `kind build node && kind create`  
 
-`kind delete` will delete a cluster.
-
-For more usage, run `kind --help` or `kind [command] --help`.
-
-## Advanced
-
-`kind build base` will build the base image.
-
-`kind build node` will build the node image.
+For more usage see [the docs] or run `kind [command] --help`
 
 ## Community, discussion, contribution, and support
 
-Learn how to engage with the Kubernetes community on the [community page](http://kubernetes.io/community/).
+Please reach out for bugs, feature requests, and other issues!  
+The maintainers of this project are reachable via:
 
-You can reach the maintainers of this project at:
+- [Kubernetes Slack] in the [#sig-testing] channel
+- [filing an issue] against this repo
+- The Kubernetes [SIG-Testing Mailing List]
 
-- [Slack](http://slack.k8s.io/)
-- [Mailing List](https://groups.google.com/forum/#!forum/kubernetes-dev)
+Current maintainers (approvers) are [@BenTheElder] and [@munnerz].
+
+Pull Requests are very welcome!  
+See the [issue tracker] if you're unsure where to start, or feel free to reach out to discuss.
+
+See also: the Kubernetes [community page].
 
 ### Code of conduct
 
-Participation in the Kubernetes community is governed by the [Kubernetes Code of Conduct](code-of-conduct.md).
+Participation in the Kubernetes community is governed by the [Kubernetes Code of Conduct].
 
 <!--links-->
-[owners]: https://git.k8s.io/community/contributors/guide/owners.md
+[community page]: http://kubernetes.io/community/
+[Kubernetes Code of Conduct]: code-of-conduct.md
+[Go Report Card Badge]: https://goreportcard.com/badge/sigs.k8s.io/kind
+[Go Report Card]: https://goreportcard.com/report/sigs.k8s.io/kind
+[conformance tests]: https://github.com/kubernetes/community/blob/master/contributors/devel/conformance-tests.md
 [todo]: ./docs/todo.md
 [packages]: ./pkg
 [cluster package]: ./pkg/cluster
@@ -58,3 +71,13 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [kubetest]: https://github.com/kubernetes/test-infra/tree/master/kubetest
 [kubeadm]: https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/
 [design doc]: ./docs/design.md
+[the docs]: ./docs
+[SIG-Testing Mailing List]: https://groups.google.com/forum/#!forum/kubernetes-sig-testing
+[issue tracker]: ./issues
+[filing an issue]: https://github.com/kubernetes-sigs/kind/issues/new
+[Kubernetes Slack]: http://slack.k8s.io/
+[#sig-testing]: https://kubernetes.slack.com/messages/C09QZ4DQB/
+[docs/todo.md]: ./docs/todo.md
+[install docker]: https://docs.docker.com/install/
+[@BenTheElder]: https://github.com/BenTheElder
+[@munnerz]: https://github.com/munnerz
