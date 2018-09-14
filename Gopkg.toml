@@ -22,7 +22,7 @@ required = [
 
 [[override]]
   name = "github.com/bazelbuild/bazel-gazelle"
-  version = "0.11.0"
+  version = "0.14.0"
 
 [[override]]
   name = "github.com/golang/dep"
