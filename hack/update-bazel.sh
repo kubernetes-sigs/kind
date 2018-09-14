@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright 2016 The Kubernetes Authors.
+# Copyright 2018 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ REPO_ROOT=$(git rev-parse --show-toplevel)
 
 
 # https://github.com/kubernetes/test-infra/issues/5699#issuecomment-348350792
-cd ${REPO_ROOT}
+cd "${REPO_ROOT}"
 TMP_GOPATH=$(mktemp -d)
 
 cleanup() {
