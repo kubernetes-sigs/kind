@@ -111,6 +111,14 @@
   revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
 
 [[projects]]
+  branch = "master"
+  digest = "1:4ee452f8994700dcab9e816aef1cb9eb2317218734c6ccf5135746e6c19f3dce"
+  name = "github.com/golang/lint"
+  packages = ["golint"]
+  pruneopts = "NUT"
+  revision = "06c8688daad7faa9da5a0c2f163a3d14aac986ca"
+
+[[projects]]
   digest = "1:97df918963298c287643883209a2c3f642e6593379f97ab400c2a2e219ab647d"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
@@ -218,6 +226,14 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:e560ae4a227f691fafb7989d7ca2d768c85db681f29f664f635e95a8c50dced4"
+  name = "golang.org/x/lint"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "06c8688daad7faa9da5a0c2f163a3d14aac986ca"
+
+[[projects]]
+  branch = "master"
   digest = "1:76ee51c3f468493aff39dbacc401e8831fbb765104cbf613b89bef01cf4bad70"
   name = "golang.org/x/net"
   packages = ["context"]
@@ -245,9 +261,15 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:4a3868eae7ea7a797d767f453a83f27a7f5b6234f1bf1b9149aab50237b3f1a5"
+  digest = "1:2c7feb35897066f58ae261bfed23e82fa8dba5bc8dfedfca0af8c1af2fcdecb5"
   name = "golang.org/x/tools"
-  packages = ["go/vcs"]
+  packages = [
+    "go/ast/astutil",
+    "go/gcexportdata",
+    "go/internal/gcimporter",
+    "go/types/typeutil",
+    "go/vcs",
+  ]
   pruneopts = "NUT"
   revision = "677d2ff680c188ddb7dcd2bfa6bc7d3f2f2f75b2"
 
@@ -266,6 +288,7 @@
     "github.com/bazelbuild/bazel-gazelle/cmd/gazelle",
     "github.com/ghodss/yaml",
     "github.com/golang/dep/cmd/dep",
+    "github.com/golang/lint/golint",
     "github.com/jteeuwen/go-bindata/go-bindata",
     "github.com/kubernetes/repo-infra/kazel",
     "github.com/pkg/errors",
