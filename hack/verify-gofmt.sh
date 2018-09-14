@@ -16,21 +16,11 @@
 set -o errexit
 set -o nounset
 set -o pipefail
-set -o xtrace
 
-REPO_ROOT=$(git rev-parse --show-toplevel)
-cd "${REPO_ROOT}"
-
-# run vendor update script
-hack/update-deps.sh
-
-# make sure the tree is clean
-status="$(git status -s)"
-if [[ -n "${status}" ]]; then
-  echo "unexpectedly dirty working directory after hack/update-deps.sh"
-  echo "${status}"
-  echo ""
-  echo "please run and commit: hack/update-deps.sh"
+diff=$(find . -name "*.go" | grep -v "\/vendor\/" | xargs gofmt -s -d 2>&1)
+if [[ -n "${diff}" ]]; then
+  echo "${diff}"
+  echo
+  echo "Please run hack/update-gofmt.sh"
   exit 1
 fi
-

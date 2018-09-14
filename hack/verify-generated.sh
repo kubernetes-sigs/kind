@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# script to verify generated files
 set -o errexit
 set -o nounset
 set -o pipefail
