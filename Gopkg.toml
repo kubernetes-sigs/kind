@@ -5,6 +5,7 @@ required = [
   "github.com/jteeuwen/go-bindata/go-bindata",
   "github.com/kubernetes/repo-infra/kazel",
   "github.com/golang/dep/cmd/dep",
+  "github.com/golang/lint/golint",
 ]
 
 # prune out unused content from vendor
