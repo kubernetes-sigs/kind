@@ -8,7 +8,7 @@ go_library(
         "paths.go",
         "types.go",
     ],
-    importmap = "vendor/github.com/jmank88/nuts",
+    importmap = "sigs.k8s.io/kind/vendor/github.com/jmank88/nuts",
     importpath = "github.com/jmank88/nuts",
     visibility = ["//visibility:public"],
     deps = ["//vendor/github.com/boltdb/bolt:go_default_library"],

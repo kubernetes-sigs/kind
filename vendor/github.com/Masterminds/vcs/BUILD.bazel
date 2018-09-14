@@ -12,7 +12,7 @@ go_library(
         "vcs_local_lookup.go",
         "vcs_remote_lookup.go",
     ],
-    importmap = "vendor/github.com/Masterminds/vcs",
+    importmap = "sigs.k8s.io/kind/vendor/github.com/Masterminds/vcs",
     importpath = "github.com/Masterminds/vcs",
     visibility = ["//visibility:public"],
 )

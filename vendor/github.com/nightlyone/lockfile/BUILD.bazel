@@ -7,7 +7,7 @@ go_library(
         "lockfile_unix.go",
         "lockfile_windows.go",
     ],
-    importmap = "vendor/github.com/nightlyone/lockfile",
+    importmap = "sigs.k8s.io/kind/vendor/github.com/nightlyone/lockfile",
     importpath = "github.com/nightlyone/lockfile",
     visibility = ["//visibility:public"],
 )

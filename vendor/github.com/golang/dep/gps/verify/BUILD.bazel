@@ -8,7 +8,7 @@ go_library(
         "lockdiff.go",
         "locksat.go",
     ],
-    importmap = "vendor/github.com/golang/dep/gps/verify",
+    importmap = "sigs.k8s.io/kind/vendor/github.com/golang/dep/gps/verify",
     importpath = "github.com/golang/dep/gps/verify",
     visibility = ["//visibility:public"],
     deps = [

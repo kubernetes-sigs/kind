@@ -26,24 +26,28 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:08667581481ea8870a261c1e9d8f5626679f7a8c58c4e46caf8854e2562af269"
+  digest = "1:d7cf27a3bb11248b8d6edc6b65d54cf9ef53bef9d3876e6dce63ce6adc77206b"
   name = "github.com/bazelbuild/bazel-gazelle"
   packages = [
     "cmd/gazelle",
     "internal/config",
+    "internal/flag",
     "internal/label",
+    "internal/language",
+    "internal/language/go",
+    "internal/language/proto",
     "internal/merger",
-    "internal/packages",
     "internal/pathtools",
     "internal/repos",
     "internal/resolve",
-    "internal/rules",
+    "internal/rule",
     "internal/version",
+    "internal/walk",
     "internal/wspace",
   ]
   pruneopts = "NUT"
-  revision = "8bc6a862933eaa0d7431e15b308ceadc5729a6f9"
-  version = "0.11.0"
+  revision = "6a1b93cc9b1c7e55e7d05a6d324bcf9d87ea3ab1"
+  version = "0.14.0"
 
 [[projects]]
   digest = "1:03679414789b10f815a33667d29e3c77e57c8096bd32457fd1682a4222f25806"

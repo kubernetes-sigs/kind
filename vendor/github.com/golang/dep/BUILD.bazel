@@ -11,7 +11,7 @@ go_library(
         "project.go",
         "txn_writer.go",
     ],
-    importmap = "vendor/github.com/golang/dep",
+    importmap = "sigs.k8s.io/kind/vendor/github.com/golang/dep",
     importpath = "github.com/golang/dep",
     visibility = ["//visibility:public"],
     deps = [

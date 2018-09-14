@@ -14,7 +14,7 @@ go_library(
         "stringwriter.go",
         "toc.go",
     ],
-    importmap = "vendor/github.com/jteeuwen/go-bindata",
+    importmap = "sigs.k8s.io/kind/vendor/github.com/jteeuwen/go-bindata",
     importpath = "github.com/jteeuwen/go-bindata",
     visibility = ["//visibility:public"],
 )

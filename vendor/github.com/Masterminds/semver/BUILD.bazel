@@ -13,7 +13,7 @@ go_library(
         "union.go",
         "version.go",
     ],
-    importmap = "vendor/github.com/Masterminds/semver",
+    importmap = "sigs.k8s.io/kind/vendor/github.com/Masterminds/semver",
     importpath = "github.com/Masterminds/semver",
     visibility = ["//visibility:public"],
 )
