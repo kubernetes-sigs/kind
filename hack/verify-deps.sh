@@ -18,10 +18,13 @@ set -o nounset
 set -o pipefail
 set -o xtrace
 
+# cd to the repo root
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
 # run vendor update script
+# TODO(bentheelder): investigate why naive variant that uses a tmpdir copy
+# of the repo is 10x slower, fix that and use a tmpdir instead..
 hack/update-deps.sh
 
 # make sure the tree is clean
