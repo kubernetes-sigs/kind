@@ -18,22 +18,30 @@ set -o nounset
 set -o pipefail
 set -o verbose
 
-# cd to the repo root
+# cd to repo root
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
-# run vendor update script
-# TODO(bentheelder): investigate why naive variant that uses a tmpdir copy
-# of the repo is 10x slower, fix that and use a tmpdir instead..
-hack/update-deps.sh
+# exit code, if a script fails we'll set this to 1
+res=0
 
-# make sure the tree is clean
-status="$(git status -s)"
-if [[ -n "${status}" ]]; then
-  echo "unexpectedly dirty working directory after hack/update-deps.sh"
-  echo "${status}"
+# run all verify scripts
+"${REPO_ROOT}"/hack/verify-govet.sh || res=1
+"${REPO_ROOT}"/hack/verify-gofmt.sh || res=1
+"${REPO_ROOT}"/hack/verify-golint.sh || res=1
+"${REPO_ROOT}"/hack/verify-generated.sh || res=1
+
+# TODO(bentheelder): this script must be last because it doesn't operate in a tempdir ...
+"${REPO_ROOT}"/hack/verify-deps.sh || res=1
+
+set +o verbose
+# exit based on verify scripts
+if [[ "${res}" = 0 ]]; then
   echo ""
-  echo "please run and commit: hack/update-deps.sh"
-  exit 1
+  echo "All verify checks passed, congrats!"
+else
+  echo ""
+  echo "One or more verify checks failed! See output above..."
 fi
+exit "${res}"
 
