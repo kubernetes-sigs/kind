@@ -16,7 +16,7 @@
 set -o errexit
 set -o nounset
 set -o pipefail
-set -o xtrace
+set -o verbose
 
 # cd to the repo root
 REPO_ROOT=$(git rev-parse --show-toplevel)
