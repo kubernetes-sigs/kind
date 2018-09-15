@@ -1,9 +1,8 @@
 <!--TODO(bentheelder): fill this in much more thoroughly-->
 # `kind` - `k`ubernetes `in` `d`ocker
 
-<!--testgrid test status badge, prow build badge, and go report card-->
-<!--TODO(bentheelder): switch these jobs out once we've added more CI jobs-->
-<a href="https://k8s-testgrid.appspot.com/conformance-providerless#kind,%20master%20(dev)"><img src="https://k8s-testgrid.appspot.com/q/summary/conformance-providerless/kind,%20master%20(dev)/tests_status" /></a> <a href="https://prow.k8s.io/?job=ci-kind-build">
+<!-- prow build badge, and go report card-->
+<a href="https://prow.k8s.io/?job=ci-kind-build">
 <img alt="Build Status" src="https://prow.k8s.io/badge.svg?jobs=ci-kind-build">
 </a> <a href="https://goreportcard.com/report/sigs.k8s.io/kind"><img alt="Go Report Card" src="https://goreportcard.com/badge/sigs.k8s.io/kind" /></a>
 
