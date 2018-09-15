@@ -13,12 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# script to verify generated files
 set -o errexit
 set -o nounset
 set -o pipefail
 set -o xtrace
 
-TESTINFRA_ROOT=$(git rev-parse --show-toplevel)
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "${REPO_ROOT}"
 
 bazel build //kind/pkg/build/sources:bindata
 
@@ -27,8 +29,9 @@ GO_GENERATED_BINDATA="kind/pkg/build/sources/images_sources.go"
 
 DIFF="$(diff <(cat "${GO_GENERATED_BINDATA}") <(gofmt -s "${BAZEL_GENERATED_BINDATA}"))"
 if [ ! -z "$DIFF" ]; then
-    echo "${GO_GENERATED_BINDATA} does not match ${BAZEL_GENERATED_BINDATA}"
-    echo "please run kind/hack/generate.sh"
-    echo "if you have changed the generation, please ensure these remain identical"
-    exit 1
+  echo "${GO_GENERATED_BINDATA} does not match ${BAZEL_GENERATED_BINDATA}"
+  echo "please run and commit: kind/hack/generate.sh"
+  echo "if you have changed the generation, please ensure these remain identical" 
+  echo "see: hack/bindata.bzl, pkg/build/sources/BUILD.bazel, pkg/build/sources/generate.go"
+  exit 1
 fi

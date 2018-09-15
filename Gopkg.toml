@@ -4,6 +4,8 @@ required = [
   "github.com/bazelbuild/bazel-gazelle/cmd/gazelle",
   "github.com/jteeuwen/go-bindata/go-bindata",
   "github.com/kubernetes/repo-infra/kazel",
+  "github.com/golang/dep/cmd/dep",
+  "github.com/golang/lint/golint",
 ]
 
 # prune out unused content from vendor
@@ -21,7 +23,11 @@ required = [
 
 [[override]]
   name = "github.com/bazelbuild/bazel-gazelle"
-  version = "0.11.0"
+  version = "0.14.0"
+
+[[override]]
+  name = "github.com/golang/dep"
+  version = "v0.5.0"
 
 
 # normal constraints below

@@ -1,4 +1,5 @@
 # gazelle:prefix sigs.k8s.io/kind
+# gazelle:proto disable_global
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 go_library(
