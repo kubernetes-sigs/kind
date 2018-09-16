@@ -27,6 +27,7 @@ import (
 
 	"sigs.k8s.io/kind/pkg/build/kube"
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/fs"
 )
 
 // NodeImageBuildContext is used to build the kind node image, and contains
@@ -75,7 +76,7 @@ func (c *NodeImageBuildContext) Build() (err error) {
 	log.Infof("Finished building Kubernetes")
 
 	// create tempdir to build the image in
-	buildDir, err := TempDir("", "kind-node-image")
+	buildDir, err := fs.TempDir("", "kind-node-image")
 	if err != nil {
 		return err
 	}
@@ -103,7 +104,8 @@ func (c *NodeImageBuildContext) populateBits(buildDir string) error {
 	bitPaths := c.Bits.Paths()
 	for src, dest := range bitPaths {
 		realDest := path.Join(bitsDir, dest)
-		if err := copyFile(src, realDest); err != nil {
+		// NOTE: we use copy not copyfile because copy ensures the dest dir
+		if err := fs.Copy(src, realDest); err != nil {
 			return errors.Wrap(err, "failed to copy build artifact")
 		}
 	}

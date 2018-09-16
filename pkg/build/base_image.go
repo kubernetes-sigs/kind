@@ -19,7 +19,6 @@ limitations under the License.
 package build
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -27,6 +26,7 @@ import (
 
 	"sigs.k8s.io/kind/pkg/build/sources"
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/fs"
 )
 
 // BaseImageBuildContext is used to build the kind node base image, and contains
@@ -52,7 +52,7 @@ func NewBaseImageBuildContext(imageName string) *BaseImageBuildContext {
 // the NodeImageBuildContext
 func (c *BaseImageBuildContext) Build() (err error) {
 	// create tempdir to build in
-	tmpDir, err := ioutil.TempDir("", "kind-base-image")
+	tmpDir, err := fs.TempDir("", "kind-base-image")
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func (c *BaseImageBuildContext) Build() (err error) {
 		buildDir = filepath.Join(buildDir, "images", "base")
 
 	} else {
-		err = copyDir(c.SourceDir, buildDir)
+		err = fs.CopyDir(c.SourceDir, buildDir)
 		if err != nil {
 			log.Errorf("failed to copy sources to build dir %v", err)
 			return err

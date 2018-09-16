@@ -33,6 +33,7 @@ filegroup(
         "//pkg/build:all-srcs",
         "//pkg/cluster:all-srcs",
         "//pkg/exec:all-srcs",
+        "//pkg/fs:all-srcs",
         "//vendor:all-srcs",
     ],
     tags = ["automanaged"],

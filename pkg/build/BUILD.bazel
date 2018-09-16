@@ -5,7 +5,6 @@ go_library(
     srcs = [
         "base_image.go",
         "doc.go",
-        "files.go",
         "node_image.go",
     ],
     importpath = "sigs.k8s.io/kind/pkg/build",
@@ -14,6 +13,7 @@ go_library(
         "//pkg/build/kube:go_default_library",
         "//pkg/build/sources:go_default_library",
         "//pkg/exec:go_default_library",
+        "//pkg/fs:go_default_library",
         "//vendor/github.com/pkg/errors:go_default_library",
         "//vendor/github.com/sirupsen/logrus:go_default_library",
     ],
