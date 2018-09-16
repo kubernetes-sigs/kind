@@ -20,7 +20,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"sigs.k8s.io/kind/pkg/build"
+	"sigs.k8s.io/kind/pkg/build/node"
 )
 
 type flags struct {
@@ -50,7 +50,7 @@ func NewCommand() *cobra.Command {
 
 func run(flags *flags, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
-	ctx, err := build.NewNodeImageBuildContext(flags.BuildType, flags.ImageName, flags.BaseImageName)
+	ctx, err := node.NewBuildContext(flags.BuildType, flags.ImageName, flags.BaseImageName)
 	if err != nil {
 		log.Fatalf("Error creating build context: %v", err)
 	}

@@ -14,9 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package build implements functionality to build the kind images
-// TODO(bentheelder): and k8s
-package build
+// Package base implements functionality to build the kind base image
+package base
 
 import (
 	"os"
@@ -24,24 +23,24 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"sigs.k8s.io/kind/pkg/build/sources"
+	"sigs.k8s.io/kind/pkg/build/base/sources"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
 )
 
-// BaseImageBuildContext is used to build the kind node base image, and contains
+// BuildContext is used to build the kind node base image, and contains
 // build configuration
-type BaseImageBuildContext struct {
+type BuildContext struct {
 	SourceDir string
 	ImageTag  string
 	GoCmd     string
 	Arch      string
 }
 
-// NewBaseImageBuildContext creates a new BaseImageBuildContext with
+// NewBuildContext creates a new BuildContext with
 // default configuration
-func NewBaseImageBuildContext(imageName string) *BaseImageBuildContext {
-	return &BaseImageBuildContext{
+func NewBuildContext(imageName string) *BuildContext {
+	return &BuildContext{
 		ImageTag: imageName,
 		GoCmd:    "go",
 		Arch:     "amd64",
@@ -50,7 +49,7 @@ func NewBaseImageBuildContext(imageName string) *BaseImageBuildContext {
 
 // Build builds the cluster node image, the sourcedir must be set on
 // the NodeImageBuildContext
-func (c *BaseImageBuildContext) Build() (err error) {
+func (c *BuildContext) Build() (err error) {
 	// create tempdir to build in
 	tmpDir, err := fs.TempDir("", "kind-base-image")
 	if err != nil {
@@ -89,7 +88,7 @@ func (c *BaseImageBuildContext) Build() (err error) {
 }
 
 // builds the entrypoint binary
-func (c *BaseImageBuildContext) buildEntrypoint(dir string) error {
+func (c *BuildContext) buildEntrypoint(dir string) error {
 	// NOTE: this binary only uses the go1 stdlib, and is a single file
 	entrypointSrc := filepath.Join(dir, "entrypoint", "main.go")
 	entrypointDest := filepath.Join(dir, "entrypoint", "entrypoint")
@@ -110,7 +109,7 @@ func (c *BaseImageBuildContext) buildEntrypoint(dir string) error {
 	return nil
 }
 
-func (c *BaseImageBuildContext) buildImage(dir string) error {
+func (c *BuildContext) buildImage(dir string) error {
 	// build the image, tagged as tagImageAs, using the our tempdir as the context
 	cmd := exec.Command("docker", "build", "-t", c.ImageTag, dir)
 	cmd.Debug = true

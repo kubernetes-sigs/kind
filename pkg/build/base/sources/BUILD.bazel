@@ -10,13 +10,13 @@ go_bindata(
     outs = [
         "images_sources.go",
     ],
-    bindata_srcs = "./../../../images/...",
+    bindata_srcs = "./../../../../images/...",
     generate_directive_file = "generate.go",
     ignores = ["(\.*README\.md)|(\.*BUILD\.bazel)"],
     include_metadata = False,
     mode = "0666",
     pkg = "sources",
-    prefix = "./../../../",
+    prefix = "./../../../../",
 )
 
 go_library(
@@ -25,7 +25,7 @@ go_library(
         "generate.go",
         "images_sources.go",
     ],
-    importpath = "sigs.k8s.io/kind/pkg/build/sources",
+    importpath = "sigs.k8s.io/kind/pkg/build/images/base/sources",
     visibility = ["//visibility:public"],
 )
 

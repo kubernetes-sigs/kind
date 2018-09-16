@@ -20,7 +20,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"sigs.k8s.io/kind/pkg/build"
+	"sigs.k8s.io/kind/pkg/build/base"
 )
 
 type flags struct {
@@ -47,7 +47,7 @@ func NewCommand() *cobra.Command {
 
 func run(flags *flags, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
-	ctx := build.NewBaseImageBuildContext(flags.ImageName)
+	ctx := base.NewBuildContext(flags.ImageName)
 	ctx.SourceDir = flags.Source
 	err := ctx.Build()
 	if err != nil {

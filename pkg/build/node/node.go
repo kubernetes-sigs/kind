@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package build
+// Package node implements functionality to build the kind node image
+package node
 
 import (
 	"fmt"
@@ -30,9 +31,9 @@ import (
 	"sigs.k8s.io/kind/pkg/fs"
 )
 
-// NodeImageBuildContext is used to build the kind node image, and contains
+// BuildContext is used to build the kind node image, and contains
 // build configuration
-type NodeImageBuildContext struct {
+type BuildContext struct {
 	ImageTag  string
 	Arch      string
 	BaseImage string
@@ -40,9 +41,9 @@ type NodeImageBuildContext struct {
 	Bits      kube.Bits
 }
 
-// NewNodeImageBuildContext creates a new NodeImageBuildContext with
+// NewBuildContext creates a new BuildContext with
 // default configuration
-func NewNodeImageBuildContext(mode, imageName, baseImageName string) (ctx *NodeImageBuildContext, err error) {
+func NewBuildContext(mode, imageName, baseImageName string) (ctx *BuildContext, err error) {
 	kubeRoot := ""
 	// apt should not fail on finding kube root as it does not use it
 	if mode != "apt" {
@@ -55,7 +56,7 @@ func NewNodeImageBuildContext(mode, imageName, baseImageName string) (ctx *NodeI
 	if err != nil {
 		return nil, err
 	}
-	return &NodeImageBuildContext{
+	return &BuildContext{
 		ImageTag:  imageName,
 		Arch:      "amd64",
 		BaseImage: baseImageName,
@@ -65,8 +66,8 @@ func NewNodeImageBuildContext(mode, imageName, baseImageName string) (ctx *NodeI
 }
 
 // Build builds the cluster node image, the sourcedir must be set on
-// the NodeImageBuildContext
-func (c *NodeImageBuildContext) Build() (err error) {
+// the BuildContext
+func (c *BuildContext) Build() (err error) {
 	// ensure kubernetes build is up to date first
 	log.Infof("Starting to build Kubernetes")
 	if err = c.Bits.Build(); err != nil {
@@ -93,7 +94,7 @@ func (c *NodeImageBuildContext) Build() (err error) {
 	return c.buildImage(buildDir)
 }
 
-func (c *NodeImageBuildContext) populateBits(buildDir string) error {
+func (c *BuildContext) populateBits(buildDir string) error {
 	// always create bits dir
 	bitsDir := path.Join(buildDir, "bits")
 	if err := os.Mkdir(bitsDir, 0777); err != nil {
@@ -142,7 +143,7 @@ func (ic *installContext) CombinedOutputLines(command string, args ...string) ([
 	return cmd.CombinedOutputLines()
 }
 
-func (c *NodeImageBuildContext) buildImage(dir string) error {
+func (c *BuildContext) buildImage(dir string) error {
 	// build the image, tagged as tagImageAs, using the our tempdir as the context
 	log.Info("Starting image build ...")
 	// create build container
@@ -214,7 +215,7 @@ func (c *NodeImageBuildContext) buildImage(dir string) error {
 	return nil
 }
 
-func (c *NodeImageBuildContext) createBuildContainer(buildDir string) (id string, err error) {
+func (c *BuildContext) createBuildContainer(buildDir string) (id string, err error) {
 	cmd := exec.Command("docker", "run")
 	cmd.Args = append(cmd.Args,
 		"-d", // make the client exit while the container continues to run
