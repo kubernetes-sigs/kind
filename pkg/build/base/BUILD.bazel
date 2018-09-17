@@ -2,9 +2,15 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = ["doc.go"],
-    importpath = "sigs.k8s.io/kind/pkg/build",
+    srcs = ["base.go"],
+    importpath = "sigs.k8s.io/kind/pkg/build/base",
     visibility = ["//visibility:public"],
+    deps = [
+        "//pkg/build/base/sources:go_default_library",
+        "//pkg/exec:go_default_library",
+        "//pkg/fs:go_default_library",
+        "//vendor/github.com/sirupsen/logrus:go_default_library",
+    ],
 )
 
 filegroup(
@@ -18,9 +24,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
-        "//pkg/build/base:all-srcs",
-        "//pkg/build/kube:all-srcs",
-        "//pkg/build/node:all-srcs",
+        "//pkg/build/base/sources:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
