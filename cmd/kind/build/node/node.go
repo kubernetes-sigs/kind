@@ -50,7 +50,11 @@ func NewCommand() *cobra.Command {
 
 func run(flags *flags, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
-	ctx, err := node.NewBuildContext(flags.BuildType, flags.ImageName, flags.BaseImageName)
+	ctx, err := node.NewBuildContext(
+		node.WithMode(flags.BuildType),
+		node.WithImageTag(flags.ImageName),
+		node.WithBaseImage(flags.BaseImageName),
+	)
 	if err != nil {
 		log.Fatalf("Error creating build context: %v", err)
 	}
