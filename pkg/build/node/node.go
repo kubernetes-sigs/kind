@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package build
+// Package node implements functionality to build the kind node image
+package node
 
 import (
 	"fmt"
@@ -27,55 +28,102 @@ import (
 
 	"sigs.k8s.io/kind/pkg/build/kube"
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/fs"
 )
 
-// NodeImageBuildContext is used to build the kind node image, and contains
-// build configuration
-type NodeImageBuildContext struct {
-	ImageTag  string
-	Arch      string
-	BaseImage string
-	KubeRoot  string
-	Bits      kube.Bits
+// DefaultTag is the default tag for the built image
+const DefaultTag = "kind-node"
+
+// DefaultBaseImage is the default base image used
+const DefaultBaseImage = "kind-base"
+
+// DefaultMode is the default kubernetes build mode for the built image
+// see pkg/build/kube.Bits
+const DefaultMode = "docker"
+
+// Option is BuildContext configuration option supplied to NewBuildContext
+type Option func(*BuildContext)
+
+// WithImageTag configures a NewBuildContext to tag the built image with `tag`
+func WithImageTag(tag string) Option {
+	return func(b *BuildContext) {
+		b.imageTag = tag
+	}
 }
 
-// NewNodeImageBuildContext creates a new NodeImageBuildContext with
-// default configuration
-func NewNodeImageBuildContext(mode, imageName, baseImageName string) (ctx *NodeImageBuildContext, err error) {
-	kubeRoot := ""
+// WithBaseImage configures a NewBuildContext to use `image` as the base image
+func WithBaseImage(image string) Option {
+	return func(b *BuildContext) {
+		b.baseImage = image
+	}
+}
+
+// WithMode sets the kubernetes build mode for the build context
+func WithMode(mode string) Option {
+	return func(b *BuildContext) {
+		b.mode = mode
+	}
+}
+
+// BuildContext is used to build the kind node image, and contains
+// build configuration
+type BuildContext struct {
+	// option fields
+	mode      string
+	imageTag  string
+	arch      string
+	baseImage string
+	// non-option fields
+	kubeRoot string
+	bits     kube.Bits
+}
+
+// NewBuildContext creates a new BuildContext with default configuration,
+// overridden by the options supplied in the order that they are supplied
+func NewBuildContext(options ...Option) (ctx *BuildContext, err error) {
+	// default options
+	ctx = &BuildContext{
+		mode:      DefaultMode,
+		imageTag:  DefaultTag,
+		arch:      "amd64",
+		baseImage: DefaultBaseImage,
+	}
+	// apply user options
+	for _, option := range options {
+		option(ctx)
+	}
+	// lookup kuberoot unless mode == "apt",
 	// apt should not fail on finding kube root as it does not use it
-	if mode != "apt" {
+	kubeRoot := ""
+	if ctx.mode != "apt" {
 		kubeRoot, err = kube.FindSource()
 		if err != nil {
 			return nil, fmt.Errorf("error finding kuberoot: %v", err)
 		}
 	}
-	bits, err := kube.NewNamedBits(mode, kubeRoot)
+	ctx.kubeRoot = kubeRoot
+	// initialize bits
+	bits, err := kube.NewNamedBits(ctx.mode, kubeRoot)
 	if err != nil {
 		return nil, err
 	}
-	return &NodeImageBuildContext{
-		ImageTag:  imageName,
-		Arch:      "amd64",
-		BaseImage: baseImageName,
-		KubeRoot:  kubeRoot,
-		Bits:      bits,
-	}, nil
+	ctx.bits = bits
+	return ctx, nil
 }
 
 // Build builds the cluster node image, the sourcedir must be set on
-// the NodeImageBuildContext
-func (c *NodeImageBuildContext) Build() (err error) {
+// the BuildContext
+func (c *BuildContext) Build() (err error) {
 	// ensure kubernetes build is up to date first
 	log.Infof("Starting to build Kubernetes")
-	if err = c.Bits.Build(); err != nil {
+	if err = c.bits.Build(); err != nil {
 		log.Errorf("Failed to build Kubernetes: %v", err)
 		return errors.Wrap(err, "failed to build kubernetes")
 	}
 	log.Infof("Finished building Kubernetes")
 
 	// create tempdir to build the image in
-	buildDir, err := TempDir("", "kind-node-image")
+	buildDir, err := fs.TempDir("", "kind-node-image")
 	if err != nil {
 		return err
 	}
@@ -92,7 +140,7 @@ func (c *NodeImageBuildContext) Build() (err error) {
 	return c.buildImage(buildDir)
 }
 
-func (c *NodeImageBuildContext) populateBits(buildDir string) error {
+func (c *BuildContext) populateBits(buildDir string) error {
 	// always create bits dir
 	bitsDir := path.Join(buildDir, "bits")
 	if err := os.Mkdir(bitsDir, 0777); err != nil {
@@ -100,10 +148,11 @@ func (c *NodeImageBuildContext) populateBits(buildDir string) error {
 	}
 	// copy all bits from their source path to where we will COPY them into
 	// the dockerfile, see images/node/Dockerfile
-	bitPaths := c.Bits.Paths()
+	bitPaths := c.bits.Paths()
 	for src, dest := range bitPaths {
 		realDest := path.Join(bitsDir, dest)
-		if err := copyFile(src, realDest); err != nil {
+		// NOTE: we use copy not copyfile because copy ensures the dest dir
+		if err := fs.Copy(src, realDest); err != nil {
 			return errors.Wrap(err, "failed to copy build artifact")
 		}
 	}
@@ -140,7 +189,7 @@ func (ic *installContext) CombinedOutputLines(command string, args ...string) ([
 	return cmd.CombinedOutputLines()
 }
 
-func (c *NodeImageBuildContext) buildImage(dir string) error {
+func (c *BuildContext) buildImage(dir string) error {
 	// build the image, tagged as tagImageAs, using the our tempdir as the context
 	log.Info("Starting image build ...")
 	// create build container
@@ -186,7 +235,7 @@ func (c *NodeImageBuildContext) buildImage(dir string) error {
 		basePath:    "/kind/",
 		containerID: containerID,
 	}
-	if err = c.Bits.Install(ic); err != nil {
+	if err = c.bits.Install(ic); err != nil {
 		log.Errorf("Image build Failed! %v", err)
 		return err
 	}
@@ -200,7 +249,7 @@ func (c *NodeImageBuildContext) buildImage(dir string) error {
 	}
 
 	// Save the image changes to a new image
-	cmd := exec.Command("docker", "commit", containerID, c.ImageTag)
+	cmd := exec.Command("docker", "commit", containerID, c.imageTag)
 	cmd.Debug = true
 	cmd.InheritOutput = true
 	if err = cmd.Run(); err != nil {
@@ -212,14 +261,14 @@ func (c *NodeImageBuildContext) buildImage(dir string) error {
 	return nil
 }
 
-func (c *NodeImageBuildContext) createBuildContainer(buildDir string) (id string, err error) {
+func (c *BuildContext) createBuildContainer(buildDir string) (id string, err error) {
 	cmd := exec.Command("docker", "run")
 	cmd.Args = append(cmd.Args,
 		"-d", // make the client exit while the container continues to run
 		// label the container to make them easier to track
 		"--label", fmt.Sprintf("%s=%s", BuildContainerLabelKey, time.Now().Format(time.RFC3339Nano)),
 		"-v", fmt.Sprintf("%s:/build", buildDir),
-		c.BaseImage,
+		c.baseImage,
 	)
 	cmd.Debug = true
 	lines, err := cmd.CombinedOutputLines()

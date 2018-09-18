@@ -14,45 +14,68 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package build implements functionality to build the kind images
-// TODO(bentheelder): and k8s
-package build
+// Package base implements functionality to build the kind base image
+package base
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
 
-	"sigs.k8s.io/kind/pkg/build/sources"
+	"sigs.k8s.io/kind/pkg/build/base/sources"
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/fs"
 )
 
-// BaseImageBuildContext is used to build the kind node base image, and contains
+// DefaultImageName is the default name of the built base image
+const DefaultImageName = "kind-base"
+
+// BuildContext is used to build the kind node base image, and contains
 // build configuration
-type BaseImageBuildContext struct {
-	SourceDir string
-	ImageTag  string
-	GoCmd     string
-	Arch      string
+type BuildContext struct {
+	sourceDir string
+	imageTag  string
+	goCmd     string
+	arch      string
 }
 
-// NewBaseImageBuildContext creates a new BaseImageBuildContext with
-// default configuration
-func NewBaseImageBuildContext(imageName string) *BaseImageBuildContext {
-	return &BaseImageBuildContext{
-		ImageTag: imageName,
-		GoCmd:    "go",
-		Arch:     "amd64",
+// Option is BuildContext configuration option supplied to NewBuildContext
+type Option func(*BuildContext)
+
+// WithSourceDir configures a NewBuildContext to use the source dir `sourceDir`
+func WithSourceDir(sourceDir string) Option {
+	return func(b *BuildContext) {
+		b.sourceDir = sourceDir
 	}
+}
+
+// WithImageTag configures a NewBuildContext to tag the built image with `tag`
+func WithImageTag(tag string) Option {
+	return func(b *BuildContext) {
+		b.imageTag = tag
+	}
+}
+
+// NewBuildContext creates a new BuildContext with
+// default configuration
+func NewBuildContext(options ...Option) *BuildContext {
+	ctx := &BuildContext{
+		imageTag: DefaultImageName,
+		goCmd:    "go",
+		arch:     "amd64",
+	}
+	for _, option := range options {
+		option(ctx)
+	}
+	return ctx
 }
 
 // Build builds the cluster node image, the sourcedir must be set on
 // the NodeImageBuildContext
-func (c *BaseImageBuildContext) Build() (err error) {
+func (c *BuildContext) Build() (err error) {
 	// create tempdir to build in
-	tmpDir, err := ioutil.TempDir("", "kind-base-image")
+	tmpDir, err := fs.TempDir("", "kind-base-image")
 	if err != nil {
 		return err
 	}
@@ -61,7 +84,7 @@ func (c *BaseImageBuildContext) Build() (err error) {
 	// populate with image sources
 	// if SourceDir is unset, use the baked in sources
 	buildDir := tmpDir
-	if c.SourceDir == "" {
+	if c.sourceDir == "" {
 		// populate with image sources
 		err = sources.RestoreAssets(buildDir, "images/base")
 		if err != nil {
@@ -70,7 +93,7 @@ func (c *BaseImageBuildContext) Build() (err error) {
 		buildDir = filepath.Join(buildDir, "images", "base")
 
 	} else {
-		err = copyDir(c.SourceDir, buildDir)
+		err = fs.CopyDir(c.sourceDir, buildDir)
 		if err != nil {
 			log.Errorf("failed to copy sources to build dir %v", err)
 			return err
@@ -89,14 +112,14 @@ func (c *BaseImageBuildContext) Build() (err error) {
 }
 
 // builds the entrypoint binary
-func (c *BaseImageBuildContext) buildEntrypoint(dir string) error {
+func (c *BuildContext) buildEntrypoint(dir string) error {
 	// NOTE: this binary only uses the go1 stdlib, and is a single file
 	entrypointSrc := filepath.Join(dir, "entrypoint", "main.go")
 	entrypointDest := filepath.Join(dir, "entrypoint", "entrypoint")
 
-	cmd := exec.Command(c.GoCmd, "build", "-o", entrypointDest, entrypointSrc)
+	cmd := exec.Command(c.goCmd, "build", "-o", entrypointDest, entrypointSrc)
 	// TODO(bentheelder): we may need to map between docker image arch and GOARCH
-	cmd.Env = []string{"GOOS=linux", "GOARCH=" + c.Arch}
+	cmd.Env = []string{"GOOS=linux", "GOARCH=" + c.arch}
 
 	// actually build
 	log.Info("Building entrypoint binary ...")
@@ -110,9 +133,9 @@ func (c *BaseImageBuildContext) buildEntrypoint(dir string) error {
 	return nil
 }
 
-func (c *BaseImageBuildContext) buildImage(dir string) error {
+func (c *BuildContext) buildImage(dir string) error {
 	// build the image, tagged as tagImageAs, using the our tempdir as the context
-	cmd := exec.Command("docker", "build", "-t", c.ImageTag, dir)
+	cmd := exec.Command("docker", "build", "-t", c.imageTag, dir)
 	cmd.Debug = true
 	cmd.InheritOutput = true
 
