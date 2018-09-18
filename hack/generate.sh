@@ -28,4 +28,4 @@ GOBIN="${OUTPUT_GOBIN}" go install ./vendor/github.com/jteeuwen/go-bindata/go-bi
 # NOTE: go will only take package paths, not absolute directories
 PATH="${OUTPUT_GOBIN}:${PATH}" go generate ./...
 # gofmt the generated file
-find ./kind -name "*.go" -type f -print0 | xargs -0 gofmt -s -w
+find . -path "./vendor" -prune -o -name "*.go" -type f -print0 | xargs -0 gofmt -s -w

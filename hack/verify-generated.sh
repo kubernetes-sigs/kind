@@ -22,10 +22,10 @@ set -o xtrace
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
-bazel build //pkg/build/sources:bindata
+bazel build //pkg/build/base/sources:bindata
 
-BAZEL_GENERATED_BINDATA="bazel-genfiles/pkg/build/sources/images_sources.go"
-GO_GENERATED_BINDATA="pkg/build/sources/images_sources.go"
+BAZEL_GENERATED_BINDATA="bazel-genfiles/pkg/build/base/sources/images_sources.go"
+GO_GENERATED_BINDATA="pkg/build/base/sources/images_sources.go"
 
 DIFF="$(diff <(cat "${GO_GENERATED_BINDATA}") <(gofmt -s "${BAZEL_GENERATED_BINDATA}"))"
 if [ ! -z "$DIFF" ]; then
