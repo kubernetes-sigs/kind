@@ -16,24 +16,62 @@
 set -o errexit
 set -o nounset
 set -o pipefail
-set -o verbose
 
 # cd to the repo root
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
-# run vendor update script
-# TODO(bentheelder): investigate why naive variant that uses a tmpdir copy
-# of the repo is 10x slower, fix that and use a tmpdir instead..
-hack/update-deps.sh
+# place to stick temp binaries
+BINDIR="${REPO_ROOT}/_output/bin"
+mkdir -p "${BINDIR}"
 
-# make sure the tree is clean
-status="$(git status -s)"
-if [[ -n "${status}" ]]; then
-  echo "unexpectedly dirty working directory after hack/update-deps.sh"
-  echo "${status}"
-  echo ""
-  echo "please run and commit: hack/update-deps.sh"
-  exit 1
-fi
+# TMP_GOPATH is used in make_temp_root
+TMP_GOPATH="$(TMPDIR="${BINDIR}" mktemp -d "${BINDIR}/verify-deps.XXXXX")"
 
+# exit trap cleanup for TMP_GOPATH
+cleanup() {
+  if [[ -n "${TMP_GOPATH}" ]]; then
+    rm -rf "${TMP_GOPATH}"
+  fi
+}
+
+# copies repo into a temp root relative to TMP_GOPATH
+make_temp_root() {
+  # make a fake gopath
+  local fake_root="${TMP_GOPATH}/src/sigs.k8s.io/kind"
+  mkdir -p "${fake_root}/.."
+  # we need to copy everything but _output (which is .gitignore anyhow)
+  find . \
+    -type d -path "./_output" -prune -o \
+    -maxdepth 1 -mindepth 1 -exec cp -a {} "${fake_root}/{}" \;
+}
+
+main() {
+  trap cleanup EXIT
+
+  # copy repo root into tempdir under ./_output
+  echo "Copying tree into temp root ..."
+  make_temp_root
+  local fake_root="${TMP_GOPATH}/src/sigs.k8s.io/kind"
+
+  # run vendor update script
+  echo "Updating deps in '${fake_root}' ..."
+  cd "${fake_root}"
+  GOPATH="${TMP_GOPATH}" PATH="${TMP_GOPATH}/bin:${PATH}" hack/update-deps.sh
+
+  # make sure the temp repo has no changes relative to the real repo
+  echo "Diffing '${REPO_ROOT}/' '${fake_root}/' ..."
+  diff=$(diff -ur \
+          -x ".git" \
+          -x "_output" \
+         "${REPO_ROOT}" "${fake_root}" || true)
+  if [[ -n "${diff}" ]]; then
+    echo "unexpectedly dirty working directory after hack/update-deps.sh" >&2
+    echo "${diff}" >&2
+    echo "" >&2
+    echo "please run: hack/update-deps.sh" >&2
+    exit 1
+  fi
+}
+
+main

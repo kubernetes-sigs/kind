@@ -13,25 +13,66 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# script to verify generated files
 set -o errexit
 set -o nounset
 set -o pipefail
-set -o xtrace
 
+# cd to the repo root
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
-bazel build //pkg/build/base/sources:bindata
 
-BAZEL_GENERATED_BINDATA="bazel-genfiles/pkg/build/base/sources/images_sources.go"
-GO_GENERATED_BINDATA="pkg/build/base/sources/images_sources.go"
+# place to stick temp binaries
+BINDIR="${REPO_ROOT}/_output/bin"
+mkdir -p "${BINDIR}"
 
-DIFF="$(diff <(cat "${GO_GENERATED_BINDATA}") <(gofmt -s "${BAZEL_GENERATED_BINDATA}"))"
-if [ ! -z "$DIFF" ]; then
-  echo "${GO_GENERATED_BINDATA} does not match ${BAZEL_GENERATED_BINDATA}"
-  echo "please run and commit: hack/generate.sh"
-  echo "if you have changed the generation, please ensure these remain identical" 
-  echo "see: hack/bindata.bzl, pkg/build/sources/BUILD.bazel, pkg/build/sources/generate.go"
-  exit 1
-fi
+# TMP_GOPATH is used in make_temp_root
+TMP_GOPATH="$(TMPDIR="${BINDIR}" mktemp -d "${BINDIR}/verify-deps.XXXXX")"
+
+# exit trap cleanup for TMP_GOPATH
+cleanup() {
+  if [[ -n "${TMP_GOPATH}" ]]; then
+    rm -rf "${TMP_GOPATH}"
+  fi
+}
+
+# copies repo into a temp root saved to TMP_GOPATH
+make_temp_root() {
+  # make a fake gopath
+  local fake_root="${TMP_GOPATH}/src/sigs.k8s.io/kind"
+  mkdir -p "${fake_root}"
+  # we need to copy everything but _output (which is .gitignore anyhow)
+  find . \
+    -type d -path "./_output" -prune -o \
+    -maxdepth 1 -mindepth 1 -exec cp -r {} "${fake_root}/{}" \;
+}
+
+main() {
+  trap cleanup EXIT
+
+  # copy repo root into tempdir under ./_output
+  echo "Copying tree into temp root ..."
+  make_temp_root
+  local fake_root="${TMP_GOPATH}/src/sigs.k8s.io/kind"
+
+  # run generated code update script
+  echo "Updating generated code in '${fake_root}' ..."
+  cd "${fake_root}"
+  GOPATH="${TMP_GOPATH}" PATH="${TMP_GOPATH}/bin:${PATH}" hack/update-generated.sh
+
+  # make sure the temp repo has no changes relative to the real repo
+  echo "Diffing '${REPO_ROOT}' '${fake_root}' ..."
+  diff=$(diff -Nupr \
+          -x ".git" \
+          -x "_output" \
+         "${REPO_ROOT}" "${fake_root}" 2>/dev/null || true)
+  if [[ -n "${diff}" ]]; then
+    echo "unexpectedly dirty working directory after hack/update-generated.sh" >&2
+    echo "${diff}" >&2
+    echo "" >&2
+    echo "please run: hack/update-generated.sh" >&2
+    exit 1
+  fi
+}
+
+main

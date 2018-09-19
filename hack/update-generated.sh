@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Copyright 2018 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,8 +14,9 @@
 # limitations under the License.
 
 # 'go generate's kind, using tools from vendor (go-bindata)
-
+set -o nounset
 set -o errexit
+set -o pipefail
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
 
@@ -27,5 +28,5 @@ GOBIN="${OUTPUT_GOBIN}" go install ./vendor/github.com/jteeuwen/go-bindata/go-bi
 # go generate (using go-bindata)
 # NOTE: go will only take package paths, not absolute directories
 PATH="${OUTPUT_GOBIN}:${PATH}" go generate ./...
-# gofmt the generated file
+# gofmt the tree
 find . -path "./vendor" -prune -o -name "*.go" -type f -print0 | xargs -0 gofmt -s -w
