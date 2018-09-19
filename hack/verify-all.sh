@@ -25,19 +25,21 @@ cd "${REPO_ROOT}"
 res=0
 
 # run all verify scripts
-"${REPO_ROOT}"/hack/verify-govet.sh || res=1
-
+hack/verify-govet.sh || res=1
 cd "${REPO_ROOT}"
-"${REPO_ROOT}"/hack/verify-gofmt.sh || res=1
 
+hack/verify-gofmt.sh || res=1
 cd "${REPO_ROOT}"
-"${REPO_ROOT}"/hack/verify-golint.sh || res=1
 
+hack/verify-golint.sh || res=1
 cd "${REPO_ROOT}"
-"${REPO_ROOT}"/hack/verify-generated.sh || res=1
+
+hack/verify-generated.sh || res=1
+cd "${REPO_ROOT}"
 
 # TODO(bentheelder): this script must be last because it doesn't operate in a tempdir ...
-"${REPO_ROOT}"/hack/verify-deps.sh || res=1
+hack/verify-deps.sh || res=1
+cd "${REPO_ROOT}"
 
 # exit based on verify scripts
 if [[ "${res}" = 0 ]]; then
