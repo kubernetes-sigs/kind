@@ -52,14 +52,7 @@ get_dep() {
 # select dep binary to use
 DEP="${DEP:-$(get_dep)}"
 
-
-# dep itself has a problematic testdata directory with infinite symlinks which
-# makes bazel sad: https://github.com/golang/dep/pull/1412
-# dep should probably be removing it, but it doesn't:
-# https://github.com/golang/dep/issues/1580
-rm -rf vendor/github.com/golang/dep/internal/fs/testdata
-# go-bindata does too, and is not maintained ...
-rm -rf vendor/github.com/jteeuwen/go-bindata/testdata
+# TODO(bentheelder): re-enable once (if?) we're using docker client
 # docker has a contrib dir with nothing we use in it, dep will retain only the
 # licenses, which includes some GPL, so we manually prune this directory.
 # See https://github.com/kubernetes/steering/issues/57
@@ -68,10 +61,9 @@ rm -rf vendor/github.com/docker/docker/contrib
 # actually run dep
 "${DEP}" ensure -v "$@"
 
-# rm all of the junk again
-rm -rf vendor/github.com/golang/dep/internal/fs/testdata
-rm -rf vendor/github.com/jteeuwen/go-bindata/testdata
-rm -rf vendor/github.com/docker/docker/contrib
+# TODO(bentheelder): re-enable once (if?) we're using docker client
+# we have to rm it again after dep ensure
+#rm -rf vendor/github.com/docker/docker/contrib
 
 # update BUILD since we may have updated vendor/...
 hack/update-bazel.sh

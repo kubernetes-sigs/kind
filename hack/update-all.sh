@@ -21,5 +21,4 @@ set -o verbose
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
 
-"${REPO_ROOT}"/hack/update-bazel.sh
 "${REPO_ROOT}"/hack/update-gofmt.sh

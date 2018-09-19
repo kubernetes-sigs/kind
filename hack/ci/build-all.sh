@@ -38,6 +38,3 @@ trap exit_trap EXIT
 
 # build go binaries without bazzel
 go install .
-
-# build the entire repo with bazel
-bazel build //...
