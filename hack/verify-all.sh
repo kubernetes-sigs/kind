@@ -37,7 +37,6 @@ cd "${REPO_ROOT}"
 hack/verify-generated.sh || res=1
 cd "${REPO_ROOT}"
 
-# TODO(bentheelder): this script must be last because it doesn't operate in a tempdir ...
 hack/verify-deps.sh || res=1
 cd "${REPO_ROOT}"
 
