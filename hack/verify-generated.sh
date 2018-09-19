@@ -36,15 +36,22 @@ cleanup() {
   fi
 }
 
+# cp -r without any warnings for symlinks ¯\_(ツ)_/¯
+quiet_recursive_cp() {
+  cp -r "${1}" "${2}" >/dev/null 2>&1
+}
+
 # copies repo into a temp root saved to TMP_GOPATH
 make_temp_root() {
   # make a fake gopath
   local fake_root="${TMP_GOPATH}/src/sigs.k8s.io/kind"
   mkdir -p "${fake_root}"
+  export -f quiet_recursive_cp
   # we need to copy everything but _output (which is .gitignore anyhow)
   find . \
     -type d -path "./_output" -prune -o \
-    -maxdepth 1 -mindepth 1 -exec cp -r {} "${fake_root}/{}" \;
+    -mindepth 1 -maxdepth 1 \
+    -exec bash -c 'quiet_recursive_cp "${0}" "${1}/${0}"' {} "${fake_root}" \;
 }
 
 main() {
@@ -65,12 +72,15 @@ main() {
   diff=$(diff -Nupr \
           -x ".git" \
           -x "_output" \
+          -x "vendor/github.com/jteeuwen/go-bindata/testdata" \
+          -x "vendor/github.com/golang/dep/internal/fs/testdata/symlinks" \
          "${REPO_ROOT}" "${fake_root}" 2>/dev/null || true)
   if [[ -n "${diff}" ]]; then
     echo "unexpectedly dirty working directory after hack/update-generated.sh" >&2
+    echo "" >&2
     echo "${diff}" >&2
     echo "" >&2
-    echo "please run: hack/update-generated.sh" >&2
+    echo "please run hack/update-generated.sh" >&2
     exit 1
   fi
 }

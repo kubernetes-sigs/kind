@@ -23,53 +23,26 @@ cd "${REPO_ROOT}"
 
 # place to stick temp binaries
 BINDIR="${REPO_ROOT}/_output/bin"
-mkdir -p "${BINDIR}"
 
-# TMP_GOPATH is used in make_temp_root
-TMP_GOPATH="$(TMPDIR="${BINDIR}" mktemp -d "${BINDIR}/verify-deps.XXXXX")"
-
-# exit trap cleanup for TMP_GOPATH
-cleanup() {
-  if [[ -n "${TMP_GOPATH}" ]]; then
-    rm -rf "${TMP_GOPATH}"
-  fi
+# install dep from vendor into $BINDIR
+get_dep() {
+  # build dep from vendor-fake-gopath and use that ...
+  GOBIN="${BINDIR}" go install ./vendor/github.com/golang/dep/cmd/dep
+  echo "${BINDIR}/dep"
 }
 
-# copies repo into a temp root relative to TMP_GOPATH
-make_temp_root() {
-  # make a fake gopath
-  local fake_root="${TMP_GOPATH}/src/sigs.k8s.io/kind"
-  mkdir -p "${fake_root}/.."
-  # we need to copy everything but _output (which is .gitignore anyhow)
-  find . \
-    -type d -path "./_output" -prune -o \
-    -maxdepth 1 -mindepth 1 -exec cp -a {} "${fake_root}/{}" \;
-}
+# select dep binary to use
+DEP="${DEP:-$(get_dep)}"
 
 main() {
-  trap cleanup EXIT
-
-  # copy repo root into tempdir under ./_output
-  echo "Copying tree into temp root ..."
-  make_temp_root
-  local fake_root="${TMP_GOPATH}/src/sigs.k8s.io/kind"
-
-  # run vendor update script
-  echo "Updating deps in '${fake_root}' ..."
-  cd "${fake_root}"
-  GOPATH="${TMP_GOPATH}" PATH="${TMP_GOPATH}/bin:${PATH}" hack/update-deps.sh
-
-  # make sure the temp repo has no changes relative to the real repo
-  echo "Diffing '${REPO_ROOT}/' '${fake_root}/' ..."
-  diff=$(diff -ur \
-          -x ".git" \
-          -x "_output" \
-         "${REPO_ROOT}" "${fake_root}" || true)
+  # run vendor update script in dry run mode
+  diff=$("${DEP}" check || true)
   if [[ -n "${diff}" ]]; then
-    echo "unexpectedly dirty working directory after hack/update-deps.sh" >&2
+    echo "Non-zero output from dep check" >&2
+    echo "" >&2
     echo "${diff}" >&2
     echo "" >&2
-    echo "please run: hack/update-deps.sh" >&2
+    echo "please run hack/update-deps.sh" >&2
     exit 1
   fi
 }
