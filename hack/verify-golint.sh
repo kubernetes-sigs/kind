@@ -17,7 +17,6 @@
 set -o errexit
 set -o nounset
 set -o pipefail
-set -o verbose
 
 # cd to the repo root
 REPO_ROOT=$(git rev-parse --show-toplevel)
@@ -25,21 +24,16 @@ cd "${REPO_ROOT}"
 
 # place to stick temp binaries
 BINDIR="${REPO_ROOT}/_output/bin"
+mkdir -p "${BINDIR}"
 
-# obtain golint either from existing bazel build (in case of running in an sh_binary)
-# or install it from vendor into BINDIR
+# TMP_GOPATH is used in get_golint
+TMP_GOPATH="$(TMPDIR="${BINDIR}" mktemp -d "${BINDIR}/verify-deps.XXXXX")"
+trap 'rm -rf "${TMP_GOPATH}"' EXIT
+
+# install golint from vendor into $BINDIR
 get_golint() {
-    # look for local bazel built dep first
-    local golint
-    golint="$(find bazel-bin/ -type f -name golint | head -n1)"
-    # if we found dep from bazel, just return that
-    if [[ -n "${golint}" ]]; then
-        echo "golint"
-        return 0
-    fi
-    # otherwise build dep from vendor and use that ...
-    GOBIN="${BINDIR}" go install ./vendor/github.com/golang/lint/golint
-    echo "${BINDIR}/golint"
+  GOBIN="${BINDIR}" go install ./vendor/github.com/golang/lint/golint
+  echo "${BINDIR}/golint"
 }
 
 # select golint binary to use

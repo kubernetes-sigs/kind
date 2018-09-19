@@ -16,7 +16,6 @@
 set -o errexit
 set -o nounset
 set -o pipefail
-set -o verbose
 
 # cd to repo root
 REPO_ROOT=$(git rev-parse --show-toplevel)
@@ -26,15 +25,26 @@ cd "${REPO_ROOT}"
 res=0
 
 # run all verify scripts
-"${REPO_ROOT}"/hack/verify-govet.sh || res=1
-"${REPO_ROOT}"/hack/verify-gofmt.sh || res=1
-"${REPO_ROOT}"/hack/verify-golint.sh || res=1
-"${REPO_ROOT}"/hack/verify-generated.sh || res=1
+echo "verifying govet ..."
+hack/verify-govet.sh || res=1
+cd "${REPO_ROOT}"
 
-# TODO(bentheelder): this script must be last because it doesn't operate in a tempdir ...
-"${REPO_ROOT}"/hack/verify-deps.sh || res=1
+echo "verifying gofmt ..."
+hack/verify-gofmt.sh || res=1
+cd "${REPO_ROOT}"
 
-set +o verbose
+echo "verifying golint ..."
+hack/verify-golint.sh || res=1
+cd "${REPO_ROOT}"
+
+echo "verifying generated ..."
+hack/verify-generated.sh || res=1
+cd "${REPO_ROOT}"
+
+echo "verifying deps ..."
+hack/verify-deps.sh || res=1
+cd "${REPO_ROOT}"
+
 # exit based on verify scripts
 if [[ "${res}" = 0 ]]; then
   echo ""

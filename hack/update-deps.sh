@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Copyright 2018 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,6 @@
 set -o nounset
 set -o errexit
 set -o pipefail
-set -o xtrace
 
 # cd to the repo root
 REPO_ROOT=$(git rev-parse --show-toplevel)
@@ -33,47 +32,25 @@ cd "${REPO_ROOT}"
 # place to stick temp binaries
 BINDIR="${REPO_ROOT}/_output/bin"
 
-# obtain dep either from existing bazel build (in case of running in an sh_binary)
-# or install it from vendor into BINDIR
+# install dep from vendor into $BINDIR
 get_dep() {
-    # look for local bazel built dep first
-    local dep
-    dep="$(find bazel-bin/ -type f -name dep | head -n1)"
-    # if we found dep from bazel, just return that
-    if [[ -n "${dep}" ]]; then
-        echo "dep"
-        return 0
-    fi
-    # otherwise build dep from vendor and use that ...
-    GOBIN="${BINDIR}" go install ./vendor/github.com/golang/dep/cmd/dep
-    echo "${BINDIR}/dep"
+  # build dep from vendor-fake-gopath and use that ...
+  GOBIN="${BINDIR}" go install ./vendor/github.com/golang/dep/cmd/dep
+  echo "${BINDIR}/dep"
 }
 
 # select dep binary to use
 DEP="${DEP:-$(get_dep)}"
 
-
-# dep itself has a problematic testdata directory with infinite symlinks which
-# makes bazel sad: https://github.com/golang/dep/pull/1412
-# dep should probably be removing it, but it doesn't:
-# https://github.com/golang/dep/issues/1580
-rm -rf vendor/github.com/golang/dep/internal/fs/testdata
-# go-bindata does too, and is not maintained ...
-rm -rf vendor/github.com/jteeuwen/go-bindata/testdata
+# TODO(bentheelder): re-enable once (if?) we're using docker client
 # docker has a contrib dir with nothing we use in it, dep will retain only the
-# licenses, which includes some GPL, so we manually prune this directory.
+# licenses, so we manually prune this directory.
 # See https://github.com/kubernetes/steering/issues/57
-rm -rf vendor/github.com/docker/docker/contrib
+#rm -rf vendor/github.com/docker/docker/contrib
 
 # actually run dep
 "${DEP}" ensure -v "$@"
 
-# rm all of the junk again
-rm -rf vendor/github.com/golang/dep/internal/fs/testdata
-rm -rf vendor/github.com/jteeuwen/go-bindata/testdata
-rm -rf vendor/github.com/docker/docker/contrib
-
-# update BUILD since we may have updated vendor/...
-hack/update-bazel.sh
-
-echo SUCCESS
+# TODO(bentheelder): re-enable once (if?) we're using docker client
+# we have to rm it again after dep ensure
+#rm -rf vendor/github.com/docker/docker/contrib

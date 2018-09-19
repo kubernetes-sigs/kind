@@ -18,26 +18,11 @@
 set -o errexit
 set -o nounset
 set -o pipefail
-set -o verbose
 
 # cd to the repo root
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
-exit_trap() {
-  # we _want_ to check the exit code directly
-  # shellcheck disable=SC2181
-  if [ "$?" -eq 0 ]; then
-    echo "Build passed!"
-  else
-    echo "Build Failed!"
-  fi
-}
-
-trap exit_trap EXIT
-
-# build go binaries without bazzel
-go install .
-
-# build the entire repo with bazel
-bazel build //...
+# build kind
+set -x
+go install -v .
