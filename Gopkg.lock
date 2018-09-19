@@ -26,40 +26,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:d7cf27a3bb11248b8d6edc6b65d54cf9ef53bef9d3876e6dce63ce6adc77206b"
-  name = "github.com/bazelbuild/bazel-gazelle"
-  packages = [
-    "cmd/gazelle",
-    "internal/config",
-    "internal/flag",
-    "internal/label",
-    "internal/language",
-    "internal/language/go",
-    "internal/language/proto",
-    "internal/merger",
-    "internal/pathtools",
-    "internal/repos",
-    "internal/resolve",
-    "internal/rule",
-    "internal/version",
-    "internal/walk",
-    "internal/wspace",
-  ]
-  pruneopts = "NUT"
-  revision = "6a1b93cc9b1c7e55e7d05a6d324bcf9d87ea3ab1"
-  version = "0.14.0"
-
-[[projects]]
-  digest = "1:03679414789b10f815a33667d29e3c77e57c8096bd32457fd1682a4222f25806"
-  name = "github.com/bazelbuild/buildtools"
-  packages = [
-    "build",
-    "tables",
-  ]
-  pruneopts = "NUT"
-  revision = "80c7f0d45d7e40fa1f7362852697d4a03df557b3"
-
-[[projects]]
   digest = "1:a12d94258c5298ead75e142e8001224bf029f302fed9e96cd39c0eaf90f3954d"
   name = "github.com/boltdb/bolt"
   packages = ["."]
@@ -104,14 +70,6 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e2b86e41f3d669fc36b50d31d32d22c8ac656c75aa5ea89717ce7177e134ff2a"
-  name = "github.com/golang/glog"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
-
-[[projects]]
-  branch = "master"
   digest = "1:4ee452f8994700dcab9e816aef1cb9eb2317218734c6ccf5135746e6c19f3dce"
   name = "github.com/golang/lint"
   packages = ["golint"]
@@ -151,14 +109,6 @@
   ]
   pruneopts = "NUT"
   revision = "6025e8de665b31fa74ab1a66f2cddd8c0abf887e"
-
-[[projects]]
-  branch = "master"
-  digest = "1:f60b33d29fc000402656efc11c760f3881d5360a28a47021649f32e770e4b064"
-  name = "github.com/kubernetes/repo-infra"
-  packages = ["kazel"]
-  pruneopts = "NUT"
-  revision = "84d52408a061e87d45aebf5a0867246bdf66d180"
 
 [[projects]]
   branch = "master"
@@ -261,14 +211,13 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2c7feb35897066f58ae261bfed23e82fa8dba5bc8dfedfca0af8c1af2fcdecb5"
+  digest = "1:3d35f43f18787f661e7a4c8d8bcd424e96b046ef63769f02ae23e34aa57ff661"
   name = "golang.org/x/tools"
   packages = [
     "go/ast/astutil",
     "go/gcexportdata",
     "go/internal/gcimporter",
     "go/types/typeutil",
-    "go/vcs",
   ]
   pruneopts = "NUT"
   revision = "677d2ff680c188ddb7dcd2bfa6bc7d3f2f2f75b2"
@@ -285,12 +234,10 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/bazelbuild/bazel-gazelle/cmd/gazelle",
     "github.com/ghodss/yaml",
     "github.com/golang/dep/cmd/dep",
     "github.com/golang/lint/golint",
     "github.com/jteeuwen/go-bindata/go-bindata",
-    "github.com/kubernetes/repo-infra/kazel",
     "github.com/pkg/errors",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
