@@ -24,20 +24,28 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/build/base/sources"
+	"sigs.k8s.io/kind/pkg/docker"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
 )
 
 // DefaultImageName is the default name of the built base image
-const DefaultImageName = "kind-base"
+const DefaultImageName = "kindest/base"
+
+// DefaultImageTag is the default tag of the built base image
+const DefaultImageTag = "latest"
 
 // BuildContext is used to build the kind node base image, and contains
 // build configuration
 type BuildContext struct {
+	// option fields
 	sourceDir string
+	imageName string
 	imageTag  string
-	goCmd     string
-	arch      string
+	// non option fields
+	image string
+	goCmd string // TODO(bentheelder): should be an option possibly
+	arch  string // TODO(bentheelder): should be an option
 }
 
 // Option is BuildContext configuration option supplied to NewBuildContext
@@ -47,6 +55,13 @@ type Option func(*BuildContext)
 func WithSourceDir(sourceDir string) Option {
 	return func(b *BuildContext) {
 		b.sourceDir = sourceDir
+	}
+}
+
+// WithImageName configures a NewBuildContext to tag the built image with `name`
+func WithImageName(name string) Option {
+	return func(b *BuildContext) {
+		b.imageName = name
 	}
 }
 
@@ -61,13 +76,16 @@ func WithImageTag(tag string) Option {
 // default configuration
 func NewBuildContext(options ...Option) *BuildContext {
 	ctx := &BuildContext{
-		imageTag: DefaultImageName,
-		goCmd:    "go",
-		arch:     "amd64",
+		imageName: DefaultImageName,
+		imageTag:  DefaultImageTag,
+		goCmd:     "go",
+		arch:      "amd64",
 	}
 	for _, option := range options {
 		option(ctx)
 	}
+	// normalize name and tag into an image reference
+	ctx.image = docker.JoinNameAndTag(ctx.imageName, ctx.imageTag)
 	return ctx
 }
 
@@ -135,7 +153,7 @@ func (c *BuildContext) buildEntrypoint(dir string) error {
 
 func (c *BuildContext) buildImage(dir string) error {
 	// build the image, tagged as tagImageAs, using the our tempdir as the context
-	cmd := exec.Command("docker", "build", "-t", c.imageTag, dir)
+	cmd := exec.Command("docker", "build", "-t", c.image, dir)
 	cmd.Debug = true
 	cmd.InheritOutput = true
 

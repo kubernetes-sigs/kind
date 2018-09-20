@@ -44,9 +44,9 @@ func NewCommand() *cobra.Command {
 			run(flags, cmd, args)
 		},
 	}
-	cmd.Flags().StringVar(&flags.Name, "name", "1", "the cluster name")
-	cmd.Flags().StringVar(&flags.Config, "config", "", "path to create config file")
-	cmd.Flags().StringVar(&flags.ImageName, "image", "", "name of the image to use for booting the cluster. If this is non-empty, it will override the value specified in the --config file.")
+	cmd.Flags().StringVar(&flags.Name, "name", "1", "the cluster context name")
+	cmd.Flags().StringVar(&flags.Config, "config", "", "path to a kind config file")
+	cmd.Flags().StringVar(&flags.ImageName, "image", "", "node docker image to use for booting the cluster")
 	return cmd
 }
 
