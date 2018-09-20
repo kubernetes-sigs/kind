@@ -42,7 +42,9 @@ const DefaultImageTag = "latest"
 const DefaultBaseImageName = "kindest/base"
 
 // DefaultBaseImageTag is the default base image tag used
-const DefaultBaseImageTag = "latest"
+// TODO(bentheelder): add tooling to automanage this,
+// and document using --base-tag=latest for local builds
+const DefaultBaseImageTag = "v20180920-afa27a7"
 
 // DefaultMode is the default kubernetes build mode for the built image
 // see pkg/build/kube.Bits
