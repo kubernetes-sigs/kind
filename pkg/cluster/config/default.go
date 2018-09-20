@@ -26,7 +26,8 @@ func New() *Config {
 // ApplyDefaults replaces unset fields with defaults
 func (c *Config) ApplyDefaults() {
 	if c.Image == "" {
-		c.Image = "kind-node"
+		// TODO(bentheelder): move this to a constant
+		c.Image = "kindest/node:v1.11.3"
 	}
 	if c.NumNodes == 0 {
 		c.NumNodes = 1

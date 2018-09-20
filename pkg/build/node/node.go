@@ -27,15 +27,24 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/build/kube"
+	"sigs.k8s.io/kind/pkg/docker"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
 )
 
-// DefaultTag is the default tag for the built image
-const DefaultTag = "kind-node"
+// DefaultImageName is the default name for the built image
+const DefaultImageName = "kindest/node"
 
-// DefaultBaseImage is the default base image used
-const DefaultBaseImage = "kind-base"
+// DefaultImageTag is the default tag for the built image
+const DefaultImageTag = "latest"
+
+// DefaultBaseImageName is the default base image name used
+const DefaultBaseImageName = "kindest/base"
+
+// DefaultBaseImageTag is the default base image tag used
+// TODO(bentheelder): add tooling to automanage this,
+// and document using --base-tag=latest for local builds
+const DefaultBaseImageTag = "v20180920-afa27a7"
 
 // DefaultMode is the default kubernetes build mode for the built image
 // see pkg/build/kube.Bits
@@ -44,6 +53,13 @@ const DefaultMode = "docker"
 // Option is BuildContext configuration option supplied to NewBuildContext
 type Option func(*BuildContext)
 
+// WithImageName configures a NewBuildContext to tag the built image with `name`
+func WithImageName(name string) Option {
+	return func(b *BuildContext) {
+		b.imageName = name
+	}
+}
+
 // WithImageTag configures a NewBuildContext to tag the built image with `tag`
 func WithImageTag(tag string) Option {
 	return func(b *BuildContext) {
@@ -51,10 +67,17 @@ func WithImageTag(tag string) Option {
 	}
 }
 
-// WithBaseImage configures a NewBuildContext to use `image` as the base image
-func WithBaseImage(image string) Option {
+// WithBaseImageName configures a NewBuildContext to use `image` as the base image name
+func WithBaseImageName(image string) Option {
 	return func(b *BuildContext) {
-		b.baseImage = image
+		b.baseImageName = image
+	}
+}
+
+// WithBaseImageTag configures a NewBuildContext to use `tag` as the base image tag
+func WithBaseImageTag(tag string) Option {
+	return func(b *BuildContext) {
+		b.baseImageTag = tag
 	}
 }
 
@@ -69,13 +92,17 @@ func WithMode(mode string) Option {
 // build configuration
 type BuildContext struct {
 	// option fields
-	mode      string
-	imageTag  string
-	arch      string
-	baseImage string
+	mode          string
+	imageName     string
+	imageTag      string
+	baseImageName string
+	baseImageTag  string
 	// non-option fields
-	kubeRoot string
-	bits     kube.Bits
+	arch      string // TODO(bentheelder): this should be an option
+	image     string
+	baseImage string
+	kubeRoot  string
+	bits      kube.Bits
 }
 
 // NewBuildContext creates a new BuildContext with default configuration,
@@ -83,15 +110,20 @@ type BuildContext struct {
 func NewBuildContext(options ...Option) (ctx *BuildContext, err error) {
 	// default options
 	ctx = &BuildContext{
-		mode:      DefaultMode,
-		imageTag:  DefaultTag,
-		arch:      "amd64",
-		baseImage: DefaultBaseImage,
+		mode:          DefaultMode,
+		imageName:     DefaultImageName,
+		imageTag:      DefaultImageTag,
+		arch:          "amd64",
+		baseImageName: DefaultBaseImageName,
+		baseImageTag:  DefaultBaseImageTag,
 	}
 	// apply user options
 	for _, option := range options {
 		option(ctx)
 	}
+	// normalize name and tag into an image reference
+	ctx.image = docker.JoinNameAndTag(ctx.imageName, ctx.imageTag)
+	ctx.baseImage = docker.JoinNameAndTag(ctx.baseImageName, ctx.baseImageTag)
 	// lookup kuberoot unless mode == "apt",
 	// apt should not fail on finding kube root as it does not use it
 	kubeRoot := ""
@@ -249,7 +281,7 @@ func (c *BuildContext) buildImage(dir string) error {
 	}
 
 	// Save the image changes to a new image
-	cmd := exec.Command("docker", "commit", containerID, c.imageTag)
+	cmd := exec.Command("docker", "commit", containerID, c.image)
 	cmd.Debug = true
 	cmd.InheritOutput = true
 	if err = cmd.Run(); err != nil {

@@ -24,6 +24,7 @@ package config
 // Other API versions can be converted to this struct with Convert()
 type Config struct {
 	// Image is the node image to use when running the cluster
+	// TODO(bentheelder): split this into image and tag?
 	Image string `json:"image,omitempty"`
 	// NumNodes is the number of nodes to create (currently only one is supported)
 	NumNodes int `json:"numNodes,omitempty"`
