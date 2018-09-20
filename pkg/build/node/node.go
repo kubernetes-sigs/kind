@@ -307,8 +307,8 @@ func (c *BuildContext) createBuildContainer(buildDir string) (id string, err err
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create build container")
 	}
-	if len(lines) != 1 {
-		return "", fmt.Errorf("invalid container creation output: %v", lines)
+	if len(lines) < 1 {
+		return "", fmt.Errorf("invalid container creation output, must print at least one line")
 	}
-	return lines[0], nil
+	return lines[len(lines)-1], nil
 }
