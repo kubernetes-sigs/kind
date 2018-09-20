@@ -10,7 +10,11 @@
 `kind` is a tool for running local Kubernetes clusters using Docker container "nodes".  
 `kind` is primarily designed for testing Kubernetes 1.11+, initially targeting the [conformance tests].
 
-It consists of:
+If you have [go] and [docker] installed `go get sigs.k8s.io/kind && kind create` is all you need!
+
+<img src="https://gist.githubusercontent.com/BenTheElder/621bc321fc6d9506fd936feb36d32dd0/raw/e5eabd250f73195dcaaf4f76e3620bb7d6fa7042/demo.gif" alt="kind create demo" />
+
+`kind` consists of:
  - Go [packages][packages] implementing [cluster creation][cluster package], [image build][build package], etc.
  - A command line interface ([`kind`][kind cli]) built on these packages.
  - Docker [image(s)][images] written to run systemd, Kubernetes, etc.
@@ -56,6 +60,8 @@ See also: the Kubernetes [community page].
 Participation in the Kubernetes community is governed by the [Kubernetes Code of Conduct].
 
 <!--links-->
+[go]: https://golang.org/
+[docker]: https://www.docker.com/
 [community page]: http://kubernetes.io/community/
 [Kubernetes Code of Conduct]: code-of-conduct.md
 [Go Report Card Badge]: https://goreportcard.com/badge/sigs.k8s.io/kind
