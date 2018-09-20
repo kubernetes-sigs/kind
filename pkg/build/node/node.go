@@ -160,7 +160,7 @@ func (c *BuildContext) populateBits(buildDir string) error {
 }
 
 // BuildContainerLabelKey is applied to each build container
-const BuildContainerLabelKey = "io.k8s.test-infra.kind-build"
+const BuildContainerLabelKey = "io.k8s.sigs.kind.build"
 
 // private kube.InstallContext implementation, local to the image build
 type installContext struct {
