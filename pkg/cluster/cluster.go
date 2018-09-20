@@ -33,7 +33,7 @@ import (
 )
 
 // ClusterLabelKey is applied to each "node" docker container for identification
-const ClusterLabelKey = "io.k8s.test-infra.kind-cluster"
+const ClusterLabelKey = "io.k8s.sigs.kind.cluster"
 
 // Context is used to create / manipulate kubernetes-in-docker clusters
 type Context struct {

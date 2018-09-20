@@ -37,7 +37,7 @@ cleanup() {
     fi
 }
 
-# install kind to a tempdir GOPATH from this script's test-infra checkout
+# install kind to a tempdir GOPATH from this script's kind checkout
 install_kind() {
     # install `kind` to tempdir
     TMP_DIR=$(mktemp -d)
