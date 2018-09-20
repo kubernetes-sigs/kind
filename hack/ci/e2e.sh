@@ -55,10 +55,6 @@ install_kind() {
 
 # build kubernetes / node image, e2e binaries
 build() {
-    # build the base image
-    # TODO(bentheelder): eliminate this once we publish this image
-    kind build base
-
     # possibly enable bazel build caching before building kubernetes
     BAZEL_REMOTE_CACHE_ENABLED=${BAZEL_REMOTE_CACHE_ENABLED:-false}
     if [[ "${BAZEL_REMOTE_CACHE_ENABLED}" == "true" ]]; then
