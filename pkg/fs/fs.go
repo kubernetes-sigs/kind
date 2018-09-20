@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 // Package fs contains utilites for interacting with the host filesystem
+// in a docker friendly way
 package fs
 
 import (
@@ -43,6 +44,7 @@ func TempDir(dir, prefix string) (name string, err error) {
 
 // Copy recursively directories, symlinks, files copies from src to dst
 // Copy will make dirs as necessary, and keep file modes
+// Symlinks will be dereferenced similar to `cp -r src dst`
 func Copy(src, dst string) error {
 	// get source info
 	info, err := os.Lstat(src)
@@ -59,7 +61,7 @@ func Copy(src, dst string) error {
 
 func copy(src, dst string, info os.FileInfo) error {
 	if info.Mode()&os.ModeSymlink != 0 {
-		return CopySymlink(src, dst)
+		return copySymlink(src, dst)
 	}
 	if info.IsDir() {
 		return copyDir(src, dst, info)
@@ -106,24 +108,19 @@ func copyFile(src, dst string, info os.FileInfo) error {
 	return err
 }
 
-// CopySymlink copies a symlink from src to dst
-func CopySymlink(src, dst string) error {
-	// find the actual source link
-	realSrc, err := os.Readlink(src)
+// copySymlink dereferences and then copies a symlink
+func copySymlink(src, dst string) error {
+	// read through the symlink
+	realSrc, err := filepath.EvalSymlinks(src)
 	if err != nil {
 		return err
 	}
-	// create a new link
-	return os.Symlink(realSrc, dst)
-}
-
-// CopyDir copies a directory recursively from src to dst
-func CopyDir(src, dst string) error {
-	info, err := os.Lstat(src)
+	info, err := os.Lstat(realSrc)
 	if err != nil {
 		return err
 	}
-	return copyDir(src, dst, info)
+	// copy the underlying contents
+	return copy(realSrc, dst, info)
 }
 
 func copyDir(src, dst string, info os.FileInfo) error {
