@@ -93,7 +93,7 @@ func (c *BuildContext) Build() (err error) {
 		buildDir = filepath.Join(buildDir, "images", "base")
 
 	} else {
-		err = fs.CopyDir(c.sourceDir, buildDir)
+		err = fs.Copy(c.sourceDir, buildDir)
 		if err != nil {
 			log.Errorf("failed to copy sources to build dir %v", err)
 			return err
