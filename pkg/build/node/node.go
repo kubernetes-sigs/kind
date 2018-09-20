@@ -300,7 +300,10 @@ func (c *BuildContext) createBuildContainer(buildDir string) (id string, err err
 		// label the container to make them easier to track
 		"--label", fmt.Sprintf("%s=%s", BuildContainerLabelKey, time.Now().Format(time.RFC3339Nano)),
 		"-v", fmt.Sprintf("%s:/build", buildDir),
-		c.baseImage,
+		// the container should hang forever so we can exec in it
+		"--entrypoint=sleep",
+		c.baseImage, // use the selected base image
+		"infinity",  // sleep infinitely
 	)
 	cmd.Debug = true
 	lines, err := cmd.CombinedOutputLines()
