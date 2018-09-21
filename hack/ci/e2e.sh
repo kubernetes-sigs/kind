@@ -94,7 +94,7 @@ create_cluster() {
     # mark the cluster as up for cleanup
     # even if kind create fails, kind delete can clean up after it
     KIND_IS_UP=true
-    kind create
+    kind create --image="kindest/node:latest"
 }
 
 # run e2es with kubetest
