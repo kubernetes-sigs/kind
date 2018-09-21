@@ -19,6 +19,8 @@ package docker
 
 import (
 	"strings"
+
+	"sigs.k8s.io/kind/pkg/exec"
 )
 
 // JoinNameAndTag combines a docker image name and tag
@@ -32,4 +34,16 @@ func JoinNameAndTag(name, tag string) string {
 		return name + ":" + tag
 	}
 	return name + tag
+}
+
+// PullIfNotPresent will pull an image if it is not present locally
+// it returns true if it attempted to pull, and any errors from pulling
+func PullIfNotPresent(image string) (pulled bool, err error) {
+	// if this did not return an error, then the image exists locally
+	cmd := exec.Command("docker", "inspect", "--type=image", image)
+	if err := cmd.Run(); err == nil {
+		return false, nil
+	}
+	// otherwise try to pull it
+	return true, exec.Command("docker", "pull", image).Run()
 }

@@ -73,7 +73,7 @@ func (cmd *Cmd) runLoggingOutputOnFail() error {
 	cmd.Stdout = &buff
 	cmd.Stderr = &buff
 	err := cmd.Cmd.Run()
-	if cmd.LogOutputOnFail {
+	if err != nil && cmd.LogOutputOnFail {
 		log.Error("failed with:")
 		scanner := bufio.NewScanner(&buff)
 		for scanner.Scan() {
@@ -95,12 +95,9 @@ func (cmd *Cmd) CombinedOutputLines() (lines []string, err error) {
 	cmd.Stdout = &buff
 	cmd.Stderr = &buff
 	err = cmd.Cmd.Run()
-	if err != nil {
-		return nil, err
-	}
 	scanner := bufio.NewScanner(&buff)
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
-	return lines, nil
+	return lines, err
 }

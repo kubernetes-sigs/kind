@@ -294,6 +294,9 @@ func (c *BuildContext) buildImage(dir string) error {
 }
 
 func (c *BuildContext) createBuildContainer(buildDir string) (id string, err error) {
+	// attempt to explicitly pull the image if it doesn't exist locally
+	// we don't care if this errors, we'll still try to run
+	_, _ = docker.PullIfNotPresent(c.baseImage)
 	cmd := exec.Command("docker", "run")
 	cmd.Args = append(cmd.Args,
 		"-d", // make the client exit while the container continues to run
@@ -308,7 +311,8 @@ func (c *BuildContext) createBuildContainer(buildDir string) (id string, err err
 	cmd.Debug = true
 	lines, err := cmd.CombinedOutputLines()
 	if err != nil {
-		return "", errors.Wrap(err, "failed to create build container")
+		return "", errors.Wrap(err,
+			fmt.Sprintf("failed to create build container: %v", lines))
 	}
 	if len(lines) < 1 {
 		return "", fmt.Errorf("invalid container creation output, must print at least one line")
