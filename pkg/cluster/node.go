@@ -69,7 +69,11 @@ func createNode(name, image, clusterLabel string) (handle *nodeHandle, err error
 		"--expose", "6443", // expose API server port
 		// pick a random ephemeral port to forward to the API server
 		"--publish-all",
+		// explicitly set the entrypoint
+		"--entrypoint=/usr/local/bin/entrypoint",
 		image,
+		// explicitly pass the entrypoint argument
+		"/sbin/init",
 	)
 	cmd.Debug = true
 	err = cmd.Run()
