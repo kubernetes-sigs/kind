@@ -257,7 +257,7 @@ func (c *Context) provisionControlPlane(
 	// TODO(bentheelder): support other overlay networks
 	if err = node.Run(
 		"/bin/sh", "-c",
-		`kubectl apply --kubeconfig=/etc/kubernetes/admin.conf -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"`,
+		`kubectl apply --kubeconfig=/etc/kubernetes/admin.conf -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version --kubeconfig=/etc/kubernetes/admin.conf | base64 | tr -d '\n')"`,
 	); err != nil {
 		return kubeadmConfig, errors.Wrap(err, "failed to apply overlay network")
 	}
