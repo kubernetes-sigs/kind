@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -270,6 +271,14 @@ func (c *Context) provisionControlPlane(
 		); err != nil {
 			return kubeadmConfig, errors.Wrap(err, "failed to remove master taint")
 		}
+	}
+
+	// add the default storage class
+	if err := node.RunWithInput(
+		strings.NewReader(defaultStorageClassManifest),
+		"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf", "apply", "-f", "-",
+	); err != nil {
+		return kubeadmConfig, errors.Wrap(err, "failed to add default storage class")
 	}
 
 	// run any post-overlay hooks
