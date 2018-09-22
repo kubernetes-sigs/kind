@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -256,7 +257,7 @@ func (c *Context) provisionControlPlane(
 	// TODO(bentheelder): support other overlay networks
 	if err = node.Run(
 		"/bin/sh", "-c",
-		`kubectl apply --kubeconfig=/etc/kubernetes/admin.conf -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"`,
+		`kubectl apply --kubeconfig=/etc/kubernetes/admin.conf -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version --kubeconfig=/etc/kubernetes/admin.conf | base64 | tr -d '\n')"`,
 	); err != nil {
 		return kubeadmConfig, errors.Wrap(err, "failed to apply overlay network")
 	}
@@ -270,6 +271,14 @@ func (c *Context) provisionControlPlane(
 		); err != nil {
 			return kubeadmConfig, errors.Wrap(err, "failed to remove master taint")
 		}
+	}
+
+	// add the default storage class
+	if err := node.RunWithInput(
+		strings.NewReader(defaultStorageClassManifest),
+		"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf", "apply", "-f", "-",
+	); err != nil {
+		return kubeadmConfig, errors.Wrap(err, "failed to add default storage class")
 	}
 
 	// run any post-overlay hooks

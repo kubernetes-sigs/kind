@@ -19,6 +19,7 @@ package cluster
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -108,6 +109,23 @@ func (nh *nodeHandle) Run(command string, args ...string) error {
 	cmd.Args = append(cmd.Args,
 		args..., // finally, with the args specified
 	)
+	cmd.InheritOutput = true
+	return cmd.Run()
+}
+
+// RunWithInput execs command, args... on the node, hooking input to stdin
+func (nh *nodeHandle) RunWithInput(input io.Reader, command string, args ...string) error {
+	cmd := exec.Command("docker", "exec")
+	cmd.Args = append(cmd.Args,
+		"-i",           // interactive so we can supply input
+		"--privileged", // run with priliges so we can remount etc..
+		nh.nameOrID,    // ... against the "node" container
+		command,        // with the command specified
+	)
+	cmd.Args = append(cmd.Args,
+		args..., // finally, with the args specified
+	)
+	cmd.Stdin = input
 	cmd.InheritOutput = true
 	return cmd.Run()
 }
