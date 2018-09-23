@@ -63,7 +63,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [go]: https://golang.org/
 [docker]: https://www.docker.com/
 [community page]: http://kubernetes.io/community/
-[Kubernetes Code of Conduct]: code-of-conduct.md
+[Kubernetes Code of Conduct]: CODE_OF_CONDUCT.md
 [Go Report Card Badge]: https://goreportcard.com/badge/sigs.k8s.io/kind
 [Go Report Card]: https://goreportcard.com/report/sigs.k8s.io/kind
 [conformance tests]: https://github.com/kubernetes/community/blob/master/contributors/devel/conformance-tests.md
