@@ -171,7 +171,7 @@ func (nh *nodeHandle) CombinedOutputLines(command string, args ...string) ([]str
 func (nh *nodeHandle) CopyTo(source, dest string) error {
 	cmd := exec.Command("docker", "cp")
 	cmd.Args = append(cmd.Args,
-		source,               // from the source file
+		source, // from the source file
 		nh.nameOrID+":"+dest, // to the node, at dest
 	)
 	cmd.InheritOutput = true
