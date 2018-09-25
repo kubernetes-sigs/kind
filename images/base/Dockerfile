@@ -91,7 +91,8 @@ ARG CNI_URL="${CNI_BASE_URL}${CNI_TARBALL}"
 RUN curl -sSL --retry 5 --output /tmp/cni.tgz "${CNI_URL}" \
     && sha256sum /tmp/cni.tgz \
     && mkdir -p /opt/cni/bin \
-    && tar -C /opt/cni/bin -xzf /tmp/cni.tgz
+    && tar -C /opt/cni/bin -xzf /tmp/cni.tgz \
+    && rm -rf /tmp/cni.tgz
 
 # tell systemd that it is in docker (it will check for the container env)
 # https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
