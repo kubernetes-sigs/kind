@@ -147,7 +147,7 @@ func (c *Context) provisionControlPlane(
 	}
 
 	// we need to change a few mounts once we have the container
-	// we'd do this ahead of time if we could, but --priviliged implies things
+	// we'd do this ahead of time if we could, but --privileged implies things
 	// that don't seem to be configurable, and we need that flag
 	if err := node.FixMounts(); err != nil {
 		// TODO(bentheelder): logging here
