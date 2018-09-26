@@ -26,7 +26,6 @@ import (
 type flags struct {
 	Source string
 	Image  string
-	Tag    string
 }
 
 // NewCommand returns a new cobra.Command for building the base image
@@ -41,16 +40,15 @@ func NewCommand() *cobra.Command {
 			run(flags, cmd, args)
 		},
 	}
-	cmd.Flags().StringVar(&flags.Source, "source", "", "path to the base image sources")
 	cmd.Flags().StringVar(
-		&flags.Image, "image",
-		base.DefaultImageName,
-		"name of the resulting image to be built",
+		&flags.Source, "source",
+		"",
+		"path to the base image sources",
 	)
 	cmd.Flags().StringVar(
-		&flags.Tag, "tag",
-		base.DefaultImageTag,
-		"tag of the resulting image to be built",
+		&flags.Image, "image",
+		base.DefaultImage,
+		"name:tag of the resulting image to be built",
 	)
 	return cmd
 }
@@ -58,8 +56,7 @@ func NewCommand() *cobra.Command {
 func run(flags *flags, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
 	ctx := base.NewBuildContext(
-		base.WithImageName(flags.Image),
-		base.WithImageTag(flags.Tag),
+		base.WithImage(flags.Image),
 		base.WithSourceDir(flags.Source),
 	)
 	err := ctx.Build()

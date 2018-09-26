@@ -37,10 +37,11 @@ KIND="${KIND:-$(get_kind)}"
 # generate tag
 DATE="$(date +v%Y%m%d)"
 TAG="${DATE}-$(git describe --tags --always --dirty)"
+IMAGE="kindest/base:${TAG}"
 
 # build
-(set -x; "${KIND}" build base --tag="${TAG}")
+(set -x; "${KIND}" build base --image="${IMAGE}")
 
 # push
-docker push kindest/base:"${TAG}"
+docker push "${IMAGE}"
 

@@ -24,26 +24,20 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/build/base/sources"
-	"sigs.k8s.io/kind/pkg/docker"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
 )
 
-// DefaultImageName is the default name of the built base image
-const DefaultImageName = "kindest/base"
-
-// DefaultImageTag is the default tag of the built base image
-const DefaultImageTag = "latest"
+// DefaultImage is the default name:tag of the built base image
+const DefaultImage = "kindest/base:latest"
 
 // BuildContext is used to build the kind node base image, and contains
 // build configuration
 type BuildContext struct {
 	// option fields
 	sourceDir string
-	imageName string
-	imageTag  string
+	image     string
 	// non option fields
-	image string
 	goCmd string // TODO(bentheelder): should be an option possibly
 	arch  string // TODO(bentheelder): should be an option
 }
@@ -58,17 +52,10 @@ func WithSourceDir(sourceDir string) Option {
 	}
 }
 
-// WithImageName configures a NewBuildContext to tag the built image with `name`
-func WithImageName(name string) Option {
+// WithImage configures a NewBuildContext to tag the built image with `name`
+func WithImage(image string) Option {
 	return func(b *BuildContext) {
-		b.imageName = name
-	}
-}
-
-// WithImageTag configures a NewBuildContext to tag the built image with `tag`
-func WithImageTag(tag string) Option {
-	return func(b *BuildContext) {
-		b.imageTag = tag
+		b.image = image
 	}
 }
 
@@ -76,16 +63,13 @@ func WithImageTag(tag string) Option {
 // default configuration
 func NewBuildContext(options ...Option) *BuildContext {
 	ctx := &BuildContext{
-		imageName: DefaultImageName,
-		imageTag:  DefaultImageTag,
-		goCmd:     "go",
-		arch:      "amd64",
+		image: DefaultImage,
+		goCmd: "go",
+		arch:  "amd64",
 	}
 	for _, option := range options {
 		option(ctx)
 	}
-	// normalize name and tag into an image reference
-	ctx.image = docker.JoinNameAndTag(ctx.imageName, ctx.imageTag)
 	return ctx
 }
 

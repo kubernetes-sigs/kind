@@ -18,23 +18,8 @@ limitations under the License.
 package docker
 
 import (
-	"strings"
-
 	"sigs.k8s.io/kind/pkg/exec"
 )
-
-// JoinNameAndTag combines a docker image name and tag
-// The tag may be empty, a tag as in name:tag, or a a sha as in `@sha256:asdf`
-func JoinNameAndTag(name, tag string) string {
-	// Join the name and tag with a colon IFF the tag is not any of:
-	// - empty, in which case we can just the name
-	// - starts with @, this is either a digest, or an invalid value
-	// - starts with :, we can gracefully not double up the :
-	if tag != "" && !strings.HasPrefix(tag, "@") && !strings.HasPrefix(tag, ":") {
-		return name + ":" + tag
-	}
-	return name + tag
-}
 
 // PullIfNotPresent will pull an image if it is not present locally
 // it returns true if it attempted to pull, and any errors from pulling
