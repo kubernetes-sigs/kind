@@ -42,6 +42,14 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:38e684375ef5b55e812332266d63f9fc5b6329ab303067c4cdda051db6d29ca4"
+  name = "github.com/gogo/protobuf"
+  packages = ["proto"]
+  pruneopts = "NUT"
+  revision = "636bf0302bc95575d69441b25a2603156ffdddf1"
+  version = "v1.1.1"
+
+[[projects]]
   digest = "1:1db55ba0586c3fc887dcd18864bfaedf91d06c9beff7f64e89f5b669b3bfc85c"
   name = "github.com/golang/dep"
   packages = [
@@ -67,6 +75,14 @@
   pruneopts = "NUT"
   revision = "224a564abe296670b692fe08bb63a3e4c4ad7978"
   version = "v0.5.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:e2b86e41f3d669fc36b50d31d32d22c8ac656c75aa5ea89717ce7177e134ff2a"
+  name = "github.com/golang/glog"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
 
 [[projects]]
   branch = "master"
@@ -211,13 +227,15 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:3d35f43f18787f661e7a4c8d8bcd424e96b046ef63769f02ae23e34aa57ff661"
+  digest = "1:1b78e3121d0197d75a56968c87830650aa276c4508c9204ccb6bcc4fcce969dd"
   name = "golang.org/x/tools"
   packages = [
     "go/ast/astutil",
     "go/gcexportdata",
     "go/internal/gcimporter",
     "go/types/typeutil",
+    "imports",
+    "internal/fastwalk",
   ]
   pruneopts = "NUT"
   revision = "677d2ff680c188ddb7dcd2bfa6bc7d3f2f2f75b2"
@@ -232,11 +250,54 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f12c14c7738afa45994bb3dc01539fbae77dc4848777ac209b3b1bea4d1507c3"
+  digest = "1:ab388162293c0c2ea67c8d4d6b6ac2523aac262a1cd68a2c64ab4cb23ef19546"
   name = "k8s.io/apimachinery"
-  packages = ["pkg/util/version"]
+  packages = [
+    "pkg/conversion",
+    "pkg/conversion/queryparams",
+    "pkg/runtime",
+    "pkg/runtime/schema",
+    "pkg/util/errors",
+    "pkg/util/json",
+    "pkg/util/naming",
+    "pkg/util/runtime",
+    "pkg/util/sets",
+    "pkg/util/version",
+    "third_party/forked/golang/reflect",
+  ]
   pruneopts = "NUT"
   revision = "c6dd271be00615c6fa8c91fdf63381265a5f0e4e"
+
+[[projects]]
+  branch = "release-1.11"
+  digest = "1:647030d10eaa615a2739ce4c41db3d6739157d4530aa73fe70a75047d35047fd"
+  name = "k8s.io/code-generator"
+  packages = [
+    "cmd/deepcopy-gen",
+    "cmd/deepcopy-gen/args",
+    "cmd/defaulter-gen",
+    "cmd/defaulter-gen/args",
+    "pkg/util",
+  ]
+  pruneopts = "NT"
+  revision = "8c97d6ab64da020f8b151e9d3ed8af3172f5c390"
+
+[[projects]]
+  branch = "master"
+  digest = "1:5249c83f0fb9e277b2d28c19eca814feac7ef05dc762e4deaf0a2e4b1a7c5df3"
+  name = "k8s.io/gengo"
+  packages = [
+    "args",
+    "examples/deepcopy-gen/generators",
+    "examples/defaulter-gen/generators",
+    "examples/set-gen/sets",
+    "generator",
+    "namer",
+    "parser",
+    "types",
+  ]
+  pruneopts = "NUT"
+  revision = "4242d8e6c5dba56827bb7bcf14ad11cda38f3991"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -249,7 +310,11 @@
     "github.com/pkg/errors",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
+    "k8s.io/apimachinery/pkg/runtime",
+    "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/util/version",
+    "k8s.io/code-generator/cmd/deepcopy-gen",
+    "k8s.io/code-generator/cmd/defaulter-gen",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
