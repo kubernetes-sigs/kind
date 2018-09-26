@@ -24,12 +24,10 @@ import (
 )
 
 type flags struct {
-	Source        string
-	BuildType     string
-	ImageName     string
-	ImageTag      string
-	BaseImageName string
-	BaseImageTag  string
+	Source    string
+	BuildType string
+	Image     string
+	BaseImage string
 }
 
 // NewCommand returns a new cobra.Command for building the node image
@@ -49,24 +47,14 @@ func NewCommand() *cobra.Command {
 		"docker", "build type, one of [bazel, docker, apt]",
 	)
 	cmd.Flags().StringVar(
-		&flags.ImageName, "image",
-		node.DefaultImageName,
-		"name of the resulting image to be built",
+		&flags.Image, "image",
+		node.DefaultImage,
+		"name:tag of the resulting image to be built",
 	)
 	cmd.Flags().StringVar(
-		&flags.ImageTag, "tag",
-		node.DefaultImageTag,
-		"tag of the resulting image to be built",
-	)
-	cmd.Flags().StringVar(
-		&flags.BaseImageName, "base-image",
-		node.DefaultBaseImageName,
-		"name of the base image to use for the build",
-	)
-	cmd.Flags().StringVar(
-		&flags.BaseImageTag, "base-tag",
-		node.DefaultBaseImageTag,
-		"tag of the base image to use for the build",
+		&flags.BaseImage, "base-image",
+		node.DefaultBaseImage,
+		"name:tag of the base image to use for the build",
 	)
 	return cmd
 }
@@ -75,10 +63,8 @@ func run(flags *flags, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
 	ctx, err := node.NewBuildContext(
 		node.WithMode(flags.BuildType),
-		node.WithImageName(flags.ImageName),
-		node.WithImageTag(flags.ImageTag),
-		node.WithBaseImageName(flags.BaseImageName),
-		node.WithBaseImageTag(flags.BaseImageTag),
+		node.WithImage(flags.Image),
+		node.WithBaseImage(flags.BaseImage),
 	)
 	if err != nil {
 		log.Fatalf("Error creating build context: %v", err)
