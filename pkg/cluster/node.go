@@ -227,6 +227,29 @@ func (nh *nodeHandle) LoadImages() {
 	nh.Run("docker", "images")
 }
 
+// FixMounts will correct mounts in the node container to meet the right
+// sharing and permissions for systemd and Docker / Kubernetes
+func (nh *nodeHandle) FixMounts() error {
+	// systemd-in-a-container should have read only /sys
+	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
+	// however, we need other things from `docker run --privileged` ...
+	// and this flag also happens to make /sys rw, amongst other things
+	if err := nh.Run("mount", "-o", "remount,ro", "/sys"); err != nil {
+		return err
+	}
+	// kubernetes needs shared mount propagation
+	if err := nh.Run("mount", "--make-shared", "/"); err != nil {
+		return err
+	}
+	if err := nh.Run("mount", "--make-shared", "/run"); err != nil {
+		return err
+	}
+	if err := nh.Run("mount", "--make-shared", "/var/lib/docker"); err != nil {
+		return err
+	}
+	return nil
+}
+
 // KubeVersion returns the Kubernetes version installed on the node
 func (nh *nodeHandle) KubeVersion() (version string, err error) {
 	// grab kubernetes version from the node image

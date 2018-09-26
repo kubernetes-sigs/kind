@@ -146,11 +146,10 @@ func (c *Context) provisionControlPlane(
 		return "", err
 	}
 
-	// systemd-in-a-container should have read only /sys
-	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
-	// however, we need other things from `docker run --privileged` ...
-	// and this flag also happens to make /sys rw, amongst other things
-	if err := node.Run("mount", "-o", "remount,ro", "/sys"); err != nil {
+	// we need to change a few mounts once we have the container
+	// we'd do this ahead of time if we could, but --privileged implies things
+	// that don't seem to be configurable, and we need that flag
+	if err := node.FixMounts(); err != nil {
 		// TODO(bentheelder): logging here
 		// TODO(bentheelder): add a flag to retain the broken nodes for debugging
 		c.deleteNodes(node.nameOrID)
