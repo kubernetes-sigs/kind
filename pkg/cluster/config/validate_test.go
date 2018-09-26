@@ -16,7 +16,11 @@ limitations under the License.
 
 package config
 
-import "testing"
+import (
+	"testing"
+
+	"sigs.k8s.io/kind/pkg/util"
+)
 
 func TestConfigValidate(t *testing.T) {
 	cases := []struct {
@@ -107,7 +111,7 @@ func TestConfigValidate(t *testing.T) {
 			continue
 		}
 		// - not castable to *Errors, in which case we have the wrong error type ...
-		configErrors, ok := err.(*Errors)
+		configErrors, ok := err.(*util.Errors)
 		if !ok {
 			t.Errorf("config.Validate should only return nil or ConfigErrors{...}, got: %v for case: %s", err, tc.TestName)
 			continue

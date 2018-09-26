@@ -16,20 +16,21 @@ limitations under the License.
 
 package config
 
+import (
+	"k8s.io/apimachinery/pkg/runtime"
+)
+
 // New returns a new default Config
-func New() *Config {
-	cfg := &Config{}
-	cfg.ApplyDefaults()
-	return cfg
+func addDefaultingFuncs(scheme *runtime.Scheme) error {
+       return RegisterDefaults(scheme)
 }
 
-// ApplyDefaults replaces unset fields with defaults
-func (c *Config) ApplyDefaults() {
-	if c.Image == "" {
+func SetDefaults_Config(obj *Config) {
+	if obj.Image == "" {
 		// TODO(bentheelder): move this to a constant
-		c.Image = "kindest/node:v1.11.3"
+		obj.Image = "kindest/node:v1.11.3"
 	}
-	if c.NumNodes == 0 {
-		c.NumNodes = 1
+	if obj.NumNodes == 0 {
+		obj.NumNodes = 1
 	}
 }

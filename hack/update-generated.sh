@@ -24,9 +24,15 @@ REPO_ROOT=$(git rev-parse --show-toplevel)
 OUTPUT_GOBIN="${REPO_ROOT}/_output/bin"
 cd "${REPO_ROOT}"
 GOBIN="${OUTPUT_GOBIN}" go install ./vendor/github.com/jteeuwen/go-bindata/go-bindata
+GOBIN="${OUTPUT_GOBIN}" go install ./vendor/k8s.io/code-generator/cmd/defaulter-gen
+GOBIN="${OUTPUT_GOBIN}" go install ./vendor/k8s.io/code-generator/cmd/deepcopy-gen
 
 # go generate (using go-bindata)
 # NOTE: go will only take package paths, not absolute directories
-PATH="${OUTPUT_GOBIN}:${PATH}" go generate ./...
+export PATH="${OUTPUT_GOBIN}:${PATH}"
+go generate ./...
+deepcopy-gen -i ./pkg/cluster/config/ -O zz_generated.deepcopy --go-header-file boilerplate.go.txt
+defaulter-gen -i ./pkg/cluster/config -O zz_generated.default --go-header-file boilerplate.go.txt
+
 # gofmt the tree
 find . -path "./vendor" -prune -o -name "*.go" -type f -print0 | xargs -0 gofmt -s -w

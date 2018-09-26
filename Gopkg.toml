@@ -4,6 +4,8 @@ required = [
   "github.com/jteeuwen/go-bindata/go-bindata",
   "github.com/golang/dep/cmd/dep",
   "github.com/golang/lint/golint",
+  "k8s.io/code-generator/cmd/defaulter-gen",
+  "k8s.io/code-generator/cmd/deepcopy-gen",
 ]
 
 # prune out unused content from vendor
@@ -12,7 +14,10 @@ required = [
   non-go = true
   unused-packages = true
 
-# overrides for dev-time dependencies 
+# Don't prune helper scripts from code-generator
+ [[prune.project]]
+   name = "k8s.io/code-generator"
+   unused-packages = false
 
 [[override]]
   name = "github.com/jteeuwen/go-bindata"
@@ -42,7 +47,11 @@ required = [
   name = "github.com/spf13/cobra"
   version = "0.0.3"
 
-
 [[constraint]]
   branch = "master"
   name = "k8s.io/apimachinery"
+
+[[constraint]]
+ name = "k8s.io/code-generator"
+ branch = "release-1.11"
+
