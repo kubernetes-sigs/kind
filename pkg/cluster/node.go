@@ -237,8 +237,14 @@ func (nh *nodeHandle) FixMounts() error {
 	if err := nh.Run("mount", "-o", "remount,ro", "/sys"); err != nil {
 		return err
 	}
-	// kubernetes needs shared mount propogation
+	// kubernetes needs shared mount propagation
 	if err := nh.Run("mount", "--make-shared", "/"); err != nil {
+		return err
+	}
+	if err := nh.Run("mount", "--make-shared", "/run"); err != nil {
+		return err
+	}
+	if err := nh.Run("mount", "--make-shared", "/var/lib/docker"); err != nil {
 		return err
 	}
 	return nil
