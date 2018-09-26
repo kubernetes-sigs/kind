@@ -16,31 +16,18 @@ limitations under the License.
 
 package config
 
-import (
-	"k8s.io/apimachinery/pkg/runtime"
-)
+// APIVersion is the kubernetes-style API apiVersion for this Config package
+const APIVersion = "kind.sigs.k8s.io/v1alpha1"
 
-// New returns a new default Config
-func addDefaultingFuncs(scheme *runtime.Scheme) error {
-	return RegisterDefaults(scheme)
+// ConfigKind is the kubernetes-style API kind identifier for Config
+const ConfigKind = "Config"
+
+// Kind returns the `kind:` for Config
+func (c *Config) Kind() string {
+	return ConfigKind
 }
 
-func SetDefaults_Config(obj *Config) {
-	if obj.Image == "" {
-		// TODO(bentheelder): move this to a constant
-		obj.Image = "kindest/node:v1.11.3"
-	}
-	if obj.NumNodes == 0 {
-		obj.NumNodes = 1
-	}
-}
-
-func (c *Config) ApplyDefaults() {
-	SetDefaults_Config(c)
-}
-
-func New() *Config {
-	cfg := &Config{}
-	cfg.ApplyDefaults()
-	return cfg
+// APIVersion returns the `apiVersion:` for Config
+func (c *Config) APIVersion() string {
+	return SchemeGroupVersion.String()
 }
