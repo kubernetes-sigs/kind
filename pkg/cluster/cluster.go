@@ -25,6 +25,8 @@ import (
 	"strings"
 	"time"
 
+	"sigs.k8s.io/kind/pkg/docker"
+
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
@@ -100,6 +102,10 @@ func (c *Context) Create(cfg *config.Config) error {
 	if err := cfg.Validate(); err != nil {
 		return err
 	}
+
+	// attempt to explicitly pull the image if it doesn't exist locally
+	// we don't care if this errors, we'll still try to run which also pulls
+	_, _ = docker.PullIfNotPresent(cfg.Image, 4)
 
 	// TODO(bentheelder): multiple nodes ...
 	kubeadmConfig, err := c.provisionControlPlane(

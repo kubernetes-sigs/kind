@@ -264,8 +264,8 @@ func (c *BuildContext) buildImage(dir string) error {
 
 func (c *BuildContext) createBuildContainer(buildDir string) (id string, err error) {
 	// attempt to explicitly pull the image if it doesn't exist locally
-	// we don't care if this errors, we'll still try to run
-	_, _ = docker.PullIfNotPresent(c.baseImage)
+	// we don't care if this errors, we'll still try to run which also pulls
+	_, _ = docker.PullIfNotPresent(c.baseImage, 4)
 	cmd := exec.Command("docker", "run")
 	cmd.Args = append(cmd.Args,
 		"-d", // make the client exit while the container continues to run

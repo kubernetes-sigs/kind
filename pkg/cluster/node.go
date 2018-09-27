@@ -28,8 +28,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
@@ -79,7 +77,7 @@ func createNode(name, image, clusterLabel string) (handle *nodeHandle, err error
 	cmd.Debug = true
 	err = cmd.Run()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "docker run error")
 	}
 	return &nodeHandle{name}, nil
 }
@@ -133,7 +131,7 @@ func (nh *nodeHandle) RunWithInput(input io.Reader, command string, args ...stri
 // RunHook runs a LifecycleHook on the node
 // It will only return an error if hook.MustSucceed is true
 func (nh *nodeHandle) RunHook(hook *config.LifecycleHook, phase string) error {
-	logger := logrus.WithFields(logrus.Fields{
+	logger := log.WithFields(log.Fields{
 		"node":  nh.nameOrID,
 		"phase": phase,
 	})
