@@ -237,7 +237,6 @@ func (c *Context) provisionControlPlane(
 	); err != nil {
 		// TODO(bentheelder): logging here
 		// TODO(bentheelder): add a flag to retain the broken nodes for debugging
-		c.deleteNodes(node.nameOrID)
 		return kubeadmConfig, errors.Wrap(err, "failed to init node with kubeadm")
 	}
 
@@ -255,7 +254,6 @@ func (c *Context) provisionControlPlane(
 	if err = node.WriteKubeConfig(kubeConfigPath); err != nil {
 		// TODO(bentheelder): logging here
 		// TODO(bentheelder): add a flag to retain the broken nodes for debugging
-		c.deleteNodes(node.nameOrID)
 		return kubeadmConfig, errors.Wrap(err, "failed to get kubeconfig from node")
 	}
 
