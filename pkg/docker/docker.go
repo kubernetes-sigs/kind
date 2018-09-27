@@ -44,7 +44,7 @@ func PullIfNotPresent(image string, retries int) (pulled bool, err error) {
 	if err != nil {
 		for i := 0; i < retries; i++ {
 			time.Sleep(time.Second * time.Duration(i+1))
-			log.Infof("Trying again to pull image: %s ...", image)
+			log.WithError(err).Infof("Trying again to pull image: %s ...", image)
 			// TODO(bentheelder): add some backoff / sleep?
 			err = exec.Command("docker", "pull", image).Run()
 			if err == nil {
@@ -53,7 +53,7 @@ func PullIfNotPresent(image string, retries int) (pulled bool, err error) {
 		}
 	}
 	if err != nil {
-		log.Infof("Failed to pull image: %s", image)
+		log.WithError(err).Infof("Failed to pull image: %s", image)
 	}
 	return true, err
 }
