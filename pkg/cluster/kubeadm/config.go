@@ -30,8 +30,6 @@ import (
 type ConfigData struct {
 	ClusterName       string
 	KubernetesVersion string
-	// UnifiedControlPlaneImage - optional
-	UnifiedControlPlaneImage string
 	// DerivedConfigData is populated by Derive()
 	// These auto-generated fields are available to Config templates,
 	// but not meant to be set by hand
@@ -72,10 +70,7 @@ clusterName: {{.ClusterName}}
 # so we need to ensure the cert is valid for localhost so we can talk
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServerCertSANs: [localhost]
-{{if ne .UnifiedControlPlaneImage ""}}
-# optionally specify a unified control plane image
-unifiedControlPlaneImage: {{.UnifiedControlPlaneImage}}:{{.DockerStableTag}}
-{{end}}`
+`
 
 // DefaultConfigTemplateAlphaV3 is the kubadm config template for
 // API version v1alpha3
@@ -97,10 +92,7 @@ clusterName: {{.ClusterName}}
 # so we need to ensure the cert is valid for localhost so we can talk
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServerCertSANs: [localhost]
-{{if ne .UnifiedControlPlaneImage ""}}
-# optionally specify a unified control plane image
-unifiedControlPlaneImage: {{.UnifiedControlPlaneImage}}:{{.DockerStableTag}}
-{{end}}`
+`
 
 // Config returns a kubeadm config from the template and config data,
 // if templateSource == "", DeafultConfigTemplate will be used instead
