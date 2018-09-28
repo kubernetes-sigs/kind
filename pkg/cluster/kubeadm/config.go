@@ -61,6 +61,15 @@ clusterName: {{.ClusterName}}
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServerCertSANs: [localhost]
 kubernetesVersion: {{.KubernetesVersion}}
+# TODO(bentheelder): fix this upstream!
+# we need nsswitch.conf so we use /etc/hosts
+# https://github.com/kubernetes/kubernetes/issues/69195
+apiServerExtraVolumes:
+- name: nsswitch
+  mountPath: /etc/nsswitch.conf
+  hostPath: /etc/nsswitch.conf
+  writeable: false
+  pathType: FileOrCreate
 {{if ne .UnifiedControlPlaneImage ""}}
 # optionally specify a unified control plane image
 unifiedControlPlaneImage: {{.UnifiedControlPlaneImage}}:{{.DockerStableTag}}
