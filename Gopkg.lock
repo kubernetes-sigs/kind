@@ -230,6 +230,14 @@
   revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
   version = "v2.2.1"
 
+[[projects]]
+  branch = "master"
+  digest = "1:f12c14c7738afa45994bb3dc01539fbae77dc4848777ac209b3b1bea4d1507c3"
+  name = "k8s.io/apimachinery"
+  packages = ["pkg/util/version"]
+  pruneopts = "NUT"
+  revision = "c6dd271be00615c6fa8c91fdf63381265a5f0e4e"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
@@ -241,6 +249,7 @@
     "github.com/pkg/errors",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
+    "k8s.io/apimachinery/pkg/util/version",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
