@@ -198,17 +198,18 @@ func (c *BuildContext) buildImage(dir string) error {
 	// debians without permanently copying them into the image.
 	// if docker gets proper squash support, we can rm them instead
 	// This also allows the KubeBit implementations to perform programmatic
-	// isntall in the image
+	// install in the image
 	containerID, err := c.createBuildContainer(dir)
+	// ensure we will delete it
+	if containerID != "" {
+		defer func() {
+			exec.Command("docker", "rm", "-f", containerID).Run()
+		}()
+	}
 	if err != nil {
 		log.Errorf("Image build Failed! %v", err)
 		return err
 	}
-
-	// ensure we will delete it
-	defer func() {
-		exec.Command("docker", "rm", "-f", containerID).Run()
-	}()
 
 	// helper we will use to run "build steps"
 	execInBuild := func(command ...string) error {
@@ -266,25 +267,22 @@ func (c *BuildContext) createBuildContainer(buildDir string) (id string, err err
 	// attempt to explicitly pull the image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
 	_, _ = docker.PullIfNotPresent(c.baseImage, 4)
-	cmd := exec.Command("docker", "run")
-	cmd.Args = append(cmd.Args,
-		"-d", // make the client exit while the container continues to run
-		// label the container to make them easier to track
-		"--label", fmt.Sprintf("%s=%s", BuildContainerLabelKey, time.Now().Format(time.RFC3339Nano)),
-		"-v", fmt.Sprintf("%s:/build", buildDir),
-		// the container should hang forever so we can exec in it
-		"--entrypoint=sleep",
-		c.baseImage, // use the selected base image
-		"infinity",  // sleep infinitely
+	id, err = docker.Run(
+		c.baseImage,
+		[]string{
+			"-d", // make the client exit while the container continues to run
+			// label the container to make them easier to track
+			"--label", fmt.Sprintf("%s=%s", BuildContainerLabelKey, time.Now().Format(time.RFC3339Nano)),
+			"-v", fmt.Sprintf("%s:/build", buildDir),
+			// the container should hang forever so we can exec in it
+			"--entrypoint=sleep",
+		},
+		[]string{
+			"infinity", // sleep infinitely to keep the container around
+		},
 	)
-	cmd.Debug = true
-	lines, err := cmd.CombinedOutputLines()
 	if err != nil {
-		return "", errors.Wrap(err,
-			fmt.Sprintf("failed to create build container: %v", lines))
+		return id, errors.Wrap(err, "failed to create build container")
 	}
-	if len(lines) < 1 {
-		return "", fmt.Errorf("invalid container creation output, must print at least one line")
-	}
-	return lines[len(lines)-1], nil
+	return id, nil
 }

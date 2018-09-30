@@ -16,6 +16,7 @@ limitations under the License.
 
 // Package fs contains utilites for interacting with the host filesystem
 // in a docker friendly way
+// This package has no stability guarantees whatsoever!
 package fs
 
 import (
