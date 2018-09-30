@@ -61,8 +61,8 @@ func createNode(name, image, clusterLabel string) (handle *nodeHandle, err error
 			"--tmpfs", "/run", // systemd wants a writable /run
 			// docker in docker needs this, so as not to stack overlays
 			"--tmpfs", "/var/lib/docker:exec",
-			// private cgroups hierarchy
-			// options "borrowed" from an ubuntu 18.04
+			// cgroups will be mounted here
+			// mount options "borrowed" from an ubuntu 18.04 machine
 			// we cannot do ro or set mode, but the default mode=755 matches anyhow
 			"--tmpfs", "/sys/fs/cgroup:nosuid,nodev,noexec",
 			// some k8s things want /lib/modules
