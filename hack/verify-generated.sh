@@ -58,17 +58,14 @@ main() {
   trap cleanup EXIT
 
   # copy repo root into tempdir under ./_output
-  echo "Copying tree into temp root ..."
   make_temp_root
   local fake_root="${TMP_GOPATH}/src/sigs.k8s.io/kind"
 
   # run generated code update script
-  echo "Updating generated code in '${fake_root}' ..."
   cd "${fake_root}"
   GOPATH="${TMP_GOPATH}" PATH="${TMP_GOPATH}/bin:${PATH}" hack/update-generated.sh
 
   # make sure the temp repo has no changes relative to the real repo
-  echo "Diffing '${REPO_ROOT}' '${fake_root}' ..."
   diff=$(diff -Nupr \
           -x ".git" \
           -x "_output" \

@@ -26,10 +26,6 @@ cd "${REPO_ROOT}"
 BINDIR="${REPO_ROOT}/_output/bin"
 mkdir -p "${BINDIR}"
 
-# TMP_GOPATH is used in get_golint
-TMP_GOPATH="$(TMPDIR="${BINDIR}" mktemp -d "${BINDIR}/verify-deps.XXXXX")"
-trap 'rm -rf "${TMP_GOPATH}"' EXIT
-
 # install golint from vendor into $BINDIR
 get_golint() {
   GOBIN="${BINDIR}" go install ./vendor/github.com/golang/lint/golint
@@ -40,4 +36,8 @@ get_golint() {
 GOLINT="${GOLINT:-$(get_golint)}"
 
 # we need to do this because golint ./... matches vendor...
-go list ./... | xargs -L1 "${GOLINT}" -set_exit_status
+# we also further filter out generated k8s api code in the config package
+# which unfortunately fails lint ...
+go list ./... | \
+  grep -v '^sigs.k8s.io/kind/pkg/cluster/config$' | \
+  xargs -L1 "${GOLINT}" -set_exit_status
