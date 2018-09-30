@@ -59,6 +59,10 @@ func createNode(name, image, clusterLabel string) (handle *nodeHandle, err error
 		"--tmpfs", "/run", // systemd wants a writable /run
 		// docker in docker needs this, so as not to stack overlays
 		"--tmpfs", "/var/lib/docker:exec",
+		// private cgroups hierarchy
+		// options "borrowed" from an ubuntu 18.04
+		// we cannot do ro or set mode, but the default mode=755 matches anyhow
+		"--tmpfs", "/sys/fs/cgroup:nosuid,nodev,noexec",
 		// some k8s things want /lib/modules
 		"-v", "/lib/modules:/lib/modules:ro",
 		"--hostname", name, // make hostname match container name
@@ -75,9 +79,17 @@ func createNode(name, image, clusterLabel string) (handle *nodeHandle, err error
 		"/sbin/init",
 	)
 	cmd.Debug = true
-	err = cmd.Run()
+	output, err := cmd.CombinedOutputLines()
 	if err != nil {
-		return nil, errors.Wrap(err, "docker run error")
+		for i, line := range output {
+			// the first line is the container ID
+			if i == 0 {
+				handle = &nodeHandle{output[0]}
+			} else {
+				log.Error(line)
+			}
+		}
+		return handle, errors.Wrap(err, "docker run error")
 	}
 	return &nodeHandle{name}, nil
 }
