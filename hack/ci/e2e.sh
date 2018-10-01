@@ -22,10 +22,17 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+# default WORKSPACE if not in CI
+WORKSPACE="${WORKSPACE:-${PWD}}"
+# default ARTIFACTS if not in CI
+ARTIFACTS="${ARTIFACTS:-"${WORKSPACE}/_artifacts"}"
+
 # our exit handler (trap)
 cleanup() {
     # KIND_IS_UP is true once we: kind create
     if [[ "${KIND_IS_UP:-}" = true ]]; then
+        # TODO(bentheelder): use a real log-dumping command in kind isntead of this
+        docker exec -i kind-1-control-plane journalctl > "${ARTIFACTS}/kind-1-control-plane-journal-logs.txt" || true
         kind delete || true
     fi
     # clean up e2e.test symlink
@@ -99,9 +106,6 @@ create_cluster() {
 
 # run e2es with kubetest
 run_tests() {
-    # default WORKSPACE if not in CI
-    WORKSPACE="${WORKSPACE:-${PWD}}"
-
     # base kubetest args
     KUBETEST_ARGS="--provider=skeleton --test --check-version-skew=false"
 
@@ -116,7 +120,7 @@ run_tests() {
     fi
 
     # add ginkgo args
-    KUBETEST_ARGS="${KUBETEST_ARGS} --test_args=\"--ginkgo.focus=${FOCUS} --ginkgo.skip=${SKIP} --report-dir=${WORKSPACE}/_artifacts --disable-log-dump=true\""
+    KUBETEST_ARGS="${KUBETEST_ARGS} --test_args=\"--ginkgo.focus=${FOCUS} --ginkgo.skip=${SKIP} --report-dir=${ARTIFACTS} --disable-log-dump=true\""
 
     # export the KUBECONFIG
     # TODO(bentheelder): provide a `kind` command that can be eval'ed instead
