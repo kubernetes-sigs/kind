@@ -49,6 +49,9 @@ do_ci_setup() {
     # what we really want is to detect that we're already in DIND and handle it
     if [[ "${KUBETEST_IN_DOCKER:-}" == "true" ]]; then
         # make some mounts shared in CI
+        echo "detected DIND, making mounts shared ..."
+        mount --make-rshared /sys/fs/cgroup
+        mount --make-rshared /sys
         mount --make-rshared /
     fi
 }
