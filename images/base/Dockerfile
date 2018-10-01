@@ -41,17 +41,22 @@ ARG ARCH="amd64"
 # a real argument, we're (ab)using ARG to get a temporary ENV again.
 ARG DEBIAN_FRONTEND=noninteractive
 # Get dependencies
+# First we add stretch-backports so we can get newer systemd which supports
+# supressing kmsg in journald
 # The base image already has: ssh, apt, snapd
-# This is broken down into:
+# This is broken down into (each on a line):
 # - packages necessary for installing docker
 # - packages needed to run services (systemd)
 # - packages needed for docker / hyperkube / kubernetes components
 # - misc packages (utilities we use in our own tooling)
 # Then we cleanup (removing unwanted systemd services)
+# Finally we disable kmsg in journald
 # https://developers.redhat.com/blog/2014/05/05/running-systemd-within-docker-container/
-RUN clean-install \
+RUN echo "deb http://ftp.debian.org/debian stretch-backports main" \
+        > /etc/apt/sources.list.d/backports.list \
+    && clean-install \
       apt-transport-https ca-certificates curl software-properties-common gnupg2 lsb-release \
-      systemd systemd-sysv \
+      systemd/stretch-backports systemd-sysv/stretch-backports libsystemd0/stretch-backports \
       iptables iproute2 ethtool socat util-linux mount ebtables udev kmod aufs-tools \
       bash rsync \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
@@ -60,7 +65,8 @@ RUN clean-install \
     && rm -f /lib/systemd/system/local-fs.target.wants/* \
     && rm -f /lib/systemd/system/sockets.target.wants/*udev* \
     && rm -f /lib/systemd/system/sockets.target.wants/*initctl* \
-    && rm -f /lib/systemd/system/basic.target.wants/*
+    && rm -f /lib/systemd/system/basic.target.wants/* \
+    && echo "ReadKMsg=no" >> /etc/systemd/journald.conf
 
 # Install docker, which needs to happen after we install some of the packages above
 # based on https://docs.docker.com/install/linux/docker-ce/ubuntu/#set-up-the-repository
