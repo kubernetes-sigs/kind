@@ -33,6 +33,7 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/kubeadm"
+	"sigs.k8s.io/kind/pkg/docker"
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
@@ -45,41 +46,48 @@ type nodeHandle struct {
 // images/node/entrypoint being the entrypoint, this container will
 // effectively be paused until we call actuallyStartNode(...)
 func createNode(name, image, clusterLabel string) (handle *nodeHandle, err error) {
-	cmd := exec.Command("docker", "run")
-	cmd.Args = append(cmd.Args,
-		"-d", // run the container detached
-		// running containers in a container requires privileged
-		// NOTE: we could try to replicate this with --cap-add, and use less
-		// privileges, but this flag also changes some mounts that are necessary
-		// including some ones docker would otherwise do by default.
-		// for now this is what we want. in the future we may revisit this.
-		"--privileged",
-		"--security-opt", "seccomp=unconfined", // also ignore seccomp
-		"--tmpfs", "/tmp", // various things depend on working /tmp
-		"--tmpfs", "/run", // systemd wants a writable /run
-		// docker in docker needs this, so as not to stack overlays
-		"--tmpfs", "/var/lib/docker:exec",
-		// some k8s things want /lib/modules
-		"-v", "/lib/modules:/lib/modules:ro",
-		"--hostname", name, // make hostname match container name
-		"--name", name, // ... and set the container name
-		// label the node with the cluster ID
-		"--label", clusterLabel,
-		"--expose", "6443", // expose API server port
-		// pick a random ephemeral port to forward to the API server
-		"--publish-all",
-		// explicitly set the entrypoint
-		"--entrypoint=/usr/local/bin/entrypoint",
+	id, err := docker.Run(
 		image,
-		// explicitly pass the entrypoint argument
-		"/sbin/init",
+		[]string{
+			"-d", // run the container detached
+			// running containers in a container requires privileged
+			// NOTE: we could try to replicate this with --cap-add, and use less
+			// privileges, but this flag also changes some mounts that are necessary
+			// including some ones docker would otherwise do by default.
+			// for now this is what we want. in the future we may revisit this.
+			"--privileged",
+			"--security-opt", "seccomp=unconfined", // also ignore seccomp
+			"--tmpfs", "/tmp", // various things depend on working /tmp
+			"--tmpfs", "/run", // systemd wants a writable /run
+			// docker in docker needs this, so as not to stack overlays
+			"--tmpfs", "/var/lib/docker:exec",
+			// some k8s things want /lib/modules
+			"-v", "/lib/modules:/lib/modules:ro",
+			"--hostname", name, // make hostname match container name
+			"--name", name, // ... and set the container name
+			// label the node with the cluster ID
+			"--label", clusterLabel,
+			"--expose", "6443", // expose API server port
+			// pick a random ephemeral port to forward to the API server
+			"--publish-all",
+			// explicitly set the entrypoint
+			"--entrypoint=/usr/local/bin/entrypoint",
+		},
+		[]string{
+			// explicitly pass the entrypoint argument
+			"/sbin/init",
+		},
 	)
-	cmd.Debug = true
-	err = cmd.Run()
-	if err != nil {
-		return nil, errors.Wrap(err, "docker run error")
+	// if there is a returned ID then we did create a container
+	// we should return a handle so the caller can clean it up
+	// we'll return a handle with the nice name though
+	if id != "" {
+		handle = &nodeHandle{name}
 	}
-	return &nodeHandle{name}, nil
+	if err != nil {
+		return handle, errors.Wrap(err, "docker run error")
+	}
+	return handle, nil
 }
 
 // SignalStart sends SIGUSR1 to the node, which signals our entrypoint to boot
