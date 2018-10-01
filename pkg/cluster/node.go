@@ -62,7 +62,7 @@ func createNode(name, image, clusterLabel string) (handle *nodeHandle, err error
 			// docker in docker needs this, so as not to stack overlays
 			"--tmpfs", "/var/lib/docker:exec",
 			// we need cgroups for docker in docker
-			// "-v", "/sys/fs/cgroup:/sys/fs/cgroup:rw",
+			"-v", "/sys/fs/cgroup:/sys/fs/cgroup:ro,rshared",
 			// some k8s things want /lib/modules
 			"-v", "/lib/modules:/lib/modules:ro",
 			"--hostname", name, // make hostname match container name
