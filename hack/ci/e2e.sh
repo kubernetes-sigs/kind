@@ -44,6 +44,15 @@ cleanup() {
     fi
 }
 
+do_ci_setup() {
+    # TODO(bentheelder): add a better detection mechanism!
+    # what we really want is to detect that we're already in DIND and handle it
+    if [[ "${KUBETEST_IN_DOCKER:-}" == "true" ]]; then
+        # make some mounts shared in CI
+        mount --make-rshared /
+    fi
+}
+
 # install kind to a tempdir GOPATH from this script's kind checkout
 install_kind() {
     # install `kind` to tempdir
@@ -136,6 +145,7 @@ run_tests() {
 # setup kind, build kubernetes, create a cluster, run the e2es
 main() {
     trap cleanup EXIT
+    do_ci_setup
     install_kind
     build
     create_cluster
