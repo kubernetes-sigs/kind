@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 // Package exec contains helpers for os/exec
+// This package has no stability guarantees whatsoever!
 package exec
 
 import (

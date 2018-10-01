@@ -149,6 +149,10 @@ func (c *Context) provisionControlPlane(
 	// create the "node" container (docker run, but it is paused, see createNode)
 	node, err := createNode(nodeName, cfg.Image, c.ClusterLabel())
 	if err != nil {
+		// if we managed to get a container ID anyhow, clean it up
+		if node != nil {
+			c.deleteNodes(node.nameOrID)
+		}
 		return "", err
 	}
 

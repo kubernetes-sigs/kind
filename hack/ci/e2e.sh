@@ -22,10 +22,17 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+# default WORKSPACE if not in CI
+WORKSPACE="${WORKSPACE:-${PWD}}"
+# default ARTIFACTS if not in CI
+ARTIFACTS="${ARTIFACTS:-"${WORKSPACE}/_artifacts"}"
+
 # our exit handler (trap)
 cleanup() {
     # KIND_IS_UP is true once we: kind create
     if [[ "${KIND_IS_UP:-}" = true ]]; then
+        # TODO(bentheelder): use a real log-dumping command in kind isntead of this
+        docker exec -i kind-1-control-plane journalctl > "${ARTIFACTS}/kind-1-control-plane-journal-logs.txt" || true
         kind delete || true
     fi
     # clean up e2e.test symlink
@@ -34,6 +41,18 @@ cleanup() {
     # NOTE: this needs to be last, or it will prevent kind delete
     if [[ -n "${TMP_DIR:-}" ]]; then
         rm -rf "${TMP_DIR}"
+    fi
+}
+
+do_ci_setup() {
+    # TODO(bentheelder): add a better detection mechanism!
+    # what we really want is to detect that we're already in DIND and handle it
+    if [[ "${KUBETEST_IN_DOCKER:-}" == "true" ]]; then
+        # make some mounts shared in CI
+        echo "detected DIND, making mounts shared ..."
+        mount --make-rshared /sys/fs/cgroup
+        mount --make-rshared /sys
+        mount --make-rshared /
     fi
 }
 
@@ -99,9 +118,6 @@ create_cluster() {
 
 # run e2es with kubetest
 run_tests() {
-    # default WORKSPACE if not in CI
-    WORKSPACE="${WORKSPACE:-${PWD}}"
-
     # base kubetest args
     KUBETEST_ARGS="--provider=skeleton --test --check-version-skew=false"
 
@@ -116,7 +132,7 @@ run_tests() {
     fi
 
     # add ginkgo args
-    KUBETEST_ARGS="${KUBETEST_ARGS} --test_args=\"--ginkgo.focus=${FOCUS} --ginkgo.skip=${SKIP} --report-dir=${WORKSPACE}/_artifacts --disable-log-dump=true\""
+    KUBETEST_ARGS="${KUBETEST_ARGS} --test_args=\"--ginkgo.focus=${FOCUS} --ginkgo.skip=${SKIP} --report-dir=${ARTIFACTS} --disable-log-dump=true\""
 
     # export the KUBECONFIG
     # TODO(bentheelder): provide a `kind` command that can be eval'ed instead
@@ -132,6 +148,7 @@ run_tests() {
 # setup kind, build kubernetes, create a cluster, run the e2es
 main() {
     trap cleanup EXIT
+    do_ci_setup
     install_kind
     build
     create_cluster

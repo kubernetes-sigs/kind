@@ -15,9 +15,11 @@ limitations under the License.
 */
 
 // Package docker contains helpers for working with docker
+// This package has no stability guarantees whatsoever!
 package docker
 
 import (
+	"regexp"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -56,4 +58,29 @@ func PullIfNotPresent(image string, retries int) (pulled bool, err error) {
 		log.WithError(err).Infof("Failed to pull image: %s", image)
 	}
 	return true, err
+}
+
+// Docker container IDs are hex, more than one character, and on their own line
+var containerIDRegex = regexp.MustCompile("^[a-f0-9]+$")
+
+// Run creates a container with "docker run", with some error handling
+// it will return the ID of the created container if any, even on error
+func Run(image string, runArgs []string, containerArgs []string) (id string, err error) {
+	cmd := exec.Command("docker", "run")
+	cmd.Args = append(cmd.Args, runArgs...)
+	cmd.Args = append(cmd.Args, image)
+	cmd.Args = append(cmd.Args, containerArgs...)
+	cmd.Debug = true
+	output, err := cmd.CombinedOutputLines()
+	// if docker created a container the id will be the first line and match
+	if len(output) > 0 && containerIDRegex.MatchString(output[0]) {
+		id = output[0]
+	}
+	// log error lines if there were any
+	if err != nil {
+		for _, line := range output {
+			log.Error(line)
+		}
+	}
+	return id, nil
 }
