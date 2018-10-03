@@ -19,6 +19,7 @@ limitations under the License.
 package docker
 
 import (
+	"fmt"
 	"regexp"
 	"time"
 
@@ -72,15 +73,20 @@ func Run(image string, runArgs []string, containerArgs []string) (id string, err
 	cmd.Args = append(cmd.Args, containerArgs...)
 	cmd.Debug = true
 	output, err := cmd.CombinedOutputLines()
-	// if docker created a container the id will be the first line and match
-	if len(output) > 0 && containerIDRegex.MatchString(output[0]) {
-		id = output[0]
-	}
-	// log error lines if there were any
 	if err != nil {
+		// log error output if there was any
 		for _, line := range output {
 			log.Error(line)
 		}
+		return "", err
 	}
-	return id, nil
+	// if docker created a container the id will be the first line and match
+	// validate the output and get the id
+	if len(output) < 1 {
+		return "", fmt.Errorf("failed to get container id, received no output from docker run")
+	}
+	if !containerIDRegex.MatchString(output[0]) {
+		return "", fmt.Errorf("failed to get container id, output did not match: %v", output)
+	}
+	return output[0], nil
 }
