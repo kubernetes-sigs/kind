@@ -14,53 +14,44 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package base
+// Package cluster implements the `delete` command
+package cluster
 
 import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"sigs.k8s.io/kind/pkg/build/base"
+	"sigs.k8s.io/kind/pkg/cluster"
 )
 
 type flags struct {
-	Source string
-	Image  string
+	Name string
 }
 
-// NewCommand returns a new cobra.Command for building the base image
+// NewCommand returns a new cobra.Command for cluster creation
 func NewCommand() *cobra.Command {
 	flags := &flags{}
 	cmd := &cobra.Command{
 		// TODO(bentheelder): more detailed usage
-		Use:   "base",
-		Short: "build the base node image",
-		Long:  "build the base node image",
+		Use:   "cluster",
+		Short: "Deletes a cluster",
+		Long:  "Deletes a resource",
 		Run: func(cmd *cobra.Command, args []string) {
 			run(flags, cmd, args)
 		},
 	}
-	cmd.Flags().StringVar(
-		&flags.Source, "source",
-		"",
-		"path to the base image sources",
-	)
-	cmd.Flags().StringVar(
-		&flags.Image, "image",
-		base.DefaultImage,
-		"name:tag of the resulting image to be built",
-	)
+	cmd.Flags().StringVar(&flags.Name, "name", "1", "the cluster name")
 	return cmd
 }
 
 func run(flags *flags, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
-	ctx := base.NewBuildContext(
-		base.WithImage(flags.Image),
-		base.WithSourceDir(flags.Source),
-	)
-	err := ctx.Build()
+	ctx, err := cluster.NewContext(flags.Name)
 	if err != nil {
-		log.Fatalf("Build failed! %v", err)
+		log.Fatalf("Failed to create cluster context! %v", err)
+	}
+	err = ctx.Delete()
+	if err != nil {
+		log.Fatalf("Failed to delete cluster: %v", err)
 	}
 }

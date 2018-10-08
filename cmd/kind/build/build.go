@@ -20,8 +20,8 @@ package build
 import (
 	"github.com/spf13/cobra"
 
-	"sigs.k8s.io/kind/cmd/kind/build/base"
-	"sigs.k8s.io/kind/cmd/kind/build/node"
+	"sigs.k8s.io/kind/cmd/kind/build/baseimage"
+	"sigs.k8s.io/kind/cmd/kind/build/nodeimage"
 )
 
 // NewCommand returns a new cobra.Command for building
@@ -29,11 +29,11 @@ func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		// TODO(bentheelder): more detailed usage
 		Use:   "build",
-		Short: "build",
-		Long:  "build",
+		Short: "Build one of [base-image, node-image]",
+		Long:  "Build one of [base-image, node-image]",
 	}
 	// add subcommands
-	cmd.AddCommand(base.NewCommand())
-	cmd.AddCommand(node.NewCommand())
+	cmd.AddCommand(baseimage.NewCommand())
+	cmd.AddCommand(nodeimage.NewCommand())
 	return cmd
 }

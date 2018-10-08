@@ -14,63 +14,53 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package node
+package baseimage
 
 import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"sigs.k8s.io/kind/pkg/build/node"
+	"sigs.k8s.io/kind/pkg/build/base"
 )
 
 type flags struct {
-	Source    string
-	BuildType string
-	Image     string
-	BaseImage string
+	Source string
+	Image  string
 }
 
-// NewCommand returns a new cobra.Command for building the node image
+// NewCommand returns a new cobra.Command for building the base image
 func NewCommand() *cobra.Command {
 	flags := &flags{}
 	cmd := &cobra.Command{
 		// TODO(bentheelder): more detailed usage
-		Use:   "node",
-		Short: "build the node image",
-		Long:  "build the node image",
+		Use:   "base-image",
+		Short: "build the base node image",
+		Long:  "build the base node image",
 		Run: func(cmd *cobra.Command, args []string) {
 			run(flags, cmd, args)
 		},
 	}
 	cmd.Flags().StringVar(
-		&flags.BuildType, "type",
-		"docker", "build type, one of [bazel, docker, apt]",
+		&flags.Source, "source",
+		"",
+		"path to the base image sources",
 	)
 	cmd.Flags().StringVar(
 		&flags.Image, "image",
-		node.DefaultImage,
+		base.DefaultImage,
 		"name:tag of the resulting image to be built",
-	)
-	cmd.Flags().StringVar(
-		&flags.BaseImage, "base-image",
-		node.DefaultBaseImage,
-		"name:tag of the base image to use for the build",
 	)
 	return cmd
 }
 
 func run(flags *flags, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
-	ctx, err := node.NewBuildContext(
-		node.WithMode(flags.BuildType),
-		node.WithImage(flags.Image),
-		node.WithBaseImage(flags.BaseImage),
+	ctx := base.NewBuildContext(
+		base.WithImage(flags.Image),
+		base.WithSourceDir(flags.Source),
 	)
+	err := ctx.Build()
 	if err != nil {
-		log.Fatalf("Error creating build context: %v", err)
-	}
-	err = ctx.Build()
-	if err != nil {
-		log.Fatalf("Error building node image: %v", err)
+		log.Fatalf("Build failed! %v", err)
 	}
 }
