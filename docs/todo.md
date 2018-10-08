@@ -15,8 +15,8 @@ A non-exhaustive list of tasks (in no-particular order) includes:
 - [ ] kubetest ingregration [WIP]
   - [ ] point existing ["dind"](https://github.com/kubernetes/test-infra/tree/master/dind) integration here once complete
 - [ ] improved logging and error handling
-- [ ] continuous integration
-- [ ] publish pre-built images to a registry
+- [x] continuous integration
+- [x] publish pre-built images to a registry
 - [ ] fake out all internals and unit test [WIP]
 - [ ] pre-load images that are not from the build / possibly build more images
   - [ ] etcd

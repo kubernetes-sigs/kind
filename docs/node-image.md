@@ -6,7 +6,7 @@ nested containers, systemd, and Kubernetes components.
 This image is built on top of the ["base" image][base image].
 
 Logic for building both can be found in [`pkg/build`][build package],
-and they can be built with `kind build base` and `kind build node` respectively.
+and they can be built with `kind build base-image` and `kind build node-image` respectively.
 
 ## Design
 

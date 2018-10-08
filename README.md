@@ -10,7 +10,7 @@
 `kind` is a tool for running local Kubernetes clusters using Docker container "nodes".  
 `kind` is primarily designed for testing Kubernetes 1.11+, initially targeting the [conformance tests].
 
-If you have [go] and [docker] installed `go get sigs.k8s.io/kind && kind create` is all you need!
+If you have [go] and [docker] installed `go get sigs.k8s.io/kind && kind create cluster` is all you need!
 
 <img src="https://gist.githubusercontent.com/BenTheElder/621bc321fc6d9506fd936feb36d32dd0/raw/e5eabd250f73195dcaaf4f76e3620bb7d6fa7042/demo.gif" alt="kind create demo" />
 
@@ -29,13 +29,13 @@ If you have [go] and [docker] installed `go get sigs.k8s.io/kind && kind create`
 You can install `kind` with `go get sigs.k8s.io/kind`
 
 To use `kind`, you will need to [install docker].  
-Once you have docker running you can create a cluster with `kind create`  
-To delete your cluster use `kind delete`
+Once you have docker running you can create a cluster with `kind create cluster`  
+To delete your cluster use `kind delete cluster`
 
 <!--TODO(bentheelder): improve this part of the guide-->
 To create a cluster from Kubernetes source:
 - ensure that Kubernetes is cloned in `$(go env GOPATH)/src/k8s.io/kubernetes`
-- build a node image and create a cluster with `kind build node && kind create`  
+- build a node image and create a cluster with `kind build node-image && kind create cluster`  
 
 For more usage see [the docs] or run `kind [command] --help`
 

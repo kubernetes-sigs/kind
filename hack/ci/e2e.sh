@@ -26,7 +26,7 @@ set -o pipefail
 cleanup() {
     # KIND_IS_UP is true once we: kind create
     if [[ "${KIND_IS_UP:-}" = true ]]; then
-        kind delete || true
+        kind delete cluster || true
     fi
     # clean up e2e.test symlink
     rm -f _output/bin/e2e.test
@@ -63,7 +63,7 @@ build() {
     fi
 
     # build the node image w/ kubernetes
-    kind build node --type=bazel
+    kind build node-image --type=bazel
 
     # make sure we have e2e requirements
     #make all WHAT="cmd/kubectl test/e2e/e2e.test vendor/github.com/onsi/ginkgo/ginkgo"
@@ -94,7 +94,7 @@ create_cluster() {
     # mark the cluster as up for cleanup
     # even if kind create fails, kind delete can clean up after it
     KIND_IS_UP=true
-    kind create --image="kindest/node:latest"
+    kind create cluster --image="kindest/node:latest"
 }
 
 # run e2es with kubetest

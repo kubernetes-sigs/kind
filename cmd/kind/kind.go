@@ -18,6 +18,8 @@ limitations under the License.
 package kind
 
 import (
+	"os"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -30,8 +32,8 @@ import (
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "kind",
-		Short: "kind is a tool for managing local multi-node Kubernetes clusters",
-		Long:  "kind creates and manages local multi-node Kubernetes clusters using Docker containers",
+		Short: "kind is a tool for managing local Kubernetes clusters",
+		Long:  "kind creates and manages local Kubernetes clusters using Docker container 'nodes'",
 	}
 	// add all top level subcommands
 	cmd.AddCommand(build.NewCommand())
@@ -54,6 +56,7 @@ func Main() {
 		TimestampFormat: "0102-15:04:05",
 	})
 	if err := Run(); err != nil {
-		log.Fatal(err)
+		os.Stderr.WriteString(err.Error())
+		os.Exit(-1)
 	}
 }

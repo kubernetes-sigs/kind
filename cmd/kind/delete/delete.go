@@ -18,40 +18,29 @@ limitations under the License.
 package delete
 
 import (
-	log "github.com/sirupsen/logrus"
+	"fmt"
+
 	"github.com/spf13/cobra"
 
-	"sigs.k8s.io/kind/pkg/cluster"
+	deletecluster "sigs.k8s.io/kind/cmd/kind/delete/cluster"
 )
-
-type flags struct {
-	Name string
-}
 
 // NewCommand returns a new cobra.Command for cluster creation
 func NewCommand() *cobra.Command {
-	flags := &flags{}
 	cmd := &cobra.Command{
 		// TODO(bentheelder): more detailed usage
 		Use:   "delete",
-		Short: "Deletes a cluster",
-		Long:  "Deletes a Kubernetes cluster",
-		Run: func(cmd *cobra.Command, args []string) {
-			run(flags, cmd, args)
-		},
+		Short: "Deletes one of [cluster]",
+		Long:  "Deletes one of [cluster]",
+		RunE:  run,
 	}
-	cmd.Flags().StringVar(&flags.Name, "name", "1", "the cluster name")
+	cmd.AddCommand(deletecluster.NewCommand())
 	return cmd
 }
 
-func run(flags *flags, cmd *cobra.Command, args []string) {
-	// TODO(bentheelder): make this more configurable
-	ctx, err := cluster.NewContext(flags.Name)
-	if err != nil {
-		log.Fatalf("Failed to create cluster context! %v", err)
-	}
-	err = ctx.Delete()
-	if err != nil {
-		log.Fatalf("Failed to delete cluster: %v", err)
-	}
+func run(cmd *cobra.Command, args []string) error {
+	fmt.Println("You likely want `kind delete cluster`, please migrate!")
+	fmt.Println()
+	cmd.Usage()
+	return nil
 }
