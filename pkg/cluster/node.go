@@ -59,8 +59,6 @@ func createNode(name, image, clusterLabel string) (handle *nodeHandle, err error
 			"--security-opt", "seccomp=unconfined", // also ignore seccomp
 			"--tmpfs", "/tmp", // various things depend on working /tmp
 			"--tmpfs", "/run", // systemd wants a writable /run
-			// docker in docker needs this, so as not to stack overlays
-			"--tmpfs", "/var/lib/docker:exec",
 			// some k8s things want /lib/modules
 			"-v", "/lib/modules:/lib/modules:ro",
 			"--hostname", name, // make hostname match container name
@@ -177,7 +175,7 @@ func (nh *nodeHandle) CombinedOutputLines(command string, args ...string) ([]str
 func (nh *nodeHandle) CopyTo(source, dest string) error {
 	cmd := exec.Command("docker", "cp")
 	cmd.Args = append(cmd.Args,
-		source,               // from the source file
+		source, // from the source file
 		nh.nameOrID+":"+dest, // to the node, at dest
 	)
 	cmd.InheritOutput = true
