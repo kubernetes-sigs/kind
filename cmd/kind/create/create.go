@@ -22,8 +22,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
-	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/config/encoding"
+	"sigs.k8s.io/kind/pkg/util"
 )
 
 type flags struct {
@@ -61,7 +61,7 @@ func run(flags *flags, cmd *cobra.Command, args []string) {
 	err = cfg.Validate()
 	if err != nil {
 		log.Error("Invalid configuration!")
-		configErrors := err.(*config.Errors)
+		configErrors := err.(*util.Errors)
 		for _, problem := range configErrors.Errors() {
 			log.Error(problem)
 		}

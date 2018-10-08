@@ -19,15 +19,15 @@ package config
 // APIVersion is the kubernetes-style API apiVersion for this Config package
 const APIVersion = "kind.sigs.k8s.io/v1alpha1"
 
-// Kind is the kubernetes-style API kind identifier for Config
-const Kind = "Config"
+// ConfigKind is the kubernetes-style API kind identifier for Config
+const ConfigKind = "Config"
 
 // Kind returns the `kind:` for Config
 func (c *Config) Kind() string {
-	return Kind
+	return ConfigKind
 }
 
 // APIVersion returns the `apiVersion:` for Config
 func (c *Config) APIVersion() string {
-	return APIVersion
+	return SchemeGroupVersion.String()
 }

@@ -16,7 +16,10 @@ limitations under the License.
 
 package config
 
-import "fmt"
+import (
+	"fmt"
+	"sigs.k8s.io/kind/pkg/util"
+)
 
 // Validate returns a ConfigErrors with an entry for each problem
 // with the config, or nil if there are none
@@ -65,7 +68,7 @@ func (c *Config) Validate() error {
 		}
 	}
 	if len(errs) > 0 {
-		return NewErrors(errs)
+		return util.NewErrors(errs)
 	}
 	return nil
 }

@@ -73,8 +73,8 @@ func detectVersion(raw []byte) (version string, err error) {
 	}
 	switch c.APIVersion {
 	// default to the current api version if unspecified, or explicitly specified
-	case config.APIVersion, "":
-		return config.APIVersion, nil
+	case config.SchemeGroupVersion.String(), "":
+		return config.SchemeGroupVersion.String(), nil
 	}
 	return "", fmt.Errorf("invalid version: %v", c.APIVersion)
 }
@@ -92,7 +92,7 @@ func Unmarshal(raw []byte) (config.Any, error) {
 	// load version
 	var cfg config.Any
 	switch version {
-	case config.APIVersion:
+	case config.SchemeGroupVersion.String():
 		cfg = &config.Config{}
 	}
 	err = yaml.Unmarshal(raw, cfg)
