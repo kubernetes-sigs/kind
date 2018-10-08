@@ -203,7 +203,7 @@ func (c *BuildContext) buildImage(dir string) error {
 	// ensure we will delete it
 	if containerID != "" {
 		defer func() {
-			exec.Command("docker", "rm", "-f", containerID).Run()
+			exec.Command("docker", "rm", "-f", "-v", containerID).Run()
 		}()
 	}
 	if err != nil {
