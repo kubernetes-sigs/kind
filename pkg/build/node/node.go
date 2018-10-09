@@ -36,7 +36,7 @@ import (
 const DefaultImage = "kindest/node:latest"
 
 // DefaultBaseImage is the default base image used
-const DefaultBaseImage = "kindest/base:v20181001-fe0a0b4"
+const DefaultBaseImage = "kindest/base:v20181008-0c5031c"
 
 // DefaultMode is the default kubernetes build mode for the built image
 // see pkg/build/kube.Bits
@@ -203,7 +203,7 @@ func (c *BuildContext) buildImage(dir string) error {
 	// ensure we will delete it
 	if containerID != "" {
 		defer func() {
-			exec.Command("docker", "rm", "-f", containerID).Run()
+			exec.Command("docker", "rm", "-f", "-v", containerID).Run()
 		}()
 	}
 	if err != nil {

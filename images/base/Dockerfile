@@ -116,6 +116,12 @@ COPY [ "entrypoint/entrypoint", "/usr/local/bin/" ]
 # NOTE: this is *only* for documentation, the entrypoint is overridden at runtime
 ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]
 
+# the docker graph must be a volume to avoid overlay on overlay
+# NOTE: we do this last because changing a volume with a Dockerfile must
+# occur before defining it.
+# See: https://docs.docker.com/engine/reference/builder/#volume
+VOLUME [ "/var/lib/docker" ]
+
 # TODO(bentheelder): deal with systemd MAC address assignment
 # https://github.com/systemd/systemd/issues/3374#issuecomment-288882355
 # https://github.com/systemd/systemd/issues/3374#issuecomment-339258483

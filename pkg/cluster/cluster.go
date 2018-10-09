@@ -325,6 +325,7 @@ func (c *Context) deleteNodes(names ...string) error {
 	cmd := exec.Command("docker", "rm")
 	cmd.Args = append(cmd.Args,
 		"-f", // force the container to be delete now
+		"-v", // delete volumes
 	)
 	cmd.Args = append(cmd.Args, names...)
 	return cmd.Run()
