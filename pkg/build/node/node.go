@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
+	"regexp"
 	"time"
 
 	"github.com/pkg/errors"
@@ -44,6 +46,12 @@ const DefaultMode = "docker"
 
 // Option is BuildContext configuration option supplied to NewBuildContext
 type Option func(*BuildContext)
+
+// componentRegEx defines a regex for getting a component name out of a docker image tag
+var componentRegEx = regexp.MustCompile("/(.*):")
+
+// bitsImageRegEx defines a regex for getting a tar image name out of a bits path
+var bitsImageRegEx = regexp.MustCompile("images/(.*)\\.tar")
 
 // WithImage configures a NewBuildContext to tag the built image with `image`
 func WithImage(image string) Option {
@@ -221,7 +229,7 @@ func (c *BuildContext) buildImage(dir string) error {
 	}
 
 	// make artifacts directory
-	if err = execInBuild("mkdir", "/kind/"); err != nil {
+	if err = execInBuild("mkdir", "-p", "/kind/images/"); err != nil {
 		log.Errorf("Image build Failed! %v", err)
 		return err
 	}
@@ -233,6 +241,7 @@ func (c *BuildContext) buildImage(dir string) error {
 	}
 
 	// install the kube bits
+	log.Info("bits ...")
 	ic := &installContext{
 		basePath:    "/kind/",
 		containerID: containerID,
@@ -250,6 +259,23 @@ func (c *BuildContext) buildImage(dir string) error {
 		return err
 	}
 
+	// prepull images tars into the build directory (only for images not provided by bits)
+	images, err := c.prepullImages(containerID, dir)
+	if err != nil {
+		return err
+	}
+
+	// moves image tars form build directory to /kind/images directory, so they will be
+	// loaded by the cluster tooling prior to running `kubeadm`
+	for _, image := range images {
+		if err = execInBuild("/bin/sh", "-c",
+			fmt.Sprintf("mv /build/%s /kind/images/", image),
+		); err != nil {
+			log.Errorf("image copy failed! %v", err)
+			return err
+		}
+	}
+
 	// Save the image changes to a new image
 	cmd := exec.Command("docker", "commit", containerID, c.image)
 	cmd.Debug = true
@@ -261,6 +287,74 @@ func (c *BuildContext) buildImage(dir string) error {
 
 	log.Info("Image build completed.")
 	return nil
+}
+
+func (c *BuildContext) prepullImages(containerID string, buildDir string) (images []string, err error) {
+
+	// helper we will use to run "build steps"
+	combinedOutputLinesInBuild := func(command ...string) ([]string, error) {
+		cmd := exec.Command("docker", "exec", containerID)
+		cmd.Args = append(cmd.Args, command...)
+		cmd.Debug = true
+		return cmd.CombinedOutputLines()
+	}
+
+	// gets the list of images provided by bits
+	imagesFromBits := map[string]bool{}
+	for _, path := range c.bits.Paths() {
+		match := bitsImageRegEx.FindStringSubmatch(path)
+		if len(match) > 1 {
+			component := match[1]
+			imagesFromBits[component] = true
+		}
+	}
+
+	// gets the Kubernetes version installed on the node
+	version, err := combinedOutputLinesInBuild("cat", "/kind/version")
+	if err != nil || len(version) != 1 {
+		log.Errorf("failed to get version! %v", err)
+		return nil, err
+	}
+
+	// gets the list of images required by kubeadm
+	requiredImages, err := combinedOutputLinesInBuild("kubeadm", "config", "images", "list", "--kubernetes-version", version[0])
+	if err != nil {
+		log.Errorf("Image build Failed! %v", err)
+		return nil, err
+	}
+
+	// prepull images tar into the build directory (only for images not provided by bits)
+	images = []string{}
+	for _, image := range requiredImages {
+		// gets the compontent name out of the image
+		match := componentRegEx.FindStringSubmatch(image)
+		if len(match) > 1 {
+			component := match[1]
+			// if there is not an image from the components provided by bits
+			if !imagesFromBits[component] {
+				// pull the images using the docker istance running on the hosts
+				tar := fmt.Sprintf("%s.tar", component)
+				cmd := exec.Command("docker", "pull", image)
+				cmd.Debug = true
+				cmd.InheritOutput = true
+				if err = cmd.Run(); err != nil {
+					log.Errorf("docker pull failed! %v", err)
+					return nil, err
+				}
+				// saves the image tar in the buildDir
+				cmd = exec.Command("docker", "save", "-o", filepath.Join(buildDir, tar), image)
+				cmd.Debug = true
+				cmd.InheritOutput = true
+				if err = cmd.Run(); err != nil {
+					log.Errorf("docker save failed! %v", err)
+					return nil, err
+				}
+				images = append(images, tar)
+			}
+		}
+	}
+
+	return images, nil
 }
 
 func (c *BuildContext) createBuildContainer(buildDir string) (id string, err error) {
