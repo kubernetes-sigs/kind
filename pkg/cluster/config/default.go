@@ -28,7 +28,7 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 func SetDefaults_Config(obj *Config) {
 	if obj.Image == "" {
 		// TODO(bentheelder): move this to a constant
-		obj.Image = "kindest/node:v1.11.3"
+		obj.Image = "kindest/node:v1.11.3@sha256:855562266d5f647b5770a91c76a0579ed6487eb5bf1dfe908705dad285525483"
 	}
 	if obj.NumNodes == 0 {
 		obj.NumNodes = 1
