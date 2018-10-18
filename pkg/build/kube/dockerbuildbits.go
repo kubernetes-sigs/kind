@@ -108,7 +108,12 @@ func (b *DockerBuildBits) build() error {
 	}
 
 	// build images
-	cmd = exec.Command("make", "quick-release-images", "KUBE_BUILD_HYPERKUBE=n")
+	cmd = exec.Command(
+		"make", "quick-release-images",
+		// we don't want to build these images as we don't use them...
+		"KUBE_BUILD_HYPERKUBE=n",
+		"KUBE_BUILD_CONFORMANCE=n",
+	)
 	cmd.Env = append(cmd.Env, os.Environ()...)
 	cmd.Debug = true
 	cmd.InheritOutput = true
