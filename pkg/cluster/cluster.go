@@ -147,7 +147,7 @@ func (c *Context) provisionControlPlane(
 	cfg *config.Config,
 ) (kubeadmConfigPath string, err error) {
 	// create the "node" container (docker run, but it is paused, see createNode)
-	node, err := createNode(nodeName, cfg.Image, c.ClusterLabel())
+	node, port, err := createControlPlaneNode(nodeName, cfg.Image, c.ClusterLabel())
 	if err != nil {
 		return "", err
 	}
@@ -205,6 +205,7 @@ func (c *Context) provisionControlPlane(
 		kubeadm.ConfigData{
 			ClusterName:       c.ClusterName(),
 			KubernetesVersion: kubeVersion,
+			APIBindPort:       port,
 		},
 	)
 
