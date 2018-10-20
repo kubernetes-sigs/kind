@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/kubeadm"
 	"sigs.k8s.io/kind/pkg/exec"
+	logutil "sigs.k8s.io/kind/pkg/log"
 )
 
 // ClusterLabelKey is applied to each "node" docker container for identification
@@ -40,7 +41,8 @@ const ClusterLabelKey = "io.k8s.sigs.kind.cluster"
 
 // Context is used to create / manipulate kubernetes-in-docker clusters
 type Context struct {
-	name string
+	name   string
+	status *logutil.Status
 }
 
 // similar to valid docker container names, but since we will prefix
@@ -103,6 +105,13 @@ func (c *Context) Create(cfg *config.Config) error {
 		return err
 	}
 
+	fmt.Printf("Creating cluster '%s' ...\n", c.ClusterName())
+	c.status = logutil.NewStatus()
+	c.status.MaybeWrapLogrus(log.StandardLogger())
+
+	defer c.status.End(false)
+	c.status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", cfg.Image))
+
 	// attempt to explicitly pull the image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
 	_, _ = docker.PullIfNotPresent(cfg.Image, 4)
@@ -118,16 +127,15 @@ func (c *Context) Create(cfg *config.Config) error {
 	if kubeadmConfig != "" {
 		defer os.Remove(kubeadmConfig)
 	}
-
 	if err != nil {
 		return err
 	}
 
-	log.Infof(
-		"You can now use the cluster with:\n\nexport KUBECONFIG=\"%s\"\nkubectl cluster-info",
+	c.status.End(true)
+	fmt.Printf(
+		"Cluster creation complete. You can now use the cluster with:\n\nexport KUBECONFIG=\"%s\"\nkubectl cluster-info\n",
 		c.KubeConfigPath(),
 	)
-
 	return nil
 }
 
@@ -146,12 +154,14 @@ func (c *Context) provisionControlPlane(
 	nodeName string,
 	cfg *config.Config,
 ) (kubeadmConfigPath string, err error) {
+	c.status.Start(fmt.Sprintf("[%s] Creating node container 📦", nodeName))
 	// create the "node" container (docker run, but it is paused, see createNode)
 	node, err := createNode(nodeName, cfg.Image, c.ClusterLabel())
 	if err != nil {
 		return "", err
 	}
 
+	c.status.Start(fmt.Sprintf("[%s] Fixing mounts 🗻", nodeName))
 	// we need to change a few mounts once we have the container
 	// we'd do this ahead of time if we could, but --privileged implies things
 	// that don't seem to be configurable, and we need that flag
@@ -171,6 +181,7 @@ func (c *Context) provisionControlPlane(
 		}
 	}
 
+	c.status.Start(fmt.Sprintf("[%s] Starting systemd 🖥", nodeName))
 	// signal the node entrypoint to continue booting into systemd
 	if err := node.SignalStart(); err != nil {
 		// TODO(bentheelder): logging here
@@ -179,6 +190,7 @@ func (c *Context) provisionControlPlane(
 		return "", err
 	}
 
+	c.status.Start(fmt.Sprintf("[%s] Waiting for docker to be ready 🐋", nodeName))
 	// wait for docker to be ready
 	if !node.WaitForDocker(time.Now().Add(time.Second * 30)) {
 		// TODO(bentheelder): logging here
@@ -226,7 +238,12 @@ func (c *Context) provisionControlPlane(
 	}
 
 	// run kubeadm
-	if err := node.Run(
+	c.status.Start(
+		fmt.Sprintf(
+			"[%s] Starting Kubernetes (this may take a minute) ☸",
+			nodeName,
+		))
+	if err := node.RunQ(
 		// init because this is the control plane node
 		"kubeadm", "init",
 		// preflight errors are expected, in particular for swap being enabled
@@ -240,7 +257,7 @@ func (c *Context) provisionControlPlane(
 		return kubeadmConfig, errors.Wrap(err, "failed to init node with kubeadm")
 	}
 
-	// run any pre-kubeadm hooks
+	// run any post-kubeadm hooks
 	if cfg.NodeLifecycle != nil {
 		for _, hook := range cfg.NodeLifecycle.PostKubeadm {
 			if err := node.RunHook(&hook, "postKubeadm"); err != nil {
@@ -258,7 +275,7 @@ func (c *Context) provisionControlPlane(
 	}
 
 	// TODO(bentheelder): support other overlay networks
-	if err = node.Run(
+	if err = node.RunQ(
 		"/bin/sh", "-c",
 		`kubectl apply --kubeconfig=/etc/kubernetes/admin.conf -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version --kubeconfig=/etc/kubernetes/admin.conf | base64 | tr -d '\n')"`,
 	); err != nil {
@@ -268,7 +285,7 @@ func (c *Context) provisionControlPlane(
 	// if we are only provisioning one node, remove the master taint
 	// https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#master-isolation
 	if cfg.NumNodes == 1 {
-		if err = node.Run(
+		if err = node.RunQ(
 			"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf",
 			"taint", "nodes", "--all", "node-role.kubernetes.io/master-",
 		); err != nil {
@@ -277,7 +294,7 @@ func (c *Context) provisionControlPlane(
 	}
 
 	// add the default storage class
-	if err := node.RunWithInput(
+	if err := node.RunQWithInput(
 		strings.NewReader(defaultStorageClassManifest),
 		"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf", "apply", "-f", "-",
 	); err != nil {

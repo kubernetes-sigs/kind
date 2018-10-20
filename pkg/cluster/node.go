@@ -96,8 +96,6 @@ func (nh *nodeHandle) SignalStart() error {
 		"-s", "SIGUSR1",
 		nh.nameOrID,
 	)
-	// TODO(bentheelder): collect output instead of connecting these
-	cmd.InheritOutput = true
 	return cmd.Run()
 }
 
@@ -117,6 +115,21 @@ func (nh *nodeHandle) Run(command string, args ...string) error {
 	return cmd.Run()
 }
 
+// RunQ execs command, args... on the node without inherting stdout
+func (nh *nodeHandle) RunQ(command string, args ...string) error {
+	cmd := exec.Command("docker", "exec")
+	cmd.Args = append(cmd.Args,
+		"-t",           // use a tty so we can get output
+		"--privileged", // run with priliges so we can remount etc..
+		nh.nameOrID,    // ... against the "node" container
+		command,        // with the command specified
+	)
+	cmd.Args = append(cmd.Args,
+		args..., // finally, with the args specified
+	)
+	return cmd.Run()
+}
+
 // RunWithInput execs command, args... on the node, hooking input to stdin
 func (nh *nodeHandle) RunWithInput(input io.Reader, command string, args ...string) error {
 	cmd := exec.Command("docker", "exec")
@@ -131,6 +144,22 @@ func (nh *nodeHandle) RunWithInput(input io.Reader, command string, args ...stri
 	)
 	cmd.Stdin = input
 	cmd.InheritOutput = true
+	return cmd.Run()
+}
+
+// RunQWithInput execs command, args... on the node, hooking input to stdin
+func (nh *nodeHandle) RunQWithInput(input io.Reader, command string, args ...string) error {
+	cmd := exec.Command("docker", "exec")
+	cmd.Args = append(cmd.Args,
+		"-i",           // interactive so we can supply input
+		"--privileged", // run with priliges so we can remount etc..
+		nh.nameOrID,    // ... against the "node" container
+		command,        // with the command specified
+	)
+	cmd.Args = append(cmd.Args,
+		args..., // finally, with the args specified
+	)
+	cmd.Stdin = input
 	return cmd.Run()
 }
 
@@ -209,7 +238,7 @@ func tryUntil(until time.Time, try func() bool) bool {
 // LoadImages loads image tarballs stored on the node into docker on the node
 func (nh *nodeHandle) LoadImages() {
 	// load images cached on the node into docker
-	if err := nh.Run(
+	if err := nh.RunQ(
 		"find",
 		"/kind/images",
 		"-name", "*.tar",
@@ -221,14 +250,12 @@ func (nh *nodeHandle) LoadImages() {
 	// retag images that are missing -amd64 as image:tag -> image-amd64:tag
 	// bazel built images are currently missing these
 	// TODO(bentheelder): this is a bit gross, move this logic out of bash
-	if err := nh.Run(
+	if err := nh.RunQ(
 		"/bin/bash", "-c",
 		`docker images --format='{{.Repository}}:{{.Tag}}' | grep -v amd64 | xargs -L 1 -I '{}' /bin/bash -c 'docker tag "{}" "$(echo "{}" | sed s/:/-amd64:/)"'`,
 	); err != nil {
 		log.Warningf("Failed to re-tag docker images: %v", err)
 	}
-
-	nh.Run("docker", "images")
 }
 
 // FixMounts will correct mounts in the node container to meet the right
@@ -238,17 +265,17 @@ func (nh *nodeHandle) FixMounts() error {
 	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
 	// however, we need other things from `docker run --privileged` ...
 	// and this flag also happens to make /sys rw, amongst other things
-	if err := nh.Run("mount", "-o", "remount,ro", "/sys"); err != nil {
+	if err := nh.RunQ("mount", "-o", "remount,ro", "/sys"); err != nil {
 		return err
 	}
 	// kubernetes needs shared mount propagation
-	if err := nh.Run("mount", "--make-shared", "/"); err != nil {
+	if err := nh.RunQ("mount", "--make-shared", "/"); err != nil {
 		return err
 	}
-	if err := nh.Run("mount", "--make-shared", "/run"); err != nil {
+	if err := nh.RunQ("mount", "--make-shared", "/run"); err != nil {
 		return err
 	}
-	if err := nh.Run("mount", "--make-shared", "/var/lib/docker"); err != nil {
+	if err := nh.RunQ("mount", "--make-shared", "/var/lib/docker"); err != nil {
 		return err
 	}
 	return nil

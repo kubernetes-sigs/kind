@@ -31,6 +31,9 @@ func NewCommand() *cobra.Command {
 		Use:   "build",
 		Short: "Build one of [base-image, node-image]",
 		Long:  "Build one of [base-image, node-image]",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmd.Help()
+		},
 	}
 	// add subcommands
 	cmd.AddCommand(baseimage.NewCommand())
