@@ -34,6 +34,22 @@
   version = "v1.3.1"
 
 [[projects]]
+  digest = "1:bbf61f7710ce4136a5a3a0f49d82127ecc71a8177d5b9dbd3f156b8c9bffb075"
+  name = "github.com/briandowns/spinner"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "dd69c579ff204842e8962816987f838e2c2c18d8"
+  version = "1.4"
+
+[[projects]]
+  digest = "1:ade392a843b2035effb4b4a2efa2c3bab3eb29b992e98bacf9c898b0ecb54e45"
+  name = "github.com/fatih/color"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "5b77d2a35fb0ede96d138fc9a99f5c9b6aef11b4"
+  version = "v1.7.0"
+
+[[projects]]
   digest = "1:81466b4218bf6adddac2572a30ac733a9255919bc2f470b4827a317bd4ee1756"
   name = "github.com/ghodss/yaml"
   packages = ["."]
@@ -125,6 +141,22 @@
   ]
   pruneopts = "NUT"
   revision = "6025e8de665b31fa74ab1a66f2cddd8c0abf887e"
+
+[[projects]]
+  digest = "1:08c231ec84231a7e23d67e4b58f975e1423695a32467a362ee55a803f9de8061"
+  name = "github.com/mattn/go-colorable"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
+  version = "v0.0.9"
+
+[[projects]]
+  digest = "1:bffa444ca07c69c599ae5876bc18b25bfd5fa85b297ca10a25594d284a7e9c5d"
+  name = "github.com/mattn/go-isatty"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c"
+  version = "v0.0.4"
 
 [[projects]]
   branch = "master"
@@ -303,6 +335,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/briandowns/spinner",
     "github.com/ghodss/yaml",
     "github.com/golang/dep/cmd/dep",
     "github.com/golang/lint/golint",
@@ -310,6 +343,7 @@
     "github.com/pkg/errors",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
+    "golang.org/x/crypto/ssh/terminal",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/util/version",

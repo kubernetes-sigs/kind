@@ -12,7 +12,7 @@
 
 If you have [go] and [docker] installed `go get sigs.k8s.io/kind && kind create cluster` is all you need!
 
-<img src="https://gist.githubusercontent.com/BenTheElder/621bc321fc6d9506fd936feb36d32dd0/raw/e5eabd250f73195dcaaf4f76e3620bb7d6fa7042/demo.gif" alt="kind create demo" />
+<img src="https://gist.githubusercontent.com/BenTheElder/621bc321fc6d9506fd936feb36d32dd0/raw/7fe14e9d0929cab428929ca6c501abc990c07359/kind-create-cluster.gif" alt="2x speed `kind create cluster` demo" />
 
 `kind` consists of:
  - Go [packages][packages] implementing [cluster creation][cluster package], [image build][build package], etc.
