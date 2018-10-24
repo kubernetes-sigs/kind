@@ -21,18 +21,16 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
-	"sigs.k8s.io/kind/pkg/cluster/kubeadm"
 	"sigs.k8s.io/kind/pkg/docker"
 	"sigs.k8s.io/kind/pkg/exec"
 )
@@ -42,10 +40,25 @@ type nodeHandle struct {
 	nameOrID string
 }
 
-// createNode `docker run`s the node image, note that due to
+func getPort() (int, error) {
+	// get a free TCP port for the API server
+	dummyListener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return 0, err
+	}
+	defer dummyListener.Close()
+	port := dummyListener.Addr().(*net.TCPAddr).Port
+	return port, nil
+}
+
+// createControlPlaneNode `docker run`s the node image, note that due to
 // images/node/entrypoint being the entrypoint, this container will
 // effectively be paused until we call actuallyStartNode(...)
-func createNode(name, image, clusterLabel string) (handle *nodeHandle, err error) {
+func createControlPlaneNode(name, image, clusterLabel string) (handle *nodeHandle, port int, err error) {
+	port, err = getPort()
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "failed to get port for API server")
+	}
 	id, err := docker.Run(
 		image,
 		[]string{
@@ -65,9 +78,9 @@ func createNode(name, image, clusterLabel string) (handle *nodeHandle, err error
 			"--name", name, // ... and set the container name
 			// label the node with the cluster ID
 			"--label", clusterLabel,
-			"--expose", "6443", // expose API server port
-			// pick a random ephemeral port to forward to the API server
-			"--publish-all",
+			// publish selected port for the API server
+			"--expose", fmt.Sprintf("%d", port),
+			"-p", fmt.Sprintf("%d:%d", port, port),
 			// explicitly set the entrypoint
 			"--entrypoint=/usr/local/bin/entrypoint",
 		},
@@ -83,9 +96,9 @@ func createNode(name, image, clusterLabel string) (handle *nodeHandle, err error
 		handle = &nodeHandle{name}
 	}
 	if err != nil {
-		return handle, errors.Wrap(err, "docker run error")
+		return handle, 0, errors.Wrap(err, "docker run error")
 	}
-	return handle, nil
+	return handle, port, nil
 }
 
 // SignalStart sends SIGUSR1 to the node, which signals our entrypoint to boot
@@ -298,17 +311,11 @@ func (nh *nodeHandle) KubeVersion() (version string, err error) {
 //    server: https://172.17.0.2:6443
 // which we rewrite to:
 //    server: https://localhost:$PORT
-var serverAddressRE = regexp.MustCompile(`^(\s+server:) https://.*:\d+$`)
+var serverAddressRE = regexp.MustCompile(`^(\s+server:) https://.*:(\d+)$`)
 
 // WriteKubeConfig writes a fixed KUBECONFIG to dest
 // this should only be called on a control plane node
 func (nh *nodeHandle) WriteKubeConfig(dest string) error {
-	// get the forwarded api server port
-	port, err := nh.GetForwardedPort(kubeadm.APIServerPort)
-	if err != nil {
-		return err
-	}
-
 	lines, err := nh.CombinedOutputLines("cat", "/etc/kubernetes/admin.conf")
 	if err != nil {
 		return errors.Wrap(err, "failed to get kubeconfig from node")
@@ -319,7 +326,7 @@ func (nh *nodeHandle) WriteKubeConfig(dest string) error {
 	for _, line := range lines {
 		match := serverAddressRE.FindStringSubmatch(line)
 		if len(match) > 1 {
-			line = fmt.Sprintf("%s https://localhost:%d", match[1], port)
+			line = fmt.Sprintf("%s https://localhost:%s", match[1], match[len(match)-1])
 		}
 		buff.WriteString(line)
 		buff.WriteString("\n")
@@ -333,30 +340,4 @@ func (nh *nodeHandle) WriteKubeConfig(dest string) error {
 	}
 
 	return ioutil.WriteFile(dest, buff.Bytes(), 0600)
-}
-
-// GetForwardedPort takes the port number within the "node" container
-// and returns the port it was forwarded to ouside the container
-func (nh *nodeHandle) GetForwardedPort(port uint16) (uint16, error) {
-	cmd := exec.Command("docker", "port")
-	cmd.Args = append(cmd.Args,
-		nh.nameOrID,             // ports are looked up by container
-		fmt.Sprintf("%d", port), // limit to the port we are looking up
-	)
-	lines, err := cmd.CombinedOutputLines()
-	if err != nil {
-		return 0, err
-	}
-	if len(lines) != 1 {
-		return 0, fmt.Errorf("invalid output: %v", lines)
-	}
-	parts := strings.Split(lines[0], ":")
-	if len(parts) != 2 {
-		return 0, fmt.Errorf("invalid output: %v", lines)
-	}
-	v, err := strconv.ParseUint(parts[1], 10, 16)
-	if err != nil {
-		return 0, err
-	}
-	return uint16(v), nil
 }
