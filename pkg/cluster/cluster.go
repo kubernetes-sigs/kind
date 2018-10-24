@@ -133,8 +133,7 @@ func (c *Context) Create(cfg *config.Config) error {
 
 	c.status.End(true)
 	fmt.Printf(
-		"Cluster creation complete. You can now use the cluster with:\n\nexport KUBECONFIG=\"%s\"\nkubectl cluster-info\n",
-		c.KubeConfigPath(),
+		"Cluster creation complete. You can now use the cluster with:\n\nexport KUBECONFIG=\"$(kind get kubeconfig-path)\"\nkubectl cluster-info\n",
 	)
 	return nil
 }
