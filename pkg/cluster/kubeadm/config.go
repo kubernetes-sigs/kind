@@ -103,23 +103,18 @@ apiEndpoint:
   bindPort: {{.APIBindPort}}
 `
 
-// Config returns a kubeadm config from the template and config data,
-// if templateSource == "", DeafultConfigTemplate will be used instead
-// ConfigData will be supplied to the template after conversion to ConfigTemplateData
-func Config(templateSource string, data ConfigData) (config string, err error) {
-	// load the template, using the defaults if not specified
-	if templateSource == "" {
-		ver, err := version.ParseGeneric(data.KubernetesVersion)
-		if err != nil {
-			return "", err
-		}
-		// The complexity of the config does not require special handling
-		// between v1alpha1 and v1alpha2 yet.
-		if ver.LessThan(version.MustParseSemantic("v1.12.0")) {
-			templateSource = DefaultConfigTemplateAlphaV1orV2
-		} else {
-			templateSource = DefaultConfigTemplateAlphaV3
-		}
+// Config returns a kubeadm config generated from config data, in particular
+// the kubernetes version
+func Config(data ConfigData) (config string, err error) {
+	ver, err := version.ParseGeneric(data.KubernetesVersion)
+	if err != nil {
+		return "", err
+	}
+	// The complexity of the config does not require special handling
+	// between v1alpha1 and v1alpha2 yet.
+	templateSource := DefaultConfigTemplateAlphaV3
+	if ver.LessThan(version.MustParseSemantic("v1.12.0")) {
+		templateSource = DefaultConfigTemplateAlphaV1orV2
 	}
 	t, err := template.New("kubeadm-config").Parse(templateSource)
 	if err != nil {
