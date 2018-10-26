@@ -32,7 +32,8 @@ import (
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
 
-const defaultLevel = logrus.WarnLevel
+// DefaultLogLevel is the default logging level
+const DefaultLogLevel = logrus.WarnLevel
 
 // Flags for the kind command
 type Flags struct {
@@ -52,11 +53,12 @@ func NewCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
 		},
+		Version: Version,
 	}
 	cmd.PersistentFlags().StringVar(
 		&flags.LogLevel,
 		"loglevel",
-		defaultLevel.String(),
+		DefaultLogLevel.String(),
 		"logrus log level "+logutil.LevelsString(),
 	)
 	// add all top level subcommands
@@ -64,11 +66,13 @@ func NewCommand() *cobra.Command {
 	cmd.AddCommand(create.NewCommand())
 	cmd.AddCommand(delete.NewCommand())
 	cmd.AddCommand(get.NewCommand())
+	// make the version template trivially parseable
+	cmd.SetVersionTemplate("{{.Version}}\n")
 	return cmd
 }
 
 func runE(flags *Flags, cmd *cobra.Command, args []string) error {
-	level := defaultLevel
+	level := DefaultLogLevel
 	parsed, err := log.ParseLevel(flags.LogLevel)
 	if err != nil {
 		log.Warnf("Invalid log level '%s', defaulting to '%s'", flags.LogLevel, level)
