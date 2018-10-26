@@ -25,14 +25,14 @@ import (
 	"strings"
 	"time"
 
-	"sigs.k8s.io/kind/pkg/docker"
-
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/kubeadm"
+	"sigs.k8s.io/kind/pkg/docker"
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/kustomize"
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
 
@@ -212,13 +212,17 @@ func (c *Context) provisionControlPlane(
 
 	// create kubeadm config file
 	kubeadmConfig, err := c.createKubeadmConfig(
-		cfg.KubeadmConfigTemplate,
+		cfg,
 		kubeadm.ConfigData{
 			ClusterName:       c.ClusterName(),
 			KubernetesVersion: kubeVersion,
 			APIBindPort:       port,
 		},
 	)
+	if err != nil {
+		c.deleteNodes(node.nameOrID)
+		return "", fmt.Errorf("failed to create kubeadm config: %v", err)
+	}
 
 	// copy the config to the node
 	if err := node.CopyTo(kubeadmConfig, "/kind/kubeadm.conf"); err != nil {
@@ -316,7 +320,7 @@ func (c *Context) provisionControlPlane(
 // createKubeadmConfig creates the kubeadm config file for the cluster
 // by running data through the template and writing it to a temp file
 // the config file path is returned, this file should be removed later
-func (c *Context) createKubeadmConfig(template string, data kubeadm.ConfigData) (path string, err error) {
+func (c *Context) createKubeadmConfig(cfg *config.Config, data kubeadm.ConfigData) (path string, err error) {
 	// create kubeadm config file
 	f, err := ioutil.TempFile("", "")
 	if err != nil {
@@ -324,18 +328,38 @@ func (c *Context) createKubeadmConfig(template string, data kubeadm.ConfigData) 
 	}
 	path = f.Name()
 	// generate the config contents
-	config, err := kubeadm.Config(template, data)
+	config, err := kubeadm.Config(data)
 	if err != nil {
 		os.Remove(path)
 		return "", err
 	}
-	log.Infof("Using KubeadmConfig:\n\n%s\n", config)
-	_, err = f.WriteString(config)
+	// apply patches
+	patchedConfig, err := kustomize.Build(
+		[]string{config},
+		cfg.KubeadmConfigPatches,
+		cfg.KubeadmConfigPatchesJSON6902,
+	)
+	if err != nil {
+		os.Remove(path)
+		return "", err
+	}
+	// write to the file
+	log.Infof("Using KubeadmConfig:\n\n%s\n", patchedConfig)
+	_, err = f.WriteString(patchedConfig)
 	if err != nil {
 		os.Remove(path)
 		return "", err
 	}
 	return path, nil
+}
+
+// config has slices of string, but we want bytes for kustomize
+func stringSliceToByteSliceSlice(ss []string) [][]byte {
+	bss := [][]byte{}
+	for _, s := range ss {
+		bss = append(bss, []byte(s))
+	}
+	return bss
 }
 
 func (c *Context) deleteNodes(names ...string) error {

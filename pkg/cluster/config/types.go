@@ -16,6 +16,10 @@ limitations under the License.
 
 package config
 
+import (
+	"sigs.k8s.io/kind/pkg/kustomize"
+)
+
 // NOTE: if you change these types you likely need to update
 // Validate() and DeepCopy() at minimum
 
@@ -28,9 +32,14 @@ type Config struct {
 	Image string `json:"image,omitempty"`
 	// NumNodes is the number of nodes to create (currently only one is supported)
 	NumNodes int `json:"numNodes,omitempty"`
-	// KubeadmConfigTemplate allows overriding the default template in
-	// cluster/kubeadm
-	KubeadmConfigTemplate string `json:"kubeadmConfigTemplate,omitempty"`
+	// KubeadmConfigPatches are applied to the generated kubeadm config as
+	// strategic merge patches to `kustomize build` internally
+	// https://github.com/kubernetes/community/blob/master/contributors/devel/strategic-merge-patch.md
+	// This should be an inline yaml blob-string
+	KubeadmConfigPatches []string `json:"kubeadmConfigPatches,omitempty"`
+	// KubeadmConfigPatchesJSON6902 are applied to the generated kubeadm config
+	// as patchesJson6902 to `kustomize build`
+	KubeadmConfigPatchesJSON6902 []kustomize.PatchJSON6902 `json:"kubeadmConfigPatchesJson6902,omitempty"`
 	// NodeLifecycle contains LifecycleHooks for phases of node provisioning
 	NodeLifecycle *NodeLifecycle `json:"nodeLifecycle,omitempty"`
 }
