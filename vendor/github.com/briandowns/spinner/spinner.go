@@ -237,10 +237,13 @@ func (s *Spinner) Active() bool {
 
 // Start will start the indicator
 func (s *Spinner) Start() {
+	s.lock.Lock()
 	if s.active {
+		s.lock.Unlock()
 		return
 	}
 	s.active = true
+	s.lock.Unlock()
 
 	go func() {
 		for {

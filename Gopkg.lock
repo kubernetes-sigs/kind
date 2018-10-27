@@ -100,12 +100,13 @@
   version = "v1.3.1"
 
 [[projects]]
-  digest = "1:bbf61f7710ce4136a5a3a0f49d82127ecc71a8177d5b9dbd3f156b8c9bffb075"
+  branch = "fix-data-race"
+  digest = "1:c39ea461c0c3725f85793da36075af98acf5840e7e1780c43f86d8988d69eda3"
   name = "github.com/briandowns/spinner"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "dd69c579ff204842e8962816987f838e2c2c18d8"
-  version = "1.4"
+  revision = "ee61efd0c4632ae3c56fcc7009bd9f711f13711b"
+  source = "github.com/BenTheElder/spinner"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
