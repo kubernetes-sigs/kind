@@ -78,7 +78,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [design doc]: ./docs/design.md
 [the docs]: ./docs
 [SIG-Testing Mailing List]: https://groups.google.com/forum/#!forum/kubernetes-sig-testing
-[issue tracker]: ./issues
+[issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [filing an issue]: https://github.com/kubernetes-sigs/kind/issues/new
 [Kubernetes Slack]: http://slack.k8s.io/
 [#sig-testing]: https://kubernetes.slack.com/messages/C09QZ4DQB/
