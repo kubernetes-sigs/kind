@@ -25,12 +25,7 @@
 # https://developers.redhat.com/blog/2014/05/05/running-systemd-within-docker-container/
 # https://developers.redhat.com/blog/2016/09/13/running-systemd-in-a-non-privileged-container/
 
-# TODO(bentheelder): explore supporting other arches, IE support the ARCH arg.
-# For now this is still an ARG so we can reuse it throughout the build
-# without persisting it to the container.
-ARG ARCH="amd64"
-ARG BASE_IMAGE_VERSION="0.3.2"
-ARG BASE_IMAGE="k8s.gcr.io/debian-base-${ARCH}:${BASE_IMAGE_VERSION}"
+ARG BASE_IMAGE="ubuntu:18.04"
 FROM ${BASE_IMAGE}
 
 # NOTE: ARCH must be defined again after FROM
@@ -40,9 +35,11 @@ ARG ARCH="amd64"
 # setting DEBIAN_FRONTEND=noninteractive stops some apt warnings, this is not 
 # a real argument, we're (ab)using ARG to get a temporary ENV again.
 ARG DEBIAN_FRONTEND=noninteractive
+
+COPY clean-install /usr/local/bin/clean-install
+RUN chmod +x /usr/local/bin/clean-install
+
 # Get dependencies
-# First we add stretch-backports so we can get newer systemd which supports
-# supressing kmsg in journald
 # The base image already has: ssh, apt, snapd
 # This is broken down into (each on a line):
 # - packages necessary for installing docker
@@ -52,11 +49,9 @@ ARG DEBIAN_FRONTEND=noninteractive
 # Then we cleanup (removing unwanted systemd services)
 # Finally we disable kmsg in journald
 # https://developers.redhat.com/blog/2014/05/05/running-systemd-within-docker-container/
-RUN echo "deb http://ftp.debian.org/debian stretch-backports main" \
-        > /etc/apt/sources.list.d/backports.list \
-    && clean-install \
+RUN clean-install \
       apt-transport-https ca-certificates curl software-properties-common gnupg2 lsb-release \
-      systemd/stretch-backports systemd-sysv/stretch-backports libsystemd0/stretch-backports \
+      systemd systemd-sysv libsystemd0 \
       iptables iproute2 ethtool socat util-linux mount ebtables udev kmod aufs-tools \
       bash rsync \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
@@ -75,9 +70,9 @@ RUN echo "deb http://ftp.debian.org/debian stretch-backports main" \
 # - add the fingerprint
 # - add the repository
 # - update apt, install docker, cleanup
-# NOTE: 17.03 is officially supported by Kubernetes currently, so we pin to that.
+# NOTE: 18.06 is officially supported by Kubernetes currently, so we pin to that.
 # https://kubernetes.io/docs/tasks/tools/install-kubeadm/
-ARG DOCKER_VERSION="17.03.2~ce-0~debian-stretch"
+ARG DOCKER_VERSION="18.06.*"
 # another temporary env, not a real argument. setting this to a non-zero value
 # silences this warning from apt-key:
 # "Warning: apt-key output should not be parsed (stdout is not a terminal)"
