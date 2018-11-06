@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"time"
 
-	"github.com/briandowns/spinner"
+	"sigs.k8s.io/kind/pkg/log/fidget"
+
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -31,19 +31,17 @@ import (
 // Status is used to track ongoing status in a CLI, with a nice loading spinner
 // when attached to a terminal
 type Status struct {
-	spinner *spinner.Spinner
+	spinner *fidget.Spinner
 	status  string
+	writer  io.Writer
 }
 
 // NewStatus creates a new default Status
-func NewStatus() *Status {
-	spin := spinner.New(
-		spinnerFrames,
-		100*time.Millisecond,
-	)
-	spin.Writer = os.Stdout
+func NewStatus(w io.Writer) *Status {
+	spin := fidget.NewSpinner(w)
 	s := &Status{
 		spinner: spin,
+		writer:  w,
 	}
 	return s
 }
@@ -80,7 +78,7 @@ func (s *Status) WrapLogrus(logger *logrus.Logger) {
 // MaybeWrapWriter returns a StatusFriendlyWriter for w IFF w and spinner's
 // output are a terminal, otherwise it returns w
 func (s *Status) MaybeWrapWriter(w io.Writer) io.Writer {
-	if IsTerminal(s.spinner.Writer) && IsTerminal(w) {
+	if IsTerminal(s.writer) && IsTerminal(w) {
 		return s.WrapWriter(w)
 	}
 	return w
@@ -89,24 +87,6 @@ func (s *Status) MaybeWrapWriter(w io.Writer) io.Writer {
 // MaybeWrapLogrus behaves like MaybeWrapWriter for a logrus logger
 func (s *Status) MaybeWrapLogrus(logger *logrus.Logger) {
 	logger.SetOutput(s.MaybeWrapWriter(logger.Out))
-}
-
-var spinnerFrames = []string{
-	"⠈⠁",
-	"⠈⠑",
-	"⠈⠱",
-	"⠈⡱",
-	"⢀⡱",
-	"⢄⡱",
-	"⢄⡱",
-	"⢆⡱",
-	"⢎⡱",
-	"⢎⡰",
-	"⢎⡠",
-	"⢎⡀",
-	"⢎⠁",
-	"⠎⠁",
-	"⠊⠁",
 }
 
 // IsTerminal returns true if the writer w is a terminal
@@ -122,13 +102,13 @@ func IsTerminal(w io.Writer) bool {
 func (s *Status) Start(status string) {
 	s.End(true)
 	// set new status
-	isTerm := IsTerminal(s.spinner.Writer)
+	isTerm := IsTerminal(s.writer)
 	s.status = status
 	if isTerm {
-		s.spinner.Suffix = fmt.Sprintf(" %s ", s.status)
+		s.spinner.SetSuffix(fmt.Sprintf(" %s ", s.status))
 		s.spinner.Start()
 	} else {
-		fmt.Fprintf(s.spinner.Writer, " • %s  ...\n", s.status)
+		fmt.Fprintf(s.writer, " • %s  ...\n", s.status)
 	}
 }
 
@@ -139,15 +119,16 @@ func (s *Status) End(success bool) {
 		return
 	}
 
-	isTerm := IsTerminal(s.spinner.Writer)
+	isTerm := IsTerminal(s.writer)
 	if isTerm {
 		s.spinner.Stop()
+		fmt.Fprint(s.writer, "\r")
 	}
 
 	if success {
-		fmt.Fprintf(s.spinner.Writer, " ✓ %s\n", s.status)
+		fmt.Fprintf(s.writer, " ✓ %s\n", s.status)
 	} else {
-		fmt.Fprintf(s.spinner.Writer, " ✗ %s\n", s.status)
+		fmt.Fprintf(s.writer, " ✗ %s\n", s.status)
 	}
 
 	s.status = ""
