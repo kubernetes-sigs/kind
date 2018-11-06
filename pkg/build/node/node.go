@@ -21,7 +21,13 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"regexp"
+	"strings"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/version"
+
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -160,6 +166,25 @@ func (c *BuildContext) populateBits(buildDir string) error {
 	return nil
 }
 
+// matches image tarballs kind will sideload
+var imageRegex = regexp.MustCompile(`images/[^/]+\.tar`)
+
+// returns a set of image tags that will be sideloaded
+func (c *BuildContext) getBuiltImages() (sets.String, error) {
+	bitPaths := c.bits.Paths()
+	images := sets.NewString()
+	for src, dest := range bitPaths {
+		if imageRegex.MatchString(dest) {
+			tags, err := docker.GetArchiveTags(src)
+			if err != nil {
+				return nil, err
+			}
+			images.Insert(tags...)
+		}
+	}
+	return images, nil
+}
+
 // BuildContainerLabelKey is applied to each build container
 const BuildContainerLabelKey = "io.k8s.sigs.kind.build"
 
@@ -250,6 +275,12 @@ func (c *BuildContext) buildImage(dir string) error {
 		return err
 	}
 
+	// pre-pull images that were not part of the build
+	if err = c.prePullImages(dir, containerID); err != nil {
+		log.Errorf("Image build Failed! %v", err)
+		return err
+	}
+
 	// Save the image changes to a new image
 	cmd := exec.Command("docker", "commit", containerID, c.image)
 	cmd.Debug = true
@@ -260,6 +291,92 @@ func (c *BuildContext) buildImage(dir string) error {
 	}
 
 	log.Info("Image build completed.")
+	return nil
+}
+
+// must be run after kubernetes has been installed on the node
+func (c *BuildContext) prePullImages(dir, containerID string) error {
+	// first get the images we actually built
+	builtImages, err := c.getBuiltImages()
+	if err != nil {
+		log.Errorf("Image build Failed! %v", err)
+		return err
+	}
+
+	// helpers to run things in the build container
+	execInBuild := func(command ...string) error {
+		cmd := exec.Command("docker", "exec", containerID)
+		cmd.Args = append(cmd.Args, command...)
+		cmd.Debug = true
+		cmd.InheritOutput = true
+		return cmd.Run()
+	}
+	combinedOutputLinesInBuild := func(command ...string) ([]string, error) {
+		cmd := exec.Command("docker", "exec", containerID)
+		cmd.Args = append(cmd.Args, command...)
+		cmd.Debug = true
+		return cmd.CombinedOutputLines()
+	}
+
+	// get the Kubernetes version we installed on the node
+	// we need this to ask kubeadm what images we need
+	rawVersion, err := combinedOutputLinesInBuild("cat", "/kind/version")
+	if err != nil {
+		log.Errorf("Image build Failed! %v", err)
+		return err
+	}
+	if len(rawVersion) != 1 {
+		log.Errorf("Image build Failed! %v", err)
+		return fmt.Errorf("invalid kubernetes version file")
+	}
+
+	// before Kubernetes v1.12.0 kubeadm requires arch specific images, instead
+	// later releases use manifest list images
+	// at node boot time we retag our images to handle this where necessary,
+	// so we virtually re-tag them here.
+	ver, err := version.ParseGeneric(rawVersion[0])
+	if err != nil {
+		return err
+	}
+	if ver.LessThan(version.MustParseSemantic("v1.12.0")) {
+		archSuffix := fmt.Sprintf("-%s:", c.arch)
+		for _, image := range builtImages.List() {
+			if !strings.Contains(image, archSuffix) {
+				builtImages.Insert(strings.Replace(image, ":", archSuffix, 1))
+			}
+		}
+	}
+
+	// gets the list of images required by kubeadm
+	requiredImages, err := combinedOutputLinesInBuild(
+		"kubeadm", "config", "images", "list", "--kubernetes-version", rawVersion[0],
+	)
+	if err != nil {
+		return err
+	}
+
+	movePulled := []string{"mv"}
+	for i, image := range requiredImages {
+		if !builtImages.Has(image) {
+			fmt.Printf("Pulling: %s\n", image)
+			err := docker.Pull(image, 2)
+			if err != nil {
+				return err
+			}
+			// TODO(bentheelder): generate a friendlier name
+			pullName := fmt.Sprintf("%d.tar", i)
+			pullTo := fmt.Sprintf("%s/bits/images/%s", dir, pullName)
+			err = docker.Save(image, pullTo)
+			if err != nil {
+				return err
+			}
+			movePulled = append(movePulled, fmt.Sprintf("/build/bits/images/%s", pullName))
+		}
+	}
+	movePulled = append(movePulled, "/kind/images/")
+	if err := execInBuild(movePulled...); err != nil {
+		return err
+	}
 	return nil
 }
 

@@ -271,6 +271,7 @@ func (nh *nodeHandle) LoadImages() {
 		log.Warningf("Failed to preload docker images: %v", err)
 		return
 	}
+
 	// if this fails, we don't care yet, but try to get the kubernetes verison
 	// and see if we can skip retagging for amd64
 	// if this fails, we can just assume some unkown version and re-tag
@@ -278,11 +279,12 @@ func (nh *nodeHandle) LoadImages() {
 	// and remove the logic below this comment entirely
 	if rawVersion, err := nh.KubeVersion(); err == nil {
 		if ver, err := version.ParseGeneric(rawVersion); err == nil {
-			if ver.LessThan(version.MustParseSemantic("v1.12.0")) {
+			if !ver.LessThan(version.MustParseSemantic("v1.12.0")) {
 				return
 			}
 		}
 	}
+
 	// for older releases, we need the images to have the arch in their name
 	// bazel built images were missing these, newer releases do not use them
 	// for any builds ...
