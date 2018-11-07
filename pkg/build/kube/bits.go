@@ -32,7 +32,7 @@ type Bits interface {
 	// Paths returns a map of path on host machine to desired path in the image
 	// These paths will be populated in the image relative to some base path,
 	// obtainable by NodeInstall.BasePath()
-	// Note: if Images are populated in iamges/, the cluster provisioning
+	// Note: if Images are populated to images/, the cluster provisioning
 	// will load these prior to calling kubeadm
 	Paths() map[string]string
 	// Install should install the built sources on the node, assuming paths

@@ -14,8 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package docker contains helpers for working with docker
-// This package has no stability guarantees whatsoever!
 package docker
 
 import (
@@ -41,8 +39,13 @@ func PullIfNotPresent(image string, retries int) (pulled bool, err error) {
 		return false, nil
 	}
 	// otherwise try to pull it
+	return true, Pull(image, retries)
+}
+
+// Pull pulls an image, retrying up to retries times
+func Pull(image string, retries int) error {
 	log.Infof("Pulling image: %s ...", image)
-	err = exec.Command("docker", "pull", image).Run()
+	err := exec.Command("docker", "pull", image).Run()
 	// retry pulling up to retries times if necessary
 	if err != nil {
 		for i := 0; i < retries; i++ {
@@ -58,7 +61,12 @@ func PullIfNotPresent(image string, retries int) (pulled bool, err error) {
 	if err != nil {
 		log.WithError(err).Infof("Failed to pull image: %s", image)
 	}
-	return true, err
+	return err
+}
+
+// Save saves image to dest, as in `docker save`
+func Save(image, dest string) error {
+	return exec.Command("docker", "save", "-o", dest, image).Run()
 }
 
 // Docker container IDs are hex, more than one character, and on their own line

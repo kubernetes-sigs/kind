@@ -30,6 +30,8 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	"k8s.io/apimachinery/pkg/util/version"
+
 	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/docker"
 	"sigs.k8s.io/kind/pkg/exec"
@@ -38,6 +40,13 @@ import (
 type nodeHandle struct {
 	// must be one of docker container ID or name
 	nameOrID string
+	// cached node info
+	cachedNodeInfo
+}
+
+// this is a seperate struct so we can clear the whole thing at once
+type cachedNodeInfo struct {
+	kubernetesVersion string
 }
 
 func getPort() (int, error) {
@@ -93,7 +102,9 @@ func createControlPlaneNode(name, image, clusterLabel string) (handle *nodeHandl
 	// we should return a handle so the caller can clean it up
 	// we'll return a handle with the nice name though
 	if id != "" {
-		handle = &nodeHandle{name}
+		handle = &nodeHandle{
+			nameOrID: name,
+		}
 	}
 	if err != nil {
 		return handle, 0, errors.Wrap(err, "docker run error")
@@ -260,8 +271,24 @@ func (nh *nodeHandle) LoadImages() {
 		log.Warningf("Failed to preload docker images: %v", err)
 		return
 	}
+
+	// if this fails, we don't care yet, but try to get the kubernetes verison
+	// and see if we can skip retagging for amd64
+	// if this fails, we can just assume some unkown version and re-tag
+	// in a future release of kind, we can probably drop v1.11 support
+	// and remove the logic below this comment entirely
+	if rawVersion, err := nh.KubeVersion(); err == nil {
+		if ver, err := version.ParseGeneric(rawVersion); err == nil {
+			if !ver.LessThan(version.MustParseSemantic("v1.12.0")) {
+				return
+			}
+		}
+	}
+
+	// for older releases, we need the images to have the arch in their name
+	// bazel built images were missing these, newer releases do not use them
+	// for any builds ...
 	// retag images that are missing -amd64 as image:tag -> image-amd64:tag
-	// bazel built images are currently missing these
 	// TODO(bentheelder): this is a bit gross, move this logic out of bash
 	if err := nh.RunQ(
 		"/bin/bash", "-c",
@@ -296,6 +323,10 @@ func (nh *nodeHandle) FixMounts() error {
 
 // KubeVersion returns the Kubernetes version installed on the node
 func (nh *nodeHandle) KubeVersion() (version string, err error) {
+	// use the cached version first
+	if nh.cachedNodeInfo.kubernetesVersion != "" {
+		return nh.cachedNodeInfo.kubernetesVersion, nil
+	}
 	// grab kubernetes version from the node image
 	lines, err := nh.CombinedOutputLines("cat", "/kind/version")
 	if err != nil {
@@ -304,7 +335,8 @@ func (nh *nodeHandle) KubeVersion() (version string, err error) {
 	if len(lines) != 1 {
 		return "", fmt.Errorf("file should only be one line, got %d lines", len(lines))
 	}
-	return lines[0], nil
+	nh.cachedNodeInfo.kubernetesVersion = lines[0]
+	return nh.cachedNodeInfo.kubernetesVersion, nil
 }
 
 // matches kubeconfig server entry like:

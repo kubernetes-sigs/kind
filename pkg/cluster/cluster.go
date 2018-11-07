@@ -106,7 +106,7 @@ func (c *Context) Create(cfg *config.Config) error {
 	}
 
 	fmt.Printf("Creating cluster '%s' ...\n", c.ClusterName())
-	c.status = logutil.NewStatus()
+	c.status = logutil.NewStatus(os.Stdout)
 	c.status.MaybeWrapLogrus(log.StandardLogger())
 
 	defer c.status.End(false)
