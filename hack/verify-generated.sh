@@ -49,8 +49,8 @@ make_temp_root() {
   export -f quiet_recursive_cp
   # we need to copy everything but _output (which is .gitignore anyhow)
   find . \
-    -type d -path "./_output" -prune -o \
     -mindepth 1 -maxdepth 1 \
+    -type d -path "./_output" -prune -o \
     -exec bash -c 'quiet_recursive_cp "${0}" "${1}/${0}"' {} "${fake_root}" \;
 }
 
