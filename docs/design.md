@@ -27,6 +27,9 @@ enabled CCMs, enough can that we want something that:
  - is very stable, and has extensive error handling and sanity checking
  - passes all conformance tests
 
+In practice kind looks something like this:
+<img src="images/diagram.png"/>
+
 ## Clusters
 
 Clusters are managed by logic in [`pkg/cluster`][pkg/cluster], which the
