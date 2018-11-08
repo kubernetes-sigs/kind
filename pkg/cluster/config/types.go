@@ -40,6 +40,11 @@ type Config struct {
 	// KubeadmConfigPatchesJSON6902 are applied to the generated kubeadm config
 	// as patchesJson6902 to `kustomize build`
 	KubeadmConfigPatchesJSON6902 []kustomize.PatchJSON6902 `json:"kubeadmConfigPatchesJson6902,omitempty"`
+	// ControlPlane holds config for the control plane node
+	ControlPlane *ControlPlane `json:"ControlPlane,omitempty"`
+}
+
+type ControlPlane struct {
 	// NodeLifecycle contains LifecycleHooks for phases of node provisioning
 	NodeLifecycle *NodeLifecycle `json:"nodeLifecycle,omitempty"`
 }

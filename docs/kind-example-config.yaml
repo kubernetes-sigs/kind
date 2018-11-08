@@ -24,22 +24,24 @@ kubeadmConfigPatchesJson6902:
       path: /apiServerCertSANs/-
       value: my-hostname
 
-# node lifecycle hooks
-nodeLifecycle:
-  # commands run before systemd boots
-  preBoot:
-  - name: "should fail"
-    command: [ "yep-not-a-real-command" ]
-  # commands run before kubeadm init
-  preKubeadm: []
-  # commands run after kubeadm init
-  postKubeadm: []
-  # commands run after all other setup on the node
-  postSetup:
-  - name: "list containers"
-    command: [ "docker", "ps" ]
-    # this command cannot fail, or else kind will fail during create
-    mustSucceed: true
+# control plane node config
+controlPlane:
+  # node lifecycle hooks
+  nodeLifecycle:
+    # commands run before systemd boots
+    preBoot:
+    - name: "should fail"
+      command: [ "yep-not-a-real-command" ]
+    # commands run before kubeadm init
+    preKubeadm: []
+    # commands run after kubeadm init
+    postKubeadm: []
+    # commands run after all other setup on the node
+    postSetup:
+    - name: "list containers"
+      command: [ "docker", "ps" ]
+      # this command cannot fail, or else kind will fail during create
+      mustSucceed: true
 
 # number of nodes in the cluster (currently only 1 is supported)
 # skip this field for now

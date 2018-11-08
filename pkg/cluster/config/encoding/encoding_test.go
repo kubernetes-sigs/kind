@@ -124,26 +124,29 @@ func TestUnmarshal(t *testing.T) {
 			Name: "config with lifecycle",
 			Raw: []byte(`kind: Config
 apiVersion: kind.sigs.k8s.io/v1alpha1
-nodeLifecycle:
-  preKubeadm:
-  - name: "pull an image"
-    command: [ "docker", "pull", "ubuntu" ]
-  - name: "pull another image"
-    command: [ "docker", "pull", "debian" ]
-    mustSucceed: true
+controlPlane:
+  nodeLifecycle:
+    preKubeadm:
+    - name: "pull an image"
+      command: [ "docker", "pull", "ubuntu" ]
+    - name: "pull another image"
+      command: [ "docker", "pull", "debian" ]
+      mustSucceed: true
 `),
 			ExpectedConfig: func() config.Any {
 				cfg := &config.Config{
-					NodeLifecycle: &config.NodeLifecycle{
-						PreKubeadm: []config.LifecycleHook{
-							{
-								Name:    "pull an image",
-								Command: []string{"docker", "pull", "ubuntu"},
-							},
-							{
-								Name:        "pull another image",
-								Command:     []string{"docker", "pull", "debian"},
-								MustSucceed: true,
+					ControlPlane: &config.ControlPlane{
+						NodeLifecycle: &config.NodeLifecycle{
+							PreKubeadm: []config.LifecycleHook{
+								{
+									Name:    "pull an image",
+									Command: []string{"docker", "pull", "ubuntu"},
+								},
+								{
+									Name:        "pull another image",
+									Command:     []string{"docker", "pull", "debian"},
+									MustSucceed: true,
+								},
 							},
 						},
 					},
@@ -165,7 +168,7 @@ nodeLifecycle:
 		},
 		{
 			Name:        "invalid config yaml",
-			Raw:         []byte("numNodes: too-many"),
+			Raw:         []byte("controlPlane: wat"),
 			ExpectError: true,
 		},
 		{
