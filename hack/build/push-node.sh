@@ -40,7 +40,7 @@ TAG="${DATE}-$(git describe --tags --always --dirty)"
 
 # build
 set -x
-"${KIND}" build node-image --image="kindest/node:${TAG}" --base-image="kindest/base:${TAG}"
+"${KIND}" build node-image --image="kindest/node:${TAG}"
 
 # re-tag with kubernetes version
 IMG="kindest/node:${TAG}"
