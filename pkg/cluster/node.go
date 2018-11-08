@@ -250,8 +250,7 @@ func (nh *nodeHandle) WaitForDocker(until time.Time) bool {
 // helper that calls `try()`` in a loop until the deadline `until`
 // has passed or `try()`returns true, returns wether try ever returned true
 func tryUntil(until time.Time, try func() bool) bool {
-	now := time.Now()
-	for until.After(now) {
+	for until.After(time.Now()) {
 		if try() {
 			return true
 		}
