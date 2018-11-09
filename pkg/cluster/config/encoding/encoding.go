@@ -79,7 +79,7 @@ func detectVersion(raw []byte) (version string, err error) {
 	return "", fmt.Errorf("invalid version: %v", c.APIVersion)
 }
 
-// Unmarshal is an apiVersion aware yaml.Unmarshall for config.Any
+// Unmarshal is an apiVersion aware yaml.UnmarshalStrict for config.Any
 func Unmarshal(raw []byte) (config.Any, error) {
 	if raw == nil {
 		return nil, fmt.Errorf("nil input")
@@ -89,13 +89,20 @@ func Unmarshal(raw []byte) (config.Any, error) {
 	if err != nil {
 		return nil, err
 	}
-	// load version
+	// load version specific config type
 	var cfg config.Any
+	var rawCfg interface{}
 	switch version {
 	case config.SchemeGroupVersion.String():
-		cfg = &config.Config{}
+		// this allows strict unmarshaling with the version header
+		layout := &struct {
+			configHeader
+			config.Config
+		}{}
+		cfg = &layout.Config
+		rawCfg = layout
 	}
-	err = yaml.Unmarshal(raw, cfg)
+	err = yaml.UnmarshalStrict(raw, rawCfg)
 	if err != nil {
 		return nil, err
 	}
