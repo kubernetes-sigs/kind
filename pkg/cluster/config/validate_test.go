@@ -34,22 +34,15 @@ func TestConfigValidate(t *testing.T) {
 			ExpectedErrors: 0,
 		},
 		{
-			TestName: "Invalid number of nodes (not yet supported",
-			Config: func() *Config {
-				cfg := New()
-				cfg.NumNodes = 2
-				return cfg
-			}(),
-			ExpectedErrors: 1,
-		},
-		{
 			TestName: "Invalid PreBoot hook",
 			Config: func() *Config {
 				cfg := New()
-				cfg.NodeLifecycle = &NodeLifecycle{
-					PreBoot: []LifecycleHook{
-						{
-							Command: []string{},
+				cfg.ControlPlane = &ControlPlane{
+					NodeLifecycle: &NodeLifecycle{
+						PreBoot: []LifecycleHook{
+							{
+								Command: []string{},
+							},
 						},
 					},
 				}
@@ -61,11 +54,13 @@ func TestConfigValidate(t *testing.T) {
 			TestName: "Invalid PreKubeadm hook",
 			Config: func() *Config {
 				cfg := New()
-				cfg.NodeLifecycle = &NodeLifecycle{
-					PreKubeadm: []LifecycleHook{
-						{
-							Name:    "pull an image",
-							Command: []string{},
+				cfg.ControlPlane = &ControlPlane{
+					NodeLifecycle: &NodeLifecycle{
+						PreKubeadm: []LifecycleHook{
+							{
+								Name:    "pull an image",
+								Command: []string{},
+							},
 						},
 					},
 				}
@@ -77,11 +72,13 @@ func TestConfigValidate(t *testing.T) {
 			TestName: "Invalid PostKubeadm hook",
 			Config: func() *Config {
 				cfg := New()
-				cfg.NodeLifecycle = &NodeLifecycle{
-					PostKubeadm: []LifecycleHook{
-						{
-							Name:    "pull an image",
-							Command: []string{},
+				cfg.ControlPlane = &ControlPlane{
+					NodeLifecycle: &NodeLifecycle{
+						PostKubeadm: []LifecycleHook{
+							{
+								Name:    "pull an image",
+								Command: []string{},
+							},
 						},
 					},
 				}

@@ -172,8 +172,8 @@ func (c *Context) provisionControlPlane(
 	}
 
 	// run any pre-boot hooks
-	if cfg.NodeLifecycle != nil {
-		for _, hook := range cfg.NodeLifecycle.PreBoot {
+	if cfg.ControlPlane != nil && cfg.ControlPlane.NodeLifecycle != nil {
+		for _, hook := range cfg.ControlPlane.NodeLifecycle.PreBoot {
 			if err := node.RunHook(&hook, "preBoot"); err != nil {
 				return "", err
 			}
@@ -233,8 +233,8 @@ func (c *Context) provisionControlPlane(
 	}
 
 	// run any pre-kubeadm hooks
-	if cfg.NodeLifecycle != nil {
-		for _, hook := range cfg.NodeLifecycle.PreKubeadm {
+	if cfg.ControlPlane != nil && cfg.ControlPlane.NodeLifecycle != nil {
+		for _, hook := range cfg.ControlPlane.NodeLifecycle.PreKubeadm {
 			if err := node.RunHook(&hook, "preKubeadm"); err != nil {
 				return kubeadmConfig, err
 			}
@@ -262,8 +262,8 @@ func (c *Context) provisionControlPlane(
 	}
 
 	// run any post-kubeadm hooks
-	if cfg.NodeLifecycle != nil {
-		for _, hook := range cfg.NodeLifecycle.PostKubeadm {
+	if cfg.ControlPlane != nil && cfg.ControlPlane.NodeLifecycle != nil {
+		for _, hook := range cfg.ControlPlane.NodeLifecycle.PostKubeadm {
 			if err := node.RunHook(&hook, "postKubeadm"); err != nil {
 				return kubeadmConfig, err
 			}
@@ -288,14 +288,15 @@ func (c *Context) provisionControlPlane(
 
 	// if we are only provisioning one node, remove the master taint
 	// https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#master-isolation
-	if cfg.NumNodes == 1 {
-		if err = node.RunQ(
-			"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf",
-			"taint", "nodes", "--all", "node-role.kubernetes.io/master-",
-		); err != nil {
-			return kubeadmConfig, errors.Wrap(err, "failed to remove master taint")
-		}
+	// TODO(bentheelder): put this back when we have multi-node
+	//if cfg.NumNodes == 1 {
+	if err = node.RunQ(
+		"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf",
+		"taint", "nodes", "--all", "node-role.kubernetes.io/master-",
+	); err != nil {
+		return kubeadmConfig, errors.Wrap(err, "failed to remove master taint")
 	}
+	//}
 
 	// add the default storage class
 	if err := node.RunQWithInput(
@@ -306,8 +307,8 @@ func (c *Context) provisionControlPlane(
 	}
 
 	// run any post-overlay hooks
-	if cfg.NodeLifecycle != nil {
-		for _, hook := range cfg.NodeLifecycle.PostSetup {
+	if cfg.ControlPlane != nil && cfg.ControlPlane.NodeLifecycle != nil {
+		for _, hook := range cfg.ControlPlane.NodeLifecycle.PostSetup {
 			if err := node.RunHook(&hook, "postSetup"); err != nil {
 				return kubeadmConfig, err
 			}
