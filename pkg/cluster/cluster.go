@@ -110,7 +110,11 @@ func (c *Context) Create(cfg *config.Config) error {
 	c.status.MaybeWrapLogrus(log.StandardLogger())
 
 	defer c.status.End(false)
-	c.status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", cfg.Image))
+	image := cfg.Image
+	if strings.Contains(image, "@sha256:") {
+		image = strings.Split(image, "@sha256:")[0]
+	}
+	c.status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", image))
 
 	// attempt to explicitly pull the image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
