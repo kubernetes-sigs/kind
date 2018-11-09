@@ -717,11 +717,18 @@
   pruneopts = "NUT"
   revision = "6a917c5f363c79fb4ffbca8c50f31f803bc3eb61"
 
+[[projects]]
+  digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
+  name = "sigs.k8s.io/yaml"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "fd68e9863619f6ec2fdd8625fe1f02e7c877e480"
+  version = "v1.1.0"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/ghodss/yaml",
     "github.com/golang/dep/cmd/dep",
     "github.com/golang/lint/golint",
     "github.com/jteeuwen/go-bindata/go-bindata",
@@ -738,6 +745,7 @@
     "sigs.k8s.io/kustomize/k8sdeps",
     "sigs.k8s.io/kustomize/pkg/commands/build",
     "sigs.k8s.io/kustomize/pkg/fs",
+    "sigs.k8s.io/yaml",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
