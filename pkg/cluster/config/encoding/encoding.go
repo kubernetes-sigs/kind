@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/ghodss/yaml"
+	"sigs.k8s.io/yaml"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
 )
