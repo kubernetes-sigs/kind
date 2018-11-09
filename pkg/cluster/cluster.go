@@ -288,14 +288,15 @@ func (c *Context) provisionControlPlane(
 
 	// if we are only provisioning one node, remove the master taint
 	// https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#master-isolation
-	if cfg.NumNodes == 1 {
-		if err = node.RunQ(
-			"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf",
-			"taint", "nodes", "--all", "node-role.kubernetes.io/master-",
-		); err != nil {
-			return kubeadmConfig, errors.Wrap(err, "failed to remove master taint")
-		}
+	// TODO(bentheelder): put this back when we have multi-node
+	//if cfg.NumNodes == 1 {
+	if err = node.RunQ(
+		"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf",
+		"taint", "nodes", "--all", "node-role.kubernetes.io/master-",
+	); err != nil {
+		return kubeadmConfig, errors.Wrap(err, "failed to remove master taint")
 	}
+	//}
 
 	// add the default storage class
 	if err := node.RunQWithInput(

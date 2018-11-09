@@ -32,9 +32,6 @@ func SetDefaults_Config(obj *Config) {
 	if obj.Image == "" {
 		obj.Image = DefaultImage
 	}
-	if obj.NumNodes == 0 {
-		obj.NumNodes = 1
-	}
 }
 
 func (c *Config) ApplyDefaults() {

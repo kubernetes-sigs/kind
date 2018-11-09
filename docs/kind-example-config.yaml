@@ -42,7 +42,3 @@ controlPlane:
       command: [ "docker", "ps" ]
       # this command cannot fail, or else kind will fail during create
       mustSucceed: true
-
-# number of nodes in the cluster (currently only 1 is supported)
-# skip this field for now
-numNodes: 1

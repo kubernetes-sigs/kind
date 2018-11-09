@@ -29,13 +29,6 @@ func (c *Config) Validate() error {
 	if c.Image == "" {
 		errs = append(errs, fmt.Errorf("image is a required field"))
 	}
-	// TODO(bentheelder): support multiple nodes
-	if c.NumNodes != 1 {
-		errs = append(errs, fmt.Errorf(
-			"%d nodes requested but only clusters with one node are supported currently",
-			c.NumNodes,
-		))
-	}
 	if c.ControlPlane != nil {
 		if c.ControlPlane.NodeLifecycle != nil {
 			for _, hook := range c.ControlPlane.NodeLifecycle.PreBoot {

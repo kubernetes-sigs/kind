@@ -30,8 +30,6 @@ type Config struct {
 	// Image is the node image to use when running the cluster
 	// TODO(bentheelder): split this into image and tag?
 	Image string `json:"image,omitempty"`
-	// NumNodes is the number of nodes to create (currently only one is supported)
-	NumNodes int `json:"numNodes,omitempty"`
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// strategic merge patches to `kustomize build` internally
 	// https://github.com/kubernetes/community/blob/master/contributors/devel/strategic-merge-patch.md
