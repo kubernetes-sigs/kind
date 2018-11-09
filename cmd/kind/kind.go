@@ -99,7 +99,7 @@ func Main() {
 		ForceColors: logutil.IsTerminal(log.StandardLogger().Out),
 	})
 	if err := Run(); err != nil {
-		os.Stderr.WriteString(err.Error())
+		os.Stderr.WriteString(err.Error() + "\n")
 		os.Exit(-1)
 	}
 }
