@@ -25,19 +25,18 @@ import (
 	"strings"
 	"time"
 
+	"sigs.k8s.io/kind/pkg/cluster/consts"
+
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/kubeadm"
+	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/docker"
-	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/kustomize"
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
-
-// ClusterLabelKey is applied to each "node" docker container for identification
-const ClusterLabelKey = "io.k8s.sigs.kind.cluster"
 
 // Context is used to create / manipulate kubernetes-in-docker clusters
 type Context struct {
@@ -72,7 +71,7 @@ func NewContext(name string) (ctx *Context, err error) {
 // ClusterLabel returns the docker object label that will be applied
 // to cluster "node" containers
 func (c *Context) ClusterLabel() string {
-	return fmt.Sprintf("%s=%s", ClusterLabelKey, c.name)
+	return fmt.Sprintf("%s=%s", consts.ClusterLabelKey, c.name)
 }
 
 // Name returns the context's name
@@ -144,11 +143,11 @@ func (c *Context) Create(cfg *config.Config) error {
 
 // Delete tears down a kubernetes-in-docker cluster
 func (c *Context) Delete() error {
-	nodes, err := c.ListNodes(true)
+	n, err := c.ListNodes()
 	if err != nil {
 		return fmt.Errorf("error listing nodes: %v", err)
 	}
-	return c.deleteNodes(nodes...)
+	return nodes.Delete(n...)
 }
 
 // provisionControlPlane provisions the control plane node
@@ -159,7 +158,7 @@ func (c *Context) provisionControlPlane(
 ) (kubeadmConfigPath string, err error) {
 	c.status.Start(fmt.Sprintf("[%s] Creating node container 📦", nodeName))
 	// create the "node" container (docker run, but it is paused, see createNode)
-	node, port, err := createControlPlaneNode(nodeName, cfg.Image, c.ClusterLabel())
+	node, port, err := nodes.CreateControlPlaneNode(nodeName, cfg.Image, c.ClusterLabel())
 	if err != nil {
 		return "", err
 	}
@@ -171,7 +170,7 @@ func (c *Context) provisionControlPlane(
 	if err := node.FixMounts(); err != nil {
 		// TODO(bentheelder): logging here
 		// TODO(bentheelder): add a flag to retain the broken nodes for debugging
-		c.deleteNodes(node.nameOrID)
+		nodes.Delete(node.String())
 		return "", err
 	}
 
@@ -189,7 +188,7 @@ func (c *Context) provisionControlPlane(
 	if err := node.SignalStart(); err != nil {
 		// TODO(bentheelder): logging here
 		// TODO(bentheelder): add a flag to retain the broken nodes for debugging
-		c.deleteNodes(node.nameOrID)
+		nodes.Delete(node.String())
 		return "", err
 	}
 
@@ -198,7 +197,7 @@ func (c *Context) provisionControlPlane(
 	if !node.WaitForDocker(time.Now().Add(time.Second * 30)) {
 		// TODO(bentheelder): logging here
 		// TODO(bentheelder): add a flag to retain the broken nodes for debugging
-		c.deleteNodes(node.nameOrID)
+		nodes.Delete(node.String())
 		return "", fmt.Errorf("timed out waiting for docker to be ready on node")
 	}
 
@@ -210,7 +209,7 @@ func (c *Context) provisionControlPlane(
 	if err != nil {
 		// TODO(bentheelder): logging here
 		// TODO(bentheelder): add a flag to retain the broken nodes for debugging
-		c.deleteNodes(node.nameOrID)
+		nodes.Delete(node.String())
 		return "", fmt.Errorf("failed to get kubernetes version from node: %v", err)
 	}
 
@@ -224,7 +223,7 @@ func (c *Context) provisionControlPlane(
 		},
 	)
 	if err != nil {
-		c.deleteNodes(node.nameOrID)
+		nodes.Delete(node.String())
 		return "", fmt.Errorf("failed to create kubeadm config: %v", err)
 	}
 
@@ -232,7 +231,7 @@ func (c *Context) provisionControlPlane(
 	if err := node.CopyTo(kubeadmConfig, "/kind/kubeadm.conf"); err != nil {
 		// TODO(bentheelder): logging here
 		// TODO(bentheelder): add a flag to retain the broken nodes for debugging
-		c.deleteNodes(node.nameOrID)
+		nodes.Delete(node.String())
 		return kubeadmConfig, errors.Wrap(err, "failed to copy kubeadm config to node")
 	}
 
@@ -367,28 +366,7 @@ func stringSliceToByteSliceSlice(ss []string) [][]byte {
 	return bss
 }
 
-func (c *Context) deleteNodes(names ...string) error {
-	cmd := exec.Command("docker", "rm")
-	cmd.Args = append(cmd.Args,
-		"-f", // force the container to be delete now
-		"-v", // delete volumes
-	)
-	cmd.Args = append(cmd.Args, names...)
-	return cmd.Run()
-}
-
 // ListNodes returns the list of container IDs for the "nodes" in the cluster
-func (c *Context) ListNodes(alsoStopped bool) (containerIDs []string, err error) {
-	cmd := exec.Command("docker", "ps")
-	cmd.Args = append(cmd.Args,
-		// quiet output for parsing
-		"-q",
-		// filter for nodes with the cluster label
-		"--filter", "label="+c.ClusterLabel(),
-	)
-	// optionally list nodes that are stopped
-	if alsoStopped {
-		cmd.Args = append(cmd.Args, "-a")
-	}
-	return cmd.CombinedOutputLines()
+func (c *Context) ListNodes() (containerIDs []string, err error) {
+	return nodes.List("label=" + c.ClusterLabel())
 }

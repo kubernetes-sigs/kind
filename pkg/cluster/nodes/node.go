@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package nodes
 
 import (
 	"bytes"
@@ -27,6 +27,8 @@ import (
 	"regexp"
 	"time"
 
+	"sigs.k8s.io/kind/pkg/cluster/consts"
+
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
@@ -37,11 +39,18 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
-type nodeHandle struct {
+// Node represents a handle to a kind node
+// This struct must be created by one of: CreateControlPlane
+// It should not be manually instantiated
+type Node struct {
 	// must be one of docker container ID or name
 	nameOrID string
 	// cached node info
 	cachedNodeInfo
+}
+
+func (n *Node) String() string {
+	return n.nameOrID
 }
 
 // this is a seperate struct so we can clear the whole thing at once
@@ -60,10 +69,10 @@ func getPort() (int, error) {
 	return port, nil
 }
 
-// createControlPlaneNode `docker run`s the node image, note that due to
+// CreateControlPlaneNode `docker run`s the node image, note that due to
 // images/node/entrypoint being the entrypoint, this container will
 // effectively be paused until we call actuallyStartNode(...)
-func createControlPlaneNode(name, image, clusterLabel string) (handle *nodeHandle, port int, err error) {
+func CreateControlPlaneNode(name, image, clusterLabel string) (handle *Node, port int, err error) {
 	port, err = getPort()
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "failed to get port for API server")
@@ -102,7 +111,7 @@ func createControlPlaneNode(name, image, clusterLabel string) (handle *nodeHandl
 	// we should return a handle so the caller can clean it up
 	// we'll return a handle with the nice name though
 	if id != "" {
-		handle = &nodeHandle{
+		handle = &Node{
 			nameOrID: name,
 		}
 	}
@@ -114,84 +123,92 @@ func createControlPlaneNode(name, image, clusterLabel string) (handle *nodeHandl
 
 // SignalStart sends SIGUSR1 to the node, which signals our entrypoint to boot
 // see images/node/entrypoint
-func (nh *nodeHandle) SignalStart() error {
-	cmd := exec.Command("docker", "kill")
-	cmd.Args = append(cmd.Args,
+func (n *Node) SignalStart() error {
+	cmd := exec.Command(
+		"docker", "kill",
 		"-s", "SIGUSR1",
-		nh.nameOrID,
+		n.nameOrID,
 	)
 	return cmd.Run()
 }
 
 // Run execs command, args... on the node
-func (nh *nodeHandle) Run(command string, args ...string) error {
-	cmd := exec.Command("docker", "exec")
-	cmd.Args = append(cmd.Args,
-		"-t",           // use a tty so we can get output
-		"--privileged", // run with priliges so we can remount etc..
-		nh.nameOrID,    // ... against the "node" container
-		command,        // with the command specified
+func (n *Node) Run(command string, args ...string) error {
+	args = append(
+		[]string{
+			"exec",
+			"-t",           // use a tty so we can get output
+			"--privileged", // run with priliges so we can remount etc..
+			n.nameOrID,     // ... against the "node" container
+			command,        // with the command specified
+		},
+		// finally, with the caller args
+		args...,
 	)
-	cmd.Args = append(cmd.Args,
-		args..., // finally, with the args specified
-	)
-	cmd.InheritOutput = true
+	cmd := exec.Command("docker", args...)
+	exec.InheritOutput(cmd)
 	return cmd.Run()
 }
 
 // RunQ execs command, args... on the node without inherting stdout
-func (nh *nodeHandle) RunQ(command string, args ...string) error {
-	cmd := exec.Command("docker", "exec")
-	cmd.Args = append(cmd.Args,
-		"-t",           // use a tty so we can get output
-		"--privileged", // run with priliges so we can remount etc..
-		nh.nameOrID,    // ... against the "node" container
-		command,        // with the command specified
+func (n *Node) RunQ(command string, args ...string) error {
+	args = append(
+		[]string{
+			"exec",
+			"-t",           // use a tty so we can get output
+			"--privileged", // run with priliges so we can remount etc..
+			n.nameOrID,     // ... against the "node" container
+			command,        // with the command specified
+		},
+		// finally, with the caller args
+		args...,
 	)
-	cmd.Args = append(cmd.Args,
-		args..., // finally, with the args specified
-	)
+	cmd := exec.Command("docker", args...)
 	return cmd.Run()
 }
 
 // RunWithInput execs command, args... on the node, hooking input to stdin
-func (nh *nodeHandle) RunWithInput(input io.Reader, command string, args ...string) error {
-	cmd := exec.Command("docker", "exec")
-	cmd.Args = append(cmd.Args,
-		"-i",           // interactive so we can supply input
-		"--privileged", // run with priliges so we can remount etc..
-		nh.nameOrID,    // ... against the "node" container
-		command,        // with the command specified
+func (n *Node) RunWithInput(input io.Reader, command string, args ...string) error {
+	args = append(
+		[]string{
+			"exec",
+			"-t",           // use a tty so we can get output
+			"--privileged", // run with priliges so we can remount etc..
+			n.nameOrID,     // ... against the "node" container
+			command,        // with the command specified
+		},
+		// finally, with the caller args
+		args...,
 	)
-	cmd.Args = append(cmd.Args,
-		args..., // finally, with the args specified
-	)
-	cmd.Stdin = input
-	cmd.InheritOutput = true
+	cmd := exec.Command("docker", args...)
+	exec.InheritOutput(cmd)
+	cmd.SetStdin(input)
 	return cmd.Run()
 }
 
 // RunQWithInput execs command, args... on the node, hooking input to stdin
-func (nh *nodeHandle) RunQWithInput(input io.Reader, command string, args ...string) error {
-	cmd := exec.Command("docker", "exec")
-	cmd.Args = append(cmd.Args,
-		"-i",           // interactive so we can supply input
-		"--privileged", // run with priliges so we can remount etc..
-		nh.nameOrID,    // ... against the "node" container
-		command,        // with the command specified
+func (n *Node) RunQWithInput(input io.Reader, command string, args ...string) error {
+	args = append(
+		[]string{
+			"exec",
+			"-i",           // interactive so we can supply input
+			"--privileged", // run with priliges so we can remount etc..
+			n.nameOrID,     // ... against the "node" container
+			command,        // with the command specified
+		},
+		// finally, with the caller args
+		args...,
 	)
-	cmd.Args = append(cmd.Args,
-		args..., // finally, with the args specified
-	)
-	cmd.Stdin = input
+	cmd := exec.Command("docker", args...)
+	cmd.SetStdin(input)
 	return cmd.Run()
 }
 
 // RunHook runs a LifecycleHook on the node
 // It will only return an error if hook.MustSucceed is true
-func (nh *nodeHandle) RunHook(hook *config.LifecycleHook, phase string) error {
+func (n *Node) RunHook(hook *config.LifecycleHook, phase string) error {
 	logger := log.WithFields(log.Fields{
-		"node":  nh.nameOrID,
+		"node":  n.nameOrID,
 		"phase": phase,
 	})
 	if hook.Name != "" {
@@ -199,7 +216,7 @@ func (nh *nodeHandle) RunHook(hook *config.LifecycleHook, phase string) error {
 	} else {
 		logger.Info("Running LifecycleHook ...")
 	}
-	if err := nh.Run(hook.Command[0], hook.Command[1:]...); err != nil {
+	if err := n.Run(hook.Command[0], hook.Command[1:]...); err != nil {
 		if hook.MustSucceed {
 			logger.WithError(err).Error("LifecycleHook failed")
 			return err
@@ -210,36 +227,38 @@ func (nh *nodeHandle) RunHook(hook *config.LifecycleHook, phase string) error {
 }
 
 // CombinedOutputLines execs command, args... on the node, returning the output lines
-func (nh *nodeHandle) CombinedOutputLines(command string, args ...string) ([]string, error) {
-	cmd := exec.Command("docker", "exec")
-	cmd.Args = append(cmd.Args,
-		"-t",           // use a tty so we can get output
-		"--privileged", // run with priliges so we can remount etc..
-		nh.nameOrID,    // ... against the "node" container
-		command,        // with the command specified
+func (n *Node) CombinedOutputLines(command string, args ...string) ([]string, error) {
+	args = append(
+		[]string{
+			"exec",
+			"-t",           // use a tty so we can get output
+			"--privileged", // run with priliges so we can remount etc..
+			n.nameOrID,     // ... against the "node" container
+			command,        // with the command specified
+		},
+		// finally, with the caller args
+		args...,
 	)
-	cmd.Args = append(cmd.Args,
-		args..., // finally, with the args specified
-	)
-	return cmd.CombinedOutputLines()
+	cmd := exec.Command("docker", args...)
+	return exec.CombinedOutputLines(cmd)
 }
 
-// helper to copy source file to dest on the node
-func (nh *nodeHandle) CopyTo(source, dest string) error {
-	cmd := exec.Command("docker", "cp")
-	cmd.Args = append(cmd.Args,
-		source,               // from the source file
-		nh.nameOrID+":"+dest, // to the node, at dest
+// CopyTo copies the source file on the host to dest on the node
+func (n *Node) CopyTo(source, dest string) error {
+	cmd := exec.Command(
+		"docker", "cp",
+		source,              // from the source file
+		n.nameOrID+":"+dest, // to the node, at dest
 	)
-	cmd.InheritOutput = true
+	exec.InheritOutput(cmd)
 	return cmd.Run()
 }
 
 // WaitForDocker waits for Docker to be ready on the node
 // it returns true on success, and false on a timeout
-func (nh *nodeHandle) WaitForDocker(until time.Time) bool {
+func (n *Node) WaitForDocker(until time.Time) bool {
 	return tryUntil(until, func() bool {
-		out, err := nh.CombinedOutputLines("systemctl", "is-active", "docker")
+		out, err := n.CombinedOutputLines("systemctl", "is-active", "docker")
 		if err != nil {
 			return false
 		}
@@ -259,9 +278,9 @@ func tryUntil(until time.Time, try func() bool) bool {
 }
 
 // LoadImages loads image tarballs stored on the node into docker on the node
-func (nh *nodeHandle) LoadImages() {
+func (n *Node) LoadImages() {
 	// load images cached on the node into docker
-	if err := nh.RunQ(
+	if err := n.RunQ(
 		"find",
 		"/kind/images",
 		"-name", "*.tar",
@@ -276,7 +295,7 @@ func (nh *nodeHandle) LoadImages() {
 	// if this fails, we can just assume some unknown version and re-tag
 	// in a future release of kind, we can probably drop v1.11 support
 	// and remove the logic below this comment entirely
-	if rawVersion, err := nh.KubeVersion(); err == nil {
+	if rawVersion, err := n.KubeVersion(); err == nil {
 		if ver, err := version.ParseGeneric(rawVersion); err == nil {
 			if !ver.LessThan(version.MustParseSemantic("v1.12.0")) {
 				return
@@ -289,7 +308,7 @@ func (nh *nodeHandle) LoadImages() {
 	// for any builds ...
 	// retag images that are missing -amd64 as image:tag -> image-amd64:tag
 	// TODO(bentheelder): this is a bit gross, move this logic out of bash
-	if err := nh.RunQ(
+	if err := n.RunQ(
 		"/bin/bash", "-c",
 		`docker images --format='{{.Repository}}:{{.Tag}}' | grep -v amd64 | xargs -L 1 -I '{}' /bin/bash -c 'docker tag "{}" "$(echo "{}" | sed s/:/-amd64:/)"'`,
 	); err != nil {
@@ -299,43 +318,43 @@ func (nh *nodeHandle) LoadImages() {
 
 // FixMounts will correct mounts in the node container to meet the right
 // sharing and permissions for systemd and Docker / Kubernetes
-func (nh *nodeHandle) FixMounts() error {
+func (n *Node) FixMounts() error {
 	// systemd-in-a-container should have read only /sys
 	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
 	// however, we need other things from `docker run --privileged` ...
 	// and this flag also happens to make /sys rw, amongst other things
-	if err := nh.RunQ("mount", "-o", "remount,ro", "/sys"); err != nil {
+	if err := n.RunQ("mount", "-o", "remount,ro", "/sys"); err != nil {
 		return err
 	}
 	// kubernetes needs shared mount propagation
-	if err := nh.RunQ("mount", "--make-shared", "/"); err != nil {
+	if err := n.RunQ("mount", "--make-shared", "/"); err != nil {
 		return err
 	}
-	if err := nh.RunQ("mount", "--make-shared", "/run"); err != nil {
+	if err := n.RunQ("mount", "--make-shared", "/run"); err != nil {
 		return err
 	}
-	if err := nh.RunQ("mount", "--make-shared", "/var/lib/docker"); err != nil {
+	if err := n.RunQ("mount", "--make-shared", "/var/lib/docker"); err != nil {
 		return err
 	}
 	return nil
 }
 
 // KubeVersion returns the Kubernetes version installed on the node
-func (nh *nodeHandle) KubeVersion() (version string, err error) {
+func (n *Node) KubeVersion() (version string, err error) {
 	// use the cached version first
-	if nh.cachedNodeInfo.kubernetesVersion != "" {
-		return nh.cachedNodeInfo.kubernetesVersion, nil
+	if n.cachedNodeInfo.kubernetesVersion != "" {
+		return n.cachedNodeInfo.kubernetesVersion, nil
 	}
 	// grab kubernetes version from the node image
-	lines, err := nh.CombinedOutputLines("cat", "/kind/version")
+	lines, err := n.CombinedOutputLines("cat", "/kind/version")
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get file")
 	}
 	if len(lines) != 1 {
 		return "", fmt.Errorf("file should only be one line, got %d lines", len(lines))
 	}
-	nh.cachedNodeInfo.kubernetesVersion = lines[0]
-	return nh.cachedNodeInfo.kubernetesVersion, nil
+	n.cachedNodeInfo.kubernetesVersion = lines[0]
+	return n.cachedNodeInfo.kubernetesVersion, nil
 }
 
 // matches kubeconfig server entry like:
@@ -346,8 +365,8 @@ var serverAddressRE = regexp.MustCompile(`^(\s+server:) https://.*:(\d+)$`)
 
 // WriteKubeConfig writes a fixed KUBECONFIG to dest
 // this should only be called on a control plane node
-func (nh *nodeHandle) WriteKubeConfig(dest string) error {
-	lines, err := nh.CombinedOutputLines("cat", "/etc/kubernetes/admin.conf")
+func (n *Node) WriteKubeConfig(dest string) error {
+	lines, err := n.CombinedOutputLines("cat", "/etc/kubernetes/admin.conf")
 	if err != nil {
 		return errors.Wrap(err, "failed to get kubeconfig from node")
 	}
@@ -371,4 +390,40 @@ func (nh *nodeHandle) WriteKubeConfig(dest string) error {
 	}
 
 	return ioutil.WriteFile(dest, buff.Bytes(), 0600)
+}
+
+// Delete deletes nodes by name / ID (see Node.String())
+func Delete(names ...string) error {
+	cmd := exec.Command(
+		"docker",
+		append(
+			[]string{
+				"rm",
+				"-f", // force the container to be delete now
+				"-v", // delete volumes
+			},
+			names...,
+		)...,
+	)
+	return cmd.Run()
+}
+
+// List returns the list of container IDs for the kind "nodes", optionally
+// filtered by docker ps filters
+// https://docs.docker.com/engine/reference/commandline/ps/#filtering
+func List(filters ...string) (containerIDs []string, err error) {
+	args := []string{
+		"ps",
+		// quiet output for parsing
+		"-q",
+		// show stopped nodes
+		"-a",
+		// filter for nodes with the cluster label
+		"--filter", "label=" + consts.ClusterLabelKey,
+	}
+	for _, filter := range filters {
+		args = append(args, "--filter", filter)
+	}
+	cmd := exec.Command("docker", args...)
+	return exec.CombinedOutputLines(cmd)
 }

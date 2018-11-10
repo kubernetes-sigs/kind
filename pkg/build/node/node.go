@@ -201,18 +201,26 @@ func (ic *installContext) BasePath() string {
 }
 
 func (ic *installContext) Run(command string, args ...string) error {
-	cmd := exec.Command("docker", "exec", ic.containerID, command)
-	cmd.Args = append(cmd.Args, args...)
-	cmd.Debug = true
-	cmd.InheritOutput = true
+	cmd := exec.Command(
+		"docker",
+		append(
+			[]string{"exec", ic.containerID, command},
+			args...,
+		)...,
+	)
+	exec.InheritOutput(cmd)
 	return cmd.Run()
 }
 
 func (ic *installContext) CombinedOutputLines(command string, args ...string) ([]string, error) {
-	cmd := exec.Command("docker", "exec", ic.containerID, command)
-	cmd.Args = append(cmd.Args, args...)
-	cmd.Debug = true
-	return cmd.CombinedOutputLines()
+	cmd := exec.Command(
+		"docker",
+		append(
+			[]string{"exec", ic.containerID, command},
+			args...,
+		)...,
+	)
+	return exec.CombinedOutputLines(cmd)
 }
 
 func (c *BuildContext) buildImage(dir string) error {
@@ -238,10 +246,13 @@ func (c *BuildContext) buildImage(dir string) error {
 
 	// helper we will use to run "build steps"
 	execInBuild := func(command ...string) error {
-		cmd := exec.Command("docker", "exec", containerID)
-		cmd.Args = append(cmd.Args, command...)
-		cmd.Debug = true
-		cmd.InheritOutput = true
+		cmd := exec.Command("docker",
+			append(
+				[]string{"exec", containerID},
+				command...,
+			)...,
+		)
+		exec.InheritOutput(cmd)
 		return cmd.Run()
 	}
 
@@ -283,8 +294,7 @@ func (c *BuildContext) buildImage(dir string) error {
 
 	// Save the image changes to a new image
 	cmd := exec.Command("docker", "commit", containerID, c.image)
-	cmd.Debug = true
-	cmd.InheritOutput = true
+	exec.InheritOutput(cmd)
 	if err = cmd.Run(); err != nil {
 		log.Errorf("Image build Failed! %v", err)
 		return err
@@ -305,17 +315,23 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 
 	// helpers to run things in the build container
 	execInBuild := func(command ...string) error {
-		cmd := exec.Command("docker", "exec", containerID)
-		cmd.Args = append(cmd.Args, command...)
-		cmd.Debug = true
-		cmd.InheritOutput = true
+		cmd := exec.Command("docker",
+			append(
+				[]string{"exec", containerID},
+				command...,
+			)...,
+		)
+		exec.InheritOutput(cmd)
 		return cmd.Run()
 	}
 	combinedOutputLinesInBuild := func(command ...string) ([]string, error) {
-		cmd := exec.Command("docker", "exec", containerID)
-		cmd.Args = append(cmd.Args, command...)
-		cmd.Debug = true
-		return cmd.CombinedOutputLines()
+		cmd := exec.Command("docker",
+			append(
+				[]string{"exec", containerID},
+				command...,
+			)...,
+		)
+		return exec.CombinedOutputLines(cmd)
 	}
 
 	// get the Kubernetes version we installed on the node
