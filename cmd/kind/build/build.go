@@ -30,7 +30,7 @@ func NewCommand() *cobra.Command {
 		// TODO(bentheelder): more detailed usage
 		Use:   "build",
 		Short: "Build one of [base-image, node-image]",
-		Long:  "Build one of [base-image, node-image]",
+		Long:  "Build the base node image (base-image) or the node image (node-image)",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
 		},
