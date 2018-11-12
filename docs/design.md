@@ -98,6 +98,6 @@ we can simply list and delete containers with this label.
 [pkg/cluster]: ./../pkg/cluster
 [base-image.md]: ./base-image.md
 [node-image.md]: ./node-image.md
-[entrypoint]: ./images/node/entrypoint
+[entrypoint]: ../images/base/entrypoint
 [kubeconfig]: https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/
 [overlay network]: https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#pod-network
