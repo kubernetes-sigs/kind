@@ -273,7 +273,7 @@ func (nh *nodeHandle) LoadImages() {
 
 	// if this fails, we don't care yet, but try to get the kubernetes verison
 	// and see if we can skip retagging for amd64
-	// if this fails, we can just assume some unkown version and re-tag
+	// if this fails, we can just assume some unknown version and re-tag
 	// in a future release of kind, we can probably drop v1.11 support
 	// and remove the logic below this comment entirely
 	if rawVersion, err := nh.KubeVersion(); err == nil {
