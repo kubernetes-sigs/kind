@@ -35,8 +35,7 @@ func NewCommand() *cobra.Command {
 		// TODO(bentheelder): more detailed usage
 		Use:   "base-image",
 		Short: "build the base node image",
-        Long:  `build the base node image: a small Docker image for running nested 
-containers, systemd, and kubernetes components.`,
+		Long:  `build the base node image for running nested containers, systemd, and kubernetes components.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			run(flags, cmd, args)
 		},

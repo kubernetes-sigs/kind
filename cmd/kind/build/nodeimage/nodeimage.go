@@ -37,7 +37,7 @@ func NewCommand() *cobra.Command {
 		// TODO(bentheelder): more detailed usage
 		Use:   "node-image",
 		Short: "build the node image",
-		Long:  "build the node image",
+		Long:  "build the node image which contains kubernetes build artifacts and other kind requirements",
 		Run: func(cmd *cobra.Command, args []string) {
 			run(flags, cmd, args)
 		},

@@ -188,6 +188,10 @@ func (c *BuildContext) getBuiltImages() (sets.String, error) {
 // BuildContainerLabelKey is applied to each build container
 const BuildContainerLabelKey = "io.k8s.sigs.kind.build"
 
+// DockerImageArchives is the path within the node image where image archives
+// will be stored.
+const DockerImageArchives = "/kind/images"
+
 // private kube.InstallContext implementation, local to the image build
 type installContext struct {
 	basePath    string
@@ -355,6 +359,12 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 		return err
 	}
 
+	// Create "images" subdir.
+	imagesDir := path.Join(dir, "bits", "images")
+	if err := os.MkdirAll(imagesDir, 0777); err != nil {
+		return errors.Wrap(err, "failed to make images dir")
+	}
+
 	movePulled := []string{"mv"}
 	for i, image := range requiredImages {
 		if !builtImages.Has(image) {
@@ -365,7 +375,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 			}
 			// TODO(bentheelder): generate a friendlier name
 			pullName := fmt.Sprintf("%d.tar", i)
-			pullTo := fmt.Sprintf("%s/bits/images/%s", dir, pullName)
+			pullTo := path.Join(imagesDir, pullName)
 			err = docker.Save(image, pullTo)
 			if err != nil {
 				return err
@@ -373,7 +383,13 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 			movePulled = append(movePulled, fmt.Sprintf("/build/bits/images/%s", pullName))
 		}
 	}
-	movePulled = append(movePulled, "/kind/images/")
+
+	// Create the /kind/images directory inside the container.
+	if err = execInBuild("mkdir", "-p", DockerImageArchives); err != nil {
+		log.Errorf("Image build Failed! %v", err)
+		return err
+	}
+	movePulled = append(movePulled, DockerImageArchives)
 	if err := execInBuild(movePulled...); err != nil {
 		return err
 	}
