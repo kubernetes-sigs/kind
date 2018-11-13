@@ -121,12 +121,11 @@ func (c *BuildContext) buildEntrypoint(dir string) error {
 
 	cmd := exec.Command(c.goCmd, "build", "-o", entrypointDest, entrypointSrc)
 	// TODO(bentheelder): we may need to map between docker image arch and GOARCH
-	cmd.Env = []string{"GOOS=linux", "GOARCH=" + c.arch}
+	cmd.SetEnv("GOOS=linux", "GOARCH="+c.arch)
 
 	// actually build
 	log.Info("Building entrypoint binary ...")
-	cmd.Debug = true
-	cmd.InheritOutput = true
+	exec.InheritOutput(cmd)
 	if err := cmd.Run(); err != nil {
 		log.Errorf("Entrypoint build Failed! %v", err)
 		return err
@@ -138,10 +137,8 @@ func (c *BuildContext) buildEntrypoint(dir string) error {
 func (c *BuildContext) buildImage(dir string) error {
 	// build the image, tagged as tagImageAs, using the our tempdir as the context
 	cmd := exec.Command("docker", "build", "-t", c.image, dir)
-	cmd.Debug = true
-	cmd.InheritOutput = true
-
 	log.Info("Starting Docker build ...")
+	exec.InheritOutput(cmd)
 	err := cmd.Run()
 	if err != nil {
 		log.Errorf("Docker build Failed! %v", err)

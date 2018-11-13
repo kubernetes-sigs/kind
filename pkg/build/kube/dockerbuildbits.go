@@ -87,22 +87,22 @@ func (b *DockerBuildBits) Build() error {
 // binary and image build when we have `make quick-release-images` support
 func (b *DockerBuildBits) build() error {
 	// build binaries
-	cmd := exec.Command("build/run.sh", "make", "all")
 	what := []string{
 		// binaries we use directly
 		"cmd/kubeadm",
 		"cmd/kubectl",
 		"cmd/kubelet",
 	}
-	cmd.Args = append(cmd.Args,
+	cmd := exec.Command(
+		"build/run.sh",
+		"make", "all",
 		"WHAT="+strings.Join(what, " "),
 		"KUBE_BUILD_PLATFORMS=linux/amd64",
 		// ensure the build isn't especially noisy..
 		"KUBE_VERBOSE=0",
 	)
-	cmd.Env = append(cmd.Env, os.Environ()...)
-	cmd.Debug = true
-	cmd.InheritOutput = true
+	cmd.SetEnv(os.Environ()...)
+	exec.InheritOutput(cmd)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrap(err, "failed to build binaries")
 	}
@@ -114,9 +114,8 @@ func (b *DockerBuildBits) build() error {
 		"KUBE_BUILD_HYPERKUBE=n",
 		"KUBE_BUILD_CONFORMANCE=n",
 	)
-	cmd.Env = append(cmd.Env, os.Environ()...)
-	cmd.Debug = true
-	cmd.InheritOutput = true
+	cmd.SetEnv(os.Environ()...)
+	exec.InheritOutput(cmd)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrap(err, "failed to build images")
 	}
@@ -126,7 +125,6 @@ func (b *DockerBuildBits) build() error {
 // binary and image build when we don't have `make quick-release-images` support
 func (b *DockerBuildBits) buildBash() error {
 	// build binaries
-	cmd := exec.Command("build/run.sh", "make", "all")
 	what := []string{
 		// binaries we use directly
 		"cmd/kubeadm",
@@ -141,14 +139,18 @@ func (b *DockerBuildBits) buildBash() error {
 		// we don't need this one, but the image build wraps it...
 		"vendor/k8s.io/kube-aggregator",
 	}
-	cmd.Args = append(cmd.Args,
+	cmd := exec.Command(
+		"build/run.sh", "make", "all",
 		"WHAT="+strings.Join(what, " "), "KUBE_BUILD_PLATFORMS=linux/amd64",
 	)
-	cmd.Env = append(cmd.Env, os.Environ()...)
-	// ensure the build isn't especially noisy..
-	cmd.Env = append(cmd.Env, "KUBE_VERBOSE=0")
-	cmd.Debug = true
-	cmd.InheritOutput = true
+	// ensure the build isn't especially noisy..., inheret existing env
+	cmd.SetEnv(
+		append(
+			[]string{"KUBE_VERBOSE=0"},
+			os.Environ()...,
+		)...,
+	)
+	exec.InheritOutput(cmd)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrap(err, "failed to build binaries")
 	}
@@ -169,10 +171,13 @@ func (b *DockerBuildBits) buildBash() error {
 		`kube::release::create_docker_images_for_server "${LOCAL_OUTPUT_ROOT}/dockerized/bin/linux/amd64" "amd64"`,
 	}
 	cmd = exec.Command("bash", "-c", strings.Join(buildImages, " "))
-	cmd.Env = append(cmd.Env, os.Environ()...)
-	cmd.Env = append(cmd.Env, "KUBE_BUILD_HYPERKUBE=n")
-	cmd.Debug = true
-	cmd.InheritOutput = true
+	cmd.SetEnv(
+		append(
+			[]string{"KUBE_BUILD_HYPERKUBE=n"},
+			os.Environ()...,
+		)...,
+	)
+	exec.InheritOutput(cmd)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrap(err, "failed to build images")
 	}

@@ -43,8 +43,7 @@ func buildVersionFile(kubeRoot string) error {
 
 	// get the version output
 	cmd := exec.Command("hack/print-workspace-status.sh")
-	cmd.Debug = true
-	output, err := cmd.CombinedOutputLines()
+	output, err := exec.CombinedOutputLines(cmd)
 	if err != nil {
 		return err
 	}

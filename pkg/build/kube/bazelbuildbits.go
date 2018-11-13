@@ -57,8 +57,8 @@ func (b *BazelBuildBits) Build() error {
 	defer os.Chdir(cwd)
 
 	// build artifacts
-	cmd := exec.Command("bazel", "build")
-	cmd.Args = append(cmd.Args,
+	cmd := exec.Command(
+		"bazel", "build",
 		// TODO(bentheelder): we assume linux amd64, but we could select
 		// this based on Arch etc. throughout, this flag supports GOOS/GOARCH
 		"--platforms=@io_bazel_rules_go//go/toolchain:linux_amd64",
@@ -68,8 +68,7 @@ func (b *BazelBuildBits) Build() error {
 		//"//cluster/images/hyperkube:hyperkube.tar",
 		"//build:docker-artifacts",
 	)
-	cmd.Debug = true
-	cmd.InheritOutput = true
+	exec.InheritOutput(cmd)
 	if err := cmd.Run(); err != nil {
 		return err
 	}

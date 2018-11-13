@@ -57,6 +57,7 @@ var _ io.Writer = &StatusFriendlyWriter{}
 
 func (ww *StatusFriendlyWriter) Write(p []byte) (n int, err error) {
 	ww.status.spinner.Stop()
+	ww.inner.Write([]byte("\r"))
 	n, err = ww.inner.Write(p)
 	ww.status.spinner.Start()
 	return n, err

@@ -14,66 +14,76 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package exec contains helpers for os/exec
+// Package exec contains an interface for executing commands, along with helpers
+// TODO(bentheelder): add standardized timeout functionality & a default timeout
+// so that commands cannot hang indefinitely (!)
 package exec
 
 import (
 	"bufio"
 	"bytes"
+	"io"
 	"os"
-	"os/exec"
 
 	log "github.com/sirupsen/logrus"
 )
 
-// Cmd wraps os/exec.Cmd, with extra options for logging etc. when running
-type Cmd struct {
-	*exec.Cmd
-	CmdOpts
+// Cmd abstracts over running a command somewhere, this is useful for testing
+type Cmd interface {
+	Run() error
+	// Each entry should be of the form "key=value"
+	SetEnv(...string)
+	SetStdin(io.Reader)
+	SetStdout(io.Writer)
+	SetStderr(io.Writer)
 }
 
-// CmdOpts contains extra options recognized by this package's os/exec.Cmd
-// wrapper (Cmd)
-type CmdOpts struct {
-	// If Debug is true, log the command prior to running
-	Debug bool
-	// If LogOutputOnFail is true, stdout and stderr will be collected, and will
-	// be logged if the command does not exit cleanly
-	LogOutputOnFail bool
-	// If InheritOtuput is true, inheret stdout and stderr from the current process
-	InheritOutput bool
+// Cmder abstracts over creating commands
+type Cmder interface {
+	// command, args..., just like os/exec.Cmd
+	Command(string, ...string) Cmd
 }
 
-// Command returns a Cmd from os/exec's Command(...)
-func Command(name string, arg ...string) *Cmd {
-	return &Cmd{
-		Cmd: exec.Command(name, arg...),
-	}
+// DefaultCmder is a LocalCmder instance used for convienience, packages
+// originally using os/exec.Command can instead use pkg/kind/exec.Command
+// which forwards to this instance
+// TODO(bentheelder): swap this for testing
+// TODO(bentheelder): consider not using a global for this :^)
+var DefaultCmder = &LocalCmder{}
+
+// Command is a convience wrapper over DefaultCmder.Command
+func Command(command string, args ...string) Cmd {
+	return DefaultCmder.Command(command, args...)
 }
 
-// Run wraps cmd.Run(), respecting CmdOpts
-func (cmd *Cmd) Run() error {
-	if cmd.Debug {
-		log.Infof("Running: %v %v", cmd.Path, cmd.Args)
-	}
-
-	if cmd.LogOutputOnFail {
-		return cmd.runLoggingOutputOnFail()
-	}
-
-	if cmd.InheritOutput {
-		cmd.Stderr = os.Stderr
-		cmd.Stdout = os.Stdout
-	}
-	return cmd.Cmd.Run()
-}
-
-func (cmd *Cmd) runLoggingOutputOnFail() error {
+// CombinedOutputLines is like os/exec's cmd.CombinedOutput(),
+// but over our Cmd interface, and instead of returning the byte buffer of
+// stderr + stdout, it scans these for lines and returns a slice of output lines
+func CombinedOutputLines(cmd Cmd) (lines []string, err error) {
 	var buff bytes.Buffer
-	cmd.Stdout = &buff
-	cmd.Stderr = &buff
-	err := cmd.Cmd.Run()
-	if err != nil && cmd.LogOutputOnFail {
+	cmd.SetStdout(&buff)
+	cmd.SetStderr(&buff)
+	err = cmd.Run()
+	scanner := bufio.NewScanner(&buff)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	return lines, err
+}
+
+// InheritOutput sets cmd's output to write to the current process's stdout and stderr
+func InheritOutput(cmd Cmd) {
+	cmd.SetStderr(os.Stderr)
+	cmd.SetStdout(os.Stdout)
+}
+
+// RunLoggingOutputOnFail runs the cmd, logging error output if Run returns an error
+func RunLoggingOutputOnFail(cmd Cmd) error {
+	var buff bytes.Buffer
+	cmd.SetStdout(&buff)
+	cmd.SetStderr(&buff)
+	err := cmd.Run()
+	if err != nil {
 		log.Error("failed with:")
 		scanner := bufio.NewScanner(&buff)
 		for scanner.Scan() {
@@ -81,23 +91,4 @@ func (cmd *Cmd) runLoggingOutputOnFail() error {
 		}
 	}
 	return err
-}
-
-// CombinedOutputLines is like os/exec's cmd.CombinedOutput(),
-// except instead of returning the byte buffer of stderr + stdout,
-// it scans these for lines and returns a slice of output line strings
-func (cmd *Cmd) CombinedOutputLines() (lines []string, err error) {
-	if cmd.Debug {
-		log.Infof("Running: %v %v", cmd.Path, cmd.Args)
-	}
-
-	var buff bytes.Buffer
-	cmd.Stdout = &buff
-	cmd.Stderr = &buff
-	err = cmd.Cmd.Run()
-	scanner := bufio.NewScanner(&buff)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	return lines, err
 }
