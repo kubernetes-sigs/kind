@@ -17,13 +17,21 @@ limitations under the License.
 package nodes
 
 import (
+	"github.com/pkg/errors"
 	"sigs.k8s.io/kind/pkg/cluster/consts"
 
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
 // Delete deletes nodes by name / ID (see Node.String())
-func Delete(names ...string) error {
+func Delete(nodes ...*Node) error {
+	if len(nodes) == 0 {
+		return nil
+	}
+	ids := []string{}
+	for _, node := range nodes {
+		ids = append(ids, node.nameOrID)
+	}
 	cmd := exec.Command(
 		"docker",
 		append(
@@ -32,7 +40,7 @@ func Delete(names ...string) error {
 				"-f", // force the container to be delete now
 				"-v", // delete volumes
 			},
-			names...,
+			ids...,
 		)...,
 	)
 	return cmd.Run()
@@ -41,7 +49,7 @@ func Delete(names ...string) error {
 // List returns the list of container IDs for the kind "nodes", optionally
 // filtered by docker ps filters
 // https://docs.docker.com/engine/reference/commandline/ps/#filtering
-func List(filters ...string) (containerIDs []string, err error) {
+func List(filters ...string) ([]*Node, error) {
 	args := []string{
 		"ps",
 		"-q", // quiet output for parsing
@@ -53,5 +61,14 @@ func List(filters ...string) (containerIDs []string, err error) {
 		args = append(args, "--filter", filter)
 	}
 	cmd := exec.Command("docker", args...)
-	return exec.CombinedOutputLines(cmd)
+	lines, err := exec.CombinedOutputLines(cmd)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list nodes")
+	}
+	// each line should container a node container ID
+	nodes := []*Node{}
+	for _, line := range lines {
+		nodes = append(nodes, FromID(line))
+	}
+	return nodes, nil
 }

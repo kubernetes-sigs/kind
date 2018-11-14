@@ -24,6 +24,13 @@ import (
 	"sigs.k8s.io/kind/pkg/docker"
 )
 
+// FromID creates a node handle from the node (container's) ID
+func FromID(id string) *Node {
+	return &Node{
+		nameOrID: id,
+	}
+}
+
 // helper used to get a free TCP port for the API server
 func getPort() (int, error) {
 	dummyListener, err := net.Listen("tcp", ":0")
