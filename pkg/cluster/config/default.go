@@ -20,24 +20,27 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// DefaultImage is the default for the Config.Image field, aka the default node image
+// DefaultImage is the default for the Config.Image field, aka the default node
+// image.
 const DefaultImage = "kindest/node:v1.12.2@sha256:6ac1dc1750fc0efd13d4e294115f9012a21282957e4380a5535bd32154193d4d"
 
-// New returns a new default Config
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
 }
 
-func SetDefaults_Config(obj *Config) {
+// SetDefaultsConfig sets uninitialized fields to their default value.
+func SetDefaultsConfig(obj *Config) {
 	if obj.Image == "" {
 		obj.Image = DefaultImage
 	}
 }
 
+// ApplyDefaults sets the defaults to a Config.
 func (c *Config) ApplyDefaults() {
-	SetDefaults_Config(c)
+	SetDefaultsConfig(c)
 }
 
+// New returns a new default Config.
 func New() *Config {
 	cfg := &Config{}
 	cfg.ApplyDefaults()

@@ -21,18 +21,22 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// GroupName is the group name used in this package
+// GroupName is the group name used in this package.
 const GroupName = "kind.sigs.k8s.io"
 
 var (
-	// SchemeGroupVersion is group version used to register these objects
+	// SchemeGroupVersion is group version used to register these objects.
 	SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1alpha1"}
+	// SchemeBuilder is a type to collect functions that add data to an API
+	// object through a scheme.
 	SchemeBuilder      runtime.SchemeBuilder
 	localSchemeBuilder = &SchemeBuilder
-	AddToScheme        = localSchemeBuilder.AddToScheme
+	// AddToScheme applies all the stored functions in the localSchemeBuilder
+	// to the scheme.
+	AddToScheme = localSchemeBuilder.AddToScheme
 )
 
-// Kind takes an unqualified kind and returns a Group qualified GroupKind
+// Kind takes an unqualified kind and returns a Group qualified GroupKind.
 func Kind(kind string) schema.GroupKind {
 	return SchemeGroupVersion.WithKind(kind).GroupKind()
 }

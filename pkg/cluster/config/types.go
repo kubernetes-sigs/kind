@@ -42,6 +42,8 @@ type Config struct {
 	ControlPlane *ControlPlane `json:"ControlPlane,omitempty"`
 }
 
+// ControlPlane holds configurations specific to the control plane nodes
+// (currently the only node).
 type ControlPlane struct {
 	// NodeLifecycle contains LifecycleHooks for phases of node provisioning
 	NodeLifecycle *NodeLifecycle `json:"nodeLifecycle,omitempty"`
