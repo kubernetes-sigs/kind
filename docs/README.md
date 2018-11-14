@@ -1,7 +1,9 @@
 # `kind` Documentation
 
-For the primary design start with [design.md]
+For the primary design start with [design][design].
 
-<!--TODO(bentheelder): add usage docs, link to some here and in the root README-->
+For usage documentation see the [user guide][user guide].
 
-[design.md]: ./design.md
+
+[design]: ./design.md
+[user guide]: ./user-guide.md

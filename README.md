@@ -37,7 +37,7 @@ To create a cluster from Kubernetes source:
 - ensure that Kubernetes is cloned in `$(go env GOPATH)/src/k8s.io/kubernetes`
 - build a node image and create a cluster with `kind build node-image && kind create cluster`  
 
-For more usage see [the docs] or run `kind [command] --help`
+For more usage see [the docs][user guide] or run `kind [command] --help`
 
 ## Community, discussion, contribution, and support
 
@@ -76,6 +76,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [kubetest]: https://github.com/kubernetes/test-infra/tree/master/kubetest
 [kubeadm]: https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/
 [design doc]: ./docs/design.md
+[user guide]: ./docs/user-guide.md
 [the docs]: ./docs
 [SIG-Testing Mailing List]: https://groups.google.com/forum/#!forum/kubernetes-sig-testing
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
