@@ -21,13 +21,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net"
 	"os"
 	"path/filepath"
 	"regexp"
 	"time"
-
-	"sigs.k8s.io/kind/pkg/cluster/consts"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -35,7 +32,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/version"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
-	"sigs.k8s.io/kind/pkg/docker"
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
@@ -56,69 +52,6 @@ func (n *Node) String() string {
 // this is a seperate struct so we can clear the whole thing at once
 type cachedNodeInfo struct {
 	kubernetesVersion string
-}
-
-func getPort() (int, error) {
-	// get a free TCP port for the API server
-	dummyListener, err := net.Listen("tcp", ":0")
-	if err != nil {
-		return 0, err
-	}
-	defer dummyListener.Close()
-	port := dummyListener.Addr().(*net.TCPAddr).Port
-	return port, nil
-}
-
-// CreateControlPlaneNode `docker run`s the node image, note that due to
-// images/node/entrypoint being the entrypoint, this container will
-// effectively be paused until we call actuallyStartNode(...)
-func CreateControlPlaneNode(name, image, clusterLabel string) (handle *Node, port int, err error) {
-	port, err = getPort()
-	if err != nil {
-		return nil, 0, errors.Wrap(err, "failed to get port for API server")
-	}
-	id, err := docker.Run(
-		image,
-		[]string{
-			"-d", // run the container detached
-			// running containers in a container requires privileged
-			// NOTE: we could try to replicate this with --cap-add, and use less
-			// privileges, but this flag also changes some mounts that are necessary
-			// including some ones docker would otherwise do by default.
-			// for now this is what we want. in the future we may revisit this.
-			"--privileged",
-			"--security-opt", "seccomp=unconfined", // also ignore seccomp
-			"--tmpfs", "/tmp", // various things depend on working /tmp
-			"--tmpfs", "/run", // systemd wants a writable /run
-			// some k8s things want /lib/modules
-			"-v", "/lib/modules:/lib/modules:ro",
-			"--hostname", name, // make hostname match container name
-			"--name", name, // ... and set the container name
-			// label the node with the cluster ID
-			"--label", clusterLabel,
-			// publish selected port for the API server
-			"--expose", fmt.Sprintf("%d", port),
-			"-p", fmt.Sprintf("%d:%d", port, port),
-			// explicitly set the entrypoint
-			"--entrypoint=/usr/local/bin/entrypoint",
-		},
-		[]string{
-			// explicitly pass the entrypoint argument
-			"/sbin/init",
-		},
-	)
-	// if there is a returned ID then we did create a container
-	// we should return a handle so the caller can clean it up
-	// we'll return a handle with the nice name though
-	if id != "" {
-		handle = &Node{
-			nameOrID: name,
-		}
-	}
-	if err != nil {
-		return handle, 0, errors.Wrap(err, "docker run error")
-	}
-	return handle, port, nil
 }
 
 // SignalStart sends SIGUSR1 to the node, which signals our entrypoint to boot
@@ -390,40 +323,4 @@ func (n *Node) WriteKubeConfig(dest string) error {
 	}
 
 	return ioutil.WriteFile(dest, buff.Bytes(), 0600)
-}
-
-// Delete deletes nodes by name / ID (see Node.String())
-func Delete(names ...string) error {
-	cmd := exec.Command(
-		"docker",
-		append(
-			[]string{
-				"rm",
-				"-f", // force the container to be delete now
-				"-v", // delete volumes
-			},
-			names...,
-		)...,
-	)
-	return cmd.Run()
-}
-
-// List returns the list of container IDs for the kind "nodes", optionally
-// filtered by docker ps filters
-// https://docs.docker.com/engine/reference/commandline/ps/#filtering
-func List(filters ...string) (containerIDs []string, err error) {
-	args := []string{
-		"ps",
-		// quiet output for parsing
-		"-q",
-		// show stopped nodes
-		"-a",
-		// filter for nodes with the cluster label
-		"--filter", "label=" + consts.ClusterLabelKey,
-	}
-	for _, filter := range filters {
-		args = append(args, "--filter", filter)
-	}
-	cmd := exec.Command("docker", args...)
-	return exec.CombinedOutputLines(cmd)
 }
