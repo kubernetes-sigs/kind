@@ -14,29 +14,39 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package get implements the `get` command
-package get
+// Package clusters implements the `clusters` command
+package clusters
 
 import (
+	"fmt"
+
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"sigs.k8s.io/kind/cmd/kind/get/clusters"
-	"sigs.k8s.io/kind/cmd/kind/get/kubeconfigpath"
+	"sigs.k8s.io/kind/pkg/cluster"
 )
 
-// NewCommand returns a new cobra.Command for get
+// NewCommand returns a new cobra.Command for getting the list of clusters
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		// TODO(bentheelder): more detailed usage
-		Use:   "get",
-		Short: "Gets one of [clusters, kubeconfig-path]",
-		Long:  "Gets one of [clusters, kubeconfig-path]",
+		Use:   "clusters",
+		Short: "lists existing kind clusters by their name",
+		Long:  "lists existing kind clusters by their name",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return cmd.Help()
+			return runE(cmd, args)
 		},
 	}
-	// add subcommands
-	cmd.AddCommand(clusters.NewCommand())
-	cmd.AddCommand(kubeconfigpath.NewCommand())
 	return cmd
+}
+
+func runE(cmd *cobra.Command, args []string) error {
+	clusters, err := cluster.List()
+	if err != nil {
+		return errors.Wrap(err, "error listing clusters")
+	}
+	for _, cluster := range clusters {
+		fmt.Println(cluster.Name())
+	}
+	return nil
 }
