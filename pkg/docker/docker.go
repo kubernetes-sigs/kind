@@ -21,7 +21,7 @@ import (
 	"regexp"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	log "k8s.io/klog"
 
 	"sigs.k8s.io/kind/pkg/exec"
 )
@@ -50,7 +50,7 @@ func Pull(image string, retries int) error {
 	if err != nil {
 		for i := 0; i < retries; i++ {
 			time.Sleep(time.Second * time.Duration(i+1))
-			log.WithError(err).Infof("Trying again to pull image: %s ...", image)
+			log.Errorf("Trying again to pull image: %s ... - %s", image, err)
 			// TODO(bentheelder): add some backoff / sleep?
 			err = exec.Command("docker", "pull", image).Run()
 			if err == nil {
@@ -59,7 +59,7 @@ func Pull(image string, retries int) error {
 		}
 	}
 	if err != nil {
-		log.WithError(err).Infof("Failed to pull image: %s", image)
+		log.Errorf("Failed to pull image: %s - %s", image, err)
 	}
 	return err
 }

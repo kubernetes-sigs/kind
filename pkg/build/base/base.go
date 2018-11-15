@@ -21,8 +21,7 @@ import (
 	"os"
 	"path/filepath"
 
-	log "github.com/sirupsen/logrus"
-
+	log "k8s.io/klog"
 	"sigs.k8s.io/kind/pkg/build/base/sources"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"

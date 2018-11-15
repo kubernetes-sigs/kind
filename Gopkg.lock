@@ -671,6 +671,14 @@
   revision = "4242d8e6c5dba56827bb7bcf14ad11cda38f3991"
 
 [[projects]]
+  digest = "1:9cc257b3c9ff6a0158c9c661ab6eebda1fe8a4a4453cd5c4044dc9a2ebfb992b"
+  name = "k8s.io/klog"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "a5bc97fbc634d635061f3146511332c7e313a55a"
+  version = "v0.1.0"
+
+[[projects]]
   branch = "master"
   digest = "1:0728020defbd5d26e88ec5f6a9e844b6f2982998bad1356b649ccc9469e0aa89"
   name = "k8s.io/kube-openapi"
@@ -729,6 +737,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/ghodss/yaml",
     "github.com/golang/dep/cmd/dep",
     "github.com/golang/lint/golint",
     "github.com/jteeuwen/go-bindata/go-bindata",
@@ -742,6 +751,7 @@
     "k8s.io/apimachinery/pkg/util/version",
     "k8s.io/code-generator/cmd/deepcopy-gen",
     "k8s.io/code-generator/cmd/defaulter-gen",
+    "k8s.io/klog",
     "sigs.k8s.io/kustomize/k8sdeps",
     "sigs.k8s.io/kustomize/pkg/commands/build",
     "sigs.k8s.io/kustomize/pkg/fs",

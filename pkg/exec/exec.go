@@ -25,7 +25,7 @@ import (
 	"io"
 	"os"
 
-	log "github.com/sirupsen/logrus"
+	log "k8s.io/klog"
 )
 
 // Cmd abstracts over running a command somewhere, this is useful for testing

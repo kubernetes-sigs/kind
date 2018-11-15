@@ -24,7 +24,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
+	log "k8s.io/klog"
 
 	"sigs.k8s.io/kind/pkg/exec"
 )

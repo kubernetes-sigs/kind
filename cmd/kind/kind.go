@@ -18,47 +18,30 @@ limitations under the License.
 package kind
 
 import (
+	goflag "flag"
 	"os"
 
-	"github.com/sirupsen/logrus"
-
-	log "github.com/sirupsen/logrus"
+	//flag "github.com/spf13/pflag"
 	"github.com/spf13/cobra"
+	log "k8s.io/klog"
 
 	"sigs.k8s.io/kind/cmd/kind/build"
 	"sigs.k8s.io/kind/cmd/kind/create"
 	"sigs.k8s.io/kind/cmd/kind/delete"
 	"sigs.k8s.io/kind/cmd/kind/get"
-	logutil "sigs.k8s.io/kind/pkg/log"
 )
-
-const defaultLevel = logrus.WarnLevel
-
-// Flags for the kind command
-type Flags struct {
-	LogLevel string
-}
 
 // NewCommand returns a new cobra.Command implementing the root command for kind
 func NewCommand() *cobra.Command {
-	flags := &Flags{}
 	cmd := &cobra.Command{
 		Use:   "kind",
 		Short: "kind is a tool for managing local Kubernetes clusters",
 		Long:  "kind creates and manages local Kubernetes clusters using Docker container 'nodes'",
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return runE(flags, cmd, args)
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
 		},
 	}
-	cmd.PersistentFlags().StringVar(
-		&flags.LogLevel,
-		"loglevel",
-		defaultLevel.String(),
-		"logrus log level "+logutil.LevelsString(),
-	)
+
 	// add all top level subcommands
 	cmd.AddCommand(build.NewCommand())
 	cmd.AddCommand(create.NewCommand())
@@ -67,39 +50,20 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func runE(flags *Flags, cmd *cobra.Command, args []string) error {
-	level := defaultLevel
-	parsed, err := log.ParseLevel(flags.LogLevel)
-	if err != nil {
-		log.Warnf("Invalid log level '%s', defaulting to '%s'", flags.LogLevel, level)
-	} else {
-		level = parsed
-	}
-	log.SetLevel(level)
-	return nil
-}
-
-// Run runs the `kind` root command
-func Run() error {
-	return NewCommand().Execute()
-}
-
-// Main wraps Run, adding a log.Fatal(err) on error, and setting the log formatter
+// Main creates the root command for kind, sets up klog, and serves as
+// entrypoint.
 func Main() {
-	// let's explicitly set stdout
-	log.SetOutput(os.Stdout)
-	// this formatter is the default, but the timestamps output aren't
-	// particularly useful, they're relative to the command start
-	log.SetFormatter(&log.TextFormatter{
-		FullTimestamp:   true,
-		TimestampFormat: "15:04:05",
-		// we force colors because this only forces over the isTerminal check
-		// and this will not be accurately checkable later on when we wrap
-		// the logger output with our logutil.StatusFriendlyWriter
-		ForceColors: logutil.IsTerminal(log.StandardLogger().Out),
-	})
-	if err := Run(); err != nil {
+	cmd := NewCommand()
+	// setup klog.
+	klogFlags := goflag.NewFlagSet("kind", goflag.ContinueOnError)
+	log.InitFlags(klogFlags)
+	cmd.PersistentFlags().AddGoFlagSet(klogFlags)
+
+	// now we can run.
+	if err := cmd.Execute(); err != nil {
+		log.Flush()
 		os.Stderr.WriteString(err.Error() + "\n")
 		os.Exit(-1)
 	}
+	log.Flush()
 }

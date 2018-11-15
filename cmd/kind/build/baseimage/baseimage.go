@@ -17,8 +17,8 @@ limitations under the License.
 package baseimage
 
 import (
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	log "k8s.io/klog"
 
 	"sigs.k8s.io/kind/pkg/build/base"
 )

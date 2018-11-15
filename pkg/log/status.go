@@ -103,8 +103,9 @@ func IsTerminal(w io.Writer) bool {
 func (s *Status) Start(status string) {
 	s.End(true)
 	// set new status
-	isTerm := IsTerminal(s.writer)
 	s.status = status
+
+	isTerm := IsTerminal(s.writer)
 	if isTerm {
 		s.spinner.SetSuffix(fmt.Sprintf(" %s ", s.status))
 		s.spinner.Start()

@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
+	log "k8s.io/klog"
 
 	"k8s.io/apimachinery/pkg/util/version"
 
@@ -140,21 +140,17 @@ func (n *Node) RunQWithInput(input io.Reader, command string, args ...string) er
 // RunHook runs a LifecycleHook on the node
 // It will only return an error if hook.MustSucceed is true
 func (n *Node) RunHook(hook *config.LifecycleHook, phase string) error {
-	logger := log.WithFields(log.Fields{
-		"node":  n.nameOrID,
-		"phase": phase,
-	})
 	if hook.Name != "" {
-		logger.Infof("Running LifecycleHook \"%s\" ...", hook.Name)
+		log.Infof("Running LifecycleHook \"%s\" ...", hook.Name)
 	} else {
-		logger.Info("Running LifecycleHook ...")
+		log.Info("Running LifecycleHook ...")
 	}
 	if err := n.Run(hook.Command[0], hook.Command[1:]...); err != nil {
 		if hook.MustSucceed {
-			logger.WithError(err).Error("LifecycleHook failed")
+			log.Errorf("LifecycleHook failed %v", err)
 			return err
 		}
-		logger.WithError(err).Warn("LifecycleHook failed, continuing ...")
+		log.Warningf("LifecycleHook failed %v. Continuing ...", err)
 	}
 	return nil
 }

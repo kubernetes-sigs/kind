@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
+	log "k8s.io/klog"
 
 	"sigs.k8s.io/kind/pkg/build/kube"
 	"sigs.k8s.io/kind/pkg/docker"

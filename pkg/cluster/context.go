@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/consts"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
+	log "k8s.io/klog"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/kubeadm"
@@ -117,7 +117,6 @@ func (c *Context) Create(cfg *config.Config) error {
 
 	fmt.Printf("Creating cluster '%s' ...\n", c.ClusterName())
 	c.status = logutil.NewStatus(os.Stdout)
-	c.status.MaybeWrapLogrus(log.StandardLogger())
 
 	defer c.status.End(false)
 	image := cfg.Image

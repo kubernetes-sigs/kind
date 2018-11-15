@@ -20,7 +20,7 @@ import (
 	"io"
 	osexec "os/exec"
 
-	log "github.com/sirupsen/logrus"
+	log "k8s.io/klog"
 )
 
 // LocalCmd wraps os/exec.Cmd, implementing the kind/pkg/exec.Cmd interface
@@ -64,6 +64,6 @@ func (cmd *LocalCmd) SetStderr(w io.Writer) {
 
 // Run runs
 func (cmd *LocalCmd) Run() error {
-	log.Debugf("Running: %v %v", cmd.Path, cmd.Args)
+	log.Infof("Running: %v %v", cmd.Path, cmd.Args)
 	return cmd.Cmd.Run()
 }

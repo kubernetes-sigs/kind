@@ -2,6 +2,7 @@
 # ensure they aren't pruned
 required = [
   "github.com/jteeuwen/go-bindata/go-bindata",
+  "github.com/ghodss/yaml",
   "github.com/golang/dep/cmd/dep",
   "github.com/golang/lint/golint",
   "k8s.io/code-generator/cmd/defaulter-gen",
@@ -54,4 +55,3 @@ required = [
 [[constraint]]
  name = "k8s.io/code-generator"
  branch = "release-1.11"
-
