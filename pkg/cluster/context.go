@@ -53,6 +53,9 @@ var validNameRE = regexp.MustCompile(`^[a-zA-Z0-9_.-]+$`)
 // NewContext returns a new cluster management context
 // if name is "" the default ("1") will be used
 func NewContext(name string) (ctx *Context, err error) {
+	// TODO(bentheelder): move validation out of NewContext and into create type
+	// calls, so that EG delete still works on previously valid, now invalid
+	// names if kind updates
 	if name == "" {
 		name = "1"
 	}
@@ -63,9 +66,17 @@ func NewContext(name string) (ctx *Context, err error) {
 			name, validNameRE.String(),
 		)
 	}
+	return newContextNoValidation(name), nil
+}
+
+// internal helper that does the actual allocation consitently, but does not
+// validate the cluster name
+// we need this so that if we tighten the validation, other internal code
+// can still create contexts to existing clusters by name (see List())
+func newContextNoValidation(name string) *Context {
 	return &Context{
 		name: name,
-	}, nil
+	}
 }
 
 // ClusterLabel returns the docker object label that will be applied

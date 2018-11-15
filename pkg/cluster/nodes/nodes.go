@@ -17,6 +17,9 @@ limitations under the License.
 package nodes
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/pkg/errors"
 	"sigs.k8s.io/kind/pkg/cluster/consts"
 
@@ -52,8 +55,9 @@ func Delete(nodes ...*Node) error {
 func List(filters ...string) ([]*Node, error) {
 	args := []string{
 		"ps",
-		"-q", // quiet output for parsing
-		"-a", // show stopped nodes
+		"-q",         // quiet output for parsing
+		"-a",         // show stopped nodes
+		"--no-trunc", // don't truncate
 		// filter for nodes with the cluster label
 		"--filter", "label=" + consts.ClusterLabelKey,
 	}
@@ -69,6 +73,36 @@ func List(filters ...string) ([]*Node, error) {
 	nodes := []*Node{}
 	for _, line := range lines {
 		nodes = append(nodes, FromID(line))
+	}
+	return nodes, nil
+}
+
+// ListByCluster returns a list of nodes by the kind cluster name
+func ListByCluster() (map[string][]Node, error) {
+	args := []string{
+		"ps",
+		"-q",         // quiet output for parsing
+		"-a",         // show stopped nodes
+		"--no-trunc", // don't truncate
+		// filter for nodes with the cluster label
+		"--filter", "label=" + consts.ClusterLabelKey,
+		// format to include friendly name and the cluster name
+		"--format", fmt.Sprintf(`{{.Names}}\t{{.Label "%s"}}`, consts.ClusterLabelKey),
+	}
+	cmd := exec.Command("docker", args...)
+	lines, err := exec.CombinedOutputLines(cmd)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list nodes")
+	}
+	nodes := make(map[string][]Node)
+	for _, line := range lines {
+		parts := strings.Split(line, "\t")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid output when listing nodes: %s", line)
+		}
+		names := strings.Split(parts[0], ",")
+		cluster := parts[1]
+		nodes[cluster] = append(nodes[cluster], *FromID(names[0]))
 	}
 	return nodes, nil
 }
