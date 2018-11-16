@@ -38,11 +38,95 @@ import (
 // Node represents a handle to a kind node
 // This struct must be created by one of: CreateControlPlane
 // It should not be manually instantiated
+// Node impleemnts exec.Cmder
 type Node struct {
 	// must be one of docker container ID or name
 	nameOrID string
 	// cached node info
 	cachedNodeInfo
+}
+
+// assert Node implements Cmder
+var _ exec.Cmder = &Node{}
+
+// Command returns a new exec.Cmd that will run on the node
+func (n *Node) Command(command string, args ...string) exec.Cmd {
+	return &nodeCmd{
+		node:    n,
+		command: command,
+		args:    args,
+	}
+}
+
+// nodeCmd implements exec.Cmd
+type nodeCmd struct {
+	node    *Node
+	command string
+	args    []string
+	env     []string
+	stdin   io.Reader
+	stdout  io.Writer
+	stderr  io.Writer
+}
+
+func (c *nodeCmd) Run() error {
+	args := []string{
+		"exec",
+		"--privileged", // run with priliges so we can remount etc..
+	}
+	if c.stdin != nil {
+		args = append(args,
+			"-i", // interactive so we can supply input
+		)
+	}
+	if c.stderr != nil || c.stdout != nil {
+		args = append(args,
+			"-t", // use a tty so we can get output
+		)
+	}
+	// set env
+	for _, env := range c.env {
+		args = append(args, "-e", env)
+	}
+	// specify the container and command, after this everything will be
+	// args the the command in the container rather than to docker
+	args = append(
+		args,
+		c.node.nameOrID, // ... against the "node" container
+		c.command,       // with the command specified
+	)
+	args = append(
+		args,
+		// finally, with the caller args
+		c.args...,
+	)
+	cmd := exec.Command("docker", args...)
+	if c.stdin != nil {
+		cmd.SetStdin(c.stdin)
+	}
+	if c.stderr != nil {
+		cmd.SetStderr(c.stderr)
+	}
+	if c.stdout != nil {
+		cmd.SetStdout(c.stdout)
+	}
+	return cmd.Run()
+}
+
+func (c *nodeCmd) SetEnv(env ...string) {
+	c.env = env
+}
+
+func (c *nodeCmd) SetStdin(r io.Reader) {
+	c.stdin = r
+}
+
+func (c *nodeCmd) SetStdout(w io.Writer) {
+	c.stdout = w
+}
+
+func (c *nodeCmd) SetStderr(w io.Writer) {
+	c.stderr = w
 }
 
 func (n *Node) String() string {
