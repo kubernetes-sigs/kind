@@ -188,7 +188,7 @@ func (c *Context) provisionControlPlane(
 	// run any pre-boot hooks
 	if cfg.ControlPlane != nil && cfg.ControlPlane.NodeLifecycle != nil {
 		for _, hook := range cfg.ControlPlane.NodeLifecycle.PreBoot {
-			if err := node.RunHook(&hook, "preBoot"); err != nil {
+			if err := runHook(node, &hook, "preBoot"); err != nil {
 				return "", err
 			}
 		}
@@ -249,7 +249,7 @@ func (c *Context) provisionControlPlane(
 	// run any pre-kubeadm hooks
 	if cfg.ControlPlane != nil && cfg.ControlPlane.NodeLifecycle != nil {
 		for _, hook := range cfg.ControlPlane.NodeLifecycle.PreKubeadm {
-			if err := node.RunHook(&hook, "preKubeadm"); err != nil {
+			if err := runHook(node, &hook, "preKubeadm"); err != nil {
 				return kubeadmConfig, err
 			}
 		}
@@ -261,7 +261,7 @@ func (c *Context) provisionControlPlane(
 			"[%s] Starting Kubernetes (this may take a minute) ☸",
 			nodeName,
 		))
-	if err := node.RunQ(
+	if err := node.Command(
 		// init because this is the control plane node
 		"kubeadm", "init",
 		// preflight errors are expected, in particular for swap being enabled
@@ -269,7 +269,7 @@ func (c *Context) provisionControlPlane(
 		"--ignore-preflight-errors=all",
 		// specify our generated config file
 		"--config=/kind/kubeadm.conf",
-	); err != nil {
+	).Run(); err != nil {
 		// TODO(bentheelder): logging here
 		// TODO(bentheelder): add a flag to retain the broken nodes for debugging
 		return kubeadmConfig, errors.Wrap(err, "failed to init node with kubeadm")
@@ -278,7 +278,7 @@ func (c *Context) provisionControlPlane(
 	// run any post-kubeadm hooks
 	if cfg.ControlPlane != nil && cfg.ControlPlane.NodeLifecycle != nil {
 		for _, hook := range cfg.ControlPlane.NodeLifecycle.PostKubeadm {
-			if err := node.RunHook(&hook, "postKubeadm"); err != nil {
+			if err := runHook(node, &hook, "postKubeadm"); err != nil {
 				return kubeadmConfig, err
 			}
 		}
@@ -293,10 +293,10 @@ func (c *Context) provisionControlPlane(
 	}
 
 	// TODO(bentheelder): support other overlay networks
-	if err = node.RunQ(
+	if err = node.Command(
 		"/bin/sh", "-c",
 		`kubectl apply --kubeconfig=/etc/kubernetes/admin.conf -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version --kubeconfig=/etc/kubernetes/admin.conf | base64 | tr -d '\n')"`,
-	); err != nil {
+	).Run(); err != nil {
 		return kubeadmConfig, errors.Wrap(err, "failed to apply overlay network")
 	}
 
@@ -304,32 +304,61 @@ func (c *Context) provisionControlPlane(
 	// https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#master-isolation
 	// TODO(bentheelder): put this back when we have multi-node
 	//if cfg.NumNodes == 1 {
-	if err = node.RunQ(
+	if err = node.Command(
 		"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf",
 		"taint", "nodes", "--all", "node-role.kubernetes.io/master-",
-	); err != nil {
+	).Run(); err != nil {
 		return kubeadmConfig, errors.Wrap(err, "failed to remove master taint")
 	}
 	//}
 
 	// add the default storage class
-	if err := node.RunQWithInput(
-		strings.NewReader(defaultStorageClassManifest),
-		"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf", "apply", "-f", "-",
-	); err != nil {
+	if err := addDefaultStorageClass(node); err != nil {
 		return kubeadmConfig, errors.Wrap(err, "failed to add default storage class")
 	}
 
 	// run any post-overlay hooks
 	if cfg.ControlPlane != nil && cfg.ControlPlane.NodeLifecycle != nil {
 		for _, hook := range cfg.ControlPlane.NodeLifecycle.PostSetup {
-			if err := node.RunHook(&hook, "postSetup"); err != nil {
+			if err := runHook(node, &hook, "postSetup"); err != nil {
 				return kubeadmConfig, err
 			}
 		}
 	}
 
 	return kubeadmConfig, nil
+}
+
+func addDefaultStorageClass(controlPlane *nodes.Node) error {
+	in := strings.NewReader(defaultStorageClassManifest)
+	cmd := controlPlane.Command(
+		"kubectl",
+		"--kubeconfig=/etc/kubernetes/admin.conf", "apply", "-f", "-",
+	)
+	cmd.SetStdin(in)
+	return cmd.Run()
+}
+
+// runHook runs a LifecycleHook on the node
+// It will only return an error if hook.MustSucceed is true
+func runHook(node *nodes.Node, hook *config.LifecycleHook, phase string) error {
+	logger := log.WithFields(log.Fields{
+		"node":  node.String(),
+		"phase": phase,
+	})
+	if hook.Name != "" {
+		logger.Infof("Running LifecycleHook \"%s\" ...", hook.Name)
+	} else {
+		logger.Info("Running LifecycleHook ...")
+	}
+	if err := node.Command(hook.Command[0], hook.Command[1:]...).Run(); err != nil {
+		if hook.MustSucceed {
+			logger.WithError(err).Error("LifecycleHook failed")
+			return err
+		}
+		logger.WithError(err).Warn("LifecycleHook failed, continuing ...")
+	}
+	return nil
 }
 
 // createKubeadmConfig creates the kubeadm config file for the cluster
