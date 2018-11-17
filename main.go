@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// This package is a stub main wrapping kind.Main()
+// This package is a stub main wrapping cmd/kind.Main()
 package main
 
 import (
