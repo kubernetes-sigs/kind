@@ -19,7 +19,6 @@ package nodes
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -31,6 +30,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/version"
 
+	"sigs.k8s.io/kind/pkg/docker"
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
@@ -41,122 +41,47 @@ import (
 type Node struct {
 	// must be one of docker container ID or name
 	nameOrID string
-	// cached node info
-	cachedNodeInfo
+	// cached node info etc.
+	nodeCache
 }
 
 // assert Node implements Cmder
 var _ exec.Cmder = &Node{}
 
+// Cmder returns an exec.Cmder that runs on the node via docker exec
+func (n *Node) Cmder() exec.Cmder {
+	if n.nodeCache.containerCmder == nil {
+		n.nodeCache.containerCmder = docker.ContainerCmder(n.nameOrID)
+	}
+	return n.nodeCache.containerCmder
+}
+
 // Command returns a new exec.Cmd that will run on the node
 func (n *Node) Command(command string, args ...string) exec.Cmd {
-	return &nodeCmd{
-		node:    n,
-		command: command,
-		args:    args,
-	}
+	return n.Cmder().Command(command, args...)
 }
 
-// nodeCmd implements exec.Cmd
-type nodeCmd struct {
-	node    *Node
-	command string
-	args    []string
-	env     []string
-	stdin   io.Reader
-	stdout  io.Writer
-	stderr  io.Writer
-}
-
-func (c *nodeCmd) Run() error {
-	args := []string{
-		"exec",
-		"--privileged", // run with priliges so we can remount etc..
-	}
-	if c.stdin != nil {
-		args = append(args,
-			"-i", // interactive so we can supply input
-		)
-	}
-	if c.stderr != nil || c.stdout != nil {
-		args = append(args,
-			"-t", // use a tty so we can get output
-		)
-	}
-	// set env
-	for _, env := range c.env {
-		args = append(args, "-e", env)
-	}
-	// specify the container and command, after this everything will be
-	// args the the command in the container rather than to docker
-	args = append(
-		args,
-		c.node.nameOrID, // ... against the "node" container
-		c.command,       // with the command specified
-	)
-	args = append(
-		args,
-		// finally, with the caller args
-		c.args...,
-	)
-	cmd := exec.Command("docker", args...)
-	if c.stdin != nil {
-		cmd.SetStdin(c.stdin)
-	}
-	if c.stderr != nil {
-		cmd.SetStderr(c.stderr)
-	}
-	if c.stdout != nil {
-		cmd.SetStdout(c.stdout)
-	}
-	return cmd.Run()
-}
-
-func (c *nodeCmd) SetEnv(env ...string) {
-	c.env = env
-}
-
-func (c *nodeCmd) SetStdin(r io.Reader) {
-	c.stdin = r
-}
-
-func (c *nodeCmd) SetStdout(w io.Writer) {
-	c.stdout = w
-}
-
-func (c *nodeCmd) SetStderr(w io.Writer) {
-	c.stderr = w
+// this is a seperate struct so we can clearly the whole thing at once
+// it contains lazily initialized fields
+// like node.nodeCache = nodeCache{}
+type nodeCache struct {
+	kubernetesVersion string
+	containerCmder    exec.Cmder
 }
 
 func (n *Node) String() string {
 	return n.nameOrID
 }
 
-// this is a seperate struct so we can clear the whole thing at once
-type cachedNodeInfo struct {
-	kubernetesVersion string
-}
-
 // SignalStart sends SIGUSR1 to the node, which signals our entrypoint to boot
 // see images/node/entrypoint
 func (n *Node) SignalStart() error {
-	cmd := exec.Command(
-		"docker", "kill",
-		"-s", "SIGUSR1",
-		n.nameOrID,
-	)
-	return cmd.Run()
+	return docker.Kill("SIGUSR1", n.nameOrID)
 }
 
 // CopyTo copies the source file on the host to dest on the node
 func (n *Node) CopyTo(source, dest string) error {
-	cmd := exec.Command(
-		"docker", "cp",
-		source,              // from the source file
-		n.nameOrID+":"+dest, // to the node, at dest
-	)
-	exec.InheritOutput(cmd)
-	return cmd.Run()
+	return docker.CopyTo(source, n.nameOrID, dest)
 }
 
 // WaitForDocker waits for Docker to be ready on the node
@@ -248,8 +173,8 @@ func (n *Node) FixMounts() error {
 // KubeVersion returns the Kubernetes version installed on the node
 func (n *Node) KubeVersion() (version string, err error) {
 	// use the cached version first
-	if n.cachedNodeInfo.kubernetesVersion != "" {
-		return n.cachedNodeInfo.kubernetesVersion, nil
+	if n.nodeCache.kubernetesVersion != "" {
+		return n.nodeCache.kubernetesVersion, nil
 	}
 	// grab kubernetes version from the node image
 	cmd := n.Command("cat", "/kind/version")
@@ -260,8 +185,8 @@ func (n *Node) KubeVersion() (version string, err error) {
 	if len(lines) != 1 {
 		return "", fmt.Errorf("file should only be one line, got %d lines", len(lines))
 	}
-	n.cachedNodeInfo.kubernetesVersion = lines[0]
-	return n.cachedNodeInfo.kubernetesVersion, nil
+	n.nodeCache.kubernetesVersion = lines[0]
+	return n.nodeCache.kubernetesVersion, nil
 }
 
 // matches kubeconfig server entry like:
