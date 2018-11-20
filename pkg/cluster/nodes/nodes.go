@@ -27,7 +27,7 @@ import (
 )
 
 // Delete deletes nodes by name / ID (see Node.String())
-func Delete(nodes ...*Node) error {
+func Delete(nodes ...Node) error {
 	if len(nodes) == 0 {
 		return nil
 	}
@@ -52,33 +52,24 @@ func Delete(nodes ...*Node) error {
 // List returns the list of container IDs for the kind "nodes", optionally
 // filtered by docker ps filters
 // https://docs.docker.com/engine/reference/commandline/ps/#filtering
-func List(filters ...string) ([]*Node, error) {
-	args := []string{
-		"ps",
-		"-q",         // quiet output for parsing
-		"-a",         // show stopped nodes
-		"--no-trunc", // don't truncate
-		// filter for nodes with the cluster label
-		"--filter", "label=" + consts.ClusterLabelKey,
+func List(filters ...string) ([]Node, error) {
+	res := []Node{}
+	visit := func(cluster string, node *Node) {
+		res = append(res, *node)
 	}
-	for _, filter := range filters {
-		args = append(args, "--filter", filter)
-	}
-	cmd := exec.Command("docker", args...)
-	lines, err := exec.CombinedOutputLines(cmd)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to list nodes")
-	}
-	// each line should container a node container ID
-	nodes := []*Node{}
-	for _, line := range lines {
-		nodes = append(nodes, FromID(line))
-	}
-	return nodes, nil
+	return res, list(visit, filters...)
 }
 
 // ListByCluster returns a list of nodes by the kind cluster name
-func ListByCluster() (map[string][]Node, error) {
+func ListByCluster(filters ...string) (map[string][]Node, error) {
+	res := make(map[string][]Node)
+	visit := func(cluster string, node *Node) {
+		res[cluster] = append(res[cluster], *node)
+	}
+	return res, list(visit, filters...)
+}
+
+func list(visit func(string, *Node), filters ...string) error {
 	args := []string{
 		"ps",
 		"-q",         // quiet output for parsing
@@ -89,20 +80,22 @@ func ListByCluster() (map[string][]Node, error) {
 		// format to include friendly name and the cluster name
 		"--format", fmt.Sprintf(`{{.Names}}\t{{.Label "%s"}}`, consts.ClusterLabelKey),
 	}
+	for _, filter := range filters {
+		args = append(args, "--filter", filter)
+	}
 	cmd := exec.Command("docker", args...)
 	lines, err := exec.CombinedOutputLines(cmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to list nodes")
+		return errors.Wrap(err, "failed to list nodes")
 	}
-	nodes := make(map[string][]Node)
 	for _, line := range lines {
 		parts := strings.Split(line, "\t")
 		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid output when listing nodes: %s", line)
+			return fmt.Errorf("invalid output when listing nodes: %s", line)
 		}
 		names := strings.Split(parts[0], ",")
 		cluster := parts[1]
-		nodes[cluster] = append(nodes[cluster], *FromID(names[0]))
+		visit(cluster, FromID(names[0]))
 	}
-	return nodes, nil
+	return nil
 }

@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/kind/pkg/util"
 )
 
-type flags struct {
+type flagpole struct {
 	Name      string
 	Config    string
 	ImageName string
@@ -34,7 +34,7 @@ type flags struct {
 
 // NewCommand returns a new cobra.Command for cluster creation
 func NewCommand() *cobra.Command {
-	flags := &flags{}
+	flags := &flagpole{}
 	cmd := &cobra.Command{
 		// TODO(bentheelder): more detailed usage
 		Use:   "cluster",
@@ -50,7 +50,7 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func run(flags *flags, cmd *cobra.Command, args []string) {
+func run(flags *flagpole, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
 	// load the config
 	cfg, err := encoding.Load(flags.Config)
