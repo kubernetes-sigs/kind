@@ -36,15 +36,14 @@ type flags struct {
 func NewCommand() *cobra.Command {
 	flags := &flags{}
 	cmd := &cobra.Command{
-		// TODO(bentheelder): more detailed usage
 		Use:   "cluster",
-		Short: "Creates a cluster",
-		Long:  "Creates a Kubernetes cluster",
+		Short: "Creates a local Kubernetes cluster",
+		Long:  "Creates a local Kubernetes cluster using Docker container 'nodes'",
 		Run: func(cmd *cobra.Command, args []string) {
 			run(flags, cmd, args)
 		},
 	}
-	cmd.Flags().StringVar(&flags.Name, "name", "1", "the cluster context name")
+	cmd.Flags().StringVar(&flags.Name, "name", "1", "cluster context name")
 	cmd.Flags().StringVar(&flags.Config, "config", "", "path to a kind config file")
 	cmd.Flags().StringVar(&flags.ImageName, "image", "", "node docker image to use for booting the cluster")
 	return cmd
