@@ -5,20 +5,16 @@ kind: Config
 # patch the generate kubeadm config with some extra settings
 kubeadmConfigPatches:
 - |
-  apiVersion: kubeadm.k8s.io/v1alpha2
-  kind: MasterConfiguration
+  apiVersion: kubeadm.k8s.io/v1alpha3
+  kind: ClusterConfiguration
   networking:
     serviceSubnet: 10.0.0.0/16
-  kubeletConfiguration:
-    baseConfig:
-      clusterDNS:
-      - 10.0.0.10
 
 # patch it further using a json 6902 patch
 kubeadmConfigPatchesJson6902:
 - group: kubeadm.k8s.io
-  version: v1alpha2
-  kind: MasterConfiguration
+  version: v1alpha3
+  kind: ClusterConfiguration
   patch: |
     - op: add
       path: /apiServerCertSANs/-
