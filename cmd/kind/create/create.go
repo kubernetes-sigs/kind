@@ -28,10 +28,9 @@ import (
 // NewCommand returns a new cobra.Command for cluster creation
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		// TODO(bentheelder): more detailed usage
 		Use:   "create",
 		Short: "Creates one of [cluster]",
-		Long:  "Creates one of [cluster]",
+		Long:  "Creates one of local Kubernetes cluster (cluster)",
 		RunE:  run,
 	}
 	cmd.AddCommand(createcluster.NewCommand())
