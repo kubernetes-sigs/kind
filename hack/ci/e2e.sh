@@ -24,6 +24,8 @@ set -o pipefail
 
 # our exit handler (trap)
 cleanup() {
+    # always attempt to dump logs
+    kind export logs "${ARTIFACTS}/logs" || true
     # KIND_IS_UP is true once we: kind create
     if [[ "${KIND_IS_UP:-}" = true ]]; then
         kind delete cluster || true
@@ -99,9 +101,6 @@ create_cluster() {
 
 # run e2es with kubetest
 run_tests() {
-    # default WORKSPACE if not in CI
-    WORKSPACE="${WORKSPACE:-${PWD}}"
-
     # base kubetest args
     KUBETEST_ARGS="--provider=skeleton --test --check-version-skew=false"
 
@@ -116,11 +115,11 @@ run_tests() {
     fi
 
     # add ginkgo args
-    KUBETEST_ARGS="${KUBETEST_ARGS} --test_args=\"--ginkgo.focus=${FOCUS} --ginkgo.skip=${SKIP} --report-dir=${WORKSPACE}/_artifacts --disable-log-dump=true\""
+    KUBETEST_ARGS="${KUBETEST_ARGS} --test_args=\"--ginkgo.focus=${FOCUS} --ginkgo.skip=${SKIP} --report-dir=${ARTIFACTS} --disable-log-dump=true\""
 
     # export the KUBECONFIG
-    # TODO(bentheelder): provide a `kind` command that can be eval'ed instead
-    export KUBECONFIG="${HOME}/.kube/kind-config-1"
+    KUBECONFIG="$(kind get kubeconfig-path)"
+    export KUBECONFIG
 
     # setting this env prevents ginkg e2e from trying to run provider setup
     export KUBERNETES_CONFORMANCE_TEST="y"
@@ -131,6 +130,11 @@ run_tests() {
 
 # setup kind, build kubernetes, create a cluster, run the e2es
 main() {
+    # ensure artifacts exists when not in CI
+    ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
+    mkdir -p "${ARTIFACTS}"
+    export ARTIFACTS
+    # now build an run the cluster and tests
     trap cleanup EXIT
     install_kind
     build
