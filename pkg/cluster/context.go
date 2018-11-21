@@ -44,6 +44,7 @@ import (
 type Context struct {
 	name   string
 	status *logutil.Status
+	retain bool
 }
 
 // similar to valid docker container names, but since we will prefix
@@ -54,7 +55,7 @@ var validNameRE = regexp.MustCompile(`^[a-zA-Z0-9_.-]+$`)
 
 // NewContext returns a new cluster management context
 // if name is "" the default ("1") will be used
-func NewContext(name string) (ctx *Context, err error) {
+func NewContext(name string, retain bool) (ctx *Context, err error) {
 	// TODO(bentheelder): move validation out of NewContext and into create type
 	// calls, so that EG delete still works on previously valid, now invalid
 	// names if kind updates
@@ -68,16 +69,17 @@ func NewContext(name string) (ctx *Context, err error) {
 			name, validNameRE.String(),
 		)
 	}
-	return newContextNoValidation(name), nil
+	return newContextNoValidation(name, retain), nil
 }
 
 // internal helper that does the actual allocation consitently, but does not
 // validate the cluster name
 // we need this so that if we tighten the validation, other internal code
 // can still create contexts to existing clusters by name (see List())
-func newContextNoValidation(name string) *Context {
+func newContextNoValidation(name string, retain bool) *Context {
 	return &Context{
-		name: name,
+		name:   name,
+		retain: retain,
 	}
 }
 
@@ -182,8 +184,9 @@ func (c *Context) provisionControlPlane(
 	// that don't seem to be configurable, and we need that flag
 	if err := node.FixMounts(); err != nil {
 		// TODO(bentheelder): logging here
-		// TODO(bentheelder): add a flag to retain the broken nodes for debugging
-		nodes.Delete(*node)
+		if !c.retain {
+			nodes.Delete(node)
+		}
 		return "", err
 	}
 
@@ -200,8 +203,9 @@ func (c *Context) provisionControlPlane(
 	// signal the node entrypoint to continue booting into systemd
 	if err := node.SignalStart(); err != nil {
 		// TODO(bentheelder): logging here
-		// TODO(bentheelder): add a flag to retain the broken nodes for debugging
-		nodes.Delete(*node)
+		if !c.retain {
+			nodes.Delete(node)
+		}
 		return "", err
 	}
 
@@ -209,8 +213,9 @@ func (c *Context) provisionControlPlane(
 	// wait for docker to be ready
 	if !node.WaitForDocker(time.Now().Add(time.Second * 30)) {
 		// TODO(bentheelder): logging here
-		// TODO(bentheelder): add a flag to retain the broken nodes for debugging
-		nodes.Delete(*node)
+		if !c.retain {
+			nodes.Delete(node)
+		}
 		return "", fmt.Errorf("timed out waiting for docker to be ready on node")
 	}
 
@@ -221,8 +226,9 @@ func (c *Context) provisionControlPlane(
 	kubeVersion, err := node.KubeVersion()
 	if err != nil {
 		// TODO(bentheelder): logging here
-		// TODO(bentheelder): add a flag to retain the broken nodes for debugging
-		nodes.Delete(*node)
+		if !c.retain {
+			nodes.Delete(node)
+		}
 		return "", fmt.Errorf("failed to get kubernetes version from node: %v", err)
 	}
 
@@ -236,15 +242,18 @@ func (c *Context) provisionControlPlane(
 		},
 	)
 	if err != nil {
-		nodes.Delete(*node)
+		if !c.retain {
+			nodes.Delete(node)
+		}
 		return "", fmt.Errorf("failed to create kubeadm config: %v", err)
 	}
 
 	// copy the config to the node
 	if err := node.CopyTo(kubeadmConfig, "/kind/kubeadm.conf"); err != nil {
 		// TODO(bentheelder): logging here
-		// TODO(bentheelder): add a flag to retain the broken nodes for debugging
-		nodes.Delete(*node)
+		if !c.retain {
+			nodes.Delete(node)
+		}
 		return kubeadmConfig, errors.Wrap(err, "failed to copy kubeadm config to node")
 	}
 
