@@ -89,15 +89,15 @@ the cluster by the chosen cluster name (default is "1"), to delete a cluster
 we can simply list and delete containers with this label.
 
 
-[README.md]: ./../README.md 
+[README.md]: ./../../README.md 
 [kubetest]: https://github.com/kubernetes/test-infra/tree/master/kubetest
 [original proposal]: https://docs.google.com/document/d/1VL0shYfKl7goy5Zj4Rghpixbye4M8zs_N2gWoQTSKh0/
 [q-lee]: https://github.com/q-lee
 [sig-testing-post]: https://groups.google.com/d/msg/kubernetes-sig-testing/uVkosorBnVc/8DDC3qvMAwAJ
 [kubernetes-sig-testing]: https://groups.google.com/forum/#!forum/kubernetes-sig-testing
-[pkg/cluster]: ./../pkg/cluster
+[pkg/cluster]: ./../../pkg/cluster
 [base-image.md]: ./base-image.md
 [node-image.md]: ./node-image.md
-[entrypoint]: ../images/base/entrypoint
+[entrypoint]: ../../images/base/entrypoint
 [kubeconfig]: https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/
 [overlay network]: https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#pod-network

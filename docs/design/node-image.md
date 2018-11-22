@@ -31,10 +31,10 @@ installed Kubernetes build
 These properties are used by the [cluster][cluster package] tooling to boot
 each "node" container with [kubeadm][kubeadm].
 
-[node image]: ./../images/node
+[node image]: ./../../images/node
 [base image]: ./base-image.md
-[build package]: ./../pkg/build
-[cluster package]: ./../pkg/cluster
+[build package]: ./../../pkg/build
+[cluster package]: ./../../pkg/cluster
 [docker image archives]: https://docs.docker.com/engine/reference/commandline/save/
 [systemd service]: https://www.freedesktop.org/software/systemd/man/systemd.service.html
 [kubeadm]: https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/
