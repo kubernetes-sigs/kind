@@ -32,18 +32,6 @@ required = [
 # normal constraints below
 
 [[constraint]]
-  name = "github.com/pkg/errors"
-  version = "0.8.0"
-
-[[constraint]]
-  name = "github.com/sirupsen/logrus"
-  version = "1.0.6"
-
-[[constraint]]
-  name = "github.com/spf13/cobra"
-  version = "0.0.3"
-
-[[constraint]]
   branch = "master"
   name = "k8s.io/apimachinery"
 
