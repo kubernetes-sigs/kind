@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/kind/cmd/kind/build"
 	"sigs.k8s.io/kind/cmd/kind/create"
 	"sigs.k8s.io/kind/cmd/kind/delete"
+	"sigs.k8s.io/kind/cmd/kind/export"
 	"sigs.k8s.io/kind/cmd/kind/get"
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
@@ -63,6 +64,7 @@ func NewCommand() *cobra.Command {
 	cmd.AddCommand(build.NewCommand())
 	cmd.AddCommand(create.NewCommand())
 	cmd.AddCommand(delete.NewCommand())
+	cmd.AddCommand(export.NewCommand())
 	cmd.AddCommand(get.NewCommand())
 	return cmd
 }

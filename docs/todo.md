@@ -4,8 +4,8 @@ A non-exhaustive list of tasks (in no-particular order) includes:
 - [x] basic single "node" clusters
 - [x] multiple clusters per host / named clusters
 - [x] user guide(s)
-  - [ ] more detailed user guides for common usage
-  - [ ] more detailed user guides for more advanced usage
+  - [x] more detailed user guides for common usage
+  - [x] more detailed user guides for more advanced usage
 - [ ] preflight checks [WIP]
 - [ ] multi-node clusters
 - [x] cli command to list clusters
@@ -31,7 +31,7 @@ A non-exhaustive list of tasks (in no-particular order) includes:
 - [ ] support for other CRI within the "node" containers (containerd, cri-o)
 - [ ] move all docker functionality into a common package (`pkg/docker`) [WIP]
  - [ ] potentially move this to using the docker client library
-- [ ] log dumping functionality / cli commands [WIP]
+- [x] log dumping functionality / cli commands
   - [ ] support audit logging
 - [ ] fake out all internals and unit test [WIP]
 - [ ] support for local registries
