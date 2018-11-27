@@ -22,6 +22,15 @@ import (
 	"sigs.k8s.io/kind/pkg/util"
 )
 
+// TODO(fabriziopandini): ideally this should use scheme.Default, but this creates a circular dependency
+// So the current solution is to mimic defaulting for the validation test, but probably there should be a better solution here
+func newDefaultedConfig() *Config {
+	cfg := &Config{
+		Image: "myImage:latest",
+	}
+	return cfg
+}
+
 func TestConfigValidate(t *testing.T) {
 	cases := []struct {
 		TestName       string
@@ -30,13 +39,13 @@ func TestConfigValidate(t *testing.T) {
 	}{
 		{
 			TestName:       "Canonical config",
-			Config:         New(),
+			Config:         newDefaultedConfig(),
 			ExpectedErrors: 0,
 		},
 		{
 			TestName: "Invalid PreBoot hook",
 			Config: func() *Config {
-				cfg := New()
+				cfg := newDefaultedConfig()
 				cfg.ControlPlane = &ControlPlane{
 					NodeLifecycle: &NodeLifecycle{
 						PreBoot: []LifecycleHook{
@@ -53,7 +62,7 @@ func TestConfigValidate(t *testing.T) {
 		{
 			TestName: "Invalid PreKubeadm hook",
 			Config: func() *Config {
-				cfg := New()
+				cfg := newDefaultedConfig()
 				cfg.ControlPlane = &ControlPlane{
 					NodeLifecycle: &NodeLifecycle{
 						PreKubeadm: []LifecycleHook{
@@ -71,7 +80,7 @@ func TestConfigValidate(t *testing.T) {
 		{
 			TestName: "Invalid PostKubeadm hook",
 			Config: func() *Config {
-				cfg := New()
+				cfg := newDefaultedConfig()
 				cfg.ControlPlane = &ControlPlane{
 					NodeLifecycle: &NodeLifecycle{
 						PostKubeadm: []LifecycleHook{
@@ -89,7 +98,7 @@ func TestConfigValidate(t *testing.T) {
 		{
 			TestName: "Empty image field",
 			Config: func() *Config {
-				cfg := New()
+				cfg := newDefaultedConfig()
 				cfg.Image = ""
 				return cfg
 			}(),

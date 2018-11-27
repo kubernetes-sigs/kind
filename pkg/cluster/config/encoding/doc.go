@@ -14,10 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
-
-// ToCurrent converts Config to config.Config
-// It is implemented to meet config.Any, and just deep copies on this type
-func (c *Config) ToCurrent() *Config {
-	return c.DeepCopy()
-}
+// Package encoding implements utilities for decoding from yaml the `kind` Config
+package encoding

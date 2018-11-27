@@ -32,7 +32,8 @@ GOBIN="${OUTPUT_GOBIN}" go install ./vendor/k8s.io/code-generator/cmd/deepcopy-g
 export PATH="${OUTPUT_GOBIN}:${PATH}"
 go generate ./...
 deepcopy-gen -i ./pkg/cluster/config/ -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
-defaulter-gen -i ./pkg/cluster/config -O zz_generated.default --go-header-file hack/boilerplate.go.txt
+deepcopy-gen -i ./pkg/cluster/config/v1alpha1 -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
+defaulter-gen -i ./pkg/cluster/config/v1alpha1 -O zz_generated.default --go-header-file hack/boilerplate.go.txt
 
 # gofmt the tree
 find . -path "./vendor" -prune -o -name "*.go" -type f -print0 | xargs -0 gofmt -s -w

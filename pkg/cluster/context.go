@@ -114,11 +114,6 @@ func (c *Context) KubeConfigPath() string {
 
 // Create provisions and starts a kubernetes-in-docker cluster
 func (c *Context) Create(cfg *config.Config) error {
-	// validate config first
-	if err := cfg.Validate(); err != nil {
-		return err
-	}
-
 	fmt.Printf("Creating cluster '%s' ...\n", c.ClusterName())
 	c.status = logutil.NewStatus(os.Stdout)
 	c.status.MaybeWrapLogrus(log.StandardLogger())
