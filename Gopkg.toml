@@ -32,10 +32,6 @@ required = [
 # normal constraints below
 
 [[constraint]]
-  name = "github.com/ghodss/yaml"
-  version = "1.0.0"
-
-[[constraint]]
   name = "github.com/pkg/errors"
   version = "0.8.0"
 

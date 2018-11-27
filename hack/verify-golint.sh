@@ -36,8 +36,9 @@ get_golint() {
 GOLINT="${GOLINT:-$(get_golint)}"
 
 # we need to do this because golint ./... matches vendor...
-# we also further filter out generated k8s api code in the config package
-# which unfortunately fails lint ...
+# we also further filter out generated k8s api code in the config v1alpha1 package
+# which unfortunately fails lint due to apimachinery conventions ...
+# TODO(fabrizio pandini): makes this smarter (skip only one file)
 go list ./... | \
-  grep -v '^sigs.k8s.io/kind/pkg/cluster/config$' | \
+  grep -v '^sigs.k8s.io/kind/pkg/cluster/config/v1alpha1$' | \
   xargs -L1 "${GOLINT}" -set_exit_status
