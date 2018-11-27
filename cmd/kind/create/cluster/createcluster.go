@@ -30,6 +30,7 @@ type flagpole struct {
 	Name      string
 	Config    string
 	ImageName string
+	Retain    bool
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
@@ -46,6 +47,7 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().StringVar(&flags.Name, "name", "1", "cluster context name")
 	cmd.Flags().StringVar(&flags.Config, "config", "", "path to a kind config file")
 	cmd.Flags().StringVar(&flags.ImageName, "image", "", "node docker image to use for booting the cluster")
+	cmd.Flags().BoolVar(&flags.Retain, "retain", false, "retain nodes for debugging when cluster creation fails")
 	return cmd
 }
 
@@ -67,7 +69,7 @@ func run(flags *flagpole, cmd *cobra.Command, args []string) {
 		log.Fatal("Aborting due to invalid configuration.")
 	}
 	// create a cluster context and create the cluster
-	ctx, err := cluster.NewContext(flags.Name)
+	ctx, err := cluster.NewContext(flags.Name, flags.Retain)
 	if err != nil {
 		log.Fatalf("Failed to create cluster context! %v", err)
 	}

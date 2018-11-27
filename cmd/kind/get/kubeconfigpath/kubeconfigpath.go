@@ -51,7 +51,7 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flags, cmd *cobra.Command, args []string) error {
-	ctx, err := cluster.NewContext(flags.Name)
+	ctx, err := cluster.NewContext(flags.Name, false)
 	if err != nil {
 		return fmt.Errorf("failed to create cluster context! %v", err)
 	}

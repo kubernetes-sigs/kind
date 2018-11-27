@@ -57,7 +57,7 @@ func TestNewContext(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		_, err := NewContext(tc.Name)
+		_, err := NewContext(tc.Name, false)
 		// the error can be:
 		// - nil, in which case we should expect no errors or fail
 		if err == nil && tc.ExpectError {

@@ -25,7 +25,8 @@ import (
 )
 
 type flags struct {
-	Name string
+	Name   string
+	Retain bool
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
@@ -46,7 +47,7 @@ func NewCommand() *cobra.Command {
 
 func run(flags *flags, cmd *cobra.Command, args []string) {
 	// TODO(bentheelder): make this more configurable
-	ctx, err := cluster.NewContext(flags.Name)
+	ctx, err := cluster.NewContext(flags.Name, false)
 	if err != nil {
 		log.Fatalf("Failed to create cluster context! %v", err)
 	}

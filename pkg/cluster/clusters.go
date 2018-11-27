@@ -30,7 +30,7 @@ func List() ([]Context, error) {
 	}
 	clusters := []Context{}
 	for name := range n {
-		clusters = append(clusters, *newContextNoValidation(name))
+		clusters = append(clusters, *newContextNoValidation(name, false))
 	}
 	return clusters, nil
 }

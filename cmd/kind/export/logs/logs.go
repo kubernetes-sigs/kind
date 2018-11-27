@@ -61,7 +61,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		dir = args[0]
 	}
 	// TODO(bentheelder): NewContext should not return error
-	context, err := cluster.NewContext(flags.Name)
+	context, err := cluster.NewContext(flags.Name, false)
 	if err != nil {
 		return err
 	}
