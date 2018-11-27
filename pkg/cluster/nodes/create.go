@@ -54,6 +54,9 @@ func CreateControlPlaneNode(name, image, clusterLabel string) (handle *Node, por
 		image,
 		[]string{
 			"-d", // run the container detached
+			// We need this argument in order to make this command work
+			// in systems that have userns-remap enabled on the docker daemon
+			"--userns=host",
 			// running containers in a container requires privileged
 			// NOTE: we could try to replicate this with --cap-add, and use less
 			// privileges, but this flag also changes some mounts that are necessary
