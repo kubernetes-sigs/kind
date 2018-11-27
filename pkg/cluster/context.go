@@ -185,7 +185,7 @@ func (c *Context) provisionControlPlane(
 	if err := node.FixMounts(); err != nil {
 		// TODO(bentheelder): logging here
 		if !c.retain {
-			nodes.Delete(node)
+			nodes.Delete(*node)
 		}
 		return "", err
 	}
@@ -204,7 +204,7 @@ func (c *Context) provisionControlPlane(
 	if err := node.SignalStart(); err != nil {
 		// TODO(bentheelder): logging here
 		if !c.retain {
-			nodes.Delete(node)
+			nodes.Delete(*node)
 		}
 		return "", err
 	}
@@ -214,7 +214,7 @@ func (c *Context) provisionControlPlane(
 	if !node.WaitForDocker(time.Now().Add(time.Second * 30)) {
 		// TODO(bentheelder): logging here
 		if !c.retain {
-			nodes.Delete(node)
+			nodes.Delete(*node)
 		}
 		return "", fmt.Errorf("timed out waiting for docker to be ready on node")
 	}
@@ -227,7 +227,7 @@ func (c *Context) provisionControlPlane(
 	if err != nil {
 		// TODO(bentheelder): logging here
 		if !c.retain {
-			nodes.Delete(node)
+			nodes.Delete(*node)
 		}
 		return "", fmt.Errorf("failed to get kubernetes version from node: %v", err)
 	}
@@ -243,7 +243,7 @@ func (c *Context) provisionControlPlane(
 	)
 	if err != nil {
 		if !c.retain {
-			nodes.Delete(node)
+			nodes.Delete(*node)
 		}
 		return "", fmt.Errorf("failed to create kubeadm config: %v", err)
 	}
@@ -252,7 +252,7 @@ func (c *Context) provisionControlPlane(
 	if err := node.CopyTo(kubeadmConfig, "/kind/kubeadm.conf"); err != nil {
 		// TODO(bentheelder): logging here
 		if !c.retain {
-			nodes.Delete(node)
+			nodes.Delete(*node)
 		}
 		return kubeadmConfig, errors.Wrap(err, "failed to copy kubeadm config to node")
 	}
