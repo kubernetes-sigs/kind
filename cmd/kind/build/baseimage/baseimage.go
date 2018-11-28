@@ -17,7 +17,8 @@ limitations under the License.
 package baseimage
 
 import (
-	log "github.com/sirupsen/logrus"
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/build/base"
@@ -36,8 +37,8 @@ func NewCommand() *cobra.Command {
 		Use:   "base-image",
 		Short: "build the base node image",
 		Long:  `build the base node image for running nested containers, systemd, and kubernetes components.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			run(flags, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runE(flags, cmd, args)
 		},
 	}
 	cmd.Flags().StringVar(
@@ -59,8 +60,8 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		base.WithImage(flags.Image),
 		base.WithSourceDir(flags.Source),
 	)
-	err := ctx.Build()
-	if err != nil {
-		log.Fatalf("Build failed! %v", err)
+	if err := ctx.Build(); err != nil {
+		return fmt.Errorf("build failed: %v", err)
 	}
+	return nil
 }

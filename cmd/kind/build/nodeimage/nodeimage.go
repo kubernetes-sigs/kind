@@ -17,7 +17,8 @@ limitations under the License.
 package nodeimage
 
 import (
-	log "github.com/sirupsen/logrus"
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/build/node"
@@ -38,8 +39,8 @@ func NewCommand() *cobra.Command {
 		Use:   "node-image",
 		Short: "build the node image",
 		Long:  "build the node image which contains kubernetes build artifacts and other kind requirements",
-		Run: func(cmd *cobra.Command, args []string) {
-			run(flags, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runE(flags, cmd, args)
 		},
 	}
 	cmd.Flags().StringVar(
@@ -67,10 +68,10 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		node.WithBaseImage(flags.BaseImage),
 	)
 	if err != nil {
-		log.Fatalf("Error creating build context: %v", err)
+		return fmt.Errorf("error creating build context: %v", err)
 	}
-	err = ctx.Build()
-	if err != nil {
-		log.Fatalf("Error building node image: %v", err)
+	if err := ctx.Build(); err != nil {
+		return fmt.Errorf("error building node image: %v", err)
 	}
+	return nil
 }

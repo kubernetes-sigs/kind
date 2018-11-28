@@ -49,7 +49,7 @@ func NewCommand() *cobra.Command {
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	ctx := cluster.NewContext(flags.Name)
 	if err := ctx.Delete(); err != nil {
-		return fmt.Errorf("Failed to delete cluster: %v", err)
+		return fmt.Errorf("failed to delete cluster: %v", err)
 	}
 	return nil
 }

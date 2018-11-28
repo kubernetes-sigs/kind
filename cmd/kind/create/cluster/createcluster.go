@@ -18,6 +18,8 @@ limitations under the License.
 package cluster
 
 import (
+	"fmt"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -40,8 +42,8 @@ func NewCommand() *cobra.Command {
 		Use:   "cluster",
 		Short: "Creates a local Kubernetes cluster",
 		Long:  "Creates a local Kubernetes cluster using Docker container 'nodes'",
-		Run: func(cmd *cobra.Command, args []string) {
-			run(flags, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runE(flags, cmd, args)
 		},
 	}
 	cmd.Flags().StringVar(&flags.Name, "name", "1", "cluster context name")
@@ -51,11 +53,11 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func run(flags *flagpole, cmd *cobra.Command, args []string) {
+func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	// load the config
 	cfg, err := encoding.Load(flags.Config)
 	if err != nil {
-		log.Fatalf("Error loading config: %v", err)
+		return fmt.Errorf("error loading config: %v", err)
 	}
 
 	// validate the config
@@ -66,21 +68,22 @@ func run(flags *flagpole, cmd *cobra.Command, args []string) {
 		for _, problem := range configErrors.Errors() {
 			log.Error(problem)
 		}
-		log.Fatal("Aborting due to invalid configuration.")
+		return fmt.Errorf("aborting due to invalid configuration")
 	}
 
 	// create a cluster context and create the cluster
 	ctx := cluster.NewContext(flags.Name)
-	convertedCfg := cfg.ToCurrent()
 	if flags.ImageName != "" {
 		cfg.Image = flags.ImageName
 		err := cfg.Validate()
 		if err != nil {
 			log.Errorf("Invalid flags, configuration failed validation: %v", err)
-			log.Fatal("Aborting due to invalid configuration.")
+			return fmt.Errorf("aborting due to invalid configuration")
 		}
 	}
-	if err = ctx.Create(convertedCfg, flags.Retain); err != nil {
-		log.Fatalf("Failed to create cluster: %v", err)
+	if err = ctx.Create(cfg, flags.Retain); err != nil {
+		return fmt.Errorf("failed to create cluster: %v", err)
 	}
+
+	return nil
 }
