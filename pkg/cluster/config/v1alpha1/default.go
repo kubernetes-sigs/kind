@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
+package v1alpha1
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,21 +28,9 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
 }
 
-// SetDefaultsConfig sets uninitialized fields to their default value.
-func SetDefaultsConfig(obj *Config) {
+// SetDefaults_Config sets uninitialized fields to their default value.
+func SetDefaults_Config(obj *Config) {
 	if obj.Image == "" {
 		obj.Image = DefaultImage
 	}
-}
-
-// ApplyDefaults sets the defaults to a Config.
-func (c *Config) ApplyDefaults() {
-	SetDefaultsConfig(c)
-}
-
-// New returns a new default Config.
-func New() *Config {
-	cfg := &Config{}
-	cfg.ApplyDefaults()
-	return cfg
 }

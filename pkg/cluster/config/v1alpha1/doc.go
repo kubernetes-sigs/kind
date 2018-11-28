@@ -14,22 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
-
-/*
-This file contains interfaces and code related to all API versions
-*/
-
-// Any represents any API version of Config
-type Any interface {
-	// Validate should return an error of type `*Errors` if config is invalid
-	Validate() error
-	// ToCurrent should convert a config version to the version in this package
-	ToCurrent() *Config
-	// ApplyDefaults should set unset fields to defaults
-	ApplyDefaults()
-	// Kind should return "Config"
-	Kind() string
-	// APIVersion should return the apiVersion for this config
-	APIVersion() string
-}
+// Package v1alpha1 implements the v1alpha1 apiVersion of the `kind` Config
+//
+// +k8s:deepcopy-gen=package
+// +k8s:conversion-gen=sigs.k8s.io/kind/pkg/cluster/config/
+// +k8s:defaulter-gen=TypeMeta
+package v1alpha1

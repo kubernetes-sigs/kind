@@ -68,21 +68,21 @@ func run(flags *flagpole, cmd *cobra.Command, args []string) {
 		}
 		log.Fatal("Aborting due to invalid configuration.")
 	}
-	// create a cluster context and create the cluster
-	ctx, err := cluster.NewContext(flags.Name, flags.Retain)
-	if err != nil {
-		log.Fatalf("Failed to create cluster context! %v", err)
-	}
-	convertedCfg := cfg.ToCurrent()
+	// apply flags overriding config data and validate again
 	if flags.ImageName != "" {
-		convertedCfg.Image = flags.ImageName
-		err := convertedCfg.Validate()
+		cfg.Image = flags.ImageName
+		err := cfg.Validate()
 		if err != nil {
 			log.Errorf("Invalid flags, configuration failed validation: %v", err)
 			log.Fatal("Aborting due to invalid configuration.")
 		}
 	}
-	err = ctx.Create(convertedCfg)
+	// create a cluster context and create the cluster
+	ctx, err := cluster.NewContext(flags.Name, flags.Retain)
+	if err != nil {
+		log.Fatalf("Failed to create cluster context! %v", err)
+	}
+	err = ctx.Create(cfg)
 	if err != nil {
 		log.Fatalf("Failed to create cluster: %v", err)
 	}

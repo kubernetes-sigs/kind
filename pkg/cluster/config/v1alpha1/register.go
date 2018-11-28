@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
+package v1alpha1
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
@@ -26,7 +26,7 @@ const GroupName = "kind.sigs.k8s.io"
 
 var (
 	// SchemeGroupVersion is group version used to register these objects.
-	SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: runtime.APIVersionInternal}
+	SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1alpha1"}
 	// SchemeBuilder is a type to collect functions that add data to an API
 	// object through a scheme.
 	SchemeBuilder      runtime.SchemeBuilder
@@ -50,7 +50,7 @@ func init() {
 	// We only register manually written functions here. The registration of the
 	// generated functions takes place in the generated files. The separation
 	// makes the code compile even when the generated files are missing.
-	localSchemeBuilder.Register(addKnownTypes)
+	localSchemeBuilder.Register(addKnownTypes, addDefaultingFuncs)
 }
 
 func addKnownTypes(scheme *runtime.Scheme) error {
