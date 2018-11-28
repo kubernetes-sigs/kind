@@ -52,12 +52,12 @@ func NewCommand() *cobra.Command {
 }
 
 func run(flags *flagpole, cmd *cobra.Command, args []string) {
-	// TODO(bentheelder): make this more configurable
 	// load the config
 	cfg, err := encoding.Load(flags.Config)
 	if err != nil {
 		log.Fatalf("Error loading config: %v", err)
 	}
+
 	// validate the config
 	err = cfg.Validate()
 	if err != nil {
@@ -68,7 +68,10 @@ func run(flags *flagpole, cmd *cobra.Command, args []string) {
 		}
 		log.Fatal("Aborting due to invalid configuration.")
 	}
-	// apply flags overriding config data and validate again
+
+	// create a cluster context and create the cluster
+	ctx := cluster.NewContext(flags.Name)
+	convertedCfg := cfg.ToCurrent()
 	if flags.ImageName != "" {
 		cfg.Image = flags.ImageName
 		err := cfg.Validate()
@@ -77,13 +80,7 @@ func run(flags *flagpole, cmd *cobra.Command, args []string) {
 			log.Fatal("Aborting due to invalid configuration.")
 		}
 	}
-	// create a cluster context and create the cluster
-	ctx, err := cluster.NewContext(flags.Name, flags.Retain)
-	if err != nil {
-		log.Fatalf("Failed to create cluster context! %v", err)
-	}
-	err = ctx.Create(cfg)
-	if err != nil {
+	if err = ctx.Create(convertedCfg, flags.Retain); err != nil {
 		log.Fatalf("Failed to create cluster: %v", err)
 	}
 }

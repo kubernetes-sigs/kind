@@ -60,13 +60,8 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	} else {
 		dir = args[0]
 	}
-	// TODO(bentheelder): NewContext should not return error
-	context, err := cluster.NewContext(flags.Name, false)
-	if err != nil {
-		return err
-	}
-	err = context.CollectLogs(dir)
-	if err != nil {
+	context := cluster.NewContext(flags.Name)
+	if err := context.CollectLogs(dir); err != nil {
 		return err
 	}
 	fmt.Println("Exported logs to: " + dir)

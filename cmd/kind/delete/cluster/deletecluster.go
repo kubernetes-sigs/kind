@@ -18,7 +18,8 @@ limitations under the License.
 package cluster
 
 import (
-	log "github.com/sirupsen/logrus"
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
@@ -37,22 +38,18 @@ func NewCommand() *cobra.Command {
 		Use:   "cluster",
 		Short: "Deletes a cluster",
 		Long:  "Deletes a resource",
-		Run: func(cmd *cobra.Command, args []string) {
-			run(flags, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runE(flags, cmd, args)
 		},
 	}
 	cmd.Flags().StringVar(&flags.Name, "name", "1", "the cluster name")
 	return cmd
 }
 
-func run(flags *flags, cmd *cobra.Command, args []string) {
-	// TODO(bentheelder): make this more configurable
-	ctx, err := cluster.NewContext(flags.Name, false)
-	if err != nil {
-		log.Fatalf("Failed to create cluster context! %v", err)
+func runE(flags *flags, cmd *cobra.Command, args []string) error {
+	ctx := cluster.NewContext(flags.Name)
+	if err := ctx.Delete(); err != nil {
+		return fmt.Errorf("Failed to delete cluster: %v", err)
 	}
-	err = ctx.Delete()
-	if err != nil {
-		log.Fatalf("Failed to delete cluster: %v", err)
-	}
+	return nil
 }
