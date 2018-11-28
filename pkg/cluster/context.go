@@ -48,9 +48,10 @@ type Context struct {
 // createContext is a superset of Context used by helpers for Context.Create()
 type createContext struct {
 	*Context
-	status *logutil.Status
-	config *config.Config
-	retain bool // if we should retain nodes after failing to create
+	status       *logutil.Status
+	config       *config.Config
+	retain       bool          // if we should retain nodes after failing to create.
+	waitForReady time.Duration // Wait for the control plane node to be ready.
 }
 
 // similar to valid docker container names, but since we will prefix
@@ -121,16 +122,17 @@ func (c *Context) KubeConfigPath() string {
 }
 
 // Create provisions and starts a kubernetes-in-docker cluster
-func (c *Context) Create(cfg *config.Config, retain bool) error {
+func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) error {
 	// validate config first
 	if err := cfg.Validate(); err != nil {
 		return err
 	}
 
 	cc := &createContext{
-		Context: c,
-		config:  cfg,
-		retain:  retain,
+		Context:      c,
+		config:       cfg,
+		retain:       retain,
+		waitForReady: wait,
 	}
 
 	fmt.Printf("Creating cluster '%s' ...\n", c.ClusterName())
@@ -346,6 +348,14 @@ func (cc *createContext) provisionControlPlane(
 			if err := runHook(node, &hook, "postSetup"); err != nil {
 				return kubeadmConfig, err
 			}
+		}
+	}
+
+	// Wait for the control plane node to reach Ready status.
+	isReady := nodes.WaitForReady(node, time.Now().Add(cc.waitForReady))
+	if cc.waitForReady > 0 {
+		if !isReady {
+			log.Warn("timed out waiting for control plane to be ready")
 		}
 	}
 
