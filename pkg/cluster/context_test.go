@@ -18,7 +18,7 @@ package cluster
 
 import "testing"
 
-func TestNewContext(t *testing.T) {
+func TestContextValidate(t *testing.T) {
 	cases := []struct {
 		TestName    string
 		Name        string
@@ -57,7 +57,8 @@ func TestNewContext(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		_, err := NewContext(tc.Name, false)
+		ctx := NewContext(tc.Name)
+		err := ctx.Validate()
 		// the error can be:
 		// - nil, in which case we should expect no errors or fail
 		if err == nil && tc.ExpectError {

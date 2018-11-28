@@ -42,9 +42,15 @@ import (
 
 // Context is used to create / manipulate kubernetes-in-docker clusters
 type Context struct {
-	name   string
+	name string
+}
+
+// createContext is a superset of Context used by helpers for Context.Create()
+type createContext struct {
+	*Context
 	status *logutil.Status
-	retain bool
+	config *config.Config
+	retain bool // if we should retain nodes after failing to create
 }
 
 // similar to valid docker container names, but since we will prefix
@@ -53,34 +59,36 @@ type Context struct {
 // https://godoc.org/github.com/docker/docker/daemon/names#pkg-constants
 var validNameRE = regexp.MustCompile(`^[a-zA-Z0-9_.-]+$`)
 
+// DefaultName is the default Context name
+// TODO(bentheelder): consider removing automatic prefixing in favor
+// of letting the user specify the full name..
+const DefaultName = "1"
+
 // NewContext returns a new cluster management context
 // if name is "" the default ("1") will be used
-func NewContext(name string, retain bool) (ctx *Context, err error) {
-	// TODO(bentheelder): move validation out of NewContext and into create type
-	// calls, so that EG delete still works on previously valid, now invalid
-	// names if kind updates
+func NewContext(name string) *Context {
 	if name == "" {
-		name = "1"
+		name = DefaultName
 	}
-	// validate the name
-	if !validNameRE.MatchString(name) {
-		return nil, fmt.Errorf(
-			"'%s' is not a valid cluster name, cluster names must match `%s`",
-			name, validNameRE.String(),
-		)
+	return &Context{
+		name: name,
 	}
-	return newContextNoValidation(name, retain), nil
 }
 
-// internal helper that does the actual allocation consitently, but does not
-// validate the cluster name
-// we need this so that if we tighten the validation, other internal code
-// can still create contexts to existing clusters by name (see List())
-func newContextNoValidation(name string, retain bool) *Context {
-	return &Context{
-		name:   name,
-		retain: retain,
+// Validate will be called before creating new resources using the context
+// It will not be called before deleting or listing resources, so as to allow
+// contexts based around previously valid values to be used in newer versions
+// You can call this early yourself to check validation before creation calls,
+// though it will be called internally.
+func (c *Context) Validate() error {
+	// validate the name
+	if !validNameRE.MatchString(c.name) {
+		return fmt.Errorf(
+			"'%s' is not a valid cluster name, cluster names must match `%s`",
+			c.name, validNameRE.String(),
+		)
 	}
+	return nil
 }
 
 // ClusterLabel returns the docker object label that will be applied
@@ -113,26 +121,36 @@ func (c *Context) KubeConfigPath() string {
 }
 
 // Create provisions and starts a kubernetes-in-docker cluster
-func (c *Context) Create(cfg *config.Config) error {
-	fmt.Printf("Creating cluster '%s' ...\n", c.ClusterName())
-	c.status = logutil.NewStatus(os.Stdout)
-	c.status.MaybeWrapLogrus(log.StandardLogger())
+func (c *Context) Create(cfg *config.Config, retain bool) error {
+	// validate config first
+	if err := cfg.Validate(); err != nil {
+		return err
+	}
 
-	defer c.status.End(false)
+	cc := &createContext{
+		Context: c,
+		config:  cfg,
+		retain:  retain,
+	}
+
+	fmt.Printf("Creating cluster '%s' ...\n", c.ClusterName())
+	cc.status = logutil.NewStatus(os.Stdout)
+	cc.status.MaybeWrapLogrus(log.StandardLogger())
+
+	defer cc.status.End(false)
 	image := cfg.Image
 	if strings.Contains(image, "@sha256:") {
 		image = strings.Split(image, "@sha256:")[0]
 	}
-	c.status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", image))
+	cc.status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", image))
 
 	// attempt to explicitly pull the image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
 	_, _ = docker.PullIfNotPresent(cfg.Image, 4)
 
 	// TODO(bentheelder): multiple nodes ...
-	kubeadmConfig, err := c.provisionControlPlane(
+	kubeadmConfig, err := cc.provisionControlPlane(
 		fmt.Sprintf("kind-%s-control-plane", c.name),
-		cfg,
 	)
 
 	// clean up the kubeadm config file
@@ -144,7 +162,7 @@ func (c *Context) Create(cfg *config.Config) error {
 		return err
 	}
 
-	c.status.End(true)
+	cc.status.End(true)
 	fmt.Printf(
 		"Cluster creation complete. You can now use the cluster with:\n\nexport KUBECONFIG=\"$(kind get kubeconfig-path)\"\nkubectl cluster-info\n",
 	)
@@ -162,53 +180,52 @@ func (c *Context) Delete() error {
 
 // provisionControlPlane provisions the control plane node
 // and the cluster kubeadm config
-func (c *Context) provisionControlPlane(
+func (cc *createContext) provisionControlPlane(
 	nodeName string,
-	cfg *config.Config,
 ) (kubeadmConfigPath string, err error) {
-	c.status.Start(fmt.Sprintf("[%s] Creating node container 📦", nodeName))
+	cc.status.Start(fmt.Sprintf("[%s] Creating node container 📦", nodeName))
 	// create the "node" container (docker run, but it is paused, see createNode)
-	node, port, err := nodes.CreateControlPlaneNode(nodeName, cfg.Image, c.ClusterLabel())
+	node, port, err := nodes.CreateControlPlaneNode(nodeName, cc.config.Image, cc.ClusterLabel())
 	if err != nil {
 		return "", err
 	}
 
-	c.status.Start(fmt.Sprintf("[%s] Fixing mounts 🗻", nodeName))
+	cc.status.Start(fmt.Sprintf("[%s] Fixing mounts 🗻", nodeName))
 	// we need to change a few mounts once we have the container
 	// we'd do this ahead of time if we could, but --privileged implies things
 	// that don't seem to be configurable, and we need that flag
 	if err := node.FixMounts(); err != nil {
 		// TODO(bentheelder): logging here
-		if !c.retain {
+		if !cc.retain {
 			nodes.Delete(*node)
 		}
 		return "", err
 	}
 
 	// run any pre-boot hooks
-	if cfg.ControlPlane != nil && cfg.ControlPlane.NodeLifecycle != nil {
-		for _, hook := range cfg.ControlPlane.NodeLifecycle.PreBoot {
+	if cc.config.ControlPlane != nil && cc.config.ControlPlane.NodeLifecycle != nil {
+		for _, hook := range cc.config.ControlPlane.NodeLifecycle.PreBoot {
 			if err := runHook(node, &hook, "preBoot"); err != nil {
 				return "", err
 			}
 		}
 	}
 
-	c.status.Start(fmt.Sprintf("[%s] Starting systemd 🖥", nodeName))
+	cc.status.Start(fmt.Sprintf("[%s] Starting systemd 🖥", nodeName))
 	// signal the node entrypoint to continue booting into systemd
 	if err := node.SignalStart(); err != nil {
 		// TODO(bentheelder): logging here
-		if !c.retain {
+		if !cc.retain {
 			nodes.Delete(*node)
 		}
 		return "", err
 	}
 
-	c.status.Start(fmt.Sprintf("[%s] Waiting for docker to be ready 🐋", nodeName))
+	cc.status.Start(fmt.Sprintf("[%s] Waiting for docker to be ready 🐋", nodeName))
 	// wait for docker to be ready
 	if !node.WaitForDocker(time.Now().Add(time.Second * 30)) {
 		// TODO(bentheelder): logging here
-		if !c.retain {
+		if !cc.retain {
 			nodes.Delete(*node)
 		}
 		return "", fmt.Errorf("timed out waiting for docker to be ready on node")
@@ -221,23 +238,23 @@ func (c *Context) provisionControlPlane(
 	kubeVersion, err := node.KubeVersion()
 	if err != nil {
 		// TODO(bentheelder): logging here
-		if !c.retain {
+		if !cc.retain {
 			nodes.Delete(*node)
 		}
 		return "", fmt.Errorf("failed to get kubernetes version from node: %v", err)
 	}
 
 	// create kubeadm config file
-	kubeadmConfig, err := c.createKubeadmConfig(
-		cfg,
+	kubeadmConfig, err := cc.createKubeadmConfig(
+		cc.config,
 		kubeadm.ConfigData{
-			ClusterName:       c.ClusterName(),
+			ClusterName:       cc.ClusterName(),
 			KubernetesVersion: kubeVersion,
 			APIBindPort:       port,
 		},
 	)
 	if err != nil {
-		if !c.retain {
+		if !cc.retain {
 			nodes.Delete(*node)
 		}
 		return "", fmt.Errorf("failed to create kubeadm config: %v", err)
@@ -246,15 +263,15 @@ func (c *Context) provisionControlPlane(
 	// copy the config to the node
 	if err := node.CopyTo(kubeadmConfig, "/kind/kubeadm.conf"); err != nil {
 		// TODO(bentheelder): logging here
-		if !c.retain {
+		if !cc.retain {
 			nodes.Delete(*node)
 		}
 		return kubeadmConfig, errors.Wrap(err, "failed to copy kubeadm config to node")
 	}
 
 	// run any pre-kubeadm hooks
-	if cfg.ControlPlane != nil && cfg.ControlPlane.NodeLifecycle != nil {
-		for _, hook := range cfg.ControlPlane.NodeLifecycle.PreKubeadm {
+	if cc.config.ControlPlane != nil && cc.config.ControlPlane.NodeLifecycle != nil {
+		for _, hook := range cc.config.ControlPlane.NodeLifecycle.PreKubeadm {
 			if err := runHook(node, &hook, "preKubeadm"); err != nil {
 				return kubeadmConfig, err
 			}
@@ -262,7 +279,7 @@ func (c *Context) provisionControlPlane(
 	}
 
 	// run kubeadm
-	c.status.Start(
+	cc.status.Start(
 		fmt.Sprintf(
 			"[%s] Starting Kubernetes (this may take a minute) ☸",
 			nodeName,
@@ -282,8 +299,8 @@ func (c *Context) provisionControlPlane(
 	}
 
 	// run any post-kubeadm hooks
-	if cfg.ControlPlane != nil && cfg.ControlPlane.NodeLifecycle != nil {
-		for _, hook := range cfg.ControlPlane.NodeLifecycle.PostKubeadm {
+	if cc.config.ControlPlane != nil && cc.config.ControlPlane.NodeLifecycle != nil {
+		for _, hook := range cc.config.ControlPlane.NodeLifecycle.PostKubeadm {
 			if err := runHook(node, &hook, "postKubeadm"); err != nil {
 				return kubeadmConfig, err
 			}
@@ -291,7 +308,7 @@ func (c *Context) provisionControlPlane(
 	}
 
 	// set up the $KUBECONFIG
-	kubeConfigPath := c.KubeConfigPath()
+	kubeConfigPath := cc.KubeConfigPath()
 	if err = node.WriteKubeConfig(kubeConfigPath); err != nil {
 		// TODO(bentheelder): logging here
 		// TODO(bentheelder): add a flag to retain the broken nodes for debugging
@@ -324,8 +341,8 @@ func (c *Context) provisionControlPlane(
 	}
 
 	// run any post-overlay hooks
-	if cfg.ControlPlane != nil && cfg.ControlPlane.NodeLifecycle != nil {
-		for _, hook := range cfg.ControlPlane.NodeLifecycle.PostSetup {
+	if cc.config.ControlPlane != nil && cc.config.ControlPlane.NodeLifecycle != nil {
+		for _, hook := range cc.config.ControlPlane.NodeLifecycle.PostSetup {
 			if err := runHook(node, &hook, "postSetup"); err != nil {
 				return kubeadmConfig, err
 			}

@@ -25,13 +25,13 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster"
 )
 
-type flags struct {
+type flagpole struct {
 	Name string
 }
 
 // NewCommand returns a new cobra.Command for getting the kubeconfig path
 func NewCommand() *cobra.Command {
-	flags := &flags{}
+	flags := &flagpole{}
 	cmd := &cobra.Command{
 		// TODO(bentheelder): more detailed usage
 		Use:   "kubeconfig-path",
@@ -50,11 +50,8 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func runE(flags *flags, cmd *cobra.Command, args []string) error {
-	ctx, err := cluster.NewContext(flags.Name, false)
-	if err != nil {
-		return fmt.Errorf("failed to create cluster context! %v", err)
-	}
+func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
+	ctx := cluster.NewContext(flags.Name)
 	fmt.Println(ctx.KubeConfigPath())
 	return nil
 }

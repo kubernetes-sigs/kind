@@ -17,13 +17,14 @@ limitations under the License.
 package nodeimage
 
 import (
-	log "github.com/sirupsen/logrus"
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/build/node"
 )
 
-type flags struct {
+type flagpole struct {
 	Source    string
 	BuildType string
 	Image     string
@@ -32,14 +33,14 @@ type flags struct {
 
 // NewCommand returns a new cobra.Command for building the node image
 func NewCommand() *cobra.Command {
-	flags := &flags{}
+	flags := &flagpole{}
 	cmd := &cobra.Command{
 		// TODO(bentheelder): more detailed usage
 		Use:   "node-image",
 		Short: "build the node image",
 		Long:  "build the node image which contains kubernetes build artifacts and other kind requirements",
-		Run: func(cmd *cobra.Command, args []string) {
-			run(flags, cmd, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runE(flags, cmd, args)
 		},
 	}
 	cmd.Flags().StringVar(
@@ -59,7 +60,7 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func run(flags *flags, cmd *cobra.Command, args []string) {
+func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	// TODO(bentheelder): make this more configurable
 	ctx, err := node.NewBuildContext(
 		node.WithMode(flags.BuildType),
@@ -67,10 +68,10 @@ func run(flags *flags, cmd *cobra.Command, args []string) {
 		node.WithBaseImage(flags.BaseImage),
 	)
 	if err != nil {
-		log.Fatalf("Error creating build context: %v", err)
+		return fmt.Errorf("error creating build context: %v", err)
 	}
-	err = ctx.Build()
-	if err != nil {
-		log.Fatalf("Error building node image: %v", err)
+	if err := ctx.Build(); err != nil {
+		return fmt.Errorf("error building node image: %v", err)
 	}
+	return nil
 }
