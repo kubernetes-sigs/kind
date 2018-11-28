@@ -23,5 +23,5 @@ This image is based on a minimal debian image (currently `k8s.gcr.io/debian-base
 due to high availability of tooling.  
 We strive to minimize the image size where possible.
 
-[base image]: ./../images/base
-[dockerfile]: ./../images/base/Dockerfile
+[base image]: ./../../images/base
+[dockerfile]: ./../../images/base/Dockerfile

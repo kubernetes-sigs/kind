@@ -85,10 +85,10 @@ $ kind build base-image --image base:v0.1.0
 ```
 
 
-[node image]: ./base-image.md
-[base image]: ./node-image.md
+[node image]: ../design/base-image.md
+[base image]: ../design/node-image.md
 [kind-example-config]: ./kind-example-config.yaml
-[pkg/build/base/sources]: ./../pkg/build/base/sources
+[pkg/build/base/sources]: ./../../pkg/build/base/sources
 [kubernetes]: https://github.com/kubernetes/kubernetes
 [kindest/node]: https://hub.docker.com/r/kindest/node/
 [kubectl]: https://kubernetes.io/docs/reference/kubectl/overview/
