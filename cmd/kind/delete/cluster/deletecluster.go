@@ -25,14 +25,14 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster"
 )
 
-type flags struct {
+type flagpole struct {
 	Name   string
 	Retain bool
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
 func NewCommand() *cobra.Command {
-	flags := &flags{}
+	flags := &flagpole{}
 	cmd := &cobra.Command{
 		// TODO(bentheelder): more detailed usage
 		Use:   "cluster",
@@ -46,7 +46,7 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func runE(flags *flags, cmd *cobra.Command, args []string) error {
+func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	ctx := cluster.NewContext(flags.Name)
 	if err := ctx.Delete(); err != nil {
 		return fmt.Errorf("Failed to delete cluster: %v", err)

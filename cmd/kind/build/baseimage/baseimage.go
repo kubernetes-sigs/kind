@@ -23,14 +23,14 @@ import (
 	"sigs.k8s.io/kind/pkg/build/base"
 )
 
-type flags struct {
+type flagpole struct {
 	Source string
 	Image  string
 }
 
 // NewCommand returns a new cobra.Command for building the base image
 func NewCommand() *cobra.Command {
-	flags := &flags{}
+	flags := &flagpole{}
 	cmd := &cobra.Command{
 		// TODO(bentheelder): more detailed usage
 		Use:   "base-image",
@@ -53,7 +53,7 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func run(flags *flags, cmd *cobra.Command, args []string) {
+func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	// TODO(bentheelder): make this more configurable
 	ctx := base.NewBuildContext(
 		base.WithImage(flags.Image),
