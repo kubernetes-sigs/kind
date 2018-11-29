@@ -150,6 +150,19 @@ func (n *Node) LoadImages() {
 // FixMounts will correct mounts in the node container to meet the right
 // sharing and permissions for systemd and Docker / Kubernetes
 func (n *Node) FixMounts() error {
+	// Check if userns-remap is enabled
+	if docker.UsernsRemap() {
+		// The binary /bin/mount should be owned by root:root in order to execute
+		// the following mount commands
+		if err := n.Command("chown", "root:root", "/bin/mount").Run(); err != nil {
+			return err
+		}
+		// The binary /bin/mount should have the setuid bit
+		if err := n.Command("chmod", "-s", "/bin/mount").Run(); err != nil {
+			return err
+		}
+	}
+
 	// systemd-in-a-container should have read only /sys
 	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
 	// however, we need other things from `docker run --privileged` ...
