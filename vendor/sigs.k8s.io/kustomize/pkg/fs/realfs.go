@@ -45,6 +45,11 @@ func (realFS) MkdirAll(name string) error {
 	return os.MkdirAll(name, 0777|os.ModeDir)
 }
 
+// RemoveAll delegates to os.RemoveAll.
+func (realFS) RemoveAll(name string) error {
+	return os.RemoveAll(name)
+}
+
 // Open delegates to os.Open.
 func (realFS) Open(name string) (File, error) { return os.Open(name) }
 

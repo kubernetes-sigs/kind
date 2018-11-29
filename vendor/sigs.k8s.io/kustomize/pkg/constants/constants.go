@@ -20,5 +20,12 @@ package constants
 // KustomizationFileSuffix is expected suffix for KustomizationFileName.
 const KustomizationFileSuffix = ".yaml"
 
+// SecondaryKustomizationFileSuffix is the second expected suffix when KustomizationFileSuffix is not found
+const SecondaryKustomizationFileSuffix = ".yml"
+
 // KustomizationFileName is the Well-Known File Name for a kustomize configuration file.
 const KustomizationFileName = "kustomization" + KustomizationFileSuffix
+
+// SecondaryKustomizationFileName is the secondary File Name for a kustomize configuration file when
+// KustomizationFileName is not found
+const SecondaryKustomizationFileName = "kustomization" + SecondaryKustomizationFileSuffix

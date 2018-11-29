@@ -51,7 +51,7 @@ func (rv *refvarTransformer) Transform(resources resmap.ResMap) error {
 				case interface{}:
 					s, ok := in.(string)
 					if !ok {
-						return nil, fmt.Errorf("%#v is expectd to be %T", in, s)
+						return nil, fmt.Errorf("%#v is expected to be %T", in, s)
 					}
 					runtimeVal := expansion.Expand(s, mappingFunc)
 					return runtimeVal, nil

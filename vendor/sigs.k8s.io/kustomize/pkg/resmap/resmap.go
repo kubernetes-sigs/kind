@@ -20,11 +20,11 @@ package resmap
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"reflect"
 	"sort"
 
 	"github.com/ghodss/yaml"
-	"github.com/golang/glog"
 	"sigs.k8s.io/kustomize/pkg/ifc"
 	"sigs.k8s.io/kustomize/pkg/resid"
 	"sigs.k8s.io/kustomize/pkg/resource"
@@ -121,16 +121,17 @@ func (m ResMap) DeepCopy(rf *resource.Factory) ResMap {
 	return mcopy
 }
 
-// FilterBy returns a ResMap containing ResIds with the same namespace and nameprefix
-// with the inputId
-// If inputId is a cluster level resource, return the original resmap
+// FilterBy returns a subset ResMap containing ResIds with
+// the same namespace and leftmost name prefix and rightmost name
+// as the inputId. If inputId is a cluster level resource, this
+// returns the original ResMap.
 func (m ResMap) FilterBy(inputId resid.ResId) ResMap {
 	if inputId.Gvk().IsClusterKind() {
 		return m
 	}
 	result := ResMap{}
 	for id, res := range m {
-		if id.Namespace() == inputId.Namespace() && id.HasSameLeftmostPrefix(inputId) {
+		if id.Namespace() == inputId.Namespace() && id.HasSameLeftmostPrefix(inputId) && id.HasSameRightmostSuffix(inputId) {
 			result[id] = res
 		}
 	}
@@ -180,17 +181,17 @@ func MergeWithOverride(maps ...ResMap) (ResMap, error) {
 				id = matchedId[0]
 				switch r.Behavior() {
 				case ifc.BehaviorReplace:
-					glog.V(4).Infof(
+					log.Printf(
 						"Replace %v with %v", result[id].Map(), r.Map())
 					r.Replace(result[id])
 					result[id] = r
 					result[id].SetBehavior(ifc.BehaviorCreate)
 				case ifc.BehaviorMerge:
-					glog.V(4).Infof(
+					log.Printf(
 						"Merging %v with %v", result[id].Map(), r.Map())
 					r.Merge(result[id])
 					result[id] = r
-					glog.V(4).Infof(
+					log.Printf(
 						"Merged object is %v", result[id].Map())
 					result[id].SetBehavior(ifc.BehaviorCreate)
 				default:

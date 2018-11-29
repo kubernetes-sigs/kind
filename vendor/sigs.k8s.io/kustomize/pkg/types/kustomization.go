@@ -42,6 +42,10 @@ type Kustomization struct {
 	// file including generated configmaps and secrets.
 	NamePrefix string `json:"namePrefix,omitempty" yaml:"namePrefix,omitempty"`
 
+	// NameSuffix will suffix the names of all resources mentioned in the kustomization
+	// file including generated configmaps and secrets.
+	NameSuffix string `json:"nameSuffix,omitempty" yaml:"nameSuffix,omitempty"`
+
 	// Namespace to add to all objects.
 	Namespace string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 
@@ -115,6 +119,9 @@ type Kustomization struct {
 
 	// GeneratorOptions modify behavior of all ConfigMap and Secret generators.
 	GeneratorOptions *GeneratorOptions `json:"generatorOptions,omitempty" yaml:"generatorOptions,omitempty"`
+
+	// Configurations is a list of transformer configuration files
+	Configurations []string `json:"configurations,omitempty" yaml:"configurations,omitempty"`
 
 	//
 	// Deprecated fields - See DealWithDeprecatedFields
@@ -249,8 +256,8 @@ type GeneratorOptions struct {
 	// resource generation.  Default at time of writing:  {'sh', '-c'}.
 	Shell []string `json:"shell,omitempty" yaml:"shell,omitempty"`
 
-	// DisableNameHash if true disables the default behavior of adding a
+	// DisableNameSuffixHash if true disables the default behavior of adding a
 	// suffix to the names of generated resources that is a hash of the
 	// resource contents.
-	DisableHash bool `json:"disableHash,omitempty" yaml:"disableHash,omitempty"`
+	DisableNameSuffixHash bool `json:"disableNameSuffixHash,omitempty" yaml:"disableNameSuffixHash,omitempty"`
 }

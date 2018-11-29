@@ -108,7 +108,7 @@ nameReference:
     kind: Job
   - path: spec/jobTemplate/spec/template/spec/volumes/configMap/name
     kind: CronJob
-  - path: spec/jobTemplate/spec/template/spec/containers/env/valueFrom/configmapKeyRef/name
+  - path: spec/jobTemplate/spec/template/spec/containers/env/valueFrom/configMapKeyRef/name
     kind: CronJob
   - path: spec/jobTemplate/spec/template/spec/initContainers/env/valueFrom/configMapKeyRef/name
     kind: CronJob
@@ -198,7 +198,7 @@ nameReference:
     kind: Job
   - path: spec/template/spec/imagePullSecrets/name
     kind: Job
-  - path: spec/jobTemplate/spec/template/sepc/volumes/secret/secretName
+  - path: spec/jobTemplate/spec/template/spec/volumes/secret/secretName
     kind: CronJob
   - path: spec/jobTemplate/spec/template/spec/containers/env/valueFrom/secretKeyRef/name
     kind: CronJob
