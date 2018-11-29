@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/kind/cmd/kind/delete"
 	"sigs.k8s.io/kind/cmd/kind/export"
 	"sigs.k8s.io/kind/cmd/kind/get"
+	"sigs.k8s.io/kind/cmd/kind/version"
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
 
@@ -53,6 +54,7 @@ func NewCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
 		},
+		Version: version.Version,
 	}
 	cmd.PersistentFlags().StringVar(
 		&flags.LogLevel,
@@ -66,6 +68,7 @@ func NewCommand() *cobra.Command {
 	cmd.AddCommand(delete.NewCommand())
 	cmd.AddCommand(export.NewCommand())
 	cmd.AddCommand(get.NewCommand())
+	cmd.AddCommand(version.NewCommand())
 	return cmd
 }
 
