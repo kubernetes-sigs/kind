@@ -24,13 +24,13 @@ import (
 
 // UsernsRemap checks if userns-remap is enabled in dockerd
 func UsernsRemap() bool {
-	cmd := exec.Command("cat", "/etc/docker/daemon.json")
+	cmd := exec.Command("docker", "info", "--format", "'{{json .SecurityOptions}}'")
 	lines, err := exec.CombinedOutputLines(cmd)
 	if err != nil {
 		return false
 	}
-	for _, l := range lines {
-		if strings.Contains(l, "userns-remap") {
+	if len(lines) > 0 {
+		if strings.Contains(lines[0], "name=userns") {
 			return true
 		}
 	}
