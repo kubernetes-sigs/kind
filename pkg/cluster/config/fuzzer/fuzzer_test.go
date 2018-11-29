@@ -14,9 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package v1alpha1 implements the v1alpha1 apiVersion of the `kind` Config
-//
-// +k8s:deepcopy-gen=package
-// +k8s:conversion-gen=sigs.k8s.io/kind/pkg/cluster/config
-// +k8s:defaulter-gen=TypeMeta
-package v1alpha1
+package fuzzer
+
+import (
+	"testing"
+
+	"k8s.io/apimachinery/pkg/api/apitesting/roundtrip"
+	"sigs.k8s.io/kind/pkg/cluster/config/encoding"
+)
+
+func TestRoundTripTypes(t *testing.T) {
+	roundtrip.RoundTripTestForAPIGroup(t, encoding.AddToScheme, Funcs)
+}

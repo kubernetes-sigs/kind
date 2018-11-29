@@ -26,14 +26,21 @@ cd "${REPO_ROOT}"
 GOBIN="${OUTPUT_GOBIN}" go install ./vendor/github.com/jteeuwen/go-bindata/go-bindata
 GOBIN="${OUTPUT_GOBIN}" go install ./vendor/k8s.io/code-generator/cmd/defaulter-gen
 GOBIN="${OUTPUT_GOBIN}" go install ./vendor/k8s.io/code-generator/cmd/deepcopy-gen
+GOBIN="${OUTPUT_GOBIN}" go install ./vendor/k8s.io/code-generator/cmd/conversion-gen
 
 # go generate (using go-bindata)
 # NOTE: go will only take package paths, not absolute directories
 export PATH="${OUTPUT_GOBIN}:${PATH}"
 go generate ./...
 deepcopy-gen -i ./pkg/cluster/config/ -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
+
 deepcopy-gen -i ./pkg/cluster/config/v1alpha1 -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
 defaulter-gen -i ./pkg/cluster/config/v1alpha1 -O zz_generated.default --go-header-file hack/boilerplate.go.txt
+conversion-gen -i ./pkg/cluster/config/v1alpha1 -O zz_generated.conversion --go-header-file hack/boilerplate.go.txt
+
+deepcopy-gen -i ./pkg/cluster/config/v1alpha2 -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
+defaulter-gen -i ./pkg/cluster/config/v1alpha2 -O zz_generated.default --go-header-file hack/boilerplate.go.txt
+conversion-gen -i ./pkg/cluster/config/v1alpha2 -O zz_generated.conversion --go-header-file hack/boilerplate.go.txt
 
 # gofmt the tree
 find . -path "./vendor" -prune -o -name "*.go" -type f -print0 | xargs -0 gofmt -s -w

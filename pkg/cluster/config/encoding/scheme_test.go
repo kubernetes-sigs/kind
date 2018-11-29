@@ -31,13 +31,23 @@ func TestLoadCurrent(t *testing.T) {
 		ExpectError bool
 	}{
 		{
-			Name:        "valid minimal",
-			Path:        "./testdata/valid-minimal.yaml",
+			Name:        "v1alpha1 valid minimal",
+			Path:        "./testdata/v1alpha1/valid-minimal.yaml",
 			ExpectError: false,
 		},
 		{
-			Name:        "valid with lifecyclehooks",
-			Path:        "./testdata/valid-with-lifecyclehooks.yaml",
+			Name:        "v1alpha1 valid with lifecyclehooks",
+			Path:        "./testdata/v1alpha1/valid-with-lifecyclehooks.yaml",
+			ExpectError: false,
+		},
+		{
+			Name:        "v1alpha2 valid minimal",
+			Path:        "./testdata/v1alpha2/valid-minimal.yaml",
+			ExpectError: false,
+		},
+		{
+			Name:        "v1alpha2 valid with lifecyclehooks",
+			Path:        "./testdata/v1alpha2/valid-with-lifecyclehooks.yaml",
 			ExpectError: false,
 		},
 		{

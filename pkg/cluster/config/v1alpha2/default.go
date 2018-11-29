@@ -14,9 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package v1alpha1 implements the v1alpha1 apiVersion of the `kind` Config
-//
-// +k8s:deepcopy-gen=package
-// +k8s:conversion-gen=sigs.k8s.io/kind/pkg/cluster/config
-// +k8s:defaulter-gen=TypeMeta
-package v1alpha1
+package v1alpha2
+
+import (
+	"k8s.io/apimachinery/pkg/runtime"
+)
+
+// DefaultImage is the default for the Config.Image field, aka the default node
+// image.
+const DefaultImage = "kindest/node:v1.12.2@sha256:6ac1dc1750fc0efd13d4e294115f9012a21282957e4380a5535bd32154193d4d"
+
+func addDefaultingFuncs(scheme *runtime.Scheme) error {
+	return RegisterDefaults(scheme)
+}
+
+// SetDefaults_Config sets uninitialized fields to their default value.
+func SetDefaults_Config(obj *Config) {
+	if obj.Image == "" {
+		obj.Image = DefaultImage
+	}
+}

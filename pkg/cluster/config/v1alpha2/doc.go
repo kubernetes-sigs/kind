@@ -14,9 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package v1alpha1 implements the v1alpha1 apiVersion of the `kind` Config
+// Package v1alpha2 implements the v1alpha2 apiVersion of the `kind` Config
+// that introduces multi node support
 //
 // +k8s:deepcopy-gen=package
 // +k8s:conversion-gen=sigs.k8s.io/kind/pkg/cluster/config
 // +k8s:defaulter-gen=TypeMeta
-package v1alpha1
+package v1alpha2
