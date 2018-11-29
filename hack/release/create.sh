@@ -22,7 +22,7 @@ set -o errexit
 set -o pipefail
 
 if [ "$#" -ne 2 ]; then
-    echo "Usage: create.sh relase-version next-prerelease-version"
+    echo "Usage: create.sh release-version next-prerelease-version"
     exit -1
 fi
 
@@ -37,32 +37,29 @@ set_version() {
     echo "Updated ${VERSION_FILE} for ${1}"
 }
 
-# make a commit denoting the version
+# make a commit denoting the version ($1)
 make_commit() {
     git add "${VERSION_FILE}"
     git commit -m "version ${1}"
     echo "Created commit for ${1}"
 }
 
+# add a git tag with $1
 add_tag() {
     git tag "${1}"
     echo "Tagged ${1}"
 }
 
-# update the version and create a commit and tag for it
-do_version() {
-    set_version "${1}"
-    make_commit "${1}"
-    add_tag "${1}"
-}
-
-# create the first version and build it
-do_version "${1}"
+# create the first version, tag and build it
+set_version "${1}"
+make_commit "${1}"
+add_tag "${1}"
 echo "Building ..."
 ./hack/build/cross.sh --clean
 
-# create the second version
-do_version "${2}"
+# update to the second version
+set_version "${2}"
+make_commit "${2}"
 
 # print follow-up instructions
 echo ""
@@ -70,5 +67,4 @@ echo "Created commits for ${1} and ${2}, you should now:"
 echo " - File a PR with these commits"
 echo " - Merge the PR"
 echo " - git push upstream ${1}"
-echo " - git push upstream ${2}"
 echo " - create a GitHub release from ${1}"
