@@ -586,13 +586,17 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ffa581eb5ad98b1079c8a88cbe6a66eb4df32f2d6ee564aac43091833bbe2cbf"
+  digest = "1:515b4fbb1eea749875ec8c9c99c239eea636b1b0ddcbb89feed234e18337c3e7"
   name = "k8s.io/apimachinery"
   packages = [
+    "pkg/api/apitesting",
+    "pkg/api/apitesting/fuzzer",
+    "pkg/api/apitesting/roundtrip",
     "pkg/api/equality",
     "pkg/api/meta",
     "pkg/api/resource",
     "pkg/api/validation",
+    "pkg/apis/meta/fuzzer",
     "pkg/apis/meta/v1",
     "pkg/apis/meta/v1/unstructured",
     "pkg/apis/meta/v1/validation",
@@ -610,6 +614,7 @@
     "pkg/runtime/serializer/versioning",
     "pkg/selection",
     "pkg/types",
+    "pkg/util/diff",
     "pkg/util/errors",
     "pkg/util/framer",
     "pkg/util/intstr",
@@ -629,7 +634,7 @@
     "third_party/forked/golang/reflect",
   ]
   pruneopts = "NUT"
-  revision = "c6dd271be00615c6fa8c91fdf63381265a5f0e4e"
+  revision = "4a9a8137c0a17bc4594f544987b3f0d48b2e3d3a"
 
 [[projects]]
   digest = "1:ae9ced9ef7b8eb2794a4f80bc3af9d2bc38ec7d60337367bad9a655c1d641458"
@@ -640,10 +645,13 @@
   version = "v7.0.0"
 
 [[projects]]
-  branch = "release-1.11"
-  digest = "1:647030d10eaa615a2739ce4c41db3d6739157d4530aa73fe70a75047d35047fd"
+  branch = "master"
+  digest = "1:ef080ef376602b9b540ef693385fdcae8d75e904680e8c6b4952de8f3ca8a9d2"
   name = "k8s.io/code-generator"
   packages = [
+    "cmd/conversion-gen",
+    "cmd/conversion-gen/args",
+    "cmd/conversion-gen/generators",
     "cmd/deepcopy-gen",
     "cmd/deepcopy-gen/args",
     "cmd/defaulter-gen",
@@ -651,11 +659,11 @@
     "pkg/util",
   ]
   pruneopts = "NT"
-  revision = "8c97d6ab64da020f8b151e9d3ed8af3172f5c390"
+  revision = "405721ab9678fde04d78961eec9498820d80408d"
 
 [[projects]]
   branch = "master"
-  digest = "1:5249c83f0fb9e277b2d28c19eca814feac7ef05dc762e4deaf0a2e4b1a7c5df3"
+  digest = "1:aa52b6c20603be5f6d64dcd44f594ea82baa8f30fa27f16ff580a9f32769efa8"
   name = "k8s.io/gengo"
   packages = [
     "args",
@@ -668,7 +676,15 @@
     "types",
   ]
   pruneopts = "NUT"
-  revision = "4242d8e6c5dba56827bb7bcf14ad11cda38f3991"
+  revision = "fd15ee9cc2f77baa4f31e59e6acbf21146455073"
+
+[[projects]]
+  digest = "1:9cc257b3c9ff6a0158c9c661ab6eebda1fe8a4a4453cd5c4044dc9a2ebfb992b"
+  name = "k8s.io/klog"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "a5bc97fbc634d635061f3146511332c7e313a55a"
+  version = "v0.1.0"
 
 [[projects]]
   branch = "master"
@@ -717,24 +733,36 @@
   pruneopts = "NUT"
   revision = "6a917c5f363c79fb4ffbca8c50f31f803bc3eb61"
 
+[[projects]]
+  digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
+  name = "sigs.k8s.io/yaml"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "fd68e9863619f6ec2fdd8625fe1f02e7c877e480"
+  version = "v1.1.0"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
     "github.com/golang/dep/cmd/dep",
     "github.com/golang/lint/golint",
+    "github.com/google/gofuzz",
     "github.com/jteeuwen/go-bindata/go-bindata",
     "github.com/pkg/errors",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
     "golang.org/x/crypto/ssh/terminal",
+    "k8s.io/apimachinery/pkg/api/apitesting/roundtrip",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
+    "k8s.io/apimachinery/pkg/conversion",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/runtime/serializer",
     "k8s.io/apimachinery/pkg/util/runtime",
     "k8s.io/apimachinery/pkg/util/sets",
     "k8s.io/apimachinery/pkg/util/version",
+    "k8s.io/code-generator/cmd/conversion-gen",
     "k8s.io/code-generator/cmd/deepcopy-gen",
     "k8s.io/code-generator/cmd/defaulter-gen",
     "sigs.k8s.io/kustomize/k8sdeps",
