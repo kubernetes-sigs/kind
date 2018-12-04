@@ -52,7 +52,7 @@ RUN chmod +x /usr/local/bin/clean-install
 RUN clean-install \
       apt-transport-https ca-certificates curl software-properties-common gnupg2 lsb-release \
       systemd systemd-sysv libsystemd0 \
-      iptables iproute2 ethtool socat util-linux mount ebtables udev kmod aufs-tools \
+      conntrack iptables iproute2 ethtool socat util-linux mount ebtables udev kmod aufs-tools \
       bash rsync \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
     && rm -f /lib/systemd/system/multi-user.target.wants/* \
