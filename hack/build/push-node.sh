@@ -36,7 +36,7 @@ KIND="${KIND:-$(get_kind)}"
 
 # generate tag
 DATE="$(date +v%Y%m%d)"
-TAG="${DATE}-$(git describe --tags --always --dirty)"
+TAG="${DATE}-$(git describe --always --dirty)"
 
 # build
 set -x
