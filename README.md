@@ -44,7 +44,7 @@ For more usage see [the docs][user guide] or run `kind [command] --help`
 Please reach out for bugs, feature requests, and other issues!  
 The maintainers of this project are reachable via:
 
-- [Kubernetes Slack] in the [#sig-testing] channel
+- [Kubernetes Slack] in the [#kind] channel
 - [filing an issue] against this repo
 - The Kubernetes [SIG-Testing Mailing List]
 
@@ -82,7 +82,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [filing an issue]: https://github.com/kubernetes-sigs/kind/issues/new
 [Kubernetes Slack]: http://slack.k8s.io/
-[#sig-testing]: https://kubernetes.slack.com/messages/C09QZ4DQB/
+[#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
 [docs/todo.md]: ./docs/todo.md
 [install docker]: https://docs.docker.com/install/
 [@BenTheElder]: https://github.com/BenTheElder
