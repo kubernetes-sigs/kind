@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,34 +19,20 @@ package args
 import (
 	"fmt"
 
-	"github.com/spf13/pflag"
 	"k8s.io/gengo/args"
 )
 
-// CustomArgs is used by the gengo framework to pass args specific to this generator.
-type CustomArgs struct{}
-
 // NewDefaults returns default arguments for the generator.
-func NewDefaults() (*args.GeneratorArgs, *CustomArgs) {
+func NewDefaults() *args.GeneratorArgs {
 	genericArgs := args.Default().WithoutDefaultFlagParsing()
-	customArgs := &CustomArgs{}
-	genericArgs.CustomArgs = customArgs
-	genericArgs.OutputFileBaseName = "openapi_generated"
-	return genericArgs, customArgs
+	genericArgs.OutputFileBaseName = "zz_generated.register"
+	return genericArgs
 }
-
-// AddFlags add the generator flags to the flag set.
-func (ca *CustomArgs) AddFlags(fs *pflag.FlagSet) {}
 
 // Validate checks the given arguments.
 func Validate(genericArgs *args.GeneratorArgs) error {
-	_ = genericArgs.CustomArgs.(*CustomArgs)
-
 	if len(genericArgs.OutputFileBaseName) == 0 {
 		return fmt.Errorf("output file base name cannot be empty")
-	}
-	if len(genericArgs.OutputPackagePath) == 0 {
-		return fmt.Errorf("output package cannot be empty")
 	}
 
 	return nil

@@ -27,6 +27,7 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/config/v1alpha1"
+	"sigs.k8s.io/kind/pkg/cluster/config/v1alpha2"
 )
 
 // Scheme is the runtime.Scheme to which all `kind` config API versions and types are registered.
@@ -43,13 +44,14 @@ func init() {
 func AddToScheme(scheme *runtime.Scheme) {
 	utilruntime.Must(config.AddToScheme(scheme))
 	utilruntime.Must(v1alpha1.AddToScheme(scheme))
-	utilruntime.Must(scheme.SetVersionPriority(v1alpha1.SchemeGroupVersion))
+	utilruntime.Must(v1alpha2.AddToScheme(scheme))
+	utilruntime.Must(scheme.SetVersionPriority(v1alpha2.SchemeGroupVersion))
 }
 
 // newDefaultedConfig creates a new, defaulted `kind` Config
 // Defaulting uses Scheme registered defaulting functions
 func newDefaultedConfig() *config.Config {
-	var cfg = &v1alpha1.Config{}
+	var cfg = &v1alpha2.Config{}
 
 	// apply defaults
 	Scheme.Default(cfg)
@@ -64,7 +66,7 @@ func newDefaultedConfig() *config.Config {
 // unmarshalConfig attempt to decode data into a `kind` Config; data can be
 // one of the different API versions defined in the Scheme.
 func unmarshalConfig(data []byte) (*config.Config, error) {
-	var cfg = &v1alpha1.Config{}
+	var cfg = &v1alpha2.Config{}
 
 	// decode data into a config object
 	_, _, err := Codecs.UniversalDecoder().Decode(data, nil, cfg)

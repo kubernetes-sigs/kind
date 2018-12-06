@@ -25,7 +25,6 @@ import (
 
 // Config contains cluster creation config
 // This is the current internal config type used by cluster
-// Other API versions can be converted to this struct with Convert()
 type Config struct {
 	metav1.TypeMeta
 
@@ -50,10 +49,6 @@ type ControlPlane struct {
 	// NodeLifecycle contains LifecycleHooks for phases of node provisioning
 	NodeLifecycle *NodeLifecycle `json:"nodeLifecycle,omitempty"`
 }
-
-// ensure current version implements the common interface for
-// conversion, validation, etc.
-// var _ Any = &Config{}
 
 // NodeLifecycle contains LifecycleHooks for phases of node provisioning
 // Within each phase these hooks run in the order specified
