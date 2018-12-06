@@ -36,16 +36,6 @@ var (
 	AddToScheme = localSchemeBuilder.AddToScheme
 )
 
-// Kind takes an unqualified kind and returns a Group qualified GroupKind.
-func Kind(kind string) schema.GroupKind {
-	return SchemeGroupVersion.WithKind(kind).GroupKind()
-}
-
-// Resource takes an unqualified resource and returns a Group qualified GroupResource
-func Resource(resource string) schema.GroupResource {
-	return SchemeGroupVersion.WithResource(resource).GroupResource()
-}
-
 func init() {
 	// We only register manually written functions here. The registration of the
 	// generated functions takes place in the generated files. The separation
@@ -55,7 +45,7 @@ func init() {
 
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
-		&Config{},
+		&Node{},
 	)
 
 	return nil

@@ -27,13 +27,17 @@ import (
 // Funcs returns custom fuzzer functions for the `kind` Config.
 func Funcs(codecs runtimeserializer.CodecFactory) []interface{} {
 	return []interface{}{
-		fuzzConfig,
+		fuzzNode,
 	}
 }
 
-func fuzzConfig(obj *config.Config, c fuzz.Continue) {
+func fuzzNode(obj *config.Node, c fuzz.Continue) {
 	c.FuzzNoCustom(obj)
 
-	// Pinning values for fields that get defaults if fuzz value is empty string or nil (thus making the round trip test fail)
-	obj.Image = "fuzzimage:latest"
+	// Pinning values for fields that get defaults if fuzz value is empty string or nil
+	obj.Image = "foo:bar"
+	obj.Role = "baz"
+
+	// Pinning default values for `kind` internal state fields
+	obj.Name = ""
 }

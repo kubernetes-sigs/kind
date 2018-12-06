@@ -28,9 +28,13 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
 }
 
-// SetDefaults_Config sets uninitialized fields to their default value.
-func SetDefaults_Config(obj *Config) {
+// SetDefaults_Node sets uninitialized fields to their default value.
+func SetDefaults_Node(obj *Node) {
 	if obj.Image == "" {
 		obj.Image = DefaultImage
+	}
+
+	if obj.Role == "" {
+		obj.Role = ControlPlaneRole
 	}
 }
