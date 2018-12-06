@@ -35,6 +35,11 @@ For a sample kind configuration file see
 To use a kind configuration file use the `--config` flag and pass the path to
 the file.
 
+If you want the `create cluster` command to block until the control plane
+reaches a ready status, you can use the `--wait` flag and specify a timeout.
+To use `--wait` you must specify the units of the time to wait. For example, to
+wait for 30 seconds, do `--wait 30s`, for 5 minutes do `--wait 5m`, etc.
+
 
 ## Building Images
 

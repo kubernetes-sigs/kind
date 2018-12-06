@@ -19,6 +19,7 @@ package nodes
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/kind/pkg/cluster/consts"
@@ -98,4 +99,38 @@ func list(visit func(string, *Node), filters ...string) error {
 		visit(cluster, FromID(names[0]))
 	}
 	return nil
+}
+
+// WaitForReady uses kubectl inside the "node" container to check if the
+// control plane nodes are "Ready".
+func WaitForReady(node *Node, until time.Time) bool {
+	return tryUntil(until, func() bool {
+		cmd := node.Command(
+			"kubectl",
+			"--kubeconfig=/etc/kubernetes/admin.conf",
+			"get",
+			"nodes",
+			"--selector=node-role.kubernetes.io/master",
+			// When the node reaches status ready, the status field will be set
+			// to true.
+			"-o=jsonpath='{.items..status.conditions[-1:].status}'",
+		)
+		lines, err := exec.CombinedOutputLines(cmd)
+		if err != nil {
+			return false
+		}
+
+		// 'lines' will return the status of all nodes labeled as master. For
+		// example, if we have three control plane nodes, and all are ready,
+		// then the status will have the following format: `True True True'.
+		status := strings.Fields(lines[0])
+		for _, s := range status {
+			// Check node status. If node is ready then this wil be 'True',
+			// 'False' or 'Unkown' otherwise.
+			if !strings.Contains(s, "True") {
+				return false
+			}
+		}
+		return true
+	})
 }

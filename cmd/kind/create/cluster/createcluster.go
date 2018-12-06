@@ -19,6 +19,7 @@ package cluster
 
 import (
 	"fmt"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -33,6 +34,7 @@ type flagpole struct {
 	Config    string
 	ImageName string
 	Retain    bool
+	Wait      time.Duration
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
@@ -50,6 +52,7 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().StringVar(&flags.Config, "config", "", "path to a kind config file")
 	cmd.Flags().StringVar(&flags.ImageName, "image", "", "node docker image to use for booting the cluster")
 	cmd.Flags().BoolVar(&flags.Retain, "retain", false, "retain nodes for debugging when cluster creation fails")
+	cmd.Flags().DurationVar(&flags.Wait, "wait", time.Duration(0), "Wait for control plane node to be ready (default 0s)")
 	return cmd
 }
 
@@ -81,7 +84,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("aborting due to invalid configuration")
 		}
 	}
-	if err = ctx.Create(cfg, flags.Retain); err != nil {
+	if err = ctx.Create(cfg, flags.Retain, flags.Wait); err != nil {
 		return fmt.Errorf("failed to create cluster: %v", err)
 	}
 
