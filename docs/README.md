@@ -19,5 +19,5 @@ out.
 
 
 [design]: ./design/
-[user guide]: ./user/user-guide.md
+[user guide]: ./user/
 [dev guide]: ./devel/

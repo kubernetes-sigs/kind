@@ -76,7 +76,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [kubetest]: https://github.com/kubernetes/test-infra/tree/master/kubetest
 [kubeadm]: https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/
 [design doc]: ./docs/design/
-[user guide]: ./docs/user/user-guide.md
+[user guide]: ./docs/user/
 [the docs]: ./docs
 [SIG-Testing Mailing List]: https://groups.google.com/forum/#!forum/kubernetes-sig-testing
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
