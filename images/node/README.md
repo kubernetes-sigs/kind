@@ -12,4 +12,4 @@ Roughly this image is [the base image](./../base), with the addition of:
 See [`docs/node-image`][docs/node-image.md] for more design details.
 
 [pkg/build/node_image.go]: ./../../pkg/build/node/node.go
-[docs/node-image.md]: ./../../docs/node-image.md
+[docs/node-image.md]: ./../../docs/design/node-image.md
