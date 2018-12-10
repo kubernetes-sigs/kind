@@ -14,11 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package consts contains well known constants for kind clusters
-package consts
+package docker
 
-// ClusterLabelKey is applied to each "node" docker container for identification
-const ClusterLabelKey = "io.k8s.sigs.kind.cluster"
+import (
+	"fmt"
 
-// ClusterRoleKey is applied to each "node" docker container for categorization of nodes by role
-const ClusterRoleKey = "io.k8s.sigs.kind.role"
+	"sigs.k8s.io/kind/pkg/exec"
+)
+
+// Inspect return low-level information on containers
+func Inspect(containerNameOrID, format string) ([]string, error) {
+	cmd := exec.Command("docker", "inspect",
+		"-f", // format
+		fmt.Sprintf("'%s'", format),
+		containerNameOrID, // ... against the "node" container
+	)
+
+	return exec.CombinedOutputLines(cmd)
+}

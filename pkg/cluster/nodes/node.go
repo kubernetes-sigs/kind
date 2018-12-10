@@ -23,6 +23,8 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -66,6 +68,8 @@ func (n *Node) Command(command string, args ...string) exec.Cmd {
 // like node.nodeCache = nodeCache{}
 type nodeCache struct {
 	kubernetesVersion string
+	ip                string
+	ports             map[int]int
 	containerCmder    exec.Cmder
 }
 
@@ -202,15 +206,64 @@ func (n *Node) KubeVersion() (version string, err error) {
 	return n.nodeCache.kubernetesVersion, nil
 }
 
+// IP returns the IP address of the node
+func (n *Node) IP() (ip string, err error) {
+	// use the cached version first
+	if n.nodeCache.ip != "" {
+		return n.nodeCache.ip, nil
+	}
+	// retrive the IP address of the node using docker inspect
+	lines, err := docker.Inspect(n.nameOrID, "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}")
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get file")
+	}
+	if len(lines) != 1 {
+		return "", fmt.Errorf("file should only be one line, got %d lines", len(lines))
+	}
+	n.nodeCache.ip = strings.Trim(lines[0], "'")
+	return n.nodeCache.ip, nil
+}
+
+// Ports returns a specific port mapping for the node
+// Node by convention use well known ports internally, while random port
+// are used for making the `kind` cluster accessible from the host machine
+func (n *Node) Ports(containerPort int) (hostPort int, err error) {
+	// use the cached version first
+	if hostPort, ok := n.nodeCache.ports[containerPort]; ok {
+		return hostPort, nil
+	}
+	// retrive the specific port mapping using docker inspect
+	lines, err := docker.Inspect(n.nameOrID, fmt.Sprintf("{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}", containerPort))
+	if err != nil {
+		return -1, errors.Wrap(err, "failed to get file")
+	}
+	if len(lines) != 1 {
+		return -1, fmt.Errorf("file should only be one line, got %d lines", len(lines))
+	}
+
+	if n.nodeCache.ports == nil {
+		n.nodeCache.ports = map[int]int{}
+	}
+
+	n.nodeCache.ports[containerPort], err = strconv.Atoi(strings.Trim(lines[0], "'"))
+	if err != nil {
+		return -1, errors.Wrap(err, "failed to get file")
+	}
+	return n.nodeCache.ports[containerPort], nil
+}
+
 // matches kubeconfig server entry like:
 //    server: https://172.17.0.2:6443
 // which we rewrite to:
 //    server: https://localhost:$PORT
-var serverAddressRE = regexp.MustCompile(`^(\s+server:) https://.*:(\d+)$`)
+var serverAddressRE = regexp.MustCompile(`^(\s+server:) https://.*:\d+$`)
 
 // WriteKubeConfig writes a fixed KUBECONFIG to dest
 // this should only be called on a control plane node
-func (n *Node) WriteKubeConfig(dest string) error {
+// While copyng to the host machine the control plane address
+// is replaced with local host and the control plane port with
+// a randomly generated port reserved during node creation.
+func (n *Node) WriteKubeConfig(dest string, hostPort int) error {
 	cmd := n.Command("cat", "/etc/kubernetes/admin.conf")
 	lines, err := exec.CombinedOutputLines(cmd)
 	if err != nil {
@@ -222,7 +275,7 @@ func (n *Node) WriteKubeConfig(dest string) error {
 	for _, line := range lines {
 		match := serverAddressRE.FindStringSubmatch(line)
 		if len(match) > 1 {
-			line = fmt.Sprintf("%s https://localhost:%s", match[1], match[len(match)-1])
+			line = fmt.Sprintf("%s https://localhost:%d", match[1], hostPort)
 		}
 		buff.WriteString(line)
 		buff.WriteString("\n")
