@@ -18,6 +18,18 @@ By default, the cluster will be given the name `kind-1`. "1," here, is the
 default context name. 
 Use the `--name` flag to assign the cluster a different context name.
 
+**Note**: If you are running `kind` on MacOS or Windows then it is recommended
+that you have at least 4GB of RAM and disk space (these are estimates for a
+single node `kind` cluster) dedicated to the virtual machine (VM) running the
+Docker engine otherwise the Kubernetes cluster might fail to start up.
+
+To change the resource limits for the Docker engine you'll need to open the
+**Preferences** menu, go to the **Advanced** settings page, and change the
+settings there, see [changing Docker's resource limits][Docker resource lims].
+
+You may also try removing any unused data left by the Docker engine - e.g.,
+`docker system prune`.
+
 
 ## Interacting With Your Cluster
 After [creating a cluster](#creating-a-cluster), you can use [kubectl][kubectl]
@@ -179,3 +191,4 @@ The logs contain information about the Docker host, the containers running
 [kubernetes]: https://github.com/kubernetes/kubernetes
 [kindest/node]: https://hub.docker.com/r/kindest/node/
 [kubectl]: https://kubernetes.io/docs/reference/kubectl/overview/
+[Docker resource lims]: https://docs.docker.com/docker-for-mac/#advanced
