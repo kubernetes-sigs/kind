@@ -80,14 +80,14 @@ wait for 30 seconds, do `--wait 30s`, for 5 minutes do `--wait 5m`, etc.
 
 ## Building Images
 
-`kind` runs a local Kubernetes cluster by using Docker containers as "nodes."
+`kind` runs a local Kubernetes cluster by using Docker containers as "nodes".
 `kind` uses the [`node-image`][node image] to run Kubernetes artifacts, such
 as `kubeadm` or `kubelet`.
 The `node-image` in turn is built off the [`base-image`][base image], which
 installs all the dependencies needed for Docker and Kubernetes to run in a
 container.
 
-See [base image](#base-image), for more advanced information information.
+See [base image](#base-image), for more advanced information.
 
 Currently, `kind` supports three different ways to build a `node-image`: via
 `apt`, or if you have the [Kubernetes][kubernetes] source in your host machine
