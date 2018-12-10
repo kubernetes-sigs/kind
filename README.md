@@ -35,7 +35,7 @@ To delete your cluster use `kind delete cluster`
 <!--TODO(bentheelder): improve this part of the guide-->
 To create a cluster from Kubernetes source:
 - ensure that Kubernetes is cloned in `$(go env GOPATH)/src/k8s.io/kubernetes`
-- build a node image and create a cluster with `kind build node-image && kind create cluster`  
+- build a node image and create a cluster with `kind build node-image && kind create cluster --image kindest/node:latest`
 
 For more usage see [the docs][user guide] or run `kind [command] --help`
 
