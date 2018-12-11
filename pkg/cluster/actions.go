@@ -44,7 +44,7 @@ type Task struct {
 	// task should be executed
 	TargetNodes NodeSelector
 	// Run the func that implements the task action
-	Run func(ec *execContext, configNode *config.Node) error
+	Run func(*execContext, *config.Node) error
 }
 
 // NodeSelector defines a function returning a subset of nodes where tasks
@@ -151,12 +151,6 @@ func (t ExecutionPlan) Less(i, j int) bool {
 	return t[i].ExecutionOrder() < t[j].ExecutionOrder()
 }
 
-// Swap two elements of the ExecutionPlan.
-// It is required for making ExecutionPlan sortable.
-func (t ExecutionPlan) Swap(i, j int) {
-	t[i], t[j] = t[j], t[i]
-}
-
 // ExecutionOrder returns a string that can be used for sorting planned tasks
 // into a predictable, "kubeadm friendly" and consistent order.
 // NB. we are using a string to combine all the item considered into something
@@ -168,14 +162,21 @@ func (p *PlannedTask) ExecutionOrder() string {
 		// plane, then complete provisioning of secondary control planes, and
 		// finally provision worker nodes.
 		p.Node.ProvisioningOrder(),
+		// Node name is considered in order to get a predictable/repeatable ordering
+		// in case of many nodes with the same ProvisioningOrder
 		p.Node.Name,
-
-		// When planning task for one machine, the given order of actions will
+		// If both the two criteria above are equal, the given order of actions will
 		// be respected and, for each action, the predefined order of tasks
 		// will be used
 		p.actionIndex,
 		p.taskIndex,
 	)
+}
+
+// Swap two elements of the ExecutionPlan.
+// It is required for making ExecutionPlan sortable.
+func (t ExecutionPlan) Swap(i, j int) {
+	t[i], t[j] = t[j], t[i]
 }
 
 // SelectAllNodes is a NodeSelector that returns all the nodes defined in

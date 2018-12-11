@@ -131,7 +131,7 @@ func createNode(name, image, clusterLabel string, extraArgs ...string) (handle *
 		return handle, errors.Wrap(err, "docker run error")
 	}
 
-	// Deletes the machine-id embedded in the node imaga and regenerate a new one.
+	// Deletes the machine-id embedded in the node image and regenerate a new one.
 	// This is necessary because both kubelet and other components like weave net
 	// use machine-id internally to distinguish nodes.
 	if err := handle.Command("rm", "-f", "/etc/machine-id").Run(); err != nil {
