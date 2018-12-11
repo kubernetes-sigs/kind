@@ -87,7 +87,7 @@ The `node-image` in turn is built off the [`base-image`][base image], which
 installs all the dependencies needed for Docker and Kubernetes to run in a
 container.
 
-See [base image](#base-image), for more advanced information.
+See [building the base image](#building-the-base-image) for more advanced information.
 
 Currently, `kind` supports three different ways to build a `node-image`: via
 `apt`, or if you have the [Kubernetes][kubernetes] source in your host machine
@@ -172,8 +172,8 @@ The structure of the logs will look more or less like this:
 The logs contain information about the Docker host, the containers running 
 `kind`, the Kubernetes cluster itself, etc.
 
-[node image]: ../design/base-image.md
-[base image]: ../design/node-image.md
+[node image]: ../design/node-image.md
+[base image]: ../design/base-image.md
 [kind-example-config]: ./kind-example-config.yaml
 [pkg/build/base/sources]: ./../../pkg/build/base/sources
 [kubernetes]: https://github.com/kubernetes/kubernetes
