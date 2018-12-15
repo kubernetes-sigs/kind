@@ -48,7 +48,8 @@ The maintainers of this project are reachable via:
 - [filing an issue] against this repo
 - The Kubernetes [SIG-Testing Mailing List]
 
-Current maintainers (approvers) are [@BenTheElder] and [@munnerz].
+Current maintainers (approvers) are [@BenTheElder] and [@munnerz] - feel free to
+reach out if you have any questions!
 
 Pull Requests are very welcome!  
 See the [issue tracker] if you're unsure where to start, or feel free to reach out to discuss.
