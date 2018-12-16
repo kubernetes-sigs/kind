@@ -22,7 +22,7 @@ import (
 
 // DefaultImage is the default for the Config.Image field, aka the default node
 // image.
-const DefaultImage = "kindest/node:v1.12.2@sha256:6ac1dc1750fc0efd13d4e294115f9012a21282957e4380a5535bd32154193d4d"
+const DefaultImage = "kindest/node:v1.12.3@sha256:f0ecb1066697d9417365ca58410132e512ce2010763470bb28c1e8f7fef55464"
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
