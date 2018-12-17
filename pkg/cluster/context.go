@@ -178,6 +178,15 @@ func (c *Context) Delete() error {
 	if err != nil {
 		return fmt.Errorf("error listing nodes: %v", err)
 	}
+
+	// clean up the kind kube config file that was created earlier
+	// also let the user know that they need to unset $KUBECONFIG to
+	// go back to their normal contexts
+	os.Remove(c.KubeConfigPath())
+	if os.Getenv("KUBECONFIG") == c.KubeConfigPath() {
+		fmt.Printf("kind kubectl config file removed, but you will need to unset KUBECONFIG to return to your normal contexts:\n\nunset KUBECONFIG\n")
+	}
+
 	return nodes.Delete(n...)
 }
 
