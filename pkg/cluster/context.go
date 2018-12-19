@@ -215,8 +215,9 @@ func (cc *createContext) provisionControlPlane(
 	if err != nil {
 		return "",  err
 	}
-	meta = &ControlPlaneMeta{
+	cc.ControlPlaneMeta = &ControlPlaneMeta{
 		APIServerPort: port,
+		// TODO (@kris-nova) add node information
 	}
 
 	cc.status.Start(fmt.Sprintf("[%s] Fixing mounts 🗻", nodeName))
