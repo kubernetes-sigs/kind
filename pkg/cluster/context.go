@@ -42,16 +42,18 @@ import (
 
 // Context is used to create / manipulate kubernetes-in-docker clusters
 type Context struct {
-	name string
+	name             string
+	ControlPlaneMeta *ControlPlaneMeta
 }
 
 // createContext is a superset of Context used by helpers for Context.Create()
 type createContext struct {
 	*Context
-	status       *logutil.Status
-	config       *config.Config
-	retain       bool          // if we should retain nodes after failing to create.
-	waitForReady time.Duration // Wait for the control plane node to be ready.
+	status           *logutil.Status
+	config           *config.Config
+	retain           bool          // if we should retain nodes after failing to create.
+	waitForReady     time.Duration // Wait for the control plane node to be ready.
+	ControlPlaneMeta *ControlPlaneMeta
 }
 
 // similar to valid docker container names, but since we will prefix
@@ -154,6 +156,7 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 	kubeadmConfig, err := cc.provisionControlPlane(
 		fmt.Sprintf("kind-%s-control-plane", c.name),
 	)
+	c.ControlPlaneMeta = cc.ControlPlaneMeta
 
 	// clean up the kubeadm config file
 	// NOTE: in the future we will use this for other nodes first
@@ -193,6 +196,14 @@ func (c *Context) Delete() error {
 	return nodes.Delete(n...)
 }
 
+// ControlPlaneMeta tracks various outputs that are relevant to the control plane created with Kind.
+// Here we can define things like ports and listen or bind addresses as needed.
+type ControlPlaneMeta struct {
+
+	//APIServerPort is the port that the container is forwarding to the Kubernetes API server running in the container
+	APIServerPort int
+}
+
 // provisionControlPlane provisions the control plane node
 // and the cluster kubeadm config
 func (cc *createContext) provisionControlPlane(
@@ -204,6 +215,10 @@ func (cc *createContext) provisionControlPlane(
 	if err != nil {
 		return "", err
 	}
+	cc.ControlPlaneMeta = &ControlPlaneMeta{
+		APIServerPort: port,
+		// TODO (@kris-nova) add node information
+	}
 
 	cc.status.Start(fmt.Sprintf("[%s] Fixing mounts 🗻", nodeName))
 	// we need to change a few mounts once we have the container
@@ -214,6 +229,7 @@ func (cc *createContext) provisionControlPlane(
 		if !cc.retain {
 			nodes.Delete(*node)
 		}
+
 		return "", err
 	}
 
