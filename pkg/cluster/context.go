@@ -42,17 +42,17 @@ import (
 
 // Context is used to create / manipulate kubernetes-in-docker clusters
 type Context struct {
-	name string
+	name             string
 	ControlPlaneMeta *ControlPlaneMeta
 }
 
 // createContext is a superset of Context used by helpers for Context.Create()
 type createContext struct {
 	*Context
-	status       *logutil.Status
-	config       *config.Config
-	retain       bool          // if we should retain nodes after failing to create.
-	waitForReady time.Duration // Wait for the control plane node to be ready.
+	status           *logutil.Status
+	config           *config.Config
+	retain           bool          // if we should retain nodes after failing to create.
+	waitForReady     time.Duration // Wait for the control plane node to be ready.
 	ControlPlaneMeta *ControlPlaneMeta
 }
 
@@ -213,7 +213,7 @@ func (cc *createContext) provisionControlPlane(
 	// create the "node" container (docker run, but it is paused, see createNode)
 	node, port, err := nodes.CreateControlPlaneNode(nodeName, cc.config.Image, cc.ClusterLabel())
 	if err != nil {
-		return "",  err
+		return "", err
 	}
 	cc.ControlPlaneMeta = &ControlPlaneMeta{
 		APIServerPort: port,
@@ -229,6 +229,7 @@ func (cc *createContext) provisionControlPlane(
 		if !cc.retain {
 			nodes.Delete(*node)
 		}
+
 		return "", err
 	}
 
@@ -248,7 +249,7 @@ func (cc *createContext) provisionControlPlane(
 		if !cc.retain {
 			nodes.Delete(*node)
 		}
-		return "",  err
+		return "", err
 	}
 
 	cc.status.Start(fmt.Sprintf("[%s] Waiting for docker to be ready 🐋", nodeName))
