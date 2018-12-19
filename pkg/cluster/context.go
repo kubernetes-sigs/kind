@@ -43,6 +43,7 @@ import (
 // Context is used to create / manipulate kubernetes-in-docker clusters
 type Context struct {
 	name string
+	ControlPlaneMeta *ControlPlaneMeta
 }
 
 // createContext is a superset of Context used by helpers for Context.Create()
@@ -52,6 +53,7 @@ type createContext struct {
 	config       *config.Config
 	retain       bool          // if we should retain nodes after failing to create.
 	waitForReady time.Duration // Wait for the control plane node to be ready.
+	ControlPlaneMeta *ControlPlaneMeta
 }
 
 // similar to valid docker container names, but since we will prefix
@@ -154,6 +156,7 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 	kubeadmConfig, err := cc.provisionControlPlane(
 		fmt.Sprintf("kind-%s-control-plane", c.name),
 	)
+	c.ControlPlaneMeta = cc.ControlPlaneMeta
 
 	// clean up the kubeadm config file
 	// NOTE: in the future we will use this for other nodes first
@@ -193,6 +196,14 @@ func (c *Context) Delete() error {
 	return nodes.Delete(n...)
 }
 
+// ControlPlaneMeta tracks various outputs that are relevant to the control plane created with Kind.
+// Here we can define things like ports and listen or bind addresses as needed.
+type ControlPlaneMeta struct {
+
+	//APIServerPort is the port that the container is forwarding to the Kubernetes API server running in the container
+	APIServerPort int
+}
+
 // provisionControlPlane provisions the control plane node
 // and the cluster kubeadm config
 func (cc *createContext) provisionControlPlane(
@@ -202,7 +213,10 @@ func (cc *createContext) provisionControlPlane(
 	// create the "node" container (docker run, but it is paused, see createNode)
 	node, port, err := nodes.CreateControlPlaneNode(nodeName, cc.config.Image, cc.ClusterLabel())
 	if err != nil {
-		return "", err
+		return "",  err
+	}
+	meta = &ControlPlaneMeta{
+		APIServerPort: port,
 	}
 
 	cc.status.Start(fmt.Sprintf("[%s] Fixing mounts 🗻", nodeName))
@@ -233,7 +247,7 @@ func (cc *createContext) provisionControlPlane(
 		if !cc.retain {
 			nodes.Delete(*node)
 		}
-		return "", err
+		return "",  err
 	}
 
 	cc.status.Start(fmt.Sprintf("[%s] Waiting for docker to be ready 🐋", nodeName))
