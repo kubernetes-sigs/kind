@@ -699,6 +699,14 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:ff54706d46de40c865b5fcfc4bde1087c02510cd12e0150de8e405ab427d9907"
+  name = "k8s.io/utils"
+  packages = ["pointer"]
+  pruneopts = "NUT"
+  revision = "0d26856f57b32ec3398579285e5c8a2bfe8c5243"
+
+[[projects]]
+  branch = "master"
   digest = "1:9dbda414956b2af5c2e24cbc54074ed7158902912bde8c0a0ec7f7344a309720"
   name = "sigs.k8s.io/kustomize"
   packages = [
@@ -765,6 +773,7 @@
     "k8s.io/code-generator/cmd/conversion-gen",
     "k8s.io/code-generator/cmd/deepcopy-gen",
     "k8s.io/code-generator/cmd/defaulter-gen",
+    "k8s.io/utils/pointer",
     "sigs.k8s.io/kustomize/k8sdeps",
     "sigs.k8s.io/kustomize/pkg/commands/build",
     "sigs.k8s.io/kustomize/pkg/fs",
