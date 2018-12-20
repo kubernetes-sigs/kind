@@ -23,29 +23,29 @@ import (
 )
 
 // TODO(fabriziopandini): ideally this should use scheme.Default, but this creates a circular dependency
-// So the current solution is to mimic defaulting for the validation test, but probably there should be a better solution here
-func newDefaultedConfig() *Config {
-	cfg := &Config{
+// So the current solution is to mimic defaulting for the validation test
+func newDefaultedNode(role NodeRole) Node {
+	return Node{
+		Role:  role,
 		Image: "myImage:latest",
 	}
-	return cfg
 }
 
-func TestConfigValidate(t *testing.T) {
+func TestNodeValidate(t *testing.T) {
 	cases := []struct {
-		TestName       string
-		Config         *Config
-		ExpectedErrors int
+		TestName     string
+		Node         Node
+		ExpectErrors int
 	}{
 		{
-			TestName:       "Canonical config",
-			Config:         newDefaultedConfig(),
-			ExpectedErrors: 0,
+			TestName:     "Canonical node",
+			Node:         newDefaultedNode(ControlPlaneRole),
+			ExpectErrors: 0,
 		},
 		{
 			TestName: "Invalid PreBoot hook",
-			Config: func() *Config {
-				cfg := newDefaultedConfig()
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
 				cfg.ControlPlane = &ControlPlane{
 					NodeLifecycle: &NodeLifecycle{
 						PreBoot: []LifecycleHook{
@@ -57,12 +57,12 @@ func TestConfigValidate(t *testing.T) {
 				}
 				return cfg
 			}(),
-			ExpectedErrors: 1,
+			ExpectErrors: 1,
 		},
 		{
 			TestName: "Invalid PreKubeadm hook",
-			Config: func() *Config {
-				cfg := newDefaultedConfig()
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
 				cfg.ControlPlane = &ControlPlane{
 					NodeLifecycle: &NodeLifecycle{
 						PreKubeadm: []LifecycleHook{
@@ -75,12 +75,12 @@ func TestConfigValidate(t *testing.T) {
 				}
 				return cfg
 			}(),
-			ExpectedErrors: 1,
+			ExpectErrors: 1,
 		},
 		{
 			TestName: "Invalid PostKubeadm hook",
-			Config: func() *Config {
-				cfg := newDefaultedConfig()
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
 				cfg.ControlPlane = &ControlPlane{
 					NodeLifecycle: &NodeLifecycle{
 						PostKubeadm: []LifecycleHook{
@@ -93,39 +93,134 @@ func TestConfigValidate(t *testing.T) {
 				}
 				return cfg
 			}(),
-			ExpectedErrors: 1,
+			ExpectErrors: 1,
 		},
 		{
 			TestName: "Empty image field",
-			Config: func() *Config {
-				cfg := newDefaultedConfig()
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
 				cfg.Image = ""
 				return cfg
 			}(),
-			ExpectedErrors: 1,
+			ExpectErrors: 1,
+		},
+		{
+			TestName: "Empty role field",
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg.Role = ""
+				return cfg
+			}(),
+			ExpectErrors: 1,
+		},
+		{
+			TestName: "Unknows role field",
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg.Role = "ssss"
+				return cfg
+			}(),
+			ExpectErrors: 1,
 		},
 	}
 
 	for _, tc := range cases {
-		err := tc.Config.Validate()
-		// the error can be:
-		// - nil, in which case we should expect no errors or fail
-		if err == nil {
-			if tc.ExpectedErrors != 0 {
-				t.Errorf("received no errors but expected errors for case %s", tc.TestName)
+		t.Run(tc.TestName, func(t2 *testing.T) {
+			err := tc.Node.Validate()
+			// the error can be:
+			// - nil, in which case we should expect no errors or fail
+			if err == nil {
+				if tc.ExpectErrors != 0 {
+					t2.Error("received no errors but expected errors for case")
+				}
+				return
 			}
-			continue
-		}
-		// - not castable to *Errors, in which case we have the wrong error type ...
-		configErrors, ok := err.(*util.Errors)
-		if !ok {
-			t.Errorf("config.Validate should only return nil or ConfigErrors{...}, got: %v for case: %s", err, tc.TestName)
-			continue
-		}
-		// - ConfigErrors, in which case expect a certain number of errors
-		errors := configErrors.Errors()
-		if len(errors) != tc.ExpectedErrors {
-			t.Errorf("expected %d errors but got len(%v) = %d for case: %s", tc.ExpectedErrors, errors, len(errors), tc.TestName)
-		}
+			// - not castable to *Errors, in which case we have the wrong error type ...
+			configErrors, ok := err.(util.Errors)
+			if !ok {
+				t2.Errorf("config.Validate should only return nil or ConfigErrors{...}, got: %v", err)
+				return
+			}
+			// - ConfigErrors, in which case expect a certain number of errors
+			errors := configErrors.Errors()
+			if len(errors) != tc.ExpectErrors {
+				t2.Errorf("expected %d errors but got len(%v) = %d", tc.ExpectErrors, errors, len(errors))
+			}
+		})
+	}
+}
+
+func TestConfigValidate(t *testing.T) {
+	cases := []struct {
+		TestName     string
+		Nodes        []Node
+		ExpectErrors int
+	}{
+		{
+			TestName: "Canonical config",
+			Nodes: []Node{
+				newDefaultedNode(ControlPlaneRole),
+			},
+		},
+		{
+			TestName:     "Fail without at least one control plane",
+			ExpectErrors: 1,
+		},
+		{
+			TestName: "Fail without at load balancer and more than one control plane",
+			Nodes: []Node{
+				newDefaultedNode(ControlPlaneRole),
+				newDefaultedNode(ControlPlaneRole),
+			},
+			ExpectErrors: 1,
+		},
+		{
+			TestName: "Fail with not valid nodes",
+			Nodes: []Node{
+				func() Node {
+					cfg := newDefaultedNode(ControlPlaneRole)
+					cfg.Image = ""
+					return cfg
+				}(),
+				func() Node {
+					cfg := newDefaultedNode(ControlPlaneRole)
+					cfg.Role = ""
+					return cfg
+				}(),
+			},
+			ExpectErrors: 2,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.TestName, func(t2 *testing.T) {
+			var c = Config{Nodes: tc.Nodes}
+			if err := c.DeriveInfo(); err != nil {
+				t.Fatalf("unexpected error while adding nodes: %v", err)
+			}
+
+			// validating config
+			err := c.Validate()
+
+			// the error can be:
+			// - nil, in which case we should expect no errors or fail
+			if err == nil {
+				if tc.ExpectErrors != 0 {
+					t2.Error("received no errors but expected errors")
+				}
+				return
+			}
+			// - not castable to *Errors, in which case we have the wrong error type ...
+			configErrors, ok := err.(util.Errors)
+			if !ok {
+				t2.Errorf("config.Validate should only return nil or ConfigErrors{...}, got: %v", err)
+				return
+			}
+			// - ConfigErrors, in which case expect a certain number of errors
+			errors := configErrors.Errors()
+			if len(errors) != tc.ExpectErrors {
+				t2.Errorf("expected %d errors but got len(%v) = %d", tc.ExpectErrors, errors, len(errors))
+			}
+		})
 	}
 }

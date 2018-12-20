@@ -140,7 +140,11 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 	cc.status.MaybeWrapLogrus(log.StandardLogger())
 
 	defer cc.status.End(false)
-	image := cfg.Image
+
+	// TODO(fabrizio pandini): usage of BootStrapControlPlane() in this file is temporary / WIP
+	// kind v1alpha2 config fully supports multi nodes, but the cluster creation logic implemented in
+	// in this file does not (yet).
+	image := cfg.BootStrapControlPlane().Image
 	if strings.Contains(image, "@sha256:") {
 		image = strings.Split(image, "@sha256:")[0]
 	}
@@ -148,7 +152,7 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 
 	// attempt to explicitly pull the image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
-	_, _ = docker.PullIfNotPresent(cfg.Image, 4)
+	_, _ = docker.PullIfNotPresent(cfg.BootStrapControlPlane().Image, 4)
 
 	// TODO(bentheelder): multiple nodes ...
 	kubeadmConfig, err := cc.provisionControlPlane(
@@ -200,7 +204,7 @@ func (cc *createContext) provisionControlPlane(
 ) (kubeadmConfigPath string, err error) {
 	cc.status.Start(fmt.Sprintf("[%s] Creating node container 📦", nodeName))
 	// create the "node" container (docker run, but it is paused, see createNode)
-	node, port, err := nodes.CreateControlPlaneNode(nodeName, cc.config.Image, cc.ClusterLabel())
+	node, port, err := nodes.CreateControlPlaneNode(nodeName, cc.config.BootStrapControlPlane().Image, cc.ClusterLabel())
 	if err != nil {
 		return "", err
 	}
@@ -218,8 +222,8 @@ func (cc *createContext) provisionControlPlane(
 	}
 
 	// run any pre-boot hooks
-	if cc.config.ControlPlane != nil && cc.config.ControlPlane.NodeLifecycle != nil {
-		for _, hook := range cc.config.ControlPlane.NodeLifecycle.PreBoot {
+	if cc.config.BootStrapControlPlane().ControlPlane != nil && cc.config.BootStrapControlPlane().ControlPlane.NodeLifecycle != nil {
+		for _, hook := range cc.config.BootStrapControlPlane().ControlPlane.NodeLifecycle.PreBoot {
 			if err := runHook(node, &hook, "preBoot"); err != nil {
 				return "", err
 			}
@@ -285,8 +289,8 @@ func (cc *createContext) provisionControlPlane(
 	}
 
 	// run any pre-kubeadm hooks
-	if cc.config.ControlPlane != nil && cc.config.ControlPlane.NodeLifecycle != nil {
-		for _, hook := range cc.config.ControlPlane.NodeLifecycle.PreKubeadm {
+	if cc.config.BootStrapControlPlane().ControlPlane != nil && cc.config.BootStrapControlPlane().ControlPlane.NodeLifecycle != nil {
+		for _, hook := range cc.config.BootStrapControlPlane().ControlPlane.NodeLifecycle.PreKubeadm {
 			if err := runHook(node, &hook, "preKubeadm"); err != nil {
 				return kubeadmConfig, err
 			}
@@ -314,8 +318,8 @@ func (cc *createContext) provisionControlPlane(
 	}
 
 	// run any post-kubeadm hooks
-	if cc.config.ControlPlane != nil && cc.config.ControlPlane.NodeLifecycle != nil {
-		for _, hook := range cc.config.ControlPlane.NodeLifecycle.PostKubeadm {
+	if cc.config.BootStrapControlPlane().ControlPlane != nil && cc.config.BootStrapControlPlane().ControlPlane.NodeLifecycle != nil {
+		for _, hook := range cc.config.BootStrapControlPlane().ControlPlane.NodeLifecycle.PostKubeadm {
 			if err := runHook(node, &hook, "postKubeadm"); err != nil {
 				return kubeadmConfig, err
 			}
@@ -356,8 +360,8 @@ func (cc *createContext) provisionControlPlane(
 	}
 
 	// run any post-overlay hooks
-	if cc.config.ControlPlane != nil && cc.config.ControlPlane.NodeLifecycle != nil {
-		for _, hook := range cc.config.ControlPlane.NodeLifecycle.PostSetup {
+	if cc.config.BootStrapControlPlane().ControlPlane != nil && cc.config.BootStrapControlPlane().ControlPlane.NodeLifecycle != nil {
+		for _, hook := range cc.config.BootStrapControlPlane().ControlPlane.NodeLifecycle.PostSetup {
 			if err := runHook(node, &hook, "postSetup"); err != nil {
 				return kubeadmConfig, err
 			}
@@ -426,8 +430,8 @@ func (c *Context) createKubeadmConfig(cfg *config.Config, data kubeadm.ConfigDat
 	// apply patches
 	patchedConfig, err := kustomize.Build(
 		[]string{config},
-		cfg.KubeadmConfigPatches,
-		cfg.KubeadmConfigPatchesJSON6902,
+		cfg.BootStrapControlPlane().KubeadmConfigPatches,
+		cfg.BootStrapControlPlane().KubeadmConfigPatchesJSON6902,
 	)
 	if err != nil {
 		os.Remove(path)
