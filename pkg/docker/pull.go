@@ -19,9 +19,8 @@ package docker
 import (
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // PullIfNotPresent will pull an image if it is not present locally
@@ -48,7 +47,8 @@ func Pull(image string, retries int) error {
 	if err != nil {
 		for i := 0; i < retries; i++ {
 			time.Sleep(time.Second * time.Duration(i+1))
-			log.WithError(err).Infof("Trying again to pull image: %s ...", image)
+			log.Error(err)
+			log.Infof("Trying again to pull image: %s ...", image)
 			// TODO(bentheelder): add some backoff / sleep?
 			err = exec.Command("docker", "pull", image).Run()
 			if err == nil {
@@ -57,7 +57,8 @@ func Pull(image string, retries int) error {
 		}
 	}
 	if err != nil {
-		log.WithError(err).Infof("Failed to pull image: %s", image)
+		log.Error(err)
+		log.Infof("Failed to pull image: %s", image)
 	}
 	return err
 }

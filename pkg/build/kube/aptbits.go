@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // AptBits implements Bits for the official upstream debian packages

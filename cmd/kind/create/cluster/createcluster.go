@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/config/encoding"
+	"sigs.k8s.io/kind/pkg/log"
 	"sigs.k8s.io/kind/pkg/util"
 )
 

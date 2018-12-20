@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/consts"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
+	"sigs.k8s.io/kind/pkg/log"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/kubeadm"
@@ -139,7 +139,7 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 
 	fmt.Printf("Creating cluster '%s' ...\n", c.ClusterName())
 	cc.status = logutil.NewStatus(os.Stdout)
-	cc.status.MaybeWrapLogrus(log.StandardLogger())
+	cc.status.MaybeWrapLogger(log.GetLogger())
 
 	defer cc.status.End(false)
 	image := cfg.Image
@@ -384,7 +384,7 @@ func (cc *createContext) provisionControlPlane(
 	isReady := nodes.WaitForReady(node, time.Now().Add(cc.waitForReady))
 	if cc.waitForReady > 0 {
 		if !isReady {
-			log.Warn("timed out waiting for control plane to be ready")
+			log.Warning("timed out waiting for control plane to be ready")
 		}
 	}
 
@@ -404,21 +404,19 @@ func addDefaultStorageClass(controlPlane *nodes.Node) error {
 // runHook runs a LifecycleHook on the node
 // It will only return an error if hook.MustSucceed is true
 func runHook(node *nodes.Node, hook *config.LifecycleHook, phase string) error {
-	logger := log.WithFields(log.Fields{
-		"node":  node.String(),
-		"phase": phase,
-	})
+	log.Infof("node: %s, phase: %s", node.String(), phase)
 	if hook.Name != "" {
-		logger.Infof("Running LifecycleHook \"%s\" ...", hook.Name)
+		log.Infof("Running LifecycleHook \"%s\" ...", hook.Name)
 	} else {
-		logger.Info("Running LifecycleHook ...")
+		log.Info("Running LifecycleHook ...")
 	}
 	if err := node.Command(hook.Command[0], hook.Command[1:]...).Run(); err != nil {
+		log.Error(err)
 		if hook.MustSucceed {
-			logger.WithError(err).Error("LifecycleHook failed")
+			log.Error("LifecycleHook failed")
 			return err
 		}
-		logger.WithError(err).Warn("LifecycleHook failed, continuing ...")
+		log.Warning("LifecycleHook failed, continuing ...")
 	}
 	return nil
 }

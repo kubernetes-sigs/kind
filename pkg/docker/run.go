@@ -20,9 +20,8 @@ import (
 	"fmt"
 	"regexp"
 
-	log "github.com/sirupsen/logrus"
-
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // Docker container IDs are hex, more than one character, and on their own line

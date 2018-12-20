@@ -18,11 +18,12 @@ limitations under the License.
 package kind
 
 import (
+	"io"
 	"os"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/cmd/kind/build"
@@ -31,7 +32,7 @@ import (
 	"sigs.k8s.io/kind/cmd/kind/export"
 	"sigs.k8s.io/kind/cmd/kind/get"
 	"sigs.k8s.io/kind/cmd/kind/version"
-	logutil "sigs.k8s.io/kind/pkg/log"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 const defaultLevel = logrus.WarnLevel
@@ -60,7 +61,7 @@ func NewCommand() *cobra.Command {
 		&flags.LogLevel,
 		"loglevel",
 		defaultLevel.String(),
-		"logrus log level "+logutil.LevelsString(),
+		"logrus log level "+levelsString(),
 	)
 	// add all top level subcommands
 	cmd.AddCommand(build.NewCommand())
@@ -74,13 +75,13 @@ func NewCommand() *cobra.Command {
 
 func runE(flags *Flags, cmd *cobra.Command, args []string) error {
 	level := defaultLevel
-	parsed, err := log.ParseLevel(flags.LogLevel)
+	parsed, err := logrus.ParseLevel(flags.LogLevel)
 	if err != nil {
-		log.Warnf("Invalid log level '%s', defaulting to '%s'", flags.LogLevel, level)
+		log.Warningf("Invalid log level '%s', defaulting to '%s'", flags.LogLevel, level)
 	} else {
 		level = parsed
 	}
-	log.SetLevel(level)
+	logrus.SetLevel(level)
 	return nil
 }
 
@@ -91,20 +92,50 @@ func Run() error {
 
 // Main wraps Run, adding a log.Fatal(err) on error, and setting the log formatter
 func Main() {
+	// Use a custom logger. Note that logrus.Logger already almost satisfies the log.Logger interface,
+	// but another logger might not do that, in which case wrapper methods have to be defined.
+	customLogger := &logger{Logger: *logrus.New()}
+	log.SetLogger(customLogger)
 	// let's explicitly set stdout
 	log.SetOutput(os.Stdout)
 	// this formatter is the default, but the timestamps output aren't
 	// particularly useful, they're relative to the command start
-	log.SetFormatter(&log.TextFormatter{
+	customLogger.Logger.Formatter = &logrus.TextFormatter{
 		FullTimestamp:   true,
 		TimestampFormat: "15:04:05",
 		// we force colors because this only forces over the isTerminal check
 		// and this will not be accurately checkable later on when we wrap
 		// the logger output with our logutil.StatusFriendlyWriter
-		ForceColors: logutil.IsTerminal(log.StandardLogger().Out),
-	})
+		ForceColors: log.IsTerminal(log.Output()),
+	}
 	if err := Run(); err != nil {
 		os.Stderr.WriteString(err.Error() + "\n")
 		os.Exit(-1)
 	}
+}
+
+// levelsString returns a string representing all log levels
+// this is useful for help text / flag info
+func levelsString() string {
+	var b strings.Builder
+	b.WriteString("[")
+	for i, level := range logrus.AllLevels {
+		b.WriteString(level.String())
+		if i+1 != len(logrus.AllLevels) {
+			b.WriteString(", ")
+		}
+	}
+	b.WriteString("]")
+	return b.String()
+}
+
+// logger is a custom logger that wraps the logrus Logger struct.
+type logger struct {
+	logrus.Logger
+}
+
+// Output defines a method for returning the logger output (io.Writer).
+// For some reason logrus does not have this method.
+func (l *logger) Output() io.Writer {
+	return l.Logger.Out
 }

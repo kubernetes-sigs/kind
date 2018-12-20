@@ -20,7 +20,7 @@ import (
 	"io"
 	osexec "os/exec"
 
-	log "github.com/sirupsen/logrus"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // LocalCmd wraps os/exec.Cmd, implementing the kind/pkg/exec.Cmd interface

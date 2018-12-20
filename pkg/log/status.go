@@ -22,10 +22,8 @@ import (
 	"io"
 	"os"
 
-	"sigs.k8s.io/kind/pkg/log/fidget"
-
-	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh/terminal"
+	"sigs.k8s.io/kind/pkg/log/fidget"
 )
 
 // Status is used to track ongoing status in a CLI, with a nice loading spinner
@@ -71,9 +69,9 @@ func (s *Status) WrapWriter(w io.Writer) io.Writer {
 	}
 }
 
-// WrapLogrus wraps a logrus logger's output with a StatusFriendlyWriter
-func (s *Status) WrapLogrus(logger *logrus.Logger) {
-	logger.SetOutput(s.WrapWriter(logger.Out))
+// WrapLogger wraps a Logger's output with a StatusFriendlyWriter
+func (s *Status) WrapLogger(logger Logger) {
+	logger.SetOutput(s.WrapWriter(logger.Output()))
 }
 
 // MaybeWrapWriter returns a StatusFriendlyWriter for w IFF w and spinner's
@@ -85,9 +83,9 @@ func (s *Status) MaybeWrapWriter(w io.Writer) io.Writer {
 	return w
 }
 
-// MaybeWrapLogrus behaves like MaybeWrapWriter for a logrus logger
-func (s *Status) MaybeWrapLogrus(logger *logrus.Logger) {
-	logger.SetOutput(s.MaybeWrapWriter(logger.Out))
+// MaybeWrapLogger behaves like MaybeWrapWriter for a Logger object
+func (s *Status) MaybeWrapLogger(logger Logger) {
+	logger.SetOutput(s.MaybeWrapWriter(logger.Output()))
 }
 
 // IsTerminal returns true if the writer w is a terminal
