@@ -21,6 +21,8 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
+	"runtime"
 
 	"sigs.k8s.io/kustomize/k8sdeps"
 	"sigs.k8s.io/kustomize/pkg/commands/build"
@@ -51,13 +53,19 @@ func Build(resources, patches []string, patchesJSON6902 []PatchJSON6902) (string
 	memFS := fs.MakeFakeFS()
 	var kustomization bytes.Buffer
 	fakeDir := "/"
+	// for Windows we need this to be a drive because kustomize uses filepath.Abs()
+	// which will add a drive letter if there is none. which drive letter is
+	// unimportant as the path is on the fake filesystem anyhow
+	if runtime.GOOS == "windows" {
+		fakeDir = `C:\\`
+	}
 
 	// NOTE: we always write this header as you cannot build without any resources
 	kustomization.WriteString("resources:\n")
 	for i, resource := range resources {
 		// this cannot error per docs
 		name := fmt.Sprintf("resource-%d.yaml", i)
-		_ = memFS.WriteFile(fakeDir+name, []byte(resource))
+		_ = memFS.WriteFile(filepath.Join(fakeDir, name), []byte(resource))
 		fmt.Fprintf(&kustomization, " - %s\n", name)
 	}
 
@@ -67,7 +75,7 @@ func Build(resources, patches []string, patchesJSON6902 []PatchJSON6902) (string
 	for i, patch := range patches {
 		// this cannot error per docs
 		name := fmt.Sprintf("patch-%d.yaml", i)
-		_ = memFS.WriteFile(fakeDir+name, []byte(patch))
+		_ = memFS.WriteFile(filepath.Join(fakeDir, name), []byte(patch))
 		fmt.Fprintf(&kustomization, " - %s\n", name)
 	}
 
@@ -77,7 +85,7 @@ func Build(resources, patches []string, patchesJSON6902 []PatchJSON6902) (string
 	for i, patch := range patchesJSON6902 {
 		// this cannot error per docs
 		name := fmt.Sprintf("patch-json6902-%d.yaml", i)
-		_ = memFS.WriteFile(fakeDir+name, []byte(patch.Patch))
+		_ = memFS.WriteFile(filepath.Join(fakeDir, name), []byte(patch.Patch))
 		fmt.Fprintf(&kustomization, " - path: %s\n", name)
 		fmt.Fprintf(&kustomization, "   target:\n")
 		fmt.Fprintf(&kustomization, "     group: %s\n", patch.Group)
@@ -91,7 +99,7 @@ func Build(resources, patches []string, patchesJSON6902 []PatchJSON6902) (string
 		}
 	}
 
-	memFS.WriteFile(fakeDir+"kustomization.yaml", kustomization.Bytes())
+	memFS.WriteFile(filepath.Join(fakeDir, "kustomization.yaml"), kustomization.Bytes())
 
 	// now we can build the kustomization
 	var out bytes.Buffer
