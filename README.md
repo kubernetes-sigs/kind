@@ -7,61 +7,106 @@
 </a> <a href="https://goreportcard.com/report/sigs.k8s.io/kind"><img alt="Go Report Card" src="https://goreportcard.com/badge/sigs.k8s.io/kind" /></a>
 
 
-`kind` is a tool for running local Kubernetes clusters using Docker container "nodes".  
-`kind` is primarily designed for testing Kubernetes 1.11+, initially targeting the [conformance tests].
+`kind` is a tool for running local Kubernetes clusters using Docker container as "nodes".  
+`kind` is primarily designed for testing Kubernetes 1.11+.
+It initially targets the [conformance tests].
 
-If you have [go] and [docker] installed `go get sigs.k8s.io/kind && kind create cluster` is all you need!
+If you have [Go] and [Docker] installed, the following commands are all you need!
 
-<img src="https://gist.githubusercontent.com/BenTheElder/621bc321fc6d9506fd936feb36d32dd0/raw/7fe14e9d0929cab428929ca6c501abc990c07359/kind-create-cluster.gif" alt="2x speed `kind create cluster` demo" />
+```console
+go get -u sigs.k8s.io/kind
+kind create cluster
+export KUBECONFIG=$(kind get kubeconfig-path)
+```
+
+<img src="https://gist.githubusercontent.com/BenTheElder/621bc321fc6d9506fd936feb36d32dd0/raw/7fe14e9d0929cab428929ca6c501abc990c07359/kind-create-cluster.gif" alt="kind create cluster" />
 
 `kind` consists of:
  - Go [packages][packages] implementing [cluster creation][cluster package], [image build][build package], etc.
  - A command line interface ([`kind`][kind cli]) built on these packages.
  - Docker [image(s)][images] written to run systemd, Kubernetes, etc.
- - [`kubetest`][kubetest] integration also built on these packages (WIP)
+ - [`kubetest`][kubetest] integration also built on these packages (currently WIP).
 
-`kind` bootstraps each "node" with [kubeadm][kubeadm]. For more details see [the design documentation][design doc].  
+`kind` bootstraps each "node" with [kubeadm][kubeadm].
+For more details see [the design documentation][design doc].  
 
-**NOTE**: `kind` is still a work in progress, see [docs/todo.md].
+**NOTE**: `kind` is still a work in progress.
+See [docs/todo.md] for a list of pending tasks.
 
-## Installation and usage
+## Installation
 
-You can install `kind` with `go get sigs.k8s.io/kind`
+You can install `kind` by running:
 
-To use `kind`, you will need to [install docker].  
-Once you have docker running you can create a cluster with `kind create cluster`  
-To delete your cluster use `kind delete cluster`
+```console
+go get -u sigs.k8s.io/kind
+```
 
-<!--TODO(bentheelder): improve this part of the guide-->
-To create a cluster from Kubernetes source:
-- ensure that Kubernetes is cloned in `$(go env GOPATH)/src/k8s.io/kubernetes`
-- build a node image and create a cluster with `kind build node-image && kind create cluster --image kindest/node:latest`
+## Usage
 
-For more usage see [the docs][user guide] or run `kind [command] --help`
+To use `kind`, you need to [install Docker].
+Once you have Docker running you can create a cluster by running:
+
+```console
+kind create cluster
+```
+
+To point at the newly created cluster, you can run:
+
+```console
+export KUBECONFIG=$(kind get kubeconfig-path)
+```
+
+To delete your cluster after you're done testing, use the following command:
+
+```console
+kind delete cluster
+```
+
+## Using a custom version of Kubernetes
+
+To create a cluster from a specific Kubernetes version, you must ensure the following:
+
+- That Kubernetes is cloned in `$(go env GOPATH)/src/k8s.io/kubernetes`.
+- That the tag/commit you want to use is checked out in the above directory.
+
+Then, you must build the base and node images (replacing `<base-image>` and `<node-image>` as desired):
+
+```console
+kind build base-image --image <base-image>
+kind build node-image --base-image <base-image> --image <node-image>
+```
+
+After having performed these steps, you can launch a Kubernetes cluster by running:
+
+```console
+kind create cluster --image <node-image>
+```
+
+For more usage details check [the documentation][user guide] or run `kind [command] --help`
 
 ## Community, discussion, contribution, and support
 
-Please reach out for bugs, feature requests, and other issues!  
+Please reach out for bugs, feature requests, and other issues!
 The maintainers of this project are reachable via:
 
 - [Kubernetes Slack] in the [#kind] channel
-- [filing an issue] against this repo
+- [Filing an issue] against this repo
 - The Kubernetes [SIG-Testing Mailing List]
 
 Current maintainers (approvers) are [@BenTheElder] and [@munnerz].
 
-Pull Requests are very welcome!  
+Pull Requests are very welcome!
 See the [issue tracker] if you're unsure where to start, or feel free to reach out to discuss.
 
-See also: the Kubernetes [community page].
+See also the Kubernetes [community page].
 
 ### Code of conduct
 
 Participation in the Kubernetes community is governed by the [Kubernetes Code of Conduct].
 
 <!--links-->
-[go]: https://golang.org/
-[docker]: https://www.docker.com/
+[Go]: https://golang.org/
+[Docker]: https://www.docker.com/
 [community page]: http://kubernetes.io/community/
 [Kubernetes Code of Conduct]: code-of-conduct.md
 [Go Report Card Badge]: https://goreportcard.com/badge/sigs.k8s.io/kind
