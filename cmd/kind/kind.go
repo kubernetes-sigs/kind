@@ -20,8 +20,6 @@ package kind
 import (
 	"os"
 
-	"github.com/sirupsen/logrus"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -34,7 +32,7 @@ import (
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
 
-const defaultLevel = logrus.WarnLevel
+const defaultLevel = log.WarnLevel
 
 // Flags for the kind command
 type Flags struct {
