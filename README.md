@@ -13,7 +13,7 @@ Pre-Request Installations: [Go] and [Docker] <br>
  $ kind create cluster
  $ kind delete cluster
  ```
-For more usage see [the docs][user guide] or run `kind [command] --help`
+For more usage see [the documentation][user guide] or run `kind [command] --help`
  
 <img src="https://gist.githubusercontent.com/BenTheElder/621bc321fc6d9506fd936feb36d32dd0/raw/7fe14e9d0929cab428929ca6c501abc990c07359/kind-create-cluster.gif" alt="2x speed `kind create cluster` demo" /> <br>
 
