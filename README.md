@@ -26,7 +26,10 @@ If you have [go] and [docker] installed `go get sigs.k8s.io/kind && kind create 
 
 ## Installation and usage
 
-You can install `kind` with `go get sigs.k8s.io/kind`
+You can install `kind` with `go get sigs.k8s.io/kind`. This will put `kind` in
+`$(go env GOPATH)/bin`. You may need to add that directory to your `$PATH` as
+shown [here](https://golang.org/doc/code.html#GOPATH) if you encounter the error
+`kind: command not found` after installation.
 
 To use `kind`, you will need to [install docker].  
 Once you have docker running you can create a cluster with `kind create cluster`  
