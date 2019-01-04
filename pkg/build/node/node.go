@@ -72,6 +72,13 @@ func WithMode(mode string) Option {
 	}
 }
 
+// WithKuberoot sets the path to the Kubernetes source directory (if empty, the path will be autodetected)
+func WithKuberoot(root string) Option {
+	return func(b *BuildContext) {
+		b.kubeRoot = root
+	}
+}
+
 // BuildContext is used to build the kind node image, and contains
 // build configuration
 type BuildContext struct {
@@ -99,18 +106,20 @@ func NewBuildContext(options ...Option) (ctx *BuildContext, err error) {
 	for _, option := range options {
 		option(ctx)
 	}
-	// lookup kuberoot unless mode == "apt",
-	// apt should not fail on finding kube root as it does not use it
-	kubeRoot := ""
-	if ctx.mode != "apt" {
-		kubeRoot, err = kube.FindSource()
-		if err != nil {
-			return nil, fmt.Errorf("error finding kuberoot: %v", err)
+	if ctx.kubeRoot == "" {
+		// lookup kuberoot unless mode == "apt",
+		// apt should not fail on finding kube root as it does not use it
+		kubeRoot := ""
+		if ctx.mode != "apt" {
+			kubeRoot, err = kube.FindSource()
+			if err != nil {
+				return nil, fmt.Errorf("error finding kuberoot: %v", err)
+			}
 		}
+		ctx.kubeRoot = kubeRoot
 	}
-	ctx.kubeRoot = kubeRoot
 	// initialize bits
-	bits, err := kube.NewNamedBits(ctx.mode, kubeRoot)
+	bits, err := kube.NewNamedBits(ctx.mode, ctx.kubeRoot)
 	if err != nil {
 		return nil, err
 	}

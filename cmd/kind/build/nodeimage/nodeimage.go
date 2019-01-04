@@ -29,6 +29,7 @@ type flagpole struct {
 	BuildType string
 	Image     string
 	BaseImage string
+	KubeRoot  string
 }
 
 // NewCommand returns a new cobra.Command for building the node image
@@ -53,6 +54,11 @@ func NewCommand() *cobra.Command {
 		"name:tag of the resulting image to be built",
 	)
 	cmd.Flags().StringVar(
+		&flags.KubeRoot, "kube-root",
+		"",
+		"Path to the Kubernetes source directory (if empty, the path is autodetected)",
+	)
+	cmd.Flags().StringVar(
 		&flags.BaseImage, "base-image",
 		node.DefaultBaseImage,
 		"name:tag of the base image to use for the build",
@@ -66,6 +72,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		node.WithMode(flags.BuildType),
 		node.WithImage(flags.Image),
 		node.WithBaseImage(flags.BaseImage),
+		node.WithKuberoot(flags.KubeRoot),
 	)
 	if err != nil {
 		return fmt.Errorf("error creating build context: %v", err)
