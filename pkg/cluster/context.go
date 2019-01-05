@@ -51,6 +51,7 @@ type createContext struct {
 	*Context
 	status           *logutil.Status
 	config           *config.Config
+	args             []string
 	retain           bool          // if we should retain nodes after failing to create.
 	waitForReady     time.Duration // Wait for the control plane node to be ready.
 	ControlPlaneMeta *ControlPlaneMeta
@@ -124,7 +125,7 @@ func (c *Context) KubeConfigPath() string {
 }
 
 // Create provisions and starts a kubernetes-in-docker cluster
-func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) error {
+func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration, args string) error {
 	// validate config first
 	if err := cfg.Validate(); err != nil {
 		return err
@@ -133,8 +134,13 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 	cc := &createContext{
 		Context:      c,
 		config:       cfg,
+		args:         []string{},
 		retain:       retain,
 		waitForReady: wait,
+	}
+
+	if args != "" {
+		cc.args = strings.Split(args," ")
 	}
 
 	fmt.Printf("Creating cluster '%s' ...\n", c.ClusterName())
@@ -211,7 +217,7 @@ func (cc *createContext) provisionControlPlane(
 ) (kubeadmConfigPath string, err error) {
 	cc.status.Start(fmt.Sprintf("[%s] Creating node container 📦", nodeName))
 	// create the "node" container (docker run, but it is paused, see createNode)
-	node, port, err := nodes.CreateControlPlaneNode(nodeName, cc.config.Image, cc.ClusterLabel())
+	node, port, err := nodes.CreateControlPlaneNode(nodeName, cc.config.Image, cc.ClusterLabel(), cc.args)
 	if err != nil {
 		return "", err
 	}

@@ -45,7 +45,7 @@ func getPort() (int, error) {
 // CreateControlPlaneNode `docker run`s the node image, note that due to
 // images/node/entrypoint being the entrypoint, this container will
 // effectively be paused until we call actuallyStartNode(...)
-func CreateControlPlaneNode(name, image, clusterLabel string) (handle *Node, port int, err error) {
+func CreateControlPlaneNode(name, image, clusterLabel string, args []string) (handle *Node, port int, err error) {
 	port, err = getPort()
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "failed to get port for API server")
@@ -79,6 +79,9 @@ func CreateControlPlaneNode(name, image, clusterLabel string) (handle *Node, por
 		// in systems that have userns-remap enabled on the docker daemon
 		runArgs = append(runArgs, "--userns=host")
 	}
+
+	runArgs = append(runArgs, args...)
+
 
 	id, err := docker.Run(
 		image,
