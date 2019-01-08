@@ -31,9 +31,8 @@ func NewCommand() *cobra.Command {
 		Use:   "version",
 		Short: "prints the kind CLI version",
 		Long:  "prints the kind CLI version",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			println(Version)
-			return nil
 		},
 	}
 	return cmd
