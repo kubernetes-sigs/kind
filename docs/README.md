@@ -17,7 +17,9 @@ We will start by getting the required software and setting up the environemnt
 and then take a look into how the `kind` and its different packages are layed
 out.
 
+You man also be interested in the [roadmap].
 
+[roadmap]: ./roadmap.md
 [design]: ./design/
 [user guide]: ./user/
 [dev guide]: ./devel/

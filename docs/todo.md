@@ -1,5 +1,8 @@
 # TODO
 
+NOTE: this document is slowly being phased out in favor of [GitHub issues](https://github.com/kubernetes-sigs/kind/issues),
+and the [roadmap](./roadmap.md).
+
 A non-exhaustive list of tasks (in no-particular order) includes:
 - [x] basic single "node" clusters
 - [x] multiple clusters per host / named clusters
