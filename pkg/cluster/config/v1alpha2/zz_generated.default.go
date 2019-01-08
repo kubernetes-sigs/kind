@@ -34,4 +34,8 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 
 func SetObjectDefaults_Config(in *Config) {
 	SetDefaults_Config(in)
+	for i := range in.Nodes {
+		a := &in.Nodes[i]
+		SetDefaults_Node(a)
+	}
 }

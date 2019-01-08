@@ -52,3 +52,7 @@ required = [
  name = "k8s.io/code-generator"
  branch = "master"
 
+
+[[constraint]]
+  branch = "master"
+  name = "k8s.io/utils"

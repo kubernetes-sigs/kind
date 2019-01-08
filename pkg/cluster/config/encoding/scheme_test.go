@@ -17,76 +17,108 @@ limitations under the License.
 package encoding
 
 import (
-	"reflect"
 	"testing"
 )
 
-// TODO(fabrizio pandini): once we have multiple config API versions we
-// will need more tests
-
 func TestLoadCurrent(t *testing.T) {
 	cases := []struct {
-		Name        string
-		Path        string
-		ExpectError bool
+		TestName       string
+		Path           string
+		ExpectReplicas []string
+		ExpectError    bool
 	}{
 		{
-			Name:        "v1alpha1 valid minimal",
-			Path:        "./testdata/v1alpha1/valid-minimal.yaml",
-			ExpectError: false,
+			TestName:       "no config",
+			Path:           "",
+			ExpectReplicas: []string{"control-plane"}, // no config (empty config path) should return a single node cluster
+			ExpectError:    false,
 		},
 		{
-			Name:        "v1alpha1 valid with lifecyclehooks",
-			Path:        "./testdata/v1alpha1/valid-with-lifecyclehooks.yaml",
-			ExpectError: false,
+			TestName:       "v1alpha1 minimal",
+			Path:           "./testdata/v1alpha1/valid-minimal.yaml",
+			ExpectReplicas: []string{"control-plane"},
+			ExpectError:    false,
 		},
 		{
-			Name:        "v1alpha2 valid minimal",
-			Path:        "./testdata/v1alpha2/valid-minimal.yaml",
-			ExpectError: false,
+			TestName:       "v1alpha1 with lifecyclehooks",
+			Path:           "./testdata/v1alpha1/valid-with-lifecyclehooks.yaml",
+			ExpectReplicas: []string{"control-plane"},
+			ExpectError:    false,
 		},
 		{
-			Name:        "v1alpha2 valid with lifecyclehooks",
-			Path:        "./testdata/v1alpha2/valid-with-lifecyclehooks.yaml",
-			ExpectError: false,
+			TestName:       "v1alpha2 minimal",
+			Path:           "./testdata/v1alpha2/valid-minimal.yaml",
+			ExpectReplicas: []string{"control-plane"},
+			ExpectError:    false,
 		},
 		{
-			Name:        "invalid path",
+			TestName:       "v1alpha2 lifecyclehooks",
+			Path:           "./testdata/v1alpha2/valid-with-lifecyclehooks.yaml",
+			ExpectReplicas: []string{"control-plane"},
+			ExpectError:    false,
+		},
+		{
+			TestName:       "v1alpha2 config with 2 nodes",
+			Path:           "./testdata/v1alpha2/valid-minimal-two-nodes.yaml",
+			ExpectReplicas: []string{"control-plane", "worker"},
+			ExpectError:    false,
+		},
+		{
+			TestName:       "v1alpha2 full HA",
+			Path:           "./testdata/v1alpha2/valid-full-ha.yaml",
+			ExpectReplicas: []string{"etcd", "lb", "control-plane1", "control-plane2", "control-plane3", "worker1", "worker2"},
+			ExpectError:    false,
+		},
+		{
+			TestName:    "invalid path",
 			Path:        "./testdata/not-a-file.bogus",
 			ExpectError: true,
 		},
 		{
-			Name:        "invalid apiVersion",
+			TestName:    "Invalid apiversion",
 			Path:        "./testdata/invalid-apiversion.yaml",
 			ExpectError: true,
 		},
 		{
-			Name:        "invalid yaml",
+			TestName:    "Invalid kind",
+			Path:        "./testdata/invalid-kind.yaml",
+			ExpectError: true,
+		},
+		{
+			TestName:    "Invalid yaml",
 			Path:        "./testdata/invalid-yaml.yaml",
 			ExpectError: true,
 		},
 	}
-	for _, tc := range cases {
-		_, err := Load(tc.Path)
-		if err != nil && !tc.ExpectError {
-			t.Errorf("case: '%s' got error loading and expected none: %v", tc.Name, err)
-		} else if err == nil && tc.ExpectError {
-			t.Errorf("case: '%s' got no error loading but expected one", tc.Name)
-		}
-	}
-}
+	for _, c := range cases {
+		t.Run(c.TestName, func(t2 *testing.T) {
+			// Loading config and deriving infos
+			cfg, err := Load(c.Path)
 
-func TestLoadDefault(t *testing.T) {
-	cfg, err := Load("")
-	if err != nil {
-		t.Errorf("got error loading default config but expected none: %v", err)
-		t.FailNow()
-	}
-	defaultConfig := newDefaultedConfig()
-	if !reflect.DeepEqual(cfg, defaultConfig) {
-		t.Errorf(
-			"Load(\"\") should match config.New() but does not: %v != %v",
-			cfg, defaultConfig,
-		)
+			// the error can be:
+			// - nil, in which case we should expect no errors or fail
+			if err != nil {
+				if !c.ExpectError {
+					t2.Fatalf("unexpected error while Loading config: %v", err)
+				}
+				return
+			}
+			// - not nil, in which case we should expect errors or fail
+			if err == nil {
+				if c.ExpectError {
+					t2.Fatalf("unexpected lack or error while Loading config")
+				}
+			}
+
+			if len(cfg.AllReplicas()) != len(c.ExpectReplicas) {
+				t2.Fatalf("expected %d replicas, saw %d", len(c.ExpectReplicas), len(cfg.AllReplicas()))
+			}
+
+			for i, name := range c.ExpectReplicas {
+				if cfg.AllReplicas()[i].Name != name {
+					t2.Errorf("expected %q node at position %d, saw %q", name, i, cfg.AllReplicas()[i].Name)
+				}
+			}
+		})
 	}
 }
