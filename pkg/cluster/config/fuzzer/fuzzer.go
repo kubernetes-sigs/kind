@@ -28,24 +28,12 @@ import (
 func Funcs(codecs runtimeserializer.CodecFactory) []interface{} {
 	return []interface{}{
 		fuzzConfig,
-		//fuzzNode,
 	}
 }
 
 func fuzzConfig(obj *config.Config, c fuzz.Continue) {
 	c.FuzzNoCustom(obj)
 
-	// Pinning values for fields that get defaults if fuzz value is empty string or nil
-	obj.Nodes = []config.Node{{
-		Image: "foo:bar",
-		Role:  config.ControlPlaneRole,
-	}}
-}
-
-func fuzzNode(obj *config.Node, c fuzz.Continue) {
-	c.FuzzNoCustom(obj)
-
-	// Pinning values for fields that get defaults if fuzz value is empty string or nil
-	obj.Image = "foo:bar"
-	obj.Role = config.ControlPlaneRole
+	// Pinning values for fields that get defaults if fuzz value is empty string or nil (thus making the round trip test fail)
+	obj.Image = "fuzzimage:latest"
 }

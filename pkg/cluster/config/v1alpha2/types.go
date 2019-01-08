@@ -23,25 +23,11 @@ import (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Config groups all nodes in the `kind` Config.
+// Config contains cluster creation config
+// This is the current internal config type used by cluster
 type Config struct {
-	// TypeMeta representing the type of the object and its API schema version.
-	metav1.TypeMeta `json:",inline"`
+	metav1.TypeMeta
 
-	// nodes constains the list of nodes defined in the `kind` Config
-	Nodes []Node `json:"nodes"`
-}
-
-// Node contains settings for a node in the `kind` Config.
-// A node in kind config represent a container that will be provisioned with all the components
-// required for the assigned role in the Kubernetes cluster
-type Node struct {
-	// Replicas is the number of desired node replicas.
-	// Defaults to 1
-	Replicas *int32 `json:"replicas,omitempty"`
-	// Role defines the role of the nodw in the in the Kubernetes cluster managed by `kind`
-	// Defaults to "control-plane"
-	Role NodeRole `json:"role,omitempty"`
 	// Image is the node image to use when running the cluster
 	// TODO(bentheelder): split this into image and tag?
 	Image string `json:"image,omitempty"`
@@ -56,24 +42,6 @@ type Node struct {
 	// ControlPlane holds config for the control plane node
 	ControlPlane *ControlPlane `json:"ControlPlane,omitempty"`
 }
-
-// NodeRole defines possible role for nodes in a Kubernetes cluster managed by `kind`
-type NodeRole string
-
-const (
-	// ControlPlaneRole identifies a node that hosts a Kubernetes control-plane.
-	// NB. in single node clusters, control-plane nodes act also as a worker nodes
-	ControlPlaneRole NodeRole = "control-plane"
-	// WorkerRole identifies a node that hosts a Kubernetes worker
-	WorkerRole NodeRole = "worker"
-	// ExternalEtcdRole identifies a node that hosts an external-etcd instance.
-	// Please note that `kind` nodes hosting external etcd are not kubernetes nodes
-	ExternalEtcdRole NodeRole = "external-etcd"
-	// ExternalLoadBalancerRole identifies a node that hosts an external load balancer for API server
-	// in HA configurations.
-	// Please note that `kind` nodes hosting external load balancer are not kubernetes nodes
-	ExternalLoadBalancerRole NodeRole = "external-load-balancer"
-)
 
 // ControlPlane holds configurations specific to the control plane nodes
 // (currently the only node).
