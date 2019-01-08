@@ -18,6 +18,9 @@ limitations under the License.
 package version
 
 import (
+	"fmt"
+	"io"
+
 	"github.com/spf13/cobra"
 )
 
@@ -25,14 +28,15 @@ import (
 const Version = "0.1.0-alpha"
 
 // NewCommand returns a new cobra.Command for version
-func NewCommand() *cobra.Command {
+func NewCommand(w io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		// TODO(bentheelder): more detailed usage
 		Use:   "version",
 		Short: "prints the kind CLI version",
 		Long:  "prints the kind CLI version",
-		Run: func(cmd *cobra.Command, args []string) {
-			println(Version)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			fmt.Fprintf(w, Version)
+			return nil
 		},
 	}
 	return cmd

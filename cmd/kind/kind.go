@@ -44,6 +44,7 @@ type Flags struct {
 // NewCommand returns a new cobra.Command implementing the root command for kind
 func NewCommand() *cobra.Command {
 	flags := &Flags{}
+	stdOut := os.Stdout
 	cmd := &cobra.Command{
 		Use:   "kind",
 		Short: "kind is a tool for managing local Kubernetes clusters",
@@ -51,8 +52,8 @@ func NewCommand() *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return runE(flags, cmd, args)
 		},
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Help()
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmd.Help()
 		},
 		Version: version.Version,
 	}
@@ -68,7 +69,7 @@ func NewCommand() *cobra.Command {
 	cmd.AddCommand(delete.NewCommand())
 	cmd.AddCommand(export.NewCommand())
 	cmd.AddCommand(get.NewCommand())
-	cmd.AddCommand(version.NewCommand())
+	cmd.AddCommand(version.NewCommand(stdOut))
 	return cmd
 }
 
