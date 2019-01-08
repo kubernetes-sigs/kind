@@ -51,8 +51,8 @@ func NewCommand() *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return runE(flags, cmd, args)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return cmd.Help()
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.Help()
 		},
 		Version: version.Version,
 	}
