@@ -19,3 +19,6 @@ package consts
 
 // ClusterLabelKey is applied to each "node" docker container for identification
 const ClusterLabelKey = "io.k8s.sigs.kind.cluster"
+
+// ClusterRoleKey is applied to each "node" docker container for categorization of nodes by role
+const ClusterRoleKey = "io.k8s.sigs.kind.role"

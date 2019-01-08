@@ -36,7 +36,6 @@ deepcopy-gen -i ./pkg/cluster/config/ -O zz_generated.deepcopy --go-header-file 
 
 deepcopy-gen -i ./pkg/cluster/config/v1alpha1 -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
 defaulter-gen -i ./pkg/cluster/config/v1alpha1 -O zz_generated.default --go-header-file hack/boilerplate.go.txt
-conversion-gen -i ./pkg/cluster/config/v1alpha1 -O zz_generated.conversion --go-header-file hack/boilerplate.go.txt
 
 deepcopy-gen -i ./pkg/cluster/config/v1alpha2 -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
 defaulter-gen -i ./pkg/cluster/config/v1alpha2 -O zz_generated.default --go-header-file hack/boilerplate.go.txt

@@ -1,4 +1,4 @@
-kind: Config
+kind: Node
 apiVersion: kind.sigs.k8s.io/v1alpha2
 nodeLifecycle:
   preKubeadm:

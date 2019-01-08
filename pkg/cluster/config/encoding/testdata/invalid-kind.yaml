@@ -1,0 +1,3 @@
+# this file contains an invalid config api version for testing
+kind: Node
+apiVersion: not-valid

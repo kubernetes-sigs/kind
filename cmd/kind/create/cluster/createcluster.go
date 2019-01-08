@@ -74,10 +74,33 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("aborting due to invalid configuration")
 	}
 
+	// TODO(fabrizio pandini): this check is temporary / WIP
+	// kind v1alpha config fully supports multi nodes, but the cluster creation logic implemented in
+	// pkg/cluster/contex.go does it only partially (yet).
+	// As soon a external load-balancer and external etcd is implemented in pkg/cluster, this should go away
+
+	if cfg.ExternalLoadBalancer() != nil {
+		return fmt.Errorf("multi node support is still a work in progress, currently external load balancer node is not supported")
+	}
+
+	if cfg.SecondaryControlPlanes() != nil {
+		return fmt.Errorf("multi node support is still a work in progress, currently only single control-plane node are supported")
+	}
+
+	if cfg.ExternalEtcd() != nil {
+		return fmt.Errorf("multi node support is still a work in progress, currently external etcd node is not supported")
+	}
+
 	// create a cluster context and create the cluster
 	ctx := cluster.NewContext(flags.Name)
 	if flags.ImageName != "" {
-		cfg.Image = flags.ImageName
+		// Apply image override to all the Nodes defined in Config
+		// TODO(fabrizio pandini): this should be reconsidered when implementing
+		//     https://github.com/kubernetes-sigs/kind/issues/133
+		for _, n := range cfg.Nodes() {
+			n.Image = flags.ImageName
+		}
+
 		err := cfg.Validate()
 		if err != nil {
 			log.Errorf("Invalid flags, configuration failed validation: %v", err)
