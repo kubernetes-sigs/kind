@@ -74,18 +74,10 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("aborting due to invalid configuration")
 	}
 
-	// TODO(fabrizio pandini): this check is temporary / WIP
-	// kind v1alpha2 config fully supports multi nodes, but the cluster creation logic implemented in
-	// pkg/cluster/contex.go does not (yet).
-	// As soon a multi node support is implemented in pkg/cluster/contex.go, this should go away
-	if len(cfg.AllReplicas()) > 1 {
-		return fmt.Errorf("multi node support is still a work in progress, currently only single node cluster are supported")
-	}
-
 	// create a cluster context and create the cluster
 	ctx := cluster.NewContext(flags.Name)
 	if flags.ImageName != "" {
-		cfg.BootStrapControlPlane().Image = flags.ImageName
+		cfg.Image = flags.ImageName
 		err := cfg.Validate()
 		if err != nil {
 			log.Errorf("Invalid flags, configuration failed validation: %v", err)
