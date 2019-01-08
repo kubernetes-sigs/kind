@@ -50,6 +50,22 @@ type createContext struct {
 	ControlPlaneMeta *ControlPlaneMeta
 }
 
+// execContext is a superset of Context used by helpers for Context.Create()
+// and Context.Exec() command
+// TODO(fabrizio pandini): might be we want to move all the actions in a separated
+//		package e.g. pkg/cluster/actions
+//		In order to do this a circular dependency should be avoided:
+//			pkg/cluster -- use -- pkg/cluster/actions
+// 			pkg/cluster/actions -- use pkg/cluster execContext
+type execContext struct {
+	*Context
+	status *logutil.Status
+	config *config.Config
+	// nodes contains the list of actual nodes (a node is a container implementing a config node)
+	nodes        map[string]*nodes.Node
+	waitForReady time.Duration // Wait for the control plane node to be ready
+}
+
 // similar to valid docker container names, but since we will prefix
 // and suffix this name, we can relax it a little
 // see NewContext() for usage
