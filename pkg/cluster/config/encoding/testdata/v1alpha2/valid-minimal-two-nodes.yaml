@@ -1,7 +1,6 @@
 # technically valid, minimal config file with two nodes
-kind: Node
+kind: Config
 apiVersion: kind.sigs.k8s.io/v1alpha2
----
-kind: Node
-apiVersion: kind.sigs.k8s.io/v1alpha2
-role: worker
+nodes:
+- role: control-plane
+- role: worker

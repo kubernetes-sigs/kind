@@ -23,13 +23,19 @@ import (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+// Config groups all nodes in the `kind` Config.
+type Config struct {
+	// TypeMeta representing the type of the object and its API schema version.
+	metav1.TypeMeta `json:",inline"`
+
+	// nodes constains the list of nodes defined in the `kind` Config
+	Nodes []Node `json:"nodes"`
+}
+
 // Node contains settings for a node in the `kind` Config.
 // A node in kind config represent a container that will be provisioned with all the components
 // required for the assigned role in the Kubernetes cluster
 type Node struct {
-	// TypeMeta representing the type of the object and its API schema version.
-	metav1.TypeMeta `json:",inline"`
-
 	// Replicas is the number of desired node replicas.
 	// Defaults to 1
 	Replicas *int32 `json:"replicas,omitempty"`
@@ -55,7 +61,8 @@ type Node struct {
 type NodeRole string
 
 const (
-	// ControlPlaneRole identifies a node that hosts a Kubernetes control-plane
+	// ControlPlaneRole identifies a node that hosts a Kubernetes control-plane.
+	// NB. in single node clusters, control-plane nodes act also as a worker nodes
 	ControlPlaneRole NodeRole = "control-plane"
 	// WorkerRole identifies a node that hosts a Kubernetes worker
 	WorkerRole NodeRole = "worker"

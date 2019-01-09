@@ -17,25 +17,56 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
 	unsafe "unsafe"
 
+	conversion "k8s.io/apimachinery/pkg/conversion"
 	"sigs.k8s.io/kind/pkg/cluster/config"
 	kustomize "sigs.k8s.io/kind/pkg/kustomize"
 )
 
-// Convert implement a custom conversion func (not using the api machinery)
-// that transform v1alpha1 Config into a v1alpha2 Config.
-// Using the api machinery for this conversion could be done, but it add several
-// constraints to the internal Config object (e.g. add TypeMeta).
-// Instead it was preferred to keep the desing of the internal Config clean and simple.
-func (in *Config) Convert(out *config.Config) {
-	// Internal configuration now supports multinode, so it is necessary to transform
-	// v1alpha1 Config into one Node with role control plane and then add it to the list of nodes.
-	var node = &config.Node{}
+func Convert_v1alpha1_Config_To_config_Config(in *Config, out *config.Config, s conversion.Scope) error {
+	if err := autoConvert_v1alpha1_Config_To_config_Config(in, out, s); err != nil {
+		return err
+	}
+
+	// converts v1alpha1 Config into an internal config with a single control-plane node
+	var node config.Node
+
 	node.Role = config.ControlPlaneRole
 	node.Image = in.Image
 	node.KubeadmConfigPatches = *(*[]string)(unsafe.Pointer(&in.KubeadmConfigPatches))
 	node.KubeadmConfigPatchesJSON6902 = *(*[]kustomize.PatchJSON6902)(unsafe.Pointer(&in.KubeadmConfigPatchesJSON6902))
 	node.ControlPlane = (*config.ControlPlane)(unsafe.Pointer(in.ControlPlane))
-	out.Add(node)
+
+	out.Nodes = []config.Node{node}
+
+	return nil
+}
+
+func Convert_config_Config_To_v1alpha1_Config(in *config.Config, out *Config, s conversion.Scope) error {
+	if err := autoConvert_config_Config_To_v1alpha1_Config(in, out, s); err != nil {
+		return err
+	}
+
+	// convertion from internal config to v1alpha1 Config is used only by the fuzzer roundtrip test;
+	// the fuzzer is configured in order to enforce the number and type of nodes to get always the
+	// following condition pass
+
+	if len(in.Nodes) > 1 {
+		return fmt.Errorf("invalid conversion. `kind` config with more than one Node cannot be converted to v1alpha1 config format")
+	}
+
+	var node = in.Nodes[0]
+
+	if !node.IsControlPlane() {
+		return fmt.Errorf("invalid conversion. `kind` config without a control-plane Node cannot be converted to v1alpha1 config format %v", node)
+	}
+
+	out.Image = node.Image
+	out.KubeadmConfigPatches = *(*[]string)(unsafe.Pointer(&node.KubeadmConfigPatches))
+	out.KubeadmConfigPatchesJSON6902 = *(*[]kustomize.PatchJSON6902)(unsafe.Pointer(&node.KubeadmConfigPatchesJSON6902))
+	out.ControlPlane = (*ControlPlane)(unsafe.Pointer(node.ControlPlane))
+
+	return nil
 }

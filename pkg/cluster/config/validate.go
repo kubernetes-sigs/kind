@@ -28,9 +28,9 @@ func (c *Config) Validate() error {
 	errs := []error{}
 
 	// All nodes in the config should be valid
-	for _, n := range c.nodes {
+	for i, n := range c.Nodes {
 		if err := n.Validate(); err != nil {
-			errs = append(errs, fmt.Errorf("please fix invalid configuration for node %q: \n%v", n.Name, err))
+			errs = append(errs, fmt.Errorf("please fix invalid configuration for node %d: \n%v", i, err))
 		}
 	}
 
@@ -39,7 +39,7 @@ func (c *Config) Validate() error {
 		errs = append(errs, fmt.Errorf("please add at least one node with role %q", ControlPlaneRole))
 	}
 	// There should be one load balancer if more than one control plane exists in the cluster
-	if c.ControlPlanes() != nil && len(c.ControlPlanes()) > 1 && c.ExternalLoadBalancer() == nil {
+	if len(c.ControlPlanes()) > 1 && c.ExternalLoadBalancer() == nil {
 		errs = append(errs, fmt.Errorf("please add a node with role %s because in the cluster there are more than one node with role %s", ExternalLoadBalancerRole, ControlPlaneRole))
 	}
 
@@ -67,6 +67,11 @@ func (n *Node) Validate() error {
 	// image should be defined
 	if n.Image == "" {
 		errs = append(errs, fmt.Errorf("image is a required field"))
+	}
+
+	// replicas >= 0
+	if n.Replicas != nil && int32(*n.Replicas) < 0 {
+		errs = append(errs, fmt.Errorf("replicas number should not be a negative number"))
 	}
 
 	// validate NodeLifecycle

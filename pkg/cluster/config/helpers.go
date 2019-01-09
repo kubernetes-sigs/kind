@@ -24,6 +24,7 @@ import (
 )
 
 // IsControlPlane returns true if the node hosts a control plane instance
+// NB. in single node clusters, control-plane nodes act also as a worker nodes
 func (n *Node) IsControlPlane() bool {
 	return n.Role == ControlPlaneRole
 }
@@ -66,14 +67,14 @@ func (n *Node) ProvisioningOrder() int {
 
 // Len of the NodeList.
 // It is required for making NodeList sortable.
-func (t NodeList) Len() int {
+func (t ReplicaList) Len() int {
 	return len(t)
 }
 
 // Less return the lower between two elements of the NodeList, where the
 // lower element should be provisioned before the other.
 // It is required for making NodeList sortable.
-func (t NodeList) Less(i, j int) bool {
+func (t ReplicaList) Less(i, j int) bool {
 	return t[i].ProvisioningOrder() < t[j].ProvisioningOrder() ||
 		// In case of same provisioning order, the name is used to get predictable/repeatable results
 		(t[i].ProvisioningOrder() == t[j].ProvisioningOrder() && t[i].Name < t[j].Name)
@@ -81,32 +82,54 @@ func (t NodeList) Less(i, j int) bool {
 
 // Swap two elements of the NodeList.
 // It is required for making NodeList sortable.
-func (t NodeList) Swap(i, j int) {
+func (t ReplicaList) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
-// Add a Node to the `kind` cluster and assignes a unique node name.
-// If the node should have replicas, more instances of the node are created as well
-func (c *Config) Add(node *Node) error {
-	// defines the list of expected replica of the node that by default are one (the node itself)
-	replicas := NodeList{node}
+// DeriveInfo populates DerivedConfig info starting
+// from the current list on Nodes
+func (c *Config) DeriveInfo() error {
 
-	// in case the node should have replicas
-	if node.Replicas != nil {
-		// generate expected replicas
-		replicas = NodeList{}
-		for i := 1; i <= int(*node.Replicas); i++ {
-			replicas = append(replicas, node.DeepCopy())
+	// reset current derived info
+	c.allReplicas = nil
+	c.controlPlanes = nil
+	c.workers = nil
+	c.externalEtcd = nil
+	c.externalLoadBalancer = nil
+
+	for _, n := range c.Nodes {
+		if err := c.Add(&n); err != nil {
+			return err
 		}
 	}
+	return nil
+}
 
-	// adds replica of the node to the config
+// Add a Node to the `kind` cluster, generating requested node replicas
+// and assigning a unique node name to each replica.
+func (c *Config) Add(node *Node) error {
+
+	// Creates the list of node replicas
+	expectedReplicas := 1
+	if node.Replicas != nil {
+		expectedReplicas = int(*node.Replicas)
+	}
+
+	replicas := ReplicaList{}
+	for i := 1; i <= expectedReplicas; i++ {
+		replica := &NodeReplica{
+			Node: *node.DeepCopy(),
+		}
+		replica.Replicas = nil // resetting the replicas number for each replica to default (1)
+
+		replicas = append(replicas, replica)
+	}
+
+	// adds replica to the config unpdating derivedConfigData
 	for _, replica := range replicas {
 
 		// adds the replica to the list of nodes
-		c.nodes = append(c.nodes, replica)
-
-		// updates derivedConfigData
+		c.allReplicas = append(c.allReplicas, replica)
 
 		// list of nodes with control plane role
 		if replica.IsControlPlane() {
@@ -162,26 +185,27 @@ func (c *Config) Add(node *Node) error {
 		}
 	}
 
-	// ensure the list of nodes is ordered
-	sort.Sort(c.nodes)
+	// ensure the list of nodes is ordered.
+	// the ordering is key for getting a consistent and predictable behaviour
+	// when provisioning nodes and when executing actions on nodes
+	sort.Sort(c.allReplicas)
 
 	return nil
 }
 
-// Nodes returns all the nodes defined in the `kind` Config.
-// Always use the Add method to add nodes.
-func (c *Config) Nodes() NodeList {
-	return c.nodes
+// AllReplicas returns all the node replicas defined in the `kind` Config.
+func (c *Config) AllReplicas() ReplicaList {
+	return c.allReplicas
 }
 
 // ControlPlanes returns all the nodes with control-plane role
-func (c *Config) ControlPlanes() NodeList {
+func (c *Config) ControlPlanes() ReplicaList {
 	return c.controlPlanes
 }
 
 // BootStrapControlPlane returns the first node with control-plane role
 // This is the node where kubeadm init will be executed.
-func (c *Config) BootStrapControlPlane() *Node {
+func (c *Config) BootStrapControlPlane() *NodeReplica {
 	if len(c.controlPlanes) == 0 {
 		return nil
 	}
@@ -190,7 +214,7 @@ func (c *Config) BootStrapControlPlane() *Node {
 
 // SecondaryControlPlanes returns all the nodes with control-plane role
 // except the BootStrapControlPlane node, if any,
-func (c *Config) SecondaryControlPlanes() NodeList {
+func (c *Config) SecondaryControlPlanes() ReplicaList {
 	if len(c.controlPlanes) <= 1 {
 		return nil
 	}
@@ -198,16 +222,16 @@ func (c *Config) SecondaryControlPlanes() NodeList {
 }
 
 // Workers returns all the nodes with Worker role, if any
-func (c *Config) Workers() NodeList {
+func (c *Config) Workers() ReplicaList {
 	return c.workers
 }
 
 // ExternalEtcd returns the node with external-etcd role, if defined
-func (c *Config) ExternalEtcd() *Node {
+func (c *Config) ExternalEtcd() *NodeReplica {
 	return c.externalEtcd
 }
 
 // ExternalLoadBalancer returns the node with external-load-balancer role, if defined
-func (c *Config) ExternalLoadBalancer() *Node {
+func (c *Config) ExternalLoadBalancer() *NodeReplica {
 	return c.externalLoadBalancer
 }

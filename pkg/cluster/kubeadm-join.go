@@ -53,7 +53,7 @@ func (b *KubeadmJoinAction) Tasks() []Task {
 }
 
 // runKubeadmJoin executes kubadm join
-func runKubeadmJoin(ec *execContext, configNode *config.Node) error {
+func runKubeadmJoin(ec *execContext, configNode *config.NodeReplica) error {
 	// before running join, it should be retrived
 
 	// gets the node where

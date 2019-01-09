@@ -28,10 +28,14 @@ import (
 // Public to allow building arbitrary schemes.
 // All generated defaulters are covering - they call all nested defaulters.
 func RegisterDefaults(scheme *runtime.Scheme) error {
-	scheme.AddTypeDefaultingFunc(&Node{}, func(obj interface{}) { SetObjectDefaults_Node(obj.(*Node)) })
+	scheme.AddTypeDefaultingFunc(&Config{}, func(obj interface{}) { SetObjectDefaults_Config(obj.(*Config)) })
 	return nil
 }
 
-func SetObjectDefaults_Node(in *Node) {
-	SetDefaults_Node(in)
+func SetObjectDefaults_Config(in *Config) {
+	SetDefaults_Config(in)
+	for i := range in.Nodes {
+		a := &in.Nodes[i]
+		SetDefaults_Node(a)
+	}
 }

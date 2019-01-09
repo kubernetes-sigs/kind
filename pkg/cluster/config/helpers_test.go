@@ -22,11 +22,11 @@ import (
 	utilpointer "k8s.io/utils/pointer"
 )
 
-func TestAdd(t *testing.T) {
+func TestDeriveInfo(t *testing.T) {
 	cases := []struct {
 		TestName                     string
-		Nodes                        []*Node
-		ExpectNodes                  []string
+		Nodes                        []Node
+		ExpectReplicas               []string
 		ExpectControlPlanes          []string
 		ExpectBootStrapControlPlane  *string
 		ExpectSecondaryControlPlanes []string
@@ -36,8 +36,8 @@ func TestAdd(t *testing.T) {
 		ExpectError                  bool
 	}{
 		{
-			TestName:                     "Defaults/Empty config should give empty Nodes",
-			ExpectNodes:                  nil,
+			TestName:                     "Defaults/Empty config should give empty replicas",
+			ExpectReplicas:               nil,
 			ExpectControlPlanes:          nil,
 			ExpectBootStrapControlPlane:  nil,
 			ExpectSecondaryControlPlanes: nil,
@@ -47,45 +47,30 @@ func TestAdd(t *testing.T) {
 			ExpectError:                  false,
 		},
 		{
-			TestName: "Single control plane get properly assigned to bootstrap control-plane",
-			Nodes: []*Node{
+			TestName: "Single control plane Node get properly assigned to bootstrap control-plane",
+			Nodes: []Node{
 				{Role: ControlPlaneRole},
 			},
-			ExpectNodes:                  []string{"control-plane"},
+			ExpectReplicas:               []string{"control-plane"},
 			ExpectControlPlanes:          []string{"control-plane"},
 			ExpectBootStrapControlPlane:  utilpointer.StringPtr("control-plane"),
 			ExpectSecondaryControlPlanes: nil,
 			ExpectError:                  false,
 		},
 		{
-			TestName: "Control planes get properly splitted between bootstrap and secondary control-planes",
-			Nodes: []*Node{
-				{Role: ControlPlaneRole},
-				{Role: ControlPlaneRole},
-				{Role: ControlPlaneRole},
+			TestName: "Control planes Nodes get properly splitted between bootstrap and secondary control-planes",
+			Nodes: []Node{
+				{Role: ControlPlaneRole, Replicas: utilpointer.Int32Ptr(3)},
 			},
-			ExpectNodes:                  []string{"control-plane1", "control-plane2", "control-plane3"},
+			ExpectReplicas:               []string{"control-plane1", "control-plane2", "control-plane3"},
 			ExpectControlPlanes:          []string{"control-plane1", "control-plane2", "control-plane3"},
 			ExpectBootStrapControlPlane:  utilpointer.StringPtr("control-plane1"),
 			ExpectSecondaryControlPlanes: []string{"control-plane2", "control-plane3"},
 			ExpectError:                  false,
 		},
 		{
-			TestName: "Single control plane get properly named if more than one node exists",
-			Nodes: []*Node{
-				{Role: ControlPlaneRole},
-				{Role: WorkerRole},
-			},
-			ExpectNodes:                  []string{"control-plane", "worker"},
-			ExpectControlPlanes:          []string{"control-plane"},
-			ExpectBootStrapControlPlane:  utilpointer.StringPtr("control-plane"),
-			ExpectSecondaryControlPlanes: nil,
-			ExpectWorkers:                []string{"worker"},
-			ExpectError:                  false,
-		},
-		{
 			TestName: "Full HA cluster", // NB. This test case test that provisioning order is applied to all the node lists as well
-			Nodes: []*Node{
+			Nodes: []Node{
 				{Role: WorkerRole},
 				{Role: ControlPlaneRole},
 				{Role: ExternalEtcdRole},
@@ -94,7 +79,24 @@ func TestAdd(t *testing.T) {
 				{Role: ControlPlaneRole},
 				{Role: ExternalLoadBalancerRole},
 			},
-			ExpectNodes:                  []string{"etcd", "lb", "control-plane1", "control-plane2", "control-plane3", "worker1", "worker2"},
+			ExpectReplicas:               []string{"etcd", "lb", "control-plane1", "control-plane2", "control-plane3", "worker1", "worker2"},
+			ExpectControlPlanes:          []string{"control-plane1", "control-plane2", "control-plane3"},
+			ExpectBootStrapControlPlane:  utilpointer.StringPtr("control-plane1"),
+			ExpectSecondaryControlPlanes: []string{"control-plane2", "control-plane3"},
+			ExpectWorkers:                []string{"worker1", "worker2"},
+			ExpectEtcd:                   utilpointer.StringPtr("etcd"),
+			ExpectLoadBalancer:           utilpointer.StringPtr("lb"),
+			ExpectError:                  false,
+		},
+		{
+			TestName: "Full HA cluster with replicas",
+			Nodes: []Node{
+				{Role: WorkerRole, Replicas: utilpointer.Int32Ptr(2)},
+				{Role: ControlPlaneRole, Replicas: utilpointer.Int32Ptr(3)},
+				{Role: ExternalEtcdRole},
+				{Role: ExternalLoadBalancerRole},
+			},
+			ExpectReplicas:               []string{"etcd", "lb", "control-plane1", "control-plane2", "control-plane3", "worker1", "worker2"},
 			ExpectControlPlanes:          []string{"control-plane1", "control-plane2", "control-plane3"},
 			ExpectBootStrapControlPlane:  utilpointer.StringPtr("control-plane1"),
 			ExpectSecondaryControlPlanes: []string{"control-plane2", "control-plane3"},
@@ -105,7 +107,7 @@ func TestAdd(t *testing.T) {
 		},
 		{
 			TestName: "Fails because two etcds Nodes are added",
-			Nodes: []*Node{
+			Nodes: []Node{
 				{Role: ExternalEtcdRole},
 				{Role: ExternalEtcdRole},
 			},
@@ -113,7 +115,7 @@ func TestAdd(t *testing.T) {
 		},
 		{
 			TestName: "Fails because two load balancer Nodes are added",
-			Nodes: []*Node{
+			Nodes: []Node{
 				{Role: ExternalLoadBalancerRole},
 				{Role: ExternalLoadBalancerRole},
 			},
@@ -122,46 +124,40 @@ func TestAdd(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		t.Run(c.TestName, func(t2 *testing.T) {
-			// Adding Nodes to the config until first error or completing all Nodes
-			var cfg = Config{}
-			var err error
-			for _, n := range c.Nodes {
-				if e := cfg.Add(n); e != nil {
-					err = e
-					break
-				}
-			}
+		t.Run(c.TestName, func(t *testing.T) {
+			// Adding Nodes to the config and deriving infos
+			var cfg = Config{Nodes: c.Nodes}
+			err := cfg.DeriveInfo()
 			// the error can be:
 			// - nil, in which case we should expect no errors or fail
 			if err != nil {
 				if !c.ExpectError {
-					t2.Fatalf("unexpected error while adding Nodes: %v", err)
+					t.Fatalf("unexpected error while Deriving infos: %v", err)
 				}
 				return
 			}
 			// - not nil, in which case we should expect errors or fail
 			if err == nil {
 				if c.ExpectError {
-					t2.Fatalf("unexpected lack or error while adding Nodes")
+					t.Fatalf("unexpected lack or error while Deriving infos")
 				}
 			}
 
 			// Fail if Nodes does not match
-			checkNodeList(t2, cfg.Nodes(), c.ExpectNodes)
+			checkReplicaList(t, cfg.AllReplicas(), c.ExpectReplicas)
 
 			// Fail if fields derived from Nodes does not match
-			checkNodeList(t2, cfg.ControlPlanes(), c.ExpectControlPlanes)
-			checkNode(t2, cfg.BootStrapControlPlane(), c.ExpectBootStrapControlPlane)
-			checkNodeList(t2, cfg.SecondaryControlPlanes(), c.ExpectSecondaryControlPlanes)
-			checkNodeList(t2, cfg.Workers(), c.ExpectWorkers)
-			checkNode(t2, cfg.ExternalEtcd(), c.ExpectEtcd)
-			checkNode(t2, cfg.ExternalLoadBalancer(), c.ExpectLoadBalancer)
+			checkReplicaList(t, cfg.ControlPlanes(), c.ExpectControlPlanes)
+			checkNode(t, cfg.BootStrapControlPlane(), c.ExpectBootStrapControlPlane)
+			checkReplicaList(t, cfg.SecondaryControlPlanes(), c.ExpectSecondaryControlPlanes)
+			checkReplicaList(t, cfg.Workers(), c.ExpectWorkers)
+			checkNode(t, cfg.ExternalEtcd(), c.ExpectEtcd)
+			checkNode(t, cfg.ExternalLoadBalancer(), c.ExpectLoadBalancer)
 		})
 	}
 }
 
-func checkNode(t *testing.T, n *Node, name *string) {
+func checkNode(t *testing.T, n *NodeReplica, name *string) {
 	if (n == nil) != (name == nil) {
 		t.Errorf("expected %v node, saw %v", name, n)
 	}
@@ -175,7 +171,7 @@ func checkNode(t *testing.T, n *Node, name *string) {
 	}
 }
 
-func checkNodeList(t *testing.T, list NodeList, names []string) {
+func checkReplicaList(t *testing.T, list ReplicaList, names []string) {
 	if len(list) != len(names) {
 		t.Errorf("expected %d nodes, saw %d", len(names), len(list))
 		return

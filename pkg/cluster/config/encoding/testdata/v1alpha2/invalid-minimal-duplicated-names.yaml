@@ -1,6 +1,0 @@
-# invalid config file with nodes with the same name
-kind: Node
-apiVersion: kind.sigs.k8s.io/v1alpha2
----
-kind: Node
-apiVersion: kind.sigs.k8s.io/v1alpha2

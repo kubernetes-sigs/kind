@@ -97,14 +97,19 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		// Apply image override to all the Nodes defined in Config
 		// TODO(fabrizio pandini): this should be reconsidered when implementing
 		//     https://github.com/kubernetes-sigs/kind/issues/133
-		for _, n := range cfg.Nodes() {
-			n.Image = flags.ImageName
+		for i := range cfg.Nodes {
+			cfg.Nodes[i].Image = flags.ImageName
 		}
 
 		err := cfg.Validate()
 		if err != nil {
 			log.Errorf("Invalid flags, configuration failed validation: %v", err)
 			return fmt.Errorf("aborting due to invalid configuration")
+		}
+
+		// updates the derived info
+		if err := cfg.DeriveInfo(); err != nil {
+			return err
 		}
 	}
 	if err = ctx.Create(cfg, flags.Retain, flags.Wait); err != nil {

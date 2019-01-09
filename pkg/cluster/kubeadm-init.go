@@ -58,7 +58,7 @@ func (b *KubeadmInitAction) Tasks() []Task {
 
 // runKubeadmConfig executes kubadm init and a set of default
 // post init operations.
-func runKubeadmInit(ec *execContext, configNode *config.Node) error {
+func runKubeadmInit(ec *execContext, configNode *config.NodeReplica) error {
 	// get the target node for this task
 	node, ok := ec.NodeFor(configNode)
 	if !ok {
@@ -126,7 +126,7 @@ func runKubeadmInit(ec *execContext, configNode *config.Node) error {
 
 	// if we are only provisioning one node, remove the master taint
 	// https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#master-isolation
-	if len(ec.config.Nodes()) == 1 {
+	if len(ec.config.AllReplicas()) == 1 {
 		if err := node.Command(
 			"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf",
 			"taint", "nodes", "--all", "node-role.kubernetes.io/master-",

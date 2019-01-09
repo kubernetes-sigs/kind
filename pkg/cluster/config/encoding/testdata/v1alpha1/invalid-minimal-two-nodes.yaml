@@ -1,6 +1,0 @@
-# invalid v1alpha1 config file with two documents
-kind: Config
-apiVersion: kind.sigs.k8s.io/v1alpha1
----
-kind: Config
-apiVersion: kind.sigs.k8s.io/v1alpha1
