@@ -262,15 +262,6 @@ func (cc *createContext) provisionNodes() (nodeList map[string]*nodes.Node, err 
 			return nodeList, err
 		}
 
-		// run any pre-boot hooks
-		if configNode.ControlPlane != nil && configNode.ControlPlane.NodeLifecycle != nil {
-			for _, hook := range configNode.ControlPlane.NodeLifecycle.PreBoot {
-				if err := runHook(node, &hook, "preBoot"); err != nil {
-					return nodeList, err
-				}
-			}
-		}
-
 		cc.status.Start(fmt.Sprintf("[%s] Starting systemd 🖥", configNode.Name))
 		// signal the node container entrypoint to continue booting into systemd
 		if err := node.SignalStart(); err != nil {
@@ -347,28 +338,6 @@ func (c *Context) Exec(cfg *config.Config, nodeList map[string]*nodes.Node, acti
 func (ec *execContext) NodeFor(configNode *config.NodeReplica) (node *nodes.Node, ok bool) {
 	node, ok = ec.nodes[configNode.Name]
 	return
-}
-
-// runHook runs a LifecycleHook on the node
-// It will only return an error if hook.MustSucceed is true
-func runHook(node *nodes.Node, hook *config.LifecycleHook, phase string) error {
-	logger := log.WithFields(log.Fields{
-		"node":  node.String(),
-		"phase": phase,
-	})
-	if hook.Name != "" {
-		logger.Infof("Running LifecycleHook \"%s\" ...", hook.Name)
-	} else {
-		logger.Info("Running LifecycleHook ...")
-	}
-	if err := node.Command(hook.Command[0], hook.Command[1:]...).Run(); err != nil {
-		if hook.MustSucceed {
-			logger.WithError(err).Error("LifecycleHook failed")
-			return err
-		}
-		logger.WithError(err).Warn("LifecycleHook failed, continuing ...")
-	}
-	return nil
 }
 
 // Delete tears down a kubernetes-in-docker cluster

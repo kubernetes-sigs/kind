@@ -65,15 +65,6 @@ func runKubeadmInit(ec *execContext, configNode *config.NodeReplica) error {
 		return fmt.Errorf("unable to get the handle for operating on node: %s", configNode.Name)
 	}
 
-	// run any pre-kubeadm hooks
-	if configNode.ControlPlane != nil && configNode.ControlPlane.NodeLifecycle != nil {
-		for _, hook := range configNode.ControlPlane.NodeLifecycle.PreKubeadm {
-			if err := runHook(node, &hook, "preKubeadm"); err != nil {
-				return err
-			}
-		}
-	}
-
 	// run kubeadm
 	if err := node.Command(
 		// init because this is the control plane node
@@ -85,15 +76,6 @@ func runKubeadmInit(ec *execContext, configNode *config.NodeReplica) error {
 		"--config=/kind/kubeadm.conf",
 	).Run(); err != nil {
 		return errors.Wrap(err, "failed to init node with kubeadm")
-	}
-
-	// run any post-kubeadm hooks
-	if configNode.ControlPlane != nil && configNode.ControlPlane.NodeLifecycle != nil {
-		for _, hook := range configNode.ControlPlane.NodeLifecycle.PostKubeadm {
-			if err := runHook(node, &hook, "postKubeadm"); err != nil {
-				return err
-			}
-		}
 	}
 
 	// copies the kubeconfig files locally in order to make the cluster
@@ -138,15 +120,6 @@ func runKubeadmInit(ec *execContext, configNode *config.NodeReplica) error {
 	// add the default storage class
 	if err := addDefaultStorageClass(node); err != nil {
 		return errors.Wrap(err, "failed to add default storage class")
-	}
-
-	// run any post-setup hooks
-	if configNode.ControlPlane != nil && configNode.ControlPlane.NodeLifecycle != nil {
-		for _, hook := range configNode.ControlPlane.NodeLifecycle.PostSetup {
-			if err := runHook(node, &hook, "postSetup"); err != nil {
-				return err
-			}
-		}
 	}
 
 	// Wait for the control plane node to reach Ready status.
