@@ -74,51 +74,6 @@ func (n *Node) Validate() error {
 		errs = append(errs, fmt.Errorf("replicas number should not be a negative number"))
 	}
 
-	// validate NodeLifecycle
-	if n.ControlPlane != nil {
-		if n.ControlPlane.NodeLifecycle != nil {
-			for _, hook := range n.ControlPlane.NodeLifecycle.PreBoot {
-				if len(hook.Command) == 0 {
-					errs = append(errs, fmt.Errorf(
-						"preBoot hooks must set command to a non-empty value",
-					))
-					// we don't need to repeat this error and we don't
-					// have any others for this field
-					break
-				}
-			}
-			for _, hook := range n.ControlPlane.NodeLifecycle.PreKubeadm {
-				if len(hook.Command) == 0 {
-					errs = append(errs, fmt.Errorf(
-						"preKubeadm hooks must set command to a non-empty value",
-					))
-					// we don't need to repeat this error and we don't
-					// have any others for this field
-					break
-				}
-			}
-			for _, hook := range n.ControlPlane.NodeLifecycle.PostKubeadm {
-				if len(hook.Command) == 0 {
-					errs = append(errs, fmt.Errorf(
-						"postKubeadm hooks must set command to a non-empty value",
-					))
-					// we don't need to repeat this error and we don't
-					// have any others for this field
-					break
-				}
-			}
-			for _, hook := range n.ControlPlane.NodeLifecycle.PostSetup {
-				if len(hook.Command) == 0 {
-					errs = append(errs, fmt.Errorf(
-						"postKubeadm hooks must set command to a non-empty value",
-					))
-					// we don't need to repeat this error and we don't
-					// have any others for this field
-					break
-				}
-			}
-		}
-	}
 	if len(errs) > 0 {
 		return util.NewErrors(errs)
 	}

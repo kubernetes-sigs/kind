@@ -43,59 +43,6 @@ func TestNodeValidate(t *testing.T) {
 			ExpectErrors: 0,
 		},
 		{
-			TestName: "Invalid PreBoot hook",
-			Node: func() Node {
-				cfg := newDefaultedNode(ControlPlaneRole)
-				cfg.ControlPlane = &ControlPlane{
-					NodeLifecycle: &NodeLifecycle{
-						PreBoot: []LifecycleHook{
-							{
-								Command: []string{},
-							},
-						},
-					},
-				}
-				return cfg
-			}(),
-			ExpectErrors: 1,
-		},
-		{
-			TestName: "Invalid PreKubeadm hook",
-			Node: func() Node {
-				cfg := newDefaultedNode(ControlPlaneRole)
-				cfg.ControlPlane = &ControlPlane{
-					NodeLifecycle: &NodeLifecycle{
-						PreKubeadm: []LifecycleHook{
-							{
-								Name:    "pull an image",
-								Command: []string{},
-							},
-						},
-					},
-				}
-				return cfg
-			}(),
-			ExpectErrors: 1,
-		},
-		{
-			TestName: "Invalid PostKubeadm hook",
-			Node: func() Node {
-				cfg := newDefaultedNode(ControlPlaneRole)
-				cfg.ControlPlane = &ControlPlane{
-					NodeLifecycle: &NodeLifecycle{
-						PostKubeadm: []LifecycleHook{
-							{
-								Name:    "pull an image",
-								Command: []string{},
-							},
-						},
-					},
-				}
-				return cfg
-			}(),
-			ExpectErrors: 1,
-		},
-		{
 			TestName: "Empty image field",
 			Node: func() Node {
 				cfg := newDefaultedNode(ControlPlaneRole)

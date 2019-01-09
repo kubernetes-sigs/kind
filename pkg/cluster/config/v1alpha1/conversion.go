@@ -37,7 +37,6 @@ func Convert_v1alpha1_Config_To_config_Config(in *Config, out *config.Config, s 
 	node.Image = in.Image
 	node.KubeadmConfigPatches = *(*[]string)(unsafe.Pointer(&in.KubeadmConfigPatches))
 	node.KubeadmConfigPatchesJSON6902 = *(*[]kustomize.PatchJSON6902)(unsafe.Pointer(&in.KubeadmConfigPatchesJSON6902))
-	node.ControlPlane = (*config.ControlPlane)(unsafe.Pointer(in.ControlPlane))
 
 	out.Nodes = []config.Node{node}
 
@@ -66,7 +65,6 @@ func Convert_config_Config_To_v1alpha1_Config(in *config.Config, out *Config, s 
 	out.Image = node.Image
 	out.KubeadmConfigPatches = *(*[]string)(unsafe.Pointer(&node.KubeadmConfigPatches))
 	out.KubeadmConfigPatchesJSON6902 = *(*[]kustomize.PatchJSON6902)(unsafe.Pointer(&node.KubeadmConfigPatchesJSON6902))
-	out.ControlPlane = (*ControlPlane)(unsafe.Pointer(node.ControlPlane))
 
 	return nil
 }

@@ -53,8 +53,6 @@ type Node struct {
 	// KubeadmConfigPatchesJSON6902 are applied to the generated kubeadm config
 	// as patchesJson6902 to `kustomize build`
 	KubeadmConfigPatchesJSON6902 []kustomize.PatchJSON6902 `json:"kubeadmConfigPatchesJson6902,omitempty"`
-	// ControlPlane holds config for the control plane node
-	ControlPlane *ControlPlane `json:"ControlPlane,omitempty"`
 }
 
 // NodeRole defines possible role for nodes in a Kubernetes cluster managed by `kind`
@@ -74,35 +72,3 @@ const (
 	// Please note that `kind` nodes hosting external load balancer are not kubernetes nodes
 	ExternalLoadBalancerRole NodeRole = "external-load-balancer"
 )
-
-// ControlPlane holds configurations specific to the control plane nodes
-// (currently the only node).
-type ControlPlane struct {
-	// NodeLifecycle contains LifecycleHooks for phases of node provisioning
-	NodeLifecycle *NodeLifecycle `json:"nodeLifecycle,omitempty"`
-}
-
-// NodeLifecycle contains LifecycleHooks for phases of node provisioning
-// Within each phase these hooks run in the order specified
-type NodeLifecycle struct {
-	// PreBoot hooks run before starting systemd
-	PreBoot []LifecycleHook `json:"preBoot,omitempty"`
-	// PreKubeadm hooks run immediately before `kubeadm`
-	PreKubeadm []LifecycleHook `json:"preKubeadm,omitempty"`
-	// PostKubeadm hooks run immediately after `kubeadm`
-	PostKubeadm []LifecycleHook `json:"postKubeadm,omitempty"`
-	// PostSetup hooks run after any standard `kind` setup on the node
-	PostSetup []LifecycleHook `json:"postSetup,omitempty"`
-}
-
-// LifecycleHook represents a command to run at points in the node lifecycle
-type LifecycleHook struct {
-	// Name is used to improve logging (optional)
-	Name string `json:"name,omitempty"`
-	// Command is the command to run on the node
-	Command []string `json:"command"`
-	// MustSucceed - if true then the hook / command failing will cause
-	// cluster creation to fail, otherwise the error will just be logged and
-	// the boot process will continue
-	MustSucceed bool `json:"mustSucceed,omitempty"`
-}

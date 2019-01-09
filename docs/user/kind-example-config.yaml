@@ -2,6 +2,8 @@
 apiVersion: kind.sigs.k8s.io/v1alpha1
 kind: Config
 
+# TODO(bentheelder): add cluster wide patches or fix this to include
+# a single node
 # patch the generate kubeadm config with some extra settings
 kubeadmConfigPatches:
 - |
@@ -19,22 +21,3 @@ kubeadmConfigPatchesJson6902:
     - op: add
       path: /apiServerCertSANs/-
       value: my-hostname
-
-# control plane node config
-controlPlane:
-  # node lifecycle hooks
-  nodeLifecycle:
-    # commands run before systemd boots
-    preBoot:
-    - name: "should fail"
-      command: [ "yep-not-a-real-command" ]
-    # commands run before kubeadm init
-    preKubeadm: []
-    # commands run after kubeadm init
-    postKubeadm: []
-    # commands run after all other setup on the node
-    postSetup:
-    - name: "list containers"
-      command: [ "docker", "ps" ]
-      # this command cannot fail, or else kind will fail during create
-      mustSucceed: true
