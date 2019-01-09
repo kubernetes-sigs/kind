@@ -770,7 +770,6 @@
     "k8s.io/apimachinery/pkg/util/runtime",
     "k8s.io/apimachinery/pkg/util/sets",
     "k8s.io/apimachinery/pkg/util/version",
-    "k8s.io/apimachinery/pkg/util/yaml",
     "k8s.io/code-generator/cmd/conversion-gen",
     "k8s.io/code-generator/cmd/deepcopy-gen",
     "k8s.io/code-generator/cmd/defaulter-gen",
@@ -778,7 +777,6 @@
     "sigs.k8s.io/kustomize/k8sdeps",
     "sigs.k8s.io/kustomize/pkg/commands/build",
     "sigs.k8s.io/kustomize/pkg/fs",
-    "sigs.k8s.io/yaml",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
