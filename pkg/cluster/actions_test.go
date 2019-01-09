@@ -34,48 +34,48 @@ func TestExecutionPlanSorting(t *testing.T) {
 		{
 			TestName: "ExecutionPlan is ordered by provisioning order as a first criteria",
 			actual: ExecutionPlan{
-				&PlannedTask{Node: &config.Node{Name: "worker2", Role: config.WorkerRole}},
-				&PlannedTask{Node: &config.Node{Name: "control-plane2", Role: config.ControlPlaneRole}},
-				&PlannedTask{Node: &config.Node{Name: "etcd", Role: config.ExternalEtcdRole}},
-				&PlannedTask{Node: &config.Node{Name: "worker1", Role: config.WorkerRole}},
-				&PlannedTask{Node: &config.Node{Name: "control-plane1", Role: config.ControlPlaneRole}},
+				&PlannedTask{Node: &config.NodeReplica{Name: "worker2", Node: config.Node{Role: config.WorkerRole}}},
+				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane2", Node: config.Node{Role: config.ControlPlaneRole}}},
+				&PlannedTask{Node: &config.NodeReplica{Name: "etcd", Node: config.Node{Role: config.ExternalEtcdRole}}},
+				&PlannedTask{Node: &config.NodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}},
+				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}},
 			},
 			expected: ExecutionPlan{
-				&PlannedTask{Node: &config.Node{Name: "etcd", Role: config.ExternalEtcdRole}},
-				&PlannedTask{Node: &config.Node{Name: "control-plane1", Role: config.ControlPlaneRole}},
-				&PlannedTask{Node: &config.Node{Name: "control-plane2", Role: config.ControlPlaneRole}},
-				&PlannedTask{Node: &config.Node{Name: "worker1", Role: config.WorkerRole}},
-				&PlannedTask{Node: &config.Node{Name: "worker2", Role: config.WorkerRole}},
+				&PlannedTask{Node: &config.NodeReplica{Name: "etcd", Node: config.Node{Role: config.ExternalEtcdRole}}},
+				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}},
+				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane2", Node: config.Node{Role: config.ControlPlaneRole}}},
+				&PlannedTask{Node: &config.NodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}},
+				&PlannedTask{Node: &config.NodeReplica{Name: "worker2", Node: config.Node{Role: config.WorkerRole}}},
 			},
 		},
 		{
 			TestName: "ExecutionPlan respects the given action order as a second criteria",
 			actual: ExecutionPlan{
-				&PlannedTask{Node: &config.Node{Name: "worker1", Role: config.WorkerRole}, actionIndex: 3},
-				&PlannedTask{Node: &config.Node{Name: "control-plane1", Role: config.ControlPlaneRole}, actionIndex: 2},
-				&PlannedTask{Node: &config.Node{Name: "control-plane1", Role: config.ControlPlaneRole}, actionIndex: 1},
-				&PlannedTask{Node: &config.Node{Name: "worker1", Role: config.WorkerRole}, actionIndex: 1},
+				&PlannedTask{Node: &config.NodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 3},
+				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 2},
+				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 1},
+				&PlannedTask{Node: &config.NodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 1},
 			},
 			expected: ExecutionPlan{
-				&PlannedTask{Node: &config.Node{Name: "control-plane1", Role: config.ControlPlaneRole}, actionIndex: 1},
-				&PlannedTask{Node: &config.Node{Name: "control-plane1", Role: config.ControlPlaneRole}, actionIndex: 2},
-				&PlannedTask{Node: &config.Node{Name: "worker1", Role: config.WorkerRole}, actionIndex: 1},
-				&PlannedTask{Node: &config.Node{Name: "worker1", Role: config.WorkerRole}, actionIndex: 3},
+				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 1},
+				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 2},
+				&PlannedTask{Node: &config.NodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 1},
+				&PlannedTask{Node: &config.NodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 3},
 			},
 		},
 		{
 			TestName: "ExecutionPlan respects the predefined order for each action as a third criteria",
 			actual: ExecutionPlan{
-				&PlannedTask{Node: &config.Node{Name: "worker1", Role: config.WorkerRole}, actionIndex: 1, taskIndex: 2},
-				&PlannedTask{Node: &config.Node{Name: "control-plane1", Role: config.ControlPlaneRole}, actionIndex: 1, taskIndex: 2},
-				&PlannedTask{Node: &config.Node{Name: "control-plane1", Role: config.ControlPlaneRole}, actionIndex: 1, taskIndex: 1},
-				&PlannedTask{Node: &config.Node{Name: "worker1", Role: config.WorkerRole}, actionIndex: 1, taskIndex: 1},
+				&PlannedTask{Node: &config.NodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 1, taskIndex: 2},
+				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 1, taskIndex: 2},
+				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 1, taskIndex: 1},
+				&PlannedTask{Node: &config.NodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 1, taskIndex: 1},
 			},
 			expected: ExecutionPlan{
-				&PlannedTask{Node: &config.Node{Name: "control-plane1", Role: config.ControlPlaneRole}, actionIndex: 1, taskIndex: 1},
-				&PlannedTask{Node: &config.Node{Name: "control-plane1", Role: config.ControlPlaneRole}, actionIndex: 1, taskIndex: 2},
-				&PlannedTask{Node: &config.Node{Name: "worker1", Role: config.WorkerRole}, actionIndex: 1, taskIndex: 1},
-				&PlannedTask{Node: &config.Node{Name: "worker1", Role: config.WorkerRole}, actionIndex: 1, taskIndex: 2},
+				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 1, taskIndex: 1},
+				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 1, taskIndex: 2},
+				&PlannedTask{Node: &config.NodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 1, taskIndex: 1},
+				&PlannedTask{Node: &config.NodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 1, taskIndex: 2},
 			},
 		},
 	}
@@ -158,9 +158,9 @@ func (b *action2) Tasks() []Task {
 
 func TestNewExecutionPlan(t *testing.T) {
 	testTopology := []*config.Node{
-		{Name: "control-plane", Role: config.ControlPlaneRole},
-		{Name: "worker1", Role: config.WorkerRole},
-		{Name: "worker2", Role: config.WorkerRole},
+		{Role: config.ControlPlaneRole}, // 1 control-plane
+		{Role: config.WorkerRole},       // 2 workers
+		{Role: config.WorkerRole},
 	}
 
 	RegisterAction("action0", newAction0) // Task 0 -> allMachines

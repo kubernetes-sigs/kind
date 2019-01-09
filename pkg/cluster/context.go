@@ -208,7 +208,7 @@ func (cc *createContext) EnsureNodeImages() {
 	var images = map[string]bool{}
 
 	// For all the nodes defined in the `kind` config
-	for _, configNode := range cc.config.Nodes() {
+	for _, configNode := range cc.config.AllReplicas() {
 		if _, ok := images[configNode.Image]; ok {
 			continue
 		}
@@ -235,7 +235,7 @@ func (cc *createContext) provisionNodes() (nodeList map[string]*nodes.Node, err 
 	nodeList = map[string]*nodes.Node{}
 
 	// For all the nodes defined in the `kind` config
-	for _, configNode := range cc.config.Nodes() {
+	for _, configNode := range cc.config.AllReplicas() {
 
 		cc.status.Start(fmt.Sprintf("[%s] Creating node container 📦", configNode.Name))
 		// create the node into a container (docker run, but it is paused, see createNode)
@@ -344,7 +344,7 @@ func (c *Context) Exec(cfg *config.Config, nodeList map[string]*nodes.Node, acti
 	return nil
 }
 
-func (ec *execContext) NodeFor(configNode *config.Node) (node *nodes.Node, ok bool) {
+func (ec *execContext) NodeFor(configNode *config.NodeReplica) (node *nodes.Node, ok bool) {
 	node, ok = ec.nodes[configNode.Name]
 	return
 }

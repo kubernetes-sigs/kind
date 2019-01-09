@@ -1,2 +1,0 @@
-# this file contains an invalid config without kind for testing
-apiVersion:  kind.sigs.k8s.io/v1alpha2

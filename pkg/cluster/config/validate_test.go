@@ -24,18 +24,17 @@ import (
 
 // TODO(fabriziopandini): ideally this should use scheme.Default, but this creates a circular dependency
 // So the current solution is to mimic defaulting for the validation test
-func newDefaultedNode(role NodeRole) *Node {
-	cfg := &Node{
+func newDefaultedNode(role NodeRole) Node {
+	return Node{
 		Role:  role,
 		Image: "myImage:latest",
 	}
-	return cfg
 }
 
 func TestNodeValidate(t *testing.T) {
 	cases := []struct {
 		TestName     string
-		Node         *Node
+		Node         Node
 		ExpectErrors int
 	}{
 		{
@@ -45,7 +44,7 @@ func TestNodeValidate(t *testing.T) {
 		},
 		{
 			TestName: "Invalid PreBoot hook",
-			Node: func() *Node {
+			Node: func() Node {
 				cfg := newDefaultedNode(ControlPlaneRole)
 				cfg.ControlPlane = &ControlPlane{
 					NodeLifecycle: &NodeLifecycle{
@@ -62,7 +61,7 @@ func TestNodeValidate(t *testing.T) {
 		},
 		{
 			TestName: "Invalid PreKubeadm hook",
-			Node: func() *Node {
+			Node: func() Node {
 				cfg := newDefaultedNode(ControlPlaneRole)
 				cfg.ControlPlane = &ControlPlane{
 					NodeLifecycle: &NodeLifecycle{
@@ -80,7 +79,7 @@ func TestNodeValidate(t *testing.T) {
 		},
 		{
 			TestName: "Invalid PostKubeadm hook",
-			Node: func() *Node {
+			Node: func() Node {
 				cfg := newDefaultedNode(ControlPlaneRole)
 				cfg.ControlPlane = &ControlPlane{
 					NodeLifecycle: &NodeLifecycle{
@@ -98,7 +97,7 @@ func TestNodeValidate(t *testing.T) {
 		},
 		{
 			TestName: "Empty image field",
-			Node: func() *Node {
+			Node: func() Node {
 				cfg := newDefaultedNode(ControlPlaneRole)
 				cfg.Image = ""
 				return cfg
@@ -107,7 +106,7 @@ func TestNodeValidate(t *testing.T) {
 		},
 		{
 			TestName: "Empty role field",
-			Node: func() *Node {
+			Node: func() Node {
 				cfg := newDefaultedNode(ControlPlaneRole)
 				cfg.Role = ""
 				return cfg
@@ -116,7 +115,7 @@ func TestNodeValidate(t *testing.T) {
 		},
 		{
 			TestName: "Unknows role field",
-			Node: func() *Node {
+			Node: func() Node {
 				cfg := newDefaultedNode(ControlPlaneRole)
 				cfg.Role = "ssss"
 				return cfg
@@ -126,26 +125,26 @@ func TestNodeValidate(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		t.Run(tc.TestName, func(t2 *testing.T) {
+		t.Run(tc.TestName, func(t *testing.T) {
 			err := tc.Node.Validate()
 			// the error can be:
 			// - nil, in which case we should expect no errors or fail
 			if err == nil {
 				if tc.ExpectErrors != 0 {
-					t2.Error("received no errors but expected errors for case")
+					t.Error("received no errors but expected errors for case")
 				}
 				return
 			}
 			// - not castable to *Errors, in which case we have the wrong error type ...
 			configErrors, ok := err.(util.Errors)
 			if !ok {
-				t2.Errorf("config.Validate should only return nil or ConfigErrors{...}, got: %v", err)
+				t.Errorf("config.Validate should only return nil or ConfigErrors{...}, got: %v", err)
 				return
 			}
 			// - ConfigErrors, in which case expect a certain number of errors
 			errors := configErrors.Errors()
 			if len(errors) != tc.ExpectErrors {
-				t2.Errorf("expected %d errors but got len(%v) = %d", tc.ExpectErrors, errors, len(errors))
+				t.Errorf("expected %d errors but got len(%v) = %d", tc.ExpectErrors, errors, len(errors))
 			}
 		})
 	}
@@ -154,12 +153,12 @@ func TestNodeValidate(t *testing.T) {
 func TestConfigValidate(t *testing.T) {
 	cases := []struct {
 		TestName     string
-		Nodes        []*Node
+		Nodes        []Node
 		ExpectErrors int
 	}{
 		{
 			TestName: "Canonical config",
-			Nodes: []*Node{
+			Nodes: []Node{
 				newDefaultedNode(ControlPlaneRole),
 			},
 		},
@@ -169,7 +168,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			TestName: "Fail without at load balancer and more than one control plane",
-			Nodes: []*Node{
+			Nodes: []Node{
 				newDefaultedNode(ControlPlaneRole),
 				newDefaultedNode(ControlPlaneRole),
 			},
@@ -177,13 +176,13 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			TestName: "Fail with not valid nodes",
-			Nodes: []*Node{
-				func() *Node {
+			Nodes: []Node{
+				func() Node {
 					cfg := newDefaultedNode(ControlPlaneRole)
 					cfg.Image = ""
 					return cfg
 				}(),
-				func() *Node {
+				func() Node {
 					cfg := newDefaultedNode(ControlPlaneRole)
 					cfg.Role = ""
 					return cfg
@@ -194,15 +193,12 @@ func TestConfigValidate(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		t.Run(tc.TestName, func(t2 *testing.T) {
-			var c = Config{}
-			// Adding nodes to the config
-			for _, n := range tc.Nodes {
-				if err := c.Add(n); err != nil {
-					t.Fatalf("unexpected error while adding nodes: %v", err)
-					break
-				}
+		t.Run(tc.TestName, func(t *testing.T) {
+			var c = Config{Nodes: tc.Nodes}
+			if err := c.DeriveInfo(); err != nil {
+				t.Fatalf("unexpected error while adding nodes: %v", err)
 			}
+
 			// validating config
 			err := c.Validate()
 
@@ -210,20 +206,20 @@ func TestConfigValidate(t *testing.T) {
 			// - nil, in which case we should expect no errors or fail
 			if err == nil {
 				if tc.ExpectErrors != 0 {
-					t2.Error("received no errors but expected errors")
+					t.Error("received no errors but expected errors")
 				}
 				return
 			}
 			// - not castable to *Errors, in which case we have the wrong error type ...
 			configErrors, ok := err.(util.Errors)
 			if !ok {
-				t2.Errorf("config.Validate should only return nil or ConfigErrors{...}, got: %v", err)
+				t.Errorf("config.Validate should only return nil or ConfigErrors{...}, got: %v", err)
 				return
 			}
 			// - ConfigErrors, in which case expect a certain number of errors
 			errors := configErrors.Errors()
 			if len(errors) != tc.ExpectErrors {
-				t2.Errorf("expected %d errors but got len(%v) = %d", tc.ExpectErrors, errors, len(errors))
+				t.Errorf("expected %d errors but got len(%v) = %d", tc.ExpectErrors, errors, len(errors))
 			}
 		})
 	}

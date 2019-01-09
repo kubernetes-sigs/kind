@@ -21,41 +21,32 @@ import (
 	"sigs.k8s.io/kind/pkg/kustomize"
 )
 
-// +k8s:deepcopy-gen=false
-
-// Config groups all nodes in the `kind` Config.
-// This struct is used internally by `kind` and it is NOT EXPOSED as a object of the public API.
-// All the field of this type are intentionally defined a private fields, thus ensuring
-// that nodes and all the derivedConfigData respect a set of assumptions that will simplify
-// the rest of the code e.g. nodes are ordered by provisioning order, node names are
-// unique, derivedConfigData are properly set etc.
-// Config field can be modified or accessed only using provided helper func.
-type Config struct {
-	// nodes constains the list of nodes defined in the `kind` Config
-	// Such list is not meant to be set by hand, but the Add method
-	// should be used instead
-	nodes NodeList
-
-	// derivedConfigData is struct populated starting from the node list
-	// that provides a set of convenience func for accessing nodes
-	// with different role in the kind cluster.
-	derivedConfigData
-}
-
-// +k8s:deepcopy-gen=false
-
-// NodeList defines a list of Node in the `kind` Config
-type NodeList []*Node
-
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Node contains settings for a node in the `kind` Config.
-// A node in kind config represent a container that will be provisioned with all the components
-// required for the assigned role in the Kubernetes cluster
-type Node struct {
+// Config groups all nodes in the `kind` Config.
+type Config struct {
 	// TypeMeta representing the type of the object and its API schema version.
 	metav1.TypeMeta
 
+	// Nodes constains the list of nodes defined in the `kind` Config
+	Nodes []Node `json:"nodes,"`
+
+	// DerivedConfigData is struct populated starting from the node list.
+	// It contains a set of "materialized views" generated starting from nodes
+	// and designed to make easy operating nodes in the rest of the code base.
+	// This attribute exists only in the internal config version and is meant
+	// to simplify the usage of the config in the code base.
+	// TODO(fabrizio pandini): consider if we can move this away from the api
+	// and make it an internal of the kind library
+	// +k8s:conversion-gen=false
+	DerivedConfigData
+}
+
+// Node contains settings for a node in the `kind` Config.
+// A node in kind config represent a container that will be provisioned with all the components
+// required for the assigned role in the Kubernetes cluster.
+// If replicas is set, the desired node replica number will be generated.
+type Node struct {
 	// Replicas is the number of desired node replicas.
 	// Defaults to 1
 	Replicas *int32
@@ -75,15 +66,6 @@ type Node struct {
 	KubeadmConfigPatchesJSON6902 []kustomize.PatchJSON6902
 	// ControlPlane holds config for the control plane node
 	ControlPlane *ControlPlane
-
-	// The unique name assigned to the node
-	// This information is internal to `kind`.
-	// +k8s:conversion-gen=false
-	Name string
-	// ContainerHandle provides an handle to the container implementing the node
-	// This information is internal to `kind`.
-	// +k8s:conversion-gen=false
-	ContainerHandle
 }
 
 // NodeRole defines possible role for nodes in a Kubernetes cluster managed by `kind`
@@ -91,6 +73,7 @@ type NodeRole string
 
 const (
 	// ControlPlaneRole identifies a node that hosts a Kubernetes control-plane
+	// NB. in single node clusters, control-plane nodes act also as a worker nodes
 	ControlPlaneRole NodeRole = "control-plane"
 	// WorkerRole identifies a node that hosts a Kubernetes worker
 	WorkerRole NodeRole = "worker"
@@ -135,31 +118,45 @@ type LifecycleHook struct {
 	MustSucceed bool
 }
 
-// +k8s:deepcopy-gen=false
+// +k8s:conversion-gen=false
 
-// derivedConfigData is a struct populated starting from the node list.
-// This struct is used internally by `kind` and it is NOT EXPOSED as a object of the public API.
-// All the field of this type are intentionally defined a private fields, thus ensuring
-// that derivedConfigData respect a set of assumptions that  will simplify the rest of the code.
-// derivedConfigData fields can be modified or accessed only using provided helper func.
-type derivedConfigData struct {
-	// controlPlanes contains the subset of nodes with control-plane role
-	controlPlanes NodeList
-	// workers contains the subset of nodes with worker role, if any
-	workers NodeList
-	// externalEtcd contains the node with external-etcd role, if defined
-	// TODO(fabriziopandini): eventually in future we would like to support
-	// external etcd clusters with more than one member
-	externalEtcd *Node
-	// externalLoadBalancer contains the node with external-load-balancer role, if defined
-	externalLoadBalancer *Node
+// NodeReplica defines a `kind` config Node that is geneated by creating a replicas for a node
+// This attribute exists only in the internal config version and is meant
+// to simplify the usage of the config in the code base.
+type NodeReplica struct {
+	// Node contains settings for the node in the `kind` Config.
+	// please note that the Replicas number is alway set to nil.
+	Node
+
+	// Name contains the unique name assigned to the node while generating the replica
+	Name string
 }
 
 // +k8s:conversion-gen=false
 
-// ContainerHandle defines info used by `kind` for transforming Nodes into containers.
-// This struct is used internally by `kind` and it is NOT EXPOSED as a object of the public API.
-// TODO(fabriziopandini): this is a place holder for an object that will replace current container handle
-// when pkg/cluster/context.go will support multi master
-type ContainerHandle struct {
+// ReplicaList defines a list of NodeReplicas in the `kind` Config
+// This attribute exists only in the internal config version and is meant
+// to simplify the usage of the config in the code base.
+type ReplicaList []*NodeReplica
+
+// +k8s:conversion-gen=false
+
+// DerivedConfigData is a struct populated starting from the nodes list.
+// All the field of this type are intentionally defined a private fields, thus ensuring
+// that derivedConfigData will have a predictable behaviour for the code built on top.
+// This attribute exists only in the internal config version and is meant
+// to simplify the usage of the config in the code base.
+type DerivedConfigData struct {
+	// allReplicas constains the list of node replicas defined in the `kind` Config
+	allReplicas ReplicaList
+	// controlPlanes contains the subset of node replicas with control-plane role
+	controlPlanes ReplicaList
+	// workers contains the subset of node replicas with worker role, if any
+	workers ReplicaList
+	// externalEtcd contains the node replica with external-etcd role, if defined
+	// TODO(fabriziopandini): eventually in future we would like to support
+	// external etcd clusters with more than one member
+	externalEtcd *NodeReplica
+	// externalLoadBalancer contains the node replica with external-load-balancer role, if defined
+	externalLoadBalancer *NodeReplica
 }

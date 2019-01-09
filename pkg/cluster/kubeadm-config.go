@@ -56,7 +56,7 @@ func (b *KubeadmConfigAction) Tasks() []Task {
 
 // runKubeadmConfig creates a kubeadm config file locally and then
 // copies it to the node
-func runKubeadmConfig(ec *execContext, configNode *config.Node) error {
+func runKubeadmConfig(ec *execContext, configNode *config.NodeReplica) error {
 	// get the target node for this task
 	node, ok := ec.NodeFor(configNode)
 	if !ok {
