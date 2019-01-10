@@ -14,18 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
+package cluster
 
 import (
 	"testing"
 
 	utilpointer "k8s.io/utils/pointer"
+	"sigs.k8s.io/kind/pkg/cluster/config"
 )
 
 func TestDeriveInfo(t *testing.T) {
 	cases := []struct {
 		TestName                     string
-		Nodes                        []Node
+		Nodes                        []config.Node
 		ExpectReplicas               []string
 		ExpectControlPlanes          []string
 		ExpectBootStrapControlPlane  *string
@@ -48,8 +49,8 @@ func TestDeriveInfo(t *testing.T) {
 		},
 		{
 			TestName: "Single control plane Node get properly assigned to bootstrap control-plane",
-			Nodes: []Node{
-				{Role: ControlPlaneRole},
+			Nodes: []config.Node{
+				{Role: config.ControlPlaneRole},
 			},
 			ExpectReplicas:               []string{"control-plane"},
 			ExpectControlPlanes:          []string{"control-plane"},
@@ -59,8 +60,8 @@ func TestDeriveInfo(t *testing.T) {
 		},
 		{
 			TestName: "Control planes Nodes get properly splitted between bootstrap and secondary control-planes",
-			Nodes: []Node{
-				{Role: ControlPlaneRole, Replicas: utilpointer.Int32Ptr(3)},
+			Nodes: []config.Node{
+				{Role: config.ControlPlaneRole, Replicas: utilpointer.Int32Ptr(3)},
 			},
 			ExpectReplicas:               []string{"control-plane1", "control-plane2", "control-plane3"},
 			ExpectControlPlanes:          []string{"control-plane1", "control-plane2", "control-plane3"},
@@ -70,14 +71,14 @@ func TestDeriveInfo(t *testing.T) {
 		},
 		{
 			TestName: "Full HA cluster", // NB. This test case test that provisioning order is applied to all the node lists as well
-			Nodes: []Node{
-				{Role: WorkerRole},
-				{Role: ControlPlaneRole},
-				{Role: ExternalEtcdRole},
-				{Role: ControlPlaneRole},
-				{Role: WorkerRole},
-				{Role: ControlPlaneRole},
-				{Role: ExternalLoadBalancerRole},
+			Nodes: []config.Node{
+				{Role: config.WorkerRole},
+				{Role: config.ControlPlaneRole},
+				{Role: config.ExternalEtcdRole},
+				{Role: config.ControlPlaneRole},
+				{Role: config.WorkerRole},
+				{Role: config.ControlPlaneRole},
+				{Role: config.ExternalLoadBalancerRole},
 			},
 			ExpectReplicas:               []string{"etcd", "lb", "control-plane1", "control-plane2", "control-plane3", "worker1", "worker2"},
 			ExpectControlPlanes:          []string{"control-plane1", "control-plane2", "control-plane3"},
@@ -90,11 +91,11 @@ func TestDeriveInfo(t *testing.T) {
 		},
 		{
 			TestName: "Full HA cluster with replicas",
-			Nodes: []Node{
-				{Role: WorkerRole, Replicas: utilpointer.Int32Ptr(2)},
-				{Role: ControlPlaneRole, Replicas: utilpointer.Int32Ptr(3)},
-				{Role: ExternalEtcdRole},
-				{Role: ExternalLoadBalancerRole},
+			Nodes: []config.Node{
+				{Role: config.WorkerRole, Replicas: utilpointer.Int32Ptr(2)},
+				{Role: config.ControlPlaneRole, Replicas: utilpointer.Int32Ptr(3)},
+				{Role: config.ExternalEtcdRole},
+				{Role: config.ExternalLoadBalancerRole},
 			},
 			ExpectReplicas:               []string{"etcd", "lb", "control-plane1", "control-plane2", "control-plane3", "worker1", "worker2"},
 			ExpectControlPlanes:          []string{"control-plane1", "control-plane2", "control-plane3"},
@@ -107,17 +108,17 @@ func TestDeriveInfo(t *testing.T) {
 		},
 		{
 			TestName: "Fails because two etcds Nodes are added",
-			Nodes: []Node{
-				{Role: ExternalEtcdRole},
-				{Role: ExternalEtcdRole},
+			Nodes: []config.Node{
+				{Role: config.ExternalEtcdRole},
+				{Role: config.ExternalEtcdRole},
 			},
 			ExpectError: true,
 		},
 		{
 			TestName: "Fails because two load balancer Nodes are added",
-			Nodes: []Node{
-				{Role: ExternalLoadBalancerRole},
-				{Role: ExternalLoadBalancerRole},
+			Nodes: []config.Node{
+				{Role: config.ExternalLoadBalancerRole},
+				{Role: config.ExternalLoadBalancerRole},
 			},
 			ExpectError: true,
 		},
@@ -126,8 +127,8 @@ func TestDeriveInfo(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.TestName, func(t *testing.T) {
 			// Adding Nodes to the config and deriving infos
-			var cfg = Config{Nodes: c.Nodes}
-			err := cfg.DeriveInfo()
+			var cfg = &config.Config{Nodes: c.Nodes}
+			derived, err := deriveInfo(cfg)
 			// the error can be:
 			// - nil, in which case we should expect no errors or fail
 			if err != nil {
@@ -144,20 +145,20 @@ func TestDeriveInfo(t *testing.T) {
 			}
 
 			// Fail if Nodes does not match
-			checkReplicaList(t, cfg.AllReplicas(), c.ExpectReplicas)
+			checkReplicaList(t, derived.AllReplicas(), c.ExpectReplicas)
 
 			// Fail if fields derived from Nodes does not match
-			checkReplicaList(t, cfg.ControlPlanes(), c.ExpectControlPlanes)
-			checkNode(t, cfg.BootStrapControlPlane(), c.ExpectBootStrapControlPlane)
-			checkReplicaList(t, cfg.SecondaryControlPlanes(), c.ExpectSecondaryControlPlanes)
-			checkReplicaList(t, cfg.Workers(), c.ExpectWorkers)
-			checkNode(t, cfg.ExternalEtcd(), c.ExpectEtcd)
-			checkNode(t, cfg.ExternalLoadBalancer(), c.ExpectLoadBalancer)
+			checkReplicaList(t, derived.ControlPlanes(), c.ExpectControlPlanes)
+			checkNode(t, derived.BootStrapControlPlane(), c.ExpectBootStrapControlPlane)
+			checkReplicaList(t, derived.SecondaryControlPlanes(), c.ExpectSecondaryControlPlanes)
+			checkReplicaList(t, derived.Workers(), c.ExpectWorkers)
+			checkNode(t, derived.ExternalEtcd(), c.ExpectEtcd)
+			checkNode(t, derived.ExternalLoadBalancer(), c.ExpectLoadBalancer)
 		})
 	}
 }
 
-func checkNode(t *testing.T, n *NodeReplica, name *string) {
+func checkNode(t *testing.T, n *nodeReplica, name *string) {
 	if (n == nil) != (name == nil) {
 		t.Errorf("expected %v node, saw %v", name, n)
 	}
@@ -171,7 +172,7 @@ func checkNode(t *testing.T, n *NodeReplica, name *string) {
 	}
 }
 
-func checkReplicaList(t *testing.T, list ReplicaList, names []string) {
+func checkReplicaList(t *testing.T, list replicaList, names []string) {
 	if len(list) != len(names) {
 		t.Errorf("expected %d nodes, saw %d", len(names), len(list))
 		return

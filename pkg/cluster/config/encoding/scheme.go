@@ -80,11 +80,6 @@ func Load(path string) (*config.Config, error) {
 	var cfg = &config.Config{}
 	Scheme.Convert(latestPublicConfig, cfg, nil)
 
-	// updates the derived info
-	if err := cfg.DeriveInfo(); err != nil {
-		return nil, err
-	}
-
 	// unmarshal the file content into a `kind` Config
 	return cfg, nil
 }

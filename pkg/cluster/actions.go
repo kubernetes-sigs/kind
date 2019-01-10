@@ -20,71 +20,69 @@ import (
 	"fmt"
 	"sort"
 	"sync"
-
-	"sigs.k8s.io/kind/pkg/cluster/config"
 )
 
-// Action define a set of tasks to be executed on a `kind` cluster.
+// action define a set of tasks to be executed on a `kind` cluster.
 // Usage of actions allows to define repetitive, high level abstractions/workflows
 // by composing lower level tasks
-type Action interface {
+type action interface {
 	// Tasks returns the list of task that are identified by this action
 	// Please note that the order of task is important, and it will be
 	// respected during execution
-	Tasks() []Task
+	Tasks() []task
 }
 
 // Task define a logical step of an action to be executed on a `kind` cluster.
 // At exec time the logical step will then apply to the current cluster
 // topology, and be planned for execution zero, one or many times accordingly.
-type Task struct {
+type task struct {
 	// Description of the task
 	Description string
 	// TargetNodes define a function that identifies the nodes where this
 	// task should be executed
-	TargetNodes NodeSelector
+	TargetNodes nodeSelector
 	// Run the func that implements the task action
-	Run func(*execContext, *config.NodeReplica) error
+	Run func(*execContext, *nodeReplica) error
 }
 
-// NodeSelector defines a function returning a subset of nodes where tasks
+// nodeSelector defines a function returning a subset of nodes where tasks
 // should be planned.
-type NodeSelector func(*config.Config) config.ReplicaList
+type nodeSelector func(*derivedConfigData) replicaList
 
-// PlannedTask defines a Task planned for execution on a given node.
-type PlannedTask struct {
+// plannedTask defines a Task planned for execution on a given node.
+type plannedTask struct {
 	// task to be executed
-	Task Task
+	Task task
 	// node where the task should be executed
-	Node *config.NodeReplica
+	Node *nodeReplica
 
 	// PlannedTask should respects the given order of actions and tasks
 	actionIndex int
 	taskIndex   int
 }
 
-// ExecutionPlan contain an ordered list of Planned Tasks
+// executionPlan contain an ordered list of Planned Tasks
 // Please note that the planning order is critical for providing a
 // predictable, "kubeadm friendly" and consistent execution order.
-type ExecutionPlan []*PlannedTask
+type executionPlan []*plannedTask
 
 // internal registry of named Action implementations
 var actionImpls = struct {
-	impls map[string]func() Action
+	impls map[string]func() action
 	sync.Mutex
 }{
-	impls: map[string]func() Action{},
+	impls: map[string]func() action{},
 }
 
-// RegisterAction registers a new named actionBuilder function for use
-func RegisterAction(name string, actionBuilderFunc func() Action) {
+// registerAction registers a new named actionBuilder function for use
+func registerAction(name string, actionBuilderFunc func() action) {
 	actionImpls.Lock()
 	actionImpls.impls[name] = actionBuilderFunc
 	actionImpls.Unlock()
 }
 
-// GetAction returns one instance of a registered action
-func GetAction(name string) (Action, error) {
+// getAction returns one instance of a registered action
+func getAction(name string) (action, error) {
 	actionImpls.Lock()
 	actionBuilderFunc, ok := actionImpls.impls[name]
 	actionImpls.Unlock()
@@ -94,7 +92,7 @@ func GetAction(name string) (Action, error) {
 	return actionBuilderFunc(), nil
 }
 
-// NewExecutionPlan creates an execution plan by applying logical step/task
+// newExecutionPlan creates an execution plan by applying logical step/task
 // defined for each action to the actual cluster topology. As a result task
 // could be executed zero, one or more times according with the target nodes
 // selector defined for each task.
@@ -106,22 +104,22 @@ func GetAction(name string) (Action, error) {
 //     init-join-upgrade and then join again)
 //     e.g. it should be something like "action group" where each action
 //	   group is a list of actions
-func NewExecutionPlan(cfg *config.Config, actionNames []string) (ExecutionPlan, error) {
+func newExecutionPlan(derived *derivedConfigData, actionNames []string) (executionPlan, error) {
 	// for each actionName
-	var plan = ExecutionPlan{}
+	var plan = executionPlan{}
 	for i, name := range actionNames {
 		// get the action implementation instance
-		actionImpl, err := GetAction(name)
+		actionImpl, err := getAction(name)
 		if err != nil {
 			return nil, err
 		}
 		// for each logical tasks defined for the action
 		for j, t := range actionImpl.Tasks() {
 			// get the list of target nodes in the current topology
-			targetNodes := t.TargetNodes(cfg)
+			targetNodes := t.TargetNodes(derived)
 			for _, n := range targetNodes {
 				// creates the planned task
-				taskContext := &PlannedTask{
+				taskContext := &plannedTask{
 					Node:        n,
 					Task:        t,
 					actionIndex: i,
@@ -138,16 +136,16 @@ func NewExecutionPlan(cfg *config.Config, actionNames []string) (ExecutionPlan, 
 	return plan, nil
 }
 
-// Len of the ExecutionPlan.
+// Len of the executionPlan.
 // It is required for making ExecutionPlan sortable.
-func (t ExecutionPlan) Len() int {
+func (t executionPlan) Len() int {
 	return len(t)
 }
 
 // Less return the lower between two elements of the ExecutionPlan, where the
 // lower element should be executed before the other.
 // It is required for making ExecutionPlan sortable.
-func (t ExecutionPlan) Less(i, j int) bool {
+func (t executionPlan) Less(i, j int) bool {
 	return t[i].ExecutionOrder() < t[j].ExecutionOrder()
 }
 
@@ -155,7 +153,7 @@ func (t ExecutionPlan) Less(i, j int) bool {
 // into a predictable, "kubeadm friendly" and consistent order.
 // NB. we are using a string to combine all the item considered into something
 // that can be easily sorted using a lexicographical order
-func (p *PlannedTask) ExecutionOrder() string {
+func (p *plannedTask) ExecutionOrder() string {
 	return fmt.Sprintf("Node.ProvisioningOrder: %d - Node.Name: %s - actionIndex: %d - taskIndex: %d",
 		// Then PlannedTask are grouped by machines, respecting the kubeadm node
 		// ProvisioningOrder: first complete provisioning on bootstrap control
@@ -175,58 +173,58 @@ func (p *PlannedTask) ExecutionOrder() string {
 
 // Swap two elements of the ExecutionPlan.
 // It is required for making ExecutionPlan sortable.
-func (t ExecutionPlan) Swap(i, j int) {
+func (t executionPlan) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
-// SelectAllNodes is a NodeSelector that returns all the nodes defined in
+// selectAllNodes is a NodeSelector that returns all the nodes defined in
 // the `kind` Config
-func SelectAllNodes(cfg *config.Config) config.ReplicaList {
+func selectAllNodes(cfg *derivedConfigData) replicaList {
 	return cfg.AllReplicas()
 }
 
-// SelectControlPlaneNodes is a NodeSelector that returns all the nodes
+// selectControlPlaneNodes is a NodeSelector that returns all the nodes
 // with control-plane role
-func SelectControlPlaneNodes(cfg *config.Config) config.ReplicaList {
+func selectControlPlaneNodes(cfg *derivedConfigData) replicaList {
 	return cfg.ControlPlanes()
 }
 
-// SelectBootstrapControlPlaneNode is a NodeSelector that returns the
+// selectBootstrapControlPlaneNode is a NodeSelector that returns the
 // first node with control-plane role
-func SelectBootstrapControlPlaneNode(cfg *config.Config) config.ReplicaList {
+func selectBootstrapControlPlaneNode(cfg *derivedConfigData) replicaList {
 	if cfg.BootStrapControlPlane() != nil {
-		return config.ReplicaList{cfg.BootStrapControlPlane()}
+		return replicaList{cfg.BootStrapControlPlane()}
 	}
 	return nil
 }
 
-// SelectSecondaryControlPlaneNodes is a NodeSelector that returns all
+// selectSecondaryControlPlaneNodes is a NodeSelector that returns all
 // the nodes with control-plane roleexcept the BootStrapControlPlane
 // node, if any,
-func SelectSecondaryControlPlaneNodes(cfg *config.Config) config.ReplicaList {
+func selectSecondaryControlPlaneNodes(cfg *derivedConfigData) replicaList {
 	return cfg.SecondaryControlPlanes()
 }
 
-// SelectWorkerNodes is a NodeSelector that returns all the nodes with
+// selectWorkerNodes is a NodeSelector that returns all the nodes with
 // Worker role, if any
-func SelectWorkerNodes(cfg *config.Config) config.ReplicaList {
+func selectWorkerNodes(cfg *derivedConfigData) replicaList {
 	return cfg.Workers()
 }
 
-// SelectExternalEtcdNode is a NodeSelector that returns the node with
+// selectExternalEtcdNode is a NodeSelector that returns the node with
 //external-etcd role, if defined
-func SelectExternalEtcdNode(cfg *config.Config) config.ReplicaList {
+func selectExternalEtcdNode(cfg *derivedConfigData) replicaList {
 	if cfg.ExternalEtcd() != nil {
-		return config.ReplicaList{cfg.ExternalEtcd()}
+		return replicaList{cfg.ExternalEtcd()}
 	}
 	return nil
 }
 
-// SelectExternalLoadBalancerNode is a NodeSelector that returns the node
+// selectExternalLoadBalancerNode is a NodeSelector that returns the node
 // with external-load-balancer role, if defined
-func SelectExternalLoadBalancerNode(cfg *config.Config) config.ReplicaList {
+func selectExternalLoadBalancerNode(cfg *derivedConfigData) replicaList {
 	if cfg.ExternalLoadBalancer() != nil {
-		return config.ReplicaList{cfg.ExternalLoadBalancer()}
+		return replicaList{cfg.ExternalLoadBalancer()}
 	}
 	return nil
 }

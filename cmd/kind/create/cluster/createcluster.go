@@ -74,23 +74,6 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("aborting due to invalid configuration")
 	}
 
-	// TODO(fabrizio pandini): this check is temporary / WIP
-	// kind v1alpha config fully supports multi nodes, but the cluster creation logic implemented in
-	// pkg/cluster/contex.go does it only partially (yet).
-	// As soon a external load-balancer and external etcd is implemented in pkg/cluster, this should go away
-
-	if cfg.ExternalLoadBalancer() != nil {
-		return fmt.Errorf("multi node support is still a work in progress, currently external load balancer node is not supported")
-	}
-
-	if cfg.SecondaryControlPlanes() != nil {
-		return fmt.Errorf("multi node support is still a work in progress, currently only single control-plane node are supported")
-	}
-
-	if cfg.ExternalEtcd() != nil {
-		return fmt.Errorf("multi node support is still a work in progress, currently external etcd node is not supported")
-	}
-
 	// create a cluster context and create the cluster
 	ctx := cluster.NewContext(flags.Name)
 	if flags.ImageName != "" {
@@ -105,11 +88,6 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		if err != nil {
 			log.Errorf("Invalid flags, configuration failed validation: %v", err)
 			return fmt.Errorf("aborting due to invalid configuration")
-		}
-
-		// updates the derived info
-		if err := cfg.DeriveInfo(); err != nil {
-			return err
 		}
 	}
 	if err = ctx.Create(cfg, flags.Retain, flags.Wait); err != nil {

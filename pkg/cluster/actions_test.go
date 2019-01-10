@@ -28,54 +28,54 @@ import (
 func TestExecutionPlanSorting(t *testing.T) {
 	cases := []struct {
 		TestName string
-		actual   ExecutionPlan
-		expected ExecutionPlan
+		actual   executionPlan
+		expected executionPlan
 	}{
 		{
 			TestName: "ExecutionPlan is ordered by provisioning order as a first criteria",
-			actual: ExecutionPlan{
-				&PlannedTask{Node: &config.NodeReplica{Name: "worker2", Node: config.Node{Role: config.WorkerRole}}},
-				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane2", Node: config.Node{Role: config.ControlPlaneRole}}},
-				&PlannedTask{Node: &config.NodeReplica{Name: "etcd", Node: config.Node{Role: config.ExternalEtcdRole}}},
-				&PlannedTask{Node: &config.NodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}},
-				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}},
+			actual: executionPlan{
+				&plannedTask{Node: &nodeReplica{Name: "worker2", Node: config.Node{Role: config.WorkerRole}}},
+				&plannedTask{Node: &nodeReplica{Name: "control-plane2", Node: config.Node{Role: config.ControlPlaneRole}}},
+				&plannedTask{Node: &nodeReplica{Name: "etcd", Node: config.Node{Role: config.ExternalEtcdRole}}},
+				&plannedTask{Node: &nodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}},
+				&plannedTask{Node: &nodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}},
 			},
-			expected: ExecutionPlan{
-				&PlannedTask{Node: &config.NodeReplica{Name: "etcd", Node: config.Node{Role: config.ExternalEtcdRole}}},
-				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}},
-				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane2", Node: config.Node{Role: config.ControlPlaneRole}}},
-				&PlannedTask{Node: &config.NodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}},
-				&PlannedTask{Node: &config.NodeReplica{Name: "worker2", Node: config.Node{Role: config.WorkerRole}}},
+			expected: executionPlan{
+				&plannedTask{Node: &nodeReplica{Name: "etcd", Node: config.Node{Role: config.ExternalEtcdRole}}},
+				&plannedTask{Node: &nodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}},
+				&plannedTask{Node: &nodeReplica{Name: "control-plane2", Node: config.Node{Role: config.ControlPlaneRole}}},
+				&plannedTask{Node: &nodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}},
+				&plannedTask{Node: &nodeReplica{Name: "worker2", Node: config.Node{Role: config.WorkerRole}}},
 			},
 		},
 		{
 			TestName: "ExecutionPlan respects the given action order as a second criteria",
-			actual: ExecutionPlan{
-				&PlannedTask{Node: &config.NodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 3},
-				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 2},
-				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 1},
-				&PlannedTask{Node: &config.NodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 1},
+			actual: executionPlan{
+				&plannedTask{Node: &nodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 3},
+				&plannedTask{Node: &nodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 2},
+				&plannedTask{Node: &nodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 1},
+				&plannedTask{Node: &nodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 1},
 			},
-			expected: ExecutionPlan{
-				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 1},
-				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 2},
-				&PlannedTask{Node: &config.NodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 1},
-				&PlannedTask{Node: &config.NodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 3},
+			expected: executionPlan{
+				&plannedTask{Node: &nodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 1},
+				&plannedTask{Node: &nodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 2},
+				&plannedTask{Node: &nodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 1},
+				&plannedTask{Node: &nodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 3},
 			},
 		},
 		{
 			TestName: "ExecutionPlan respects the predefined order for each action as a third criteria",
-			actual: ExecutionPlan{
-				&PlannedTask{Node: &config.NodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 1, taskIndex: 2},
-				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 1, taskIndex: 2},
-				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 1, taskIndex: 1},
-				&PlannedTask{Node: &config.NodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 1, taskIndex: 1},
+			actual: executionPlan{
+				&plannedTask{Node: &nodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 1, taskIndex: 2},
+				&plannedTask{Node: &nodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 1, taskIndex: 2},
+				&plannedTask{Node: &nodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 1, taskIndex: 1},
+				&plannedTask{Node: &nodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 1, taskIndex: 1},
 			},
-			expected: ExecutionPlan{
-				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 1, taskIndex: 1},
-				&PlannedTask{Node: &config.NodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 1, taskIndex: 2},
-				&PlannedTask{Node: &config.NodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 1, taskIndex: 1},
-				&PlannedTask{Node: &config.NodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 1, taskIndex: 2},
+			expected: executionPlan{
+				&plannedTask{Node: &nodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 1, taskIndex: 1},
+				&plannedTask{Node: &nodeReplica{Name: "control-plane1", Node: config.Node{Role: config.ControlPlaneRole}}, actionIndex: 1, taskIndex: 2},
+				&plannedTask{Node: &nodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 1, taskIndex: 1},
+				&plannedTask{Node: &nodeReplica{Name: "worker1", Node: config.Node{Role: config.WorkerRole}}, actionIndex: 1, taskIndex: 2},
 			},
 		},
 	}
@@ -103,15 +103,15 @@ func TestExecutionPlanSorting(t *testing.T) {
 // dummy action with single task targeting all nodes
 type action0 struct{}
 
-func newAction0() Action {
+func newAction0() action {
 	return &action0{}
 }
 
-func (b *action0) Tasks() []Task {
-	return []Task{
+func (b *action0) Tasks() []task {
+	return []task{
 		{
 			Description: "action0 - task 0/all",
-			TargetNodes: SelectAllNodes,
+			TargetNodes: selectAllNodes,
 		},
 	}
 }
@@ -119,15 +119,15 @@ func (b *action0) Tasks() []Task {
 // dummy action with single task targeting control-plane nodes
 type action1 struct{}
 
-func newAction1() Action {
+func newAction1() action {
 	return &action1{}
 }
 
-func (b *action1) Tasks() []Task {
-	return []Task{
+func (b *action1) Tasks() []task {
+	return []task{
 		{
 			Description: "action1 - task 0/control-planes",
-			TargetNodes: SelectControlPlaneNodes,
+			TargetNodes: selectControlPlaneNodes,
 		},
 	}
 }
@@ -135,23 +135,23 @@ func (b *action1) Tasks() []Task {
 // dummy action with multiple tasks each with different targets
 type action2 struct{}
 
-func newAction2() Action {
+func newAction2() action {
 	return &action2{}
 }
 
-func (b *action2) Tasks() []Task {
-	return []Task{
+func (b *action2) Tasks() []task {
+	return []task{
 		{
 			Description: "action2 - task 0/all",
-			TargetNodes: SelectAllNodes,
+			TargetNodes: selectAllNodes,
 		},
 		{
 			Description: "action2 - task 1/control-planes",
-			TargetNodes: SelectControlPlaneNodes,
+			TargetNodes: selectControlPlaneNodes,
 		},
 		{
 			Description: "action2 - task 2/workers",
-			TargetNodes: SelectWorkerNodes,
+			TargetNodes: selectWorkerNodes,
 		},
 	}
 }
@@ -163,9 +163,9 @@ func TestNewExecutionPlan(t *testing.T) {
 		{Role: config.WorkerRole},
 	}
 
-	RegisterAction("action0", newAction0) // Task 0 -> allMachines
-	RegisterAction("action1", newAction1) // Task 0 -> controlPlaneMachines
-	RegisterAction("action2", newAction2) // Task 0 -> allMachines, Task 1 -> controlPlaneMachines, Task 2 -> workerMachines
+	registerAction("action0", newAction0) // Task 0 -> allMachines
+	registerAction("action1", newAction1) // Task 0 -> controlPlaneMachines
+	registerAction("action2", newAction2) // Task 0 -> allMachines, Task 1 -> controlPlaneMachines, Task 2 -> workerMachines
 
 	cases := []struct {
 		TestName     string
@@ -225,16 +225,16 @@ func TestNewExecutionPlan(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.TestName, func(t2 *testing.T) {
-			var cfg = &config.Config{}
+			var derived = &derivedConfigData{}
 			// Adding nodes to the config
 			for _, n := range c.Nodes {
-				if err := cfg.Add(n); err != nil {
+				if err := derived.Add(n); err != nil {
 					t2.Fatalf("unexpected error while adding nodes: %v", err)
 					break
 				}
 			}
 			// Creating the execution plane
-			tasks, _ := NewExecutionPlan(cfg, c.Actions)
+			tasks, _ := newExecutionPlan(derived, c.Actions)
 
 			// Checking planned task are properly created (and sorted)
 			if len(tasks) != len(c.ExpextedPlan) {

@@ -34,15 +34,6 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	// There should be at least one control plane
-	if c.BootStrapControlPlane() == nil {
-		errs = append(errs, fmt.Errorf("please add at least one node with role %q", ControlPlaneRole))
-	}
-	// There should be one load balancer if more than one control plane exists in the cluster
-	if len(c.ControlPlanes()) > 1 && c.ExternalLoadBalancer() == nil {
-		errs = append(errs, fmt.Errorf("please add a node with role %s because in the cluster there are more than one node with role %s", ExternalLoadBalancerRole, ControlPlaneRole))
-	}
-
 	if len(errs) > 0 {
 		return util.NewErrors(errs)
 	}
