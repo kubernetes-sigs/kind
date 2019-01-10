@@ -21,47 +21,46 @@ import (
 
 	"github.com/pkg/errors"
 
-	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/kubeadm"
 )
 
-// KubeadmJoinAction implements action for joining nodes
+// kubeadmJoinAction implements action for joining nodes
 // to a Kubernetes cluster.
-type KubeadmJoinAction struct{}
+type kubeadmJoinAction struct{}
 
 func init() {
-	RegisterAction("join", NewKubeadmJoinAction)
+	registerAction("join", newKubeadmJoinAction)
 }
 
-// NewKubeadmJoinAction returns a new KubeadmJoinAction
-func NewKubeadmJoinAction() Action {
-	return &KubeadmJoinAction{}
+// newKubeadmJoinAction returns a new KubeadmJoinAction
+func newKubeadmJoinAction() action {
+	return &kubeadmJoinAction{}
 }
 
 // Tasks returns the list of action tasks
-func (b *KubeadmJoinAction) Tasks() []Task {
-	return []Task{
+func (b *kubeadmJoinAction) Tasks() []task {
+	return []task{
 		// TODO(fabrizio pandini): add Run kubeadm join --experimental-master
 		//      on SecondaryControlPlaneNodes
 		{
 			// Run kubeadm join on the WorkeNodes
 			Description: "Joining worker node to Kubernetes ☸",
-			TargetNodes: SelectWorkerNodes,
+			TargetNodes: selectWorkerNodes,
 			Run:         runKubeadmJoin,
 		},
 	}
 }
 
 // runKubeadmJoin executes kubadm join
-func runKubeadmJoin(ec *execContext, configNode *config.NodeReplica) error {
+func runKubeadmJoin(ec *execContext, configNode *nodeReplica) error {
 	// before running join, it should be retrived
 
 	// gets the node where
 	// TODO(fabrizio pandini): when external load-balancer will be
 	//      implemented this should be modified accordingly
-	controlPlaneHandle, ok := ec.NodeFor(ec.config.BootStrapControlPlane())
+	controlPlaneHandle, ok := ec.NodeFor(ec.derived.BootStrapControlPlane())
 	if !ok {
-		return fmt.Errorf("unable to get the handle for operating on node: %s", ec.config.BootStrapControlPlane().Name)
+		return fmt.Errorf("unable to get the handle for operating on node: %s", ec.derived.BootStrapControlPlane().Name)
 	}
 
 	// gets the IP of the bootstrap master node

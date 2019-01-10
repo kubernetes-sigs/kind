@@ -66,6 +66,5 @@ func autoConvert_v1alpha1_Config_To_config_Config(in *Config, out *config.Config
 
 func autoConvert_config_Config_To_v1alpha1_Config(in *config.Config, out *Config, s conversion.Scope) error {
 	// WARNING: in.Nodes requires manual conversion: does not exist in peer-type
-	// INFO: in.DerivedConfigData opted out of conversion generation
 	return nil
 }

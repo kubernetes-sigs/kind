@@ -25,32 +25,31 @@ import (
 
 	"github.com/pkg/errors"
 
-	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/kubeadm"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 )
 
-// KubeadmInitAction implements action for executing the kubadm init
+// kubeadmInitAction implements action for executing the kubadm init
 // and a set of default post init operations like e.g. install the
 // CNI network plugin.
-type KubeadmInitAction struct{}
+type kubeadmInitAction struct{}
 
 func init() {
-	RegisterAction("init", NewKubeadmInitAction)
+	registerAction("init", newKubeadmInitAction)
 }
 
-// NewKubeadmInitAction returns a new KubeadmInitAction
-func NewKubeadmInitAction() Action {
-	return &KubeadmInitAction{}
+// newKubeadmInitAction returns a new KubeadmInitAction
+func newKubeadmInitAction() action {
+	return &kubeadmInitAction{}
 }
 
 // Tasks returns the list of action tasks
-func (b *KubeadmInitAction) Tasks() []Task {
-	return []Task{
+func (b *kubeadmInitAction) Tasks() []task {
+	return []task{
 		{
 			// Run kubeadm init on the BootstrapControlPlaneNode
 			Description: "Starting Kubernetes (this may take a minute) ☸",
-			TargetNodes: SelectBootstrapControlPlaneNode,
+			TargetNodes: selectBootstrapControlPlaneNode,
 			Run:         runKubeadmInit,
 		},
 	}
@@ -58,7 +57,7 @@ func (b *KubeadmInitAction) Tasks() []Task {
 
 // runKubeadmConfig executes kubadm init and a set of default
 // post init operations.
-func runKubeadmInit(ec *execContext, configNode *config.NodeReplica) error {
+func runKubeadmInit(ec *execContext, configNode *nodeReplica) error {
 	// get the target node for this task
 	node, ok := ec.NodeFor(configNode)
 	if !ok {
@@ -108,7 +107,7 @@ func runKubeadmInit(ec *execContext, configNode *config.NodeReplica) error {
 
 	// if we are only provisioning one node, remove the master taint
 	// https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#master-isolation
-	if len(ec.config.AllReplicas()) == 1 {
+	if len(ec.derived.AllReplicas()) == 1 {
 		if err := node.Command(
 			"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf",
 			"taint", "nodes", "--all", "node-role.kubernetes.io/master-",

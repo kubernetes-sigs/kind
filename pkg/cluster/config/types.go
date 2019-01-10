@@ -30,16 +30,6 @@ type Config struct {
 
 	// Nodes constains the list of nodes defined in the `kind` Config
 	Nodes []Node `json:"nodes,"`
-
-	// DerivedConfigData is struct populated starting from the node list.
-	// It contains a set of "materialized views" generated starting from nodes
-	// and designed to make easy operating nodes in the rest of the code base.
-	// This attribute exists only in the internal config version and is meant
-	// to simplify the usage of the config in the code base.
-	// TODO(fabrizio pandini): consider if we can move this away from the api
-	// and make it an internal of the kind library
-	// +k8s:conversion-gen=false
-	DerivedConfigData
 }
 
 // Node contains settings for a node in the `kind` Config.
@@ -83,46 +73,3 @@ const (
 	// Please note that `kind` nodes hosting external load balancer are not kubernetes nodes
 	ExternalLoadBalancerRole NodeRole = "external-load-balancer"
 )
-
-// +k8s:conversion-gen=false
-
-// NodeReplica defines a `kind` config Node that is geneated by creating a replicas for a node
-// This attribute exists only in the internal config version and is meant
-// to simplify the usage of the config in the code base.
-type NodeReplica struct {
-	// Node contains settings for the node in the `kind` Config.
-	// please note that the Replicas number is alway set to nil.
-	Node
-
-	// Name contains the unique name assigned to the node while generating the replica
-	Name string
-}
-
-// +k8s:conversion-gen=false
-
-// ReplicaList defines a list of NodeReplicas in the `kind` Config
-// This attribute exists only in the internal config version and is meant
-// to simplify the usage of the config in the code base.
-type ReplicaList []*NodeReplica
-
-// +k8s:conversion-gen=false
-
-// DerivedConfigData is a struct populated starting from the nodes list.
-// All the field of this type are intentionally defined a private fields, thus ensuring
-// that derivedConfigData will have a predictable behaviour for the code built on top.
-// This attribute exists only in the internal config version and is meant
-// to simplify the usage of the config in the code base.
-type DerivedConfigData struct {
-	// allReplicas constains the list of node replicas defined in the `kind` Config
-	allReplicas ReplicaList
-	// controlPlanes contains the subset of node replicas with control-plane role
-	controlPlanes ReplicaList
-	// workers contains the subset of node replicas with worker role, if any
-	workers ReplicaList
-	// externalEtcd contains the node replica with external-etcd role, if defined
-	// TODO(fabriziopandini): eventually in future we would like to support
-	// external etcd clusters with more than one member
-	externalEtcd *NodeReplica
-	// externalLoadBalancer contains the node replica with external-load-balancer role, if defined
-	externalLoadBalancer *NodeReplica
-}

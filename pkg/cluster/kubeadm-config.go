@@ -29,26 +29,26 @@ import (
 	"sigs.k8s.io/kind/pkg/kustomize"
 )
 
-// KubeadmConfigAction implements action for creating the kubadm config
+// kubeadmConfigAction implements action for creating the kubadm config
 // and deployng it on the bootrap control-plane node.
-type KubeadmConfigAction struct{}
+type kubeadmConfigAction struct{}
 
 func init() {
-	RegisterAction("config", NewKubeadmConfigAction)
+	registerAction("config", newKubeadmConfigAction)
 }
 
 // NewKubeadmConfigAction returns a new KubeadmConfigAction
-func NewKubeadmConfigAction() Action {
-	return &KubeadmConfigAction{}
+func newKubeadmConfigAction() action {
+	return &kubeadmConfigAction{}
 }
 
 // Tasks returns the list of action tasks
-func (b *KubeadmConfigAction) Tasks() []Task {
-	return []Task{
+func (b *kubeadmConfigAction) Tasks() []task {
+	return []task{
 		{
 			// Creates the kubeadm config file on the BootstrapControlPlaneNode
 			Description: "Creating the kubeadm config file ⛵",
-			TargetNodes: SelectBootstrapControlPlaneNode,
+			TargetNodes: selectBootstrapControlPlaneNode,
 			Run:         runKubeadmConfig,
 		},
 	}
@@ -56,7 +56,7 @@ func (b *KubeadmConfigAction) Tasks() []Task {
 
 // runKubeadmConfig creates a kubeadm config file locally and then
 // copies it to the node
-func runKubeadmConfig(ec *execContext, configNode *config.NodeReplica) error {
+func runKubeadmConfig(ec *execContext, configNode *nodeReplica) error {
 	// get the target node for this task
 	node, ok := ec.NodeFor(configNode)
 	if !ok {
@@ -73,6 +73,7 @@ func runKubeadmConfig(ec *execContext, configNode *config.NodeReplica) error {
 	// create kubeadm config file writing a local temp file
 	kubeadmConfig, err := createKubeadmConfig(
 		ec.config,
+		ec.derived,
 		kubeadm.ConfigData{
 			ClusterName:       ec.name,
 			KubernetesVersion: kubeVersion,
@@ -102,7 +103,7 @@ func runKubeadmConfig(ec *execContext, configNode *config.NodeReplica) error {
 // createKubeadmConfig creates the kubeadm config file for the cluster
 // by running data through the template and writing it to a temp file
 // the config file path is returned, this file should be removed later
-func createKubeadmConfig(cfg *config.Config, data kubeadm.ConfigData) (path string, err error) {
+func createKubeadmConfig(cfg *config.Config, derived *derivedConfigData, data kubeadm.ConfigData) (path string, err error) {
 	// create kubeadm config file
 	f, err := ioutil.TempFile("", "")
 	if err != nil {
@@ -116,10 +117,12 @@ func createKubeadmConfig(cfg *config.Config, data kubeadm.ConfigData) (path stri
 		return "", err
 	}
 	// apply patches
+	// TODO(bentheelder): this does not respect per node patches at all
+	// either make patches cluster wide, or change this
 	patchedConfig, err := kustomize.Build(
 		[]string{config},
-		cfg.BootStrapControlPlane().KubeadmConfigPatches,
-		cfg.BootStrapControlPlane().KubeadmConfigPatchesJSON6902,
+		derived.BootStrapControlPlane().KubeadmConfigPatches,
+		derived.BootStrapControlPlane().KubeadmConfigPatchesJSON6902,
 	)
 	if err != nil {
 		os.Remove(path)

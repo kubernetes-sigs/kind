@@ -71,7 +71,6 @@ func Convert_v1alpha2_Config_To_config_Config(in *Config, out *config.Config, s 
 
 func autoConvert_config_Config_To_v1alpha2_Config(in *config.Config, out *Config, s conversion.Scope) error {
 	out.Nodes = *(*[]Node)(unsafe.Pointer(&in.Nodes))
-	// INFO: in.DerivedConfigData opted out of conversion generation
 	return nil
 }
 

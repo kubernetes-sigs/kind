@@ -45,6 +45,7 @@ type createContext struct {
 	*Context
 	status           *logutil.Status
 	config           *config.Config
+	derived          *derivedConfigData
 	retain           bool          // if we should retain nodes after failing to create.
 	waitForReady     time.Duration // Wait for the control plane node to be ready.
 	ControlPlaneMeta *ControlPlaneMeta
@@ -59,8 +60,9 @@ type createContext struct {
 // 			pkg/cluster/actions -- use pkg/cluster execContext
 type execContext struct {
 	*Context
-	status *logutil.Status
-	config *config.Config
+	status  *logutil.Status
+	config  *config.Config
+	derived *derivedConfigData
 	// nodes contains the list of actual nodes (a node is a container implementing a config node)
 	nodes        map[string]*nodes.Node
 	waitForReady time.Duration // Wait for the control plane node to be ready
@@ -140,12 +142,36 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 		return err
 	}
 
+	// derive info necessary for creation
+	derived, err := deriveInfo(cfg)
+	if err != nil {
+		return err
+	}
+	// validate node configuration
+	if err := derived.Validate(); err != nil {
+		return err
+	}
+	// TODO(fabrizio pandini): this check is temporary / WIP
+	// kind v1alpha config fully supports multi nodes, but the cluster creation logic implemented in
+	// pkg/cluster/contex.go does it only partially (yet).
+	// As soon a external load-balancer and external etcd is implemented in pkg/cluster, this should go away
+	if derived.ExternalLoadBalancer() != nil {
+		return fmt.Errorf("multi node support is still a work in progress, currently external load balancer node is not supported")
+	}
+	if derived.SecondaryControlPlanes() != nil {
+		return fmt.Errorf("multi node support is still a work in progress, currently only single control-plane node are supported")
+	}
+	if derived.ExternalEtcd() != nil {
+		return fmt.Errorf("multi node support is still a work in progress, currently external etcd node is not supported")
+	}
+
 	fmt.Printf("Creating cluster '%s' ...\n", c.ClusterName())
 
 	// init the create context and logging
 	cc := &createContext{
 		Context: c,
 		config:  cfg,
+		derived: derived,
 		retain:  retain,
 	}
 
@@ -176,7 +202,7 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 	// Kubernetes cluster; please note that the list of actions automatically
 	// adapt to the topology defined in config
 	// TODO(fabrizio pandini): make the list of executed actions configurable from CLI
-	err = c.Exec(cc.config, nodeList, []string{"config", "init", "join"}, wait)
+	err = c.exec(cc.config, cc.derived, nodeList, []string{"config", "init", "join"}, wait)
 	if err != nil {
 		// In case of errors nodes are deleted (except if retain is explicitly set)
 		log.Error(err)
@@ -208,7 +234,7 @@ func (cc *createContext) EnsureNodeImages() {
 	var images = map[string]bool{}
 
 	// For all the nodes defined in the `kind` config
-	for _, configNode := range cc.config.AllReplicas() {
+	for _, configNode := range cc.derived.AllReplicas() {
 		if _, ok := images[configNode.Image]; ok {
 			continue
 		}
@@ -235,7 +261,7 @@ func (cc *createContext) provisionNodes() (nodeList map[string]*nodes.Node, err 
 	nodeList = map[string]*nodes.Node{}
 
 	// For all the nodes defined in the `kind` config
-	for _, configNode := range cc.config.AllReplicas() {
+	for _, configNode := range cc.derived.AllReplicas() {
 
 		cc.status.Start(fmt.Sprintf("[%s] Creating node container 📦", configNode.Name))
 		// create the node into a container (docker run, but it is paused, see createNode)
@@ -285,13 +311,12 @@ func (cc *createContext) provisionNodes() (nodeList map[string]*nodes.Node, err 
 	return nodeList, nil
 }
 
+// TODO(bentheelder): refactor this
 // Exec actions on kubernetes-in-docker cluster
 // Actions are repetitive, high level abstractions/workflows composed
 // by one or more lower level tasks, that automatically adapt to the
 // current cluster topology
-// TODO(fabrizio pandini): make Exec accessible from CLI via
-//     a separated kind exec cluster command or something similar
-func (c *Context) Exec(cfg *config.Config, nodeList map[string]*nodes.Node, actions []string, wait time.Duration) error {
+func (c *Context) exec(cfg *config.Config, derived *derivedConfigData, nodeList map[string]*nodes.Node, actions []string, wait time.Duration) error {
 	// validate config first
 	if err := cfg.Validate(); err != nil {
 		return err
@@ -301,6 +326,7 @@ func (c *Context) Exec(cfg *config.Config, nodeList map[string]*nodes.Node, acti
 	ec := &execContext{
 		Context:      c,
 		config:       cfg,
+		derived:      derived,
 		nodes:        nodeList,
 		waitForReady: wait,
 	}
@@ -312,7 +338,7 @@ func (c *Context) Exec(cfg *config.Config, nodeList map[string]*nodes.Node, acti
 
 	// Create an ExecutionPlan that applies the given actions to the topology defined
 	// in the config
-	executionPlan, err := NewExecutionPlan(ec.config, actions)
+	executionPlan, err := newExecutionPlan(ec.derived, actions)
 	if err != nil {
 		return err
 	}
@@ -335,7 +361,7 @@ func (c *Context) Exec(cfg *config.Config, nodeList map[string]*nodes.Node, acti
 	return nil
 }
 
-func (ec *execContext) NodeFor(configNode *config.NodeReplica) (node *nodes.Node, ok bool) {
+func (ec *execContext) NodeFor(configNode *nodeReplica) (node *nodes.Node, ok bool) {
 	node, ok = ec.nodes[configNode.Name]
 	return
 }

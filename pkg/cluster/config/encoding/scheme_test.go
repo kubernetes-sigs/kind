@@ -52,12 +52,6 @@ func TestLoadCurrent(t *testing.T) {
 			ExpectError:    false,
 		},
 		{
-			TestName:       "v1alpha2 lifecyclehooks",
-			Path:           "./testdata/v1alpha2/valid-with-lifecyclehooks.yaml",
-			ExpectReplicas: []string{"control-plane"},
-			ExpectError:    false,
-		},
-		{
 			TestName:       "v1alpha2 config with 2 nodes",
 			Path:           "./testdata/v1alpha2/valid-minimal-two-nodes.yaml",
 			ExpectReplicas: []string{"control-plane", "worker"},
@@ -92,8 +86,7 @@ func TestLoadCurrent(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.TestName, func(t *testing.T) {
-			// Loading config and deriving infos
-			cfg, err := Load(c.Path)
+			_, err := Load(c.Path)
 
 			// the error can be:
 			// - nil, in which case we should expect no errors or fail
@@ -107,16 +100,6 @@ func TestLoadCurrent(t *testing.T) {
 			if err == nil {
 				if c.ExpectError {
 					t.Fatalf("unexpected lack or error while Loading config")
-				}
-			}
-
-			if len(cfg.AllReplicas()) != len(c.ExpectReplicas) {
-				t.Fatalf("expected %d replicas, saw %d", len(c.ExpectReplicas), len(cfg.AllReplicas()))
-			}
-
-			for i, name := range c.ExpectReplicas {
-				if cfg.AllReplicas()[i].Name != name {
-					t.Errorf("expected %q node at position %d, saw %q", name, i, cfg.AllReplicas()[i].Name)
 				}
 			}
 		})
