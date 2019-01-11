@@ -21,7 +21,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -30,42 +29,13 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/consts"
 	"sigs.k8s.io/kind/pkg/cluster/logs"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/docker"
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
 
 // Context is used to create / manipulate kubernetes-in-docker clusters
+// See: NewContext()
 type Context struct {
-	name             string
-	ControlPlaneMeta *ControlPlaneMeta
-}
-
-// createContext is a superset of Context used by helpers for Context.Create()
-type createContext struct {
-	*Context
-	status           *logutil.Status
-	config           *config.Config
-	derived          *derivedConfigData
-	retain           bool          // if we should retain nodes after failing to create.
-	waitForReady     time.Duration // Wait for the control plane node to be ready.
-	ControlPlaneMeta *ControlPlaneMeta
-}
-
-// execContext is a superset of Context used by helpers for Context.Create()
-// and Context.Exec() command
-// TODO(fabrizio pandini): might be we want to move all the actions in a separated
-//		package e.g. pkg/cluster/actions
-//		In order to do this a circular dependency should be avoided:
-//			pkg/cluster -- use -- pkg/cluster/actions
-// 			pkg/cluster/actions -- use pkg/cluster execContext
-type execContext struct {
-	*Context
-	status  *logutil.Status
-	config  *config.Config
-	derived *derivedConfigData
-	// nodes contains the list of actual nodes (a node is a container implementing a config node)
-	nodes        map[string]*nodes.Node
-	waitForReady time.Duration // Wait for the control plane node to be ready
+	name string
 }
 
 // similar to valid docker container names, but since we will prefix
@@ -106,6 +76,22 @@ func (c *Context) Validate() error {
 	return nil
 }
 
+// ControlPlaneMeta tracks various outputs that are relevant to the control plane created with Kind.
+// Here we can define things like ports and listen or bind addresses as needed.
+type ControlPlaneMeta struct {
+	// APIServerPort is the port that the container is forwarding to the
+	// Kubernetes API server running in the container
+	APIServerPort int
+}
+
+// GetControlPlaneMeta attempts to retreive / compute metadata about
+// the control plane for the context's cluster
+// NOTE: due to refactoring this is currently non-functional (!)
+// TODO(bentheelder): fix this
+func (c *Context) GetControlPlaneMeta() (*ControlPlaneMeta, error) {
+	return nil, fmt.Errorf("needs-reimplementation")
+}
+
 // ClusterLabel returns the docker object label that will be applied
 // to cluster "node" containers
 func (c *Context) ClusterLabel() string {
@@ -133,6 +119,23 @@ func (c *Context) KubeConfigPath() string {
 	// the standard config, though in the future we may (?) merge them
 	fileName := fmt.Sprintf("kind-config-%s", c.name)
 	return filepath.Join(configDir, fileName)
+}
+
+// execContext is a superset of Context used by helpers for Context.Create()
+// and Context.Exec() command
+// TODO(fabrizio pandini): might be we want to move all the actions in a separated
+//		package e.g. pkg/cluster/actions
+//		In order to do this a circular dependency should be avoided:
+//			pkg/cluster -- use -- pkg/cluster/actions
+// 			pkg/cluster/actions -- use pkg/cluster execContext
+type execContext struct {
+	*Context
+	status  *logutil.Status
+	config  *config.Config
+	derived *derivedConfigData
+	// nodes contains the list of actual nodes (a node is a container implementing a config node)
+	nodes        map[string]*nodes.Node
+	waitForReady time.Duration // Wait for the control plane node to be ready
 }
 
 // Create provisions and starts a kubernetes-in-docker cluster
@@ -194,7 +197,6 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 		}
 		return err
 	}
-	c.ControlPlaneMeta = cc.ControlPlaneMeta
 	cc.status.End(true)
 
 	// After creating node containers the Kubernetes provisioning is executed
@@ -217,98 +219,6 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 		cc.Name(),
 	)
 	return nil
-}
-
-// TODO(bentheelder): fix this after multi-node changes (!)
-
-// ControlPlaneMeta tracks various outputs that are relevant to the control plane created with Kind.
-// Here we can define things like ports and listen or bind addresses as needed.
-type ControlPlaneMeta struct {
-
-	//APIServerPort is the port that the container is forwarding to the Kubernetes API server running in the container
-	APIServerPort int
-}
-
-// Ensure node images are present
-func (cc *createContext) EnsureNodeImages() {
-	var images = map[string]bool{}
-
-	// For all the nodes defined in the `kind` config
-	for _, configNode := range cc.derived.AllReplicas() {
-		if _, ok := images[configNode.Image]; ok {
-			continue
-		}
-
-		// prints user friendly message
-		image := configNode.Image
-		if strings.Contains(image, "@sha256:") {
-			image = strings.Split(image, "@sha256:")[0]
-		}
-		cc.status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", image))
-
-		// attempt to explicitly pull the image if it doesn't exist locally
-		// we don't care if this errors, we'll still try to run which also pulls
-		_, _ = docker.PullIfNotPresent(configNode.Image, 4)
-
-		// marks the images as already pulled
-		images[configNode.Image] = true
-	}
-}
-
-// provisionNodes takes care of creating all the containers
-// that will host `kind` nodes
-func (cc *createContext) provisionNodes() (nodeList map[string]*nodes.Node, err error) {
-	nodeList = map[string]*nodes.Node{}
-
-	// For all the nodes defined in the `kind` config
-	for _, configNode := range cc.derived.AllReplicas() {
-
-		cc.status.Start(fmt.Sprintf("[%s] Creating node container 📦", configNode.Name))
-		// create the node into a container (docker run, but it is paused, see createNode)
-		var name = fmt.Sprintf("kind-%s-%s", cc.name, configNode.Name)
-		var node *nodes.Node
-
-		switch configNode.Role {
-		case config.ControlPlaneRole:
-			node, err = nodes.CreateControlPlaneNode(name, configNode.Image, cc.ClusterLabel())
-		case config.WorkerRole:
-			node, err = nodes.CreateWorkerNode(name, configNode.Image, cc.ClusterLabel())
-		}
-		if err != nil {
-			return nodeList, err
-		}
-		nodeList[configNode.Name] = node
-
-		cc.status.Start(fmt.Sprintf("[%s] Fixing mounts 🗻", configNode.Name))
-		// we need to change a few mounts once we have the container
-		// we'd do this ahead of time if we could, but --privileged implies things
-		// that don't seem to be configurable, and we need that flag
-		if err := node.FixMounts(); err != nil {
-			// TODO(bentheelder): logging here
-			return nodeList, err
-		}
-
-		cc.status.Start(fmt.Sprintf("[%s] Starting systemd 🖥", configNode.Name))
-		// signal the node container entrypoint to continue booting into systemd
-		if err := node.SignalStart(); err != nil {
-			// TODO(bentheelder): logging here
-			return nodeList, err
-		}
-
-		cc.status.Start(fmt.Sprintf("[%s] Waiting for docker to be ready 🐋", configNode.Name))
-		// wait for docker to be ready
-		if !node.WaitForDocker(time.Now().Add(time.Second * 30)) {
-			// TODO(bentheelder): logging here
-			return nodeList, fmt.Errorf("timed out waiting for docker to be ready on node")
-		}
-
-		// load the docker image artifacts into the docker daemon
-		cc.status.Start(fmt.Sprintf("[%s] Pre-loading images 🐋", configNode.Name))
-		node.LoadImages()
-
-	}
-
-	return nodeList, nil
 }
 
 // TODO(bentheelder): refactor this
