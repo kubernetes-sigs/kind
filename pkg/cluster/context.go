@@ -380,6 +380,8 @@ func (c *Context) Delete() error {
 	}
 
 	// check if $KUBECONFIG is set and let the user know to unset if so
+	// TODO(bentheelder): this is technically not a sufficient check due to
+	// KUBECONFIG supporting multiple paths
 	if os.Getenv("KUBECONFIG") == c.KubeConfigPath() {
 		fmt.Printf("$KUBECONFIG is still set to use %s even though that file has been deleted, remember to unset it\n", c.KubeConfigPath())
 	}
