@@ -8,7 +8,7 @@ High level goals for kind include:
 
 - Reach [1.0] status / 
 stability by the end of Q1 2019 / the Kubernetes 1.14 release cycle
-- Support multi-node clusters - [#117]
+- Support multi-node clusters - [#117] - DONE ✔
 - Support offline / air-gapped clusters
   - pre-loaded / offline CNI - [#200]
 - Improve Windows support

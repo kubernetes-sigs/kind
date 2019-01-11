@@ -22,7 +22,7 @@ If you have [go] and [docker] installed `go get sigs.k8s.io/kind && kind create 
 
 `kind` bootstraps each "node" with [kubeadm][kubeadm]. For more details see [the design documentation][design doc].  
 
-**NOTE**: `kind` is still a work in progress, see [docs/todo.md].
+**NOTE**: `kind` is still a work in progress, see [docs/roadmap.md].
 
 ## Installation and usage
 
@@ -40,7 +40,8 @@ To create a cluster from Kubernetes source:
 - ensure that Kubernetes is cloned in `$(go env GOPATH)/src/k8s.io/kubernetes`
 - build a node image and create a cluster with `kind build node-image && kind create cluster --image kindest/node:latest`
 
-For more usage see [the docs][user guide] or run `kind [command] --help`
+Multi-node clusters and other advanced features may be configured with a config
+file, for more usage see [the docs][user guide] or run `kind [command] --help`
 
 ## Community, discussion, contribution, and support
 
@@ -71,7 +72,6 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [Go Report Card Badge]: https://goreportcard.com/badge/sigs.k8s.io/kind
 [Go Report Card]: https://goreportcard.com/report/sigs.k8s.io/kind
 [conformance tests]: https://github.com/kubernetes/community/blob/master/contributors/devel/conformance-tests.md
-[todo]: ./docs/todo.md
 [packages]: ./pkg
 [cluster package]: ./pkg/cluster
 [build package]: ./pkg/build
@@ -87,7 +87,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [filing an issue]: https://github.com/kubernetes-sigs/kind/issues/new
 [Kubernetes Slack]: http://slack.k8s.io/
 [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
-[docs/todo.md]: ./docs/todo.md
+[docs/roadmap.md]: ./docs/roadmap.md
 [install docker]: https://docs.docker.com/install/
 [@BenTheElder]: https://github.com/BenTheElder
 [@munnerz]: https://github.com/munnerz
