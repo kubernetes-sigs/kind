@@ -380,7 +380,7 @@ func (c *Context) Delete() error {
 	}
 
 	// check if $KUBECONFIG is set and let the user know to unset if so
-	if os.Getenv("KUBECONFIG") == c.KubeConfigPath() {
+	if strings.Contains(os.Getenv("KUBECONFIG"), c.KubeConfigPath()) {
 		fmt.Printf("$KUBECONFIG is still set to use %s even though that file has been deleted, remember to unset it\n", c.KubeConfigPath())
 	}
 
