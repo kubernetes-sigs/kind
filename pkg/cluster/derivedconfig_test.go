@@ -128,7 +128,7 @@ func TestDeriveInfo(t *testing.T) {
 		t.Run(c.TestName, func(t *testing.T) {
 			// Adding Nodes to the config and deriving infos
 			var cfg = &config.Config{Nodes: c.Nodes}
-			derived, err := deriveInfo(cfg)
+			derived, err := derive(cfg)
 			// the error can be:
 			// - nil, in which case we should expect no errors or fail
 			if err != nil {

@@ -30,9 +30,9 @@ import (
 // createContext is a superset of Context implementing helpers internal to Context.Create()
 type createContext struct {
 	*Context
-	status           *logutil.Status
-	config           *config.Config
-	derived          *derivedConfigData
+	status *logutil.Status
+	config *config.Config
+	*derivedConfig
 	retain           bool          // if we should retain nodes after failing to create.
 	waitForReady     time.Duration // Wait for the control plane node to be ready.
 	ControlPlaneMeta *ControlPlaneMeta
@@ -44,7 +44,7 @@ func (cc *createContext) EnsureNodeImages() {
 	var images = map[string]bool{}
 
 	// For all the nodes defined in the `kind` config
-	for _, configNode := range cc.derived.AllReplicas() {
+	for _, configNode := range cc.AllReplicas() {
 		if _, ok := images[configNode.Image]; ok {
 			continue
 		}
@@ -71,7 +71,7 @@ func (cc *createContext) provisionNodes() (nodeList map[string]*nodes.Node, err 
 	nodeList = map[string]*nodes.Node{}
 
 	// For all the nodes defined in the `kind` config
-	for _, configNode := range cc.derived.AllReplicas() {
+	for _, configNode := range cc.AllReplicas() {
 
 		cc.status.Start(fmt.Sprintf("[%s] Creating node container 📦", configNode.Name))
 		// create the node into a container (docker run, but it is paused, see createNode)

@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -132,7 +133,7 @@ type execContext struct {
 	*Context
 	status  *logutil.Status
 	config  *config.Config
-	derived *derivedConfigData
+	derived *derivedConfig
 	// nodes contains the list of actual nodes (a node is a container implementing a config node)
 	nodes        map[string]*nodes.Node
 	waitForReady time.Duration // Wait for the control plane node to be ready
@@ -146,7 +147,7 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 	}
 
 	// derive info necessary for creation
-	derived, err := deriveInfo(cfg)
+	derived, err := derive(cfg)
 	if err != nil {
 		return err
 	}
@@ -172,10 +173,10 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 
 	// init the create context and logging
 	cc := &createContext{
-		Context: c,
-		config:  cfg,
-		derived: derived,
-		retain:  retain,
+		Context:       c,
+		config:        cfg,
+		derivedConfig: derived,
+		retain:        retain,
 	}
 
 	cc.status = logutil.NewStatus(os.Stdout)
@@ -204,7 +205,7 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 	// Kubernetes cluster; please note that the list of actions automatically
 	// adapt to the topology defined in config
 	// TODO(fabrizio pandini): make the list of executed actions configurable from CLI
-	err = c.exec(cc.config, cc.derived, nodeList, []string{"config", "init", "join"}, wait)
+	err = c.exec(cc.config, cc.derivedConfig, nodeList, []string{"config", "init", "join"}, wait)
 	if err != nil {
 		// In case of errors nodes are deleted (except if retain is explicitly set)
 		log.Error(err)
@@ -226,7 +227,7 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 // Actions are repetitive, high level abstractions/workflows composed
 // by one or more lower level tasks, that automatically adapt to the
 // current cluster topology
-func (c *Context) exec(cfg *config.Config, derived *derivedConfigData, nodeList map[string]*nodes.Node, actions []string, wait time.Duration) error {
+func (c *Context) exec(cfg *config.Config, derived *derivedConfig, nodeList map[string]*nodes.Node, actions []string, wait time.Duration) error {
 	// validate config first
 	if err := cfg.Validate(); err != nil {
 		return err

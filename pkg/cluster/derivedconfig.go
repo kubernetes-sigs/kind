@@ -26,12 +26,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-// derivedConfigData is a struct populated starting from the nodes list.
-// All the field of this type are intentionally defined a private fields, thus ensuring
-// that derivedConfigData will have a predictable behaviour for the code built on top.
-// This attribute exists only in the internal config version and is meant
-// to simplify the usage of the config in the code base.
-type derivedConfigData struct {
+// derivedConfig contains config-like data computed from pkg/cluster/config.Config
+// namely, it contains lists of nodeReplicas to be created based on the config
+type derivedConfig struct {
 	// allReplicas constains the list of node replicas defined in the `kind` Config
 	allReplicas replicaList
 	// controlPlanes contains the subset of node replicas with control-plane role
@@ -63,7 +60,7 @@ type nodeReplica struct {
 // to simplify the usage of the config in the code base.
 type replicaList []*nodeReplica
 
-func (d *derivedConfigData) Validate() error {
+func (d *derivedConfig) Validate() error {
 	errs := []error{}
 
 	// There should be at least one control plane
@@ -123,10 +120,10 @@ func (t replicaList) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
-// deriveInfo populates DerivedConfig info starting
+// derive populates derivedConfig info starting
 // from the current list on Nodes
-func deriveInfo(c *config.Config) (*derivedConfigData, error) {
-	d := &derivedConfigData{}
+func derive(c *config.Config) (*derivedConfig, error) {
+	d := &derivedConfig{}
 
 	for _, n := range c.Nodes {
 		if err := d.Add(&n); err != nil {
@@ -139,7 +136,7 @@ func deriveInfo(c *config.Config) (*derivedConfigData, error) {
 
 // Add a Node to the `kind` cluster, generating requested node replicas
 // and assigning a unique node name to each replica.
-func (d *derivedConfigData) Add(node *config.Node) error {
+func (d *derivedConfig) Add(node *config.Node) error {
 
 	// Creates the list of node replicas
 	expectedReplicas := 1
@@ -226,18 +223,18 @@ func (d *derivedConfigData) Add(node *config.Node) error {
 }
 
 // AllReplicas returns all the node replicas defined in the `kind` Config.
-func (d *derivedConfigData) AllReplicas() replicaList {
+func (d *derivedConfig) AllReplicas() replicaList {
 	return d.allReplicas
 }
 
 // ControlPlanes returns all the nodes with control-plane role
-func (d *derivedConfigData) ControlPlanes() replicaList {
+func (d *derivedConfig) ControlPlanes() replicaList {
 	return d.controlPlanes
 }
 
 // BootStrapControlPlane returns the first node with control-plane role
 // This is the node where kubeadm init will be executed.
-func (d *derivedConfigData) BootStrapControlPlane() *nodeReplica {
+func (d *derivedConfig) BootStrapControlPlane() *nodeReplica {
 	if len(d.controlPlanes) == 0 {
 		return nil
 	}
@@ -246,7 +243,7 @@ func (d *derivedConfigData) BootStrapControlPlane() *nodeReplica {
 
 // SecondaryControlPlanes returns all the nodes with control-plane role
 // except the BootStrapControlPlane node, if any,
-func (d *derivedConfigData) SecondaryControlPlanes() replicaList {
+func (d *derivedConfig) SecondaryControlPlanes() replicaList {
 	if len(d.controlPlanes) <= 1 {
 		return nil
 	}
@@ -254,16 +251,16 @@ func (d *derivedConfigData) SecondaryControlPlanes() replicaList {
 }
 
 // Workers returns all the nodes with Worker role, if any
-func (d *derivedConfigData) Workers() replicaList {
+func (d *derivedConfig) Workers() replicaList {
 	return d.workers
 }
 
 // ExternalEtcd returns the node with external-etcd role, if defined
-func (d *derivedConfigData) ExternalEtcd() *nodeReplica {
+func (d *derivedConfig) ExternalEtcd() *nodeReplica {
 	return d.externalEtcd
 }
 
 // ExternalLoadBalancer returns the node with external-load-balancer role, if defined
-func (d *derivedConfigData) ExternalLoadBalancer() *nodeReplica {
+func (d *derivedConfig) ExternalLoadBalancer() *nodeReplica {
 	return d.externalLoadBalancer
 }

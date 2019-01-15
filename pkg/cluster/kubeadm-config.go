@@ -103,7 +103,7 @@ func runKubeadmConfig(ec *execContext, configNode *nodeReplica) error {
 // createKubeadmConfig creates the kubeadm config file for the cluster
 // by running data through the template and writing it to a temp file
 // the config file path is returned, this file should be removed later
-func createKubeadmConfig(cfg *config.Config, derived *derivedConfigData, data kubeadm.ConfigData) (path string, err error) {
+func createKubeadmConfig(cfg *config.Config, derived *derivedConfig, data kubeadm.ConfigData) (path string, err error) {
 	// create kubeadm config file
 	f, err := ioutil.TempFile("", "")
 	if err != nil {

@@ -225,7 +225,7 @@ func TestNewExecutionPlan(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.TestName, func(t2 *testing.T) {
-			var derived = &derivedConfigData{}
+			var derived = &derivedConfig{}
 			// Adding nodes to the config
 			for _, n := range c.Nodes {
 				if err := derived.Add(n); err != nil {
