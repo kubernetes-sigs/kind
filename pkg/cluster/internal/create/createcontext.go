@@ -42,8 +42,8 @@ type Context struct {
 	WaitForReady time.Duration // Wait for the control plane node to be ready.
 }
 
-// TODO(bentheelder): refactor this
 // Exec actions on kubernetes-in-docker cluster
+// TODO(bentheelder): refactor this further
 // Actions are repetitive, high level abstractions/workflows composed
 // by one or more lower level tasks, that automatically adapt to the
 // current cluster topology
@@ -110,7 +110,7 @@ func (cc *Context) EnsureNodeImages() {
 	}
 }
 
-// provisionNodes takes care of creating all the containers
+// ProvisionNodes takes care of creating all the containers
 // that will host `kind` nodes
 func (cc *Context) ProvisionNodes() (nodeList map[string]*nodes.Node, err error) {
 	nodeList = map[string]*nodes.Node{}

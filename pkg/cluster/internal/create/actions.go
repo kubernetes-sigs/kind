@@ -47,7 +47,7 @@ type Task struct {
 	// task should be executed
 	TargetNodes nodeSelector
 	// Run the func that implements the task action
-	Run func(*execContext, *nodeReplica) error
+	Run func(*execContext, *NodeReplica) error
 }
 
 // execContext is a superset of Context used by helpers for Context.Exec() command
@@ -60,21 +60,21 @@ type execContext struct {
 	waitForReady time.Duration // Wait for the control plane node to be ready
 }
 
-func (ec *execContext) NodeFor(configNode *nodeReplica) (node *nodes.Node, ok bool) {
+func (ec *execContext) NodeFor(configNode *NodeReplica) (node *nodes.Node, ok bool) {
 	node, ok = ec.nodes[configNode.Name]
 	return
 }
 
 // nodeSelector defines a function returning a subset of nodes where tasks
 // should be planned.
-type nodeSelector func(*DerivedConfig) replicaList
+type nodeSelector func(*DerivedConfig) ReplicaList
 
 // plannedTask defines a Task planned for execution on a given node.
 type plannedTask struct {
 	// task to be executed
 	Task Task
 	// node where the task should be executed
-	Node *nodeReplica
+	Node *NodeReplica
 
 	// PlannedTask should respects the given order of actions and tasks
 	actionIndex int
@@ -199,21 +199,21 @@ func (t executionPlan) Swap(i, j int) {
 
 // selectAllNodes is a NodeSelector that returns all the nodes defined in
 // the `kind` Config
-func selectAllNodes(cfg *DerivedConfig) replicaList {
+func selectAllNodes(cfg *DerivedConfig) ReplicaList {
 	return cfg.AllReplicas()
 }
 
 // selectControlPlaneNodes is a NodeSelector that returns all the nodes
 // with control-plane role
-func selectControlPlaneNodes(cfg *DerivedConfig) replicaList {
+func selectControlPlaneNodes(cfg *DerivedConfig) ReplicaList {
 	return cfg.ControlPlanes()
 }
 
 // selectBootstrapControlPlaneNode is a NodeSelector that returns the
 // first node with control-plane role
-func selectBootstrapControlPlaneNode(cfg *DerivedConfig) replicaList {
+func selectBootstrapControlPlaneNode(cfg *DerivedConfig) ReplicaList {
 	if cfg.BootStrapControlPlane() != nil {
-		return replicaList{cfg.BootStrapControlPlane()}
+		return ReplicaList{cfg.BootStrapControlPlane()}
 	}
 	return nil
 }
@@ -221,30 +221,30 @@ func selectBootstrapControlPlaneNode(cfg *DerivedConfig) replicaList {
 // selectSecondaryControlPlaneNodes is a NodeSelector that returns all
 // the nodes with control-plane roleexcept the BootStrapControlPlane
 // node, if any,
-func selectSecondaryControlPlaneNodes(cfg *DerivedConfig) replicaList {
+func selectSecondaryControlPlaneNodes(cfg *DerivedConfig) ReplicaList {
 	return cfg.SecondaryControlPlanes()
 }
 
 // selectWorkerNodes is a NodeSelector that returns all the nodes with
 // Worker role, if any
-func selectWorkerNodes(cfg *DerivedConfig) replicaList {
+func selectWorkerNodes(cfg *DerivedConfig) ReplicaList {
 	return cfg.Workers()
 }
 
 // selectExternalEtcdNode is a NodeSelector that returns the node with
 //external-etcd role, if defined
-func selectExternalEtcdNode(cfg *DerivedConfig) replicaList {
+func selectExternalEtcdNode(cfg *DerivedConfig) ReplicaList {
 	if cfg.ExternalEtcd() != nil {
-		return replicaList{cfg.ExternalEtcd()}
+		return ReplicaList{cfg.ExternalEtcd()}
 	}
 	return nil
 }
 
 // selectExternalLoadBalancerNode is a NodeSelector that returns the node
 // with external-load-balancer role, if defined
-func selectExternalLoadBalancerNode(cfg *DerivedConfig) replicaList {
+func selectExternalLoadBalancerNode(cfg *DerivedConfig) ReplicaList {
 	if cfg.ExternalLoadBalancer() != nil {
-		return replicaList{cfg.ExternalLoadBalancer()}
+		return ReplicaList{cfg.ExternalLoadBalancer()}
 	}
 	return nil
 }

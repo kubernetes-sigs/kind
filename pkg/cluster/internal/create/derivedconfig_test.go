@@ -158,7 +158,7 @@ func TestDeriveInfo(t *testing.T) {
 	}
 }
 
-func checkNode(t *testing.T, n *nodeReplica, name *string) {
+func checkNode(t *testing.T, n *NodeReplica, name *string) {
 	if (n == nil) != (name == nil) {
 		t.Errorf("expected %v node, saw %v", name, n)
 	}
@@ -172,7 +172,7 @@ func checkNode(t *testing.T, n *nodeReplica, name *string) {
 	}
 }
 
-func checkReplicaList(t *testing.T, list replicaList, names []string) {
+func checkReplicaList(t *testing.T, list ReplicaList, names []string) {
 	if len(list) != len(names) {
 		t.Errorf("expected %d nodes, saw %d", len(names), len(list))
 		return

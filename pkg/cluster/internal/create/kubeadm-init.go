@@ -57,7 +57,7 @@ func (b *kubeadmInitAction) Tasks() []Task {
 
 // runKubeadmConfig executes kubadm init and a set of default
 // post init operations.
-func runKubeadmInit(ec *execContext, configNode *nodeReplica) error {
+func runKubeadmInit(ec *execContext, configNode *NodeReplica) error {
 	// get the target node for this task
 	node, ok := ec.NodeFor(configNode)
 	if !ok {
