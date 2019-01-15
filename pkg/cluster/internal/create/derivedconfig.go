@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package create
 
 import (
 	"fmt"
@@ -26,9 +26,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-// derivedConfig contains config-like data computed from pkg/cluster/config.Config
+// DerivedConfig contains config-like data computed from pkg/cluster/config.Config
 // namely, it contains lists of nodeReplicas to be created based on the config
-type derivedConfig struct {
+type DerivedConfig struct {
 	// allReplicas constains the list of node replicas defined in the `kind` Config
 	allReplicas replicaList
 	// controlPlanes contains the subset of node replicas with control-plane role
@@ -60,7 +60,7 @@ type nodeReplica struct {
 // to simplify the usage of the config in the code base.
 type replicaList []*nodeReplica
 
-func (d *derivedConfig) Validate() error {
+func (d *DerivedConfig) Validate() error {
 	errs := []error{}
 
 	// There should be at least one control plane
@@ -120,10 +120,10 @@ func (t replicaList) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
-// derive populates derivedConfig info starting
+// Derive populates DerivedConfig info starting
 // from the current list on Nodes
-func derive(c *config.Config) (*derivedConfig, error) {
-	d := &derivedConfig{}
+func Derive(c *config.Config) (*DerivedConfig, error) {
+	d := &DerivedConfig{}
 
 	for _, n := range c.Nodes {
 		if err := d.Add(&n); err != nil {
@@ -136,7 +136,7 @@ func derive(c *config.Config) (*derivedConfig, error) {
 
 // Add a Node to the `kind` cluster, generating requested node replicas
 // and assigning a unique node name to each replica.
-func (d *derivedConfig) Add(node *config.Node) error {
+func (d *DerivedConfig) Add(node *config.Node) error {
 
 	// Creates the list of node replicas
 	expectedReplicas := 1
@@ -154,7 +154,7 @@ func (d *derivedConfig) Add(node *config.Node) error {
 		replicas = append(replicas, replica)
 	}
 
-	// adds replica to the config unpdating derivedConfigData
+	// adds replica to the config updating derivedConfig
 	for _, replica := range replicas {
 
 		// adds the replica to the list of nodes
@@ -164,7 +164,7 @@ func (d *derivedConfig) Add(node *config.Node) error {
 		if replica.IsControlPlane() {
 			// assign selected name for control plane node
 			replica.Name = "control-plane"
-			// stores the node in derivedConfigData
+			// stores the node in derivedConfig
 			d.controlPlanes = append(d.controlPlanes, replica)
 		}
 
@@ -172,7 +172,7 @@ func (d *derivedConfig) Add(node *config.Node) error {
 		if replica.IsWorker() {
 			// assign selected name for worker node
 			replica.Name = "worker"
-			// stores the node in derivedConfigData
+			// stores the node in derivedConfig
 			d.workers = append(d.workers, replica)
 		}
 
@@ -183,7 +183,7 @@ func (d *derivedConfig) Add(node *config.Node) error {
 			}
 			// assign selected name for etcd node
 			replica.Name = "etcd"
-			// stores the node in derivedConfigData
+			// stores the node in derivedConfig
 			d.externalEtcd = replica
 		}
 
@@ -194,7 +194,7 @@ func (d *derivedConfig) Add(node *config.Node) error {
 			}
 			// assign selected name for load balancer node
 			replica.Name = "lb"
-			// stores the node in derivedConfigData
+			// stores the node in derivedConfig
 			d.externalLoadBalancer = replica
 		}
 
@@ -223,18 +223,18 @@ func (d *derivedConfig) Add(node *config.Node) error {
 }
 
 // AllReplicas returns all the node replicas defined in the `kind` Config.
-func (d *derivedConfig) AllReplicas() replicaList {
+func (d *DerivedConfig) AllReplicas() replicaList {
 	return d.allReplicas
 }
 
 // ControlPlanes returns all the nodes with control-plane role
-func (d *derivedConfig) ControlPlanes() replicaList {
+func (d *DerivedConfig) ControlPlanes() replicaList {
 	return d.controlPlanes
 }
 
 // BootStrapControlPlane returns the first node with control-plane role
 // This is the node where kubeadm init will be executed.
-func (d *derivedConfig) BootStrapControlPlane() *nodeReplica {
+func (d *DerivedConfig) BootStrapControlPlane() *nodeReplica {
 	if len(d.controlPlanes) == 0 {
 		return nil
 	}
@@ -243,7 +243,7 @@ func (d *derivedConfig) BootStrapControlPlane() *nodeReplica {
 
 // SecondaryControlPlanes returns all the nodes with control-plane role
 // except the BootStrapControlPlane node, if any,
-func (d *derivedConfig) SecondaryControlPlanes() replicaList {
+func (d *DerivedConfig) SecondaryControlPlanes() replicaList {
 	if len(d.controlPlanes) <= 1 {
 		return nil
 	}
@@ -251,16 +251,16 @@ func (d *derivedConfig) SecondaryControlPlanes() replicaList {
 }
 
 // Workers returns all the nodes with Worker role, if any
-func (d *derivedConfig) Workers() replicaList {
+func (d *DerivedConfig) Workers() replicaList {
 	return d.workers
 }
 
 // ExternalEtcd returns the node with external-etcd role, if defined
-func (d *derivedConfig) ExternalEtcd() *nodeReplica {
+func (d *DerivedConfig) ExternalEtcd() *nodeReplica {
 	return d.externalEtcd
 }
 
 // ExternalLoadBalancer returns the node with external-load-balancer role, if defined
-func (d *derivedConfig) ExternalLoadBalancer() *nodeReplica {
+func (d *DerivedConfig) ExternalLoadBalancer() *nodeReplica {
 	return d.externalLoadBalancer
 }

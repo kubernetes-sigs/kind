@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package create
 
 import (
 	"testing"
@@ -128,7 +128,7 @@ func TestDeriveInfo(t *testing.T) {
 		t.Run(c.TestName, func(t *testing.T) {
 			// Adding Nodes to the config and deriving infos
 			var cfg = &config.Config{Nodes: c.Nodes}
-			derived, err := derive(cfg)
+			derived, err := Derive(cfg)
 			// the error can be:
 			// - nil, in which case we should expect no errors or fail
 			if err != nil {

@@ -14,14 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package create
 
 import (
 	"fmt"
 
 	"github.com/pkg/errors"
 
-	"sigs.k8s.io/kind/pkg/cluster/kubeadm"
+	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
 )
 
 // kubeadmJoinAction implements action for joining nodes
@@ -33,13 +33,13 @@ func init() {
 }
 
 // newKubeadmJoinAction returns a new KubeadmJoinAction
-func newKubeadmJoinAction() action {
+func newKubeadmJoinAction() Action {
 	return &kubeadmJoinAction{}
 }
 
 // Tasks returns the list of action tasks
-func (b *kubeadmJoinAction) Tasks() []task {
-	return []task{
+func (b *kubeadmJoinAction) Tasks() []Task {
+	return []Task{
 		// TODO(fabrizio pandini): add Run kubeadm join --experimental-master
 		//      on SecondaryControlPlaneNodes
 		{
@@ -58,9 +58,9 @@ func runKubeadmJoin(ec *execContext, configNode *nodeReplica) error {
 	// gets the node where
 	// TODO(fabrizio pandini): when external load-balancer will be
 	//      implemented this should be modified accordingly
-	controlPlaneHandle, ok := ec.NodeFor(ec.derived.BootStrapControlPlane())
+	controlPlaneHandle, ok := ec.NodeFor(ec.DerivedConfig.BootStrapControlPlane())
 	if !ok {
-		return fmt.Errorf("unable to get the handle for operating on node: %s", ec.derived.BootStrapControlPlane().Name)
+		return fmt.Errorf("unable to get the handle for operating on node: %s", ec.DerivedConfig.BootStrapControlPlane().Name)
 	}
 
 	// gets the IP of the bootstrap master node

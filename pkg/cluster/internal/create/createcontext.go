@@ -14,33 +14,78 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package create
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/kind/pkg/cluster/config"
+	"sigs.k8s.io/kind/pkg/cluster/internal/meta"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/docker"
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
 
-// createContext is a superset of Context implementing helpers internal to Context.Create()
-type createContext struct {
-	*Context
-	status *logutil.Status
-	config *config.Config
-	*derivedConfig
-	retain           bool          // if we should retain nodes after failing to create.
-	waitForReady     time.Duration // Wait for the control plane node to be ready.
-	ControlPlaneMeta *ControlPlaneMeta
+// Context is a superset of cluster.Context implementing helpers internal to Context.Create()
+type Context struct {
+	*meta.ClusterMeta
+	// other fields
+	Status *logutil.Status
+	Config *config.Config
+	*DerivedConfig
+	Retain       bool          // if we should retain nodes after failing to create.
+	WaitForReady time.Duration // Wait for the control plane node to be ready.
+}
+
+// TODO(bentheelder): refactor this
+// Exec actions on kubernetes-in-docker cluster
+// Actions are repetitive, high level abstractions/workflows composed
+// by one or more lower level tasks, that automatically adapt to the
+// current cluster topology
+func (cc *Context) Exec(nodeList map[string]*nodes.Node, actions []string, wait time.Duration) error {
+	// init the exec context and logging
+	ec := &execContext{
+		Context:      cc,
+		nodes:        nodeList,
+		waitForReady: wait,
+	}
+
+	ec.status = logutil.NewStatus(os.Stdout)
+	ec.status.MaybeWrapLogrus(log.StandardLogger())
+
+	defer ec.status.End(false)
+
+	// Create an ExecutionPlan that applies the given actions to the
+	// topology defined in the config
+	executionPlan, err := newExecutionPlan(ec.DerivedConfig, actions)
+	if err != nil {
+		return err
+	}
+
+	// Executes all the selected action
+	for _, plannedTask := range executionPlan {
+		ec.status.Start(fmt.Sprintf("[%s] %s", plannedTask.Node.Name, plannedTask.Task.Description))
+
+		err := plannedTask.Task.Run(ec, plannedTask.Node)
+		if err != nil {
+			// in case of error, the execution plan is halted
+			log.Error(err)
+			return err
+		}
+	}
+	ec.status.End(true)
+
+	return nil
 }
 
 // EnsureNodeImages ensures that the node images used by the create
 // configuration are present
-func (cc *createContext) EnsureNodeImages() {
+func (cc *Context) EnsureNodeImages() {
 	var images = map[string]bool{}
 
 	// For all the nodes defined in the `kind` config
@@ -54,7 +99,7 @@ func (cc *createContext) EnsureNodeImages() {
 		if strings.Contains(image, "@sha256:") {
 			image = strings.Split(image, "@sha256:")[0]
 		}
-		cc.status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", image))
+		cc.Status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", image))
 
 		// attempt to explicitly pull the image if it doesn't exist locally
 		// we don't care if this errors, we'll still try to run which also pulls
@@ -67,15 +112,15 @@ func (cc *createContext) EnsureNodeImages() {
 
 // provisionNodes takes care of creating all the containers
 // that will host `kind` nodes
-func (cc *createContext) provisionNodes() (nodeList map[string]*nodes.Node, err error) {
+func (cc *Context) ProvisionNodes() (nodeList map[string]*nodes.Node, err error) {
 	nodeList = map[string]*nodes.Node{}
 
 	// For all the nodes defined in the `kind` config
 	for _, configNode := range cc.AllReplicas() {
 
-		cc.status.Start(fmt.Sprintf("[%s] Creating node container 📦", configNode.Name))
+		cc.Status.Start(fmt.Sprintf("[%s] Creating node container 📦", configNode.Name))
 		// create the node into a container (docker run, but it is paused, see createNode)
-		var name = fmt.Sprintf("kind-%s-%s", cc.name, configNode.Name)
+		var name = fmt.Sprintf("kind-%s-%s", cc.Name(), configNode.Name)
 		var node *nodes.Node
 
 		switch configNode.Role {
@@ -89,7 +134,7 @@ func (cc *createContext) provisionNodes() (nodeList map[string]*nodes.Node, err 
 		}
 		nodeList[configNode.Name] = node
 
-		cc.status.Start(fmt.Sprintf("[%s] Fixing mounts 🗻", configNode.Name))
+		cc.Status.Start(fmt.Sprintf("[%s] Fixing mounts 🗻", configNode.Name))
 		// we need to change a few mounts once we have the container
 		// we'd do this ahead of time if we could, but --privileged implies things
 		// that don't seem to be configurable, and we need that flag
@@ -98,14 +143,14 @@ func (cc *createContext) provisionNodes() (nodeList map[string]*nodes.Node, err 
 			return nodeList, err
 		}
 
-		cc.status.Start(fmt.Sprintf("[%s] Starting systemd 🖥", configNode.Name))
+		cc.Status.Start(fmt.Sprintf("[%s] Starting systemd 🖥", configNode.Name))
 		// signal the node container entrypoint to continue booting into systemd
 		if err := node.SignalStart(); err != nil {
 			// TODO(bentheelder): logging here
 			return nodeList, err
 		}
 
-		cc.status.Start(fmt.Sprintf("[%s] Waiting for docker to be ready 🐋", configNode.Name))
+		cc.Status.Start(fmt.Sprintf("[%s] Waiting for docker to be ready 🐋", configNode.Name))
 		// wait for docker to be ready
 		if !node.WaitForDocker(time.Now().Add(time.Second * 30)) {
 			// TODO(bentheelder): logging here
@@ -113,7 +158,7 @@ func (cc *createContext) provisionNodes() (nodeList map[string]*nodes.Node, err 
 		}
 
 		// load the docker image artifacts into the docker daemon
-		cc.status.Start(fmt.Sprintf("[%s] Pre-loading images 🐋", configNode.Name))
+		cc.Status.Start(fmt.Sprintf("[%s] Pre-loading images 🐋", configNode.Name))
 		node.LoadImages()
 
 	}

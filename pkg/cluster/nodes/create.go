@@ -21,7 +21,7 @@ import (
 	"net"
 
 	"github.com/pkg/errors"
-	"sigs.k8s.io/kind/pkg/cluster/kubeadm"
+	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
 	"sigs.k8s.io/kind/pkg/docker"
 )
 

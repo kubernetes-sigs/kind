@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package create
 
 import (
 	"fmt"
@@ -103,12 +103,12 @@ func TestExecutionPlanSorting(t *testing.T) {
 // dummy action with single task targeting all nodes
 type action0 struct{}
 
-func newAction0() action {
+func newAction0() Action {
 	return &action0{}
 }
 
-func (b *action0) Tasks() []task {
-	return []task{
+func (b *action0) Tasks() []Task {
+	return []Task{
 		{
 			Description: "action0 - task 0/all",
 			TargetNodes: selectAllNodes,
@@ -119,12 +119,12 @@ func (b *action0) Tasks() []task {
 // dummy action with single task targeting control-plane nodes
 type action1 struct{}
 
-func newAction1() action {
+func newAction1() Action {
 	return &action1{}
 }
 
-func (b *action1) Tasks() []task {
-	return []task{
+func (b *action1) Tasks() []Task {
+	return []Task{
 		{
 			Description: "action1 - task 0/control-planes",
 			TargetNodes: selectControlPlaneNodes,
@@ -135,12 +135,12 @@ func (b *action1) Tasks() []task {
 // dummy action with multiple tasks each with different targets
 type action2 struct{}
 
-func newAction2() action {
+func newAction2() Action {
 	return &action2{}
 }
 
-func (b *action2) Tasks() []task {
-	return []task{
+func (b *action2) Tasks() []Task {
+	return []Task{
 		{
 			Description: "action2 - task 0/all",
 			TargetNodes: selectAllNodes,
@@ -225,7 +225,7 @@ func TestNewExecutionPlan(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.TestName, func(t2 *testing.T) {
-			var derived = &derivedConfig{}
+			var derived = &DerivedConfig{}
 			// Adding nodes to the config
 			for _, n := range c.Nodes {
 				if err := derived.Add(n); err != nil {

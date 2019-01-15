@@ -14,28 +14,33 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package create
 
 import (
 	"fmt"
 	"sort"
 	"sync"
+	"time"
+
+	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	logutil "sigs.k8s.io/kind/pkg/log"
 )
 
-// action define a set of tasks to be executed on a `kind` cluster.
+// Action define a set of tasks to be executed on a `kind` cluster.
+// TODO(bentheelder): redesign this for concurrency
 // Usage of actions allows to define repetitive, high level abstractions/workflows
 // by composing lower level tasks
-type action interface {
+type Action interface {
 	// Tasks returns the list of task that are identified by this action
 	// Please note that the order of task is important, and it will be
 	// respected during execution
-	Tasks() []task
+	Tasks() []Task
 }
 
 // Task define a logical step of an action to be executed on a `kind` cluster.
 // At exec time the logical step will then apply to the current cluster
 // topology, and be planned for execution zero, one or many times accordingly.
-type task struct {
+type Task struct {
 	// Description of the task
 	Description string
 	// TargetNodes define a function that identifies the nodes where this
@@ -45,14 +50,29 @@ type task struct {
 	Run func(*execContext, *nodeReplica) error
 }
 
+// execContext is a superset of Context used by helpers for Context.Exec() command
+// TODO(bentheelder): refactor this
+type execContext struct {
+	*Context
+	status *logutil.Status
+	// nodes contains the list of actual nodes (a node is a container implementing a config node)
+	nodes        map[string]*nodes.Node
+	waitForReady time.Duration // Wait for the control plane node to be ready
+}
+
+func (ec *execContext) NodeFor(configNode *nodeReplica) (node *nodes.Node, ok bool) {
+	node, ok = ec.nodes[configNode.Name]
+	return
+}
+
 // nodeSelector defines a function returning a subset of nodes where tasks
 // should be planned.
-type nodeSelector func(*derivedConfig) replicaList
+type nodeSelector func(*DerivedConfig) replicaList
 
 // plannedTask defines a Task planned for execution on a given node.
 type plannedTask struct {
 	// task to be executed
-	Task task
+	Task Task
 	// node where the task should be executed
 	Node *nodeReplica
 
@@ -68,21 +88,21 @@ type executionPlan []*plannedTask
 
 // internal registry of named Action implementations
 var actionImpls = struct {
-	impls map[string]func() action
+	impls map[string]func() Action
 	sync.Mutex
 }{
-	impls: map[string]func() action{},
+	impls: map[string]func() Action{},
 }
 
 // registerAction registers a new named actionBuilder function for use
-func registerAction(name string, actionBuilderFunc func() action) {
+func registerAction(name string, actionBuilderFunc func() Action) {
 	actionImpls.Lock()
 	actionImpls.impls[name] = actionBuilderFunc
 	actionImpls.Unlock()
 }
 
 // getAction returns one instance of a registered action
-func getAction(name string) (action, error) {
+func getAction(name string) (Action, error) {
 	actionImpls.Lock()
 	actionBuilderFunc, ok := actionImpls.impls[name]
 	actionImpls.Unlock()
@@ -104,7 +124,7 @@ func getAction(name string) (action, error) {
 //     init-join-upgrade and then join again)
 //     e.g. it should be something like "action group" where each action
 //	   group is a list of actions
-func newExecutionPlan(cfg *derivedConfig, actionNames []string) (executionPlan, error) {
+func newExecutionPlan(cfg *DerivedConfig, actionNames []string) (executionPlan, error) {
 	// for each actionName
 	var plan = executionPlan{}
 	for i, name := range actionNames {
@@ -179,19 +199,19 @@ func (t executionPlan) Swap(i, j int) {
 
 // selectAllNodes is a NodeSelector that returns all the nodes defined in
 // the `kind` Config
-func selectAllNodes(cfg *derivedConfig) replicaList {
+func selectAllNodes(cfg *DerivedConfig) replicaList {
 	return cfg.AllReplicas()
 }
 
 // selectControlPlaneNodes is a NodeSelector that returns all the nodes
 // with control-plane role
-func selectControlPlaneNodes(cfg *derivedConfig) replicaList {
+func selectControlPlaneNodes(cfg *DerivedConfig) replicaList {
 	return cfg.ControlPlanes()
 }
 
 // selectBootstrapControlPlaneNode is a NodeSelector that returns the
 // first node with control-plane role
-func selectBootstrapControlPlaneNode(cfg *derivedConfig) replicaList {
+func selectBootstrapControlPlaneNode(cfg *DerivedConfig) replicaList {
 	if cfg.BootStrapControlPlane() != nil {
 		return replicaList{cfg.BootStrapControlPlane()}
 	}
@@ -201,19 +221,19 @@ func selectBootstrapControlPlaneNode(cfg *derivedConfig) replicaList {
 // selectSecondaryControlPlaneNodes is a NodeSelector that returns all
 // the nodes with control-plane roleexcept the BootStrapControlPlane
 // node, if any,
-func selectSecondaryControlPlaneNodes(cfg *derivedConfig) replicaList {
+func selectSecondaryControlPlaneNodes(cfg *DerivedConfig) replicaList {
 	return cfg.SecondaryControlPlanes()
 }
 
 // selectWorkerNodes is a NodeSelector that returns all the nodes with
 // Worker role, if any
-func selectWorkerNodes(cfg *derivedConfig) replicaList {
+func selectWorkerNodes(cfg *DerivedConfig) replicaList {
 	return cfg.Workers()
 }
 
 // selectExternalEtcdNode is a NodeSelector that returns the node with
 //external-etcd role, if defined
-func selectExternalEtcdNode(cfg *derivedConfig) replicaList {
+func selectExternalEtcdNode(cfg *DerivedConfig) replicaList {
 	if cfg.ExternalEtcd() != nil {
 		return replicaList{cfg.ExternalEtcd()}
 	}
@@ -222,7 +242,7 @@ func selectExternalEtcdNode(cfg *derivedConfig) replicaList {
 
 // selectExternalLoadBalancerNode is a NodeSelector that returns the node
 // with external-load-balancer role, if defined
-func selectExternalLoadBalancerNode(cfg *derivedConfig) replicaList {
+func selectExternalLoadBalancerNode(cfg *DerivedConfig) replicaList {
 	if cfg.ExternalLoadBalancer() != nil {
 		return replicaList{cfg.ExternalLoadBalancer()}
 	}
