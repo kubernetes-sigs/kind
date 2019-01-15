@@ -18,8 +18,9 @@ package meta
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
+
+	"k8s.io/client-go/util/homedir"
 
 	"sigs.k8s.io/kind/pkg/cluster/consts"
 )
@@ -46,9 +47,8 @@ func (c *ClusterMeta) Name() string {
 // KubeConfigPath returns the path to where the Kubeconfig would be placed
 // by kind based on the configuration.
 func (c *ClusterMeta) KubeConfigPath() string {
-	// TODO(bentheelder): Windows?
 	// configDir matches the standard directory expected by kubectl etc
-	configDir := filepath.Join(os.Getenv("HOME"), ".kube")
+	configDir := filepath.Join(homedir.HomeDir(), ".kube")
 	// note that the file name however does not, we do not want to overwrite
 	// the standard config, though in the future we may (?) merge them
 	fileName := fmt.Sprintf("kind-config-%s", c.name)
