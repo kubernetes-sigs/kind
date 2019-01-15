@@ -637,9 +637,12 @@
   revision = "4a9a8137c0a17bc4594f544987b3f0d48b2e3d3a"
 
 [[projects]]
-  digest = "1:ae9ced9ef7b8eb2794a4f80bc3af9d2bc38ec7d60337367bad9a655c1d641458"
+  digest = "1:ad5bf92b9bd4027f2cd033c98dc3ac622caa8c55b82648f907a211afef6f74d4"
   name = "k8s.io/client-go"
-  packages = ["kubernetes/scheme"]
+  packages = [
+    "kubernetes/scheme",
+    "util/homedir",
+  ]
   pruneopts = "NUT"
   revision = "23781f4d6632d88e869066eaebb743857aa1ef9b"
   version = "v7.0.0"
@@ -770,6 +773,7 @@
     "k8s.io/apimachinery/pkg/util/runtime",
     "k8s.io/apimachinery/pkg/util/sets",
     "k8s.io/apimachinery/pkg/util/version",
+    "k8s.io/client-go/util/homedir",
     "k8s.io/code-generator/cmd/conversion-gen",
     "k8s.io/code-generator/cmd/deepcopy-gen",
     "k8s.io/code-generator/cmd/defaulter-gen",
