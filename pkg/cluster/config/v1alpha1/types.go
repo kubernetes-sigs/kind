@@ -40,7 +40,7 @@ type Config struct {
 	// as patchesJson6902 to `kustomize build`
 	KubeadmConfigPatchesJSON6902 []kustomize.PatchJSON6902 `json:"kubeadmConfigPatchesJson6902,omitempty"`
 	// ControlPlane holds config for the control plane node
-	ControlPlane *ControlPlane `json:"ControlPlane,omitempty"`
+	ControlPlane *ControlPlane `json:"controlPlane,omitempty"`
 }
 
 // ControlPlane holds configurations specific to the control plane nodes
