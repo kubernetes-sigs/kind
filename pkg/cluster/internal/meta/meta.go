@@ -22,7 +22,7 @@ import (
 
 	"k8s.io/client-go/util/homedir"
 
-	"sigs.k8s.io/kind/pkg/cluster/consts"
+	"sigs.k8s.io/kind/pkg/cluster/constants"
 )
 
 // ClusterMeta contains some cluster meta and can be used to compute some more
@@ -58,5 +58,5 @@ func (c *ClusterMeta) KubeConfigPath() string {
 // ClusterLabel returns the docker object label that will be applied
 // to cluster "node" containers
 func (c *ClusterMeta) ClusterLabel() string {
-	return fmt.Sprintf("%s=%s", consts.ClusterLabelKey, c.name)
+	return fmt.Sprintf("%s=%s", constants.ClusterLabelKey, c.name)
 }
