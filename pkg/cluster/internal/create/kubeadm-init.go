@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package create
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"sigs.k8s.io/kind/pkg/cluster/kubeadm"
+	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 )
 
@@ -39,13 +39,13 @@ func init() {
 }
 
 // newKubeadmInitAction returns a new KubeadmInitAction
-func newKubeadmInitAction() action {
+func newKubeadmInitAction() Action {
 	return &kubeadmInitAction{}
 }
 
 // Tasks returns the list of action tasks
-func (b *kubeadmInitAction) Tasks() []task {
-	return []task{
+func (b *kubeadmInitAction) Tasks() []Task {
+	return []Task{
 		{
 			// Run kubeadm init on the BootstrapControlPlaneNode
 			Description: "Starting Kubernetes (this may take a minute) ☸",
@@ -57,7 +57,7 @@ func (b *kubeadmInitAction) Tasks() []task {
 
 // runKubeadmConfig executes kubadm init and a set of default
 // post init operations.
-func runKubeadmInit(ec *execContext, configNode *nodeReplica) error {
+func runKubeadmInit(ec *execContext, configNode *NodeReplica) error {
 	// get the target node for this task
 	node, ok := ec.NodeFor(configNode)
 	if !ok {
@@ -107,7 +107,7 @@ func runKubeadmInit(ec *execContext, configNode *nodeReplica) error {
 
 	// if we are only provisioning one node, remove the master taint
 	// https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#master-isolation
-	if len(ec.derived.AllReplicas()) == 1 {
+	if len(ec.DerivedConfig.AllReplicas()) == 1 {
 		if err := node.Command(
 			"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf",
 			"taint", "nodes", "--all", "node-role.kubernetes.io/master-",

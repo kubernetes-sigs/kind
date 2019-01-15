@@ -19,7 +19,6 @@ package cluster
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -27,45 +26,17 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
-	"sigs.k8s.io/kind/pkg/cluster/consts"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create"
+	"sigs.k8s.io/kind/pkg/cluster/internal/meta"
 	"sigs.k8s.io/kind/pkg/cluster/logs"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/docker"
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
 
 // Context is used to create / manipulate kubernetes-in-docker clusters
+// See: NewContext()
 type Context struct {
-	name             string
-	ControlPlaneMeta *ControlPlaneMeta
-}
-
-// createContext is a superset of Context used by helpers for Context.Create()
-type createContext struct {
-	*Context
-	status           *logutil.Status
-	config           *config.Config
-	derived          *derivedConfigData
-	retain           bool          // if we should retain nodes after failing to create.
-	waitForReady     time.Duration // Wait for the control plane node to be ready.
-	ControlPlaneMeta *ControlPlaneMeta
-}
-
-// execContext is a superset of Context used by helpers for Context.Create()
-// and Context.Exec() command
-// TODO(fabrizio pandini): might be we want to move all the actions in a separated
-//		package e.g. pkg/cluster/actions
-//		In order to do this a circular dependency should be avoided:
-//			pkg/cluster -- use -- pkg/cluster/actions
-// 			pkg/cluster/actions -- use pkg/cluster execContext
-type execContext struct {
-	*Context
-	status  *logutil.Status
-	config  *config.Config
-	derived *derivedConfigData
-	// nodes contains the list of actual nodes (a node is a container implementing a config node)
-	nodes        map[string]*nodes.Node
-	waitForReady time.Duration // Wait for the control plane node to be ready
+	*meta.ClusterMeta
 }
 
 // similar to valid docker container names, but since we will prefix
@@ -86,7 +57,7 @@ func NewContext(name string) *Context {
 		name = DefaultName
 	}
 	return &Context{
-		name: name,
+		ClusterMeta: meta.NewClusterMeta(name),
 	}
 }
 
@@ -97,42 +68,35 @@ func NewContext(name string) *Context {
 // though it will be called internally.
 func (c *Context) Validate() error {
 	// validate the name
-	if !validNameRE.MatchString(c.name) {
+	if !validNameRE.MatchString(c.Name()) {
 		return fmt.Errorf(
 			"'%s' is not a valid cluster name, cluster names must match `%s`",
-			c.name, validNameRE.String(),
+			c.Name(), validNameRE.String(),
 		)
 	}
 	return nil
 }
 
-// ClusterLabel returns the docker object label that will be applied
-// to cluster "node" containers
-func (c *Context) ClusterLabel() string {
-	return fmt.Sprintf("%s=%s", consts.ClusterLabelKey, c.name)
+// ControlPlaneMeta tracks various outputs that are relevant to the control plane created with Kind.
+// Here we can define things like ports and listen or bind addresses as needed.
+type ControlPlaneMeta struct {
+	// APIServerPort is the port that the container is forwarding to the
+	// Kubernetes API server running in the container
+	APIServerPort int
 }
 
-// Name returns the context's name
-func (c *Context) Name() string {
-	return c.name
+// GetControlPlaneMeta attempts to retreive / compute metadata about
+// the control plane for the context's cluster
+// NOTE: due to refactoring this is currently non-functional (!)
+// TODO(bentheelder): fix this
+func (c *Context) GetControlPlaneMeta() (*ControlPlaneMeta, error) {
+	return nil, fmt.Errorf("needs-reimplementation")
 }
 
 // ClusterName returns the Kubernetes cluster name based on the context name
 // currently this is .Name prefixed with "kind-"
 func (c *Context) ClusterName() string {
-	return fmt.Sprintf("kind-%s", c.name)
-}
-
-// KubeConfigPath returns the path to where the Kubeconfig would be placed
-// by kind based on the configuration.
-func (c *Context) KubeConfigPath() string {
-	// TODO(bentheelder): Windows?
-	// configDir matches the standard directory expected by kubectl etc
-	configDir := filepath.Join(os.Getenv("HOME"), ".kube")
-	// note that the file name however does not, we do not want to overwrite
-	// the standard config, though in the future we may (?) merge them
-	fileName := fmt.Sprintf("kind-config-%s", c.name)
-	return filepath.Join(configDir, fileName)
+	return fmt.Sprintf("kind-%s", c.Name())
 }
 
 // Create provisions and starts a kubernetes-in-docker cluster
@@ -143,7 +107,7 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 	}
 
 	// derive info necessary for creation
-	derived, err := deriveInfo(cfg)
+	derived, err := create.Derive(cfg)
 	if err != nil {
 		return err
 	}
@@ -168,46 +132,45 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 	fmt.Printf("Creating cluster '%s' ...\n", c.ClusterName())
 
 	// init the create context and logging
-	cc := &createContext{
-		Context: c,
-		config:  cfg,
-		derived: derived,
-		retain:  retain,
+	cc := &create.Context{
+		Config:        cfg,
+		DerivedConfig: derived,
+		Retain:        retain,
+		ClusterMeta:   c.ClusterMeta,
 	}
 
-	cc.status = logutil.NewStatus(os.Stdout)
-	cc.status.MaybeWrapLogrus(log.StandardLogger())
+	cc.Status = logutil.NewStatus(os.Stdout)
+	cc.Status.MaybeWrapLogrus(log.StandardLogger())
 
-	defer cc.status.End(false)
+	defer cc.Status.End(false)
 
 	// attempt to explicitly pull the required node images if they doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
 	cc.EnsureNodeImages()
 
 	// Create node containers implementing defined config Nodes
-	nodeList, err := cc.provisionNodes()
+	nodeList, err := cc.ProvisionNodes()
 	if err != nil {
 		// In case of errors nodes are deleted (except if retain is explicitly set)
 		log.Error(err)
-		if !cc.retain {
-			cc.Delete()
+		if !cc.Retain {
+			c.Delete()
 		}
 		return err
 	}
-	c.ControlPlaneMeta = cc.ControlPlaneMeta
-	cc.status.End(true)
+	cc.Status.End(true)
 
 	// After creating node containers the Kubernetes provisioning is executed
 	// By default `kind` executes all the actions required to get a fully working
 	// Kubernetes cluster; please note that the list of actions automatically
 	// adapt to the topology defined in config
 	// TODO(fabrizio pandini): make the list of executed actions configurable from CLI
-	err = c.exec(cc.config, cc.derived, nodeList, []string{"config", "init", "join"}, wait)
+	err = cc.Exec(nodeList, []string{"config", "init", "join"}, wait)
 	if err != nil {
 		// In case of errors nodes are deleted (except if retain is explicitly set)
 		log.Error(err)
-		if !cc.retain {
-			cc.Delete()
+		if !cc.Retain {
+			c.Delete()
 		}
 		return err
 	}
@@ -217,153 +180,6 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 		cc.Name(),
 	)
 	return nil
-}
-
-// TODO(bentheelder): fix this after multi-node changes (!)
-
-// ControlPlaneMeta tracks various outputs that are relevant to the control plane created with Kind.
-// Here we can define things like ports and listen or bind addresses as needed.
-type ControlPlaneMeta struct {
-
-	//APIServerPort is the port that the container is forwarding to the Kubernetes API server running in the container
-	APIServerPort int
-}
-
-// Ensure node images are present
-func (cc *createContext) EnsureNodeImages() {
-	var images = map[string]bool{}
-
-	// For all the nodes defined in the `kind` config
-	for _, configNode := range cc.derived.AllReplicas() {
-		if _, ok := images[configNode.Image]; ok {
-			continue
-		}
-
-		// prints user friendly message
-		image := configNode.Image
-		if strings.Contains(image, "@sha256:") {
-			image = strings.Split(image, "@sha256:")[0]
-		}
-		cc.status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", image))
-
-		// attempt to explicitly pull the image if it doesn't exist locally
-		// we don't care if this errors, we'll still try to run which also pulls
-		_, _ = docker.PullIfNotPresent(configNode.Image, 4)
-
-		// marks the images as already pulled
-		images[configNode.Image] = true
-	}
-}
-
-// provisionNodes takes care of creating all the containers
-// that will host `kind` nodes
-func (cc *createContext) provisionNodes() (nodeList map[string]*nodes.Node, err error) {
-	nodeList = map[string]*nodes.Node{}
-
-	// For all the nodes defined in the `kind` config
-	for _, configNode := range cc.derived.AllReplicas() {
-
-		cc.status.Start(fmt.Sprintf("[%s] Creating node container 📦", configNode.Name))
-		// create the node into a container (docker run, but it is paused, see createNode)
-		var name = fmt.Sprintf("kind-%s-%s", cc.name, configNode.Name)
-		var node *nodes.Node
-
-		switch configNode.Role {
-		case config.ControlPlaneRole:
-			node, err = nodes.CreateControlPlaneNode(name, configNode.Image, cc.ClusterLabel())
-		case config.WorkerRole:
-			node, err = nodes.CreateWorkerNode(name, configNode.Image, cc.ClusterLabel())
-		}
-		if err != nil {
-			return nodeList, err
-		}
-		nodeList[configNode.Name] = node
-
-		cc.status.Start(fmt.Sprintf("[%s] Fixing mounts 🗻", configNode.Name))
-		// we need to change a few mounts once we have the container
-		// we'd do this ahead of time if we could, but --privileged implies things
-		// that don't seem to be configurable, and we need that flag
-		if err := node.FixMounts(); err != nil {
-			// TODO(bentheelder): logging here
-			return nodeList, err
-		}
-
-		cc.status.Start(fmt.Sprintf("[%s] Starting systemd 🖥", configNode.Name))
-		// signal the node container entrypoint to continue booting into systemd
-		if err := node.SignalStart(); err != nil {
-			// TODO(bentheelder): logging here
-			return nodeList, err
-		}
-
-		cc.status.Start(fmt.Sprintf("[%s] Waiting for docker to be ready 🐋", configNode.Name))
-		// wait for docker to be ready
-		if !node.WaitForDocker(time.Now().Add(time.Second * 30)) {
-			// TODO(bentheelder): logging here
-			return nodeList, fmt.Errorf("timed out waiting for docker to be ready on node")
-		}
-
-		// load the docker image artifacts into the docker daemon
-		cc.status.Start(fmt.Sprintf("[%s] Pre-loading images 🐋", configNode.Name))
-		node.LoadImages()
-
-	}
-
-	return nodeList, nil
-}
-
-// TODO(bentheelder): refactor this
-// Exec actions on kubernetes-in-docker cluster
-// Actions are repetitive, high level abstractions/workflows composed
-// by one or more lower level tasks, that automatically adapt to the
-// current cluster topology
-func (c *Context) exec(cfg *config.Config, derived *derivedConfigData, nodeList map[string]*nodes.Node, actions []string, wait time.Duration) error {
-	// validate config first
-	if err := cfg.Validate(); err != nil {
-		return err
-	}
-
-	// init the exec context and logging
-	ec := &execContext{
-		Context:      c,
-		config:       cfg,
-		derived:      derived,
-		nodes:        nodeList,
-		waitForReady: wait,
-	}
-
-	ec.status = logutil.NewStatus(os.Stdout)
-	ec.status.MaybeWrapLogrus(log.StandardLogger())
-
-	defer ec.status.End(false)
-
-	// Create an ExecutionPlan that applies the given actions to the topology defined
-	// in the config
-	executionPlan, err := newExecutionPlan(ec.derived, actions)
-	if err != nil {
-		return err
-	}
-
-	// Executes all the selected action
-	// TODO(fabrizio pandini): add a flag to a filter PlannedTask by node
-	// (e.g. execute only on this node) or by other criteria tbd
-	for _, plannedTask := range executionPlan {
-		ec.status.Start(fmt.Sprintf("[%s] %s", plannedTask.Node.Name, plannedTask.Task.Description))
-
-		err := plannedTask.Task.Run(ec, plannedTask.Node)
-		if err != nil {
-			// in case of error, the execution plan is halted
-			log.Error(err)
-			return err
-		}
-	}
-	ec.status.End(true)
-
-	return nil
-}
-
-func (ec *execContext) NodeFor(configNode *nodeReplica) (node *nodes.Node, ok bool) {
-	node, ok = ec.nodes[configNode.Name]
-	return
 }
 
 // Delete tears down a kubernetes-in-docker cluster

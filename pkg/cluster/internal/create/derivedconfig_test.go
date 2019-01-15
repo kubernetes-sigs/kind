@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package create
 
 import (
 	"testing"
@@ -128,7 +128,7 @@ func TestDeriveInfo(t *testing.T) {
 		t.Run(c.TestName, func(t *testing.T) {
 			// Adding Nodes to the config and deriving infos
 			var cfg = &config.Config{Nodes: c.Nodes}
-			derived, err := deriveInfo(cfg)
+			derived, err := Derive(cfg)
 			// the error can be:
 			// - nil, in which case we should expect no errors or fail
 			if err != nil {
@@ -158,7 +158,7 @@ func TestDeriveInfo(t *testing.T) {
 	}
 }
 
-func checkNode(t *testing.T, n *nodeReplica, name *string) {
+func checkNode(t *testing.T, n *NodeReplica, name *string) {
 	if (n == nil) != (name == nil) {
 		t.Errorf("expected %v node, saw %v", name, n)
 	}
@@ -172,7 +172,7 @@ func checkNode(t *testing.T, n *nodeReplica, name *string) {
 	}
 }
 
-func checkReplicaList(t *testing.T, list replicaList, names []string) {
+func checkReplicaList(t *testing.T, list ReplicaList, names []string) {
 	if len(list) != len(names) {
 		t.Errorf("expected %d nodes, saw %d", len(names), len(list))
 		return

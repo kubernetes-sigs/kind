@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package create
 
 // a default storage class
 // we need this for e2es (StatefulSet)

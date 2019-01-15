@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package consts contains well known constants for kind clusters
-package consts
+// Package constants contains well known constants for kind clusters
+package constants
 
 // ClusterLabelKey is applied to each "node" docker container for identification
 const ClusterLabelKey = "io.k8s.sigs.kind.cluster"

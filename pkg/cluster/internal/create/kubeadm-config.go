@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package create
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
-	"sigs.k8s.io/kind/pkg/cluster/kubeadm"
+	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
 	"sigs.k8s.io/kind/pkg/kustomize"
 )
 
@@ -38,13 +38,13 @@ func init() {
 }
 
 // NewKubeadmConfigAction returns a new KubeadmConfigAction
-func newKubeadmConfigAction() action {
+func newKubeadmConfigAction() Action {
 	return &kubeadmConfigAction{}
 }
 
 // Tasks returns the list of action tasks
-func (b *kubeadmConfigAction) Tasks() []task {
-	return []task{
+func (b *kubeadmConfigAction) Tasks() []Task {
+	return []Task{
 		{
 			// Creates the kubeadm config file on the BootstrapControlPlaneNode
 			Description: "Creating the kubeadm config file ⛵",
@@ -56,7 +56,7 @@ func (b *kubeadmConfigAction) Tasks() []task {
 
 // runKubeadmConfig creates a kubeadm config file locally and then
 // copies it to the node
-func runKubeadmConfig(ec *execContext, configNode *nodeReplica) error {
+func runKubeadmConfig(ec *execContext, configNode *NodeReplica) error {
 	// get the target node for this task
 	node, ok := ec.NodeFor(configNode)
 	if !ok {
@@ -72,10 +72,10 @@ func runKubeadmConfig(ec *execContext, configNode *nodeReplica) error {
 
 	// create kubeadm config file writing a local temp file
 	kubeadmConfig, err := createKubeadmConfig(
-		ec.config,
-		ec.derived,
+		ec.Config,
+		ec.DerivedConfig,
 		kubeadm.ConfigData{
-			ClusterName:       ec.name,
+			ClusterName:       ec.Name(),
 			KubernetesVersion: kubeVersion,
 			APIBindPort:       kubeadm.APIServerPort,
 			Token:             kubeadm.Token,
@@ -103,7 +103,7 @@ func runKubeadmConfig(ec *execContext, configNode *nodeReplica) error {
 // createKubeadmConfig creates the kubeadm config file for the cluster
 // by running data through the template and writing it to a temp file
 // the config file path is returned, this file should be removed later
-func createKubeadmConfig(cfg *config.Config, derived *derivedConfigData, data kubeadm.ConfigData) (path string, err error) {
+func createKubeadmConfig(cfg *config.Config, derived *DerivedConfig, data kubeadm.ConfigData) (path string, err error) {
 	// create kubeadm config file
 	f, err := ioutil.TempFile("", "")
 	if err != nil {

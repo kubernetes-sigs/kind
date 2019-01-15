@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"sigs.k8s.io/kind/pkg/cluster/consts"
+	"sigs.k8s.io/kind/pkg/cluster/constants"
 
 	"sigs.k8s.io/kind/pkg/exec"
 )
@@ -77,9 +77,9 @@ func list(visit func(string, *Node), filters ...string) error {
 		"-a",         // show stopped nodes
 		"--no-trunc", // don't truncate
 		// filter for nodes with the cluster label
-		"--filter", "label=" + consts.ClusterLabelKey,
+		"--filter", "label=" + constants.ClusterLabelKey,
 		// format to include friendly name and the cluster name
-		"--format", fmt.Sprintf(`{{.Names}}\t{{.Label "%s"}}`, consts.ClusterLabelKey),
+		"--format", fmt.Sprintf(`{{.Names}}\t{{.Label "%s"}}`, constants.ClusterLabelKey),
 	}
 	for _, filter := range filters {
 		args = append(args, "--filter", filter)
