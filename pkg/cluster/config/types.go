@@ -66,10 +66,12 @@ const (
 	// WorkerRole identifies a node that hosts a Kubernetes worker
 	WorkerRole NodeRole = "worker"
 	// ExternalEtcdRole identifies a node that hosts an external-etcd instance.
+	// WARNING: this node type is not yet implemented!
 	// Please note that `kind` nodes hosting external etcd are not kubernetes nodes
 	ExternalEtcdRole NodeRole = "external-etcd"
 	// ExternalLoadBalancerRole identifies a node that hosts an external load balancer for API server
 	// in HA configurations.
+	// WARNING: this node type is not yet implemented!
 	// Please note that `kind` nodes hosting external load balancer are not kubernetes nodes
 	ExternalLoadBalancerRole NodeRole = "external-load-balancer"
 )
