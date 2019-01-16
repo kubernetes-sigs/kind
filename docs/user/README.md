@@ -18,6 +18,11 @@ By default, the cluster will be given the name `kind-1`. "1," here, is the
 default context name. 
 Use the `--name` flag to assign the cluster a different context name.
 
+If you want the `create cluster` command to block until the control plane
+reaches a ready status, you can use the `--wait` flag and specify a timeout.
+To use `--wait` you must specify the units of the time to wait. For example, to
+wait for 30 seconds, do `--wait 30s`, for 5 minutes do `--wait 5m`, etc.
+
 **Note**: If you are running `kind` on MacOS or Windows then it is recommended
 that you have at least 4GB of RAM and disk space (these are estimates for a
 single node `kind` cluster) dedicated to the virtual machine (VM) running the
@@ -87,11 +92,6 @@ If the flag `--name` is not specified, `kind` will use the default cluster
 context name "1" and delete that cluster.
 Recall that cluster context names are prefixed with `kind-` so the default
 cluster name is `kind-1`.
-
-If you want the `create cluster` command to block until the control plane
-reaches a ready status, you can use the `--wait` flag and specify a timeout.
-To use `--wait` you must specify the units of the time to wait. For example, to
-wait for 30 seconds, do `--wait 30s`, for 5 minutes do `--wait 5m`, etc.
 
 
 ## Building Images
