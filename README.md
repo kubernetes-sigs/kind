@@ -60,6 +60,25 @@ See the [issue tracker] if you're unsure where to start, or feel free to reach o
 
 See also: the Kubernetes [community page].
 
+## Why kind?
+
+ - kind supports building official Kuberbetes release builds from source
+ - kind ships upstream Kubernetes release builds
+ - kind supports building Kubernetes with make/bash/docker, bazel, or installing from apt, in addition to pre-published builds.
+ - kind is written in go, and can be used as a library, has binary releases
+ - kind supports windows in addition to mac and linux
+ - for more details see [the design documentation][design doc]
+
+## Alternatives
+
+Some other open source projects with slightly different but very overlapping use cases, features etc.
+
+- https://github.com/kubernetes-sigs/kubeadm-dind-cluster
+- https://github.com/kinvolk/kube-spawn
+- https://github.com/kubernetes/minikube
+- https://github.com/danderson/virtuakube
+- https://github.com/ubuntu/microk8s
+
 ### Code of conduct
 
 Participation in the Kubernetes community is governed by the [Kubernetes Code of Conduct].
