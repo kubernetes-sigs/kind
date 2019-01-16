@@ -73,6 +73,20 @@ func (d *DerivedConfig) Validate() error {
 		errs = append(errs, fmt.Errorf("please add a node with role %s because in the cluster there are more than one node with role %s", config.ExternalLoadBalancerRole, config.ControlPlaneRole))
 	}
 
+	// TODO(fabrizio pandini): this check is temporary / WIP
+	// kind v1alpha config fully supports multi nodes, but the cluster creation logic implemented in
+	// pkg/cluster/contex.go does it only partially (yet).
+	// As soon a external load-balancer and external etcd is implemented in pkg/cluster, this should go away
+	if d.ExternalLoadBalancer() != nil {
+		errs = append(errs, fmt.Errorf("multi node support is still a work in progress, currently external load balancer node is not supported"))
+	}
+	if d.SecondaryControlPlanes() != nil {
+		errs = append(errs, fmt.Errorf("multi node support is still a work in progress, currently only single control-plane node are supported"))
+	}
+	if d.ExternalEtcd() != nil {
+		errs = append(errs, fmt.Errorf("multi node support is still a work in progress, currently external etcd node is not supported"))
+	}
+
 	if len(errs) > 0 {
 		return util.NewErrors(errs)
 	}

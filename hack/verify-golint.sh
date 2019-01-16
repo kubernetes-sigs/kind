@@ -42,4 +42,5 @@ GOLINT="${GOLINT:-$(get_golint)}"
 go list ./... | \
   grep -v '^sigs.k8s.io/kind/pkg/cluster/config/v1alpha1$' | \
   grep -v '^sigs.k8s.io/kind/pkg/cluster/config/v1alpha2$' | \
+  grep -v '^sigs.k8s.io/kind/pkg/cluster/config$' | \
   xargs -L1 "${GOLINT}" -set_exit_status

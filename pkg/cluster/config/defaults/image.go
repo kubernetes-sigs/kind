@@ -13,3 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+// Package defaults contains cross-api-version configuration defaults
+package defaults
+
+// Image is the default for the Config.Image field, aka the default node image.
+const Image = "kindest/node:v1.13.2@sha256:e14edfa4950e009fe560499c9db6e89daae8bd18bcb372caca6d321a86c52cda"
