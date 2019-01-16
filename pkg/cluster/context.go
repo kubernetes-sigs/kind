@@ -26,6 +26,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
+	"sigs.k8s.io/kind/pkg/cluster/config/encoding"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create"
 	"sigs.k8s.io/kind/pkg/cluster/internal/meta"
 	"sigs.k8s.io/kind/pkg/cluster/logs"
@@ -101,7 +102,11 @@ func (c *Context) ClusterName() string {
 
 // Create provisions and starts a kubernetes-in-docker cluster
 func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) error {
-	// validate config first
+	// default config fields (important for usage as a library, where the config
+	// may be constructed in memory rather than from disk)
+	encoding.Scheme.Default(cfg)
+
+	// then validate
 	if err := cfg.Validate(); err != nil {
 		return err
 	}
@@ -111,22 +116,10 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 	if err != nil {
 		return err
 	}
+
 	// validate node configuration
 	if err := derived.Validate(); err != nil {
 		return err
-	}
-	// TODO(fabrizio pandini): this check is temporary / WIP
-	// kind v1alpha config fully supports multi nodes, but the cluster creation logic implemented in
-	// pkg/cluster/contex.go does it only partially (yet).
-	// As soon a external load-balancer and external etcd is implemented in pkg/cluster, this should go away
-	if derived.ExternalLoadBalancer() != nil {
-		return fmt.Errorf("multi node support is still a work in progress, currently external load balancer node is not supported")
-	}
-	if derived.SecondaryControlPlanes() != nil {
-		return fmt.Errorf("multi node support is still a work in progress, currently only single control-plane node are supported")
-	}
-	if derived.ExternalEtcd() != nil {
-		return fmt.Errorf("multi node support is still a work in progress, currently external etcd node is not supported")
 	}
 
 	fmt.Printf("Creating cluster '%s' ...\n", c.ClusterName())

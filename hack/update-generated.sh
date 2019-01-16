@@ -32,7 +32,9 @@ GOBIN="${OUTPUT_GOBIN}" go install ./vendor/k8s.io/code-generator/cmd/conversion
 # NOTE: go will only take package paths, not absolute directories
 export PATH="${OUTPUT_GOBIN}:${PATH}"
 go generate ./...
+
 deepcopy-gen -i ./pkg/cluster/config/ -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
+defaulter-gen -i ./pkg/cluster/config/ -O zz_generated.default --go-header-file hack/boilerplate.go.txt
 
 deepcopy-gen -i ./pkg/cluster/config/v1alpha1 -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
 defaulter-gen -i ./pkg/cluster/config/v1alpha1 -O zz_generated.default --go-header-file hack/boilerplate.go.txt

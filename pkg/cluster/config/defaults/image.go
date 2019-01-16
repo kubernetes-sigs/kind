@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,21 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+// Package defaults contains cross-api-version configuration defaults
+package defaults
 
-import (
-	"k8s.io/apimachinery/pkg/runtime"
-
-	"sigs.k8s.io/kind/pkg/cluster/config/defaults"
-)
-
-func addDefaultingFuncs(scheme *runtime.Scheme) error {
-	return RegisterDefaults(scheme)
-}
-
-// SetDefaults_Config sets uninitialized fields to their default value.
-func SetDefaults_Config(obj *Config) {
-	if obj.Image == "" {
-		obj.Image = defaults.Image
-	}
-}
+// Image is the default for the Config.Image field, aka the default node image.
+const Image = "kindest/node:v1.13.2@sha256:e14edfa4950e009fe560499c9db6e89daae8bd18bcb372caca6d321a86c52cda"

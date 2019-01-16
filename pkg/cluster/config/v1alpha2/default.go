@@ -18,11 +18,9 @@ package v1alpha2
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
-)
 
-// DefaultImage is the default for the Config.Image field, aka the default node
-// image.
-const DefaultImage = "kindest/node:v1.12.3@sha256:f0ecb1066697d9417365ca58410132e512ce2010763470bb28c1e8f7fef55464"
+	"sigs.k8s.io/kind/pkg/cluster/config/defaults"
+)
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
@@ -33,7 +31,7 @@ func SetDefaults_Config(obj *Config) {
 	if len(obj.Nodes) == 0 {
 		obj.Nodes = []Node{
 			{
-				Image: DefaultImage,
+				Image: defaults.Image,
 				Role:  ControlPlaneRole,
 			},
 		}
@@ -43,7 +41,7 @@ func SetDefaults_Config(obj *Config) {
 // SetDefaults_Node sets uninitialized fields to their default value.
 func SetDefaults_Node(obj *Node) {
 	if obj.Image == "" {
-		obj.Image = DefaultImage
+		obj.Image = defaults.Image
 	}
 
 	if obj.Role == "" {
