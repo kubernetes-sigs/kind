@@ -1,5 +1,3 @@
-<!-- party! -->
-<!--TODO(bentheelder): fill this in much more thoroughly-->
 # `kind` - `k`ubernetes `in` `d`ocker
 
 <!-- prow build badge, and go report card-->
