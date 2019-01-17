@@ -420,7 +420,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	}
 	// make sure we own the tarballs
 	// TODO(bentheelder): someday we might need a different user ...
-	if err = execInBuild("chown", "-R", "root", DockerImageArchives); err != nil {
+	if err = execInBuild("chown", "-R", "root:root", DockerImageArchives); err != nil {
 		log.Errorf("Image build Failed! %v", err)
 		return err
 	}
