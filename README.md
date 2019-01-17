@@ -1,3 +1,4 @@
+<!-- party! -->
 <!--TODO(bentheelder): fill this in much more thoroughly-->
 # `kind` - `k`ubernetes `in` `d`ocker
 
