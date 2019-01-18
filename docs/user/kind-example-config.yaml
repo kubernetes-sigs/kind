@@ -1,23 +1,28 @@
 # this config file contains all config fields with comments
-apiVersion: kind.sigs.k8s.io/v1alpha1
 kind: Config
+apiVersion: kind.sigs.k8s.io/v1alpha2
+# 1 control plane node and 3 workers
+nodes:
+# the control plane node config
+- role: control-plane
+  # patch the generated kubeadm config with some extra settings
+  kubeadmConfigPatches:
+  - |
+    apiVersion: kubeadm.k8s.io/v1beta1
+    kind: ClusterConfiguration
+    networking:
+      serviceSubnet: 10.0.0.0/16
+  # patch it further using a JSON 6902 patch
+  kubeadmConfigPatchesJson6902:
+  - group: kubeadm.k8s.io
+    version: v1beta1
+    kind: ClusterConfiguration
+    patch: |
+      - op: add
+        path: /apiServerCertSANs/-
+        value: my-hostname
+# the three workers
+- role: worker
+  # replicas specifes the number of nodes to create with this configuration
+  replicas: 3 
 
-# TODO(bentheelder): add cluster wide patches or fix this to include
-# a single node
-# patch the generate kubeadm config with some extra settings
-kubeadmConfigPatches:
-- |
-  apiVersion: kubeadm.k8s.io/v1alpha3
-  kind: ClusterConfiguration
-  networking:
-    serviceSubnet: 10.0.0.0/16
-
-# patch it further using a json 6902 patch
-kubeadmConfigPatchesJson6902:
-- group: kubeadm.k8s.io
-  version: v1alpha3
-  kind: ClusterConfiguration
-  patch: |
-    - op: add
-      path: /apiServerCertSANs/-
-      value: my-hostname

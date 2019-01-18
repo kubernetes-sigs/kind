@@ -29,11 +29,11 @@ single node `kind` cluster) dedicated to the virtual machine (VM) running the
 Docker engine otherwise the Kubernetes cluster might fail to start up.
 
 To change the resource limits for the Docker engine on Mac, you'll need to open the
-**Preferences** menu.
+**Preferences** menu.  
 <img src="./images/docker-pref-1.png"/>
 
 Now, go to the **Advanced** settings page, and change the
-settings there, see [changing Docker's resource limits][Docker resource lims].
+settings there, see [changing Docker's resource limits][Docker resource lims].  
 <img src="./images/docker-pref-2.png"/>
 
 You may also try removing any unused data left by the Docker engine - e.g.,
@@ -152,6 +152,17 @@ To specify a configuration file when creating a cluster, use the `--config`
 flag.
 For a sample kind configuration file see [kind-example-config][kind-example-config].
 
+In particular, many users may be interested in multi-node clusters. A simple
+configuration for this can be acheived with the following config file contents:
+```yaml
+# three node cluster config, with two worker nodes
+kind: Config
+apiVersion: kind.sigs.k8s.io/v1alpha2
+nodes:
+- role: control-plane
+- role: worker
+  replicas: 2
+```
 
 ### Exporting `kind`'s Logs
 `kind` has the ability to export all `kind` related logs for you to explore.
