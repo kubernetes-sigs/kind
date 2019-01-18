@@ -18,6 +18,9 @@ package create
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
+	"sigs.k8s.io/kind/pkg/exec"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -77,20 +80,26 @@ func runKubeadmJoin(ec *execContext, configNode *NodeReplica) error {
 
 	// TODO(fabrizio pandini): might be we want to run pre-kubeadm hooks on workers too
 
+	line, err := kubeadm.ParseTemplate(strings.TrimSpace(ec.Context.Config.Kubeadm.JoinCommand),
+		struct {
+			Token string
+			IP    string
+			Port  int
+		}{
+			kubeadm.Token,
+			controlPlaneIP,
+			kubeadm.APIServerPort,
+		})
+	if err != nil {
+		return fmt.Errorf("error when parsing kubeadm join template: %v", err)
+	}
+
 	// run kubeadm
-	if err := node.Command(
-		"kubeadm", "join",
-		// the control plane address uses the docker ip and a well know APIServerPort that
-		// are accessible only inside the docker network
-		fmt.Sprintf("%s:%d", controlPlaneIP, kubeadm.APIServerPort),
-		// uses a well known token and skipping ca certification for automating TLS bootstrap process
-		"--token", kubeadm.Token,
-		"--discovery-token-unsafe-skip-ca-verification",
-		// preflight errors are expected, in particular for swap being enabled
-		// TODO(bentheelder): limit the set of acceptable errors
-		"--ignore-preflight-errors=all",
-	).Run(); err != nil {
-		return errors.Wrap(err, "failed to join node with kubeadm")
+	cmd := string(line)
+	args := strings.Split(cmd, " ")
+	log.Debugf("Kubeadm init command: %s", cmd)
+	if err := exec.RunLoggingOutputOnFail(node.Command(args[0], args[1:]...)); err != nil {
+		return errors.Wrapf(err, "failed to join node with '%s'", cmd)
 	}
 
 	// TODO(fabrizio pandini): might be we want to run post-kubeadm hooks on workers too

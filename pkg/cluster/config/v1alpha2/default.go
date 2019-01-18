@@ -48,3 +48,14 @@ func SetDefaults_Node(obj *Node) {
 		obj.Role = ControlPlaneRole
 	}
 }
+
+// SetDefaults_KubeadmConfiguration sets the default kubeadm templates when not given
+func SetDefaults_KubeadmConfiguration(obj *KubeadmConfiguration) {
+	if obj.InitCommand == "" {
+		obj.InitCommand = defaults.KubeadmInitTemplate
+	}
+
+	if obj.JoinCommand == "" {
+		obj.JoinCommand = defaults.KubeadmJoinTemplate
+	}
+}

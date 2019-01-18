@@ -30,6 +30,9 @@ type Config struct {
 
 	// Nodes constains the list of nodes defined in the `kind` Config
 	Nodes []Node `json:"nodes,"`
+
+	// KubeadmConfiguration specifies hoow to build the kubeadm commands
+	Kubeadm KubeadmConfiguration `json:"kubeadm,"`
 }
 
 // Node contains settings for a node in the `kind` Config.
@@ -75,3 +78,13 @@ const (
 	// Please note that `kind` nodes hosting external load balancer are not kubernetes nodes
 	ExternalLoadBalancerRole NodeRole = "external-load-balancer"
 )
+
+// KubeadmConfiguration contains some low-level configuration parameters for
+// running kubeadm
+type KubeadmConfiguration struct {
+	// InitCommand specifies the template used for building the `kubeadm init` command
+	InitCommand string `json:"init,"`
+
+	// JoinCommand specifies the template used for building the `kubeadm join` command
+	JoinCommand string `json:"join,"`
+}

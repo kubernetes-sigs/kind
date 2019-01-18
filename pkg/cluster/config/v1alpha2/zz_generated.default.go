@@ -38,4 +38,5 @@ func SetObjectDefaults_Config(in *Config) {
 		a := &in.Nodes[i]
 		SetDefaults_Node(a)
 	}
+	SetDefaults_KubeadmConfiguration(&in.Kubeadm)
 }

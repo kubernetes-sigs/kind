@@ -18,6 +18,7 @@ package create
 
 import (
 	"fmt"
+	"sigs.k8s.io/kind/pkg/exec"
 	"strings"
 	"time"
 
@@ -64,17 +65,22 @@ func runKubeadmInit(ec *execContext, configNode *NodeReplica) error {
 		return fmt.Errorf("unable to get the handle for operating on node: %s", configNode.Name)
 	}
 
+	line, err := kubeadm.ParseTemplate(strings.TrimSpace(ec.Context.Config.Kubeadm.InitCommand),
+		struct {
+			Config string
+		}{
+			"/kind/kubeadm.conf",
+		})
+	if err != nil {
+		return fmt.Errorf("error when parsing kubeadm init template: %v", err)
+	}
+
 	// run kubeadm
-	if err := node.Command(
-		// init because this is the control plane node
-		"kubeadm", "init",
-		// preflight errors are expected, in particular for swap being enabled
-		// TODO(bentheelder): limit the set of acceptable errors
-		"--ignore-preflight-errors=all",
-		// specify our generated config file
-		"--config=/kind/kubeadm.conf",
-	).Run(); err != nil {
-		return errors.Wrap(err, "failed to init node with kubeadm")
+	cmd := string(line)
+	args := strings.Split(cmd, " ")
+	log.Debugf("Kubeadm init command: %s", cmd)
+	if err := exec.RunLoggingOutputOnFail(node.Command(args[0], args[1:]...)); err != nil {
+		return errors.Wrapf(err, "failed to init node with '%s'", cmd)
 	}
 
 	// copies the kubeconfig files locally in order to make the cluster
