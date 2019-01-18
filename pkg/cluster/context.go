@@ -158,7 +158,7 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 	// Kubernetes cluster; please note that the list of actions automatically
 	// adapt to the topology defined in config
 	// TODO(fabrizio pandini): make the list of executed actions configurable from CLI
-	err = cc.Exec(nodeList, []string{"config", "init", "join"}, wait)
+	err = cc.Exec(nodeList, []string{"haproxy", "config", "init", "join"}, wait)
 	if err != nil {
 		// In case of errors nodes are deleted (except if retain is explicitly set)
 		log.Error(err)

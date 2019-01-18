@@ -88,6 +88,11 @@ func (n *Node) CopyTo(source, dest string) error {
 	return docker.CopyTo(source, n.nameOrID, dest)
 }
 
+// CopyFrom copies the source file on the node to dest on the host
+func (n *Node) CopyFrom(source, dest string) error {
+	return docker.CopyFrom(n.nameOrID, source, dest)
+}
+
 // WaitForDocker waits for Docker to be ready on the node
 // it returns true on success, and false on a timeout
 func (n *Node) WaitForDocker(until time.Time) bool {

@@ -124,6 +124,8 @@ func (cc *Context) ProvisionNodes() (nodeList map[string]*nodes.Node, err error)
 		var node *nodes.Node
 
 		switch configNode.Role {
+		case config.ExternalLoadBalancerRole:
+			node, err = nodes.CreateExternalLoadBalancerNode(name, configNode.Image, cc.ClusterLabel())
 		case config.ControlPlaneRole:
 			node, err = nodes.CreateControlPlaneNode(name, configNode.Image, cc.ClusterLabel())
 		case config.WorkerRole:
