@@ -80,13 +80,12 @@ func runHAProxy(ec *execContext, configNode *NodeReplica) error {
 			BackendServers:   backendServers,
 		},
 	)
+	defer os.Remove(haproxyConfig)
+
 	if err != nil {
 		// TODO(bentheelder): logging here
 		return fmt.Errorf("failed to create kubeadm config: %v", err)
 	}
-
-	// defer deletion of the local temp file
-	defer os.Remove(haproxyConfig)
 
 	// get the target node for this task (the load balancer node)
 	node, ok := ec.NodeFor(configNode)

@@ -91,13 +91,11 @@ func runKubeadmConfig(ec *execContext, configNode *NodeReplica) error {
 			Token:                kubeadm.Token,
 		},
 	)
+	defer os.Remove(kubeadmConfig)
 	if err != nil {
 		// TODO(bentheelder): logging here
 		return fmt.Errorf("failed to create kubeadm config: %v", err)
 	}
-
-	// defer deletion of the local temp file
-	defer os.Remove(kubeadmConfig)
 
 	// copy the config to the node
 	if err := node.CopyTo(kubeadmConfig, "/kind/kubeadm.conf"); err != nil {
