@@ -47,7 +47,7 @@ func (b *kubeadmJoinAction) Tasks() []Task {
 			// Run kubeadm join on the secondary control plane Nodes
 			Description: "Joining control-plane node to Kubernetes ☸",
 			TargetNodes: selectSecondaryControlPlaneNodes,
-			Run:         runKubeadmJoinMaster,
+			Run:         runKubeadmJoinControlPlane,
 		},
 		{
 			// Run kubeadm join on the Worker Nodes
@@ -58,8 +58,8 @@ func (b *kubeadmJoinAction) Tasks() []Task {
 	}
 }
 
-// runKubeadmJoinMaster executes kubadm join --control-plane command
-func runKubeadmJoinMaster(ec *execContext, configNode *NodeReplica) error {
+// runKubeadmJoinControlPlane executes kubadm join --control-plane command
+func runKubeadmJoinControlPlane(ec *execContext, configNode *NodeReplica) error {
 
 	// get the join addres
 	joinAddress, err := getJoinAddress(ec)
@@ -106,14 +106,14 @@ func runKubeadmJoinMaster(ec *execContext, configNode *NodeReplica) error {
 	// get the handle for the bootstrap control plane node (the source for necessary cluster certificates)
 	controlPlaneHandle, ok := ec.NodeFor(ec.BootStrapControlPlane())
 	if !ok {
-		return fmt.Errorf("unable to get the handle for operating on node: %s", ec.BootStrapControlPlane().Name)
+		return errors.Errorf("unable to get the handle for operating on node: %s", ec.BootStrapControlPlane().Name)
 	}
 
 	// copies certificates from the bootstrap control plane node to the joining node
 	for _, fileName := range fileNames {
 		// sets the path of the certificate into a node
 		containerPath := filepath.Join("/etc/kubernetes/pki", fileName)
-		// set the path of the certificate into the transit are on the host
+		// set the path of the certificate into the tmp area on the host
 		tmpPath := filepath.Join(tmpDir, fileName)
 		// copies from bootstrap control plane node to tmp area
 		if err := controlPlaneHandle.CopyFrom(containerPath, tmpPath); err != nil {
@@ -200,7 +200,7 @@ func getJoinAddress(ec *execContext) (string, error) {
 	// otherwise, gets the BootStrapControlPlane node
 	controlPlaneHandle, ok := ec.NodeFor(ec.BootStrapControlPlane())
 	if !ok {
-		return "", fmt.Errorf("unable to get the handle for operating on node: %s", ec.BootStrapControlPlane().Name)
+		return "", errors.Errorf("unable to get the handle for operating on node: %s", ec.BootStrapControlPlane().Name)
 	}
 
 	// gets the IP of the bootstrap control plane node

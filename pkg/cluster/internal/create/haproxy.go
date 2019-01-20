@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ func runHAProxy(ec *execContext, configNode *NodeReplica) error {
 		// gets the handle for the control plane node
 		controlPlaneHandle, ok := ec.NodeFor(n)
 		if !ok {
-			return fmt.Errorf("unable to get the handle for operating on node: %s", n.Name)
+			return errors.Errorf("unable to get the handle for operating on node: %s", n.Name)
 		}
 
 		// gets the IP of the control plane node
@@ -74,9 +74,8 @@ func runHAProxy(ec *execContext, configNode *NodeReplica) error {
 
 	// create haproxy config file writing a local temp file on the host machine
 	haproxyConfig, err := createHAProxyConfig(
-		haproxy.ConfigData{
+		&haproxy.ConfigData{
 			ControlPlanePort: haproxy.ControlPlanePort,
-			AdminPort:        haproxy.AdminPort,
 			BackendServers:   backendServers,
 		},
 	)
@@ -84,13 +83,13 @@ func runHAProxy(ec *execContext, configNode *NodeReplica) error {
 
 	if err != nil {
 		// TODO(bentheelder): logging here
-		return fmt.Errorf("failed to create kubeadm config: %v", err)
+		return errors.Wrap(err, "failed to create kubeadm config")
 	}
 
 	// get the target node for this task (the load balancer node)
 	node, ok := ec.NodeFor(configNode)
 	if !ok {
-		return fmt.Errorf("unable to get the handle for operating on node: %s", configNode.Name)
+		return errors.Errorf("unable to get the handle for operating on node: %s", configNode.Name)
 	}
 
 	// copy the haproxy config file from the host to the node
@@ -102,7 +101,7 @@ func runHAProxy(ec *execContext, configNode *NodeReplica) error {
 	// starts a docker container with HA proxy load balancer
 	if err := node.Command(
 		"/bin/sh", "-c",
-		"docker run -d -v /kind/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro --network host --restart always haproxy:1.8.14-alpine",
+		fmt.Sprintf("docker run -d -v /kind/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro --network host --restart always %s", haproxy.Image),
 	).Run(); err != nil {
 		return errors.Wrap(err, "failed to start haproxy")
 	}
@@ -110,7 +109,7 @@ func runHAProxy(ec *execContext, configNode *NodeReplica) error {
 	return nil
 }
 
-func createHAProxyConfig(data haproxy.ConfigData) (path string, err error) {
+func createHAProxyConfig(data *haproxy.ConfigData) (path string, err error) {
 	// create haproxy config file
 	f, err := ioutil.TempFile("", "")
 	if err != nil {

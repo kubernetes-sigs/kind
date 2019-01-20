@@ -26,7 +26,6 @@ import (
 // ConfigData is supplied to the haproxy config template
 type ConfigData struct {
 	ControlPlanePort int
-	AdminPort        int
 	BackendServers   map[string]string
 }
 
@@ -67,19 +66,11 @@ backend kube-apiservers
 {{range $server, $address := .BackendServers}}
     server {{ $server }} {{ $address }} check
 {{- end}}
-
-listen stats 
-    bind :{{ .AdminPort }} 
-    mode http
-    stats enable  
-    stats hide-version  
-    stats admin if TRUE
-    stats uri /  
 `
 
 // Config returns a kubeadm config generated from config data, in particular
 // the kubernetes version
-func Config(data ConfigData) (config string, err error) {
+func Config(data *ConfigData) (config string, err error) {
 	t, err := template.New("haproxy-config").Parse(DefaultConfigTemplate)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse config template")

@@ -71,32 +71,23 @@ func CreateControlPlaneNode(name, image, clusterLabel string) (node *Node, err e
 // CreateExternalLoadBalancerNode creates an external loab balancer node
 // and gets ready for exposing the the API server and the load balancer admin console
 func CreateExternalLoadBalancerNode(name, image, clusterLabel string) (node *Node, err error) {
-	// gets a random host port for the API server
-	port1, err := getPort()
+	// gets a random host port for control-plane load balancer
+	port, err := getPort()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get port for control-plane load balancer")
-	}
-	// gets a random host port for load balancer admin console
-	port2, err := getPort()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get port for load balancer admin console")
 	}
 
 	node, err = createNode(name, image, clusterLabel,
 		// publish selected port for the control plane
-		"--expose", fmt.Sprintf("%d", port1),
-		"-p", fmt.Sprintf("%d:%d", port1, haproxy.ControlPlanePort),
-		// publish selected port for the load balancer admin console
-		"--expose", fmt.Sprintf("%d", port2),
-		"-p", fmt.Sprintf("%d:%d", port2, haproxy.AdminPort),
+		"--expose", fmt.Sprintf("%d", port),
+		"-p", fmt.Sprintf("%d:%d", port, haproxy.ControlPlanePort),
 	)
 	if err != nil {
 		return node, err
 	}
 
 	// stores the port mapping into the node internal state
-	node.ports = map[int]int{haproxy.ControlPlanePort: port1}
-	node.ports = map[int]int{haproxy.AdminPort: port2}
+	node.ports = map[int]int{haproxy.ControlPlanePort: port}
 
 	return node, nil
 }

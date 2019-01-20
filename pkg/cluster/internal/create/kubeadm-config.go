@@ -109,23 +109,23 @@ func runKubeadmConfig(ec *execContext, configNode *NodeReplica) error {
 // getControlPlaneEndpoint return the control plane endpoint in case the cluster has an external load balancer in
 // front of the control-plane nodes, otherwise return an empty string.
 func getControlPlaneEndpoint(ec *execContext) (string, error) {
-	if ec.ExternalLoadBalancer() != nil {
-		// gets the handle for the load balancer node
-		loadBalancerHandle, ok := ec.NodeFor(ec.ExternalLoadBalancer())
-		if !ok {
-			return "", fmt.Errorf("unable to get the handle for operating on node: %s", ec.ExternalLoadBalancer().Name)
-		}
-
-		// gets the IP of the load balancer
-		loadBalancerIP, err := loadBalancerHandle.IP()
-		if err != nil {
-			return "", errors.Wrapf(err, "failed to get IP for node %s", ec.ExternalLoadBalancer().Name)
-		}
-
-		return fmt.Sprintf("%s:%d", loadBalancerIP, haproxy.ControlPlanePort), nil
+	if ec.ExternalLoadBalancer() == nil {
+		return "", nil
 	}
 
-	return "", nil
+	// gets the handle for the load balancer node
+	loadBalancerHandle, ok := ec.NodeFor(ec.ExternalLoadBalancer())
+	if !ok {
+		return "", errors.Errorf("unable to get the handle for operating on node: %s", ec.ExternalLoadBalancer().Name)
+	}
+
+	// gets the IP of the load balancer
+	loadBalancerIP, err := loadBalancerHandle.IP()
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get IP for node: %s", ec.ExternalLoadBalancer().Name)
+	}
+
+	return fmt.Sprintf("%s:%d", loadBalancerIP, haproxy.ControlPlanePort), nil
 }
 
 // createKubeadmConfig creates the kubeadm config file for the cluster
