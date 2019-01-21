@@ -1,10 +1,10 @@
-# `kind` - `k`ubernetes `in` `d`ocker
-
-<!-- prow build badge, and go report card-->
-<a href="https://prow.k8s.io/?job=ci-kind-build">
+<p align="center"><img src="./logo/logo.png" width="400x" /></p>
+<p align="center"><a href="https://prow.k8s.io/?job=ci-kind-build">
+<!-- prow build badge, godoc, and go report card-->
 <img alt="Build Status" src="https://prow.k8s.io/badge.svg?jobs=ci-kind-build">
-</a> <a href="https://goreportcard.com/report/sigs.k8s.io/kind"><img alt="Go Report Card" src="https://goreportcard.com/badge/sigs.k8s.io/kind" /></a>
+</a> <a href="https://godoc.org/sigs.k8s.io/kind"><img src="https://godoc.org/sigs.k8s.io/kind?status.svg"></a> <a href="https://goreportcard.com/report/sigs.k8s.io/kind"><img alt="Go Report Card" src="https://goreportcard.com/badge/sigs.k8s.io/kind" /></a></p>
 
+# `kind` - `k`ubernetes `in` `d`ocker
 
 `kind` is a tool for running local Kubernetes clusters using Docker container "nodes".  
 `kind` is primarily designed for testing Kubernetes 1.11+, initially targeting the [conformance tests].
