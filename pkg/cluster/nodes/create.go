@@ -21,6 +21,7 @@ import (
 	"net"
 
 	"github.com/pkg/errors"
+	"sigs.k8s.io/kind/pkg/cluster/internal/haproxy"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
 	"sigs.k8s.io/kind/pkg/docker"
 )
@@ -63,6 +64,30 @@ func CreateControlPlaneNode(name, image, clusterLabel string) (node *Node, err e
 
 	// stores the port mapping into the node internal state
 	node.ports = map[int]int{kubeadm.APIServerPort: port}
+
+	return node, nil
+}
+
+// CreateExternalLoadBalancerNode creates an external loab balancer node
+// and gets ready for exposing the the API server and the load balancer admin console
+func CreateExternalLoadBalancerNode(name, image, clusterLabel string) (node *Node, err error) {
+	// gets a random host port for control-plane load balancer
+	port, err := getPort()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get port for control-plane load balancer")
+	}
+
+	node, err = createNode(name, image, clusterLabel,
+		// publish selected port for the control plane
+		"--expose", fmt.Sprintf("%d", port),
+		"-p", fmt.Sprintf("%d:%d", port, haproxy.ControlPlanePort),
+	)
+	if err != nil {
+		return node, err
+	}
+
+	// stores the port mapping into the node internal state
+	node.ports = map[int]int{haproxy.ControlPlanePort: port}
 
 	return node, nil
 }

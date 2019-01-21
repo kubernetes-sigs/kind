@@ -30,7 +30,9 @@ import (
 type ConfigData struct {
 	ClusterName       string
 	KubernetesVersion string
-	// The API Server port
+	// The ControlPlaneEndpoint, that is the address of the external loadbalancer, if defined
+	ControlPlaneEndpoint string
+	// The Local API Server port
 	APIBindPort int
 	// The Token for TLS bootstrap
 	Token string
@@ -69,6 +71,9 @@ clusterName: "{{.ClusterName}}"
 # we use a well know token for TLS bootstrap
 bootstrapTokens:
 - token: "{{ .Token }}"
+{{ if .ControlPlaneEndpoint -}}
+controlPlaneEndpoint: {{ .ControlPlaneEndpoint }}
+{{- end }}
 # we use a well know port for making the API server discoverable inside docker network. 
 # from the host machine such port will be accessible via a random local port instead.
 api:
@@ -93,6 +98,9 @@ apiVersion: kubeadm.k8s.io/v1alpha3
 kind: ClusterConfiguration
 kubernetesVersion: {{.KubernetesVersion}}
 clusterName: "{{.ClusterName}}"
+{{ if .ControlPlaneEndpoint -}}
+controlPlaneEndpoint: {{ .ControlPlaneEndpoint }}
+{{- end }}
 # we need nsswitch.conf so we use /etc/hosts
 # https://github.com/kubernetes/kubernetes/issues/69195
 apiServerExtraVolumes:
@@ -135,6 +143,9 @@ apiVersion: kubeadm.k8s.io/v1beta1
 kind: ClusterConfiguration
 kubernetesVersion: {{.KubernetesVersion}}
 clusterName: "{{.ClusterName}}"
+{{ if .ControlPlaneEndpoint -}}
+controlPlaneEndpoint: {{ .ControlPlaneEndpoint }}
+{{- end }}
 # on docker for mac we have to expose the api server via port forward,
 # so we need to ensure the cert is valid for localhost so we can talk
 # to the cluster after rewriting the kubeconfig to point to localhost

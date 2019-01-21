@@ -18,10 +18,13 @@ package create
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
+	"sigs.k8s.io/kind/pkg/fs"
 )
 
 // kubeadmJoinAction implements action for joining nodes
@@ -40,10 +43,14 @@ func newKubeadmJoinAction() Action {
 // Tasks returns the list of action tasks
 func (b *kubeadmJoinAction) Tasks() []Task {
 	return []Task{
-		// TODO(fabrizio pandini): add Run kubeadm join --experimental-master
-		//      on SecondaryControlPlaneNodes
 		{
-			// Run kubeadm join on the WorkeNodes
+			// Run kubeadm join on the secondary control plane Nodes
+			Description: "Joining control-plane node to Kubernetes ☸",
+			TargetNodes: selectSecondaryControlPlaneNodes,
+			Run:         runKubeadmJoinControlPlane,
+		},
+		{
+			// Run kubeadm join on the Worker Nodes
 			Description: "Joining worker node to Kubernetes ☸",
 			TargetNodes: selectWorkerNodes,
 			Run:         runKubeadmJoin,
@@ -51,38 +58,115 @@ func (b *kubeadmJoinAction) Tasks() []Task {
 	}
 }
 
-// runKubeadmJoin executes kubadm join
-func runKubeadmJoin(ec *execContext, configNode *NodeReplica) error {
-	// before running join, it should be retrived
+// runKubeadmJoinControlPlane executes kubadm join --control-plane command
+func runKubeadmJoinControlPlane(ec *execContext, configNode *NodeReplica) error {
 
-	// gets the node where
-	// TODO(fabrizio pandini): when external load-balancer will be
-	//      implemented this should be modified accordingly
-	controlPlaneHandle, ok := ec.NodeFor(ec.DerivedConfig.BootStrapControlPlane())
-	if !ok {
-		return fmt.Errorf("unable to get the handle for operating on node: %s", ec.DerivedConfig.BootStrapControlPlane().Name)
-	}
-
-	// gets the IP of the bootstrap master node
-	controlPlaneIP, err := controlPlaneHandle.IP()
+	// get the join addres
+	joinAddress, err := getJoinAddress(ec)
 	if err != nil {
-		return errors.Wrap(err, "failed to get IP for node")
+		// TODO(bentheelder): logging here
+		return err
 	}
 
-	// get the target node for this task
+	// get the target node for this task (the joining node)
 	node, ok := ec.NodeFor(configNode)
 	if !ok {
 		return fmt.Errorf("unable to get the handle for operating on node: %s", configNode.Name)
 	}
 
-	// TODO(fabrizio pandini): might be we want to run pre-kubeadm hooks on workers too
+	// creates the folder tree for pre-loading necessary cluster certificates
+	// on the joining node
+	if err := node.Command("mkdir", "-p", "/etc/kubernetes/pki/etcd").Run(); err != nil {
+		return errors.Wrap(err, "failed to join node with kubeadm")
+	}
 
-	// run kubeadm
+	// define the list of necessary cluster certificates
+	fileNames := []string{
+		"ca.crt", "ca.key",
+		"front-proxy-ca.crt", "front-proxy-ca.key",
+		"sa.pub", "sa.key",
+	}
+	if ec.ExternalEtcd() == nil {
+		fileNames = append(fileNames, "etcd/ca.crt", "etcd/ca.key")
+	}
+
+	// creates a temporary folder on the host that should acts as a transit area
+	// for moving necessary cluster certificates
+	tmpDir, err := fs.TempDir("", "")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmpDir)
+
+	err = os.MkdirAll(filepath.Join(tmpDir, "/etcd"), os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	// get the handle for the bootstrap control plane node (the source for necessary cluster certificates)
+	controlPlaneHandle, ok := ec.NodeFor(ec.BootStrapControlPlane())
+	if !ok {
+		return errors.Errorf("unable to get the handle for operating on node: %s", ec.BootStrapControlPlane().Name)
+	}
+
+	// copies certificates from the bootstrap control plane node to the joining node
+	for _, fileName := range fileNames {
+		// sets the path of the certificate into a node
+		containerPath := filepath.Join("/etc/kubernetes/pki", fileName)
+		// set the path of the certificate into the tmp area on the host
+		tmpPath := filepath.Join(tmpDir, fileName)
+		// copies from bootstrap control plane node to tmp area
+		if err := controlPlaneHandle.CopyFrom(containerPath, tmpPath); err != nil {
+			return errors.Wrapf(err, "failed to copy certificate %s", fileName)
+		}
+		// copies from tmp area to joining node
+		if err := node.CopyTo(tmpPath, containerPath); err != nil {
+			return errors.Wrapf(err, "failed to copy certificate %s", fileName)
+		}
+	}
+
+	// run kubeadm join --control-plane
 	if err := node.Command(
 		"kubeadm", "join",
-		// the control plane address uses the docker ip and a well know APIServerPort that
+		// the join command uses the docker ip and a well know port that
 		// are accessible only inside the docker network
-		fmt.Sprintf("%s:%d", controlPlaneIP, kubeadm.APIServerPort),
+		joinAddress,
+		// set the node to join as control-plane
+		"--experimental-control-plane",
+		// uses a well known token and skips ca certification for automating TLS bootstrap process
+		"--token", kubeadm.Token,
+		"--discovery-token-unsafe-skip-ca-verification",
+		// preflight errors are expected, in particular for swap being enabled
+		// TODO(bentheelder): limit the set of acceptable errors
+		"--ignore-preflight-errors=all",
+	).Run(); err != nil {
+		return errors.Wrap(err, "failed to join a control plane node with kubeadm")
+	}
+
+	return nil
+}
+
+// runKubeadmJoin executes kubadm join command
+func runKubeadmJoin(ec *execContext, configNode *NodeReplica) error {
+	// get the join addres
+	joinAddress, err := getJoinAddress(ec)
+	if err != nil {
+		// TODO(bentheelder): logging here
+		return err
+	}
+
+	// get the target node for this task (the joining node)
+	node, ok := ec.NodeFor(configNode)
+	if !ok {
+		return fmt.Errorf("unable to get the handle for operating on node: %s", configNode.Name)
+	}
+
+	// run kubeadm join
+	if err := node.Command(
+		"kubeadm", "join",
+		// the join command uses the docker ip and a well know port that
+		// are accessible only inside the docker network
+		joinAddress,
 		// uses a well known token and skipping ca certification for automating TLS bootstrap process
 		"--token", kubeadm.Token,
 		"--discovery-token-unsafe-skip-ca-verification",
@@ -93,9 +177,37 @@ func runKubeadmJoin(ec *execContext, configNode *NodeReplica) error {
 		return errors.Wrap(err, "failed to join node with kubeadm")
 	}
 
-	// TODO(fabrizio pandini): might be we want to run post-kubeadm hooks on workers too
-
-	// TODO(fabrizio pandini): might be we want to run post-setup hooks on workers too
-
 	return nil
+}
+
+// getJoinAddress return the join addres thas is the control plane endpoint in case the cluster has
+// an external load balancer in front of the control-plane nodes, otherwise the address of the
+// boostrap control plane node.
+func getJoinAddress(ec *execContext) (string, error) {
+	// get the control plane endpoint, in case the cluster has an external load balancer in
+	// front of the control-plane nodes
+	controlPlaneEndpoint, err := getControlPlaneEndpoint(ec)
+	if err != nil {
+		// TODO(bentheelder): logging here
+		return "", err
+	}
+
+	// if the control plane endpoint is defined we are using it as a join address
+	if controlPlaneEndpoint != "" {
+		return controlPlaneEndpoint, nil
+	}
+
+	// otherwise, gets the BootStrapControlPlane node
+	controlPlaneHandle, ok := ec.NodeFor(ec.BootStrapControlPlane())
+	if !ok {
+		return "", errors.Errorf("unable to get the handle for operating on node: %s", ec.BootStrapControlPlane().Name)
+	}
+
+	// gets the IP of the bootstrap control plane node
+	controlPlaneIP, err := controlPlaneHandle.IP()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get IP for node")
+	}
+
+	return fmt.Sprintf("%s:%d", controlPlaneIP, kubeadm.APIServerPort), nil
 }

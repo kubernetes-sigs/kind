@@ -25,6 +25,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
+	"sigs.k8s.io/kind/pkg/cluster/internal/haproxy"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
 	"sigs.k8s.io/kind/pkg/kustomize"
 )
@@ -70,26 +71,31 @@ func runKubeadmConfig(ec *execContext, configNode *NodeReplica) error {
 		return errors.Wrap(err, "failed to get kubernetes version from node: %v")
 	}
 
+	// get the control plane endpoint, in case the cluster has an external load balancer in
+	// front of the control-plane nodes
+	controlPlaneEndpoint, err := getControlPlaneEndpoint(ec)
+	if err != nil {
+		// TODO(bentheelder): logging here
+		return err
+	}
+
 	// create kubeadm config file writing a local temp file
 	kubeadmConfig, err := createKubeadmConfig(
 		ec.Config,
 		ec.DerivedConfig,
 		kubeadm.ConfigData{
-			ClusterName:       ec.Name(),
-			KubernetesVersion: kubeVersion,
-			APIBindPort:       kubeadm.APIServerPort,
-			Token:             kubeadm.Token,
-			// TODO(fabriziopandini): when external load-balancer will be
-			//		implemented also controlPlaneAddress should be added
+			ClusterName:          ec.Name(),
+			KubernetesVersion:    kubeVersion,
+			ControlPlaneEndpoint: controlPlaneEndpoint,
+			APIBindPort:          kubeadm.APIServerPort,
+			Token:                kubeadm.Token,
 		},
 	)
+	defer os.Remove(kubeadmConfig)
 	if err != nil {
 		// TODO(bentheelder): logging here
 		return fmt.Errorf("failed to create kubeadm config: %v", err)
 	}
-
-	// defer deletion of the local temp file
-	defer os.Remove(kubeadmConfig)
 
 	// copy the config to the node
 	if err := node.CopyTo(kubeadmConfig, "/kind/kubeadm.conf"); err != nil {
@@ -98,6 +104,28 @@ func runKubeadmConfig(ec *execContext, configNode *NodeReplica) error {
 	}
 
 	return nil
+}
+
+// getControlPlaneEndpoint return the control plane endpoint in case the cluster has an external load balancer in
+// front of the control-plane nodes, otherwise return an empty string.
+func getControlPlaneEndpoint(ec *execContext) (string, error) {
+	if ec.ExternalLoadBalancer() == nil {
+		return "", nil
+	}
+
+	// gets the handle for the load balancer node
+	loadBalancerHandle, ok := ec.NodeFor(ec.ExternalLoadBalancer())
+	if !ok {
+		return "", errors.Errorf("unable to get the handle for operating on node: %s", ec.ExternalLoadBalancer().Name)
+	}
+
+	// gets the IP of the load balancer
+	loadBalancerIP, err := loadBalancerHandle.IP()
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get IP for node: %s", ec.ExternalLoadBalancer().Name)
+	}
+
+	return fmt.Sprintf("%s:%d", loadBalancerIP, haproxy.ControlPlanePort), nil
 }
 
 // createKubeadmConfig creates the kubeadm config file for the cluster
