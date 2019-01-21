@@ -17,8 +17,7 @@ limitations under the License.
 package baseimage
 
 import (
-	"fmt"
-
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/build/base"
@@ -61,7 +60,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		base.WithSourceDir(flags.Source),
 	)
 	if err := ctx.Build(); err != nil {
-		return fmt.Errorf("build failed: %v", err)
+		return errors.Wrap(err, "build failed")
 	}
 	return nil
 }
