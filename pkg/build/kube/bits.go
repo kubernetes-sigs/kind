@@ -56,6 +56,7 @@ type InstallContext interface {
 // "apt" -> NewAptBits(kubeRoot)
 // "bazel" -> NewBazelBuildBits(kubeRoot)
 // "docker" or "make" -> NewDockerBuildBits(kubeRoot)
+// "zypper" -> NewZypperBits(kubeRoot)
 func NewNamedBits(name string, kubeRoot string) (bits Bits, err error) {
 	bitsImpls.Lock()
 	fn, ok := bitsImpls.impls[name]
@@ -72,6 +73,17 @@ func RegisterNamedBits(name string, fn func(string) (Bits, error)) {
 	bitsImpls.Lock()
 	bitsImpls.impls[name] = fn
 	bitsImpls.Unlock()
+}
+
+// GetRegisteredNamedBits gets the list of Bits
+func GetRegisteredNamedBits() []string {
+	res := []string{}
+	bitsImpls.Lock()
+	defer bitsImpls.Unlock()
+	for name := range bitsImpls.impls {
+		res = append(res, name)
+	}
+	return res
 }
 
 // NamedBitsRegistered returns true if name is in the registry backing

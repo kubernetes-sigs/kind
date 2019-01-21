@@ -18,10 +18,12 @@ package nodeimage
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/build/node"
+	"sigs.k8s.io/kind/pkg/build/kube"
 )
 
 type flagpole struct {
@@ -35,6 +37,7 @@ type flagpole struct {
 // NewCommand returns a new cobra.Command for building the node image
 func NewCommand() *cobra.Command {
 	flags := &flagpole{}
+	builds := fmt.Sprintf("[%s]", strings.Join(kube.GetRegisteredNamedBits(), ","))
 	cmd := &cobra.Command{
 		// TODO(bentheelder): more detailed usage
 		Use:   "node-image",
@@ -46,7 +49,7 @@ func NewCommand() *cobra.Command {
 	}
 	cmd.Flags().StringVar(
 		&flags.BuildType, "type",
-		"docker", "build type, one of [bazel, docker, apt]",
+		"docker", fmt.Sprintf("build type, one of %s", builds),
 	)
 	cmd.Flags().StringVar(
 		&flags.Image, "image",
