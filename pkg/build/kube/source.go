@@ -17,8 +17,9 @@ limitations under the License.
 package kube
 
 import (
-	"fmt"
 	"go/build"
+
+	"github.com/pkg/errors"
 )
 
 // ImportPath is the canonical import path for the kubernetes root package
@@ -32,7 +33,7 @@ func FindSource() (root string, err error) {
 	if err == nil && maybeKubeDir(pkg.Dir) {
 		return pkg.Dir, nil
 	}
-	return "", fmt.Errorf("could not find kubernetes source")
+	return "", errors.New("could not find kubernetes source")
 }
 
 // maybeKubeDir returns true if the dir looks plausibly like a kubernetes

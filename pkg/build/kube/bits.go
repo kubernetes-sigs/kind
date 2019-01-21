@@ -17,8 +17,9 @@ limitations under the License.
 package kube
 
 import (
-	"fmt"
 	"sync"
+
+	"github.com/pkg/errors"
 )
 
 // Bits provides the locations of Kubernetes Binaries / Images
@@ -61,7 +62,7 @@ func NewNamedBits(name string, kubeRoot string) (bits Bits, err error) {
 	fn, ok := bitsImpls.impls[name]
 	bitsImpls.Unlock()
 	if !ok {
-		return nil, fmt.Errorf("no Bits implementation with name: %s", name)
+		return nil, errors.Errorf("no Bits implementation with name: %s", name)
 	}
 	return fn(kubeRoot)
 }

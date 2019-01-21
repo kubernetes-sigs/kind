@@ -25,6 +25,8 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+
+	"github.com/pkg/errors"
 )
 
 // GetArchiveTags obtains a list of "repo:tag" docker image tags from a
@@ -45,7 +47,7 @@ func GetArchiveTags(path string) ([]string, error) {
 	for {
 		hdr, err = tr.Next()
 		if err == io.EOF {
-			return nil, fmt.Errorf("could not find image metadata")
+			return nil, errors.New("could not find image metadata")
 		}
 		if err != nil {
 			return nil, err

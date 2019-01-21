@@ -113,7 +113,7 @@ func NewBuildContext(options ...Option) (ctx *BuildContext, err error) {
 		if ctx.mode != "apt" {
 			kubeRoot, err = kube.FindSource()
 			if err != nil {
-				return nil, fmt.Errorf("error finding kuberoot: %v", err)
+				return nil, errors.Wrap(err, "error finding kuberoot")
 			}
 		}
 		ctx.kubeRoot = kubeRoot
@@ -356,7 +356,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	}
 	if len(rawVersion) != 1 {
 		log.Errorf("Image build Failed! %v", err)
-		return fmt.Errorf("invalid kubernetes version file")
+		return errors.New("invalid kubernetes version file")
 	}
 
 	// before Kubernetes v1.12.0 kubeadm requires arch specific images, instead

@@ -17,9 +17,9 @@ limitations under the License.
 package docker
 
 import (
-	"fmt"
 	"regexp"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/exec"
@@ -47,10 +47,10 @@ func Run(image string, runArgs []string, containerArgs []string) (id string, err
 	// if docker created a container the id will be the first line and match
 	// validate the output and get the id
 	if len(output) < 1 {
-		return "", fmt.Errorf("failed to get container id, received no output from docker run")
+		return "", errors.New("failed to get container id, received no output from docker run")
 	}
 	if !containerIDRegex.MatchString(output[0]) {
-		return "", fmt.Errorf("failed to get container id, output did not match: %v", output)
+		return "", errors.Errorf("failed to get container id, output did not match: %v", output)
 	}
 	return output[0], nil
 }

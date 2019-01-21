@@ -17,7 +17,6 @@ limitations under the License.
 package kube
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -62,7 +61,7 @@ func buildVersionFile(kubeRoot string) error {
 		parts := strings.SplitN(line, " ", 2)
 		if len(parts) != 2 {
 			log.Errorf("Could not parse kubernetes version, output: %s", strings.Join(output, "\n"))
-			return fmt.Errorf("could not parse kubernetes version")
+			return errors.New("could not parse kubernetes version")
 		}
 		if parts[0] == "gitVersion" {
 			if err := ioutil.WriteFile(
@@ -77,7 +76,7 @@ func buildVersionFile(kubeRoot string) error {
 	}
 	if !wroteVersion {
 		log.Errorf("Could not obtain kubernetes version, output: %s", strings.Join(output, "\n"))
-		return fmt.Errorf("could not obtain kubernetes version")
+		return errors.New("could not obtain kubernetes version")
 	}
 	return nil
 }
