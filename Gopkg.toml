@@ -43,16 +43,3 @@ required = [
 [[constraint]]
   name = "github.com/spf13/cobra"
   version = "0.0.3"
-
-[[constraint]]
-  branch = "master"
-  name = "k8s.io/apimachinery"
-
-[[constraint]]
- name = "k8s.io/code-generator"
- branch = "master"
-
-
-[[constraint]]
-  branch = "master"
-  name = "k8s.io/utils"
