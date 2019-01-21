@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -78,7 +79,7 @@ EOF`
 	// the output should be one line of the form `Kubernetes ${VERSION}`
 	if len(lines) != 1 {
 		log.Errorf("Failed to parse Kubernetes version with unexpected output: %v", lines)
-		return fmt.Errorf("failed to parse Kubernetes version")
+		return errors.New("failed to parse Kubernetes version")
 	}
 	// write version file
 	version := strings.SplitN(lines[0], " ", 2)[1]
