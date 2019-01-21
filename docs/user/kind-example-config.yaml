@@ -19,7 +19,7 @@ nodes:
     kind: ClusterConfiguration
     patch: |
       - op: add
-        path: /apiServerCertSANs/-
+        path: /apiServer/certSANs/-
         value: my-hostname
 # the three workers
 - role: worker
