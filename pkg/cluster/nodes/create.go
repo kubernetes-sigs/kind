@@ -21,6 +21,8 @@ import (
 	"net"
 
 	"github.com/pkg/errors"
+	"sigs.k8s.io/kind/pkg/cluster/config"
+	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/internal/haproxy"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
 	"sigs.k8s.io/kind/pkg/docker"
@@ -53,7 +55,7 @@ func CreateControlPlaneNode(name, image, clusterLabel string) (node *Node, err e
 		return nil, errors.Wrap(err, "failed to get port for API server")
 	}
 
-	node, err = createNode(name, image, clusterLabel,
+	node, err = createNode(name, image, clusterLabel, config.ControlPlaneRole,
 		// publish selected port for the API server
 		"--expose", fmt.Sprintf("%d", port),
 		"-p", fmt.Sprintf("%d:%d", port, kubeadm.APIServerPort),
@@ -77,7 +79,7 @@ func CreateExternalLoadBalancerNode(name, image, clusterLabel string) (node *Nod
 		return nil, errors.Wrap(err, "failed to get port for control-plane load balancer")
 	}
 
-	node, err = createNode(name, image, clusterLabel,
+	node, err = createNode(name, image, clusterLabel, config.ExternalLoadBalancerRole,
 		// publish selected port for the control plane
 		"--expose", fmt.Sprintf("%d", port),
 		"-p", fmt.Sprintf("%d:%d", port, haproxy.ControlPlanePort),
@@ -94,7 +96,7 @@ func CreateExternalLoadBalancerNode(name, image, clusterLabel string) (node *Nod
 
 // CreateWorkerNode creates a worker node
 func CreateWorkerNode(name, image, clusterLabel string) (node *Node, err error) {
-	node, err = createNode(name, image, clusterLabel)
+	node, err = createNode(name, image, clusterLabel, config.WorkerRole)
 	if err != nil {
 		return node, err
 	}
@@ -104,7 +106,7 @@ func CreateWorkerNode(name, image, clusterLabel string) (node *Node, err error) 
 // createNode `docker run`s the node image, note that due to
 // images/node/entrypoint being the entrypoint, this container will
 // effectively be paused until we call actuallyStartNode(...)
-func createNode(name, image, clusterLabel string, extraArgs ...string) (handle *Node, err error) {
+func createNode(name, image, clusterLabel string, role config.NodeRole, extraArgs ...string) (handle *Node, err error) {
 	runArgs := []string{
 		"-d", // run the container detached
 		// running containers in a container requires privileged
@@ -122,6 +124,8 @@ func createNode(name, image, clusterLabel string, extraArgs ...string) (handle *
 		"--name", name, // ... and set the container name
 		// label the node with the cluster ID
 		"--label", clusterLabel,
+		// label the node with the role ID
+		"--label", fmt.Sprintf("%s=%s", constants.ClusterRoleKey, role),
 		// explicitly set the entrypoint
 		"--entrypoint=/usr/local/bin/entrypoint",
 	}
