@@ -27,7 +27,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/internal/meta"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/docker"
+	"sigs.k8s.io/kind/pkg/container"
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
 
@@ -42,7 +42,7 @@ type Context struct {
 	WaitForReady time.Duration // Wait for the control plane node to be ready.
 }
 
-// Exec actions on kubernetes-in-docker cluster
+// Exec actions on KIND cluster
 // TODO(bentheelder): refactor this further
 // Actions are repetitive, high level abstractions/workflows composed
 // by one or more lower level tasks, that automatically adapt to the
@@ -103,7 +103,7 @@ func (cc *Context) EnsureNodeImages() {
 
 		// attempt to explicitly pull the image if it doesn't exist locally
 		// we don't care if this errors, we'll still try to run which also pulls
-		_, _ = docker.PullIfNotPresent(configNode.Image, 4)
+		_, _ = container.PullIfNotPresent(configNode.Image, 4)
 
 		// marks the images as already pulled
 		images[configNode.Image] = true

@@ -43,5 +43,6 @@ IMAGE="kindest/base:${TAG}"
 (set -x; "${KIND}" build base-image --image="${IMAGE}")
 
 # push
-docker push "${IMAGE}"
+ENGINE=$(command -v podman 2> /dev/null || echo docker)
+${ENGINE} push "${IMAGE}"
 

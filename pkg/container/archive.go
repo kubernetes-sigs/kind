@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package docker contains helpers for working with docker
+// Package container contains helpers for working with container engines
 // This package has no stability guarantees whatsoever!
-package docker
+package container
 
 import (
 	"archive/tar"
@@ -29,8 +29,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// GetArchiveTags obtains a list of "repo:tag" docker image tags from a
-// given docker image archive (tarball) path
+// GetArchiveTags obtains a list of "repo:tag" container image tags from a
+// given container image archive (tarball) path
 // compatible with all known specs:
 // https://github.com/moby/moby/blob/master/image/spec/v1.0.md
 // https://github.com/moby/moby/blob/master/image/spec/v1.1.md

@@ -44,10 +44,11 @@ set -x
 
 # re-tag with kubernetes version
 IMG="kindest/node:${TAG}"
-KUBE_VERSION="$(docker run --rm --entrypoint=cat "${IMG}" /kind/version)"
-docker tag "${IMG}" "kindest/node:${KUBE_VERSION}"
+ENGINE=$(command -v podman 2> /dev/null || echo docker)
+KUBE_VERSION="$(${ENGINE} run --rm --entrypoint=cat "${IMG}" /kind/version)"
+${ENGINE} tag "${IMG}" "kindest/node:${KUBE_VERSION}"
 
 # push
-docker push kindest/node:"${KUBE_VERSION}"
+${ENGINE} push kindest/node:"${KUBE_VERSION}"
 
 

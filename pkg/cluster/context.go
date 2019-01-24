@@ -34,13 +34,11 @@ import (
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
 
-// Context is used to create / manipulate kubernetes-in-docker clusters
-// See: NewContext()
 type Context struct {
 	*meta.ClusterMeta
 }
 
-// similar to valid docker container names, but since we will prefix
+// similar to valid container names, but since we will prefix
 // and suffix this name, we can relax it a little
 // see NewContext() for usage
 // https://godoc.org/github.com/docker/docker/daemon/names#pkg-constants
@@ -100,7 +98,7 @@ func (c *Context) ClusterName() string {
 	return fmt.Sprintf("kind-%s", c.Name())
 }
 
-// Create provisions and starts a kubernetes-in-docker cluster
+// Create provisions and starts a kind cluster
 func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) error {
 	// default config fields (important for usage as a library, where the config
 	// may be constructed in memory rather than from disk)
@@ -175,7 +173,7 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 	return nil
 }
 
-// Delete tears down a kubernetes-in-docker cluster
+// Delete tears down a kind cluster
 func (c *Context) Delete() error {
 	n, err := c.ListNodes()
 	if err != nil {

@@ -6,7 +6,7 @@ This is the root design documentation for `kind`. See also the project
 ## Overview
 
 `kind` or **k**ubernetes **in** **d**ocker is a suite of tooling for local 
-Kubernetes "clusters" where each "node" is a Docker container.
+Kubernetes "clusters" where each "node" is a container.
 `kind` is targeted at testing Kubernetes.
 
 `kind` is divided into go packages implementing most of the functionality, a
@@ -35,10 +35,10 @@ In practice kind looks something like this:
 Clusters are managed by logic in [`pkg/cluster`][pkg/cluster], which the
 `kind` cli wraps.
 
-Each "cluster" is identified by an internal but well-known [docker object label](https://docs.docker.com/config/labels-custom-metadata/) key, with the cluster
+Each "cluster" is identified by an internal but well-known [container object label](https://docs.docker.com/config/labels-custom-metadata/) key, with the cluster
 name / ID as the value on each "node" container.
 
-We initially offload this type of state into the containers and Docker. 
+We initially offload this type of state into the containers.
 Similarly the container names are automatically managed by `kind`, though
 we will select over labels instead of names because these are less brittle and
 are properly namespaced. Doing this also avoids us needing to manage anything
@@ -63,17 +63,17 @@ For more see [node-image.md][node-image.md].
 
 ### Cluster Creation
 
-Each "node" runs as a docker container. Each container initially boots to a
+Each "node" runs as a container. Each container initially boots to a
 pseudo "paused" state, with [the entrypoint][entrypoint] waiting for `SIGUSR1`.
-This allows us to manipulate and inspect the container with `docker exec ...`
+This allows us to manipulate and inspect the container with eg `docker exec ...`
 and other tools prior to starting systemd and all of the components.
 
-This setup includes fixing mounts and pre-loading saved docker images.
+This setup includes fixing mounts and pre-loading saved container images.
 
 Once the nodes are sufficiently prepared, we signal the entrypoint to actually
 "boot" the node.
 
-We then wait for the Docker service to be ready on the node before running
+We then wait for the Docker service to be ready if we are using Docker on the node before running
 `kubeadm` to initialize the node.
 
 Once kubeadm has booted, we export the [KUBECONFIG][kubeconfig], then apply
@@ -84,7 +84,7 @@ At this point users can test Kubernetes by using the exported kubeconfig.
 
 ### Cluster Deletion
 
-All "node" containers in the cluster are tagged with docker labels identifying
+All "node" containers in the cluster are tagged with container labels identifying
 the cluster by the chosen cluster name (default is "1"), to delete a cluster
 we can simply list and delete containers with this label.
 

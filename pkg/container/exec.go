@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package docker
+package container
 
 import (
 	"io"
@@ -22,13 +22,13 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
-// containerCmder implements exec.Cmder for docker containers
+// containerCmder implements exec.Cmder for containers
 type containerCmder struct {
 	nameOrID string
 }
 
-// ContainerCmder creates a new exec.Cmder against a docker container
-func ContainerCmder(containerNameOrID string) exec.Cmder {
+// Cmder creates a new exec.Cmder against a container
+func Cmder(containerNameOrID string) exec.Cmder {
 	return &containerCmder{
 		nameOrID: containerNameOrID,
 	}
@@ -42,7 +42,7 @@ func (c *containerCmder) Command(command string, args ...string) exec.Cmd {
 	}
 }
 
-// containerCmd implements exec.Cmd for docker containers
+// containerCmd implements exec.Cmd for containers
 type containerCmd struct {
 	nameOrID string // the container name or ID
 	command  string
@@ -76,7 +76,7 @@ func (c *containerCmd) Run() error {
 		args = append(args, "-e", env)
 	}
 	// specify the container and command, after this everything will be
-	// args the the command in the container rather than to docker
+	// args the the command in the container rather than to container engine
 	args = append(
 		args,
 		c.nameOrID, // ... against the container
@@ -87,7 +87,7 @@ func (c *containerCmd) Run() error {
 		// finally, with the caller args
 		c.args...,
 	)
-	cmd := exec.Command("docker", args...)
+	cmd := exec.Command(Engine, args...)
 	if c.stdin != nil {
 		cmd.SetStdin(c.stdin)
 	}

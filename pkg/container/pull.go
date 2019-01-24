@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package docker
+package container
 
 import (
 	"time"
@@ -31,7 +31,7 @@ func PullIfNotPresent(image string, retries int) (pulled bool, err error) {
 	// TODO(bentheelder): switch most (all) of the logging here to debug level
 	// once we have configurable log levels
 	// if this did not return an error, then the image exists locally
-	cmd := exec.Command("docker", "inspect", "--type=image", image)
+	cmd := exec.Command(Engine, "inspect", "--type=image", image)
 	if err := cmd.Run(); err == nil {
 		log.Infof("Image: %s present locally", image)
 		return false, nil
@@ -43,14 +43,14 @@ func PullIfNotPresent(image string, retries int) (pulled bool, err error) {
 // Pull pulls an image, retrying up to retries times
 func Pull(image string, retries int) error {
 	log.Infof("Pulling image: %s ...", image)
-	err := exec.Command("docker", "pull", image).Run()
+	err := exec.Command(Engine, "pull", image).Run()
 	// retry pulling up to retries times if necessary
 	if err != nil {
 		for i := 0; i < retries; i++ {
 			time.Sleep(time.Second * time.Duration(i+1))
 			log.WithError(err).Infof("Trying again to pull image: %s ...", image)
 			// TODO(bentheelder): add some backoff / sleep?
-			err = exec.Command("docker", "pull", image).Run()
+			err = exec.Command(Engine, "pull", image).Run()
 			if err == nil {
 				break
 			}

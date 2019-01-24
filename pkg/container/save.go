@@ -14,18 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package docker
+package container
 
 import (
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
-// Kill sends the named signal to the container
-func Kill(signal, containerNameOrID string) error {
-	cmd := exec.Command(
-		"docker", "kill",
-		"-s", signal,
-		containerNameOrID,
-	)
-	return cmd.Run()
+// Save saves image to dest, as in `Engine save`
+func Save(image, dest string) error {
+	return exec.Command(Engine, "save", "-o", dest, image).Run()
 }

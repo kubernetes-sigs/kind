@@ -14,13 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package docker
+package container
 
 import (
+	"fmt"
+
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
-// Save saves image to dest, as in `docker save`
-func Save(image, dest string) error {
-	return exec.Command("docker", "save", "-o", dest, image).Run()
+// Inspect return low-level information on containers
+func Inspect(containerNameOrID, format string) ([]string, error) {
+	cmd := exec.Command(Engine, "inspect",
+		"-f", // format
+		fmt.Sprintf("'%s'", format),
+		containerNameOrID, // ... against the "node" container
+	)
+
+	return exec.CombinedOutputLines(cmd)
 }

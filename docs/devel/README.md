@@ -6,7 +6,7 @@ Before you being you must have:
 * [GitHub account][github]
 * `git`
 * `go`
-* `Docker`
+* `Container Engine`
 
 ## Task 1. Read the Kubernetes community guidelines
 Make sure to read you read the [Kubernetes community guidelines][community].
@@ -32,17 +32,25 @@ $ go version
 ```
 This documentation is written using Go version 1.11+.
 
-## Task 4. Install or upgrade Docker
+## Task 4. Install or upgrade Docker or Podman
 If you haven't already, install the 
 [Docker software using the instructions for your operating system][docker].
+or
+[Podman software using the instructions for your operating system][podman].
 If you have an existing installation, check your version and make sure you have
-the latest Docker.
+the latest Docker or Podman
 
 To check if `docker` is has been installed:
 ```
 $ docker --version
 ```
 This documentation is written using Docker version 18.09.0.
+
+To check if `podman` is has been installed:
+```
+$ podman --version
+```
+This documentation is written using Podman version 0.12.1.
 
 
 
@@ -51,3 +59,4 @@ This documentation is written using Docker version 18.09.0.
 [contributor]: https://github.com/kubernetes/community/blob/master/contributors/guide/README.md
 [golang]: https://golang.org/doc/install
 [docker]: https://docs.docker.com/install/#supported-platforms
+[podman]: https://github.com/containers/libpod/install.md

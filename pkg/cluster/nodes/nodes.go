@@ -23,7 +23,7 @@ import (
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/kind/pkg/cluster/constants"
-
+	"sigs.k8s.io/kind/pkg/container"
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
@@ -37,7 +37,7 @@ func Delete(nodes ...Node) error {
 		ids = append(ids, node.nameOrID)
 	}
 	cmd := exec.Command(
-		"docker",
+		container.Engine,
 		append(
 			[]string{
 				"rm",
@@ -51,7 +51,7 @@ func Delete(nodes ...Node) error {
 }
 
 // List returns the list of container IDs for the kind "nodes", optionally
-// filtered by docker ps filters
+// filtered by container engine ps filters
 // https://docs.docker.com/engine/reference/commandline/ps/#filtering
 func List(filters ...string) ([]Node, error) {
 	res := []Node{}
@@ -84,7 +84,7 @@ func list(visit func(string, *Node), filters ...string) error {
 	for _, filter := range filters {
 		args = append(args, "--filter", filter)
 	}
-	cmd := exec.Command("docker", args...)
+	cmd := exec.Command(container.Engine, args...)
 	lines, err := exec.CombinedOutputLines(cmd)
 	if err != nil {
 		return errors.Wrap(err, "failed to list nodes")

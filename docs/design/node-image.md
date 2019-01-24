@@ -1,6 +1,6 @@
 # The Node Image
 
-The ["node" image][node image] is a Docker image for running
+The ["node" image][node image] is a container image for running
 nested containers, systemd, and Kubernetes components.
 
 This image is built on top of the ["base" image][base image].
@@ -15,7 +15,7 @@ provides most of the tools statically needed for a kubernetes deployment
 (eg `systemd`), variants of this image have the following properties:
 
 - `/kind/images/` contains various `*.tar` files which are 
-[Docker image archives][docker image archives],
+[Container image archives][container image archives],
 these images will be loaded by the cluster tooling prior to running `kubeadm`
 
 - `kubeadm`, `kubectl`, `kubelet` are in the path
@@ -35,6 +35,6 @@ each "node" container with [kubeadm][kubeadm].
 [base image]: ./base-image.md
 [build package]: ./../../pkg/build
 [cluster package]: ./../../pkg/cluster
-[docker image archives]: https://docs.docker.com/engine/reference/commandline/save/
+[container image archives]: https://docs.docker.com/engine/reference/commandline/save/
 [systemd service]: https://www.freedesktop.org/software/systemd/man/systemd.service.html
 [kubeadm]: https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/

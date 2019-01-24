@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package docker
+package container
 
 import (
 	"strings"
@@ -24,7 +24,7 @@ import (
 
 // UsernsRemap checks if userns-remap is enabled in dockerd
 func UsernsRemap() bool {
-	cmd := exec.Command("docker", "info", "--format", "'{{json .SecurityOptions}}'")
+	cmd := exec.Command(Engine, "info", "--format", "'{{json .SecurityOptions}}'")
 	lines, err := exec.CombinedOutputLines(cmd)
 	if err != nil {
 		return false

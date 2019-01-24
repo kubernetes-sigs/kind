@@ -23,6 +23,7 @@ import (
 	"sync"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/container"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/util"
 )
@@ -56,10 +57,10 @@ func Collect(nodes []nodes.Node, dir string) error {
 	// construct a slice of methods to collect logs
 	fns := []errFn{
 		// TODO(bentheelder): record the kind version here as well
-		// record info about the host docker
+		// record info about the host container engine
 		execToPathFn(
-			exec.Command("docker", "info"),
-			"docker-info.txt",
+			exec.Command(container.Engine, "info"),
+			"container-info.txt",
 		),
 	}
 	// add a log collection method for each node
@@ -70,7 +71,7 @@ func Collect(nodes []nodes.Node, dir string) error {
 			return coalesce(
 				// record info about the node container
 				execToPathFn(
-					exec.Command("docker", "inspect", name),
+					exec.Command(container.Engine, "inspect", name),
 					filepath.Join(name, "inspect.json"),
 				),
 				// grab all of the node logs
@@ -91,7 +92,7 @@ func Collect(nodes []nodes.Node, dir string) error {
 					filepath.Join(name, "docker.log"),
 				),
 				// grab all container / pod logs
-				// NOTE: we cannot just docker cp this directory because
+				// NOTE: we cannot just cp this directory because
 				// it is mostly symlinks, so we must list and resolve the symlinks
 				func() error {
 					// collect up file names

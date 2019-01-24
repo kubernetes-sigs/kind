@@ -14,6 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package docker contains helpers for working with docker
+// Package container contains helpers for working with container engines
 // This package has no stability guarantees whatsoever!
-package docker
+package container

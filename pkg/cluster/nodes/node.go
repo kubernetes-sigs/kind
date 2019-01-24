@@ -32,7 +32,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/version"
 
-	"sigs.k8s.io/kind/pkg/docker"
+	"sigs.k8s.io/kind/pkg/container"
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
@@ -41,7 +41,7 @@ import (
 // It should not be manually instantiated
 // Node impleemnts exec.Cmder
 type Node struct {
-	// must be one of docker container ID or name
+	// must be one of container ID or name
 	nameOrID string
 	// cached node info etc.
 	nodeCache
@@ -50,10 +50,10 @@ type Node struct {
 // assert Node implements Cmder
 var _ exec.Cmder = &Node{}
 
-// Cmder returns an exec.Cmder that runs on the node via docker exec
+// Cmder returns an exec.Cmder that runs on the node via ContainerEngine exec
 func (n *Node) Cmder() exec.Cmder {
 	if n.nodeCache.containerCmder == nil {
-		n.nodeCache.containerCmder = docker.ContainerCmder(n.nameOrID)
+		n.nodeCache.containerCmder = container.Cmder(n.nameOrID)
 	}
 	return n.nodeCache.containerCmder
 }
@@ -80,12 +80,12 @@ func (n *Node) String() string {
 // SignalStart sends SIGUSR1 to the node, which signals our entrypoint to boot
 // see images/node/entrypoint
 func (n *Node) SignalStart() error {
-	return docker.Kill("SIGUSR1", n.nameOrID)
+	return container.Kill("SIGUSR1", n.nameOrID)
 }
 
 // CopyTo copies the source file on the host to dest on the node
 func (n *Node) CopyTo(source, dest string) error {
-	return docker.CopyTo(source, n.nameOrID, dest)
+	return container.CopyTo(source, n.nameOrID, dest)
 }
 
 // CopyFrom copies the source file on the node to dest on the host
@@ -93,12 +93,15 @@ func (n *Node) CopyTo(source, dest string) error {
 //     but this should go away when kubeadm automatic copy certs lands,
 //     otherwise it should be refactored in something more robust in the long term
 func (n *Node) CopyFrom(source, dest string) error {
-	return docker.CopyFrom(n.nameOrID, source, dest)
+	return container.CopyFrom(n.nameOrID, source, dest)
 }
 
 // WaitForDocker waits for Docker to be ready on the node
 // it returns true on success, and false on a timeout
 func (n *Node) WaitForDocker(until time.Time) bool {
+	if container.Engine != "docker" {
+		return true
+	}
 	return tryUntil(until, func() bool {
 		cmd := n.Command("systemctl", "is-active", "docker")
 		out, err := exec.CombinedOutputLines(cmd)
@@ -120,16 +123,16 @@ func tryUntil(until time.Time, try func() bool) bool {
 	return false
 }
 
-// LoadImages loads image tarballs stored on the node into docker on the node
+// LoadImages loads image tarballs stored on the node into container storage on the node
 func (n *Node) LoadImages() {
-	// load images cached on the node into docker
+	// load images cached on the node into Container Storage
 	if err := n.Command(
 		"find",
 		"/kind/images",
 		"-name", "*.tar",
-		"-exec", "docker", "load", "-i", "{}", ";",
+		"-exec", container.Engine, "load", "-i", "{}", ";",
 	).Run(); err != nil {
-		log.Warningf("Failed to preload docker images: %v", err)
+		log.Warningf("Failed to preload container images: %v", err)
 		return
 	}
 
@@ -153,17 +156,17 @@ func (n *Node) LoadImages() {
 	// TODO(bentheelder): this is a bit gross, move this logic out of bash
 	if err := n.Command(
 		"/bin/bash", "-c",
-		`docker images --format='{{.Repository}}:{{.Tag}}' | grep -v amd64 | xargs -L 1 -I '{}' /bin/bash -c 'docker tag "{}" "$(echo "{}" | sed s/:/-amd64:/)"'`,
+		fmt.Sprintf(`%s images --format='{{.Repository}}:{{.Tag}}' | grep -v amd64 | xargs -L 1 -I '{}' /bin/bash -c '%s tag "{}" "$(echo "{}" | sed s/:/-amd64:/)"'`, container.Engine, container.Engine),
 	).Run(); err != nil {
-		log.Warningf("Failed to re-tag docker images: %v", err)
+		log.Warningf("Failed to re-tag container images: %v", err)
 	}
 }
 
 // FixMounts will correct mounts in the node container to meet the right
-// sharing and permissions for systemd and Docker / Kubernetes
+// sharing and permissions for systemd and Containers / Kubernetes
 func (n *Node) FixMounts() error {
 	// Check if userns-remap is enabled
-	if docker.UsernsRemap() {
+	if container.UsernsRemap() {
 		// The binary /bin/mount should be owned by root:root in order to execute
 		// the following mount commands
 		if err := n.Command("chown", "root:root", "/bin/mount").Run(); err != nil {
@@ -177,7 +180,7 @@ func (n *Node) FixMounts() error {
 
 	// systemd-in-a-container should have read only /sys
 	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
-	// however, we need other things from `docker run --privileged` ...
+	// however, we need other things from `container run --privileged` ...
 	// and this flag also happens to make /sys rw, amongst other things
 	if err := n.Command("mount", "-o", "remount,ro", "/sys").Run(); err != nil {
 		return err
@@ -221,7 +224,7 @@ func (n *Node) IP() (ip string, err error) {
 		return n.nodeCache.ip, nil
 	}
 	// retrive the IP address of the node using docker inspect
-	lines, err := docker.Inspect(n.nameOrID, "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}")
+	lines, err := container.Inspect(n.nameOrID, "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}")
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get file")
 	}
@@ -241,7 +244,7 @@ func (n *Node) Ports(containerPort int) (hostPort int, err error) {
 		return hostPort, nil
 	}
 	// retrive the specific port mapping using docker inspect
-	lines, err := docker.Inspect(n.nameOrID, fmt.Sprintf("{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}", containerPort))
+	lines, err := container.Inspect(n.nameOrID, fmt.Sprintf("{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}", containerPort))
 	if err != nil {
 		return -1, errors.Wrap(err, "failed to get file")
 	}

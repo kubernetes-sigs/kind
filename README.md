@@ -6,17 +6,17 @@
 
 # `kind` - `k`ubernetes `in` `d`ocker
 
-`kind` is a tool for running local Kubernetes clusters using Docker container "nodes".  
+`kind` is a tool for running local Kubernetes clusters using container "nodes".
 `kind` is primarily designed for testing Kubernetes 1.11+, initially targeting the [conformance tests].
 
-If you have [go] and [docker] installed `go get sigs.k8s.io/kind && kind create cluster` is all you need!
+If you have [go] and [docker] or [podman] installed `go get sigs.k8s.io/kind && kind create cluster` is all you need!
 
 <img src="https://gist.githubusercontent.com/BenTheElder/621bc321fc6d9506fd936feb36d32dd0/raw/7fe14e9d0929cab428929ca6c501abc990c07359/kind-create-cluster.gif" alt="2x speed `kind create cluster` demo" />
 
 `kind` consists of:
  - Go [packages][packages] implementing [cluster creation][cluster package], [image build][build package], etc.
  - A command line interface ([`kind`][kind cli]) built on these packages.
- - Docker [image(s)][images] written to run systemd, Kubernetes, etc.
+ - Container [image(s)][images] written to run systemd, Kubernetes, etc.
  - [`kubetest`][kubetest] integration also built on these packages (WIP)
 
 `kind` bootstraps each "node" with [kubeadm][kubeadm]. For more details see [the design documentation][design doc].  
@@ -30,8 +30,8 @@ You can install `kind` with `go get sigs.k8s.io/kind`. This will put `kind` in
 shown [here](https://golang.org/doc/code.html#GOPATH) if you encounter the error
 `kind: command not found` after installation.
 
-To use `kind`, you will need to [install docker].  
-Once you have docker running you can create a cluster with `kind create cluster`  
+To use `kind`, you will need to [install docker] or [install podman].
+Once you have installed podman or have the docker service running you can create a cluster with `kind create cluster`
 To delete your cluster use `kind delete cluster`
 
 <!--TODO(bentheelder): improve this part of the guide-->
@@ -84,6 +84,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 <!--links-->
 [go]: https://golang.org/
 [docker]: https://www.docker.com/
+[podman]: https://podman.io/
 [community page]: http://kubernetes.io/community/
 [Kubernetes Code of Conduct]: code-of-conduct.md
 [Go Report Card Badge]: https://goreportcard.com/badge/sigs.k8s.io/kind
@@ -106,5 +107,6 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
 [docs/roadmap.md]: ./docs/roadmap.md
 [install docker]: https://docs.docker.com/install/
+[install podman]: https://github.com/containers/libpod/install.md
 [@BenTheElder]: https://github.com/BenTheElder
 [@munnerz]: https://github.com/munnerz

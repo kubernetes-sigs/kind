@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"sigs.k8s.io/kind/pkg/cluster/internal/haproxy"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
-	"sigs.k8s.io/kind/pkg/docker"
+	"sigs.k8s.io/kind/pkg/container"
 )
 
 // FromID creates a node handle from the node (container's) ID
@@ -110,7 +110,7 @@ func createNode(name, image, clusterLabel string, extraArgs ...string) (handle *
 		// running containers in a container requires privileged
 		// NOTE: we could try to replicate this with --cap-add, and use less
 		// privileges, but this flag also changes some mounts that are necessary
-		// including some ones docker would otherwise do by default.
+		// including some ones the container engine would otherwise do by default.
 		// for now this is what we want. in the future we may revisit this.
 		"--privileged",
 		"--security-opt", "seccomp=unconfined", // also ignore seccomp
@@ -129,13 +129,13 @@ func createNode(name, image, clusterLabel string, extraArgs ...string) (handle *
 	// adds node specific args
 	runArgs = append(runArgs, extraArgs...)
 
-	if docker.UsernsRemap() {
+	if container.UsernsRemap() {
 		// We need this argument in order to make this command work
 		// in systems that have userns-remap enabled on the docker daemon
 		runArgs = append(runArgs, "--userns=host")
 	}
 
-	id, err := docker.Run(
+	id, err := container.Run(
 		image,
 		runArgs,
 		[]string{
@@ -153,7 +153,7 @@ func createNode(name, image, clusterLabel string, extraArgs ...string) (handle *
 		}
 	}
 	if err != nil {
-		return handle, errors.Wrap(err, "docker run error")
+		return handle, errors.Wrap(err, "container run error")
 	}
 
 	// Deletes the machine-id embedded in the node image and regenerate a new one.

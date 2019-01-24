@@ -1,6 +1,6 @@
 # Overview
 `kind` is a command-line application for building Kubernetes clusters using
-Docker containers as "nodes."
+ containers as "nodes."
 
 
 ## CLI
@@ -27,7 +27,7 @@ and setup logging.
 ├── pkg
 │   ├── build     # Build and manage images
 │   ├── cluster   # Build and manage clusters
-│   ├── docker    # Interact with Docker
+│   ├── container # Interact with container engines
 │   ├── exec      # Execute commands
 │   ├── fs        # Interact with the host file system
 │   ├── kustomize # Work with embedded kustomize commands
@@ -36,7 +36,7 @@ and setup logging.
 ```
 `kind` commands rely on the functionality of the [packages directory][pkg].
 Here, you will find everything needed to build container images for `kind`;
-create clusters from these images; interact with the Docker engine and file system; customize configuration files; and logging.
+create clusters from these images; interact with the container engine and file system; customize configuration files; and logging.
 
 
 

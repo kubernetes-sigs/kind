@@ -24,6 +24,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/build/base/sources"
+	"sigs.k8s.io/kind/pkg/container"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
 )
@@ -109,7 +110,7 @@ func (c *BuildContext) Build() (err error) {
 		return err
 	}
 
-	// then the actual docker image
+	// then the actual container image
 	return c.buildImage(buildDir)
 }
 
@@ -120,7 +121,7 @@ func (c *BuildContext) buildEntrypoint(dir string) error {
 	entrypointDest := filepath.Join(dir, "entrypoint", "entrypoint")
 
 	cmd := exec.Command(c.goCmd, "build", "-o", entrypointDest, entrypointSrc)
-	// TODO(bentheelder): we may need to map between docker image arch and GOARCH
+	// TODO(bentheelder): we may need to map between container image arch and GOARCH
 	cmd.SetEnv("GOOS=linux", "GOARCH="+c.arch)
 
 	// actually build
@@ -136,14 +137,14 @@ func (c *BuildContext) buildEntrypoint(dir string) error {
 
 func (c *BuildContext) buildImage(dir string) error {
 	// build the image, tagged as tagImageAs, using the our tempdir as the context
-	cmd := exec.Command("docker", "build", "-t", c.image, dir)
-	log.Info("Starting Docker build ...")
+	cmd := exec.Command(container.Engine, "build", "-t", c.image, dir)
+	log.Info("Starting container image build ...")
 	exec.InheritOutput(cmd)
 	err := cmd.Run()
 	if err != nil {
-		log.Errorf("Docker build Failed! %v", err)
+		log.Errorf("Container image build Failed! %v", err)
 		return err
 	}
-	log.Info("Docker build completed.")
+	log.Info("Container image build completed.")
 	return nil
 }
