@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
@@ -156,7 +157,7 @@ func (cc *Context) ProvisionNodes() (nodeList map[string]*nodes.Node, err error)
 		// wait for docker to be ready
 		if !node.WaitForDocker(time.Now().Add(time.Second * 30)) {
 			// TODO(bentheelder): logging here
-			return nodeList, fmt.Errorf("timed out waiting for docker to be ready on node")
+			return nodeList, errors.New("timed out waiting for docker to be ready on node")
 		}
 
 		// load the docker image artifacts into the docker daemon

@@ -208,7 +208,7 @@ func (n *Node) KubeVersion() (version string, err error) {
 		return "", errors.Wrap(err, "failed to get file")
 	}
 	if len(lines) != 1 {
-		return "", fmt.Errorf("file should only be one line, got %d lines", len(lines))
+		return "", errors.Errorf("file should only be one line, got %d lines", len(lines))
 	}
 	n.nodeCache.kubernetesVersion = lines[0]
 	return n.nodeCache.kubernetesVersion, nil
@@ -226,7 +226,7 @@ func (n *Node) IP() (ip string, err error) {
 		return "", errors.Wrap(err, "failed to get file")
 	}
 	if len(lines) != 1 {
-		return "", fmt.Errorf("file should only be one line, got %d lines", len(lines))
+		return "", errors.Errorf("file should only be one line, got %d lines", len(lines))
 	}
 	n.nodeCache.ip = strings.Trim(lines[0], "'")
 	return n.nodeCache.ip, nil
@@ -246,7 +246,7 @@ func (n *Node) Ports(containerPort int) (hostPort int, err error) {
 		return -1, errors.Wrap(err, "failed to get file")
 	}
 	if len(lines) != 1 {
-		return -1, fmt.Errorf("file should only be one line, got %d lines", len(lines))
+		return -1, errors.Errorf("file should only be one line, got %d lines", len(lines))
 	}
 
 	if n.nodeCache.ports == nil {

@@ -17,7 +17,6 @@ limitations under the License.
 package create
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -61,7 +60,7 @@ func runKubeadmInit(ec *execContext, configNode *NodeReplica) error {
 	// get the target node for this task
 	node, ok := ec.NodeFor(configNode)
 	if !ok {
-		return fmt.Errorf("unable to get the handle for operating on node: %s", configNode.Name)
+		return errors.Errorf("unable to get the handle for operating on node: %s", configNode.Name)
 	}
 
 	// run kubeadm

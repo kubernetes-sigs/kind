@@ -17,9 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"fmt"
 	unsafe "unsafe"
 
+	"github.com/pkg/errors"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	"sigs.k8s.io/kind/pkg/cluster/config"
 	kustomize "sigs.k8s.io/kind/pkg/kustomize"
@@ -53,13 +53,13 @@ func Convert_config_Config_To_v1alpha1_Config(in *config.Config, out *Config, s 
 	// following condition pass
 
 	if len(in.Nodes) > 1 {
-		return fmt.Errorf("invalid conversion. `kind` config with more than one Node cannot be converted to v1alpha1 config format")
+		return errors.New("invalid conversion. `kind` config with more than one Node cannot be converted to v1alpha1 config format")
 	}
 
 	var node = in.Nodes[0]
 
 	if !node.IsControlPlane() {
-		return fmt.Errorf("invalid conversion. `kind` config without a control-plane Node cannot be converted to v1alpha1 config format %v", node)
+		return errors.Errorf("invalid conversion. `kind` config without a control-plane Node cannot be converted to v1alpha1 config format %v", node)
 	}
 
 	out.Image = node.Image

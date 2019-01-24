@@ -71,7 +71,7 @@ func runKubeadmJoinControlPlane(ec *execContext, configNode *NodeReplica) error 
 	// get the target node for this task (the joining node)
 	node, ok := ec.NodeFor(configNode)
 	if !ok {
-		return fmt.Errorf("unable to get the handle for operating on node: %s", configNode.Name)
+		return errors.Errorf("unable to get the handle for operating on node: %s", configNode.Name)
 	}
 
 	// creates the folder tree for pre-loading necessary cluster certificates
@@ -158,7 +158,7 @@ func runKubeadmJoin(ec *execContext, configNode *NodeReplica) error {
 	// get the target node for this task (the joining node)
 	node, ok := ec.NodeFor(configNode)
 	if !ok {
-		return fmt.Errorf("unable to get the handle for operating on node: %s", configNode.Name)
+		return errors.Errorf("unable to get the handle for operating on node: %s", configNode.Name)
 	}
 
 	// run kubeadm join

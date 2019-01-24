@@ -61,7 +61,7 @@ func runKubeadmConfig(ec *execContext, configNode *NodeReplica) error {
 	// get the target node for this task
 	node, ok := ec.NodeFor(configNode)
 	if !ok {
-		return fmt.Errorf("unable to get the handle for operating on node: %s", configNode.Name)
+		return errors.Errorf("unable to get the handle for operating on node: %s", configNode.Name)
 	}
 
 	// get installed kubernetes version from the node image
@@ -94,7 +94,7 @@ func runKubeadmConfig(ec *execContext, configNode *NodeReplica) error {
 	defer os.Remove(kubeadmConfig)
 	if err != nil {
 		// TODO(bentheelder): logging here
-		return fmt.Errorf("failed to create kubeadm config: %v", err)
+		return errors.Wrap(err, "failed to create kubeadm config")
 	}
 
 	// copy the config to the node

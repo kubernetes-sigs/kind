@@ -92,7 +92,7 @@ func list(visit func(string, *Node), filters ...string) error {
 	for _, line := range lines {
 		parts := strings.Split(line, "\t")
 		if len(parts) != 2 {
-			return fmt.Errorf("invalid output when listing nodes: %s", line)
+			return errors.Errorf("invalid output when listing nodes: %s", line)
 		}
 		names := strings.Split(parts[0], ",")
 		cluster := parts[1]

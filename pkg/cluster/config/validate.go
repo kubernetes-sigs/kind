@@ -17,7 +17,7 @@ limitations under the License.
 package config
 
 import (
-	"fmt"
+	"github.com/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/util"
 )
@@ -30,7 +30,7 @@ func (c *Config) Validate() error {
 	// All nodes in the config should be valid
 	for i, n := range c.Nodes {
 		if err := n.Validate(); err != nil {
-			errs = append(errs, fmt.Errorf("please fix invalid configuration for node %d: \n%v", i, err))
+			errs = append(errs, errors.Errorf("invalid configuration for node %d", i))
 		}
 	}
 
@@ -52,17 +52,17 @@ func (n *Node) Validate() error {
 		ExternalEtcdRole,
 		ExternalLoadBalancerRole:
 	default:
-		errs = append(errs, fmt.Errorf("role is a required field"))
+		errs = append(errs, errors.New("role is a required field"))
 	}
 
 	// image should be defined
 	if n.Image == "" {
-		errs = append(errs, fmt.Errorf("image is a required field"))
+		errs = append(errs, errors.New("image is a required field"))
 	}
 
 	// replicas >= 0
 	if n.Replicas != nil && int32(*n.Replicas) < 0 {
-		errs = append(errs, fmt.Errorf("replicas number should not be a negative number"))
+		errs = append(errs, errors.New("replicas number should not be a negative number"))
 	}
 
 	if len(errs) > 0 {

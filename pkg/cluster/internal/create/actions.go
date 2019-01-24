@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
@@ -107,7 +108,7 @@ func getAction(name string) (Action, error) {
 	actionBuilderFunc, ok := actionImpls.impls[name]
 	actionImpls.Unlock()
 	if !ok {
-		return nil, fmt.Errorf("no Action implementation with name: %s", name)
+		return nil, errors.Errorf("no Action implementation with name: %s", name)
 	}
 	return actionBuilderFunc(), nil
 }
