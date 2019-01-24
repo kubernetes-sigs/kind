@@ -18,9 +18,9 @@ limitations under the License.
 package cluster
 
 import (
-	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -60,7 +60,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	// load the config
 	cfg, err := encoding.Load(flags.Config)
 	if err != nil {
-		return fmt.Errorf("error loading config: %v", err)
+		return errors.Wrap(err, "error loading config")
 	}
 
 	// validate the config
@@ -71,7 +71,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		for _, problem := range configErrors.Errors() {
 			log.Error(problem)
 		}
-		return fmt.Errorf("aborting due to invalid configuration")
+		return errors.New("aborting due to invalid configuration")
 	}
 
 	// create a cluster context and create the cluster
@@ -87,11 +87,11 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		err := cfg.Validate()
 		if err != nil {
 			log.Errorf("Invalid flags, configuration failed validation: %v", err)
-			return fmt.Errorf("aborting due to invalid configuration")
+			return errors.New("aborting due to invalid configuration")
 		}
 	}
 	if err = ctx.Create(cfg, flags.Retain, flags.Wait); err != nil {
-		return fmt.Errorf("failed to create cluster: %v", err)
+		return errors.Wrap(err, "failed to create cluster")
 	}
 
 	return nil

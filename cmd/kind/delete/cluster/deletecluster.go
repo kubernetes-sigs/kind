@@ -18,8 +18,7 @@ limitations under the License.
 package cluster
 
 import (
-	"fmt"
-
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
@@ -49,7 +48,7 @@ func NewCommand() *cobra.Command {
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	ctx := cluster.NewContext(flags.Name)
 	if err := ctx.Delete(); err != nil {
-		return fmt.Errorf("failed to delete cluster: %v", err)
+		return errors.Wrap(err, "failed to delete cluster")
 	}
 	return nil
 }

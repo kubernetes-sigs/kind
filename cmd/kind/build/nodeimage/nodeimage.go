@@ -17,8 +17,7 @@ limitations under the License.
 package nodeimage
 
 import (
-	"fmt"
-
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/build/node"
@@ -75,10 +74,10 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		node.WithKuberoot(flags.KubeRoot),
 	)
 	if err != nil {
-		return fmt.Errorf("error creating build context: %v", err)
+		return errors.Wrap(err, "error creating build context")
 	}
 	if err := ctx.Build(); err != nil {
-		return fmt.Errorf("error building node image: %v", err)
+		return errors.Wrap(err, "error building node image")
 	}
 	return nil
 }
