@@ -93,16 +93,49 @@ build() {
 
 # up a cluster with kind
 create_cluster() {
+    # create the config file
+    cat <<EOF > "${ARTIFACTS}/kind-config.yaml"
+# config for 1 control plane node and 2 workers
+# necessary for conformance
+kind: Config
+apiVersion: kind.sigs.k8s.io/v1alpha2
+nodes:
+# the control plane node
+- role: control-plane
+- role: worker
+  replicas: 2
+EOF
     # mark the cluster as up for cleanup
     # even if kind create fails, kind delete can clean up after it
     KIND_IS_UP=true
-    kind create cluster --image="kindest/node:latest" --retain --wait=1m --loglevel=debug
+    # actually create, with:
+    # - do not delete created nodes from a failed cluster create (for debugging)
+    # - wait up to one minute for the nodes to be "READY"
+    # - set log leve to debug
+    # - use our multi node config
+    kind create cluster \
+        --image=kindest/node:latest \
+        --retain \
+        --wait=1m \
+        --loglevel=debug \
+        "--config=${ARTIFACTS}/kind-config.yaml"
 }
 
 # run e2es with kubetest
 run_tests() {
+    # export the KUBECONFIG
+    KUBECONFIG="$(kind get kubeconfig-path)"
+    export KUBECONFIG
+
     # base kubetest args
     KUBETEST_ARGS="--provider=skeleton --test --check-version-skew=false"
+
+    # get the number of worker nodes
+    # TODO(bentheelder): this is kinda gross
+    NUM_NODES="$(kubectl get nodes \
+        -o=jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.taints}{"\n"}{end}' \
+        | grep -cv "node-role.kubernetes.io/master" \
+    )"
 
     # ginkgo regexes
     SKIP="${SKIP:-"Alpha|Kubectl|\\[(Disruptive|Feature:[^\\]]+|Flaky)\\]"}"
@@ -115,11 +148,7 @@ run_tests() {
     fi
 
     # add ginkgo args
-    KUBETEST_ARGS="${KUBETEST_ARGS} --test_args=\"--ginkgo.focus=${FOCUS} --ginkgo.skip=${SKIP} --report-dir=${ARTIFACTS} --disable-log-dump=true\""
-
-    # export the KUBECONFIG
-    KUBECONFIG="$(kind get kubeconfig-path)"
-    export KUBECONFIG
+    KUBETEST_ARGS="${KUBETEST_ARGS} --test_args=\"--ginkgo.focus=${FOCUS} --ginkgo.skip=${SKIP} --report-dir=${ARTIFACTS} --disable-log-dump=true --num-nodes=${NUM_NODES}\""
 
     # setting this env prevents ginkg e2e from trying to run provider setup
     export KUBERNETES_CONFORMANCE_TEST="y"
