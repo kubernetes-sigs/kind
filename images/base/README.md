@@ -18,4 +18,4 @@ See also [`pkg/cluster`](./../../pkg/cluster) for logic that interacts with this
 
 ## Design
 
-See [docs/base-image.md](./../../docs/base-image.md) for more design details.
+See [docs/base-image.md](./../../docs/design/base-image.md) for more design details.
