@@ -29,6 +29,7 @@ import (
 // NewCommand returns a new cobra.Command for getting the list of clusters
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
+		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
 		Use:   "clusters",
 		Short: "lists existing kind clusters by their name",

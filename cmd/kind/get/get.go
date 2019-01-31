@@ -27,6 +27,7 @@ import (
 // NewCommand returns a new cobra.Command for get
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
+		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
 		Use:   "get",
 		Short: "Gets one of [clusters, kubeconfig-path]",

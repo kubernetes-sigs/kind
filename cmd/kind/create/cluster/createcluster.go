@@ -41,6 +41,7 @@ type flagpole struct {
 func NewCommand() *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
+		Args:  cobra.NoArgs,
 		Use:   "cluster",
 		Short: "Creates a local Kubernetes cluster",
 		Long:  "Creates a local Kubernetes cluster using Docker container 'nodes'",
