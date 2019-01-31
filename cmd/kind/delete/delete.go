@@ -28,6 +28,7 @@ import (
 // NewCommand returns a new cobra.Command for cluster creation
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
+		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
 		Use:   "delete",
 		Short: "Deletes one of [cluster]",

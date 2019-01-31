@@ -35,6 +35,7 @@ type flagpole struct {
 func NewCommand() *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
+		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
 		Use:   "node-image",
 		Short: "build the node image",

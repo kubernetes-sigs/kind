@@ -34,9 +34,9 @@ type flagpole struct {
 func NewCommand() *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
+		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
 		Use:   "logs [output-dir]",
-		Args:  cobra.MaximumNArgs(1),
 		Short: "exports logs to to a tempdir or [output-dir] if specified",
 		Long:  "exports logs to to a tempdir or [output-dir] if specified",
 		RunE: func(cmd *cobra.Command, args []string) error {

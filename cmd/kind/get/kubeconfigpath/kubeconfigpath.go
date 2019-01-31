@@ -33,6 +33,7 @@ type flagpole struct {
 func NewCommand() *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
+		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
 		Use:   "kubeconfig-path",
 		Short: "prints the default kubeconfig path for the kind cluster by --name",

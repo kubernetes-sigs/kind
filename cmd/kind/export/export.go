@@ -26,6 +26,7 @@ import (
 // NewCommand returns a new cobra.Command for export
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
+		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
 		Use:   "export",
 		Short: "exports one of [logs]",

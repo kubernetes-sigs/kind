@@ -45,6 +45,7 @@ type Flags struct {
 func NewCommand() *cobra.Command {
 	flags := &Flags{}
 	cmd := &cobra.Command{
+		Args:  cobra.NoArgs,
 		Use:   "kind",
 		Short: "kind is a tool for managing local Kubernetes clusters",
 		Long:  "kind creates and manages local Kubernetes clusters using Docker container 'nodes'",

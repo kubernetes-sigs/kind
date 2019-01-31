@@ -27,6 +27,7 @@ const Version = "0.2.0-alpha"
 // NewCommand returns a new cobra.Command for version
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
+		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
 		Use:   "version",
 		Short: "prints the kind CLI version",
