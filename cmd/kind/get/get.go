@@ -32,9 +32,6 @@ func NewCommand() *cobra.Command {
 		Use:   "get",
 		Short: "Gets one of [clusters, kubeconfig-path]",
 		Long:  "Gets one of [clusters, kubeconfig-path]",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return cmd.Help()
-		},
 	}
 	// add subcommands
 	cmd.AddCommand(clusters.NewCommand())

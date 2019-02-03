@@ -18,8 +18,6 @@ limitations under the License.
 package delete
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	deletecluster "sigs.k8s.io/kind/cmd/kind/delete/cluster"
@@ -33,15 +31,7 @@ func NewCommand() *cobra.Command {
 		Use:   "delete",
 		Short: "Deletes one of [cluster]",
 		Long:  "Deletes one of [cluster]",
-		RunE:  run,
 	}
 	cmd.AddCommand(deletecluster.NewCommand())
 	return cmd
-}
-
-func run(cmd *cobra.Command, args []string) error {
-	fmt.Println("You likely want `kind delete cluster`, please migrate!")
-	fmt.Println()
-	cmd.Usage()
-	return nil
 }

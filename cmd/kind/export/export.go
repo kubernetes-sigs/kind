@@ -31,9 +31,6 @@ func NewCommand() *cobra.Command {
 		Use:   "export",
 		Short: "exports one of [logs]",
 		Long:  "exports one of [logs]",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return cmd.Help()
-		},
 	}
 	// add subcommands
 	cmd.AddCommand(logs.NewCommand())
