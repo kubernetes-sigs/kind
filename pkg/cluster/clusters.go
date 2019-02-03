@@ -26,7 +26,7 @@ import (
 func List() ([]Context, error) {
 	n, err := nodes.ListByCluster()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not list clusters, failed to list nodes")
+		return nil, errors.Wrap(err, "could not list clusters")
 	}
 	clusters := []Context{}
 	for name := range n {

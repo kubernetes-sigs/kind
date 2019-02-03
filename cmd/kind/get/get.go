@@ -22,6 +22,7 @@ import (
 
 	"sigs.k8s.io/kind/cmd/kind/get/clusters"
 	"sigs.k8s.io/kind/cmd/kind/get/kubeconfigpath"
+	"sigs.k8s.io/kind/cmd/kind/get/nodes"
 )
 
 // NewCommand returns a new cobra.Command for get
@@ -31,10 +32,11 @@ func NewCommand() *cobra.Command {
 		// TODO(bentheelder): more detailed usage
 		Use:   "get",
 		Short: "Gets one of [clusters, kubeconfig-path]",
-		Long:  "Gets one of [clusters, kubeconfig-path]",
+		Long:  "Gets one of [clusters, nodes, kubeconfig-path]",
 	}
 	// add subcommands
 	cmd.AddCommand(clusters.NewCommand())
+	cmd.AddCommand(nodes.NewCommand())
 	cmd.AddCommand(kubeconfigpath.NewCommand())
 	return cmd
 }

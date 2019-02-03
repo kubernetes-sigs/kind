@@ -20,7 +20,6 @@ package clusters
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
@@ -44,7 +43,7 @@ func NewCommand() *cobra.Command {
 func runE(cmd *cobra.Command, args []string) error {
 	clusters, err := cluster.List()
 	if err != nil {
-		return errors.Wrap(err, "error listing clusters")
+		return err
 	}
 	for _, cluster := range clusters {
 		fmt.Println(cluster.Name())
