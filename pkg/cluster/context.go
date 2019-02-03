@@ -122,8 +122,6 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 		return err
 	}
 
-	fmt.Printf("Creating cluster '%s' ...\n", c.ClusterName())
-
 	// init the create context and logging
 	cc := &create.Context{
 		Config:        cfg,

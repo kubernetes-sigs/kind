@@ -34,3 +34,18 @@ func List() ([]Context, error) {
 	}
 	return clusters, nil
 }
+
+// IsKnown return true if a cluster exists with the given name.
+// If obtaining the list of known clusters fails the function returns an error.
+func IsKnown(name string) (bool, error) {
+	list, err := List()
+	if err != nil {
+		return false, err
+	}
+	for _, cluster := range list {
+		if cluster.Name() == name {
+			return true, nil
+		}
+	}
+	return false, nil
+}

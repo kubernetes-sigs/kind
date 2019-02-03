@@ -20,6 +20,7 @@ package kubeconfigpath
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
@@ -52,6 +53,15 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
+	// Check if a cluster with this name exists
+	known, err := cluster.IsKnown(flags.Name)
+	if err != nil {
+		return err
+	}
+	if !known {
+		return errors.Errorf("unknown cluster %q", flags.Name)
+	}
+	// Obtain the kubeconfig path for this cluster
 	ctx := cluster.NewContext(flags.Name)
 	fmt.Println(ctx.KubeConfigPath())
 	return nil
