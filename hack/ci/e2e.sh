@@ -28,7 +28,7 @@ cleanup() {
     kind export logs "${ARTIFACTS}/logs" || true
     # KIND_IS_UP is true once we: kind create
     if [[ "${KIND_IS_UP:-}" = true ]]; then
-        kind delete cluster || true
+        kind delete cluster -f || true
     fi
     # clean up e2e.test symlink
     rm -f _output/bin/e2e.test

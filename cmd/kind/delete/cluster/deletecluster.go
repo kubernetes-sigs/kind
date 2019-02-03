@@ -18,6 +18,9 @@ limitations under the License.
 package cluster
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -27,6 +30,7 @@ import (
 type flagpole struct {
 	Name   string
 	Retain bool
+	Force  bool
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
@@ -43,10 +47,21 @@ func NewCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&flags.Name, "name", "1", "the cluster name")
+	cmd.Flags().BoolVarP(&flags.Force, "force", "f", false, "skip the confirmation prompt")
 	return cmd
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
+	if !flags.Force {
+		// Ask for confirmation
+		fmt.Printf("Are you sure you want to delete the cluster %q [y/n]? ", flags.Name)
+		var response string
+		fmt.Scanln(&response)
+		if !strings.EqualFold(response, "y") {
+			fmt.Println("Aborting")
+			return nil
+		}
+	}
 	ctx := cluster.NewContext(flags.Name)
 	if err := ctx.Delete(); err != nil {
 		return errors.Wrap(err, "failed to delete cluster")
