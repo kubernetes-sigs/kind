@@ -121,7 +121,7 @@ func (cc *Context) ProvisionNodes() (nodeList map[string]*nodes.Node, err error)
 
 		cc.Status.Start(fmt.Sprintf("[%s] Creating node container 📦", configNode.Name))
 		// create the node into a container (docker run, but it is paused, see createNode)
-		var name = fmt.Sprintf("kind-%s-%s", cc.Name(), configNode.Name)
+		var name = fmt.Sprintf("%s-%s", cc.Name(), configNode.Name)
 		var node *nodes.Node
 
 		switch configNode.Role {

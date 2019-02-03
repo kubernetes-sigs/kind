@@ -42,7 +42,7 @@ func NewCommand() *cobra.Command {
 			return runE(flags, cmd, args)
 		},
 	}
-	cmd.Flags().StringVar(&flags.Name, "name", "1", "the cluster name")
+	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "the cluster name")
 	return cmd
 }
 

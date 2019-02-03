@@ -43,8 +43,7 @@ func NewCommand() *cobra.Command {
 			return runE(flags, cmd, args)
 		},
 	}
-	// TODO(bentheelder): this default should be a constant somewhere
-	cmd.Flags().StringVar(&flags.Name, "name", "1", "the cluster context name")
+	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "the cluster context name")
 	return cmd
 }
 

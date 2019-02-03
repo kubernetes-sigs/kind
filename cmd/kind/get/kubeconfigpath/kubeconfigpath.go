@@ -45,7 +45,7 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().StringVar(
 		&flags.Name,
 		"name",
-		"1",
+		cluster.DefaultName,
 		"the cluster context name",
 	)
 	return cmd
