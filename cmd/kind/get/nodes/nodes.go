@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package kubeconfigpath implements the `kubeconfig-path` command
-package kubeconfigpath
+// Package nodes implements the `nodes` command
+package nodes
 
 import (
 	"fmt"
@@ -24,21 +24,21 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
+	clusternodes "sigs.k8s.io/kind/pkg/cluster/nodes"
 )
 
 type flagpole struct {
 	Name string
 }
 
-// NewCommand returns a new cobra.Command for getting the kubeconfig path
+// NewCommand returns a new cobra.Command for getting the list of nodes for a given cluster
 func NewCommand() *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
-		Args: cobra.NoArgs,
-		// TODO(bentheelder): more detailed usage
-		Use:   "kubeconfig-path",
-		Short: "prints the default kubeconfig path for the kind cluster by --name",
-		Long:  "prints the default kubeconfig path for the kind cluster by --name",
+		Args:  cobra.NoArgs,
+		Use:   "nodes",
+		Short: "lists existing kind nodes by their name",
+		Long:  "lists existing kind nodes by their name",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(flags, cmd, args)
 		},
@@ -53,16 +53,17 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
-	// Check if a cluster with this name exists
-	known, err := cluster.IsKnown(flags.Name)
+	// List nodes by cluster context name
+	n, err := clusternodes.ListByCluster()
 	if err != nil {
 		return err
 	}
+	nodes, known := n[flags.Name]
 	if !known {
 		return errors.Errorf("unknown cluster %q", flags.Name)
 	}
-	// Obtain the kubeconfig path for this cluster
-	ctx := cluster.NewContext(flags.Name)
-	fmt.Println(ctx.KubeConfigPath())
+	for _, node := range nodes {
+		fmt.Println(node.String())
+	}
 	return nil
 }

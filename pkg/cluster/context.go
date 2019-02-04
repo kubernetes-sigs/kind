@@ -50,10 +50,10 @@ var validNameRE = regexp.MustCompile(`^[a-zA-Z0-9_.-]+$`)
 // DefaultName is the default Context name
 // TODO(bentheelder): consider removing automatic prefixing in favor
 // of letting the user specify the full name..
-const DefaultName = "1"
+const DefaultName = "kind"
 
 // NewContext returns a new cluster management context
-// if name is "" the default ("1") will be used
+// if name is "" the default name will be used
 func NewContext(name string) *Context {
 	if name == "" {
 		name = DefaultName
@@ -96,9 +96,8 @@ func (c *Context) GetControlPlaneMeta() (*ControlPlaneMeta, error) {
 }
 
 // ClusterName returns the Kubernetes cluster name based on the context name
-// currently this is .Name prefixed with "kind-"
 func (c *Context) ClusterName() string {
-	return fmt.Sprintf("kind-%s", c.Name())
+	return c.Name()
 }
 
 // Create provisions and starts a kubernetes-in-docker cluster
@@ -122,8 +121,6 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 	if err := derived.Validate(); err != nil {
 		return err
 	}
-
-	fmt.Printf("Creating cluster '%s' ...\n", c.ClusterName())
 
 	// init the create context and logging
 	cc := &create.Context{

@@ -18,6 +18,8 @@ limitations under the License.
 package cluster
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -42,11 +44,21 @@ func NewCommand() *cobra.Command {
 			return runE(flags, cmd, args)
 		},
 	}
-	cmd.Flags().StringVar(&flags.Name, "name", "1", "the cluster name")
+	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "the cluster name")
 	return cmd
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
+	// Check if the cluster name exists
+	known, err := cluster.IsKnown(flags.Name)
+	if err != nil {
+		return err
+	}
+	if !known {
+		return errors.Errorf("unknown cluster %q", flags.Name)
+	}
+	// Delete the cluster
+	fmt.Printf("Deleting cluster %q ...\n", flags.Name)
 	ctx := cluster.NewContext(flags.Name)
 	if err := ctx.Delete(); err != nil {
 		return errors.Wrap(err, "failed to delete cluster")

@@ -52,10 +52,8 @@ func NewCommand() *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return runE(flags, cmd, args)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return cmd.Help()
-		},
-		Version: version.Version,
+		SilenceUsage: true,
+		Version:      version.Version,
 	}
 	cmd.PersistentFlags().StringVar(
 		&flags.LogLevel,
@@ -90,7 +88,7 @@ func Run() error {
 	return NewCommand().Execute()
 }
 
-// Main wraps Run, adding a log.Fatal(err) on error, and setting the log formatter
+// Main wraps Run and sets the log formatter
 func Main() {
 	// let's explicitly set stdout
 	log.SetOutput(os.Stdout)
@@ -105,7 +103,6 @@ func Main() {
 		ForceColors: logutil.IsTerminal(log.StandardLogger().Out),
 	})
 	if err := Run(); err != nil {
-		os.Stderr.WriteString(err.Error() + "\n")
-		os.Exit(-1)
+		os.Exit(1)
 	}
 }

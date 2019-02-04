@@ -20,6 +20,7 @@ package logs
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
@@ -43,12 +44,19 @@ func NewCommand() *cobra.Command {
 			return runE(flags, cmd, args)
 		},
 	}
-	// TODO(bentheelder): this default should be a constant somewhere
-	cmd.Flags().StringVar(&flags.Name, "name", "1", "the cluster context name")
+	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "the cluster context name")
 	return cmd
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
+	// Check if the cluster name exists
+	known, err := cluster.IsKnown(flags.Name)
+	if err != nil {
+		return err
+	}
+	if !known {
+		return errors.Errorf("unknown cluster %q", flags.Name)
+	}
 	// get the optional directory argument, or create a tempdir
 	var dir string
 	if len(args) == 0 {

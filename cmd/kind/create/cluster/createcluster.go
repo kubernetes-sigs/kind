@@ -18,6 +18,7 @@ limitations under the License.
 package cluster
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -49,7 +50,7 @@ func NewCommand() *cobra.Command {
 			return runE(flags, cmd, args)
 		},
 	}
-	cmd.Flags().StringVar(&flags.Name, "name", "1", "cluster context name")
+	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "cluster context name")
 	cmd.Flags().StringVar(&flags.Config, "config", "", "path to a kind config file")
 	cmd.Flags().StringVar(&flags.ImageName, "image", "", "node docker image to use for booting the cluster")
 	cmd.Flags().BoolVar(&flags.Retain, "retain", false, "retain nodes for debugging when cluster creation fails")
@@ -75,6 +76,15 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		return errors.New("aborting due to invalid configuration")
 	}
 
+	// Check if the cluster name already exists
+	known, err := cluster.IsKnown(flags.Name)
+	if err != nil {
+		return err
+	}
+	if known {
+		return errors.Errorf("a cluster with the name %q already exists", flags.Name)
+	}
+
 	// create a cluster context and create the cluster
 	ctx := cluster.NewContext(flags.Name)
 	if flags.ImageName != "" {
@@ -91,6 +101,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 			return errors.New("aborting due to invalid configuration")
 		}
 	}
+	fmt.Printf("Creating cluster %q ...\n", flags.Name)
 	if err = ctx.Create(cfg, flags.Retain, flags.Wait); err != nil {
 		return errors.Wrap(err, "failed to create cluster")
 	}

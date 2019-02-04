@@ -18,8 +18,6 @@ limitations under the License.
 package create
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	createcluster "sigs.k8s.io/kind/cmd/kind/create/cluster"
@@ -32,15 +30,7 @@ func NewCommand() *cobra.Command {
 		Use:   "create",
 		Short: "Creates one of [cluster]",
 		Long:  "Creates one of local Kubernetes cluster (cluster)",
-		RunE:  run,
 	}
 	cmd.AddCommand(createcluster.NewCommand())
 	return cmd
-}
-
-func run(cmd *cobra.Command, args []string) error {
-	fmt.Println("You likely want `kind create cluster`, please migrate!")
-	fmt.Println()
-	cmd.Usage()
-	return nil
 }
