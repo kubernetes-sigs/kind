@@ -72,7 +72,7 @@ RUN clean-install \
 # - update apt, install docker, cleanup
 # NOTE: 18.06 is officially supported by Kubernetes currently, so we pin to that.
 # https://kubernetes.io/docs/tasks/tools/install-kubeadm/
-ARG DOCKER_VERSION="18.06.*"
+ARG DOCKER_VERSION="18.09.*"
 # another temporary env, not a real argument. setting this to a non-zero value
 # silences this warning from apt-key:
 # "Warning: apt-key output should not be parsed (stdout is not a terminal)"
