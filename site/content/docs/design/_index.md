@@ -85,7 +85,7 @@ At this point users can test Kubernetes by using the exported kubeconfig.
 ### Cluster Deletion
 
 All "node" containers in the cluster are tagged with docker labels identifying
-the cluster by the chosen cluster name (default is "1"), to delete a cluster
+the cluster by the chosen cluster name (default is "kind"), to delete a cluster
 we can simply list and delete containers with this label.
 
 

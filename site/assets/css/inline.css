@@ -13,6 +13,11 @@ html {
   font-size: 100%;
   background-color: white;
   color: black;
+  font-family: -apple-system, BlinkMacSystemFont, “Roboto”, “Droid Sans”, “Helvetica Neue”, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+code, pre {
+  font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, Roboto Mono, Courier, monospace;
 }
 
 body {
@@ -34,7 +39,7 @@ body {
   clear: both;
   overflow-x: hidden;
   flex: 1 0 auto;
-  margin: 0 0.5em;
+  margin: 0 0.3em;
 }
 
 #content {
@@ -44,9 +49,33 @@ body {
 }
 
 pre {
+  background-color: #f3f4f4 !important;
   overflow-x: scroll;
+  border-radius: 5px;
+  padding: .5em;
+}
+
+code {
+  background-color: #f3f4f4;
+  border-radius: 3px;
+  padding: 0 .25em;
+}
+
+pre code {
+  background-color: transparent;
+  padding: 0;
 }
 
 #content img {
   max-width: 100%;
+}
+
+/* mobile */
+@media (max-width: 50em) {
+  pre {
+    font-size: 14px;
+  }
+  code {
+    font-size: 16px;
+  }
 }

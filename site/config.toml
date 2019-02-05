@@ -2,3 +2,7 @@ title = "kind"
 languageCode = "en-us"
 
 enableRobotsTXT = true
+
+# syntax highlighting options
+pygmentsCodeFences = true
+pygmentsStyle = "tango"
