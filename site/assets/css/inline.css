@@ -30,14 +30,23 @@ body {
 
 #wrapper {
   background-color: white;
-  min-width: 100%;
+  max-width: 100%;
   clear: both;
   overflow-x: hidden;
   flex: 1 0 auto;
+  margin: 0 0.5em;
 }
 
 #content {
   margin: 0 auto;
+  width: 100%;
   max-width: 50em;
 }
 
+pre {
+  overflow-x: scroll;
+}
+
+#content img {
+  max-width: 100%;
+}
