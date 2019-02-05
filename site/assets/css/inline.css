@@ -1,0 +1,43 @@
+html {
+  width: 100%;
+  font-size: 18px;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  text-rendering: optimizeLegibility !important;
+  -webkit-tap-highlight-color: transparent;
+  height: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  font-size: 100%;
+  background-color: white;
+  color: black;
+}
+
+body {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1.5;
+  min-height: 100%;
+  /* sticky footer */
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+}
+
+#wrapper {
+  background-color: white;
+  min-width: 100%;
+  clear: both;
+  overflow-x: hidden;
+  flex: 1 0 auto;
+}
+
+#content {
+  margin: 0 auto;
+  max-width: 50em;
+}
+

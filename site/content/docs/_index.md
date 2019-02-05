@@ -19,7 +19,7 @@ out.
 
 You man also be interested in the [roadmap].
 
-[roadmap]: ./roadmap.md
+[roadmap]: ./roadmap
 [design]: ./design/
 [user guide]: ./user/
 [dev guide]: ./devel/

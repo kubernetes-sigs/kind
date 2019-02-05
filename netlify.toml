@@ -1,0 +1,6 @@
+# netlify configuration
+[build]
+base = "site/"
+
+[build.environment]
+HUGO_VERSION = "0.53"
