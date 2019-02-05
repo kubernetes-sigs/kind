@@ -157,6 +157,10 @@ To specify a configuration file when creating a cluster, use the `--config`
 flag.
 For a sample kind configuration file see [kind-example-config][kind-example-config].
 
+The kind configuration object is outlined [here][godoc-config].
+It contains a list of nodes (`nodes`) that is composed of `Node` configuration objects.
+The `Node` configuration object is outlined [here][godoc-node].
+
 In particular, many users may be interested in multi-node clusters. A simple
 configuration for this can be acheived with the following config file contents:
 ```yaml
@@ -168,6 +172,37 @@ nodes:
 - role: worker
   replicas: 2
 ```
+
+kind also supports multiple control-plane and HA setups using a stacked etcd topology:
+```yaml
+# six node cluster with three control-plane and three worker nodes
+kind: Config
+apiVersion: kind.sigs.k8s.io/v1alpha2
+nodes:
+- role: control-plane
+  replicas: 3
+- role: worker
+  replicas: 3
+```
+
+Next to `role` and `replicas` you can also specify fields like `image` to be able to
+use a custom image per node:
+```yaml
+# a setup with custom control-plane and worker node images
+kind: Config
+apiVersion: kind.sigs.k8s.io/v1alpha2
+nodes:
+- role: control-plane
+  image: kindest/node:v1.13.2@sha256:e14edfa4950e009fe560499c9db6e89daae8bd18bcb372caca6d321a86c52cda
+- role: worker
+  image: kindest/node:v1.13.2@sha256:e14edfa4950e009fe560499c9db6e89daae8bd18bcb372caca6d321a86c52cda
+  replicas: 2
+```
+
+The `Node` object also allows you to patch the kubeadm config that the node uses by applying
+either strategic merge patches (`kubeadmConfigPatches`) or JSON6902 patches
+(`kubeadmConfigPatchesJson6902`).
+Examples of patching can be found in the [kind-example-config][kind-example-config].
 
 ### Exporting kind's Logs
 kind has the ability to export all kind related logs for you to explore.
@@ -214,3 +249,5 @@ kind, the Kubernetes cluster itself, etc.
 [kubectl]: https://kubernetes.io/docs/reference/kubectl/overview/
 [Docker resource lims]: https://docs.docker.com/docker-for-mac/#advanced
 [install docker]: https://docs.docker.com/install/
+[godoc-config]: https://godoc.org/sigs.k8s.io/kind/pkg/cluster/config#Config
+[godoc-node]: https://godoc.org/sigs.k8s.io/kind/pkg/cluster/config#Node
