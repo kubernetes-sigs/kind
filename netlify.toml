@@ -4,3 +4,7 @@ base = "site/"
 
 [build.environment]
 HUGO_VERSION = "0.53"
+
+[context.production.environment]
+# this controls our robots.txt
+HUGO_ENV = "production"

@@ -1,2 +1,4 @@
 title = "kind"
 languageCode = "en-us"
+
+enableRobotsTXT = true
