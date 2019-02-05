@@ -1,5 +1,7 @@
 # User Guide
 
+Checkout the [known issues guide][known issues] if you run into any trouble.
+
 ## Creating a Cluster
 
 Creating a Kubernetes cluster is as simple as:
@@ -22,17 +24,20 @@ reaches a ready status, you can use the `--wait` flag and specify a timeout.
 To use `--wait` you must specify the units of the time to wait. For example, to
 wait for 30 seconds, do `--wait 30s`, for 5 minutes do `--wait 5m`, etc.
 
-**Note**: If you are running kind on MacOS or Windows then it is recommended
-that you have at least 4GB of RAM and disk space (these are estimates for a
-single node kind cluster) dedicated to the virtual machine (VM) running the
-Docker engine otherwise the Kubernetes cluster might fail to start up.
+**Note**: If you are running `kind` on MacOS or Windows then it is recommended
+that you have at least 4GB of RAM and at least the same amount of disk space available
+(these are estimates for a single node kind cluster) dedicated to the virtual
+machine (VM) running the Docker engine otherwise the Kubernetes cluster might
+fail to start up.
 
 To change the resource limits for the Docker engine on Mac, you'll need to open the
-**Preferences** menu.  
+**Preferences** menu.
+
 <img src="./images/docker-pref-1.png"/>
 
 Now, go to the **Advanced** settings page, and change the
-settings there, see [changing Docker's resource limits][Docker resource lims].  
+settings there, see [changing Docker's resource limits][Docker resource lims].
+
 <img src="./images/docker-pref-2.png"/>
 
 You may also try removing any unused data left by the Docker engine - e.g.,
@@ -202,3 +207,4 @@ kind, the Kubernetes cluster itself, etc.
 [kindest/node]: https://hub.docker.com/r/kindest/node/
 [kubectl]: https://kubernetes.io/docs/reference/kubectl/overview/
 [Docker resource lims]: https://docs.docker.com/docker-for-mac/#advanced
+[known issues]: ./known-issues.md
