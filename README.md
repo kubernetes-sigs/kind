@@ -51,7 +51,7 @@ The maintainers of this project are reachable via:
 - [filing an issue] against this repo
 - The Kubernetes [SIG-Testing Mailing List]
 
-Current maintainers (approvers) are [@BenTheElder] and [@munnerz] - feel free to
+Current maintainers are [@BenTheElder] and [@munnerz] - feel free to
 reach out if you have any questions!
 
 Pull Requests are very welcome!  
@@ -71,12 +71,12 @@ See also: the Kubernetes [community page].
 
 Some other open source projects with slightly different but very overlapping use cases, features etc.
 
-- https://github.com/kubernetes-sigs/kubeadm-dind-cluster
+- https://github.com/bsycorp/kind
+- https://github.com/ubuntu/microk8s
 - https://github.com/kinvolk/kube-spawn
 - https://github.com/kubernetes/minikube
 - https://github.com/danderson/virtuakube
-- https://github.com/ubuntu/microk8s
-- https://github.com/bsycorp/kind
+- https://github.com/kubernetes-sigs/kubeadm-dind-cluster
 
 ### Code of conduct
 
