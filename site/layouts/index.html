@@ -1,6 +1,8 @@
 {{ partial "header.html" . }}
 <div id="wrapper">
 <!-- render the content as markdown, using a regex to add heading links-->
-<div id="content" style="text-align: center">{{ .Content | replaceRE "(<h[1-9] id=\"([^\"]+)\".+)(</h[1-9]+>)" `${1}<a href="#${2}" class="hanchor" ariaLabel="Anchor"> 🔗&#xFE0E;</a> ${3}` | safeHTML }}</div>
+<div id="content">
+<h1 style="text-align: center">🚧 This site is under construction 🚧</h1>  
+{{ .Content | replaceRE "(<h[1-9] id=\"([^\"]+)\".+)(</h[1-9]+>)" `${1}<a href="#${2}" class="hanchor" ariaLabel="Anchor"> 🔗&#xFE0E;</a> ${3}` | safeHTML }}</div>
 </div>
 {{ partial "footer.html" . }}
