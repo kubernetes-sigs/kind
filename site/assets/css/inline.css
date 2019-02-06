@@ -79,3 +79,15 @@ pre code {
     font-size: 16px;
   }
 }
+
+.hanchor { 
+  font-size: 100%;
+  visibility: hidden;
+  font-size: .5em;
+  color: blue;
+  vertical-align: middle;
+  text-decoration: none !important;
+}
+h1:hover a, h2:hover a, h3:hover a, h4:hover a { 
+  visibility: visible;
+}
