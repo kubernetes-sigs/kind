@@ -24,6 +24,7 @@ import (
 	"sigs.k8s.io/kind/pkg/util"
 
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 // DerivedConfig contains config-like data computed from pkg/cluster/config.Config
@@ -141,6 +142,16 @@ func Derive(c *config.Config) (*DerivedConfig, error) {
 		}
 	}
 
+	// Add a load balancer automatically if one does not exists already and if the number
+	// of control plane nodes is more than one
+	if d.ExternalLoadBalancer() == nil && len(d.ControlPlanes()) > 1 {
+		n := config.Node{
+			Role:  config.ExternalLoadBalancerRole,
+			Image: d.BootStrapControlPlane().Image, // should always return non-nil in this branch
+		}
+		log.Info("Automatically creating a load balancer node")
+		d.Add(&n)
+	}
 	return d, nil
 }
 
