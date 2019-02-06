@@ -32,6 +32,7 @@ import (
 
 type flagpole struct {
 	Name      string
+	Network   string
 	Config    string
 	ImageName string
 	Retain    bool
@@ -51,6 +52,7 @@ func NewCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "cluster context name")
+	cmd.Flags().StringVar(&flags.Network, "network", "", "network to use for cluster")
 	cmd.Flags().StringVar(&flags.Config, "config", "", "path to a kind config file")
 	cmd.Flags().StringVar(&flags.ImageName, "image", "", "node docker image to use for booting the cluster")
 	cmd.Flags().BoolVar(&flags.Retain, "retain", false, "retain nodes for debugging when cluster creation fails")
@@ -87,6 +89,9 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 
 	// create a cluster context and create the cluster
 	ctx := cluster.NewContext(flags.Name)
+	if flags.Network != "" {
+		ctx.SetNetwork(flags.Network)
+	}
 	if flags.ImageName != "" {
 		// Apply image override to all the Nodes defined in Config
 		// TODO(fabrizio pandini): this should be reconsidered when implementing

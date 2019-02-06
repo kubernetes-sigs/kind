@@ -48,18 +48,23 @@ func getPort() (int, error) {
 
 // CreateControlPlaneNode creates a contol-plane node
 // and gets ready for exposing the the API server
-func CreateControlPlaneNode(name, image, clusterLabel string) (node *Node, err error) {
+func CreateControlPlaneNode(name, image, network, clusterLabel string) (node *Node, err error) {
 	// gets a random host port for the API server
 	port, err := getPort()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get port for API server")
 	}
 
-	node, err = createNode(name, image, clusterLabel, config.ControlPlaneRole,
+	extraArgs := []string{
 		// publish selected port for the API server
 		"--expose", fmt.Sprintf("%d", port),
 		"-p", fmt.Sprintf("%d:%d", port, kubeadm.APIServerPort),
-	)
+	}
+	if network != "" {
+		extraArgs = append(extraArgs, "--network", network)
+	}
+
+	node, err = createNode(name, image, clusterLabel, config.ControlPlaneRole, extraArgs...)
 	if err != nil {
 		return node, err
 	}
@@ -72,18 +77,23 @@ func CreateControlPlaneNode(name, image, clusterLabel string) (node *Node, err e
 
 // CreateExternalLoadBalancerNode creates an external loab balancer node
 // and gets ready for exposing the the API server and the load balancer admin console
-func CreateExternalLoadBalancerNode(name, image, clusterLabel string) (node *Node, err error) {
+func CreateExternalLoadBalancerNode(name, image, network, clusterLabel string) (node *Node, err error) {
 	// gets a random host port for control-plane load balancer
 	port, err := getPort()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get port for control-plane load balancer")
 	}
 
-	node, err = createNode(name, image, clusterLabel, config.ExternalLoadBalancerRole,
+	extraArgs := []string{
 		// publish selected port for the control plane
 		"--expose", fmt.Sprintf("%d", port),
 		"-p", fmt.Sprintf("%d:%d", port, haproxy.ControlPlanePort),
-	)
+	}
+	if network != "" {
+		extraArgs = append(extraArgs, "--network", network)
+	}
+
+	node, err = createNode(name, image, clusterLabel, config.ExternalLoadBalancerRole, extraArgs...)
 	if err != nil {
 		return node, err
 	}
@@ -95,8 +105,12 @@ func CreateExternalLoadBalancerNode(name, image, clusterLabel string) (node *Nod
 }
 
 // CreateWorkerNode creates a worker node
-func CreateWorkerNode(name, image, clusterLabel string) (node *Node, err error) {
-	node, err = createNode(name, image, clusterLabel, config.WorkerRole)
+func CreateWorkerNode(name, image, network, clusterLabel string) (node *Node, err error) {
+	var extraArgs []string
+	if network != "" {
+		extraArgs = []string{"--network", network}
+	}
+	node, err = createNode(name, image, clusterLabel, config.WorkerRole, extraArgs...)
 	if err != nil {
 		return node, err
 	}

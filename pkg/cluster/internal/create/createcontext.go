@@ -126,11 +126,11 @@ func (cc *Context) ProvisionNodes() (nodeList map[string]*nodes.Node, err error)
 
 		switch configNode.Role {
 		case config.ExternalLoadBalancerRole:
-			node, err = nodes.CreateExternalLoadBalancerNode(name, configNode.Image, cc.ClusterLabel())
+			node, err = nodes.CreateExternalLoadBalancerNode(name, configNode.Image, cc.Network(), cc.ClusterLabel())
 		case config.ControlPlaneRole:
-			node, err = nodes.CreateControlPlaneNode(name, configNode.Image, cc.ClusterLabel())
+			node, err = nodes.CreateControlPlaneNode(name, configNode.Image, cc.Network(), cc.ClusterLabel())
 		case config.WorkerRole:
-			node, err = nodes.CreateWorkerNode(name, configNode.Image, cc.ClusterLabel())
+			node, err = nodes.CreateWorkerNode(name, configNode.Image, cc.Network(), cc.ClusterLabel())
 		}
 		if err != nil {
 			return nodeList, err

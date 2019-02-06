@@ -29,7 +29,8 @@ import (
 // cluster metadata
 // See: NewClusterMeta
 type ClusterMeta struct {
-	name string
+	name    string
+	network string
 }
 
 // NewClusterMeta returns a new cluster meta
@@ -42,6 +43,14 @@ func NewClusterMeta(name string) *ClusterMeta {
 // Name returns the cluster's name
 func (c *ClusterMeta) Name() string {
 	return c.name
+}
+
+func (c *ClusterMeta) Network() string {
+	return c.network
+}
+
+func (c *ClusterMeta) SetNetwork(network string) {
+	c.network = network
 }
 
 // KubeConfigPath returns the path to where the Kubeconfig would be placed
