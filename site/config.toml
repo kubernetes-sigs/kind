@@ -3,6 +3,8 @@ languageCode = "en-us"
 
 enableRobotsTXT = true
 
+enableGitInfo = true
+
 # syntax highlighting options
 pygmentsCodeFences = true
 pygmentsStyle = "tango"

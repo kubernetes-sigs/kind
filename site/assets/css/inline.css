@@ -42,7 +42,7 @@ body {
   margin: 0 0.3em;
 }
 
-#content {
+#content, .footer {
   margin: 0 auto;
   width: 100%;
   max-width: 50em;
@@ -90,4 +90,10 @@ pre code {
 }
 h1:hover a, h2:hover a, h3:hover a, h4:hover a { 
   visibility: visible;
+}
+
+.footer { text-align: center; }
+.footer>* { 
+  font-size: .6em;
+  line-height: 1;
 }
