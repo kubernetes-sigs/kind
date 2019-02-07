@@ -54,12 +54,16 @@ const DefaultName = "kind"
 
 // NewContext returns a new cluster management context
 // if name is "" the default name will be used
-func NewContext(name string) *Context {
+func NewContext(name string, options ...Option) *Context {
 	if name == "" {
 		name = DefaultName
 	}
+	var c contextConfig
+	for _, opt := range options {
+		opt(&c)
+	}
 	return &Context{
-		ClusterMeta: meta.NewClusterMeta(name),
+		ClusterMeta: meta.NewClusterMeta(name, c.network),
 	}
 }
 
@@ -206,4 +210,18 @@ func (c *Context) CollectLogs(dir string) error {
 		return err
 	}
 	return logs.Collect(nodes, dir)
+}
+
+type contextConfig struct {
+	network string
+}
+
+// Option allows optional configuration of the cluster context.
+type Option func(*contextConfig)
+
+// WithNetwork sets the container network to be used when creating a cluster.
+func WithNetwork(network string) func(*contextConfig) {
+	return func(c *contextConfig) {
+		c.network = network
+	}
 }

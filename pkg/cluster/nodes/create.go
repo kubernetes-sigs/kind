@@ -63,7 +63,6 @@ func CreateControlPlaneNode(name, image, network, clusterLabel string) (node *No
 	if network != "" {
 		extraArgs = append(extraArgs, "--network", network)
 	}
-
 	node, err = createNode(name, image, clusterLabel, config.ControlPlaneRole, extraArgs...)
 	if err != nil {
 		return node, err
@@ -92,7 +91,6 @@ func CreateExternalLoadBalancerNode(name, image, network, clusterLabel string) (
 	if network != "" {
 		extraArgs = append(extraArgs, "--network", network)
 	}
-
 	node, err = createNode(name, image, clusterLabel, config.ExternalLoadBalancerRole, extraArgs...)
 	if err != nil {
 		return node, err
