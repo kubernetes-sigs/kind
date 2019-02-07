@@ -76,6 +76,7 @@ Some other open source projects with slightly different but very overlapping use
 - https://github.com/kubernetes/minikube
 - https://github.com/danderson/virtuakube
 - https://github.com/ubuntu/microk8s
+- https://github.com/bsycorp/kind
 
 ### Code of conduct
 
