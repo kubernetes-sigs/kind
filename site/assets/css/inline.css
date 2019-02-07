@@ -84,7 +84,6 @@ pre code {
   font-size: 100%;
   visibility: hidden;
   font-size: .5em;
-  color: blue;
   vertical-align: middle;
   text-decoration: none !important;
 }
@@ -96,4 +95,8 @@ h1:hover a, h2:hover a, h3:hover a, h4:hover a {
 .footer>* { 
   font-size: .6em;
   line-height: 1;
+}
+
+a {
+  color: #1f28f0;
 }
