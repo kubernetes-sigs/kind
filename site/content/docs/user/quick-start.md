@@ -1,4 +1,8 @@
-# User Guide
+# Quick Start
+
+This guide covers getting started with the `kind` command.
+
+**If you are having problems please see the [known issues] guide.**
 
 ## Installation
 
@@ -200,8 +204,9 @@ The structure of the logs will look more or less like this:
 The logs contain information about the Docker host, the containers running 
 kind, the Kubernetes cluster itself, etc.
 
-[node image]: ../design/node-image.md
-[base image]: ../design/base-image.md
+[known issues]: ../known-issues
+[node image]: ../design/node-image
+[base image]: ../design/base-image
 [kind-example-config]: ./kind-example-config.yaml
 [pkg/build/base/sources]: ./../../pkg/build/base/sources
 [kubernetes]: https://github.com/kubernetes/kubernetes
