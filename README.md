@@ -5,6 +5,7 @@
 </a> <a href="https://godoc.org/sigs.k8s.io/kind"><img src="https://godoc.org/sigs.k8s.io/kind?status.svg"></a> <a href="https://goreportcard.com/report/sigs.k8s.io/kind"><img alt="Go Report Card" src="https://goreportcard.com/badge/sigs.k8s.io/kind" /></a></p>
 
 # `kind` - `k`ubernetes `in` `d`ocker
+### [View the documentation](https://kindocs.netlify.com)
 
 `kind` is a tool for running local Kubernetes clusters using Docker container "nodes".  
 `kind` is primarily designed for testing Kubernetes 1.11+, initially targeting the [conformance tests].
