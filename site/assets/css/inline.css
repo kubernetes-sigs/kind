@@ -39,7 +39,7 @@ body {
   clear: both;
   overflow-x: hidden;
   flex: 1 0 auto;
-  margin: 0 0.3em;
+  margin: 0;
   margin-left: 240px;
 }
 .sidebar-collapsed #wrapper {
@@ -49,7 +49,8 @@ body {
 #content, .footer {
   padding-left: .2em;
   margin: 0 auto;
-  width: 100%;
+  padding: 4px 0;
+  width: calc(100% - 8px);
   max-width: 50em;
 }
 
