@@ -101,6 +101,7 @@ body {
   flex-direction: column;
   width: 240px;
   border-right: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: #fafafa;
 }
 .sidebar-collapsed #sidebar {
   display: none;
