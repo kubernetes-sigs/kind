@@ -31,7 +31,8 @@ function getWidth() {
 document.addEventListener("DOMContentLoaded", function () {
     // note: the default state of the page on load is collapsed
     var manualCollapsed = window.localStorage.getItem('sidebar-collapsed');
-    if (manualCollapsed == 'false' || (manualCollapsed == null && getWidth() > 900)) {
+    var width = getWidth();
+    if (width > 900 && (manualCollapsed == 'false' || manualCollapsed == null)) {
         showSideBar();
     }
 });
