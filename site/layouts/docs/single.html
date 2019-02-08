@@ -1,5 +1,6 @@
 {{ partial "header.html" . }}
-<div id="wrapper">
+{{ partial "sidebar.html" . }}
+<div id="wrapper">{{ partial "navbar.html" . }}
 <!-- render the content as markdown, using a regex to add heading links-->
 <div id="content">{{ partial "fancymarkdown.html" .Content }}</div>
 </div>

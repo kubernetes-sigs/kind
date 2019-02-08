@@ -1,7 +1,4 @@
-# Overview
-`kind` is a command-line application for building Kubernetes clusters using
-Docker containers as "nodes."
-
+# Project Structure
 
 ## CLI
 ```

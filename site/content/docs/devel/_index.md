@@ -1,7 +1,8 @@
-# Overview
+# Developer Guide
 
-`kind` is a command-line application for building Kubernetes clusters using
-Docker containers as "nodes."
+## Overview
+
+This page covers some of how to develop `kind` itself.
 
 The [project structure] and [design] may be helpful to review.
 

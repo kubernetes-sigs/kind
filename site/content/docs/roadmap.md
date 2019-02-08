@@ -1,4 +1,4 @@
-# kind RoadMap 🗺️
+# RoadMap 🗺️
 
 New year, new roadmap 🎉  
 This document outlines some goals, non-goals, and future aspirations for kind
