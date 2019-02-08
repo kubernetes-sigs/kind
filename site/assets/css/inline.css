@@ -80,6 +80,7 @@ body {
 #navbar-title>a {
   font-weight: bold;
   font-size: 20px;
+  padding: 0 4px;
 }
 #navbar-title>a, #commit>a{
   text-decoration: none;
@@ -88,7 +89,9 @@ body {
 #sidebar-toggle {
   color: black;
   cursor: pointer;
-  padding-left: 8px;
+  padding: 2px 8px;
+  padding-bottom: 0;
+  user-select: none;
 }
 #commit {
   padding-right: 8px;
@@ -173,5 +176,14 @@ h1:hover a, h2:hover a, h3:hover a, h4:hover a {
   }
   code {
     font-size: 16px;
+  }
+  #wrapper {
+    margin-left: 0;
+  }
+  #wrapper #navbar {
+    margin-left: 241px;
+  }
+  .sidebar-collapsed #wrapper #navbar {
+    margin-left: 0;
   }
 }
