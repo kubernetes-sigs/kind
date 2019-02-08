@@ -101,6 +101,7 @@ body {
 }
 #sidebar-logo {
   padding: 16px 16px;
+  padding-bottom: 10px;
 }
 #sidebar-title {
   display: none;

@@ -66,11 +66,11 @@ sectionPagesMenu = "main"
     weight = 5
   [[menu.main]]
     parent = "devel"
-    identifier = "devel-overview"
-    name = "overview"
-    title = "overview"
-    url = "/docs/devel/"
-    weight = 5
+    identifier = "devel-getting-started"
+    name = "getting started"
+    title = "getting started"
+    url = "/docs/devel/getting-started/"
+    weight = 1
   [[menu.main]]
     parent = "devel"
     identifier = "project-structure"
