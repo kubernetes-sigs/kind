@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="en">
+{{ partial "header.html" . }}
+<body ontouchstart="return true" class="sidebar-collapsed">
+{{ partial "sidebar.html" . }}
+<div id="wrapper">{{ partial "navbar.html" . }}
+<!-- render the content as markdown, using a regex to add heading links-->
+<div id="content">{{ partial "fancymarkdown.html" .Content }}</div>
+{{ partial "footer.html" . }}
+</div>
+</body>
+</html>

@@ -1,7 +1,8 @@
 # Design
 
-This is the root design documentation for `kind`. See also the project
-[README.md][README.md].
+This is the root design documentation for `kind`.  
+**NOTE**: Some of this is out of date. In general the documentation is currently
+being revamped.
 
 ## Overview
 
@@ -85,11 +86,9 @@ At this point users can test Kubernetes by using the exported kubeconfig.
 ### Cluster Deletion
 
 All "node" containers in the cluster are tagged with docker labels identifying
-the cluster by the chosen cluster name (default is "1"), to delete a cluster
+the cluster by the chosen cluster name (default is "kind"), to delete a cluster
 we can simply list and delete containers with this label.
 
-
-[README.md]: ./../../README.md 
 [kubetest]: https://github.com/kubernetes/test-infra/tree/master/kubetest
 [original proposal]: https://docs.google.com/document/d/1VL0shYfKl7goy5Zj4Rghpixbye4M8zs_N2gWoQTSKh0/
 [q-lee]: https://github.com/q-lee

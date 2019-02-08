@@ -1,0 +1,79 @@
+title = "kind"
+languageCode = "en-us"
+
+# we use this to disable indexing for the non-production build
+enableRobotsTXT = true
+
+# this allows us to show the source commit in the footer
+enableGitInfo = true
+
+# syntax highlighting options
+pygmentsCodeFences = true
+pygmentsStyle = "tango"
+
+# enable hugo's menu system for the site, name the primary menu
+sectionPagesMenu = "main"
+# menu entries
+[menu]
+  [[menu.main]]
+    identifier = "home"
+    name = "home"
+    title = "home"
+    url = "/"
+    weight = 1
+  [[menu.main]]
+    identifier = "user"
+    name = "user guide"
+    title = "user guide"
+    url = "/docs/user/"
+    weight = 2
+  [[menu.main]]
+    identifier = "roadmap"
+    name = "roadmap"
+    title = "roadmap"
+    url = "/docs/roadmap/"
+    weight = 3
+  [[menu.main]]
+    identifier = "design"
+    name = "design"
+    title = "design"
+    url = "/docs/design/"
+    weight = 4
+  [[menu.main]]
+    parent = "design"
+    identifier = "design-overview"
+    name = "overview"
+    title = "overview"
+    url = "/docs/design/"
+    weight = 1
+  [[menu.main]]
+    parent = "design"
+    identifier = "base-image"
+    name = "base image"
+    title = "base image"
+    url = "/docs/design/base-image/"
+  [[menu.main]]
+    parent = "design"
+    identifier = "node-image"
+    name = "node image"
+    title = "node image"
+    url = "/docs/design/node-image/"
+  [[menu.main]]
+    identifier = "devel"
+    name = "developer guide"
+    title = "developer guide"
+    url = "/docs/devel/"
+    weight = 5
+  [[menu.main]]
+    parent = "devel"
+    identifier = "devel-getting-started"
+    name = "getting started"
+    title = "getting started"
+    url = "/docs/devel/getting-started/"
+    weight = 1
+  [[menu.main]]
+    parent = "devel"
+    identifier = "project-structure"
+    name = "project structure"
+    title = "project structure"
+    url = "/docs/devel/project-structure/"

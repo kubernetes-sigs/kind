@@ -1,4 +1,4 @@
-# `kind` RoadMap 🗺️
+# RoadMap 🗺️
 
 New year, new roadmap 🎉  
 This document outlines some goals, non-goals, and future aspirations for kind
@@ -12,7 +12,7 @@ stability by the end of Q1 2019 / the Kubernetes 1.14 release cycle
 - Support offline / air-gapped clusters
   - pre-loaded / offline CNI - [#200]
 - Improve Windows support
-  - add Windows binaries to releases - [#155]
+  - add Windows binaries to releases - [#155] - DONE ✔
   - improve instructions for KUBECONFIG in particular
 - Improve documentation
   - expand examples of using kind
@@ -37,13 +37,15 @@ stability by the end of Q1 2019 / the Kubernetes 1.14 release cycle
 and Phippy is awesome ❤️
 
 Longer Term goals include:
+
 - Enabling a suitable local storage provider for testing applications that need
 persistent storage
 - Improving "kind as a library"
 
 Misc:
- - setup a regular Zoom meeting for the project
- - achieve certified Kubernetes conformance
+
+- setup a regular Zoom meeting for the project - DONE ✔
+- achieve certified Kubernetes conformance - DONE ✔
 
 Other goals / tasks not listed here can be found both in [the 1.0 project] and 
 more generally triaged for rough-priority in the [GitHub issues].

@@ -1,11 +1,17 @@
 # User Guide
 
+## Installation
+
+You can install `kind` with `go get sigs.k8s.io/kind`. This will put `kind` in
+`$(go env GOPATH)/bin`. You may need to add that directory to your `$PATH` as
+shown [here](https://golang.org/doc/code.html#GOPATH) if you encounter the error
+`kind: command not found` after installation.
+
+To use `kind`, you will also need to [install docker].  
+
 ## Creating a Cluster
 
-Creating a Kubernetes cluster is as simple as:
-```
-$ kind create cluster
-```
+Creating a Kubernetes cluster is as simple as `kind create cluster`.
 
 This will bootstrap a Kubernetes cluster using a pre-built 
 [node image][node image] - you can find it on docker hub
@@ -57,24 +63,24 @@ command.
 
 For example, let's say you create two clusters:
 ```
-$ kind create cluster # Default cluster context name is `kind`.
+kind create cluster # Default cluster context name is `kind`.
 ...
-$ kind create cluster --name kind-2
+kind create cluster --name kind-2
 ```
 
 When you list your kind clusters, you will see something like the following:
 ```
-$ kind get clusters
+kind get clusters
 kind
 kind-2
 ```
 
 Both of these clusters will have a kubeconfig file to go along with them:
 ```
-$ kind get kubeconfig-path
+kind get kubeconfig-path
 /home/user/.kube/kind-config-kind
 
-$ kind get kubeconfig-path --name kind-2
+kind get kubeconfig-path --name kind-2
 /home/user/.kube/kind-config-kind-2
 ```
 
@@ -83,7 +89,7 @@ $ kind get kubeconfig-path --name kind-2
 If you created a cluster with `kind create cluster` then deleting is equally
 simple:
 ```
-$ kind delete cluster
+kind delete cluster
 ```
 
 If the flag `--name` is not specified, kind will use the default cluster
@@ -107,7 +113,7 @@ To specify the build type use the flag `--type`.
 kind will default to using the build type `docker` if none is specified.
 
 ```
-$ kind build node-image --type apt
+kind build node-image --type apt
 ```
 
 Similarly as for the base-image command, you can specify the name and tag of
@@ -122,7 +128,7 @@ the flag `--base-image` to specify the name and tag you used.
 ### Building The Base Image
 To build the `base-image` we use the `build` command:
 ```
-$ kind build base-image
+kind build base-image
 ```
 
 If you want to specify the path to the base image source files you can use the
@@ -135,7 +141,7 @@ By default, the base image will be tagged as `kindest/base:latest`.
 If you want to change this, you can use the `--image` flag.
 
 ```
-$ kind build base-image --image base:v0.1.0
+kind build base-image --image base:v0.1.0
 ```
 
 
@@ -150,7 +156,7 @@ For a sample kind configuration file see [kind-example-config][kind-example-conf
 In particular, many users may be interested in multi-node clusters. A simple
 configuration for this can be acheived with the following config file contents:
 ```yaml
-# three node cluster config, with two worker nodes
+# three node (two workers) cluster config
 kind: Config
 apiVersion: kind.sigs.k8s.io/v1alpha2
 nodes:
@@ -163,7 +169,7 @@ nodes:
 kind has the ability to export all kind related logs for you to explore.
 To export all logs from the default cluster (context name `kind`):
 ```
-$ kind export logs
+kind export logs
 Exported logs to: /tmp/396758314
 ```
 
@@ -174,7 +180,7 @@ As you can see, kind placed all the logs for the cluster `kind` in a
 temporary directory. If you want to specify a location then simply add the path
 to the directory after the command:
 ```
-$ kind export logs ./somedir  
+kind export logs ./somedir  
 Exported logs to: ./somedir
 ```
 
@@ -202,3 +208,4 @@ kind, the Kubernetes cluster itself, etc.
 [kindest/node]: https://hub.docker.com/r/kindest/node/
 [kubectl]: https://kubernetes.io/docs/reference/kubectl/overview/
 [Docker resource lims]: https://docs.docker.com/docker-for-mac/#advanced
+[install docker]: https://docs.docker.com/install/
