@@ -67,7 +67,7 @@ See also: the Kubernetes [community page].
 
 ## Alternatives
 
-Some other open source projects with slightly different but very overlapping use cases, features etc.
+Some other open source projects with slightly different but overlapping use cases, features etc.
 
 - https://github.com/bsycorp/kind
 - https://github.com/ubuntu/microk8s
