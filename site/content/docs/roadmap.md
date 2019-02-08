@@ -1,4 +1,4 @@
-# RoadMap 🗺️
+# Roadmap 🗺️
 
 New year, new roadmap 🎉  
 This document outlines some goals, non-goals, and future aspirations for kind
@@ -6,22 +6,23 @@ as a project.
 
 High level goals for kind include:
 
-- Reach [1.0] status / 
+- [ ] Reach [1.0] status / 
 stability by the end of Q1 2019 / the Kubernetes 1.14 release cycle
-- Support multi-node clusters - [#117] - DONE ✔
-- Support offline / air-gapped clusters
-  - pre-loaded / offline CNI - [#200]
-- Improve Windows support
-  - add Windows binaries to releases - [#155] - DONE ✔
-  - improve instructions for KUBECONFIG in particular
-- Improve documentation
-  - expand examples of using kind
-  - cover known issues, debugging, work-arounds, etc.
-  - create a GitHub-pages landing page with docs
-- Improving logging and debuggability
-  - enable audit-logging
-- Support non-amd64 architectures (namely ARM) - [#166]
-- Automated publishing of Kubernetes release based kind "node" images - [#197]
+- [x] Support multi-node clusters - [#117]
+- [ ] Support offline / air-gapped clusters
+  - [ ] pre-loaded / offline CNI - [#200]
+- [ ] Support mounting host directores - [#62]
+- [ ] Improve Windows support
+  - [x] add Windows binaries to releases - [#155]
+  - [ ] improve instructions for KUBECONFIG in particular
+- [ ] Improve documentation - In Progress ...
+  - [ ] expand examples of using kind
+  - [ ] cover known issues, debugging, work-arounds, etc.
+  - [ ] create a GitHub-pages landing page with docs
+- [ ] Improving logging and debuggability
+  - [ ] enable audit-logging
+- [ ] Support non-amd64 architectures (namely ARM) - [#166]
+- [ ] Automated publishing of Kubernetes release based kind "node" images - [#197]
 
 **Non**-Goals include:
 
@@ -44,8 +45,8 @@ persistent storage
 
 Misc:
 
-- setup a regular Zoom meeting for the project - DONE ✔
-- achieve certified Kubernetes conformance - DONE ✔
+- [x] setup a regular Zoom meeting for the project [#244]
+- [x] achieve certified Kubernetes conformance [#245]
 
 Other goals / tasks not listed here can be found both in [the 1.0 project] and 
 more generally triaged for rough-priority in the [GitHub issues].
@@ -53,10 +54,13 @@ more generally triaged for rough-priority in the [GitHub issues].
 [1.0]: https://github.com/kubernetes-sigs/kind/projects/1
 [the 1.0 project]: https://github.com/kubernetes-sigs/kind/projects/1
 [GitHub issues]: https://github.com/kubernetes-sigs/kind/issues
+[#62]: https://github.com/kubernetes-sigs/kind/issues/62
 [#117]: https://github.com/kubernetes-sigs/kind/issues/117
 [#166]: https://github.com/kubernetes-sigs/kind/issues/166
 [#155]: https://github.com/kubernetes-sigs/kind/issues/155
 [#197]: https://github.com/kubernetes-sigs/kind/issues/197
 [#200]: https://github.com/kubernetes-sigs/kind/issues/200
+[#244]: https://github.com/kubernetes-sigs/kind/issues/244
+[#245]: https://github.com/kubernetes-sigs/kind/issues/245
 
 [Phippy]: https://phippy.io/
