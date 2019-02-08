@@ -54,7 +54,12 @@ body {
   max-width: 50em;
 }
 
-#content { padding-top: 1em; }
+#content { 
+  /* clear navbar */
+  padding-top: 1em;
+  /* push down footer */
+  min-height: calc(100vh - 4em);
+}
 
 #navbar {
   position: fixed;
