@@ -1,6 +1,6 @@
 {{ partial "header.html" . }}
-<div id="wrapper" class="docs">
+<div id="wrapper">
 <!-- render the content as markdown, using a regex to add heading links-->
-<div id="content" class="docs">{{ .Content | replaceRE "(<h[1-9] id=\"([^\"]+)\".+)(</h[1-9]+>)" `${1}<a href="#${2}" class="hanchor" ariaLabel="Anchor"> 🔗&#xFE0E;</a> ${3}` | safeHTML }}</div>
+<div id="content">{{ partial "fancymarkdown.html" .Content }}</div>
 </div>
 {{ partial "footer.html" . }}
