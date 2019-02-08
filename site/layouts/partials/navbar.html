@@ -1,3 +1,3 @@
 <div id="navbar">
-  <span id="sidebar-toggle" onclick="toggleSidebar()">&#9776;</span><span id="navbar-title"><a href="/">kind</a></span>{{if .GitInfo}}<span id="commit"><a href="https://github.com/kubernetes-sigs/kind/commit/{{.GitInfo.Hash}}">{{.GitInfo.AbbreviatedHash}}</a></span>{{end}}
+  <span id="sidebar-toggle" onclick="toggleSidebar()">&#9776;</span><span id="navbar-title"><a href="/">kind</a></span><span id="commit">{{if .GitInfo}}<a href="https://github.com/kubernetes-sigs/kind/commit/{{.GitInfo.Hash}}">{{.GitInfo.AbbreviatedHash}}</a>{{else}}<a href="#">Uknown Commit</a>{{end}}</span>
 </div>
