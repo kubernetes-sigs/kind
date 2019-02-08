@@ -16,64 +16,77 @@ sectionPagesMenu = "main"
 # menu entries
 [menu]
   [[menu.main]]
-    identifier = "home"
-    name = "home"
-    title = "home"
+    identifier = "ome"
+    name = "Home"
+    title = "Home"
     url = "/"
     weight = 1
   [[menu.main]]
     identifier = "user"
-    name = "user guide"
-    title = "user guide"
-    url = "/docs/user/"
+    name = "User Guide"
+    title = "User Guide"
+    weight = 2
+   [[menu.main]]
+    parent = "user"
+    identifier = "user-quick-start"
+    name = "Quick Start"
+    title = "Quick Start"
+    url = "/docs/user/quick-start"
+    weight = 1
+  [[menu.main]]
+    parent = "user"
+    identifier = "user-known-issues"
+    name = "Known Issues"
+    title = "Known Issues"
+    url = "/docs/user/known-issues"
     weight = 2
   [[menu.main]]
     identifier = "roadmap"
-    name = "roadmap"
-    title = "roadmap"
+    name = "Roadmap"
+    title = "Roadmap"
     url = "/docs/roadmap/"
-    weight = 3
+    weight = 4
   [[menu.main]]
     identifier = "design"
-    name = "design"
-    title = "design"
+    name = "Design"
+    title = "Design"
     url = "/docs/design/"
-    weight = 4
+    weight = 5
   [[menu.main]]
     parent = "design"
     identifier = "design-overview"
-    name = "overview"
-    title = "overview"
+    name = "Overview"
+    title = "Overview"
     url = "/docs/design/"
     weight = 1
   [[menu.main]]
     parent = "design"
     identifier = "base-image"
-    name = "base image"
-    title = "base image"
+    name = "Base Image"
+    title = "Base Image"
     url = "/docs/design/base-image/"
   [[menu.main]]
     parent = "design"
     identifier = "node-image"
-    name = "node image"
-    title = "node image"
+    name = "Node Image"
+    title = "Node Image"
     url = "/docs/design/node-image/"
   [[menu.main]]
     identifier = "devel"
-    name = "developer guide"
-    title = "developer guide"
+    name = "Developer Guide"
+    title = "Developer Guide"
     url = "/docs/devel/"
-    weight = 5
+    weight = 6
   [[menu.main]]
     parent = "devel"
     identifier = "devel-getting-started"
-    name = "getting started"
-    title = "getting started"
+    name = "Getting Started"
+    title = "Getting Started"
     url = "/docs/devel/getting-started/"
     weight = 1
   [[menu.main]]
     parent = "devel"
     identifier = "project-structure"
-    name = "project structure"
-    title = "project structure"
+    name = "Project Structure"
+    title = "Project Structure"
     url = "/docs/devel/project-structure/"
