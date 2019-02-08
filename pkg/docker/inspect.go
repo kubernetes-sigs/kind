@@ -17,16 +17,13 @@ limitations under the License.
 package docker
 
 import (
-	"fmt"
-
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
 // Inspect return low-level information on containers
 func Inspect(containerNameOrID, format string) ([]string, error) {
 	cmd := exec.Command("docker", "inspect",
-		"-f", // format
-		fmt.Sprintf("'%s'", format),
+		"-f", format,
 		containerNameOrID, // ... against the "node" container
 	)
 

@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -228,7 +227,7 @@ func (n *Node) IP() (ip string, err error) {
 	if len(lines) != 1 {
 		return "", errors.Errorf("file should only be one line, got %d lines", len(lines))
 	}
-	n.nodeCache.ip = strings.Trim(lines[0], "'")
+	n.nodeCache.ip = lines[0]
 	return n.nodeCache.ip, nil
 }
 
@@ -253,7 +252,7 @@ func (n *Node) Ports(containerPort int) (hostPort int, err error) {
 		n.nodeCache.ports = map[int]int{}
 	}
 
-	n.nodeCache.ports[containerPort], err = strconv.Atoi(strings.Trim(lines[0], "'"))
+	n.nodeCache.ports[containerPort], err = strconv.Atoi(lines[0])
 	if err != nil {
 		return -1, errors.Wrap(err, "failed to get file")
 	}
