@@ -42,6 +42,12 @@ type Node struct {
 	// Role defines the role of the nodw in the in the Kubernetes cluster managed by `kind`
 	// Defaults to "control-plane"
 	Role NodeRole `json:"role,omitempty"`
+	// CNI is the name of the desired network plugin
+	CNI string `json:"cni,omitempty"`
+	// CNIConfigFIleName is the name of the config file that will be placed in /etc/cni/net.d
+	CNIConfigFileName string `json:"cniConfigFileName,omitempty"`
+	// CNIConfig is the actual content inside the cni config file.
+	CNIConfig []string `json:"cniConfig,omitempty"`
 	// Image is the node image to use when running the cluster
 	// TODO(bentheelder): split this into image and tag?
 	Image string `json:"image,omitempty"`

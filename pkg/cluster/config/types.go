@@ -43,6 +43,12 @@ type Node struct {
 	// Role defines the role of the nodw in the in the Kubernetes cluster managed by `kind`
 	// Defaults to "control-plane"
 	Role NodeRole
+	// CNI is the name of the desired network plugin
+	CNI string
+	// CNIConfigFIleName is the name of the config file that will be placed in /etc/cni/net.d
+	CNIConfigFileName string
+	// CNIConfig is the actual content inside the cni config file.
+	CNIConfig []string
 	// Image is the node image to use when running the cluster
 	// TODO(bentheelder): split this into image and tag?
 	Image string
@@ -74,4 +80,6 @@ const (
 	// WARNING: this node type is not yet implemented!
 	// Please note that `kind` nodes hosting external load balancer are not kubernetes nodes
 	ExternalLoadBalancerRole NodeRole = "external-load-balancer"
+	// Default path where the CNI configuration(s) are placed.
+	CNIConfigPath = "/etc/cni/net.d/"
 )

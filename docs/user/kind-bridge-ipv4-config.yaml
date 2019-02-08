@@ -1,0 +1,41 @@
+# this config file contains all config fields with comments
+kind: Config
+apiVersion: kind.sigs.k8s.io/v1alpha2
+# 1 control plane node and 3 workers
+nodes:
+# the control plane node config
+- role: control-plane
+  cni: cncf-containernetworking-plugin
+  cniConfigFileName: 100-bridge.conf
+  cniConfig:
+  - |
+    {
+        "cniVersion": "0.3.0",
+        "name": "mynet",
+        "type": "bridge",
+        "bridge": "cni0",
+        "isDefaultGateway": true,
+        "ipMasq": true,
+        "ipam": {
+            "type": "host-local",
+            "subnet": "10.0.0.0/16"
+        }
+    }
+  # patch the generated kubeadm config with some extra settings
+  kubeadmConfigPatches:
+  - |
+    apiVersion: kubeadm.k8s.io/v1beta1
+    kind: ClusterConfiguration
+    networking:
+      serviceSubnet: 192.168.0.0/16
+      podSubnet: 10.0.0.0/10
+  # patch it further using a JSON 6902 patch
+  kubeadmConfigPatchesJson6902:
+  - group: kubeadm.k8s.io
+    version: v1beta1
+    kind: ClusterConfiguration
+    patch: |
+      - op: add
+        path: /apiServer/certSANs/-
+        value: my-hostname
+

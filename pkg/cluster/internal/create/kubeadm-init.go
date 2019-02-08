@@ -17,6 +17,8 @@ limitations under the License.
 package create
 
 import (
+	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 
@@ -24,6 +26,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 )
@@ -97,11 +100,35 @@ func runKubeadmInit(ec *execContext, configNode *NodeReplica) error {
 
 	// install the CNI network plugin
 	// TODO(bentheelder): support other overlay networks
-	if err := node.Command(
-		"/bin/sh", "-c",
-		`kubectl apply --kubeconfig=/etc/kubernetes/admin.conf -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version --kubeconfig=/etc/kubernetes/admin.conf | base64 | tr -d '\n')"`,
-	).Run(); err != nil {
-		return errors.Wrap(err, "failed to apply overlay network")
+	if configNode.CNI != "" {
+		if configNode.CNI != "cncf-containernetworking-plugin" {
+			return errors.Errorf("invalid cni plugin specified %s", configNode.CNIConfigFileName)
+		} else if configNode.CNIConfigFileName == "" {
+			return errors.Errorf("no name provided for the CNI configuration file")
+		} else if len(configNode.CNIConfig) == 0 {
+			return errors.Errorf("no configuration provided for the CNI plugin")
+		} else {
+			// copy contents in CNIConfig to /etc/cni/net.d/
+			cniConfigPath, err := createCNIConfigFile(configNode.CNIConfig)
+			defer os.Remove(cniConfigPath)
+			if err != nil {
+				return errors.Wrap(err, "failed to create cni config")
+			}
+			if err := node.MkDirPath(config.CNIConfigPath); err != nil {
+				return errors.Wrap(err, "failed to create cni config directory path on node")
+			}
+			if err := node.CopyTo(cniConfigPath, config.CNIConfigPath+configNode.CNIConfigFileName); err != nil {
+				return errors.Wrap(err, "failed to copy cni config to node")
+			}
+		}
+	} else {
+		// keep the default as weave
+		if err := node.Command(
+			"/bin/sh", "-c",
+			`kubectl apply --kubeconfig=/etc/kubernetes/admin.conf -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version --kubeconfig=/etc/kubernetes/admin.conf | base64 | tr -d '\n')"`,
+		).Run(); err != nil {
+			return errors.Wrap(err, "failed to apply overlay network")
+		}
 	}
 
 	// if we are only provisioning one node, remove the master taint
@@ -139,4 +166,21 @@ func addDefaultStorageClass(controlPlane *nodes.Node) error {
 	)
 	cmd.SetStdin(in)
 	return cmd.Run()
+}
+
+func createCNIConfigFile(config []string) (path string, err error) {
+	f, err := ioutil.TempFile("", "")
+	if err != nil {
+		return "", errors.Wrap(err, "failed to create local file for cni config")
+	}
+	path = f.Name()
+	// write to the file
+	for _, l := range config {
+		_, err = f.WriteString(l)
+		if err != nil {
+			os.Remove(path)
+			return "", err
+		}
+	}
+	return path, nil
 }

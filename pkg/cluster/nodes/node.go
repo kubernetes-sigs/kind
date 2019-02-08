@@ -96,6 +96,10 @@ func (n *Node) CopyFrom(source, dest string) error {
 	return docker.CopyFrom(n.nameOrID, source, dest)
 }
 
+func (n *Node) MkDirPath(dirPath string) error {
+	return docker.MkDirPath(dirPath, n.nameOrID)
+}
+
 // WaitForDocker waits for Docker to be ready on the node
 // it returns true on success, and false on a timeout
 func (n *Node) WaitForDocker(until time.Time) bool {
