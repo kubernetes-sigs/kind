@@ -1,5 +1,14 @@
 # User Guide
 
+## Installation
+
+You can install `kind` with `go get sigs.k8s.io/kind`. This will put `kind` in
+`$(go env GOPATH)/bin`. You may need to add that directory to your `$PATH` as
+shown [here](https://golang.org/doc/code.html#GOPATH) if you encounter the error
+`kind: command not found` after installation.
+
+To use `kind`, you will also need to [install docker].  
+
 ## Creating a Cluster
 
 Creating a Kubernetes cluster is as simple as `kind create cluster`.
@@ -199,3 +208,4 @@ kind, the Kubernetes cluster itself, etc.
 [kindest/node]: https://hub.docker.com/r/kindest/node/
 [kubectl]: https://kubernetes.io/docs/reference/kubectl/overview/
 [Docker resource lims]: https://docs.docker.com/docker-for-mac/#advanced
+[install docker]: https://docs.docker.com/install/

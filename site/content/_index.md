@@ -21,22 +21,25 @@ If you have [go] and [docker] installed `go get sigs.k8s.io/kind && kind create 
 
 ## Installation and usage
 
+For more detailed instructions see [the user guide][user guide].
+
 You can install `kind` with `go get sigs.k8s.io/kind`. This will put `kind` in
 `$(go env GOPATH)/bin`. You may need to add that directory to your `$PATH` as
 shown [here](https://golang.org/doc/code.html#GOPATH) if you encounter the error
 `kind: command not found` after installation.
 
-To use `kind`, you will need to [install docker].  
+To use `kind`, you will also need to [install docker].  
 Once you have docker running you can create a cluster with `kind create cluster`  
 To delete your cluster use `kind delete cluster`
 
 <!--TODO(bentheelder): improve this part of the guide-->
 To create a cluster from Kubernetes source:
+
 - ensure that Kubernetes is cloned in `$(go env GOPATH)/src/k8s.io/kubernetes`
 - build a node image and create a cluster with `kind build node-image && kind create cluster --image kindest/node:latest`
 
 Multi-node clusters and other advanced features may be configured with a config
-file, for more usage see [the docs][user guide] or run `kind [command] --help`
+file, for more usage see [the user guide][user guide] or run `kind [command] --help`
 
 ## Community, discussion, contribution, and support
 
