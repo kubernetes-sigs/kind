@@ -129,7 +129,7 @@ a { color: #1f28f0; }
 /* code block styling */
 pre {
   background-color: #f3f4f4 !important;
-  overflow-x: scroll;
+  overflow-x: auto;
   border-radius: 5px;
   padding: .5em;
 }
