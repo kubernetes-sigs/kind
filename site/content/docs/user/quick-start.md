@@ -39,11 +39,11 @@ Docker engine otherwise the Kubernetes cluster might fail to start up.
 
 To change the resource limits for the Docker engine on Mac, you'll need to open the
 **Preferences** menu.  
-<img src="../images/docker-pref-1.png"/>
+<img src="/docs/user/images/docker-pref-1.png"/>
 
 Now, go to the **Advanced** settings page, and change the
 settings there, see [changing Docker's resource limits][Docker resource lims].  
-<img src="../images/docker-pref-2.png"/>
+<img src="/docs/user/images/docker-pref-2.png"/>
 
 You may also try removing any unused data left by the Docker engine - e.g.,
 `docker system prune`.
@@ -204,11 +204,11 @@ The structure of the logs will look more or less like this:
 The logs contain information about the Docker host, the containers running 
 kind, the Kubernetes cluster itself, etc.
 
-[known issues]: ../known-issues
-[node image]: ../design/node-image
-[base image]: ../design/base-image
+[known issues]: /docs/user/known-issues
+[node image]: /docs/design/node-image
+[base image]: /docs/design/base-image
 [kind-example-config]: ./kind-example-config.yaml
-[pkg/build/base/sources]: ./../../pkg/build/base/sources
+[pkg/build/base/sources]: https://github.com/kubernetes-sigs/kind/tree/master/pkg/build/base/sources
 [kubernetes]: https://github.com/kubernetes/kubernetes
 [kindest/node]: https://hub.docker.com/r/kindest/node/
 [kubectl]: https://kubernetes.io/docs/reference/kubectl/overview/
