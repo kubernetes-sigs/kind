@@ -168,6 +168,12 @@ h1:hover a, h2:hover a, h3:hover a, h4:hover a {
   visibility: visible;
 }
 
+#content ul {
+  padding-left: 1.75em;
+}
+#content ul ul {
+  padding-left: 1em;
+}
 
 /* mobile */
 @media (max-width: 50em) {
@@ -185,5 +191,8 @@ h1:hover a, h2:hover a, h3:hover a, h4:hover a {
   }
   .sidebar-collapsed #wrapper #navbar {
     margin-left: 0;
+  }
+  #content ul {
+    padding-left: 1.5em;
   }
 }
