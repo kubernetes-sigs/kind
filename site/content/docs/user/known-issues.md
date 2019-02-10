@@ -1,9 +1,6 @@
 # Known Issues
 
-Problems running `kind`?
-
-This guide is aimed at warning users against known problems and documenting
-any known solutions / workarounds.
+Having problems with kind? This guide is covers some known problems and solutions / workarounds.
 
 It may additionally be helpful to:
 
@@ -101,8 +98,8 @@ error building node image: failed to build kubernetes: failed to build images: e
 ```
 
 Then you may try increasing the resource limits for the Docker engine on Mac.
-It is recommended that you have at least 4GB of RAM and disk space 
-(these estimates are for a single node kind cluster).
+
+It is recommended that you allocate at least 8GB of RAM to build Kubernetes.
 
 Open the **Preferences** menu.
 
@@ -110,7 +107,8 @@ Open the **Preferences** menu.
 
 Go to the **Advanced** settings page, and change the settings there, see 
 [changing Docker's resource limits][Docker resource lims].
-<img src="/docs/user/images/docker-pref-2.png"/>
+
+<img width="400px" src="/docs/user/images/docker-pref-build.png"/>
 
 
 ## Failing to properly start cluster
@@ -163,7 +161,7 @@ show something like the following:
 an 03 17:42:41 kind-1-control-plane kubelet[3804]: F0103 17:42:41.470269 3804 kubelet.go:1359] Failed to start ContainerManager failed to get rootfs info: failed to get device for dir "/ var/lib/kubelet": could not find device with major: 0, minor: 67 in cached partitions map
 ```
 
-The problem seems to be relates to a [bug in Docker][moby#9939].
+This problem seems to be related to a [bug in Docker][moby#9939].
 
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new

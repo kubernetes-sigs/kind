@@ -2,7 +2,7 @@
 
 This document covers some of the the initial design for `kind`.
 
-**NOTE**: Some of this is out of date relative to what is actually implemented.
+**NOTE**: Some of this is out of date relative to what is currently implemented.
 This mostly exists for historical purposes, the [the original proposal][original proposal]
 covers some more details.
 
