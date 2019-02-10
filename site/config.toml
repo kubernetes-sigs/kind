@@ -61,6 +61,13 @@ sectionPagesMenu = "main"
     weight = 1
   [[menu.main]]
     parent = "design"
+    identifier = "design-principles"
+    name = "Principles"
+    title = "Principles"
+    url = "/docs/design/principles"
+    weight = 1
+  [[menu.main]]
+    parent = "design"
     identifier = "base-image"
     name = "Base Image"
     title = "Base Image"

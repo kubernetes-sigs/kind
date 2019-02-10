@@ -4,7 +4,7 @@
 
 This page covers some of how to develop `kind` itself.
 
-The [project structure] and [design] may be helpful to review.
+The [design principles], [roadmap], [project structure], and [initial design] may be helpful to review.
 
 ## Get the required development tools for Linux or MacOS
 Here we will explain the software you need to use Linux or MacOS for `kind`
@@ -53,9 +53,10 @@ $ docker --version
 This documentation is written using Docker version 18.09.0.
 
 
-
-[project structure]: ./project-structure
-[design]: ./../design
+[design principles]: /docs/design/principles
+[roadmap]: /docs/roadmap
+[project structure]: /docs/devel/project-structure
+[initial design]: /docs/design/initial
 [github]: https://github.com/
 [community]: https://github.com/kubernetes/community
 [contributor]: https://github.com/kubernetes/community/blob/master/contributors/guide/README.md

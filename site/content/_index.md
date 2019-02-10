@@ -66,7 +66,7 @@ See also: the Kubernetes [community page].
  - kind supports building Kubernetes with make/bash/docker, bazel, or installing from apt, in addition to pre-published builds.
  - kind is written in go, and can be used as a library, has binary releases
  - kind supports windows in addition to mac and linux
- - for more details see [the design documentation][design doc]
+ - for more details see the [design documentation][design doc]
 
 ## Alternatives
 
@@ -98,7 +98,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [images]: https://github.com/kubernetes-sigs/kind/tree/master/images
 [kubetest]: https://github.com/kubernetes/test-infra/tree/master/kubetest
 [kubeadm]: https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/
-[design doc]: ./docs/design/
+[design doc]: ./docs/design/initial
 [user guide]: ./docs/user/
 [the docs]: ./docs
 [SIG-Testing Mailing List]: https://groups.google.com/forum/#!forum/kubernetes-sig-testing
