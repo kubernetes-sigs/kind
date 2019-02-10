@@ -1,3 +1,4 @@
 <div class="footer">
   <p class="copyright">© {{now.Year}} The Kubernetes Authors | Documentation Distributed under <a class="nowrap" href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a></p>
+  {{if .GitInfo}}<p>Last Updated on {{.GitInfo.AuthorDate}} in <span id="commit"><a href="https://github.com/kubernetes-sigs/kind/commit/{{.GitInfo.Hash}}">{{.GitInfo.AbbreviatedHash}}</a></span></p>{{end}}
 </div>
