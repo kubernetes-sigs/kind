@@ -174,6 +174,9 @@ h1:hover a, h2:hover a, h3:hover a, h4:hover a {
 #content ul ul {
   padding-left: 1em;
 }
+#sidebar ul ul {
+  padding-left: 1.25em;
+}
 
 /* mobile */
 @media (max-width: 50em) {
