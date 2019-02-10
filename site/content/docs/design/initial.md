@@ -1,8 +1,10 @@
 # Design
 
-This is the root design documentation for `kind`.  
-**NOTE**: Some of this is out of date. In general the documentation is currently
-being revamped.
+This document covers some of the the initial design for `kind`.
+
+**NOTE**: Some of this is out of date relative to what is actually implemented.
+This mostly exists for historical purposes, the [the original proposal][original proposal]
+covers some more details.
 
 ## Overview
 

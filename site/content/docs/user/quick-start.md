@@ -169,7 +169,7 @@ nodes:
   replicas: 2
 ```
 
-### Exporting kind's Logs
+### Exporting Cluster Logs
 kind has the ability to export all kind related logs for you to explore.
 To export all logs from the default cluster (context name `kind`):
 ```
