@@ -18,7 +18,7 @@ stability by the end of Q1 2019 / the Kubernetes 1.14 release cycle
 - [ ] Improve documentation - In Progress ...
   - [ ] expand examples of using kind
   - [ ] cover known issues, debugging, work-arounds, etc.
-  - [ ] create a GitHub-pages landing page with docs
+  - [X] create a documentation site - [#268]
 - [ ] Improving logging and debuggability
   - [ ] enable audit-logging
 - [ ] Support non-amd64 architectures (namely ARM) - [#166]
@@ -62,5 +62,6 @@ more generally triaged for rough-priority in the [GitHub issues].
 [#200]: https://github.com/kubernetes-sigs/kind/issues/200
 [#244]: https://github.com/kubernetes-sigs/kind/issues/244
 [#245]: https://github.com/kubernetes-sigs/kind/issues/245
+[#268]: https://github.com/kubernetes-sigs/kind/pull/268
 
 [Phippy]: https://phippy.io/
