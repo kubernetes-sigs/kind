@@ -1,5 +1,4 @@
-<p style="text-align: center; margin-top: 2em;"><img alt="kind" src="./logo/logo.png" width="300px" /></p>
-<p style="text-align: center; padding-top: 0; margin-top: -1em;"><a href="https://prow.k8s.io/?job=ci-kind-build"><img alt="Build Status" src="https://prow.k8s.io/badge.svg?jobs=ci-kind-build"></a> <a href="https://godoc.org/sigs.k8s.io/kind"><img src="https://godoc.org/sigs.k8s.io/kind?status.svg"></a> <a href="https://goreportcard.com/report/sigs.k8s.io/kind"><img alt="Go Report Card" src="https://goreportcard.com/badge/sigs.k8s.io/kind" /></a></p>
+<p style="text-align: center; margin-top: 2em; margin-bottom: -.75em;"><img alt="kind" src="./logo/logo.png" width="300px" /></p>
 
 [kind] is a tool for running local Kubernetes clusters using Docker container "nodes".  
 kind is primarily designed for testing Kubernetes 1.11+, initially targeting the [conformance tests].
