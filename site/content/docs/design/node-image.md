@@ -1,5 +1,8 @@
 # The Node Image
 
+
+**NOTE**: This may not completely cover the current implementation.
+
 The ["node" image][node image] is a Docker image for running
 nested containers, systemd, and Kubernetes components.
 

@@ -1,3 +1,7 @@
+<!--
+TODO(bentheelder): this page should probably be removed now that we have navigation
+-->
+
 # Welcome to kind's Documentation
 
 
@@ -20,6 +24,6 @@ out.
 You man also be interested in the [roadmap].
 
 [roadmap]: ./roadmap
-[design]: ./design/
+[design]: ./design/initial
 [user guide]: ./user/
 [dev guide]: ./devel/

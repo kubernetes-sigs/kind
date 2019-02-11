@@ -1,8 +1,12 @@
 # Design
 
-This is the root design documentation for `kind`.  
-**NOTE**: Some of this is out of date. In general the documentation is currently
-being revamped.
+This document covers some of the the initial design for `kind`.
+
+**NOTE**: Some of this is out of date relative to what is currently implemented.
+This mostly exists for historical purposes, the [the original proposal][original proposal]
+covers some more details.
+
+Going forward the [design principles] may be more relevant.
 
 ## Overview
 
@@ -94,9 +98,10 @@ we can simply list and delete containers with this label.
 [q-lee]: https://github.com/q-lee
 [sig-testing-post]: https://groups.google.com/d/msg/kubernetes-sig-testing/uVkosorBnVc/8DDC3qvMAwAJ
 [kubernetes-sig-testing]: https://groups.google.com/forum/#!forum/kubernetes-sig-testing
-[pkg/cluster]: ./../../pkg/cluster
-[base-image.md]: ./base-image.md
-[node-image.md]: ./node-image.md
-[entrypoint]: ../../images/base/entrypoint
+[pkg/cluster]: https://github.com/kubernetes-sigs/kind/tree/master/pkg/cluster
+[base-image.md]: /docs/design/base-image
+[node-image.md]: /docs/design/node-image
+[entrypoint]: https://github.com/kubernetes-sigs/kind/tree/master/images/base/entrypoint
 [kubeconfig]: https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/
 [overlay network]: https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#pod-network
+[design principles]: /docs/design/principles

@@ -28,6 +28,7 @@ function getWidth() {
     );
 }
 
+var oldWidth;
 document.addEventListener("DOMContentLoaded", function () {
     // note: the default state of the page on load is collapsed
     var manualCollapsed = window.localStorage.getItem('sidebar-collapsed');
@@ -38,18 +39,26 @@ document.addEventListener("DOMContentLoaded", function () {
     if (width > 900 && (manualCollapsed == 'false' || manualCollapsed == null)) {
         showSideBar();
     }
-});
-
-window.addEventListener("resize", function () {
-    // if we're now under 900px, hide it
-    if (getWidth() <= 900) {
-        hideSideBar();
-    } else {
-        // otherwise only unhide if the user has not yet manually toggled it
-        // or has toggled it back to visible
-        var manualCollapsed = window.localStorage.getItem('sidebar-collapsed');
-        if (manualCollapsed == 'false' || manualCollapsed == null) {
-            showSideBar();
+    // setup listener for width change
+    oldWidth = width;
+    window.addEventListener("resize", function () {
+        // bail out early if it wasn't the width that changed
+        var width = getWidth();
+        if (oldWidth == width) {
+            oldWidth = width;
+            return;
         }
-    }
+        oldWidth = width;
+        // if we're now under 900px, hide it
+        if (width <= 900) {
+            hideSideBar();
+        } else {
+            // otherwise only unhide if the user has not yet manually toggled it
+            // or has toggled it back to visible
+            var manualCollapsed = window.localStorage.getItem('sidebar-collapsed');
+            if (manualCollapsed == 'false' || manualCollapsed == null) {
+                showSideBar();
+            }
+        }
+    });
 });

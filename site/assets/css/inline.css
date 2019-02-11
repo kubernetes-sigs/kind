@@ -49,7 +49,7 @@ body {
 #content, .footer {
   padding-left: .2em;
   margin: 0 auto;
-  padding: 4px 0;
+  padding: 0 4px;
   width: calc(100% - 8px);
   max-width: 50em;
 }
@@ -81,20 +81,23 @@ body {
   font-weight: bold;
   font-size: 20px;
   padding: 0 4px;
-}
-#navbar-title>a, #commit>a{
-  text-decoration: none;
   vertical-align: middle;
+}
+#navbar-title>a, #github>a{
+  text-decoration: none;
 }
 #sidebar-toggle {
   color: black;
   cursor: pointer;
-  padding: 2px 8px;
+  padding: 1px .5em;
   padding-bottom: 0;
   user-select: none;
 }
-#commit {
-  padding-right: 8px;
+#github { padding: 0 .5em; }
+#github img {
+  height: 1.4em;
+  width: 1.4em;
+  vertical-align: middle;
 }
 
 #sidebar {
@@ -136,17 +139,20 @@ pre {
   overflow-x: auto;
   border-radius: 5px;
   padding: .5em;
+  font-size: 85%;
 }
 
 code {
   background-color: #f3f4f4;
   border-radius: 3px;
-  padding: 0 .25em;
+  padding: .1em .4em;
+  font-size: 85%;
 }
 
 pre code {
   background-color: transparent;
   padding: 0;
+  font-size: 100%;
 }
 
 /* page footer*/
@@ -168,13 +174,19 @@ h1:hover a, h2:hover a, h3:hover a, h4:hover a {
   visibility: visible;
 }
 
+#content ul {
+  padding-left: 1.75em;
+}
+#content ul ul {
+  padding-left: 1em;
+}
+#sidebar ul ul {
+  padding-left: 1.25em;
+}
 
 /* mobile */
 @media (max-width: 50em) {
-  pre {
-    font-size: 14px;
-  }
-  code {
+  #content {
     font-size: 16px;
   }
   #wrapper {
@@ -185,5 +197,8 @@ h1:hover a, h2:hover a, h3:hover a, h4:hover a {
   }
   .sidebar-collapsed #wrapper #navbar {
     margin-left: 0;
+  }
+  #content ul {
+    padding-left: 1.5em;
   }
 }
