@@ -90,6 +90,17 @@ apiServerExtraVolumes:
 # so we need to ensure the cert is valid for localhost so we can talk
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServerCertSANs: [localhost]
+kubeletConfiguration:
+  baseConfig:
+    # disable disk resource management by default
+    # kubelet will see the host disk that the inner container runtime
+    # is ultimately backed by and attempt to recover disk space.
+    # we don't want that.
+    imageGCHighThresholdPercent: 100
+    evictionHard:
+      nodefs.available: "0%"
+      nodefs.inodesFree: "0%"
+      imagefs.available: "0%"
 `
 
 // ConfigTemplateAlphaV3 is the kubadm config template for API version v1alpha3
@@ -128,9 +139,16 @@ apiEndpoint:
 apiVersion: kubeadm.k8s.io/v1alpha3
 kind: JoinConfiguration
 ---
-# no-op entry that exists soley so it can be patched
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
+# disable disk resource management by default
+# kubelet will see the host disk that the inner container runtime
+# is ultimately backed by and attempt to recover disk space. we don't want that.
+imageGCHighThresholdPercent: 100
+evictionHard:
+  nodefs.available: "0%"
+  nodefs.inodesFree: "0%"
+  imagefs.available: "0%"
 ---
 # no-op entry that exists soley so it can be patched
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
@@ -166,9 +184,16 @@ localAPIEndpoint:
 apiVersion: kubeadm.k8s.io/v1beta1
 kind: JoinConfiguration
 ---
-# no-op entry that exists soley so it can be patched
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
+# disable disk resource management by default
+# kubelet will see the host disk that the inner container runtime
+# is ultimately backed by and attempt to recover disk space. we don't want that.
+imageGCHighThresholdPercent: 100
+evictionHard:
+  nodefs.available: "0%"
+  nodefs.inodesFree: "0%"
+  imagefs.available: "0%"
 ---
 # no-op entry that exists soley so it can be patched
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
