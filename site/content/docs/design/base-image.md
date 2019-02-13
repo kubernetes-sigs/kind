@@ -28,9 +28,9 @@ the container truly boots
 - we do a few tricks to minimize unnecessary services and inform systemd that it
 is in docker (see the [Dockerfile][dockerfile])
 
-This image is based on a minimal debian image (currently `k8s.gcr.io/debian-base`)
-due to high availability of tooling.  
+This image is based on `ubuntu:18.04` image
+due to high availability of tooling.
 We strive to minimize the image size where possible.
 
-[base image]: ./../../images/base
-[dockerfile]: ./../../images/base/Dockerfile
+[base image]: https://sigs.k8s.io/kind/images/base
+[dockerfile]: https://sigs.k8s.io/kind/images/base/Dockerfile
