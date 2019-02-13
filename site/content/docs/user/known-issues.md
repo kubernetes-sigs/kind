@@ -17,10 +17,22 @@ It may additionally be helpful to:
 - reach out and ask for help in [#kind] on the [kubernetes slack]
 
 ## Contents
+* [Docker on Btrfs](#docker-on-btrfs)
 * [Failing to apply overlay network](#failing-to-apply-overlay-network)
 * [Failure to build node image](#failure-to-build-node-image)
 * [Failure for cluster to properly start](#failure-for-cluster-to-properly-start)
 
+## Docker on Btrfs
+
+`kind` cannot run properly if containers on your machine / host are backed by a
+[Btrfs](https://en.wikipedia.org/wiki/Btrfs) filesystem.
+
+This should only be relevant on linux, on which you can check with:
+
+`stat --file-system --format=%T $(docker info --format {{.DockerRootDir}})`
+
+To fix this you must ensure that your containers are not backed by Btrfs, there
+is no other known workaround at this time.
 
 ## Failing to apply overlay network
 There are two known causes for problems while applying the overlay network
