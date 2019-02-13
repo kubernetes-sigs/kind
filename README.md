@@ -14,14 +14,14 @@ If you have [go] and [docker] installed `go get sigs.k8s.io/kind && kind create 
 <img src="https://gist.githubusercontent.com/BenTheElder/621bc321fc6d9506fd936feb36d32dd0/raw/7fe14e9d0929cab428929ca6c501abc990c07359/kind-create-cluster.gif" alt="2x speed `kind create cluster` demo" />
 
 kind consists of:
- - Go [packages][packages] implementing [cluster creation][cluster package], [image build][build package], etc.
- - A command line interface ([`kind`][kind cli]) built on these packages.
- - Docker [image(s)][images] written to run systemd, Kubernetes, etc.
- - [`kubetest`][kubetest] integration also built on these packages (WIP)
+- Go [packages][packages] implementing [cluster creation][cluster package], [image build][build package], etc.
+- A command line interface ([`kind`][kind cli]) built on these packages.
+- Docker [image(s)][images] written to run systemd, Kubernetes, etc.
+- [`kubetest`][kubetest] integration also built on these packages (WIP)
 
-kind bootstraps each "node" with [kubeadm][kubeadm]. For more details see [the design documentation][design doc].  
+kind bootstraps each "node" with [kubeadm][kubeadm]. For more details see [the design documentation][design doc].
 
-**NOTE**: kind is still a work in progress, see [docs/roadmap.md].
+**NOTE**: kind is still a work in progress, see [docs/roadmap.md](site/content/docs/roadmap.md).
 
 ## Installation and usage
 
@@ -61,12 +61,12 @@ See also: the Kubernetes [community page].
 
 ## Why kind?
 
- - kind supports multi-node (including HA) clusters
- - kind supports building Kubernetes release builds from source
-   - support for make / bash / docker, bazel, or installing from apt, in addition to pre-published builds.
- - kind is written in go, and can be used as a library, has stable releases
- - kind supports Windows in addition to MacOS and Linux
- - kind is a [CNCF certified conformant Kubernetes installer](https://landscape.cncf.io/selected=kind)
+- kind supports multi-node (including HA) clusters
+- kind supports building Kubernetes release builds from source
+  - support for make / bash / docker, bazel, or installing from apt, in addition to pre-published builds.
+- kind is written in go, and can be used as a library, has stable releases
+- kind supports Windows in addition to MacOS and Linux
+- kind is a [CNCF certified conformant Kubernetes installer](https://landscape.cncf.io/selected=kind)
 
 ## Alternatives
 
@@ -98,15 +98,15 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [images]: ./images
 [kubetest]: https://github.com/kubernetes/test-infra/tree/master/kubetest
 [kubeadm]: https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/
-[design doc]: ./docs/design/
-[user guide]: ./docs/user/
+[design doc]: site/content/docs/design/
+[user guide]: site/content/docs/user/
 [the docs]: ./docs
 [SIG-Testing Mailing List]: https://groups.google.com/forum/#!forum/kubernetes-sig-testing
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [filing an issue]: https://github.com/kubernetes-sigs/kind/issues/new
 [Kubernetes Slack]: http://slack.k8s.io/
 [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
-[docs/roadmap.md]: ./docs/roadmap.md
+[docs/roadmap.md]: site/content/docs/roadmap.md
 [install docker]: https://docs.docker.com/install/
 [@BenTheElder]: https://github.com/BenTheElder
 [@munnerz]: https://github.com/munnerz
