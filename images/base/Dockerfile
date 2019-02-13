@@ -12,11 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# kind cluster base image, built on Kubernetes's debian-base
-# which is basically a very stripped down debian image (~43MB)
-# that ships with a small utility 'clean-install' which is an ideal drop in for
-# apt-get update && apt-get install $@ 
-# see https://github.com/kubernetes/kubernetes/tree/master/build/debian-base
+# kind cluster base image, built on ubuntu:18.04
 #
 # To this we add systemd, CNI, and other tools needed to run Kubeadm
 #

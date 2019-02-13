@@ -47,7 +47,7 @@ create clusters from these images; interact with the Docker engine and file syst
 
 
 [cobra]: https://github.com/spf13/cobra
-[main.go]: ../../main.go
-[cmd]: ../../cmd/kind/
-[kind.go]: ../../cmd/kind/kind.go
-[pkg]: ../../pkg
+[main.go]: https://sigs.k8s.io/kind/main.go
+[cmd]: https://sigs.k8s.io/kind/cmd/kind/
+[kind.go]: https://sigs.k8s.io/kind/cmd/kind/kind.go
+[pkg]: https://sigs.k8s.io/kind/pkg
