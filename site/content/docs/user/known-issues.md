@@ -1,3 +1,11 @@
+---
+title: "Known Issues"
+menu:
+  main:
+    parent: "user"
+    identifier: "known-issues"
+    weight: 3
+---
 # Known Issues
 
 Having problems with kind? This guide is covers some known problems and solutions / workarounds.

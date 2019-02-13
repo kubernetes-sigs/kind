@@ -1,3 +1,11 @@
+---
+title: "Getting Started"
+menu:
+  main:
+    parent: "devel"
+    identifier: "devel-getting-started"
+    weight: 2
+---
 # Developer Guide
 
 ## Overview

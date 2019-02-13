@@ -1,3 +1,11 @@
+---
+title: "Principles"
+menu:
+  main:
+    parent: "design"
+    identifier: "design-principles"
+    weight: 1
+---
 # Principles
 
 While developing kind the following principles should be considered.

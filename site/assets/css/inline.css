@@ -127,6 +127,14 @@ body {
   font-weight: bold;
 }
 
+#sidebar li.active-entry :first-child,
+#sidebar li.active :first-child {
+  font-weight: bold;
+}
+#sidebar li.active-entry :first-child {
+  color: black;
+}
+
 /* consistent link color */
 a { color: #1f28f0; }
 

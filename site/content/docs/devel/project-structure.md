@@ -1,3 +1,10 @@
+---
+title: "Project Structure"
+menu:
+  main:
+    parent: "devel"
+    identifier: "project-structure"
+---
 # Project Structure
 
 🚧 This is a work-in-progress 🚧

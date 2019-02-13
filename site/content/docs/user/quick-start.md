@@ -1,3 +1,11 @@
+---
+title: "Quick Start"
+menu:
+  main:
+    parent: "user"
+    identifier: "user-quick-start"
+    weight: 1
+---
 # Quick Start
 
 This guide covers getting started with the `kind` command.

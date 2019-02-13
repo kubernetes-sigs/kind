@@ -1,3 +1,10 @@
+---
+title: "Node Image"
+menu:
+  main:
+    parent: "design"
+    identifier: "node-image"
+---
 # The Node Image
 
 
