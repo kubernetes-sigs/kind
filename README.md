@@ -21,7 +21,7 @@ kind consists of:
 
 kind bootstraps each "node" with [kubeadm][kubeadm]. For more details see [the design documentation][design doc].
 
-**NOTE**: kind is still a work in progress, see [docs/roadmap.md](site/content/docs/roadmap.md).
+**NOTE**: kind is still a work in progress, see [docs/roadmap.md].
 
 ## Installation and usage
 
