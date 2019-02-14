@@ -23,22 +23,58 @@ cd "${REPO_ROOT}"
 
 # place to stick temp binaries
 BINDIR="${REPO_ROOT}/_output/bin"
+mkdir -p "${BINDIR}"
 
-# install dep from vendor into $BINDIR
-get_dep() {
-  # build dep from vendor-fake-gopath and use that ...
-  GOBIN="${BINDIR}" go install ./vendor/github.com/golang/dep/cmd/dep
-  echo "${BINDIR}/dep"
+# TMP_GOPATH is used in make_temp_root
+TMP_GOPATH="$(TMPDIR="${BINDIR}" mktemp -d "${BINDIR}/verify-deps.XXXXX")"
+
+# exit trap cleanup for TMP_GOPATH
+cleanup() {
+  if [[ -n "${TMP_GOPATH}" ]]; then
+    # go module cache is not writable
+    chmod -R 775 "${TMP_GOPATH}"
+    rm -rf "${TMP_GOPATH}"
+  fi
 }
 
-# select dep binary to use
-DEP="${DEP:-$(get_dep)}"
+# cp -r without any warnings for symlinks ¯\_(ツ)_/¯
+quiet_recursive_cp() {
+  cp -r "${1}" "${2}" >/dev/null 2>&1
+}
+
+# copies repo into a temp root saved to TMP_GOPATH
+make_temp_root() {
+  # make a fake gopath
+  local fake_root="${TMP_GOPATH}/src/sigs.k8s.io/kind"
+  mkdir -p "${fake_root}"
+  export -f quiet_recursive_cp
+  # we need to copy everything but _output (which is .gitignore anyhow)
+  find . \
+    -mindepth 1 -maxdepth 1 \
+    -type d -path "./_output" -prune -o \
+    -exec bash -c 'quiet_recursive_cp "${0}" "${1}/${0}"' {} "${fake_root}" \;
+}
 
 main() {
-  # run vendor update script in dry run mode
-  diff=$("${DEP}" check || true)
+  trap cleanup EXIT
+
+  # copy repo root into tempdir under ./_output
+  make_temp_root
+  local fake_root="${TMP_GOPATH}/src/sigs.k8s.io/kind"
+
+  # run deps update script
+  cd "${fake_root}"
+  GOPATH="${TMP_GOPATH}" PATH="${TMP_GOPATH}/bin:${PATH}" hack/update-deps.sh
+
+  # make sure the temp repo has no changes relative to the real repo
+  diff=$(diff -Nupr \
+          -x ".git" \
+          -x "_output" \
+          -x "vendor/github.com/jteeuwen/go-bindata/testdata" \
+          -x "vendor/github.com/golang/dep/internal/fs/testdata/symlinks" \
+         "${REPO_ROOT}" "${fake_root}" 2>/dev/null || true)
   if [[ -n "${diff}" ]]; then
-    echo "Non-zero output from dep check" >&2
+    echo "unexpectedly dirty working directory after hack/update-deps.sh" >&2
     echo "" >&2
     echo "${diff}" >&2
     echo "" >&2
