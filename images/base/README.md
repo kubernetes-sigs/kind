@@ -18,4 +18,4 @@ See also [`pkg/cluster`](./../../pkg/cluster) for logic that interacts with this
 
 ## Design
 
-See [docs/base-image.md](./../../docs/design/base-image.md) for more design details.
+See [base-image](https://kind.sigs.k8s.io/docs/design/base-image/) for more design details.

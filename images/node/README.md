@@ -9,7 +9,7 @@ Roughly this image is [the base image](./../base), with the addition of:
  - placing the Kubernetes docker images in `/kind/images/*.tar`
  - placing a file in `/kind/version` containing the Kubernetes semver
 
-See [`docs/node-image`][docs/node-image.md] for more design details.
+See [`node-image`][node-image.md] for more design details.
 
 [pkg/build/node_image.go]: ./../../pkg/build/node/node.go
-[docs/node-image.md]: ./../../docs/design/node-image.md
+[node-image.md]: https://kind.sigs.k8s.io/docs/design/node-image
