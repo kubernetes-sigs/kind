@@ -32,6 +32,8 @@ TMP_GOPATH="$(TMPDIR="${BINDIR}" mktemp -d "${BINDIR}/verify-deps.XXXXX")"
 # exit trap cleanup for TMP_GOPATH
 cleanup() {
   if [[ -n "${TMP_GOPATH}" ]]; then
+    # go module cache is not writable
+    chmod -R 775 "${TMP_GOPATH}"
     rm -rf "${TMP_GOPATH}"
   fi
 }
