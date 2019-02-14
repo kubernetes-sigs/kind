@@ -2,7 +2,7 @@
 title: "Project Structure"
 menu:
   main:
-    parent: "devel"
+    parent: "contributing"
     identifier: "project-structure"
 ---
 # Project Structure

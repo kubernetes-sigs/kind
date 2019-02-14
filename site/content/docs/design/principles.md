@@ -90,6 +90,16 @@ In other words:
 - Strive for reproducibility of operations
 - Avoid depending on external services, vendor / pre-pull dependencies
 
+## No External State
+
+State is offloaded into the "node" containers in the form of labels, files in
+the container filesystem, and processes in the container. The cluster itself
+stores all state. No external state stores are used and the only stateful
+process is the container runtime. kind does not itself store or manage state.
+
+This simplifes a lot of problems and eases portability, while forcing cluster
+interactions to be consistent.
+
 ## Consider Automation
 
 While kind strives to present a pleasant UX to users on their local machines,

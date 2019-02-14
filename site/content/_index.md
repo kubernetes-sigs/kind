@@ -16,7 +16,7 @@ kind consists of:
 
 kind bootstraps each "node" with [kubeadm][kubeadm]. For more details see [the design documentation][design doc].
 
-**NOTE**: kind is still a work in progress, see the [roadmap].
+**NOTE**: kind is still a work in progress, see the [1.0 roadmap].
 
 ## Installation and usage
 
@@ -55,7 +55,7 @@ reach out if you have any questions!
 Pull Requests are very welcome!  
 See the [issue tracker] if you're unsure where to start, or feel free to reach out to discuss.
 
-See also: the Kubernetes [community page].
+See also: our own [contributor guide] and the Kubernetes [community page]. 
 
 ## Why kind?
 
@@ -99,13 +99,13 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [kubeadm]: https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/
 [design doc]: ./docs/design/initial
 [user guide]: ./docs/user/quick-start
-[the docs]: ./docs
 [SIG-Testing Mailing List]: https://groups.google.com/forum/#!forum/kubernetes-sig-testing
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [filing an issue]: https://github.com/kubernetes-sigs/kind/issues/new
 [Kubernetes Slack]: http://slack.k8s.io/
 [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
-[roadmap]: ./docs/roadmap
+[1.0 roadmap]: /docs/contributing/1.0-roadmap
 [install docker]: https://docs.docker.com/install/
 [@BenTheElder]: https://github.com/BenTheElder
 [@munnerz]: https://github.com/munnerz
+[contributor guide]: /docs/contributing/getting-started

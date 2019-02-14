@@ -21,7 +21,7 @@ kind consists of:
 
 kind bootstraps each "node" with [kubeadm][kubeadm]. For more details see [the design documentation][design doc].
 
-**NOTE**: kind is still a work in progress, see [docs/roadmap.md].
+**NOTE**: kind is still a work in progress, see the [1.0 roadmap].
 
 ## Installation and usage
 
@@ -57,7 +57,7 @@ reach out if you have any questions!
 Pull Requests are very welcome!  
 See the [issue tracker] if you're unsure where to start, or feel free to reach out to discuss.
 
-See also: the Kubernetes [community page].
+See also: our own [contributor guide] and the Kubernetes [community page].
 
 ## Why kind?
 
@@ -105,7 +105,8 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [filing an issue]: https://github.com/kubernetes-sigs/kind/issues/new
 [Kubernetes Slack]: http://slack.k8s.io/
 [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
-[docs/roadmap.md]: ./docs/roadmap.md
+[1.0 roadmap]:  https://kind.sigs.k8s.io/docs/contributing/1.0-roadmap
 [install docker]: https://docs.docker.com/install/
 [@BenTheElder]: https://github.com/BenTheElder
 [@munnerz]: https://github.com/munnerz
+[contributor guide]: https://kind.sigs.k8s.io/docs/contributing/getting-started
