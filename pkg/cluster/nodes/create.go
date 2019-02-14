@@ -121,6 +121,9 @@ func createNode(name, image, clusterLabel string, role config.NodeRole, extraArg
 		"--tmpfs", "/run", // systemd wants a writable /run
 		// some k8s things want /lib/modules
 		"-v", "/lib/modules:/lib/modules:ro",
+		// NOTE: systemd start failure when nodes container restart
+		// use host cgroup for systemd initializing to avoid this failure.
+		"-v", "/sys/fs/cgroup:/sys/fs/cgroup:ro",
 		"--hostname", name, // make hostname match container name
 		"--name", name, // ... and set the container name
 		// label the node with the cluster ID
