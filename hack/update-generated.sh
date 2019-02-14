@@ -20,6 +20,9 @@ set -o pipefail
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
 
+# TODO(bentheelder): find a solution that does not depend on GO111MODULE="off"
+export GO111MODULE="off"
+
 # install go-bindata from vendor locally
 OUTPUT_GOBIN="${REPO_ROOT}/_output/bin"
 cd "${REPO_ROOT}"

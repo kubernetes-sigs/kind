@@ -28,7 +28,8 @@ mkdir -p "${BINDIR}"
 
 # install golint from vendor into $BINDIR
 get_golint() {
-  GOBIN="${BINDIR}" go install ./vendor/github.com/golang/lint/golint
+  # TODO(bentheelder): find a solution that does not depend on GO111MODULE="off"
+  GO111MODULE="off" GOBIN="${BINDIR}" go install ./vendor/github.com/golang/lint/golint
   echo "${BINDIR}/golint"
 }
 
@@ -39,7 +40,7 @@ GOLINT="${GOLINT:-$(get_golint)}"
 # we also further filter out generated k8s api code in the config v1alpha1 package
 # which unfortunately fails lint due to apimachinery conventions ...
 # TODO(fabrizio pandini): makes this smarter (skip only one file)
-go list ./... | \
+go list -mod=vendor ./... | \
   grep -v '^sigs.k8s.io/kind/pkg/cluster/config/v1alpha1$' | \
   grep -v '^sigs.k8s.io/kind/pkg/cluster/config/v1alpha2$' | \
   grep -v '^sigs.k8s.io/kind/pkg/cluster/config$' | \
