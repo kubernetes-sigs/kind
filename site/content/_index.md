@@ -9,12 +9,12 @@ If you have [go] and [docker] installed `go get sigs.k8s.io/kind && kind create 
 
 kind consists of:
 
- - Go [packages][packages] implementing [cluster creation][cluster package], [image build][build package], etc.
- - A command line interface ([`kind`][kind cli]) built on these packages.
- - Docker [image(s)][images] written to run systemd, Kubernetes, etc.
- - [`kubetest`][kubetest] integration also built on these packages (WIP)
+- Go [packages][packages] implementing [cluster creation][cluster package], [image build][build package], etc.
+- A command line interface ([`kind`][kind cli]) built on these packages.
+- Docker [image(s)][images] written to run systemd, Kubernetes, etc.
+- [`kubetest`][kubetest] integration also built on these packages (WIP)
 
-kind bootstraps each "node" with [kubeadm][kubeadm]. For more details see [the design documentation][design doc].  
+kind bootstraps each "node" with [kubeadm][kubeadm]. For more details see [the design documentation][design doc].
 
 **NOTE**: kind is still a work in progress, see the [roadmap].
 
@@ -59,12 +59,12 @@ See also: the Kubernetes [community page].
 
 ## Why kind?
 
- - kind supports multi-node (including HA) clusters
- - kind supports building Kubernetes release builds from source
-   - support for make / bash / docker, bazel, or installing from apt, in addition to pre-published builds.
- - kind is written in go, and can be used as a library, has stable releases
- - kind supports Windows in addition to MacOS and Linux
- - kind is a [CNCF certified conformant Kubernetes installer](https://landscape.cncf.io/selected=kind)
+- kind supports multi-node (including HA) clusters
+- kind supports building Kubernetes release builds from source
+  - support for make / bash / docker, bazel, or installing from apt, in addition to pre-published builds.
+- kind is written in go, and can be used as a library, has stable releases
+- kind supports Windows in addition to MacOS and Linux
+- kind is a [CNCF certified conformant Kubernetes installer](https://landscape.cncf.io/selected=kind)
 
 ## Alternatives
 
@@ -98,7 +98,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [kubetest]: https://github.com/kubernetes/test-infra/tree/master/kubetest
 [kubeadm]: https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/
 [design doc]: ./docs/design/initial
-[user guide]: ./docs/user/
+[user guide]: ./docs/user/quick-start
 [the docs]: ./docs
 [SIG-Testing Mailing List]: https://groups.google.com/forum/#!forum/kubernetes-sig-testing
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
