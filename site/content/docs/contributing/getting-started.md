@@ -65,7 +65,7 @@ To check if `docker` is has been installed:
 ```
 docker --version
 ```
-This documentation is written using Docker version 18.09.0.
+This documentation is written using Docker version 18.09.2.
 
 ## 3. Read The Docs 
 
