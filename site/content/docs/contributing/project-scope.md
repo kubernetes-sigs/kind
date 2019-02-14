@@ -43,11 +43,11 @@ See also: the [1.0 roadmap], and the [1.0 tracking milestone].
 
 **Covered Work**:
 
-- limited workloads / e2e testing
-- cluster bring-up (IE kubeadm)
-- kubernetes build (and currently install, but that may be problematic for cross-platform [#166])
-- node skew, client skew (kubectl / e2e)
-- image publishing
+- Limited workloads / e2e testing
+- Cluster bring-up (IE kubeadm)
+- Kubernetes build (and currently install, but that may be problematic for cross-platform [#166])
+- Node skew, client skew (kubectl / e2e)
+- Image publishing
 - Kubernetes CI tooling and jobs
 - ...
 
@@ -67,7 +67,7 @@ Most of the necessary work should be covered under
 [P1: Support Testing Kubernetes Applications](#p1-support-testing-kubernetes-applications),
 however there is some additional work.
 
-- improve "kind as a library"
+- Improve "kind as a library"
 - ...
 
 ### P2: Provide Cheap Bootstrap Clusters for the Cluster-API 
@@ -75,7 +75,7 @@ however there is some additional work.
 
 **Stakeholders**:
 
-- the cluster-api
+- The cluster-api
 - cluster-api-provider-foo developers
 
 ### P3: Extended Testing Not Covered Above
@@ -88,11 +88,11 @@ however there is some additional work.
 Possibly supporting various things that we cannot reasonably test today including:
 
 - "node" tests, e.g. reboot
-- upgrades, downgrades
-- anything depending on ingress
-- anything depending on persistent storage / PVs
-- testing the cluster-api proper with some sort of machine provisioning
-- device plugin, e.g. GPU
+- Upgrades, downgrades
+- Anything depending on ingress
+- Anything depending on persistent storage / PVs
+- Testing the cluster-api proper with some sort of machine provisioning
+- Device plugin, e.g. GPU
 - ...
 
 Several of these make sense but are not possible with the current tooling and will require a reasonable amount of design and thought to do well. Some of them may not be solve-able in a good way, but are at least technologically feasible to explore.
@@ -102,10 +102,10 @@ Several of these make sense but are not possible with the current tooling and wi
 
 Some things we can likely never cover in a reasonable way:
 
-- cloud provider / CCM
-- some of the node testing
-- being a strange alternative library to "docker compose" etc.
-- replacing [Phippy][phippy] ❤️ 🦒 ❤️
+- Cloud provider / CCM
+- Some of the node testing
+- Being a strange alternative library to "docker compose" etc.
+- Replacing [Phippy][phippy] ❤️ 🦒 ❤️
 - ...
 
 
