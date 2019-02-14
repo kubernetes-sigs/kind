@@ -37,8 +37,8 @@ sectionPagesMenu = "main"
     url = "/docs/design/"
     weight = 5
   [[menu.main]]
-    identifier = "devel"
-    name = "Developer Guide"
-    title = "Developer Guide"
-    url = "/docs/devel/"
+    identifier = "contributing"
+    name = "Contributing"
+    title = "contributing"
+    url = "/docs/contributing/"
     weight = 6
