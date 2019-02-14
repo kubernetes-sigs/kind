@@ -39,7 +39,7 @@ prune-vendor() {
     -not -iname "COPYING*" \
     -not -iname "LICENSE*" \
     -not -iname "NOTICE*" \
-    -exec rm '{}' \;
+    -delete
 }
 
 export GO111MODULE="on"
