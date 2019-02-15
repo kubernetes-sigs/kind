@@ -21,6 +21,7 @@
 set -o errexit
 set -o nounset
 set -o pipefail
+set -o xtrace
 
 # our exit handler (trap)
 cleanup() {
