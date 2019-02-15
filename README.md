@@ -9,7 +9,7 @@
 kind is a tool for running local Kubernetes clusters using Docker container "nodes".  
 kind is primarily designed for testing Kubernetes 1.11+, initially targeting the [conformance tests].
 
-If you have [go] and [docker] installed `go get sigs.k8s.io/kind && kind create cluster` is all you need!
+If you have [go] and [docker] installed `go get -u sigs.k8s.io/kind && kind create cluster` is all you need!
 
 <img src="https://gist.githubusercontent.com/BenTheElder/621bc321fc6d9506fd936feb36d32dd0/raw/7fe14e9d0929cab428929ca6c501abc990c07359/kind-create-cluster.gif" alt="2x speed `kind create cluster` demo" />
 
@@ -25,7 +25,7 @@ kind bootstraps each "node" with [kubeadm][kubeadm]. For more details see [the d
 
 ## Installation and usage
 
-You can install kind with `go get sigs.k8s.io/kind`. This will put `kind` in
+You can install kind with `go get -u sigs.k8s.io/kind`. This will put `kind` in
 `$(go env GOPATH)/bin`. You may need to add that directory to your `$PATH` as
 shown [here](https://golang.org/doc/code.html#GOPATH) if you encounter the error
 `kind: command not found` after installation.
