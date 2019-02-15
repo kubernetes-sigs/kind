@@ -141,6 +141,11 @@ func createNode(name, image, clusterLabel string, role config.NodeRole, extraArg
 		runArgs = append(runArgs, "-e", "HTTPS_PROXY="+httpsProxy)
 	}
 
+	noProxy := os.Getenv("NO_PROXY")
+	if noProxy != "" {
+		runArgs = append(runArgs, "-e", "NO_PROXY="+noProxy)
+	}
+
 	// adds node specific args
 	runArgs = append(runArgs, extraArgs...)
 
