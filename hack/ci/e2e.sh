@@ -26,7 +26,7 @@ set -o xtrace
 # our exit handler (trap)
 cleanup() {
     # always attempt to dump logs
-    kind export logs "${ARTIFACTS}/logs" || true
+    kind "export" logs "${ARTIFACTS}/logs" || true
     # KIND_IS_UP is true once we: kind create
     if [[ "${KIND_IS_UP:-}" = true ]]; then
         kind delete cluster || true
