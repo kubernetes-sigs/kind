@@ -50,7 +50,7 @@ install_kind() {
     if [[ $(go list sigs.k8s.io/kind) = "sigs.k8s.io/kind" ]]; then
         env "GOBIN=${TMP_DIR}/bin" go install sigs.k8s.io/kind
     else
-        env "GOPATH=${TMP_DIR}" go get sigs.k8s.io/kind
+        env "GOPATH=${TMP_DIR}" go get -u sigs.k8s.io/kind
     fi
     PATH="${TMP_DIR}/bin:${PATH}"
     export PATH

@@ -14,7 +14,7 @@ This guide covers getting started with the `kind` command.
 
 ## Installation
 
-You can install `kind` with `go get sigs.k8s.io/kind`. This will put `kind` in
+You can install `kind` with `go get -u sigs.k8s.io/kind`. This will put `kind` in
 `$(go env GOPATH)/bin`. You may need to add that directory to your `$PATH` as
 shown [here](https://golang.org/doc/code.html#GOPATH) if you encounter the error
 `kind: command not found` after installation.
