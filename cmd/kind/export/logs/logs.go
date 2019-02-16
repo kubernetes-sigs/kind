@@ -35,7 +35,7 @@ type flagpole struct {
 func NewCommand() *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
-		Args: cobra.NoArgs,
+		Args: cobra.MaximumNArgs(1),
 		// TODO(bentheelder): more detailed usage
 		Use:   "logs [output-dir]",
 		Short: "exports logs to to a tempdir or [output-dir] if specified",
