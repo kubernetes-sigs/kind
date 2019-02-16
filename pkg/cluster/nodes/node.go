@@ -319,3 +319,59 @@ func (n *Node) WriteKubeConfig(dest string, hostPort int) error {
 
 	return ioutil.WriteFile(dest, buff.Bytes(), 0600)
 }
+
+// WriteFile writes temporary file on the host
+// and copies it to the node
+func (n *Node) WriteFile(dest, content string) error {
+	// create destination directory
+	cmd := n.Command("mkdir", "-p", filepath.Dir(dest))
+	err := exec.RunLoggingOutputOnFail(cmd)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create directory %s", dest)
+	}
+
+	// create temporary file
+	ftmp, err := ioutil.TempFile("", "")
+	if err != nil {
+		return errors.Wrap(err, "failed to create temporary file")
+	}
+
+	path := ftmp.Name()
+	defer os.Remove(path)
+
+	// write content to the temp file
+	_, err = ftmp.WriteString(content)
+	if err != nil {
+		return errors.Wrap(err, "failed to write content to the file")
+	}
+
+	// copy the temp file from the host to the node
+	if err := n.CopyTo(path, dest); err != nil {
+		return errors.Wrap(err, "failed to copy file to the node")
+	}
+	return nil
+}
+
+// SetProxy configures proxy settings for the node
+// Currently it only creates systemd drop-in for Docker daemon
+// as described in Docker documentation: https://docs.docker.com/config/daemon/systemd/#http-proxy
+func (n *Node) SetProxy() error {
+	// configure Docker daemon to use proxy
+	proxies := ""
+	for _, name := range []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"} {
+		val := os.Getenv(name)
+		if val != "" {
+			proxies += fmt.Sprintf("\"%s=%s\" ", name, val)
+		}
+	}
+
+	if proxies != "" {
+		err := n.WriteFile("/etc/systemd/system/docker.service.d/http-proxy.conf",
+			"[Service]\nEnvironment="+proxies)
+		if err != nil {
+			errors.Wrap(err, "failed to create http-proxy drop-in")
+		}
+	}
+
+	return nil
+}
