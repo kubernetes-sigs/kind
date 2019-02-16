@@ -97,7 +97,7 @@ See also: the Kubernetes [community page].
 [design principles]: /docs/design/principles
 [1.0 roadmap]: /docs/contributing/1.0-roadmap
 [project scope]: /docs/contributing/project-scope
-[project structure]: /docs/devel/project-structure
+[project structure]: /docs/contributing/project-structure
 [initial design]: /docs/design/initial
 [github]: https://github.com/
 [golang]: https://golang.org/doc/install

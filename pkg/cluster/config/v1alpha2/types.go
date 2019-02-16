@@ -28,7 +28,7 @@ type Config struct {
 	// TypeMeta representing the type of the object and its API schema version.
 	metav1.TypeMeta `json:",inline"`
 
-	// nodes constains the list of nodes defined in the `kind` Config
+	// nodes contains the list of nodes defined in the `kind` Config
 	Nodes []Node `json:"nodes"`
 }
 
@@ -39,7 +39,7 @@ type Node struct {
 	// Replicas is the number of desired node replicas.
 	// Defaults to 1
 	Replicas *int32 `json:"replicas,omitempty"`
-	// Role defines the role of the nodw in the in the Kubernetes cluster managed by `kind`
+	// Role defines the role of the node in the in the Kubernetes cluster managed by `kind`
 	// Defaults to "control-plane"
 	Role NodeRole `json:"role,omitempty"`
 	// Image is the node image to use when running the cluster
