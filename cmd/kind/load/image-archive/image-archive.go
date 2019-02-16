@@ -18,7 +18,7 @@ limitations under the License.
 package load
 
 import (
-	"fmt"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -65,8 +65,6 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
-	destinationImageTar := fmt.Sprintf("/%s", args[0])
-
 	// List nodes by cluster context name
 	n, err := clusternodes.ListByCluster()
 	if err != nil {
@@ -77,18 +75,52 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		return errors.Errorf("unknown cluster %q", flags.Name)
 	}
 
+	// map cluster nodes by their name
+	nodesByName := map[string]clusternodes.Node{}
 	for _, node := range nodes {
-		// Copy image tar to each node
-		if err := node.CopyTo(args[0], destinationImageTar); err != nil {
-			return errors.Wrap(err, "failed to copy image to node")
-		}
+		// TODO(bentheelder): this depends on the fact that ListByCluster()
+		// will have name for nameOrId.
+		nodesByName[node.String()] = node
+	}
 
-		// Load image into each node
-		if err := node.Command(
-			"docker", "load", "--input", destinationImageTar,
-		).Run(); err != nil {
-			return errors.Wrap(err, "failed to load image")
+	// pick only the user selected nodes and ensure they exist
+	// the default is all nodes unless flags.Nodes is set
+	selectedNodes := nodes
+	if len(flags.Nodes) > 0 {
+		selectedNodes := []clusternodes.Node{}
+		for _, name := range flags.Nodes {
+			node, ok := nodesByName[name]
+			if !ok {
+				return errors.Errorf("unknown node: %s", name)
+			}
+			selectedNodes = append(selectedNodes, node)
 		}
+	}
+
+	// Load the image into every node
+	for _, node := range selectedNodes {
+		if err := loadImage(args[0], &node); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func loadImage(imageTarName string, node *clusternodes.Node) error {
+	// Copy image tar to each node
+	f, err := os.Open(imageTarName)
+	if err != nil {
+		return errors.Wrap(err, "failed to open image")
+	}
+	defer f.Close()
+
+	// Load image into each node
+	cmd := node.Command(
+		"docker", "load",
+	)
+	cmd.SetStdin(f)
+	if err := cmd.Run(); err != nil {
+		return errors.Wrap(err, "failed to load image")
 	}
 	return nil
 }

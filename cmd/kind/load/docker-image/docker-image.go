@@ -18,7 +18,8 @@ limitations under the License.
 package load
 
 import (
-	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -26,6 +27,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster"
 	clusternodes "sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/docker"
+	"sigs.k8s.io/kind/pkg/fs"
 )
 
 type flagpole struct {
@@ -66,15 +68,6 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
-	imageTarName := "image.tar"
-	destinationImageTar := fmt.Sprintf("/%s", imageTarName)
-
-	// Get the image into a tar
-	err := docker.Save(args[0], imageTarName)
-	if err != nil {
-		return err
-	}
-
 	// List nodes by cluster context name
 	n, err := clusternodes.ListByCluster()
 	if err != nil {
@@ -85,18 +78,65 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		return errors.Errorf("unknown cluster %q", flags.Name)
 	}
 
+	// map cluster nodes by their name
+	nodesByName := map[string]clusternodes.Node{}
 	for _, node := range nodes {
-		// Copy image tar to each node
-		if err := node.CopyTo(imageTarName, destinationImageTar); err != nil {
-			return errors.Wrap(err, "failed to copy image to node")
-		}
+		// TODO(bentheelder): this depends on the fact that ListByCluster()
+		// will have name for nameOrId.
+		nodesByName[node.String()] = node
+	}
 
-		// Load image into each node
-		if err := node.Command(
-			"docker", "load", "--input", destinationImageTar,
-		).Run(); err != nil {
-			return errors.Wrap(err, "failed to load image")
+	// pick only the user selected nodes and ensure they exist
+	// the default is all nodes unless flags.Nodes is set
+	selectedNodes := nodes
+	if len(flags.Nodes) > 0 {
+		selectedNodes := []clusternodes.Node{}
+		for _, name := range flags.Nodes {
+			node, ok := nodesByName[name]
+			if !ok {
+				return errors.Errorf("unknown node: %s", name)
+			}
+			selectedNodes = append(selectedNodes, node)
 		}
+	}
+
+	// Save the image into a tar
+	dir, err := fs.TempDir("", "image-tar")
+	if err != nil {
+		return errors.Wrap(err, "failed to create tempdir")
+	}
+	defer os.RemoveAll(dir)
+	imageTarPath := filepath.Join(dir, "image.tar")
+
+	err = docker.Save(args[0], imageTarPath)
+	if err != nil {
+		return err
+	}
+
+	// Load the image into every node
+	for _, node := range selectedNodes {
+		if err := loadImage(imageTarPath, &node); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func loadImage(imageTarName string, node *clusternodes.Node) error {
+	// Copy image tar to each node
+	f, err := os.Open(imageTarName)
+	if err != nil {
+		return errors.Wrap(err, "failed to open image")
+	}
+	defer f.Close()
+
+	// Load image into each node
+	cmd := node.Command(
+		"docker", "load",
+	)
+	cmd.SetStdin(f)
+	if err := cmd.Run(); err != nil {
+		return errors.Wrap(err, "failed to load image")
 	}
 	return nil
 }
