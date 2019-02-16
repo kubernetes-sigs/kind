@@ -107,6 +107,21 @@ kind delete cluster
 If the flag `--name` is not specified, kind will use the default cluster
 context name `kind` and delete that cluster.
 
+## Loading an Image Into Your Cluster
+
+Docker images can be loaded into your cluster nodes with:
+`kind load docker-image my-custom-image`
+
+Additionally, image archives can be loaded with:
+`kind load image-archive /my-image-archive.tar`
+
+This allows a workflow like:
+```
+docker build -t my-custom-image:unique-tag ./my-image-dir
+kind load docker-image my-custom-image:unique-tag
+kubectl apply -f my-manifest-using-my-image:unique-tag
+```
+
 ## Building Images
 
 kind runs a local Kubernetes cluster by using Docker containers as "nodes".
