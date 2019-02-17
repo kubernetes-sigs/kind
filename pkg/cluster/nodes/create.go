@@ -157,11 +157,11 @@ func createNode(name, image, clusterLabel string, role config.NodeRole, extraArg
 
 	id, err := docker.Run(
 		image,
-		runArgs,
-		[]string{
+		docker.WithRunArgs(runArgs...),
+		docker.WithContainerArgs(
 			// explicitly pass the entrypoint argument
 			"/sbin/init",
-		},
+		),
 	)
 
 	// if there is a returned ID then we did create a container
