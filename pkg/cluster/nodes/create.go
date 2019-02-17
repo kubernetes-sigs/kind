@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/internal/haproxy"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
+	"sigs.k8s.io/kind/pkg/container/cri"
 	"sigs.k8s.io/kind/pkg/container/docker"
 )
 
@@ -49,14 +50,15 @@ func getPort() (int, error) {
 
 // CreateControlPlaneNode creates a contol-plane node
 // and gets ready for exposing the the API server
-func CreateControlPlaneNode(name, image, clusterLabel string) (node *Node, err error) {
+func CreateControlPlaneNode(name, image, clusterLabel string, mounts []cri.Mount) (node *Node, err error) {
 	// gets a random host port for the API server
 	port, err := getPort()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get port for API server")
 	}
 
-	node, err = createNode(name, image, clusterLabel, config.ControlPlaneRole,
+	node, err = createNode(
+		name, image, clusterLabel, config.ControlPlaneRole, mounts,
 		// publish selected port for the API server
 		"--expose", fmt.Sprintf("%d", port),
 		"-p", fmt.Sprintf("%d:%d", port, kubeadm.APIServerPort),
@@ -81,6 +83,7 @@ func CreateExternalLoadBalancerNode(name, image, clusterLabel string) (node *Nod
 	}
 
 	node, err = createNode(name, image, clusterLabel, config.ExternalLoadBalancerRole,
+		nil,
 		// publish selected port for the control plane
 		"--expose", fmt.Sprintf("%d", port),
 		"-p", fmt.Sprintf("%d:%d", port, haproxy.ControlPlanePort),
@@ -96,18 +99,19 @@ func CreateExternalLoadBalancerNode(name, image, clusterLabel string) (node *Nod
 }
 
 // CreateWorkerNode creates a worker node
-func CreateWorkerNode(name, image, clusterLabel string) (node *Node, err error) {
-	node, err = createNode(name, image, clusterLabel, config.WorkerRole)
+func CreateWorkerNode(name, image, clusterLabel string, mounts []cri.Mount) (node *Node, err error) {
+	node, err = createNode(name, image, clusterLabel, config.WorkerRole, mounts)
 	if err != nil {
 		return node, err
 	}
 	return node, nil
 }
 
+// TODO(bentheelder): refactor this to not have extraArgs
 // createNode `docker run`s the node image, note that due to
 // images/node/entrypoint being the entrypoint, this container will
 // effectively be paused until we call actuallyStartNode(...)
-func createNode(name, image, clusterLabel string, role config.NodeRole, extraArgs ...string) (handle *Node, err error) {
+func createNode(name, image, clusterLabel string, role config.NodeRole, mounts []cri.Mount, extraArgs ...string) (handle *Node, err error) {
 	runArgs := []string{
 		"-d", // run the container detached
 		// running containers in a container requires privileged
@@ -162,6 +166,7 @@ func createNode(name, image, clusterLabel string, role config.NodeRole, extraArg
 			// explicitly pass the entrypoint argument
 			"/sbin/init",
 		),
+		docker.WithMounts(mounts),
 	)
 
 	// if there is a returned ID then we did create a container
