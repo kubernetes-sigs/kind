@@ -22,6 +22,7 @@ package v1alpha2
 
 import (
 	runtime "k8s.io/apimachinery/pkg/runtime"
+	cri "sigs.k8s.io/kind/pkg/container/cri"
 	kustomize "sigs.k8s.io/kind/pkg/kustomize"
 )
 
@@ -73,6 +74,11 @@ func (in *Node) DeepCopyInto(out *Node) {
 	if in.KubeadmConfigPatchesJSON6902 != nil {
 		in, out := &in.KubeadmConfigPatchesJSON6902, &out.KubeadmConfigPatchesJSON6902
 		*out = make([]kustomize.PatchJSON6902, len(*in))
+		copy(*out, *in)
+	}
+	if in.Mounts != nil {
+		in, out := &in.Mounts, &out.Mounts
+		*out = make([]cri.Mount, len(*in))
 		copy(*out, *in)
 	}
 	return

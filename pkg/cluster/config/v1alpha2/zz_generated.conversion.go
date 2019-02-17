@@ -26,6 +26,7 @@ import (
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	config "sigs.k8s.io/kind/pkg/cluster/config"
+	cri "sigs.k8s.io/kind/pkg/container/cri"
 	kustomize "sigs.k8s.io/kind/pkg/kustomize"
 )
 
@@ -85,6 +86,7 @@ func autoConvert_v1alpha2_Node_To_config_Node(in *Node, out *config.Node, s conv
 	out.Image = in.Image
 	out.KubeadmConfigPatches = *(*[]string)(unsafe.Pointer(&in.KubeadmConfigPatches))
 	out.KubeadmConfigPatchesJSON6902 = *(*[]kustomize.PatchJSON6902)(unsafe.Pointer(&in.KubeadmConfigPatchesJSON6902))
+	out.Mounts = *(*[]cri.Mount)(unsafe.Pointer(&in.Mounts))
 	return nil
 }
 
@@ -99,6 +101,7 @@ func autoConvert_config_Node_To_v1alpha2_Node(in *config.Node, out *Node, s conv
 	out.Image = in.Image
 	out.KubeadmConfigPatches = *(*[]string)(unsafe.Pointer(&in.KubeadmConfigPatches))
 	out.KubeadmConfigPatchesJSON6902 = *(*[]kustomize.PatchJSON6902)(unsafe.Pointer(&in.KubeadmConfigPatchesJSON6902))
+	out.Mounts = *(*[]cri.Mount)(unsafe.Pointer(&in.Mounts))
 	return nil
 }
 
