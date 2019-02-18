@@ -76,8 +76,8 @@ func (in *Node) DeepCopyInto(out *Node) {
 		*out = make([]kustomize.PatchJSON6902, len(*in))
 		copy(*out, *in)
 	}
-	if in.Mounts != nil {
-		in, out := &in.Mounts, &out.Mounts
+	if in.ExtraMounts != nil {
+		in, out := &in.ExtraMounts, &out.ExtraMounts
 		*out = make([]cri.Mount, len(*in))
 		copy(*out, *in)
 	}

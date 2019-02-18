@@ -55,9 +55,9 @@ type Node struct {
 	// KubeadmConfigPatchesJSON6902 are applied to the generated kubeadm config
 	// as patchesJson6902 to `kustomize build`
 	KubeadmConfigPatchesJSON6902 []kustomize.PatchJSON6902 `json:"kubeadmConfigPatchesJson6902,omitempty"`
-	// Mounts describes additional mount points for the node container
-	// These may be used to EG bind a hostpath
-	Mounts []cri.Mount `json:"mounts,omitempty"`
+	// ExtraMounts describes additional mount points for the node container
+	// These may be used to bind a hostpath
+	ExtraMounts []cri.Mount `json:"extraMounts,omitempty"`
 }
 
 // NodeRole defines possible role for nodes in a Kubernetes cluster managed by `kind`
