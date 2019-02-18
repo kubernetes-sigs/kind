@@ -31,8 +31,6 @@ the following command:
 ```
 git --version
 ```
-This documentation is written using `git` version `2.17.1`. 
-Your version may be different depending on your OS.
 
 ### Install Hugo
 
