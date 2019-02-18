@@ -30,7 +30,7 @@ func (c *Config) Validate() error {
 	// All nodes in the config should be valid
 	for i, n := range c.Nodes {
 		if err := n.Validate(); err != nil {
-			errs = append(errs, errors.Errorf("invalid configuration for node %d", i))
+			errs = append(errs, errors.Errorf("invalid configuration for node %d: %v", i, err))
 		}
 	}
 
