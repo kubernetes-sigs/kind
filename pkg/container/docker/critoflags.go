@@ -51,11 +51,11 @@ func generateMountBindings(mounts ...cri.Mount) []string {
 			attrs = append(attrs, "Z")
 		}
 		switch m.Propagation {
-		case cri.MountPropagation_PROPAGATION_PRIVATE:
+		case cri.MountPropagationNone:
 			// noop, private is default
-		case cri.MountPropagation_PROPAGATION_BIDIRECTIONAL:
+		case cri.MountPropagationBidirectional:
 			attrs = append(attrs, "rshared")
-		case cri.MountPropagation_PROPAGATION_HOST_TO_CONTAINER:
+		case cri.MountPropagationHostToContainer:
 			attrs = append(attrs, "rslave")
 		default:
 			log.Warningf("unknown propagation mode for hostPath %q", m.HostPath)

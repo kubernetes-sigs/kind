@@ -27,7 +27,7 @@ Custom JSON / yaml (by way of json) serialization for these types
 
 func (m *Mount) MarshalJSON() ([]byte, error) {
 	type Alias Mount
-	name, ok := MountPropagation_name[int32(m.Propagation)]
+	name, ok := MountPropagationValueToName[m.Propagation]
 	if !ok {
 		return nil, fmt.Errorf("unknown propogation value: %v", m.Propagation)
 	}
@@ -53,7 +53,7 @@ func (m *Mount) UnmarshalJSON(data []byte) error {
 	}
 	// if unset, will fallback to the default (0)
 	if aux.Propagation != "" {
-		val, ok := MountPropagation_value[aux.Propagation]
+		val, ok := MountPropagationNameToValue[aux.Propagation]
 		if !ok {
 			return fmt.Errorf("unknown propogation value: %s", aux.Propagation)
 		}

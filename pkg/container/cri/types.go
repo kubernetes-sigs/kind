@@ -22,52 +22,62 @@ https://github.com/kubernetes/kubernetes/blob/063e7ff358fdc8b0916e6f39beedc0d025
 */
 
 // Mount specifies a host volume to mount into a container.
-// This is a copy of the upstream cri Mount type
+// This is a close copy of the upstream cri Mount type
 // see: k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2
 // It additionally serializes the "propogation" field with the string enum
-// names on disk as opposed to the int32 values
+// names on disk as opposed to the int32 values, and the serlialzed field names
+// have been made closer to core/v1 VolumeMount field names
 // In yaml this looks like:
-//  container_path: /foo
-//  host_path: /bar
-//  readonly: true
-//  selinux_relabel: false
-//  propagation: PROPAGATION_PRIVATE
-// Propogation may be one of:
-// PROPAGATION_PRIVATE, PROPAGATION_HOST_TO_CONTAINER, PROPAGATION_BIDIRECTIONAL
+//  containerPath: /foo
+//  hostPath: /bar
+//  readOnly: true
+//  selinuxRelabel: false
+//  propagation: None
+// Propogation may be one of: None, HostToContainer, Bidirectional
 type Mount struct {
 	// Path of the mount within the container.
-	ContainerPath string `protobuf:"bytes,1,opt,name=container_path,json=containerPath,proto3" json:"container_path,omitempty"`
+	ContainerPath string `protobuf:"bytes,1,opt,name=container_path,json=containerPath,proto3" json:"containerPath,omitempty"`
 	// Path of the mount on the host. If the hostPath doesn't exist, then runtimes
 	// should report error. If the hostpath is a symbolic link, runtimes should
 	// follow the symlink and mount the real destination to container.
-	HostPath string `protobuf:"bytes,2,opt,name=host_path,json=hostPath,proto3" json:"host_path,omitempty"`
+	HostPath string `protobuf:"bytes,2,opt,name=host_path,json=hostPath,proto3" json:"hostPath,omitempty"`
 	// If set, the mount is read-only.
-	Readonly bool `protobuf:"varint,3,opt,name=readonly,proto3" json:"readonly,omitempty"`
+	Readonly bool `protobuf:"varint,3,opt,name=readonly,proto3,json=readOnly,proto3" json:"readOnly,omitempty"`
 	// If set, the mount needs SELinux relabeling.
-	SelinuxRelabel bool `protobuf:"varint,4,opt,name=selinux_relabel,json=selinuxRelabel,proto3" json:"selinux_relabel,omitempty"`
+	SelinuxRelabel bool `protobuf:"varint,4,opt,name=selinux_relabel,json=selinuxRelabel,proto3" json:"selinuxRelabel,omitempty"`
 	// Requested propagation mode.
 	Propagation MountPropagation `protobuf:"varint,5,opt,name=propagation,proto3,enum=runtime.v1alpha2.MountPropagation" json:"propagation,omitempty"`
 }
 
+// MountPropagation represents an "enum" for mount propagation options,
+// see also Mount.
 type MountPropagation int32
 
 const (
-	// No mount propagation ("private" in Linux terminology).
-	MountPropagation_PROPAGATION_PRIVATE MountPropagation = 0
-	// Mounts get propagated from the host to the container ("rslave" in Linux).
-	MountPropagation_PROPAGATION_HOST_TO_CONTAINER MountPropagation = 1
-	// Mounts get propagated from the host to the container and from the
-	// container to the host ("rshared" in Linux).
-	MountPropagation_PROPAGATION_BIDIRECTIONAL MountPropagation = 2
+	// MountPropagationNone specifies that no mount propagation
+	// ("private" in Linux terminology).
+	MountPropagationNone MountPropagation = 0
+	// MountPropagationHostToContainer specifies that mounts get propagated
+	// from the host to the container ("rslave" in Linux).
+	MountPropagationHostToContainer MountPropagation = 1
+	// MountPropagationBidirectional specifies that mounts get propagated from
+	// the host to the container and from the container to the host
+	// ("rshared" in Linux).
+	MountPropagationBidirectional MountPropagation = 2
 )
 
-var MountPropagation_name = map[int32]string{
-	0: "PROPAGATION_PRIVATE",
-	1: "PROPAGATION_HOST_TO_CONTAINER",
-	2: "PROPAGATION_BIDIRECTIONAL",
+// MountPropagationValueToName is a map of valid MountPropogation values to
+// their string names
+var MountPropagationValueToName = map[MountPropagation]string{
+	MountPropagationNone:            "None",
+	MountPropagationHostToContainer: "HostToContainer",
+	MountPropagationBidirectional:   "Bidirectional",
 }
-var MountPropagation_value = map[string]int32{
-	"PROPAGATION_PRIVATE":           0,
-	"PROPAGATION_HOST_TO_CONTAINER": 1,
-	"PROPAGATION_BIDIRECTIONAL":     2,
+
+// MountPropagationNameToValue is a map of valid MountPropogation names to
+// their values
+var MountPropagationNameToValue = map[string]MountPropagation{
+	"None":            MountPropagationNone,
+	"HostToContainer": MountPropagationHostToContainer,
+	"Bidirectional":   MountPropagationBidirectional,
 }
