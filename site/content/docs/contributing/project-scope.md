@@ -36,19 +36,20 @@ See also: the [1.0 roadmap], and the [1.0 tracking milestone].
 
 **Stakeholders**: 
 
-- SIG Testing
-- SIG Cluster-Lifecycle
-  - the kubeadm subproject
-- Possibly SIG Release (mainly to provide easy access to alpha and beta tags)
+- [SIG Testing][sigs]
+- [SIG Cluster-Lifecycle][sigs]
+  - the [kubeadm] subproject
+- Possibly [SIG Release][sigs] (mainly to provide easy access to alpha and beta tags)
 
 **Covered Work**:
 
-- Limited workloads / e2e testing
-- Cluster bring-up (IE kubeadm)
+- Limited workloads / [e2e testing][e2e]
+- Cluster bring-up (IE [kubeadm])
 - Kubernetes build (and currently install, but that may be problematic for cross-platform [#166])
-- Node skew, client skew (kubectl / e2e)
+- Node skew, client skew (kubectl / e2e versions)
 - Image publishing
-- Kubernetes CI tooling and jobs
+- Kubernetes CI tooling and [jobs][kubeadm-kind-job]
+- Most everything in the [1.0 roadmap]
 - ...
 
 ### P1: Support Testing Kubernetes Applications
@@ -56,9 +57,9 @@ See also: the [1.0 roadmap], and the [1.0 tracking milestone].
 
 **Stakeholders**: Various projects both inside & outside the Kubernetes Org.
 
-- cert-manager
-- cluster-api-provider-aws
-- cluster-api-provider-azure
+- [cert-manager]
+- [cluster-api-provider-aws]
+- [cluster-api-provider-azure]
 - ...
 
 **Covered Work**:
@@ -68,6 +69,11 @@ Most of the necessary work should be covered under
 however there is some additional work.
 
 - Improve "kind as a library"
+  - better and more controllable logging
+  - generally more control over output
+  - example usage & documentation
+  - better / tighter API contracts
+- Most of the rest should be covered by improving "kind the binary" outlined above
 - ...
 
 ### P2: Provide Cheap Bootstrap Clusters for the Cluster-API 
@@ -75,8 +81,9 @@ however there is some additional work.
 
 **Stakeholders**:
 
-- The cluster-api
-- cluster-api-provider-foo developers
+- various [cluster-api][cluster-api] [provider implementation][cluster-api provider implementations]
+developers
+- various [cluster-api][cluster-api] users
 
 ### P3: Extended Testing Not Covered Above
 ---
@@ -102,9 +109,9 @@ Several of these make sense but are not possible with the current tooling and wi
 
 Some things we can likely never cover in a reasonable way:
 
-- Cloud provider / CCM
-- Some of the node testing
-- Being a strange alternative library to "docker compose" etc.
+- Cloud provider / [CCM]
+- Some of the node testing (which portions exactly is currently unclear)
+- Being an alternative to "docker compose" etc.
 - Replacing [Phippy][phippy] ❤️ 🦒 ❤️
 - ...
 
@@ -113,3 +120,13 @@ Some things we can likely never cover in a reasonable way:
 [1.0 roadmap]: /docs/contributing/1.0-roadmap
 [1.0 tracking milestone]: https://github.com/kubernetes-sigs/kind/milestone/2
 [phippy]: https://phippy.io
+[kubeadm]: https://github.com/kubernetes/kubeadm
+[sigs]: https://github.com/kubernetes/community/blob/master/sig-list.md
+[e2e]: https://github.com/kubernetes/community/blob/master/contributors/devel/sig-testing/e2e-tests.md
+[kubeadm-kind-job]: https://testgrid.k8s.io/sig-cluster-lifecycle-all#kubeadm-kind-master
+[cert-manager]: https://github.com/jetstack/cert-manager
+[cluster-api-provider-aws]: https://github.com/kubernetes-sigs/cluster-api-provider-aws
+[cluster-api-provider-azure]: https://github.com/kubernetes-sigs/cluster-api-provider-azure
+[cluster-api]: https://github.com/kubernetes-sigs/cluster-api
+[cluster-api provider implementations]: https://github.com/kubernetes-sigs/cluster-api#provider-implementations
+[CCM]: https://github.com/kubernetes/kubernetes/tree/master/cmd/cloud-controller-manager
