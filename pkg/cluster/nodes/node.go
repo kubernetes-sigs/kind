@@ -24,12 +24,15 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/util/version"
+	"sigs.k8s.io/kind/pkg/cluster/config"
+	"sigs.k8s.io/kind/pkg/cluster/constants"
 
 	"sigs.k8s.io/kind/pkg/docker"
 	"sigs.k8s.io/kind/pkg/exec"
@@ -69,6 +72,7 @@ type nodeCache struct {
 	kubernetesVersion string
 	ip                string
 	ports             map[int]int
+	role              config.NodeRole
 	containerCmder    exec.Cmder
 }
 
@@ -257,6 +261,24 @@ func (n *Node) Ports(containerPort int) (hostPort int, err error) {
 		return -1, errors.Wrap(err, "failed to get file")
 	}
 	return n.nodeCache.ports[containerPort], nil
+}
+
+// Role returns the role of the node
+func (n *Node) Role() (role config.NodeRole, err error) {
+	// use the cached version first
+	if n.nodeCache.role != "" {
+		return n.nodeCache.role, nil
+	}
+	// retrive the role the node using docker inspect
+	lines, err := docker.Inspect(n.nameOrID, fmt.Sprintf("{{index .Config.Labels %q}}", constants.ClusterRoleKey))
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get %q label", constants.ClusterRoleKey)
+	}
+	if len(lines) != 1 {
+		return "", errors.Errorf("%q label should only be one line, got %d lines", constants.ClusterRoleKey, len(lines))
+	}
+	n.nodeCache.role = config.NodeRole(strings.Trim(lines[0], "'"))
+	return n.nodeCache.role, nil
 }
 
 // matches kubeconfig server entry like:
