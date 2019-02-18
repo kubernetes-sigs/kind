@@ -20,44 +20,51 @@ an account to contribute.
 
 ## 2. Install Tools
 
-### Install Documentation Tools
+### Install git
 
-If you wish to contribute to the documentation, it is recommended but not 
-required to install [hugo], which we use to develop this site.
+Our source code is managed with [`git`][git], to develop locally you
+will need to install `git`.
 
-Please see: https://gohugo.io/getting-started/installing/
-
-### Install Developer Tools
-
-If you wish to contribute to kind's code you will need to install the following:
-
-* `git`
-* `go`
-* `docker`
-
-#### Install git
-Install `git` on your local machine.
 You can check if `git` is already on your system and properly installed with 
 the following command:
 
 ```
 git --version
 ```
-This documentation is written using `git` version 2.17.1. 
-Your version may be different depending on your OS.
 
-#### Install or upgrade Go
+### Install Hugo
+
+If you wish to contribute to the documentation, it is recommended but not 
+required to install [hugo], which we use to develop this site.
+
+Please see: https://gohugo.io/getting-started/installing/
+
+
+### Install Go
+
+To work on kind's codebase you will need [Go][golang].
+
 Install or upgrade [Go using the instructions for your operating system][golang].
 You can check if Go is in your system with the following command:
 
 ```
 go version
 ```
-This documentation is written using Go version 1.11+.
 
-#### Install or upgrade Docker
-If you haven't already, install the 
-[Docker software using the instructions for your operating system][docker].
+Preferably Go `1.11.5` or greater should be installed. 
+
+Correct automatic formatting of the source with `gofmt` requires at least
+`1.11.0`.
+
+Working with Go [modules] (which we use for dependency management) requires at
+least `1.11.4` due to checksum bugs in lower versions.
+
+### Install Docker
+
+Currently, to create clusters you will need to install [Docker][docker].
+
+If you haven't already, [install Docker][install docker], following the
+[official instructions][install docker].
 If you have an existing installation, check your version and make sure you have
 the latest Docker.
 
@@ -91,6 +98,7 @@ reach out if you have any questions!
 
 See also: the Kubernetes [community page].
 
+[git]: https://git-scm.com/
 [hugo]: https://gohugo.io
 [issues]: https://github.com/kubernetes-sigs/kind/issues
 [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new
@@ -101,7 +109,8 @@ See also: the Kubernetes [community page].
 [initial design]: /docs/design/initial
 [github]: https://github.com/
 [golang]: https://golang.org/doc/install
-[docker]: https://docs.docker.com/install/#supported-platforms
+[docker]: https://www.docker.com/
+[install docker]: https://docs.docker.com/install/#supported-platforms
 [community]: https://github.com/kubernetes/community
 [contributor]: https://github.com/kubernetes/community/blob/master/contributors/guide/README.md
 [Kubernetes Slack]: http://slack.k8s.io/
@@ -109,3 +118,4 @@ See also: the Kubernetes [community page].
 [@BenTheElder]: https://github.com/BenTheElder
 [@munnerz]: https://github.com/munnerz
 [community page]: http://kubernetes.io/community/
+[modules]: https://github.com/golang/go/wiki/Modules
