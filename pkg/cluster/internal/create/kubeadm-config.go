@@ -144,14 +144,15 @@ func createKubeadmConfig(cfg *config.Config, derived *DerivedConfig, data kubead
 		os.Remove(path)
 		return "", err
 	}
-	// apply patches
-	// TODO(bentheelder): this does not respect per node patches at all
-	// either make patches cluster wide, or change this
-	patchedConfig, err := kustomize.Build(
-		[]string{config},
+	// fix all the patches to have name metadata matching the generated config
+	patches, jsonPatches := setPatchNames(
 		derived.BootStrapControlPlane().KubeadmConfigPatches,
 		derived.BootStrapControlPlane().KubeadmConfigPatchesJSON6902,
 	)
+	// apply patches
+	// TODO(bentheelder): this does not respect per node patches at all
+	// either make patches cluster wide, or change this
+	patchedConfig, err := kustomize.Build([]string{config}, patches, jsonPatches)
 	if err != nil {
 		os.Remove(path)
 		return "", err
@@ -164,4 +165,22 @@ func createKubeadmConfig(cfg *config.Config, derived *DerivedConfig, data kubead
 		return "", err
 	}
 	return path, nil
+}
+
+// setPatchNames sets the targeted object name on every patch to be the fixed
+// name we use when generating config objects (we have one of each type, all of
+// which have the same fixed name)
+func setPatchNames(patches []string, jsonPatches []kustomize.PatchJSON6902) ([]string, []kustomize.PatchJSON6902) {
+	fixedPatches := make([]string, len(patches))
+	fixedJSONPatches := make([]kustomize.PatchJSON6902, len(jsonPatches))
+	for i, patch := range patches {
+		// insert the generated name metadata
+		fixedPatches[i] = fmt.Sprintf("metadata:\nname: %s\n%s", kubeadm.ObjectName, patch)
+	}
+	for i, patch := range jsonPatches {
+		// insert the generated name metadata
+		patch.Name = kubeadm.ObjectName
+		fixedJSONPatches[i] = patch
+	}
+	return fixedPatches, fixedJSONPatches
 }

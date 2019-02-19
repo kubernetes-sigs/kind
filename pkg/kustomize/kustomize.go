@@ -37,6 +37,8 @@ type PatchJSON6902 struct {
 	Version string `json:"version"`
 	Kind    string `json:"kind"`
 	// Name and Namespace are optional
+	// NOTE: technically name is required now, but we default it elsewhere
+	// Third party users of this type / library would need to set it.
 	Name      string `json:"name,omitempty"`
 	Namespace string `json:"namespace,omitempty"`
 	// Patch should contain the contents of the json patch as a string
