@@ -34,7 +34,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 
-	"sigs.k8s.io/kind/pkg/docker"
+	"sigs.k8s.io/kind/pkg/container/docker"
 	"sigs.k8s.io/kind/pkg/exec"
 )
 

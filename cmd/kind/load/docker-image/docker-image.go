@@ -26,7 +26,7 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster"
 	clusternodes "sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/docker"
+	"sigs.k8s.io/kind/pkg/container/docker"
 	"sigs.k8s.io/kind/pkg/fs"
 )
 

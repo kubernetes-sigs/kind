@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/internal/meta"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/docker"
+	"sigs.k8s.io/kind/pkg/container/docker"
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
 
@@ -128,9 +128,9 @@ func (cc *Context) ProvisionNodes() (nodeList map[string]*nodes.Node, err error)
 		case config.ExternalLoadBalancerRole:
 			node, err = nodes.CreateExternalLoadBalancerNode(name, configNode.Image, cc.ClusterLabel())
 		case config.ControlPlaneRole:
-			node, err = nodes.CreateControlPlaneNode(name, configNode.Image, cc.ClusterLabel())
+			node, err = nodes.CreateControlPlaneNode(name, configNode.Image, cc.ClusterLabel(), configNode.ExtraMounts)
 		case config.WorkerRole:
-			node, err = nodes.CreateWorkerNode(name, configNode.Image, cc.ClusterLabel())
+			node, err = nodes.CreateWorkerNode(name, configNode.Image, cc.ClusterLabel(), configNode.ExtraMounts)
 		}
 		if err != nil {
 			return nodeList, err
