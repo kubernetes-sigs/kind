@@ -102,7 +102,10 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		}
 	}
 	fmt.Printf("Creating cluster %q ...\n", flags.Name)
-	if err = ctx.Create(cfg, flags.Retain, flags.Wait); err != nil {
+	if err = ctx.Create(cfg,
+		cluster.Retain(flags.Retain),
+		cluster.WaitForReady(flags.Wait),
+	); err != nil {
 		return errors.Wrap(err, "failed to create cluster")
 	}
 
