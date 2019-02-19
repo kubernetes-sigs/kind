@@ -35,10 +35,11 @@ func FromKind(k string) Gvk {
 	}
 }
 
+// Values that are brief but meaningful in logs.
 const (
-	noGroup   = "noGroup"
-	noVersion = "noVersion"
-	noKind    = "noKind"
+	noGroup   = "~G"
+	noVersion = "~V"
+	noKind    = "~K"
 	separator = "_"
 )
 
@@ -70,6 +71,7 @@ func (x Gvk) Equals(o Gvk) bool {
 // In some cases order just specified to provide determinism.
 var order = []string{
 	"Namespace",
+	"StorageClass",
 	"CustomResourceDefinition",
 	"ServiceAccount",
 	"Role",
@@ -97,7 +99,9 @@ func (x Gvk) IsLessThan(o Gvk) bool {
 	indexI, foundI := typeOrders[x.Kind]
 	indexJ, foundJ := typeOrders[o.Kind]
 	if foundI && foundJ {
-		return indexI < indexJ
+		if indexI != indexJ {
+			return indexI < indexJ
+		}
 	}
 	if foundI && !foundJ {
 		return true
@@ -110,11 +114,19 @@ func (x Gvk) IsLessThan(o Gvk) bool {
 
 // IsSelected returns true if `selector` selects `x`; otherwise, false.
 // If `selector` and `x` are the same, return true.
-// If `selector` is nil, it is considered as a wildcard and always return true.
-// e.g. selector <Group: "", Version: "", Kind: "Deployment"> CAN select
-// <Group: "extensions", Version: "v1beta1", Kind: "Deployment">.
-// selector <Group: "apps", Version: "", Kind: "Deployment"> CANNOT select
-// <Group: "extensions", Version: "v1beta1", Kind: "Deployment">.
+// If `selector` is nil, it is considered a wildcard match, returning true.
+// If selector fields are empty, they are considered wildcards matching
+// anything in the corresponding fields, e.g.
+//
+// this item:
+//       <Group: "extensions", Version: "v1beta1", Kind: "Deployment">
+//
+// is selected by
+//       <Group: "",           Version: "",        Kind: "Deployment">
+//
+// but rejected by
+//       <Group: "apps",       Version: "",        Kind: "Deployment">
+//
 func (x Gvk) IsSelected(selector *Gvk) bool {
 	if selector == nil {
 		return true
@@ -138,6 +150,7 @@ func (x Gvk) IsSelected(selector *Gvk) bool {
 }
 
 var clusterLevelKinds = []string{
+	"APIService",
 	"ClusterRoleBinding",
 	"ClusterRole",
 	"CustomResourceDefinition",

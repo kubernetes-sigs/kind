@@ -19,24 +19,31 @@ package fs
 import (
 	"fmt"
 	"path/filepath"
-	"sigs.k8s.io/kustomize/pkg/constants"
 	"sort"
+	"strings"
+
+	"sigs.k8s.io/kustomize/pkg/constants"
 )
 
-var _ FileSystem = &FakeFS{}
+var _ FileSystem = &fakeFs{}
 
-// FakeFS implements FileSystem using a fake in-memory filesystem.
-type FakeFS struct {
+// fakeFs implements FileSystem using a fake in-memory filesystem.
+type fakeFs struct {
 	m map[string]*FakeFile
 }
 
-// MakeFakeFS returns an instance of FakeFS with no files in it.
-func MakeFakeFS() *FakeFS {
-	return &FakeFS{m: map[string]*FakeFile{}}
+// MakeFakeFS returns an instance of fakeFs with no files in it.
+func MakeFakeFS() *fakeFs {
+	result := &fakeFs{m: map[string]*FakeFile{}}
+	result.Mkdir("/")
+	return result
 }
 
 // kustomizationContent is used in tests.
-const kustomizationContent = `namePrefix: some-prefix
+const kustomizationContent = `apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namePrefix: some-prefix
+nameSuffix: some-suffix
 # Labels to add to all objects and selectors.
 # These labels would also be used to form the selector for apply --prune
 # Named differently than “labels” to avoid confusion with metadata for this object
@@ -54,7 +61,7 @@ secretGenerator: []
 `
 
 // Create assures a fake file appears in the in-memory file system.
-func (fs *FakeFS) Create(name string) (File, error) {
+func (fs *fakeFs) Create(name string) (File, error) {
 	f := &FakeFile{}
 	f.open = true
 	fs.m[name] = f
@@ -62,32 +69,59 @@ func (fs *FakeFS) Create(name string) (File, error) {
 }
 
 // Mkdir assures a fake directory appears in the in-memory file system.
-func (fs *FakeFS) Mkdir(name string) error {
+func (fs *fakeFs) Mkdir(name string) error {
 	fs.m[name] = makeDir(name)
 	return nil
 }
 
 // MkdirAll delegates to Mkdir
-func (fs *FakeFS) MkdirAll(name string) error {
+func (fs *fakeFs) MkdirAll(name string) error {
 	return fs.Mkdir(name)
 }
 
+// RemoveAll presumably does rm -r on a path.
+// There's no error.
+func (fs *fakeFs) RemoveAll(name string) error {
+	var toRemove []string
+	for k := range fs.m {
+		if strings.HasPrefix(k, name) {
+			toRemove = append(toRemove, k)
+		}
+	}
+	for _, k := range toRemove {
+		delete(fs.m, k)
+	}
+	return nil
+}
+
 // Open returns a fake file in the open state.
-func (fs *FakeFS) Open(name string) (File, error) {
+func (fs *fakeFs) Open(name string) (File, error) {
 	if _, found := fs.m[name]; !found {
 		return nil, fmt.Errorf("file %q cannot be opened", name)
 	}
 	return fs.m[name], nil
 }
 
+// CleanedAbs cannot fail.
+func (fs *fakeFs) CleanedAbs(path string) (ConfirmedDir, string, error) {
+	if fs.IsDir(path) {
+		return ConfirmedDir(path), "", nil
+	}
+	d := filepath.Dir(path)
+	if d == path {
+		return ConfirmedDir(d), "", nil
+	}
+	return ConfirmedDir(d), filepath.Base(path), nil
+}
+
 // Exists returns true if file is known.
-func (fs *FakeFS) Exists(name string) bool {
+func (fs *fakeFs) Exists(name string) bool {
 	_, found := fs.m[name]
 	return found
 }
 
 // Glob returns the list of matching files
-func (fs *FakeFS) Glob(pattern string) ([]string, error) {
+func (fs *fakeFs) Glob(pattern string) ([]string, error) {
 	var result []string
 	for p := range fs.m {
 		if fs.pathMatch(p, pattern) {
@@ -99,28 +133,36 @@ func (fs *FakeFS) Glob(pattern string) ([]string, error) {
 }
 
 // IsDir returns true if the file exists and is a directory.
-func (fs *FakeFS) IsDir(name string) bool {
+func (fs *fakeFs) IsDir(name string) bool {
 	f, found := fs.m[name]
-	if !found {
-		return false
+	if found && f.dir {
+		return true
 	}
-	return f.dir
+	if !strings.HasSuffix(name, "/") {
+		name = name + "/"
+	}
+	for k := range fs.m {
+		if strings.HasPrefix(k, name) {
+			return true
+		}
+	}
+	return false
 }
 
 // ReadFile always returns an empty bytes and error depending on content of m.
-func (fs *FakeFS) ReadFile(name string) ([]byte, error) {
+func (fs *fakeFs) ReadFile(name string) ([]byte, error) {
 	if ff, found := fs.m[name]; found {
 		return ff.content, nil
 	}
 	return nil, fmt.Errorf("cannot read file %q", name)
 }
 
-func (fs *FakeFS) ReadTestKustomization() ([]byte, error) {
-	return fs.ReadFile(constants.KustomizationFileName)
+func (fs *fakeFs) ReadTestKustomization() ([]byte, error) {
+	return fs.ReadFile(constants.KustomizationFileNames[0])
 }
 
 // WriteFile always succeeds and does nothing.
-func (fs *FakeFS) WriteFile(name string, c []byte) error {
+func (fs *fakeFs) WriteFile(name string, c []byte) error {
 	ff := &FakeFile{}
 	ff.Write(c)
 	fs.m[name] = ff
@@ -128,16 +170,16 @@ func (fs *FakeFS) WriteFile(name string, c []byte) error {
 }
 
 // WriteTestKustomization writes a standard test file.
-func (fs *FakeFS) WriteTestKustomization() {
+func (fs *fakeFs) WriteTestKustomization() {
 	fs.WriteTestKustomizationWith([]byte(kustomizationContent))
 }
 
 // WriteTestKustomizationWith writes a standard test file.
-func (fs *FakeFS) WriteTestKustomizationWith(bytes []byte) {
-	fs.WriteFile(constants.KustomizationFileName, bytes)
+func (fs *fakeFs) WriteTestKustomizationWith(bytes []byte) {
+	fs.WriteFile(constants.KustomizationFileNames[0], bytes)
 }
 
-func (fs *FakeFS) pathMatch(path, pattern string) bool {
+func (fs *fakeFs) pathMatch(path, pattern string) bool {
 	match, _ := filepath.Match(pattern, path)
 	return match
 }

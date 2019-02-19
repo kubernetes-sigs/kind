@@ -18,7 +18,15 @@ limitations under the License.
 package types
 
 import (
+	"regexp"
+
+	"sigs.k8s.io/kustomize/pkg/image"
 	"sigs.k8s.io/kustomize/pkg/patch"
+)
+
+const (
+	KustomizationVersion = "kustomize.config.k8s.io/v1beta1"
+	KustomizationKind    = "Kustomization"
 )
 
 // TypeMeta copies apimachinery/pkg/apis/meta/v1.TypeMeta
@@ -42,6 +50,10 @@ type Kustomization struct {
 	// file including generated configmaps and secrets.
 	NamePrefix string `json:"namePrefix,omitempty" yaml:"namePrefix,omitempty"`
 
+	// NameSuffix will suffix the names of all resources mentioned in the kustomization
+	// file including generated configmaps and secrets.
+	NameSuffix string `json:"nameSuffix,omitempty" yaml:"nameSuffix,omitempty"`
+
 	// Namespace to add to all objects.
 	Namespace string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 
@@ -62,10 +74,10 @@ type Kustomization struct {
 	// and http://jsonpatch.com
 	PatchesJson6902 []patch.Json6902 `json:"patchesJson6902,omitempty" yaml:"patchesJson6902,omitempty"`
 
-	// ImageTags is a list of (image name, new tag) pairs for simply
-	// changing a an image tag.  This can also be achieved with a
+	// Images is a list of (image name, new name, new tag or digest)
+	// for changing image names, tags or digests. This can also be achieved with a
 	// patch, but this operator is simpler to specify.
-	ImageTags []ImageTag `json:"imageTags,omitempty" yaml:"imageTags,omitempty"`
+	Images []image.Image `json:"images,omitempty" yaml:"images,omitempty"`
 
 	// Vars allow things modified by kustomize to be injected into a
 	// container specification. A var is a name (e.g. FOO) associated
@@ -116,84 +128,88 @@ type Kustomization struct {
 	// GeneratorOptions modify behavior of all ConfigMap and Secret generators.
 	GeneratorOptions *GeneratorOptions `json:"generatorOptions,omitempty" yaml:"generatorOptions,omitempty"`
 
-	//
-	// Deprecated fields - See DealWithDeprecatedFields
-	//
+	// Configurations is a list of transformer configuration files
+	Configurations []string `json:"configurations,omitempty" yaml:"configurations,omitempty"`
+}
 
-	// Deprecated.
-	Patches []string `json:"patches,omitempty" yaml:"patches,omitempty"`
+// DealWithMissingFields fills the missing fields
+func (k *Kustomization) DealWithMissingFields() []string {
+	var msgs []string
+	if k.APIVersion == "" {
+		k.APIVersion = KustomizationVersion
+		msgs = append(msgs, "Fixed the missing field by adding apiVersion: "+KustomizationVersion)
+	}
+	if k.Kind == "" {
+		k.Kind = KustomizationKind
+		msgs = append(msgs, "Fixed the missing field by adding kind: "+KustomizationKind)
+	}
+	return msgs
+}
+
+func (k *Kustomization) EnforceFields() []string {
+	var errs []string
+	if k.APIVersion != "" && k.APIVersion != KustomizationVersion {
+		errs = append(errs, "apiVersion should be "+KustomizationVersion)
+	}
+	if k.Kind != "" && k.Kind != KustomizationKind {
+		errs = append(errs, "kind should be "+KustomizationKind)
+	}
+	return errs
 }
 
 // DealWithDeprecatedFields should be called immediately after
 // loading from storage.
-func (k *Kustomization) DealWithDeprecatedFields() {
-	if len(k.Patches) > 0 {
-		// The Patches field, meant to hold strategic merge
-		// patches, is deprecated. Append anything found
-		// there to the PatchesStrategicMerge field.
-		// This happened when the PatchesJson6902 field
-		// was introduced.
-		k.PatchesStrategicMerge = patch.Append(
-			k.PatchesStrategicMerge, k.Patches...)
-		k.Patches = []string{}
+func DealWithDeprecatedFields(data []byte) []byte {
+	deprecateFieldsMap := map[string]string{
+		"patches:":   "patchesStrategicMerge:",
+		"imageTags:": "images:",
 	}
+	for oldname, newname := range deprecateFieldsMap {
+		pattern := regexp.MustCompile(oldname)
+		data = pattern.ReplaceAll(data, []byte(newname))
+	}
+	return data
+}
+
+// GeneratorArgs contains arguments common to generators.
+type GeneratorArgs struct {
+	// Namespace for the configmap, optional
+	Namespace string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+
+	// Name - actually the partial name - of the generated resource.
+	// The full name ends up being something like
+	// NamePrefix + this.Name + hash(content of generated resource).
+	Name string `json:"name,omitempty" yaml:"name,omitempty"`
+
+	// Behavior of generated resource, must be one of:
+	//   'create': create a new one
+	//   'replace': replace the existing one
+	//   'merge': merge with the existing one
+	Behavior string `json:"behavior,omitempty" yaml:"behavior,omitempty"`
+
+	// DataSources for the generator.
+	DataSources `json:",inline,omitempty" yaml:",inline,omitempty"`
 }
 
 // ConfigMapArgs contains the metadata of how to generate a configmap.
 type ConfigMapArgs struct {
-	// Name of the configmap.
-	// The full name should be Kustomization.NamePrefix + Configmap.Name +
-	// hash(content of configmap).
-	Name string `json:"name,omitempty" yaml:"name,omitempty"`
-
-	// behavior of configmap, must be one of create, merge and replace
-	// 'create': create a new one;
-	// 'replace': replace the existing one;
-	// 'merge': merge the existing one.
-	Behavior string `json:"behavior,omitempty" yaml:"behavior,omitempty"`
-
-	// DataSources for configmap.
-	DataSources `json:",inline,omitempty" yaml:",inline,omitempty"`
+	// GeneratorArgs for the configmap.
+	GeneratorArgs `json:",inline,omitempty" yaml:",inline,omitempty"`
 }
 
 // SecretArgs contains the metadata of how to generate a secret.
 type SecretArgs struct {
-	// Name of the secret.
-	// The full name should be Kustomization.NamePrefix + SecretGenerator.Name +
-	// hash(content of secret).
-	Name string `json:"name,omitempty" yaml:"name,omitempty"`
-
-	// behavior of secretGenerator, must be one of create, merge and replace
-	// 'create': create a new one;
-	// 'replace': replace the existing one;
-	// 'merge': merge the existing one.
-	Behavior string `json:"behavior,omitempty" yaml:"behavior,omitempty"`
+	// GeneratorArgs for the secret.
+	GeneratorArgs `json:",inline,omitempty" yaml:",inline,omitempty"`
 
 	// Type of the secret.
 	//
 	// This is the same field as the secret type field in v1/Secret:
 	// It can be "Opaque" (default), or "kubernetes.io/tls".
 	//
-	// If type is "kubernetes.io/tls", then "Commands" must have exactly two
+	// If type is "kubernetes.io/tls", then "literals" or "files" must have exactly two
 	// keys: "tls.key" and "tls.crt"
 	Type string `json:"type,omitempty" yaml:"type,omitempty"`
-
-	// CommandSources for secret.
-	CommandSources `json:",inline,omitempty" yaml:",inline,omitempty"`
-
-	// Deprecated.
-	// Replaced by GeneratorOptions.TimeoutSeconds
-	// TimeoutSeconds specifies the timeout for commands.
-	TimeoutSeconds *int64 `json:"timeoutSeconds,omitempty" yaml:"timeoutSeconds,omitempty"`
-}
-
-// CommandSources contains some generic sources for secrets.
-type CommandSources struct {
-	// Map of keys to commands to generate the values
-	Commands map[string]string `json:"commands,omitempty" yaml:"commands,omitempty"`
-	// EnvCommand to output lines of key=val pairs to create a secret.
-	// i.e. a Docker .env file or a .ini file.
-	EnvCommand string `json:"envCommand,omitempty" yaml:"envCommand,omitempty"`
 }
 
 // DataSources contains some generic sources for configmaps.
@@ -219,19 +235,6 @@ type DataSources struct {
 	EnvSource string `json:"env,omitempty" yaml:"env,omitempty"`
 }
 
-// ImageTag contains an image and a new tag, which will replace the original tag.
-type ImageTag struct {
-	// Name is a tag-less image name.
-	Name string `json:"name,omitempty" yaml:"name,omitempty"`
-
-	// NewTag is the value to use in replacing the original tag.
-	NewTag string `json:"newTag,omitempty" yaml:"newTag,omitempty"`
-
-	// Digest is the value used to replace the original image tag.
-	// If digest is present NewTag value is ignored.
-	Digest string `json:"digest,omitempty" yaml:"digest,omitempty"`
-}
-
 // GeneratorOptions modify behavior of all ConfigMap and Secret generators.
 type GeneratorOptions struct {
 	// Labels to add to all generated resources.
@@ -240,17 +243,8 @@ type GeneratorOptions struct {
 	// Annotations to add to all generated resources.
 	Annotations map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
 
-	// TimeoutSeconds specifies the timeout for commands, if any,
-	// used in resource generation.  At time of writing, the default
-	// was specified in configmapandsecret.defaultCommandTimeout.
-	TimeoutSeconds *int64 `json:"timeoutSeconds,omitempty" yaml:"timeoutSeconds,omitempty"`
-
-	// Shell and arguments to use as a context for commands used in
-	// resource generation.  Default at time of writing:  {'sh', '-c'}.
-	Shell []string `json:"shell,omitempty" yaml:"shell,omitempty"`
-
-	// DisableNameHash if true disables the default behavior of adding a
+	// DisableNameSuffixHash if true disables the default behavior of adding a
 	// suffix to the names of generated resources that is a hash of the
 	// resource contents.
-	DisableHash bool `json:"disableHash,omitempty" yaml:"disableHash,omitempty"`
+	DisableNameSuffixHash bool `json:"disableNameSuffixHash,omitempty" yaml:"disableNameSuffixHash,omitempty"`
 }

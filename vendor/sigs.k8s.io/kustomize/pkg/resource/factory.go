@@ -17,9 +17,10 @@ limitations under the License.
 package resource
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 
-	"sigs.k8s.io/kustomize/pkg/fs"
 	"sigs.k8s.io/kustomize/pkg/ifc"
 	internal "sigs.k8s.io/kustomize/pkg/internal/error"
 	"sigs.k8s.io/kustomize/pkg/patch"
@@ -40,7 +41,16 @@ func NewFactory(kf ifc.KunstructuredFactory) *Factory {
 func (rf *Factory) FromMap(m map[string]interface{}) *Resource {
 	return &Resource{
 		Kunstructured: rf.kf.FromMap(m),
-		b:             ifc.BehaviorUnspecified}
+		options:       types.NewGenArgs(nil, nil),
+	}
+}
+
+// FromMapAndOption returns a new instance of Resource with given options.
+func (rf *Factory) FromMapAndOption(m map[string]interface{}, args *types.GeneratorArgs, option *types.GeneratorOptions) *Resource {
+	return &Resource{
+		Kunstructured: rf.kf.FromMap(m),
+		options:       types.NewGenArgs(args, option),
+	}
 }
 
 // FromKunstructured returns a new instance of Resource.
@@ -49,7 +59,10 @@ func (rf *Factory) FromKunstructured(
 	if u == nil {
 		log.Fatal("unstruct ifc must not be null")
 	}
-	return &Resource{Kunstructured: u, b: ifc.BehaviorUnspecified}
+	return &Resource{
+		Kunstructured: u,
+		options:       types.NewGenArgs(nil, nil),
+	}
 }
 
 // SliceFromPatches returns a slice of resources given a patch path
@@ -78,15 +91,37 @@ func (rf *Factory) SliceFromBytes(in []byte) ([]*Resource, error) {
 		return nil, err
 	}
 	var result []*Resource
-	for _, u := range kunStructs {
-		result = append(result, rf.FromKunstructured(u))
+	for len(kunStructs) > 0 {
+		u := kunStructs[0]
+		kunStructs = kunStructs[1:]
+		if u.GetKind() == "List" {
+			items := u.Map()["items"]
+			itemsSlice, ok := items.([]interface{})
+			if !ok {
+				return nil, fmt.Errorf("items in List is type %T, expected array", items)
+			}
+			for _, item := range itemsSlice {
+				itemJSON, err := json.Marshal(item)
+				if err != nil {
+					return nil, err
+				}
+				innerU, err := rf.kf.SliceFromBytes(itemJSON)
+				if err != nil {
+					return nil, err
+				}
+				// append innerU to kunStructs so nested Lists can be handled
+				kunStructs = append(kunStructs, innerU...)
+			}
+		} else {
+			result = append(result, rf.FromKunstructured(u))
+		}
 	}
 	return result, nil
 }
 
-// Set sets the filesystem and loader for the underlying factory
-func (rf *Factory) Set(fs fs.FileSystem, ldr ifc.Loader) {
-	rf.kf.Set(fs, ldr)
+// Set sets the loader for the underlying factory
+func (rf *Factory) Set(ldr ifc.Loader) {
+	rf.kf.Set(ldr)
 }
 
 // MakeConfigMap makes an instance of Resource for ConfigMap
@@ -95,7 +130,7 @@ func (rf *Factory) MakeConfigMap(args *types.ConfigMapArgs, options *types.Gener
 	if err != nil {
 		return nil, err
 	}
-	return &Resource{Kunstructured: u, b: fixBehavior(args.Behavior)}, nil
+	return &Resource{Kunstructured: u, options: types.NewGenArgs(&types.GeneratorArgs{Behavior: args.Behavior}, options)}, nil
 }
 
 // MakeSecret makes an instance of Resource for Secret
@@ -104,13 +139,5 @@ func (rf *Factory) MakeSecret(args *types.SecretArgs, options *types.GeneratorOp
 	if err != nil {
 		return nil, err
 	}
-	return &Resource{Kunstructured: u, b: fixBehavior(args.Behavior)}, nil
-}
-
-func fixBehavior(s string) ifc.GenerationBehavior {
-	b := ifc.NewGenerationBehavior(s)
-	if b == ifc.BehaviorUnspecified {
-		return ifc.BehaviorCreate
-	}
-	return b
+	return &Resource{Kunstructured: u, options: types.NewGenArgs(&types.GeneratorArgs{Behavior: args.Behavior}, options)}, nil
 }

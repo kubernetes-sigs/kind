@@ -20,7 +20,6 @@ package kunstruct
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -80,8 +79,12 @@ func (fs *UnstructAdapter) SetMap(m map[string]interface{}) {
 
 // GetFieldValue returns value at the given fieldpath.
 func (fs *UnstructAdapter) GetFieldValue(path string) (string, error) {
+	fields, err := parseFields(path)
+	if err != nil {
+		return "", err
+	}
 	s, found, err := unstructured.NestedString(
-		fs.UnstructuredContent(), strings.Split(path, ".")...)
+		fs.UnstructuredContent(), fields...)
 	if found || err != nil {
 		return s, err
 	}

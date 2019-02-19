@@ -18,52 +18,22 @@ limitations under the License.
 package loader
 
 import (
-	"fmt"
-	"path/filepath"
-	"sigs.k8s.io/kustomize/pkg/ifc"
-
 	"sigs.k8s.io/kustomize/pkg/fs"
+	"sigs.k8s.io/kustomize/pkg/git"
+	"sigs.k8s.io/kustomize/pkg/ifc"
 )
 
-// NewLoader returns a Loader given a target
-// The target can be a local disk directory or a github Url
-func NewLoader(target, r string, fSys fs.FileSystem) (ifc.Loader, error) {
-	if !isValidLoaderPath(target, r) {
-		return nil, fmt.Errorf("Not valid path: root='%s', loc='%s'\n", r, target)
+// NewLoader returns a Loader.
+func NewLoader(path string, fSys fs.FileSystem) (ifc.Loader, error) {
+	repoSpec, err := git.NewRepoSpecFromUrl(path)
+	if err == nil {
+		return newLoaderAtGitClone(
+			repoSpec, fSys, nil, git.ClonerUsingGitExec)
 	}
-
-	if !isLocalTarget(target, fSys) && isRepoUrl(target) {
-		return newGithubLoader(target, fSys)
-	}
-
-	l := newFileLoaderAtRoot(r, fSys)
-	if isRootLoaderPath(r) {
-		absPath, err := filepath.Abs(target)
-		if err != nil {
-			return nil, err
-		}
-		target = absPath
-	}
-
-	if !l.IsAbsPath(l.root, target) {
-		return nil, fmt.Errorf("Not abs path: l.root='%s', loc='%s'\n", l.root, target)
-	}
-	root, err := l.fullLocation(l.root, target)
+	root, err := demandDirectoryRoot(fSys, path)
 	if err != nil {
 		return nil, err
 	}
-	return newFileLoaderAtRoot(root, l.fSys), nil
-}
-
-func isValidLoaderPath(target, root string) bool {
-	return target != "" || root != ""
-}
-
-func isRootLoaderPath(root string) bool {
-	return root == ""
-}
-
-// isLocalTarget checks if a file exists in the filesystem
-func isLocalTarget(s string, fs fs.FileSystem) bool {
-	return fs.Exists(s)
+	return newLoaderAtConfirmedDir(
+		root, fSys, nil, git.ClonerUsingGitExec), nil
 }

@@ -31,6 +31,12 @@ varReference:
 - path: spec/template/spec/containers/command
   kind: Deployment
 
+- path: spec/template/spec/initContainers/command
+  kind: DaemonSet
+
+- path: spec/template/spec/containers/command
+  kind: DaemonSet
+
 - path: spec/template/spec/containers/command
   kind: Job
 
@@ -48,6 +54,12 @@ varReference:
 
 - path: spec/template/spec/containers/args
   kind: Deployment
+
+- path: spec/template/spec/initContainers/args
+  kind: DaemonSet
+
+- path: spec/template/spec/containers/args
+  kind: DaemonSet
 
 - path: spec/template/spec/containers/args
   kind: Job
@@ -67,6 +79,12 @@ varReference:
 - path: spec/template/spec/containers/env/value
   kind: Deployment
 
+- path: spec/template/spec/initContainers/env/value
+  kind: DaemonSet
+
+- path: spec/template/spec/containers/env/value
+  kind: DaemonSet
+
 - path: spec/template/spec/containers/env/value
   kind: Job
 
@@ -81,5 +99,11 @@ varReference:
 
 - path: spec/containers/env/value
   kind: Pod
+
+- path: spec/rules/host
+  kind: Ingress
+
+- path: spec/tls/hosts
+  kind: Ingress
 `
 )

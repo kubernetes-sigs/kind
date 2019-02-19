@@ -24,10 +24,9 @@ import (
 	"sort"
 
 	"github.com/ghodss/yaml"
-	"github.com/golang/glog"
-	"sigs.k8s.io/kustomize/pkg/ifc"
 	"sigs.k8s.io/kustomize/pkg/resid"
 	"sigs.k8s.io/kustomize/pkg/resource"
+	"sigs.k8s.io/kustomize/pkg/types"
 )
 
 // ResMap is a map from ResId to Resource.
@@ -115,31 +114,34 @@ func (m ResMap) ErrorIfNotEqual(m2 ResMap) error {
 func (m ResMap) DeepCopy(rf *resource.Factory) ResMap {
 	mcopy := make(ResMap)
 	for id, obj := range m {
-		mcopy[id] = rf.FromKunstructured(obj.Copy())
-		mcopy[id].SetBehavior(obj.Behavior())
+		mcopy[id] = obj.DeepCopy()
 	}
 	return mcopy
 }
 
-// FilterBy returns a ResMap containing ResIds with the same namespace and nameprefix
-// with the inputId
-// If inputId is a cluster level resource, return the original resmap
+// FilterBy returns a subset ResMap containing ResIds with
+// the same namespace and leftmost name prefix and rightmost name
+// as the inputId. If inputId is a cluster level resource, this
+// returns the original ResMap.
 func (m ResMap) FilterBy(inputId resid.ResId) ResMap {
 	if inputId.Gvk().IsClusterKind() {
 		return m
 	}
 	result := ResMap{}
 	for id, res := range m {
-		if id.Namespace() == inputId.Namespace() && id.HasSameLeftmostPrefix(inputId) {
+		if id.Gvk().IsClusterKind() || id.Namespace() == inputId.Namespace() &&
+			id.HasSameLeftmostPrefix(inputId) &&
+			id.HasSameRightmostSuffix(inputId) {
 			result[id] = res
 		}
 	}
 	return result
 }
 
-// MergeWithoutOverride combines multiple ResMap instances, failing on key collision
-// and skipping nil maps. In case if all of the maps are nil, an empty ResMap is returned.
-func MergeWithoutOverride(maps ...ResMap) (ResMap, error) {
+// MergeWithErrorOnIdCollision combines multiple ResMap instances, failing on
+// key collision and skipping nil maps.
+// If all of the maps are nil, an empty ResMap is returned.
+func MergeWithErrorOnIdCollision(maps ...ResMap) (ResMap, error) {
 	result := ResMap{}
 	for _, m := range maps {
 		if m == nil {
@@ -161,10 +163,10 @@ func MergeWithoutOverride(maps ...ResMap) (ResMap, error) {
 // "replace" option in its generation instructions, meaning it is supposed
 // to replace something from the raw resources list.
 // If all of the maps are nil, an empty ResMap is returned.
-// When looping over the instances to combine them, if a resource id for resource X
-// is found to be already in the combined map, then the behavior field for X
-// must be BehaviorMerge or BehaviorReplace.  If X is not in the map, then it's
-// behavior cannot be merge or replace.
+// When looping over the instances to combine them, if a resource id for
+// resource X is found to be already in the combined map, then the behavior
+// field for X must be BehaviorMerge or BehaviorReplace.  If X is not in the
+// map, then it's behavior cannot be merge or replace.
 func MergeWithOverride(maps ...ResMap) (ResMap, error) {
 	result := maps[0]
 	if result == nil {
@@ -179,26 +181,18 @@ func MergeWithOverride(maps ...ResMap) (ResMap, error) {
 			if len(matchedId) == 1 {
 				id = matchedId[0]
 				switch r.Behavior() {
-				case ifc.BehaviorReplace:
-					glog.V(4).Infof(
-						"Replace %v with %v", result[id].Map(), r.Map())
+				case types.BehaviorReplace:
 					r.Replace(result[id])
 					result[id] = r
-					result[id].SetBehavior(ifc.BehaviorCreate)
-				case ifc.BehaviorMerge:
-					glog.V(4).Infof(
-						"Merging %v with %v", result[id].Map(), r.Map())
+				case types.BehaviorMerge:
 					r.Merge(result[id])
 					result[id] = r
-					glog.V(4).Infof(
-						"Merged object is %v", result[id].Map())
-					result[id].SetBehavior(ifc.BehaviorCreate)
 				default:
 					return nil, fmt.Errorf("id %#v exists; must merge or replace", id)
 				}
 			} else if len(matchedId) == 0 {
 				switch r.Behavior() {
-				case ifc.BehaviorMerge, ifc.BehaviorReplace:
+				case types.BehaviorMerge, types.BehaviorReplace:
 					return nil, fmt.Errorf("id %#v does not exist; cannot merge or replace", id)
 				default:
 					result[id] = r

@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"sigs.k8s.io/kustomize/pkg/resmap"
-	"sigs.k8s.io/kustomize/pkg/resource"
 	"sigs.k8s.io/kustomize/pkg/transformers"
 )
 
@@ -33,25 +32,16 @@ func NewNameHashTransformer() transformers.Transformer {
 	return &nameHashTransformer{}
 }
 
-// Transform appends hash to configmaps and secrets.
+// Transform appends hash to generated resources.
 func (o *nameHashTransformer) Transform(m resmap.ResMap) error {
 	for _, res := range m {
-		if res.IsGenerated() {
-			err := o.appendHash(res)
+		if res.NeedHashSuffix() {
+			h, err := NewKustHash().Hash(res.Map())
 			if err != nil {
 				return err
 			}
+			res.SetName(fmt.Sprintf("%s-%s", res.GetName(), h))
 		}
 	}
-	return nil
-}
-
-func (o *nameHashTransformer) appendHash(res *resource.Resource) error {
-	h, err := NewKustHash().Hash(res.Map())
-	if err != nil {
-		return err
-	}
-	nameWithHash := fmt.Sprintf("%s-%s", res.GetName(), h)
-	res.SetName(nameWithHash)
 	return nil
 }

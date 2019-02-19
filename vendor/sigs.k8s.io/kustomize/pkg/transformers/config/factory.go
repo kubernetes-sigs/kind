@@ -21,12 +21,26 @@ import (
 
 	"github.com/ghodss/yaml"
 	"sigs.k8s.io/kustomize/pkg/ifc"
-	"sigs.k8s.io/kustomize/pkg/transformers/config/defaultconfig"
 )
 
 // Factory makes instances of TransformerConfig.
 type Factory struct {
 	ldr ifc.Loader
+}
+
+// MakeTransformerConfig returns a merger of custom config,
+// if any, with default config.
+func MakeTransformerConfig(
+	ldr ifc.Loader, paths []string) (*TransformerConfig, error) {
+	t1 := MakeDefaultConfig()
+	if len(paths) == 0 {
+		return t1, nil
+	}
+	t2, err := NewFactory(ldr).FromFiles(paths)
+	if err != nil {
+		return nil, err
+	}
+	return t1.Merge(t2)
 }
 
 func NewFactory(l ifc.Loader) *Factory {
@@ -53,7 +67,10 @@ func (tf *Factory) FromFiles(
 		if err != nil {
 			return nil, err
 		}
-		result = result.Merge(t)
+		result, err = result.Merge(t)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return result, nil
 }
@@ -67,20 +84,4 @@ func makeTransformerConfigFromBytes(data []byte) (*TransformerConfig, error) {
 	}
 	t.sortFields()
 	return &t, nil
-}
-
-// EmptyConfig returns an empty TransformerConfig object
-func (tf *Factory) EmptyConfig() *TransformerConfig {
-	return &TransformerConfig{}
-}
-
-// DefaultConfig returns a default TransformerConfig.
-// This should never fail, hence the Fatal panic.
-func (tf *Factory) DefaultConfig() *TransformerConfig {
-	c, err := makeTransformerConfigFromBytes(
-		defaultconfig.GetDefaultFieldSpecs())
-	if err != nil {
-		log.Fatalf("Unable to make default transformconfig: %v", err)
-	}
-	return c
 }

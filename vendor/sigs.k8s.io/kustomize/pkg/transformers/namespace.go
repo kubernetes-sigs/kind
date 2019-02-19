@@ -18,9 +18,7 @@ package transformers
 
 import (
 	"sigs.k8s.io/kustomize/pkg/gvk"
-	"sigs.k8s.io/kustomize/pkg/resid"
 	"sigs.k8s.io/kustomize/pkg/resmap"
-	"sigs.k8s.io/kustomize/pkg/resource"
 	"sigs.k8s.io/kustomize/pkg/transformers/config"
 )
 
@@ -28,13 +26,12 @@ type namespaceTransformer struct {
 	namespace        string
 	fieldSpecsToUse  []config.FieldSpec
 	fieldSpecsToSkip []config.FieldSpec
-	factory          *resource.Factory
 }
 
 var _ Transformer = &namespaceTransformer{}
 
 // NewNamespaceTransformer construct a namespaceTransformer.
-func NewNamespaceTransformer(ns string, cf []config.FieldSpec, f *resource.Factory) Transformer {
+func NewNamespaceTransformer(ns string, cf []config.FieldSpec) Transformer {
 	if len(ns) == 0 {
 		return NewNoOpTransformer()
 	}
@@ -46,13 +43,11 @@ func NewNamespaceTransformer(ns string, cf []config.FieldSpec, f *resource.Facto
 		namespace:        ns,
 		fieldSpecsToUse:  cf,
 		fieldSpecsToSkip: skip,
-		factory:          f,
 	}
 }
 
 // Transform adds the namespace.
 func (o *namespaceTransformer) Transform(m resmap.ResMap) error {
-	o.createNamespaceIfNotFound(m)
 	mf := resmap.ResMap{}
 
 	for id := range m {
@@ -122,24 +117,5 @@ func (o *namespaceTransformer) updateClusterRoleBinding(m resmap.ResMap) {
 			}
 		}
 		objMap["subjects"] = subjects
-	}
-}
-
-func (o *namespaceTransformer) createNamespaceIfNotFound(m resmap.ResMap) {
-	id := resid.NewResId(gvk.Gvk{
-		Version: "v1",
-		Kind:    "Namespace",
-	}, o.namespace)
-	ids := m.FindByGVKN(id)
-	if len(ids) == 0 {
-		m[id] = o.factory.FromMap(
-			map[string]interface{}{
-				"apiVersion": "v1",
-				"kind":       "Namespace",
-				"metadata": map[string]interface{}{
-					"name": o.namespace,
-				},
-			},
-		)
 	}
 }
