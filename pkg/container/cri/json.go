@@ -25,6 +25,8 @@ import (
 Custom JSON / yaml (by way of json) serialization for these types
 */
 
+// MarshalJSON implements custom encoding for JSON and Yaml
+// https://golang.org/pkg/encoding/json/
 func (m *Mount) MarshalJSON() ([]byte, error) {
 	type Alias Mount
 	name, ok := MountPropagationValueToName[m.Propagation]
@@ -40,6 +42,8 @@ func (m *Mount) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// UnmarshalJSON implements custom decoding for JSON and Yaml
+// https://golang.org/pkg/encoding/json/
 func (m *Mount) UnmarshalJSON(data []byte) error {
 	type Alias Mount
 	aux := &struct {
