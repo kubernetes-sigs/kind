@@ -9,58 +9,59 @@ import (
 )
 
 type refvarTransformer struct {
-	fieldSpecs []config.FieldSpec
-	vars       map[string]string
+	fieldSpecs  []config.FieldSpec
+	mappingFunc func(string) string
 }
 
-// NewRefVarTransformer returns a Trasformer that replaces $(VAR) style variables with values.
-func NewRefVarTransformer(vars map[string]string, p []config.FieldSpec) Transformer {
+// NewRefVarTransformer returns a Transformer that replaces $(VAR) style
+// variables with values.
+// The fieldSpecs are the places to look for occurrences of $(VAR).
+func NewRefVarTransformer(
+	varMap map[string]string, fs []config.FieldSpec) Transformer {
+	if len(varMap) == 0 {
+		return NewNoOpTransformer()
+	}
 	return &refvarTransformer{
-		vars:       vars,
-		fieldSpecs: p,
+		fieldSpecs:  fs,
+		mappingFunc: expansion.MappingFuncFor(varMap),
 	}
 }
 
-// Transform determines the final values of variables:
-//
-// 1.  Determine the final value of each variable:
-//     a.  If the variable's Value is set, expand the `$(var)` references to other
-//         variables in the .Value field; the sources of variables are the declared
-//         variables of the container and the service environment variables
-//     b.  If a source is defined for an environment variable, resolve the source
-// 2.  Create the container's environment in the order variables are declared
-// 3.  Add remaining service environment vars
-func (rv *refvarTransformer) Transform(resources resmap.ResMap) error {
-	for resId := range resources {
-		objMap := resources[resId].Map()
-		for _, pc := range rv.fieldSpecs {
-			if !resId.Gvk().IsSelected(&pc.Gvk) {
-				continue
-			}
-			err := mutateField(objMap, pc.PathSlice(), false, func(in interface{}) (interface{}, error) {
-				var (
-					mappingFunc = expansion.MappingFuncFor(rv.vars)
-				)
-				switch vt := in.(type) {
-				case []interface{}:
-					var xs []string
-					for _, a := range in.([]interface{}) {
-						xs = append(xs, expansion.Expand(a.(string), mappingFunc))
-					}
-					return xs, nil
-				case interface{}:
-					s, ok := in.(string)
-					if !ok {
-						return nil, fmt.Errorf("%#v is expectd to be %T", in, s)
-					}
-					runtimeVal := expansion.Expand(s, mappingFunc)
-					return runtimeVal, nil
-				default:
-					return "", fmt.Errorf("invalid type encountered %T", vt)
+// replaceVars accepts as 'in' a string, or string array, which can have
+// embedded instances of $VAR style variables, e.g. a container command string.
+// The function returns the string with the variables expanded to their final
+// values.
+func (rv *refvarTransformer) replaceVars(in interface{}) (interface{}, error) {
+	switch vt := in.(type) {
+	case []interface{}:
+		var xs []string
+		for _, a := range in.([]interface{}) {
+			xs = append(xs, expansion.Expand(a.(string), rv.mappingFunc))
+		}
+		return xs, nil
+	case interface{}:
+		s, ok := in.(string)
+		if !ok {
+			return nil, fmt.Errorf("%#v is expected to be %T", in, s)
+		}
+		return expansion.Expand(s, rv.mappingFunc), nil
+	case nil:
+		return nil, nil
+	default:
+		return "", fmt.Errorf("invalid type encountered %T", vt)
+	}
+}
+
+// Transform replaces $(VAR) style variables with values.
+func (rv *refvarTransformer) Transform(m resmap.ResMap) error {
+	for id, res := range m {
+		for _, fieldSpec := range rv.fieldSpecs {
+			if id.Gvk().IsSelected(&fieldSpec.Gvk) {
+				if err := mutateField(
+					res.Map(), fieldSpec.PathSlice(),
+					false, rv.replaceVars); err != nil {
+					return err
 				}
-			})
-			if err != nil {
-				return err
 			}
 		}
 	}

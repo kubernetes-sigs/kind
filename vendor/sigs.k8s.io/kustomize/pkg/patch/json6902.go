@@ -25,7 +25,7 @@ type Json6902 struct {
 	// applied to. It must refer to a Kubernetes resource under the
 	// purview of this kustomization. Target should use the
 	// raw name of the object (the name specified in its YAML,
-	// before addition of a namePrefix).
+	// before addition of a namePrefix and a nameSuffix).
 	Target *Target `json:"target" yaml:"target"`
 
 	// relative file path for a json patch file inside a kustomization

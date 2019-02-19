@@ -52,7 +52,7 @@ import (
 //   }
 type NameBackReferences struct {
 	gvk.Gvk    `json:",inline,omitempty" yaml:",inline,omitempty"`
-	FieldSpecs []FieldSpec `json:"FieldSpecs,omitempty" yaml:"FieldSpecs,omitempty"`
+	FieldSpecs fsSlice `json:"FieldSpecs,omitempty" yaml:"FieldSpecs,omitempty"`
 }
 
 func (n NameBackReferences) String() string {
@@ -72,20 +72,27 @@ func (s nbrSlice) Less(i, j int) bool {
 	return s[i].Gvk.IsLessThan(s[j].Gvk)
 }
 
-func (s nbrSlice) mergeAll(o nbrSlice) nbrSlice {
-	result := s
+func (s nbrSlice) mergeAll(o nbrSlice) (result nbrSlice, err error) {
+	result = s
 	for _, r := range o {
-		result = result.mergeOne(r)
+		result, err = result.mergeOne(r)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return result
+	return result, nil
 }
 
-func (s nbrSlice) mergeOne(other NameBackReferences) nbrSlice {
+func (s nbrSlice) mergeOne(other NameBackReferences) (nbrSlice, error) {
 	var result nbrSlice
+	var err error
 	found := false
 	for _, c := range s {
 		if c.Gvk.Equals(other.Gvk) {
-			c.FieldSpecs = append(c.FieldSpecs, other.FieldSpecs...)
+			c.FieldSpecs, err = c.FieldSpecs.mergeAll(other.FieldSpecs)
+			if err != nil {
+				return nil, err
+			}
 			found = true
 		}
 		result = append(result, c)
@@ -94,5 +101,5 @@ func (s nbrSlice) mergeOne(other NameBackReferences) nbrSlice {
 	if !found {
 		result = append(result, other)
 	}
-	return result
+	return result, nil
 }

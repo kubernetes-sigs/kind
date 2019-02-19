@@ -130,6 +130,11 @@ commonLabels:
   group: batch
   kind: CronJob
 
+- path: spec/jobTemplate/metadata/labels
+  create: true
+  group: batch
+  kind: CronJob
+
 - path: spec/jobTemplate/spec/template/metadata/labels
   create: true
   group: batch

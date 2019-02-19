@@ -21,139 +21,180 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
+	"github.com/go-openapi/spec"
 	"k8s.io/kube-openapi/pkg/common"
 	"sigs.k8s.io/kustomize/pkg/gvk"
+	"sigs.k8s.io/kustomize/pkg/ifc"
 )
 
-// LoadCRDs parse CRD schemas from paths into a TransformerConfig
-func (tf *Factory) LoadCRDs(paths []string) (*TransformerConfig, error) {
-	tc := tf.EmptyConfig()
+type myProperties map[string]spec.Schema
+type nameToApiMap map[string]common.OpenAPIDefinition
+
+// LoadConfigFromCRDs parse CRD schemas from paths into a TransformerConfig
+func LoadConfigFromCRDs(
+	ldr ifc.Loader, paths []string) (*TransformerConfig, error) {
+	tc := MakeEmptyConfig()
 	for _, path := range paths {
-		otherTc, err := tf.loadCRD(path)
+		content, err := ldr.Load(path)
 		if err != nil {
 			return nil, err
 		}
-		tc = tc.Merge(otherTc)
+		m, err := makeNameToApiMap(content)
+		if err != nil {
+			return nil, err
+		}
+		otherTc, err := makeConfigFromApiMap(m)
+		if err != nil {
+			return nil, err
+		}
+		tc, err = tc.Merge(otherTc)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return tc, nil
 }
 
-func (tf *Factory) loadCRD(path string) (*TransformerConfig, error) {
-	result := tf.EmptyConfig()
-	content, err := tf.loader().Load(path)
-	if err != nil {
-		return result, err
-	}
-
-	var types map[string]common.OpenAPIDefinition
+func makeNameToApiMap(content []byte) (result nameToApiMap, err error) {
 	if content[0] == '{' {
-		err = json.Unmarshal(content, &types)
+		err = json.Unmarshal(content, &result)
 	} else {
-		err = yaml.Unmarshal(content, &types)
+		err = yaml.Unmarshal(content, &result)
 	}
-	if err != nil {
-		return nil, err
-	}
+	return
+}
 
-	crds := getCRDs(types)
-	for crd, k := range crds {
-		tc := tf.EmptyConfig()
-		err = loadCrdIntoConfig(
-			types, crd, crd, k, []string{}, tc)
+func makeConfigFromApiMap(m nameToApiMap) (*TransformerConfig, error) {
+	result := MakeEmptyConfig()
+	for name, api := range m {
+		if !looksLikeAk8sType(api.Schema.SchemaProps.Properties) {
+			continue
+		}
+		tc := MakeEmptyConfig()
+		err := loadCrdIntoConfig(
+			tc, makeGvkFromTypeName(name), m, name, []string{})
 		if err != nil {
 			return result, err
 		}
-		result = result.Merge(tc)
+		result, err = result.Merge(tc)
+		if err != nil {
+			return result, err
+		}
 	}
-
 	return result, nil
 }
 
-// getCRDs get all CRD types
-func getCRDs(types map[string]common.OpenAPIDefinition) map[string]gvk.Gvk {
-	crds := map[string]gvk.Gvk{}
-
-	for typename, t := range types {
-		properties := t.Schema.SchemaProps.Properties
-		_, foundKind := properties["kind"]
-		_, foundAPIVersion := properties["apiVersion"]
-		_, foundMetadata := properties["metadata"]
-		if foundKind && foundAPIVersion && foundMetadata {
-			// TODO: Get Group and Version for CRD from the openAPI definition once
-			// "x-kubernetes-group-version-kind" is available in CRD
-			kind := strings.Split(typename, ".")[len(strings.Split(typename, "."))-1]
-			crds[typename] = gvk.Gvk{Kind: kind}
-		}
-	}
-	return crds
+// TODO: Get Group and Version for CRD from the
+// openAPI definition once
+// "x-kubernetes-group-version-kind" is available in CRD
+func makeGvkFromTypeName(n string) gvk.Gvk {
+	names := strings.Split(n, ".")
+	kind := names[len(names)-1]
+	return gvk.Gvk{Kind: kind}
 }
+
+func looksLikeAk8sType(properties myProperties) bool {
+	_, ok := properties["kind"]
+	if !ok {
+		return false
+	}
+	_, ok = properties["apiVersion"]
+	if !ok {
+		return false
+	}
+	_, ok = properties["metadata"]
+	if !ok {
+		return false
+	}
+	return true
+}
+
+const (
+	// "x-kubernetes-annotation": ""
+	xAnnotation = "x-kubernetes-annotation"
+
+	// "x-kubernetes-label-selector": ""
+	xLabelSelector = "x-kubernetes-label-selector"
+
+	// "x-kubernetes-identity": ""
+	xIdentity = "x-kubernetes-identity"
+
+	// "x-kubernetes-object-ref-api-version": <apiVersion name>
+	xVersion = "x-kubernetes-object-ref-api-version"
+
+	// "x-kubernetes-object-ref-kind": <kind name>
+	xKind = "x-kubernetes-object-ref-kind"
+
+	// "x-kubernetes-object-ref-name-key": "name"
+	// default is "name"
+	xNameKey = "x-kubernetes-object-ref-name-key"
+)
 
 // loadCrdIntoConfig loads a CRD spec into a TransformerConfig
 func loadCrdIntoConfig(
-	types map[string]common.OpenAPIDefinition,
-	atype string, crd string, in gvk.Gvk,
-	path []string, config *TransformerConfig) error {
-	if _, ok := types[crd]; !ok {
+	theConfig *TransformerConfig, theGvk gvk.Gvk, theMap nameToApiMap,
+	typeName string, path []string) (err error) {
+	api, ok := theMap[typeName]
+	if !ok {
 		return nil
 	}
-
-	for propname, property := range types[atype].Schema.SchemaProps.Properties {
-		_, annotate := property.Extensions.GetString(Annotation)
+	for propName, property := range api.Schema.SchemaProps.Properties {
+		_, annotate := property.Extensions.GetString(xAnnotation)
 		if annotate {
-			config.AddAnnotationFieldSpec(
-				FieldSpec{
-					CreateIfNotPresent: false,
-					Gvk:                in,
-					Path:               strings.Join(append(path, propname), "/"),
-				},
-			)
+			err = theConfig.AddAnnotationFieldSpec(
+				makeFs(theGvk, append(path, propName)))
+			if err != nil {
+				return
+			}
 		}
-		_, label := property.Extensions.GetString(LabelSelector)
+		_, label := property.Extensions.GetString(xLabelSelector)
 		if label {
-			config.AddLabelFieldSpec(
-				FieldSpec{
-					CreateIfNotPresent: false,
-					Gvk:                in,
-					Path:               strings.Join(append(path, propname), "/"),
-				},
-			)
+			err = theConfig.AddLabelFieldSpec(
+				makeFs(theGvk, append(path, propName)))
+			if err != nil {
+				return
+			}
 		}
-		_, identity := property.Extensions.GetString(Identity)
+		_, identity := property.Extensions.GetString(xIdentity)
 		if identity {
-			config.AddPrefixFieldSpec(
-				FieldSpec{
-					CreateIfNotPresent: false,
-					Gvk:                in,
-					Path:               strings.Join(append(path, propname), "/"),
-				},
-			)
+			err = theConfig.AddPrefixFieldSpec(
+				makeFs(theGvk, append(path, propName)))
+			if err != nil {
+				return
+			}
 		}
-		version, ok := property.Extensions.GetString(Version)
+		version, ok := property.Extensions.GetString(xVersion)
 		if ok {
-			kind, ok := property.Extensions.GetString(Kind)
+			kind, ok := property.Extensions.GetString(xKind)
 			if ok {
-				nameKey, ok := property.Extensions.GetString(NameKey)
+				nameKey, ok := property.Extensions.GetString(xNameKey)
 				if !ok {
 					nameKey = "name"
 				}
-				config.AddNamereferenceFieldSpec(NameBackReferences{
-					Gvk: gvk.Gvk{Kind: kind, Version: version},
-					FieldSpecs: []FieldSpec{
-						{
-							CreateIfNotPresent: false,
-							Gvk:                in,
-							Path:               strings.Join(append(path, propname, nameKey), "/"),
-						},
-					},
-				})
+				err = theConfig.AddNamereferenceFieldSpec(
+					NameBackReferences{
+						Gvk: gvk.Gvk{Kind: kind, Version: version},
+						FieldSpecs: []FieldSpec{
+							makeFs(theGvk, append(path, propName, nameKey))},
+					})
+				if err != nil {
+					return
+				}
 			}
 		}
-
 		if property.Ref.GetURL() != nil {
 			loadCrdIntoConfig(
-				types, property.Ref.String(), crd, in,
-				append(path, propname), config)
+				theConfig, theGvk, theMap,
+				property.Ref.String(), append(path, propName))
 		}
 	}
 	return nil
+}
+
+func makeFs(in gvk.Gvk, path []string) FieldSpec {
+	return FieldSpec{
+		CreateIfNotPresent: false,
+		Gvk:                in,
+		Path:               strings.Join(path, "/"),
+	}
 }

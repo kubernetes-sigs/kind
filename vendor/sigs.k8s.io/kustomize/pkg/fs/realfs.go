@@ -17,7 +17,9 @@ limitations under the License.
 package fs
 
 import (
+	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -45,8 +47,51 @@ func (realFS) MkdirAll(name string) error {
 	return os.MkdirAll(name, 0777|os.ModeDir)
 }
 
+// RemoveAll delegates to os.RemoveAll.
+func (realFS) RemoveAll(name string) error {
+	return os.RemoveAll(name)
+}
+
 // Open delegates to os.Open.
 func (realFS) Open(name string) (File, error) { return os.Open(name) }
+
+// CleanedAbs returns a cleaned, absolute path
+// with no symbolic links split into directory
+// and file components.  If the entire path is
+// a directory, the file component is an empty
+// string.
+func (x realFS) CleanedAbs(
+	path string) (ConfirmedDir, string, error) {
+	absRoot, err := filepath.Abs(path)
+	if err != nil {
+		return "", "", fmt.Errorf(
+			"abs path error on '%s' : %v", path, err)
+	}
+	deLinked, err := filepath.EvalSymlinks(absRoot)
+	if err != nil {
+		return "", "", fmt.Errorf(
+			"evalsymlink failure on '%s' : %v", path, err)
+	}
+	if x.IsDir(deLinked) {
+		return ConfirmedDir(deLinked), "", nil
+	}
+	d := filepath.Dir(deLinked)
+	if !x.IsDir(d) {
+		// Programmer/assumption error.
+		log.Fatalf("first part of '%s' not a directory", deLinked)
+	}
+	if d == deLinked {
+		// Programmer/assumption error.
+		log.Fatalf("d '%s' should be a subset of deLinked", d)
+	}
+	f := filepath.Base(deLinked)
+	if filepath.Join(d, f) != deLinked {
+		// Programmer/assumption error.
+		log.Fatalf("these should be equal: '%s', '%s'",
+			filepath.Join(d, f), deLinked)
+	}
+	return ConfirmedDir(d), f, nil
+}
 
 // Exists returns true if os.Stat succeeds.
 func (realFS) Exists(name string) bool {

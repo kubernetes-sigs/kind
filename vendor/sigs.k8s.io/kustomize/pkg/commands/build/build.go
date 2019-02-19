@@ -18,7 +18,6 @@ package build
 
 import (
 	"io"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -28,13 +27,20 @@ import (
 	"sigs.k8s.io/kustomize/pkg/loader"
 	"sigs.k8s.io/kustomize/pkg/resmap"
 	"sigs.k8s.io/kustomize/pkg/target"
-	"sigs.k8s.io/kustomize/pkg/transformers/config"
 )
 
-type buildOptions struct {
-	kustomizationPath      string
-	outputPath             string
-	transformerconfigPaths []string
+// Options contain the options for running a build
+type Options struct {
+	kustomizationPath string
+	outputPath        string
+}
+
+// NewOptions creates a Options object
+func NewOptions(p, o string) *Options {
+	return &Options{
+		kustomizationPath: p,
+		outputPath:        o,
+	}
 }
 
 var examples = `
@@ -50,11 +56,6 @@ url examples:
   sigs.k8s.io/kustomize//examples/multibases?ref=v1.0.6
   github.com/Liujingfang1/mysql
   github.com/Liujingfang1/kustomize//examples/helloWorld?ref=repoUrl2
-
-Advanced usage:
-Use different transformer configurations by passing files to kustomize
-    build somedir -t someconfigdir
-    build somedir -t some-transformer-configfile,another-transformer-configfile
 `
 
 // NewCmdBuild creates a new build command.
@@ -62,16 +63,15 @@ func NewCmdBuild(
 	out io.Writer, fs fs.FileSystem,
 	rf *resmap.Factory,
 	ptf transformer.Factory) *cobra.Command {
-	var o buildOptions
-	var p string
+	var o Options
 
 	cmd := &cobra.Command{
 		Use:          "build [path]",
-		Short:        "Print current configuration per contents of " + constants.KustomizationFileName,
+		Short:        "Print current configuration per contents of " + constants.KustomizationFileNames[0],
 		Example:      examples,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := o.Validate(args, p, fs)
+			err := o.Validate(args)
 			if err != nil {
 				return err
 			}
@@ -82,17 +82,13 @@ func NewCmdBuild(
 		&o.outputPath,
 		"output", "o", "",
 		"If specified, write the build output to this path.")
-	cmd.Flags().StringVarP(
-		&p,
-		"transformer-config", "t", "",
-		"If specified, use the transformer configs load from these files.")
 	return cmd
 }
 
 // Validate validates build command.
-func (o *buildOptions) Validate(args []string, p string, fs fs.FileSystem) error {
+func (o *Options) Validate(args []string) error {
 	if len(args) > 1 {
-		return errors.New("specify one path to " + constants.KustomizationFileName)
+		return errors.New("specify one path to " + constants.KustomizationFileNames[0])
 	}
 	if len(args) == 0 {
 		o.kustomizationPath = "./"
@@ -100,41 +96,19 @@ func (o *buildOptions) Validate(args []string, p string, fs fs.FileSystem) error
 		o.kustomizationPath = args[0]
 	}
 
-	if p == "" {
-		return nil
-	}
-
-	if fs.IsDir(p) {
-		paths, err := fs.Glob(p + "/*")
-		if err != nil {
-			return err
-		}
-		o.transformerconfigPaths = paths
-	} else {
-		o.transformerconfigPaths = strings.Split(p, ",")
-	}
-
 	return nil
 }
 
 // RunBuild runs build command.
-func (o *buildOptions) RunBuild(
+func (o *Options) RunBuild(
 	out io.Writer, fSys fs.FileSystem,
-	rf *resmap.Factory,
-	ptf transformer.Factory) error {
-	rootLoader, err := loader.NewLoader(o.kustomizationPath, "", fSys)
+	rf *resmap.Factory, ptf transformer.Factory) error {
+	ldr, err := loader.NewLoader(o.kustomizationPath, fSys)
 	if err != nil {
 		return err
 	}
-	tc, err := makeTransformerconfig(fSys, o.transformerconfigPaths)
-	if err != nil {
-		return err
-	}
-	defer rootLoader.Cleanup()
-	kt, err := target.NewKustTarget(
-		rootLoader, fSys,
-		rf,
-		ptf, tc)
+	defer ldr.Cleanup()
+	kt, err := target.NewKustTarget(ldr, fSys, rf, ptf)
 	if err != nil {
 		return err
 	}
@@ -152,19 +126,4 @@ func (o *buildOptions) RunBuild(
 	}
 	_, err = out.Write(res)
 	return err
-}
-
-// makeTransformerConfig returns a complete TransformerConfig object from either files
-// or the default configs
-func makeTransformerconfig(
-	fSys fs.FileSystem, paths []string) (*config.TransformerConfig, error) {
-	if paths == nil || len(paths) == 0 {
-		return config.NewFactory(nil).DefaultConfig(), nil
-	}
-	ldr, err := loader.NewLoader(".", "", fSys)
-	if err != nil {
-		return nil, errors.Wrap(
-			err, "cannot create transformer configuration loader")
-	}
-	return config.NewFactory(ldr).FromFiles(paths)
 }

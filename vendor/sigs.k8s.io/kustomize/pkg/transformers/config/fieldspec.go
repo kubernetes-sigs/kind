@@ -57,6 +57,11 @@ func (fs FieldSpec) String() string {
 		"%s:%v:%s", fs.Gvk.String(), fs.CreateIfNotPresent, fs.Path)
 }
 
+// If true, the primary key is the same, but other fields might not be.
+func (fs FieldSpec) effectivelyEquals(other FieldSpec) bool {
+	return fs.IsSelected(&other.Gvk) && fs.Path == other.Path
+}
+
 // PathSlice converts the path string to a slice of strings,
 // separated by a '/'. Forward slash can be contained in a
 // fieldname. such as ingress.kubernetes.io/auth-secret in
@@ -76,7 +81,6 @@ func (fs FieldSpec) PathSlice() []string {
 	if !strings.Contains(fs.Path, escapedForwardSlash) {
 		return strings.Split(fs.Path, "/")
 	}
-
 	s := strings.Replace(fs.Path, escapedForwardSlash, tempSlashReplacement, -1)
 	paths := strings.Split(s, "/")
 	var result []string
@@ -92,4 +96,44 @@ func (s fsSlice) Len() int      { return len(s) }
 func (s fsSlice) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 func (s fsSlice) Less(i, j int) bool {
 	return s[i].Gvk.IsLessThan(s[j].Gvk)
+}
+
+// mergeAll merges the argument into this, returning the result.
+// Items already present are ignored.
+// Items that conflict (primary key matches, but remain data differs)
+// result in an error.
+func (s fsSlice) mergeAll(incoming fsSlice) (result fsSlice, err error) {
+	result = s
+	for _, x := range incoming {
+		result, err = result.mergeOne(x)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return result, nil
+}
+
+// mergeOne merges the argument into this, returning the result.
+// If the item's primary key is already present, and there are no
+// conflicts, it is ignored (we don't want duplicates).
+// If there is a conflict, the merge fails.
+func (s fsSlice) mergeOne(x FieldSpec) (fsSlice, error) {
+	i := s.index(x)
+	if i > -1 {
+		// It's already there.
+		if s[i].CreateIfNotPresent != x.CreateIfNotPresent {
+			return nil, fmt.Errorf("conflicting fieldspecs")
+		}
+		return s, nil
+	}
+	return append(s, x), nil
+}
+
+func (s fsSlice) index(fs FieldSpec) int {
+	for i, x := range s {
+		if x.effectivelyEquals(fs) {
+			return i
+		}
+	}
+	return -1
 }

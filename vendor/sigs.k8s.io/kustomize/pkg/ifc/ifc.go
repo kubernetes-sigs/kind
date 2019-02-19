@@ -18,7 +18,6 @@ limitations under the License.
 package ifc
 
 import (
-	"sigs.k8s.io/kustomize/pkg/fs"
 	"sigs.k8s.io/kustomize/pkg/gvk"
 	"sigs.k8s.io/kustomize/pkg/types"
 )
@@ -67,7 +66,7 @@ type KunstructuredFactory interface {
 	FromMap(m map[string]interface{}) Kunstructured
 	MakeConfigMap(args *types.ConfigMapArgs, options *types.GeneratorOptions) (Kunstructured, error)
 	MakeSecret(args *types.SecretArgs, options *types.GeneratorOptions) (Kunstructured, error)
-	Set(fs fs.FileSystem, ldr Loader)
+	Set(ldr Loader)
 }
 
 // See core.v1.SecretTypeOpaque
