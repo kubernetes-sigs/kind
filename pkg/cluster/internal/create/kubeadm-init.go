@@ -120,6 +120,40 @@ func runKubeadmInit(ec *execContext, configNode *NodeReplica) error {
 		return errors.Wrap(err, "failed to add default storage class")
 	}
 
+	// add dynamic volume provisioning
+	// local-path provisioner requires kubernetes v1.12+
+	// this can be removed once kind drop support for v1.11
+	// https://github.com/rancher/local-path-provisioner
+	if rawVersion, err := node.KubeVersion(); err == nil {
+		if ver, err := version.ParseGeneric(rawVersion); err == nil {
+			if !ver.LessThan(version.MustParseSemantic("v1.12.0")) {
+				// TODO: support other dynamic volume provisioners
+				if err := node.Command(
+					"/bin/sh", "-c",
+					`kubectl apply --kubeconfig=/etc/kubernetes/admin.conf -f "https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml | base64 | tr -d '\n')"`,
+				).Run(); err != nil {
+					return errors.Wrap(err, "failed to add dynamic volume provisioner")
+				}
+
+				// Mark the default StorageClass as non-default
+				if err := node.Command(
+					"/bin/sh", "-c",
+					`kubectl patch --kubeconfig=/etc/kubernetes/admin.conf storageclass standard -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'`,
+				).Run(); err != nil {
+					return errors.Wrap(err, "failed to mark the default StorageClass as non-default")
+				}
+
+				// Mark local-path as the default StorageClass
+				if err := node.Command(
+					"/bin/sh", "-c",
+					`kubectl patch --kubeconfig=/etc/kubernetes/admin.conf storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'`,
+				).Run(); err != nil {
+					return errors.Wrap(err, "failed to mark local-path as the default StorageClass")
+				}
+			}
+		}
+	}
+
 	// Wait for the control plane node to reach Ready status.
 	isReady := nodes.WaitForReady(node, time.Now().Add(ec.waitForReady))
 	if ec.waitForReady > 0 {
