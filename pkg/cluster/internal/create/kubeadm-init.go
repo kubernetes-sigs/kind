@@ -17,6 +17,7 @@ limitations under the License.
 package create
 
 import (
+	"sigs.k8s.io/kind/pkg/exec"
 	"strings"
 	"time"
 
@@ -64,7 +65,7 @@ func runKubeadmInit(ec *execContext, configNode *NodeReplica) error {
 	}
 
 	// run kubeadm
-	if err := node.Command(
+	cmd := node.Command(
 		// init because this is the control plane node
 		"kubeadm", "init",
 		// preflight errors are expected, in particular for swap being enabled
@@ -72,7 +73,12 @@ func runKubeadmInit(ec *execContext, configNode *NodeReplica) error {
 		"--ignore-preflight-errors=all",
 		// specify our generated config file
 		"--config=/kind/kubeadm.conf",
-	).Run(); err != nil {
+		"--skip-token-print",
+		kubeadmVerbosityFlag,
+	)
+	lines, err := exec.CombinedOutputLines(cmd)
+	log.Debug(strings.Join(lines, "\n"))
+	if err != nil {
 		return errors.Wrap(err, "failed to init node with kubeadm")
 	}
 
