@@ -39,8 +39,18 @@ type Context struct {
 	Status *logutil.Status
 	Config *config.Config
 	*DerivedConfig
-	Retain       bool          // if we should retain nodes after failing to create.
-	WaitForReady time.Duration // Wait for the control plane node to be ready.
+	Retain      bool         // if we should retain nodes after failing to create.
+	ExecOptions []ExecOption // options to be forwarded to the exec command.
+}
+
+//ExecOption is an execContext configuration option supplied to Exec
+type ExecOption func(*execContext)
+
+// WaitForReady configures execContext to use interval as maximum wait time for the control plane node to be ready
+func WaitForReady(interval time.Duration) ExecOption {
+	return func(c *execContext) {
+		c.waitForReady = interval
+	}
 }
 
 // Exec actions on kubernetes-in-docker cluster
@@ -48,18 +58,22 @@ type Context struct {
 // Actions are repetitive, high level abstractions/workflows composed
 // by one or more lower level tasks, that automatically adapt to the
 // current cluster topology
-func (cc *Context) Exec(nodeList map[string]*nodes.Node, actions []string, wait time.Duration) error {
+func (cc *Context) Exec(nodeList map[string]*nodes.Node, actions []string, options ...ExecOption) error {
 	// init the exec context and logging
 	ec := &execContext{
-		Context:      cc,
-		nodes:        nodeList,
-		waitForReady: wait,
+		Context: cc,
+		nodes:   nodeList,
 	}
 
 	ec.status = logutil.NewStatus(os.Stdout)
 	ec.status.MaybeWrapLogrus(log.StandardLogger())
 
 	defer ec.status.End(false)
+
+	// apply exec options
+	for _, option := range options {
+		option(ec)
+	}
 
 	// Create an ExecutionPlan that applies the given actions to the
 	// topology defined in the config

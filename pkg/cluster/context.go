@@ -100,8 +100,26 @@ func (c *Context) ClusterName() string {
 	return c.Name()
 }
 
+//CreateOption is a Context configuration option supplied to create
+type CreateOption func(*create.Context)
+
+// Retain configures create to retain nodes after failing for debugging pourposes
+func Retain(retain bool) CreateOption {
+	return func(c *create.Context) {
+		c.Retain = retain
+	}
+}
+
+// WaitForReady configures create to use interval as maximum wait time for the control plane node to be ready
+func WaitForReady(interval time.Duration) CreateOption {
+	return func(c *create.Context) {
+		// NB. WaitForReady option does not apply directly to create, but it should be forwarded to the exec command
+		c.ExecOptions = append(c.ExecOptions, create.WaitForReady(interval))
+	}
+}
+
 // Create provisions and starts a kubernetes-in-docker cluster
-func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) error {
+func (c *Context) Create(cfg *config.Config, options ...CreateOption) error {
 	// default config fields (important for usage as a library, where the config
 	// may be constructed in memory rather than from disk)
 	encoding.Scheme.Default(cfg)
@@ -126,7 +144,6 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 	cc := &create.Context{
 		Config:        cfg,
 		DerivedConfig: derived,
-		Retain:        retain,
 		ClusterMeta:   c.ClusterMeta,
 	}
 
@@ -134,6 +151,11 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 	cc.Status.MaybeWrapLogrus(log.StandardLogger())
 
 	defer cc.Status.End(false)
+
+	// apply create options
+	for _, option := range options {
+		option(cc)
+	}
 
 	// attempt to explicitly pull the required node images if they doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
@@ -156,7 +178,7 @@ func (c *Context) Create(cfg *config.Config, retain bool, wait time.Duration) er
 	// Kubernetes cluster; please note that the list of actions automatically
 	// adapt to the topology defined in config
 	// TODO(fabrizio pandini): make the list of executed actions configurable from CLI
-	err = cc.Exec(nodeList, []string{"haproxy", "config", "init", "join"}, wait)
+	err = cc.Exec(nodeList, []string{"haproxy", "config", "init", "join"}, cc.ExecOptions...)
 	if err != nil {
 		// In case of errors nodes are deleted (except if retain is explicitly set)
 		log.Error(err)
