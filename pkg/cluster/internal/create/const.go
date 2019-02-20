@@ -29,3 +29,5 @@ metadata:
   labels:
     addonmanager.kubernetes.io/mode: EnsureExists
 provisioner: kubernetes.io/host-path`
+
+const kubeadmVerbosityFlag = "--v=6"

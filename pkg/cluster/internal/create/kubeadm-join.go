@@ -20,10 +20,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
+	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
 )
 
@@ -126,7 +129,7 @@ func runKubeadmJoinControlPlane(ec *execContext, configNode *NodeReplica) error 
 	}
 
 	// run kubeadm join --control-plane
-	if err := node.Command(
+	cmd := node.Command(
 		"kubeadm", "join",
 		// the join command uses the docker ip and a well know port that
 		// are accessible only inside the docker network
@@ -139,7 +142,11 @@ func runKubeadmJoinControlPlane(ec *execContext, configNode *NodeReplica) error 
 		// preflight errors are expected, in particular for swap being enabled
 		// TODO(bentheelder): limit the set of acceptable errors
 		"--ignore-preflight-errors=all",
-	).Run(); err != nil {
+		kubeadmVerbosityFlag,
+	)
+	lines, err := exec.CombinedOutputLines(cmd)
+	log.Debug(strings.Join(lines, "\n"))
+	if err != nil {
 		return errors.Wrap(err, "failed to join a control plane node with kubeadm")
 	}
 
@@ -162,7 +169,7 @@ func runKubeadmJoin(ec *execContext, configNode *NodeReplica) error {
 	}
 
 	// run kubeadm join
-	if err := node.Command(
+	cmd := node.Command(
 		"kubeadm", "join",
 		// the join command uses the docker ip and a well know port that
 		// are accessible only inside the docker network
@@ -173,7 +180,11 @@ func runKubeadmJoin(ec *execContext, configNode *NodeReplica) error {
 		// preflight errors are expected, in particular for swap being enabled
 		// TODO(bentheelder): limit the set of acceptable errors
 		"--ignore-preflight-errors=all",
-	).Run(); err != nil {
+		kubeadmVerbosityFlag,
+	)
+	lines, err := exec.CombinedOutputLines(cmd)
+	log.Debug(strings.Join(lines, "\n"))
+	if err != nil {
 		return errors.Wrap(err, "failed to join node with kubeadm")
 	}
 
