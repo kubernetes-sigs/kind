@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 
@@ -188,10 +189,34 @@ func (c *Context) Create(cfg *config.Config, options ...CreateOption) error {
 		return err
 	}
 
-	fmt.Printf(
-		"Cluster creation complete. You can now use the cluster with:\n\nexport KUBECONFIG=\"$(kind get kubeconfig-path --name=%q)\"\nkubectl cluster-info\n",
-		cc.Name(),
-	)
+	// TODO: consider shell detection.
+	if runtime.GOOS == "windows" {
+		fmt.Printf(
+			"Cluster creation complete. To setup KUBECONFIG:\n\n"+
+
+				"For the default cmd.exe console call:\n"+
+				"  kind get kubeconfig-path > kindpath\n"+
+				"  set /p KUBECONFIG=<kindpath && del kindpath\n\n"+
+
+				"for PowerShell call:\n"+
+				"  $env:KUBECONFIG=\"$(kind get kubeconfig-path --name=%[1]q)\"\n\n"+
+
+				"For bash on Windows:\n"+
+				"  export KUBECONFIG=\"$(kind get kubeconfig-path --name=%[1]q)\"\n\n"+
+
+				"You can now use the cluster:\n"+
+				"  kubectl cluster-info\n",
+			cc.Name(),
+		)
+	} else {
+		fmt.Printf(
+			"Cluster creation complete. You can now use the cluster with:\n\n"+
+
+				"  export KUBECONFIG=\"$(kind get kubeconfig-path --name=%q)\"\n"+
+				"  kubectl cluster-info\n",
+			cc.Name(),
+		)
+	}
 	return nil
 }
 
