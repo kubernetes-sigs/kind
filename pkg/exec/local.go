@@ -43,23 +43,27 @@ func (c *LocalCmder) Command(name string, arg ...string) Cmd {
 }
 
 // SetEnv sets env
-func (cmd *LocalCmd) SetEnv(env ...string) {
+func (cmd *LocalCmd) SetEnv(env ...string) Cmd {
 	cmd.Env = env
+	return cmd
 }
 
 // SetStdin sets stdin
-func (cmd *LocalCmd) SetStdin(r io.Reader) {
+func (cmd *LocalCmd) SetStdin(r io.Reader) Cmd {
 	cmd.Stdin = r
+	return cmd
 }
 
 // SetStdout set stdout
-func (cmd *LocalCmd) SetStdout(w io.Writer) {
+func (cmd *LocalCmd) SetStdout(w io.Writer) Cmd {
 	cmd.Stdout = w
+	return cmd
 }
 
 // SetStderr sets stderr
-func (cmd *LocalCmd) SetStderr(w io.Writer) {
+func (cmd *LocalCmd) SetStderr(w io.Writer) Cmd {
 	cmd.Stderr = w
+	return cmd
 }
 
 // Run runs

@@ -100,18 +100,22 @@ func (c *containerCmd) Run() error {
 	return cmd.Run()
 }
 
-func (c *containerCmd) SetEnv(env ...string) {
+func (c *containerCmd) SetEnv(env ...string) exec.Cmd {
 	c.env = env
+	return c
 }
 
-func (c *containerCmd) SetStdin(r io.Reader) {
+func (c *containerCmd) SetStdin(r io.Reader) exec.Cmd {
 	c.stdin = r
+	return c
 }
 
-func (c *containerCmd) SetStdout(w io.Writer) {
+func (c *containerCmd) SetStdout(w io.Writer) exec.Cmd {
 	c.stdout = w
+	return c
 }
 
-func (c *containerCmd) SetStderr(w io.Writer) {
+func (c *containerCmd) SetStderr(w io.Writer) exec.Cmd {
 	c.stderr = w
+	return c
 }
