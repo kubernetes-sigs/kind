@@ -88,7 +88,7 @@ type ControlPlaneMeta struct {
 	APIServerPort int
 }
 
-// GetControlPlaneMeta attempts to retreive / compute metadata about
+// GetControlPlaneMeta attempts to retrieve / compute metadata about
 // the control plane for the context's cluster
 // NOTE: due to refactoring this is currently non-functional (!)
 // TODO(bentheelder): fix this

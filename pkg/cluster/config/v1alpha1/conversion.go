@@ -48,7 +48,7 @@ func Convert_config_Config_To_v1alpha1_Config(in *config.Config, out *Config, s 
 		return err
 	}
 
-	// convertion from internal config to v1alpha1 Config is used only by the fuzzer roundtrip test;
+	// conversion from internal config to v1alpha1 Config is used only by the fuzzer roundtrip test;
 	// the fuzzer is configured in order to enforce the number and type of nodes to get always the
 	// following condition pass
 

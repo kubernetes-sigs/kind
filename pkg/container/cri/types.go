@@ -24,7 +24,7 @@ https://github.com/kubernetes/kubernetes/blob/063e7ff358fdc8b0916e6f39beedc0d025
 // Mount specifies a host volume to mount into a container.
 // This is a close copy of the upstream cri Mount type
 // see: k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2
-// It additionally serializes the "propogation" field with the string enum
+// It additionally serializes the "propagation" field with the string enum
 // names on disk as opposed to the int32 values, and the serlialzed field names
 // have been made closer to core/v1 VolumeMount field names
 // In yaml this looks like:
@@ -33,7 +33,7 @@ https://github.com/kubernetes/kubernetes/blob/063e7ff358fdc8b0916e6f39beedc0d025
 //  readOnly: true
 //  selinuxRelabel: false
 //  propagation: None
-// Propogation may be one of: None, HostToContainer, Bidirectional
+// Propagation may be one of: None, HostToContainer, Bidirectional
 type Mount struct {
 	// Path of the mount within the container.
 	ContainerPath string `protobuf:"bytes,1,opt,name=container_path,json=containerPath,proto3" json:"containerPath,omitempty"`

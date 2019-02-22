@@ -59,7 +59,7 @@ func NewCommand() *cobra.Command {
 		&flags.Nodes,
 		"nodes",
 		nil,
-		"comma seperated list of nodes to load images into",
+		"comma separated list of nodes to load images into",
 	)
 	return cmd
 }

@@ -141,7 +141,7 @@ bootstrapTokens:
 apiEndpoint:
   bindPort: {{.APIBindPort}}
 ---
-# no-op entry that exists soley so it can be patched
+# no-op entry that exists solely so it can be patched
 apiVersion: kubeadm.k8s.io/v1alpha3
 kind: JoinConfiguration
 metadata:
@@ -160,7 +160,7 @@ evictionHard:
   nodefs.inodesFree: "0%"
   imagefs.available: "0%"
 ---
-# no-op entry that exists soley so it can be patched
+# no-op entry that exists solely so it can be patched
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
 metadata:
@@ -196,7 +196,7 @@ bootstrapTokens:
 localAPIEndpoint:
   bindPort: {{.APIBindPort}}
 ---
-# no-op entry that exists soley so it can be patched
+# no-op entry that exists solely so it can be patched
 apiVersion: kubeadm.k8s.io/v1beta1
 kind: JoinConfiguration
 metadata:
@@ -215,7 +215,7 @@ evictionHard:
   nodefs.inodesFree: "0%"
   imagefs.available: "0%"
 ---
-# no-op entry that exists soley so it can be patched
+# no-op entry that exists solely so it can be patched
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
 metadata:

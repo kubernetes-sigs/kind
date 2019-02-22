@@ -64,7 +64,7 @@ func (b *kubeadmJoinAction) Tasks() []Task {
 // runKubeadmJoinControlPlane executes kubadm join --control-plane command
 func runKubeadmJoinControlPlane(ec *execContext, configNode *NodeReplica) error {
 
-	// get the join addres
+	// get the join address
 	joinAddress, err := getJoinAddress(ec)
 	if err != nil {
 		// TODO(bentheelder): logging here
@@ -155,7 +155,7 @@ func runKubeadmJoinControlPlane(ec *execContext, configNode *NodeReplica) error 
 
 // runKubeadmJoin executes kubadm join command
 func runKubeadmJoin(ec *execContext, configNode *NodeReplica) error {
-	// get the join addres
+	// get the join address
 	joinAddress, err := getJoinAddress(ec)
 	if err != nil {
 		// TODO(bentheelder): logging here
@@ -191,7 +191,7 @@ func runKubeadmJoin(ec *execContext, configNode *NodeReplica) error {
 	return nil
 }
 
-// getJoinAddress return the join addres thas is the control plane endpoint in case the cluster has
+// getJoinAddress return the join address thas is the control plane endpoint in case the cluster has
 // an external load balancer in front of the control-plane nodes, otherwise the address of the
 // boostrap control plane node.
 func getJoinAddress(ec *execContext) (string, error) {

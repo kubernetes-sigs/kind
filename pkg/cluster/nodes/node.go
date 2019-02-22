@@ -65,7 +65,7 @@ func (n *Node) Command(command string, args ...string) exec.Cmd {
 	return n.Cmder().Command(command, args...)
 }
 
-// this is a seperate struct so we can clearly the whole thing at once
+// this is a separate struct so we can clearly the whole thing at once
 // it contains lazily initialized fields
 // like node.nodeCache = nodeCache{}
 type nodeCache struct {
@@ -136,7 +136,7 @@ func (n *Node) LoadImages() {
 		return
 	}
 
-	// if this fails, we don't care yet, but try to get the kubernetes verison
+	// if this fails, we don't care yet, but try to get the kubernetes version
 	// and see if we can skip retagging for amd64
 	// if this fails, we can just assume some unknown version and re-tag
 	// in a future release of kind, we can probably drop v1.11 support
