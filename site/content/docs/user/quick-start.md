@@ -181,7 +181,7 @@ flag.
 For a sample kind configuration file see [kind-example-config][kind-example-config].
 
 In particular, many users may be interested in multi-node clusters. A simple
-configuration for this can be acheived with the following config file contents:
+configuration for this can be achieved with the following config file contents:
 ```yaml
 # three node (two workers) cluster config
 kind: Config

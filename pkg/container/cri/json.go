@@ -31,7 +31,7 @@ func (m *Mount) MarshalJSON() ([]byte, error) {
 	type Alias Mount
 	name, ok := MountPropagationValueToName[m.Propagation]
 	if !ok {
-		return nil, fmt.Errorf("unknown propogation value: %v", m.Propagation)
+		return nil, fmt.Errorf("unknown propagation value: %v", m.Propagation)
 	}
 	return json.Marshal(&struct {
 		Propagation string `json:"propagation"`
@@ -59,7 +59,7 @@ func (m *Mount) UnmarshalJSON(data []byte) error {
 	if aux.Propagation != "" {
 		val, ok := MountPropagationNameToValue[aux.Propagation]
 		if !ok {
-			return fmt.Errorf("unknown propogation value: %s", aux.Propagation)
+			return fmt.Errorf("unknown propagation value: %s", aux.Propagation)
 		}
 		m.Propagation = MountPropagation(val)
 	}

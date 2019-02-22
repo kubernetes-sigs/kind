@@ -25,8 +25,8 @@ cd "${REPO_ROOT}"
 res=0
 
 # run all verify scripts
-echo "verifying govet ..."
-hack/verify-govet.sh || res=1
+echo "verifying spelling ..."
+hack/verify-spelling.sh || res=1
 cd "${REPO_ROOT}"
 
 echo "verifying gofmt ..."
@@ -35,6 +35,10 @@ cd "${REPO_ROOT}"
 
 echo "verifying golint ..."
 hack/verify-golint.sh || res=1
+cd "${REPO_ROOT}"
+
+echo "verifying govet ..."
+hack/verify-govet.sh || res=1
 cd "${REPO_ROOT}"
 
 echo "verifying generated ..."

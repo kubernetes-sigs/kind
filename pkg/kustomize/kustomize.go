@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package kustomize contains helpers for working with embeded kustomize commands
+// Package kustomize contains helpers for working with embedded kustomize commands
 package kustomize
 
 import (

@@ -56,7 +56,7 @@ type containerCmd struct {
 func (c *containerCmd) Run() error {
 	args := []string{
 		"exec",
-		// run with priviliges so we can remount etc..
+		// run with privileges so we can remount etc..
 		// this might not make sense in the most general sense, but it is
 		// important to many kind commands
 		"--privileged",
