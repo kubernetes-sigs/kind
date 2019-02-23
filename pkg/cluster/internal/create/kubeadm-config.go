@@ -18,11 +18,8 @@ package create
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/internal/haproxy"
@@ -79,8 +76,8 @@ func runKubeadmConfig(ec *execContext, configNode *NodeReplica) error {
 		return err
 	}
 
-	// create kubeadm config file writing a local temp file
-	kubeadmConfig, err := createKubeadmConfig(
+	// get kubeadm config content
+	kubeadmConfig, err := getKubeadmConfig(
 		ec.Config,
 		ec.DerivedConfig,
 		kubeadm.ConfigData{
@@ -91,14 +88,13 @@ func runKubeadmConfig(ec *execContext, configNode *NodeReplica) error {
 			Token:                kubeadm.Token,
 		},
 	)
-	defer os.Remove(kubeadmConfig)
 	if err != nil {
 		// TODO(bentheelder): logging here
-		return errors.Wrap(err, "failed to create kubeadm config")
+		return errors.Wrap(err, "failed to generate kubeadm config content")
 	}
 
 	// copy the config to the node
-	if err := node.CopyTo(kubeadmConfig, "/kind/kubeadm.conf"); err != nil {
+	if err := node.WriteFile("/kind/kubeadm.conf", kubeadmConfig); err != nil {
 		// TODO(bentheelder): logging here
 		return errors.Wrap(err, "failed to copy kubeadm config to node")
 	}
@@ -128,20 +124,12 @@ func getControlPlaneEndpoint(ec *execContext) (string, error) {
 	return fmt.Sprintf("%s:%d", loadBalancerIP, haproxy.ControlPlanePort), nil
 }
 
-// createKubeadmConfig creates the kubeadm config file for the cluster
-// by running data through the template and writing it to a temp file
-// the config file path is returned, this file should be removed later
-func createKubeadmConfig(cfg *config.Config, derived *DerivedConfig, data kubeadm.ConfigData) (path string, err error) {
-	// create kubeadm config file
-	f, err := ioutil.TempFile("", "")
-	if err != nil {
-		return "", errors.Wrap(err, "failed to create kubeadm config")
-	}
-	path = f.Name()
+// getKubeadmConfig generates the kubeadm config contents for the cluster
+// by running data through the template.
+func getKubeadmConfig(cfg *config.Config, derived *DerivedConfig, data kubeadm.ConfigData) (path string, err error) {
 	// generate the config contents
 	config, err := kubeadm.Config(data)
 	if err != nil {
-		os.Remove(path)
 		return "", err
 	}
 	// fix all the patches to have name metadata matching the generated config
@@ -152,19 +140,7 @@ func createKubeadmConfig(cfg *config.Config, derived *DerivedConfig, data kubead
 	// apply patches
 	// TODO(bentheelder): this does not respect per node patches at all
 	// either make patches cluster wide, or change this
-	patchedConfig, err := kustomize.Build([]string{config}, patches, jsonPatches)
-	if err != nil {
-		os.Remove(path)
-		return "", err
-	}
-	// write to the file
-	log.Infof("Using KubeadmConfig:\n\n%s\n", patchedConfig)
-	_, err = f.WriteString(patchedConfig)
-	if err != nil {
-		os.Remove(path)
-		return "", err
-	}
-	return path, nil
+	return kustomize.Build([]string{config}, patches, jsonPatches)
 }
 
 // setPatchNames sets the targeted object name on every patch to be the fixed
