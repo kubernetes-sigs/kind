@@ -17,17 +17,21 @@ limitations under the License.
 package kube
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
 // BazelBuildBits implements Bits for a local Bazel build
 type BazelBuildBits struct {
 	kubeRoot string
+	// computed at build time
+	paths map[string]string
 }
 
 var _ Bits = &BazelBuildBits{}
@@ -56,16 +60,17 @@ func (b *BazelBuildBits) Build() error {
 	// make sure we cd back when done
 	defer os.Chdir(cwd)
 
+	// TODO(bentheelder): we assume the host arch, but cross compiling should
+	// be possible now
+	bazelGoosGoarch := fmt.Sprintf("linux_%s", runtime.GOARCH)
+
 	// build artifacts
 	cmd := exec.Command(
 		"bazel", "build",
-		// TODO(bentheelder): we assume linux amd64, but we could select
-		// this based on Arch etc. throughout, this flag supports GOOS/GOARCH
-		"--platforms=@io_bazel_rules_go//go/toolchain:linux_amd64",
-		// we want the debian packages
-		"//build/debs:debs",
+		fmt.Sprintf("--platforms=@io_bazel_rules_go//go/toolchain:%s", bazelGoosGoarch),
+		// node installed binaries
+		"//cmd/kubeadm:kubeadm", "//cmd/kubectl:kubectl", "//cmd/kubelet:kubelet",
 		// and the docker images
-		//"//cluster/images/hyperkube:hyperkube.tar",
 		"//build:docker-artifacts",
 	)
 	exec.InheritOutput(cmd)
@@ -73,22 +78,20 @@ func (b *BazelBuildBits) Build() error {
 		return err
 	}
 
+	// capture the output paths
+	b.paths = b.findPaths(bazelGoosGoarch)
+
 	// capture version info
 	return buildVersionFile(b.kubeRoot)
 }
 
-// Paths implements Bits.Paths
-func (b *BazelBuildBits) Paths() map[string]string {
+func (b *BazelBuildBits) findPaths(bazelGoosGoarch string) map[string]string {
 	// https://docs.bazel.build/versions/master/output_directories.html
 	binDir := filepath.Join(b.kubeRoot, "bazel-bin")
 	buildDir := filepath.Join(binDir, "build")
-	return map[string]string{
-		// debians
-		filepath.Join(buildDir, "debs", "kubeadm.deb"):        "debs/kubeadm.deb",
-		filepath.Join(buildDir, "debs", "kubelet.deb"):        "debs/kubelet.deb",
-		filepath.Join(buildDir, "debs", "kubectl.deb"):        "debs/kubectl.deb",
-		filepath.Join(buildDir, "debs", "kubernetes-cni.deb"): "debs/kubernetes-cni.deb",
-		filepath.Join(buildDir, "debs", "cri-tools.deb"):      "debs/cri-tools.deb",
+
+	// all well-known paths that have not changed
+	paths := map[string]string{
 		// docker images
 		filepath.Join(buildDir, "kube-apiserver.tar"):          "images/kube-apiserver.tar",
 		filepath.Join(buildDir, "kube-controller-manager.tar"): "images/kube-controller-manager.tar",
@@ -96,34 +99,73 @@ func (b *BazelBuildBits) Paths() map[string]string {
 		filepath.Join(buildDir, "kube-proxy.tar"):              "images/kube-proxy.tar",
 		// version file
 		filepath.Join(b.kubeRoot, "_output", "git_version"): "version",
+		// borrow kubelet service files from bazel debians
+		// TODO(bentheelder): probably we should use our own config instead :-)
+		filepath.Join(b.kubeRoot, "build", "debs", "kubelet.service"): "systemd/kubelet.service",
+		filepath.Join(b.kubeRoot, "build", "debs", "10-kubeadm.conf"): "systemd/10-kubeadm.conf",
+		// binaries
+		filepath.Join(
+			binDir, "cmd", "kubeadm",
+			// pure-go binary
+			fmt.Sprintf("%s_pure_stripped", bazelGoosGoarch), "kubeadm",
+		): "bin/kubeadm",
+		filepath.Join(
+			binDir, "cmd", "kubectl",
+			// pure-go binary
+			fmt.Sprintf("%s_pure_stripped", bazelGoosGoarch), "kubectl",
+		): "bin/kubectl",
 	}
+
+	// paths that changed: kubelet binary
+	oldKubeletPath := filepath.Join(
+		binDir, "cmd", "kubelet",
+		// cgo binary
+		fmt.Sprintf("%s_stripped", bazelGoosGoarch), "kubelet",
+	)
+	newKubeletPath := filepath.Join(binDir, "cmd", "kubelet", "kubelet")
+	if _, err := os.Stat(oldKubeletPath); os.IsNotExist(err) {
+		paths[newKubeletPath] = "bin/kubelet"
+	} else {
+		paths[oldKubeletPath] = "bin/kubelet"
+	}
+
+	return paths
+}
+
+// Paths implements Bits.Paths
+func (b *BazelBuildBits) Paths() map[string]string {
+	return b.paths
 }
 
 // Install implements Bits.Install
 func (b *BazelBuildBits) Install(install InstallContext) error {
-	base := install.BasePath()
+	kindBinDir := path.Join(install.BasePath(), "bin")
 
-	// install debians
-	debs := path.Join(base, "debs", "*.deb")
-	if err := install.Run("/bin/sh", "-c", "dpkg -i "+debs); err != nil {
-		log.Errorf("Debian install failed! %v", err)
-		return err
+	// symlink the kubernetes binaries into $PATH
+	binaries := []string{"kubeadm", "kubelet", "kubectl"}
+	for _, binary := range binaries {
+		if err := install.Run("ln", "-s",
+			path.Join(kindBinDir, binary),
+			path.Join("/usr/bin/", binary),
+		); err != nil {
+			return errors.Wrap(err, "failed to symlink binaries")
+		}
 	}
 
-	// clean up after debian install
-	if err := install.Run("/bin/sh", "-c",
-		"rm -rf /kind/bits/debs/*.deb"+
-			" /var/cache/debconf/* /var/lib/apt/lists/* /var/log/*kg",
-	); err != nil {
-		log.Errorf("Debian cleanup failed! %v", err)
-		return err
+	// enable the kubelet service
+	kubeletService := path.Join(install.BasePath(), "systemd/kubelet.service")
+	if err := install.Run("systemctl", "enable", kubeletService); err != nil {
+		return errors.Wrap(err, "failed to enable kubelet service")
 	}
 
-	// enable kubelet service
-	if err := install.Run("systemctl", "enable", "kubelet.service"); err != nil {
-		log.Errorf("Enabling kubelet.service failed! %v", err)
-		return err
+	// setup the kubelet dropin
+	kubeletDropinSource := path.Join(install.BasePath(), "systemd/10-kubeadm.conf")
+	kubeletDropin := "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
+	if err := install.Run("mkdir", "-p", path.Dir(kubeletDropin)); err != nil {
+		return errors.Wrap(err, "failed to configure kubelet service")
 	}
-
+	if err := install.Run("cp", kubeletDropinSource, kubeletDropin); err != nil {
+		return errors.Wrap(err, "failed to configure kubelet service")
+	}
 	return nil
 }
