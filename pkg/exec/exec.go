@@ -32,10 +32,10 @@ import (
 type Cmd interface {
 	Run() error
 	// Each entry should be of the form "key=value"
-	SetEnv(...string)
-	SetStdin(io.Reader)
-	SetStdout(io.Writer)
-	SetStderr(io.Writer)
+	SetEnv(...string) Cmd
+	SetStdin(io.Reader) Cmd
+	SetStdout(io.Writer) Cmd
+	SetStderr(io.Writer) Cmd
 }
 
 // Cmder abstracts over creating commands

@@ -322,40 +322,26 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	// first get the images we actually built
 	builtImages, err := c.getBuiltImages()
 	if err != nil {
-		log.Errorf("Image build Failed! %v", err)
+		log.Errorf("Image build Failed! Failed to get built images: %v", err)
 		return err
 	}
 
 	// helpers to run things in the build container
-	execInBuild := func(command ...string) error {
-		cmd := exec.Command("docker",
-			append(
-				[]string{"exec", containerID},
-				command...,
-			)...,
-		)
+	cmder := docker.ContainerCmder(containerID)
+	inheritOutputAndRun := func(cmd exec.Cmd) error {
 		exec.InheritOutput(cmd)
 		return cmd.Run()
-	}
-	combinedOutputLinesInBuild := func(command ...string) ([]string, error) {
-		cmd := exec.Command("docker",
-			append(
-				[]string{"exec", containerID},
-				command...,
-			)...,
-		)
-		return exec.CombinedOutputLines(cmd)
 	}
 
 	// get the Kubernetes version we installed on the node
 	// we need this to ask kubeadm what images we need
-	rawVersion, err := combinedOutputLinesInBuild("cat", "/kind/version")
+	rawVersion, err := exec.CombinedOutputLines(cmder.Command("cat", kubernetesVersionLocation))
 	if err != nil {
-		log.Errorf("Image build Failed! %v", err)
+		log.Errorf("Image build Failed! Failed to get Kubernetes version: %v", err)
 		return err
 	}
 	if len(rawVersion) != 1 {
-		log.Errorf("Image build Failed! %v", err)
+		log.Errorf("Image build Failed! Failed to get Kubernetes version: %v", err)
 		return errors.New("invalid kubernetes version file")
 	}
 
@@ -376,21 +362,44 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 		}
 	}
 
+	// write the default CNI manifest
+	// NOTE: the paths inside the container should use the path package
+	// and not filepath (!), we want posixy paths in the linux container, NOT
+	// whatever path format the host uses. For paths on the host we use filepath
+	if err := inheritOutputAndRun(cmder.Command(
+		"mkdir", "-p", path.Dir(defaultCNIManifestLocation),
+	)); err != nil {
+		log.Errorf("Image build Failed! Failed write default CNI Manifest: %v", err)
+		return err
+	}
+	if err := cmder.Command(
+		"cp", "/dev/stdin", defaultCNIManifestLocation,
+	).SetStdin(
+		strings.NewReader(defaultCNIManifest),
+	).Run(); err != nil {
+		log.Errorf("Image build Failed! Failed write default CNI Manifest: %v", err)
+		return err
+	}
+
 	// gets the list of images required by kubeadm
-	requiredImages, err := combinedOutputLinesInBuild(
+	requiredImages, err := exec.CombinedOutputLines(cmder.Command(
 		"kubeadm", "config", "images", "list", "--kubernetes-version", rawVersion[0],
-	)
+	))
 	if err != nil {
 		return err
 	}
 
+	// all builds should isntall the default CNI images currently
+	requiredImages = append(requiredImages, defaultCNIImages...)
+
 	// Create "images" subdir.
 	imagesDir := path.Join(dir, "bits", "images")
 	if err := os.MkdirAll(imagesDir, 0777); err != nil {
+		log.Errorf("Image build Failed! Failed create local images dir: %v", err)
 		return errors.Wrap(err, "failed to make images dir")
 	}
 
-	movePulled := []string{"mv"}
+	pulled := []string{}
 	for i, image := range requiredImages {
 		if !builtImages.Has(image) {
 			fmt.Printf("Pulling: %s\n", image)
@@ -405,23 +414,24 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 			if err != nil {
 				return err
 			}
-			movePulled = append(movePulled, fmt.Sprintf("/build/bits/images/%s", pullName))
+			pulled = append(pulled, fmt.Sprintf("/build/bits/images/%s", pullName))
 		}
 	}
 
 	// Create the /kind/images directory inside the container.
-	if err = execInBuild("mkdir", "-p", DockerImageArchives); err != nil {
-		log.Errorf("Image build Failed! %v", err)
+	if err = inheritOutputAndRun(cmder.Command("mkdir", "-p", DockerImageArchives)); err != nil {
+		log.Errorf("Image build Failed! Failed create images dir: %v", err)
 		return err
 	}
-	movePulled = append(movePulled, DockerImageArchives)
-	if err := execInBuild(movePulled...); err != nil {
+	pulled = append(pulled, DockerImageArchives)
+	if err := inheritOutputAndRun(cmder.Command("mv", pulled...)); err != nil {
 		return err
 	}
+
 	// make sure we own the tarballs
 	// TODO(bentheelder): someday we might need a different user ...
-	if err = execInBuild("chown", "-R", "root:root", DockerImageArchives); err != nil {
-		log.Errorf("Image build Failed! %v", err)
+	if err = inheritOutputAndRun(cmder.Command("chown", "-R", "root:root", DockerImageArchives)); err != nil {
+		log.Errorf("Image build Failed! Failed chown images dir %v", err)
 		return err
 	}
 	return nil
