@@ -102,7 +102,7 @@ func (n *Node) CopyFrom(source, dest string) error {
 // WaitForDocker waits for Docker to be ready on the node
 // it returns true on success, and false on a timeout
 func (n *Node) WaitForDocker(until time.Time) bool {
-	return tryUntil(until, func() bool {
+	return tryUntil(until, time.Second, func() bool {
 		cmd := n.Command("systemctl", "is-active", "docker")
 		out, err := exec.CombinedOutputLines(cmd)
 		if err != nil {
@@ -114,11 +114,12 @@ func (n *Node) WaitForDocker(until time.Time) bool {
 
 // helper that calls `try()`` in a loop until the deadline `until`
 // has passed or `try()`returns true, returns wether try ever returned true
-func tryUntil(until time.Time, try func() bool) bool {
+func tryUntil(until time.Time, sleepTime time.Duration, try func() bool) bool {
 	for until.After(time.Now()) {
 		if try() {
 			return true
 		}
+		time.Sleep(sleepTime)
 	}
 	return false
 }

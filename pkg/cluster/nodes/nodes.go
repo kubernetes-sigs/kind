@@ -104,7 +104,7 @@ func list(visit func(string, *Node), filters ...string) error {
 // WaitForReady uses kubectl inside the "node" container to check if the
 // control plane nodes are "Ready".
 func WaitForReady(node *Node, until time.Time) bool {
-	return tryUntil(until, func() bool {
+	return tryUntil(until, time.Second, func() bool {
 		cmd := node.Command(
 			"kubectl",
 			"--kubeconfig=/etc/kubernetes/admin.conf",
