@@ -38,6 +38,8 @@ type Bits interface {
 	Paths() map[string]string
 	// Install should install the built sources on the node, assuming paths
 	// have been populated
+	// TODO(bentheelder): eliminate install, make install file-copies only,
+	// support cross-building
 	Install(InstallContext) error
 }
 
