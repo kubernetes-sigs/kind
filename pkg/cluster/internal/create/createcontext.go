@@ -160,6 +160,12 @@ func (cc *Context) ProvisionNodes() (nodeList map[string]*nodes.Node, err error)
 			return nodeList, err
 		}
 
+		cc.Status.Start(fmt.Sprintf("[%s] Configuring proxy 🐋", configNode.Name))
+		if err := node.SetProxy(); err != nil {
+			// TODO: logging here
+			return nodeList, errors.Wrapf(err, "failed to set proxy for %s", configNode.Name)
+		}
+
 		cc.Status.Start(fmt.Sprintf("[%s] Starting systemd 🖥", configNode.Name))
 		// signal the node container entrypoint to continue booting into systemd
 		if err := node.SignalStart(); err != nil {
