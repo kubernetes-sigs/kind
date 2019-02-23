@@ -195,25 +195,25 @@ func (c *Context) Create(cfg *config.Config, options ...CreateOption) error {
 			"Cluster creation complete. To setup KUBECONFIG:\n\n"+
 
 				"For the default cmd.exe console call:\n"+
-				"  kind get kubeconfig-path > kindpath\n"+
-				"  set /p KUBECONFIG=<kindpath && del kindpath\n\n"+
+				"kind get kubeconfig-path > kindpath\n"+
+				"set /p KUBECONFIG=<kindpath && del kindpath\n\n"+
 
 				"for PowerShell call:\n"+
-				"  $env:KUBECONFIG=\"$(kind get kubeconfig-path --name=%[1]q)\"\n\n"+
+				"$env:KUBECONFIG=\"$(kind get kubeconfig-path --name=%[1]q)\"\n\n"+
 
 				"For bash on Windows:\n"+
-				"  export KUBECONFIG=\"$(kind get kubeconfig-path --name=%[1]q)\"\n\n"+
+				"export KUBECONFIG=\"$(kind get kubeconfig-path --name=%[1]q)\"\n\n"+
 
 				"You can now use the cluster:\n"+
-				"  kubectl cluster-info\n",
+				"kubectl cluster-info\n",
 			cc.Name(),
 		)
 	} else {
 		fmt.Printf(
 			"Cluster creation complete. You can now use the cluster with:\n\n"+
 
-				"  export KUBECONFIG=\"$(kind get kubeconfig-path --name=%q)\"\n"+
-				"  kubectl cluster-info\n",
+				"export KUBECONFIG=\"$(kind get kubeconfig-path --name=%q)\"\n"+
+				"kubectl cluster-info\n",
 			cc.Name(),
 		)
 	}
