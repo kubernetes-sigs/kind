@@ -137,6 +137,10 @@ Currently, kind supports three different ways to build a `node-image`: via
 `apt`, or if you have the [Kubernetes][kubernetes] source in your host machine
 (`$GOPATH/src/k8s.io/kubernetes`), by using `docker` or `bazel`.
 To specify the build type use the flag `--type`.
+Note however that using `--type=bazel` on Windows or MacOS will not work
+currently due to Kubelet using [CGO] which requires GCC/glibc for linux.
+A workaround may be enabled in the future.
+
 kind will default to using the build type `docker` if none is specified.
 
 ```
@@ -237,3 +241,4 @@ kind, the Kubernetes cluster itself, etc.
 [kubectl]: https://kubernetes.io/docs/reference/kubectl/overview/
 [Docker resource lims]: https://docs.docker.com/docker-for-mac/#advanced
 [install docker]: https://docs.docker.com/install/
+[CGO]: https://golang.org/cmd/cgo/
