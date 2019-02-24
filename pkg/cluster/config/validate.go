@@ -52,7 +52,7 @@ func (n *Node) Validate() error {
 		ExternalEtcdRole,
 		ExternalLoadBalancerRole:
 	default:
-		errs = append(errs, errors.New("role is a required field"))
+		errs = append(errs, errors.Errorf("%q is not a valid node role", n.Role))
 	}
 
 	// image should be defined
