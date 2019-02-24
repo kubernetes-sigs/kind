@@ -18,11 +18,8 @@ package create
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/haproxy"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
@@ -72,18 +69,15 @@ func runHAProxy(ec *execContext, configNode *NodeReplica) error {
 		backendServers[n.Name] = fmt.Sprintf("%s:%d", controlPlaneIP, kubeadm.APIServerPort)
 	}
 
-	// create haproxy config file writing a local temp file on the host machine
-	haproxyConfig, err := createHAProxyConfig(
-		&haproxy.ConfigData{
-			ControlPlanePort: haproxy.ControlPlanePort,
-			BackendServers:   backendServers,
-		},
+	// create haproxy config data
+	haproxyConfig, err := haproxy.Config(&haproxy.ConfigData{
+		ControlPlanePort: haproxy.ControlPlanePort,
+		BackendServers:   backendServers,
+	},
 	)
-	defer os.Remove(haproxyConfig)
 
 	if err != nil {
-		// TODO(bentheelder): logging here
-		return errors.Wrap(err, "failed to create kubeadm config")
+		return errors.Wrap(err, "failed to generate haproxy data")
 	}
 
 	// get the target node for this task (the load balancer node)
@@ -92,9 +86,9 @@ func runHAProxy(ec *execContext, configNode *NodeReplica) error {
 		return errors.Errorf("unable to get the handle for operating on node: %s", configNode.Name)
 	}
 
-	// copy the haproxy config file from the host to the node
-	if err := node.CopyTo(haproxyConfig, "/kind/haproxy.cfg"); err != nil {
-		// TODO(bentheelder): logging here
+	// create haproxy config on the node
+	if err := node.WriteFile("/kind/haproxy.cfg", haproxyConfig); err != nil {
+		// TODO: logging here
 		return errors.Wrap(err, "failed to copy haproxy config to node")
 	}
 
@@ -107,27 +101,4 @@ func runHAProxy(ec *execContext, configNode *NodeReplica) error {
 	}
 
 	return nil
-}
-
-func createHAProxyConfig(data *haproxy.ConfigData) (path string, err error) {
-	// create haproxy config file
-	f, err := ioutil.TempFile("", "")
-	if err != nil {
-		return "", errors.Wrap(err, "failed to create haproxy config")
-	}
-	path = f.Name()
-	// generate the config contents
-	config, err := haproxy.Config(data)
-	if err != nil {
-		os.Remove(path)
-		return "", err
-	}
-	// write to the file
-	log.Infof("Using haproxy:\n\n%s\n", config)
-	_, err = f.WriteString(config)
-	if err != nil {
-		os.Remove(path)
-		return "", err
-	}
-	return path, nil
 }
