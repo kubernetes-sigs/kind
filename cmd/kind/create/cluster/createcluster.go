@@ -69,7 +69,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	err = cfg.Validate()
 	if err != nil {
 		log.Error("Invalid configuration!")
-		configErrors := err.(*util.Errors)
+		configErrors := err.(util.Errors)
 		for _, problem := range configErrors.Errors() {
 			log.Error(problem)
 		}
