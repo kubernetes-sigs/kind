@@ -121,7 +121,7 @@ func (c *BuildContext) buildEntrypoint(dir string) error {
 
 	cmd := exec.Command(c.goCmd, "build", "-o", entrypointDest, entrypointSrc)
 	// TODO(bentheelder): we may need to map between docker image arch and GOARCH
-	cmd.SetEnv("GOOS=linux", "GOARCH="+c.arch)
+	cmd.SetEnv(append(os.Environ(), "GOOS=linux", "GOARCH="+c.arch)...)
 
 	// actually build
 	log.Info("Building entrypoint binary ...")
