@@ -198,6 +198,28 @@ func (n *Node) LoadImages() {
 	}
 }
 
+// LoadTarImage loads a tar archive of a container image and loads it into a
+// nodes.
+func (n *Node) LoadTarImage(imageTarPath string) error {
+	// Read image tar to later copy it into the node.
+	f, err := os.Open(imageTarPath)
+	if err != nil {
+		return errors.Wrap(err, "failed to open image")
+	}
+	defer f.Close()
+
+	// Load image into node.
+	cmd := n.Command(
+		"docker", "load",
+	)
+	cmd.SetStdin(f)
+	if err := cmd.Run(); err != nil {
+		return errors.Wrap(err, "failed to load image")
+	}
+
+	return nil
+}
+
 // FixMounts will correct mounts in the node container to meet the right
 // sharing and permissions for systemd and Docker / Kubernetes
 func (n *Node) FixMounts() error {

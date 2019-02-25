@@ -19,7 +19,6 @@ package load
 
 import (
 	"os"
-	"path/filepath"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -27,7 +26,6 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster"
 	clusternodes "sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/container/docker"
-	"sigs.k8s.io/kind/pkg/fs"
 )
 
 type flagpole struct {
@@ -100,43 +98,19 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Save the image into a tar
-	dir, err := fs.TempDir("", "image-tar")
-	if err != nil {
-		return errors.Wrap(err, "failed to create tempdir")
-	}
-	defer os.RemoveAll(dir)
-	imageTarPath := filepath.Join(dir, "image.tar")
-
-	err = docker.Save(args[0], imageTarPath)
+	// Save the image into a tar.
+	dir, imageTarPath, err := docker.SaveToTarball(args[0])
 	if err != nil {
 		return err
 	}
+	defer os.RemoveAll(dir)
 
-	// Load the image into every node
+	// Load the image into every selected node.
 	for _, node := range selectedNodes {
-		if err := loadImage(imageTarPath, &node); err != nil {
+		if err := node.LoadTarImage(imageTarPath); err != nil {
 			return err
 		}
 	}
-	return nil
-}
 
-func loadImage(imageTarName string, node *clusternodes.Node) error {
-	// Copy image tar to each node
-	f, err := os.Open(imageTarName)
-	if err != nil {
-		return errors.Wrap(err, "failed to open image")
-	}
-	defer f.Close()
-
-	// Load image into each node
-	cmd := node.Command(
-		"docker", "load",
-	)
-	cmd.SetStdin(f)
-	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "failed to load image")
-	}
 	return nil
 }

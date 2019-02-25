@@ -18,8 +18,6 @@ limitations under the License.
 package load
 
 import (
-	"os"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -97,30 +95,12 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Load the image into every node
+	// Load the image into every selected node.
 	for _, node := range selectedNodes {
-		if err := loadImage(args[0], &node); err != nil {
+		if err := node.LoadTarImage(args[0]); err != nil {
 			return err
 		}
 	}
-	return nil
-}
 
-func loadImage(imageTarName string, node *clusternodes.Node) error {
-	// Copy image tar to each node
-	f, err := os.Open(imageTarName)
-	if err != nil {
-		return errors.Wrap(err, "failed to open image")
-	}
-	defer f.Close()
-
-	// Load image into each node
-	cmd := node.Command(
-		"docker", "load",
-	)
-	cmd.SetStdin(f)
-	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "failed to load image")
-	}
 	return nil
 }

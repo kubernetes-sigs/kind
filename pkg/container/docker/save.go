@@ -17,10 +17,34 @@ limitations under the License.
 package docker
 
 import (
+	"path/filepath"
+
+	"github.com/pkg/errors"
+
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/fs"
 )
 
 // Save saves image to dest, as in `docker save`
 func Save(image, dest string) error {
 	return exec.Command("docker", "save", "-o", dest, image).Run()
+}
+
+// SaveToTarball saves image into a tar archive. If successful, it will return
+// the diectory and the full path to the tarball in that order.
+func SaveToTarball(imageName string) (string, string, error) {
+	// Create a temp directory to save the tar archive.
+	dir, err := fs.TempDir("", "image-tar")
+	if err != nil {
+		return "", "", errors.Wrap(err, "failed to create tempdir")
+	}
+	imageTarPath := filepath.Join(dir, "image.tar")
+
+	// Save container image into a tar archive.
+	err = Save(imageName, imageTarPath)
+	if err != nil {
+		return "", "", err
+	}
+
+	return dir, imageTarPath, nil
 }
