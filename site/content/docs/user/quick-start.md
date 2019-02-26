@@ -230,7 +230,7 @@ kind, the Kubernetes cluster itself, etc.
 [known issues]: /docs/user/known-issues
 [node image]: /docs/design/node-image
 [base image]: /docs/design/base-image
-[kind-example-config]: ./kind-example-config.yaml
+[kind-example-config]: https://raw.githubusercontent.com/kubernetes-sigs/kind/master/site/content/docs/user/kind-example-config.yaml
 [pkg/build/base/sources]: https://github.com/kubernetes-sigs/kind/tree/master/pkg/build/base/sources
 [kubernetes]: https://github.com/kubernetes/kubernetes
 [kindest/node]: https://hub.docker.com/r/kindest/node/
