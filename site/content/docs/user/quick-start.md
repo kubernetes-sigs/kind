@@ -122,6 +122,20 @@ kind load docker-image my-custom-image:unique-tag
 kubectl apply -f my-manifest-using-my-image:unique-tag
 ```
 
+**Note**: The Kubernetes default pull policy is `IfNotPresent` unless
+the image tag is `:latest` in which case the default policy is `Always`.
+`IfNotPresent` causes the Kubelet to skip pulling an image if it already exists.
+If you want those images loaded into node to work as expected, please:
+
+- don't use a `:latest` tag
+
+and / or:
+
+- specify `imagePullPolicy: IfNotPresent` or `imagePullPolicy: Never` on your container(s).
+
+See [Kubernetes imagePullPolicy][Kubernetes imagePullPolicy] for more information.
+
+
 ## Building Images
 
 kind runs a local Kubernetes cluster by using Docker containers as "nodes".
@@ -242,3 +256,4 @@ kind, the Kubernetes cluster itself, etc.
 [Docker resource lims]: https://docs.docker.com/docker-for-mac/#advanced
 [install docker]: https://docs.docker.com/install/
 [CGO]: https://golang.org/cmd/cgo/
+[Kubernetes imagePullPolicy]: https://kubernetes.io/docs/concepts/containers/images/#updating-images
