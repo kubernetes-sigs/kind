@@ -31,7 +31,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/util/version"
-	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 
 	"sigs.k8s.io/kind/pkg/container/docker"
@@ -72,7 +71,7 @@ type nodeCache struct {
 	kubernetesVersion string
 	ip                string
 	ports             map[int]int
-	role              config.NodeRole
+	role              string
 	containerCmder    exec.Cmder
 }
 
@@ -264,20 +263,20 @@ func (n *Node) Ports(containerPort int) (hostPort int, err error) {
 }
 
 // Role returns the role of the node
-func (n *Node) Role() (role config.NodeRole, err error) {
+func (n *Node) Role() (role string, err error) {
 	// use the cached version first
 	if n.nodeCache.role != "" {
 		return n.nodeCache.role, nil
 	}
 	// retrive the role the node using docker inspect
-	lines, err := docker.Inspect(n.nameOrID, fmt.Sprintf("{{index .Config.Labels %q}}", constants.ClusterRoleKey))
+	lines, err := docker.Inspect(n.nameOrID, fmt.Sprintf("{{index .Config.Labels %q}}", constants.NodeRoleKey))
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to get %q label", constants.ClusterRoleKey)
+		return "", errors.Wrapf(err, "failed to get %q label", constants.NodeRoleKey)
 	}
 	if len(lines) != 1 {
-		return "", errors.Errorf("%q label should only be one line, got %d lines", constants.ClusterRoleKey, len(lines))
+		return "", errors.Errorf("%q label should only be one line, got %d lines", constants.NodeRoleKey, len(lines))
 	}
-	n.nodeCache.role = config.NodeRole(strings.Trim(lines[0], "'"))
+	n.nodeCache.role = strings.Trim(lines[0], "'")
 	return n.nodeCache.role, nil
 }
 

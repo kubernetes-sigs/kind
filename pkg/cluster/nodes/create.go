@@ -130,7 +130,7 @@ func createNode(name, image, clusterLabel string, role config.NodeRole, mounts [
 		// label the node with the cluster ID
 		"--label", clusterLabel,
 		// label the node with the role ID
-		"--label", fmt.Sprintf("%s=%s", constants.ClusterRoleKey, role),
+		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleKey, role),
 		// explicitly set the entrypoint
 		"--entrypoint=/usr/local/bin/entrypoint",
 	}

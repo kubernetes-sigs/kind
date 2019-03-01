@@ -23,5 +23,34 @@ const DefaultClusterName = "kind"
 // ClusterLabelKey is applied to each "node" docker container for identification
 const ClusterLabelKey = "io.k8s.sigs.kind.cluster"
 
-// ClusterRoleKey is applied to each "node" docker container for categorization of nodes by role
-const ClusterRoleKey = "io.k8s.sigs.kind.role"
+// NodeRoleKey is applied to each "node" docker container for categorization
+// of nodes by role
+const NodeRoleKey = "io.k8s.sigs.kind.role"
+
+/* node role value constants */
+const (
+	// ControlPlaneNodeRoleValue identifies a node that hosts a Kubernetes
+	// control-plane.
+	//
+	// NOTE: in single node clusters, control-plane nodes act as worker nodes
+	ControlPlaneNodeRoleValue string = "control-plane"
+
+	// WorkerNodeRoleValue identifies a node that hosts a Kubernetes worker
+	WorkerNodeRoleValue string = "worker"
+
+	// ExternalLoadBalancerNodeRoleValue identifies a node that hosts an
+	// external load balancer for the API server in HA configurations.
+	//
+	// Please note that `kind` nodes hosting external load balancer are not
+	// kubernetes nodes
+	ExternalLoadBalancerNodeRoleValue string = "external-load-balancer"
+
+	// ExternalEtcdNodeRoleValue identifies a node that hosts an external-etcd
+	// instance.
+	//
+	// WARNING: this node type is not yet implemented!
+	//
+	// Please note that `kind` nodes hosting external etcd are not
+	// kubernetes nodes
+	ExternalEtcdNodeRoleValue string = "external-etcd"
+)

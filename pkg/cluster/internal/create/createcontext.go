@@ -22,6 +22,8 @@ import (
 	"strings"
 	"time"
 
+	"sigs.k8s.io/kind/pkg/cluster/constants"
+
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
@@ -140,12 +142,13 @@ func (cc *Context) ProvisionNodes() (nodeList map[string]*nodes.Node, err error)
 		var name = fmt.Sprintf("%s-%s", cc.Name(), configNode.Name)
 		var node *nodes.Node
 
-		switch configNode.Role {
-		case config.ExternalLoadBalancerRole:
+		// TODO(bentheelder): decouple from config objects further
+		switch string(configNode.Role) {
+		case constants.ExternalLoadBalancerNodeRoleValue:
 			node, err = nodes.CreateExternalLoadBalancerNode(name, configNode.Image, cc.ClusterLabel())
-		case config.ControlPlaneRole:
+		case constants.ControlPlaneNodeRoleValue:
 			node, err = nodes.CreateControlPlaneNode(name, configNode.Image, cc.ClusterLabel(), configNode.ExtraMounts)
-		case config.WorkerRole:
+		case constants.WorkerNodeRoleValue:
 			node, err = nodes.CreateWorkerNode(name, configNode.Image, cc.ClusterLabel(), configNode.ExtraMounts)
 		}
 		if err != nil {
