@@ -27,6 +27,7 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/config/encoding"
+	"sigs.k8s.io/kind/pkg/cluster/create"
 	"sigs.k8s.io/kind/pkg/util"
 )
 
@@ -103,8 +104,8 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	}
 	fmt.Printf("Creating cluster %q ...\n", flags.Name)
 	if err = ctx.Create(cfg,
-		cluster.Retain(flags.Retain),
-		cluster.WaitForReady(flags.Wait),
+		create.Retain(flags.Retain),
+		create.WaitForReady(flags.Wait),
 	); err != nil {
 		return errors.Wrap(err, "failed to create cluster")
 	}
