@@ -171,7 +171,7 @@ func (d *DerivedConfig) Add(node *config.Node) error {
 		d.allReplicas = append(d.allReplicas, replica)
 
 		// list of nodes with control plane role
-		if replica.IsControlPlane() {
+		if replica.Role == config.ControlPlaneRole {
 			// assign selected name for control plane node
 			replica.Name = "control-plane"
 			// stores the node in derivedConfig
@@ -179,7 +179,7 @@ func (d *DerivedConfig) Add(node *config.Node) error {
 		}
 
 		// list of nodes with worker role
-		if replica.IsWorker() {
+		if replica.Role == config.ControlPlaneRole {
 			// assign selected name for worker node
 			replica.Name = "worker"
 			// stores the node in derivedConfig
@@ -187,7 +187,7 @@ func (d *DerivedConfig) Add(node *config.Node) error {
 		}
 
 		// node with external etcd role
-		if replica.IsExternalEtcd() {
+		if replica.Role == config.ExternalEtcdRole {
 			if d.externalEtcd != nil {
 				return errors.Errorf("invalid config. there are two nodes with role %q", config.ExternalEtcdRole)
 			}
@@ -198,7 +198,7 @@ func (d *DerivedConfig) Add(node *config.Node) error {
 		}
 
 		// node with external load balancer role
-		if replica.IsExternalLoadBalancer() {
+		if replica.Role == config.ExternalLoadBalancerRole {
 			if d.externalLoadBalancer != nil {
 				return errors.Errorf("invalid config. there are two nodes with role %q", config.ExternalLoadBalancerRole)
 			}
