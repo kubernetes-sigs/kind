@@ -26,15 +26,17 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
-	"sigs.k8s.io/kind/pkg/cluster/internal/meta"
+	"sigs.k8s.io/kind/pkg/cluster/internal/context"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/container/docker"
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
 
-// Context is a superset of cluster.Context implementing helpers internal to Context.Create()
+// Context is a superset of the main cluster Context implementing helpers internal
+// to the user facing Context.Create()
+// TODO(bentheelder): elminate this object
 type Context struct {
-	*meta.ClusterMeta
+	*context.Context
 	// other fields
 	Status *logutil.Status
 	Config *config.Config

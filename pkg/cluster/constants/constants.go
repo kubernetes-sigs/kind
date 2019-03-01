@@ -17,6 +17,9 @@ limitations under the License.
 // Package constants contains well known constants for kind clusters
 package constants
 
+// DefaultClusterName is the default cluster Context name
+const DefaultClusterName = "kind"
+
 // ClusterLabelKey is applied to each "node" docker container for identification
 const ClusterLabelKey = "io.k8s.sigs.kind.cluster"
 
