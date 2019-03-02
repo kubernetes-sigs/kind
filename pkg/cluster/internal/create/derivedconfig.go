@@ -21,7 +21,6 @@ import (
 	"sort"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
-	"sigs.k8s.io/kind/pkg/util"
 
 	"github.com/pkg/errors"
 )
@@ -59,34 +58,6 @@ type NodeReplica struct {
 // This attribute exists only in the internal config version and is meant
 // to simplify the usage of the config in the code base.
 type ReplicaList []*NodeReplica
-
-// Validate validates that the configuration is possible to create
-func (d *DerivedConfig) Validate() error {
-	errs := []error{}
-
-	// There should be at least one control plane
-	if d.BootStrapControlPlane() == nil {
-		errs = append(errs, errors.Errorf("please add at least one node with role %q", config.ControlPlaneRole))
-	}
-	// There should be one load balancer if more than one control plane exists in the cluster
-	if len(d.ControlPlanes()) > 1 && d.ExternalLoadBalancer() == nil {
-		errs = append(errs, errors.Errorf("please add a node with role %s because in the cluster there are more than one node with role %s",
-			config.ExternalLoadBalancerRole, config.ControlPlaneRole))
-	}
-
-	// TODO(fabrizio pandini): this check is temporary / WIP
-	// kind v1alpha config fully supports multi nodes, but the cluster creation logic implemented in
-	// pkg/cluster/contex.go does it only partially (yet).
-	// As soon as external etcd is implemented in pkg/cluster, this should go away
-	if d.ExternalEtcd() != nil {
-		errs = append(errs, errors.New("multi node support is still a work in progress, currently external etcd node is not supported"))
-	}
-
-	if len(errs) > 0 {
-		return util.NewErrors(errs)
-	}
-	return nil
-}
 
 // ProvisioningOrder returns the provisioning order for nodes, that
 // should be defined according to the assigned NodeRole

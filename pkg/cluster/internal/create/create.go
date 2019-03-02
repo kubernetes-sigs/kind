@@ -55,11 +55,6 @@ func Cluster(c *context.Context, cfg *config.Config, opts *Options) error {
 		return err
 	}
 
-	// validate node configuration
-	if err := derived.Validate(); err != nil {
-		return err
-	}
-
 	// init the create context and logging
 	// TODO(bentheelder): eliminate this
 	cc := &Context{
