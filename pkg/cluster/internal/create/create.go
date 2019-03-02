@@ -50,7 +50,7 @@ func Cluster(c *context.Context, cfg *config.Config, opts *Options) error {
 	}
 
 	// derive info necessary for creation
-	derived, err := Derive(cfg)
+	derived, err := Derive(cfg, c.Name())
 	if err != nil {
 		return err
 	}
@@ -78,10 +78,10 @@ func Cluster(c *context.Context, cfg *config.Config, opts *Options) error {
 
 	// attempt to explicitly pull the required node images if they doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
-	cc.EnsureNodeImages()
+	ensureNodeImages(cc.Status, cfg)
 
 	// Create node containers implementing defined config Nodes
-	nodeList, err := cc.ProvisionNodes()
+	nodes, err := provisionNodes(cc.Status, cfg, c.Name(), c.ClusterLabel())
 	if err != nil {
 		// In case of errors nodes are deleted (except if retain is explicitly set)
 		log.Error(err)
@@ -97,7 +97,7 @@ func Cluster(c *context.Context, cfg *config.Config, opts *Options) error {
 	// Kubernetes cluster; please note that the list of actions automatically
 	// adapt to the topology defined in config
 	// TODO(fabrizio pandini): make the list of executed actions configurable from CLI
-	err = cc.Exec(nodeList, []string{"haproxy", "config", "init", "join"}, cc.ExecOptions...)
+	err = cc.Exec(nodes, []string{"haproxy", "config", "init", "join"}, cc.ExecOptions...)
 	if err != nil {
 		// In case of errors nodes are deleted (except if retain is explicitly set)
 		log.Error(err)
@@ -107,6 +107,13 @@ func Cluster(c *context.Context, cfg *config.Config, opts *Options) error {
 		return err
 	}
 
+	// print how to set KUBECONFIG to point to the cluster etc.
+	printUsage(cc.Name())
+
+	return nil
+}
+
+func printUsage(name string) {
 	// TODO: consider shell detection.
 	if runtime.GOOS == "windows" {
 		fmt.Printf(
@@ -124,7 +131,7 @@ func Cluster(c *context.Context, cfg *config.Config, opts *Options) error {
 
 				"You can now use the cluster:\n"+
 				"kubectl cluster-info\n",
-			cc.Name(),
+			name,
 		)
 	} else {
 		fmt.Printf(
@@ -132,8 +139,7 @@ func Cluster(c *context.Context, cfg *config.Config, opts *Options) error {
 
 				"export KUBECONFIG=\"$(kind get kubeconfig-path --name=%q)\"\n"+
 				"kubectl cluster-info\n",
-			cc.Name(),
+			name,
 		)
 	}
-	return nil
 }

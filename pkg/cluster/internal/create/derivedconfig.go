@@ -27,6 +27,7 @@ import (
 
 // DerivedConfig contains config-like data computed from pkg/cluster/config.Config
 // namely, it contains lists of NodeReplicas to be created based on the config
+// TODO(bentheelder): simplify this
 type DerivedConfig struct {
 	// allReplicas constains the list of node replicas defined in the `kind` Config
 	allReplicas ReplicaList
@@ -103,11 +104,11 @@ func (t ReplicaList) Swap(i, j int) {
 
 // Derive populates DerivedConfig info starting
 // from the current list on Nodes
-func Derive(c *config.Config) (*DerivedConfig, error) {
+func Derive(c *config.Config, clusterName string) (*DerivedConfig, error) {
 	d := &DerivedConfig{}
 
 	for _, n := range c.Nodes {
-		if err := d.Add(&n); err != nil {
+		if err := d.Add(&n, clusterName); err != nil {
 			return nil, err
 		}
 	}
@@ -117,7 +118,7 @@ func Derive(c *config.Config) (*DerivedConfig, error) {
 
 // Add a Node to the `kind` cluster, generating requested node replicas
 // and assigning a unique node name to each replica.
-func (d *DerivedConfig) Add(node *config.Node) error {
+func (d *DerivedConfig) Add(node *config.Node, clusterName string) error {
 
 	// Creates the list of node replicas
 	expectedReplicas := 1
@@ -141,18 +142,17 @@ func (d *DerivedConfig) Add(node *config.Node) error {
 		// adds the replica to the list of nodes
 		d.allReplicas = append(d.allReplicas, replica)
 
+		// assign selected name for control plane node
+		replica.Name = fmt.Sprintf("%s-%s", clusterName, string(replica.Role))
+
 		// list of nodes with control plane role
 		if replica.Role == config.ControlPlaneRole {
-			// assign selected name for control plane node
-			replica.Name = "control-plane"
 			// stores the node in derivedConfig
 			d.controlPlanes = append(d.controlPlanes, replica)
 		}
 
 		// list of nodes with worker role
-		if replica.Role == config.ControlPlaneRole {
-			// assign selected name for worker node
-			replica.Name = "worker"
+		if replica.Role == config.WorkerRole {
 			// stores the node in derivedConfig
 			d.workers = append(d.workers, replica)
 		}
@@ -162,8 +162,6 @@ func (d *DerivedConfig) Add(node *config.Node) error {
 			if d.externalEtcd != nil {
 				return errors.Errorf("invalid config. there are two nodes with role %q", config.ExternalEtcdRole)
 			}
-			// assign selected name for etcd node
-			replica.Name = "etcd"
 			// stores the node in derivedConfig
 			d.externalEtcd = replica
 		}
@@ -173,8 +171,6 @@ func (d *DerivedConfig) Add(node *config.Node) error {
 			if d.externalLoadBalancer != nil {
 				return errors.Errorf("invalid config. there are two nodes with role %q", config.ExternalLoadBalancerRole)
 			}
-			// assign selected name for load balancer node
-			replica.Name = "lb"
 			// stores the node in derivedConfig
 			d.externalLoadBalancer = replica
 		}

@@ -19,18 +19,13 @@ package create
 import (
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
-	"sigs.k8s.io/kind/pkg/cluster/constants"
-
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/internal/context"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/container/docker"
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
 
@@ -100,96 +95,4 @@ func (cc *Context) Exec(nodeList map[string]*nodes.Node, actions []string, optio
 	ec.status.End(true)
 
 	return nil
-}
-
-// EnsureNodeImages ensures that the node images used by the create
-// configuration are present
-func (cc *Context) EnsureNodeImages() {
-	var images = map[string]bool{}
-
-	// For all the nodes defined in the `kind` config
-	for _, configNode := range cc.AllReplicas() {
-		if _, ok := images[configNode.Image]; ok {
-			continue
-		}
-
-		// prints user friendly message
-		image := configNode.Image
-		if strings.Contains(image, "@sha256:") {
-			image = strings.Split(image, "@sha256:")[0]
-		}
-		cc.Status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", image))
-
-		// attempt to explicitly pull the image if it doesn't exist locally
-		// we don't care if this errors, we'll still try to run which also pulls
-		_, _ = docker.PullIfNotPresent(configNode.Image, 4)
-
-		// marks the images as already pulled
-		images[configNode.Image] = true
-	}
-}
-
-// ProvisionNodes takes care of creating all the containers
-// that will host `kind` nodes
-func (cc *Context) ProvisionNodes() (nodeList map[string]*nodes.Node, err error) {
-	nodeList = map[string]*nodes.Node{}
-
-	// For all the nodes defined in the `kind` config
-	for _, configNode := range cc.AllReplicas() {
-
-		cc.Status.Start(fmt.Sprintf("[%s] Creating node container 📦", configNode.Name))
-		// create the node into a container (docker run, but it is paused, see createNode)
-		var name = fmt.Sprintf("%s-%s", cc.Name(), configNode.Name)
-		var node *nodes.Node
-
-		// TODO(bentheelder): decouple from config objects further
-		switch string(configNode.Role) {
-		case constants.ExternalLoadBalancerNodeRoleValue:
-			node, err = nodes.CreateExternalLoadBalancerNode(name, configNode.Image, cc.ClusterLabel())
-		case constants.ControlPlaneNodeRoleValue:
-			node, err = nodes.CreateControlPlaneNode(name, configNode.Image, cc.ClusterLabel(), configNode.ExtraMounts)
-		case constants.WorkerNodeRoleValue:
-			node, err = nodes.CreateWorkerNode(name, configNode.Image, cc.ClusterLabel(), configNode.ExtraMounts)
-		}
-		if err != nil {
-			return nodeList, err
-		}
-		nodeList[configNode.Name] = node
-
-		cc.Status.Start(fmt.Sprintf("[%s] Fixing mounts 🗻", configNode.Name))
-		// we need to change a few mounts once we have the container
-		// we'd do this ahead of time if we could, but --privileged implies things
-		// that don't seem to be configurable, and we need that flag
-		if err := node.FixMounts(); err != nil {
-			// TODO(bentheelder): logging here
-			return nodeList, err
-		}
-
-		cc.Status.Start(fmt.Sprintf("[%s] Configuring proxy 🐋", configNode.Name))
-		if err := node.SetProxy(); err != nil {
-			// TODO: logging here
-			return nodeList, errors.Wrapf(err, "failed to set proxy for %s", configNode.Name)
-		}
-
-		cc.Status.Start(fmt.Sprintf("[%s] Starting systemd 🖥", configNode.Name))
-		// signal the node container entrypoint to continue booting into systemd
-		if err := node.SignalStart(); err != nil {
-			// TODO(bentheelder): logging here
-			return nodeList, err
-		}
-
-		cc.Status.Start(fmt.Sprintf("[%s] Waiting for docker to be ready 🐋", configNode.Name))
-		// wait for docker to be ready
-		if !node.WaitForDocker(time.Now().Add(time.Second * 30)) {
-			// TODO(bentheelder): logging here
-			return nodeList, errors.New("timed out waiting for docker to be ready on node")
-		}
-
-		// load the docker image artifacts into the docker daemon
-		cc.Status.Start(fmt.Sprintf("[%s] Pre-loading images 🐋", configNode.Name))
-		node.LoadImages()
-
-	}
-
-	return nodeList, nil
 }
