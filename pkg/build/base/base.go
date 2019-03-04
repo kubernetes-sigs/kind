@@ -20,6 +20,7 @@ package base
 import (
 	"os"
 	"path/filepath"
+	"sigs.k8s.io/kind/pkg/util"
 
 	log "github.com/sirupsen/logrus"
 
@@ -65,7 +66,7 @@ func NewBuildContext(options ...Option) *BuildContext {
 	ctx := &BuildContext{
 		image: DefaultImage,
 		goCmd: "go",
-		arch:  "amd64",
+		arch:  util.GetArch(),
 	}
 	for _, option := range options {
 		option(ctx)

@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sigs.k8s.io/kind/pkg/util"
 	"strconv"
 	"strings"
 	"time"
@@ -156,7 +157,8 @@ func (n *Node) LoadImages() {
 	// TODO(bentheelder): this is a bit gross, move this logic out of bash
 	if err := n.Command(
 		"/bin/bash", "-c",
-		`docker images --format='{{.Repository}}:{{.Tag}}' | grep -v amd64 | xargs -L 1 -I '{}' /bin/bash -c 'docker tag "{}" "$(echo "{}" | sed s/:/-amd64:/)"'`,
+		fmt.Sprintf(`docker images --format='{{.Repository}}:{{.Tag}}' | grep -v %s | xargs -L 1 -I '{}' /bin/bash -c 'docker tag "{}" "$(echo "{}" | sed s/:/-%s:/)"'`,
+			util.GetArch(), util.GetArch()),
 	).Run(); err != nil {
 		log.Warningf("Failed to re-tag docker images: %v", err)
 	}

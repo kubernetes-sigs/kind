@@ -21,10 +21,10 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/util"
 )
 
 // BazelBuildBits implements Bits for a local Bazel build
@@ -62,7 +62,7 @@ func (b *BazelBuildBits) Build() error {
 
 	// TODO(bentheelder): we assume the host arch, but cross compiling should
 	// be possible now
-	bazelGoosGoarch := fmt.Sprintf("linux_%s", runtime.GOARCH)
+	bazelGoosGoarch := util.GetOSandArch("_")
 
 	// build artifacts
 	cmd := exec.Command(
