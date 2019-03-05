@@ -43,7 +43,7 @@ import (
 // Node impleemnts exec.Cmder
 type Node struct {
 	// must be one of docker container ID or name
-	nameOrID string
+	name string
 	// cached node info etc.
 	nodeCache
 }
@@ -54,7 +54,7 @@ var _ exec.Cmder = &Node{}
 // Cmder returns an exec.Cmder that runs on the node via docker exec
 func (n *Node) Cmder() exec.Cmder {
 	if n.nodeCache.containerCmder == nil {
-		n.nodeCache.containerCmder = docker.ContainerCmder(n.nameOrID)
+		n.nodeCache.containerCmder = docker.ContainerCmder(n.name)
 	}
 	return n.nodeCache.containerCmder
 }
@@ -75,19 +75,24 @@ type nodeCache struct {
 	containerCmder    exec.Cmder
 }
 
+// Name returns the node's name
+func (n *Node) Name() string {
+	return n.name
+}
+
 func (n *Node) String() string {
-	return n.nameOrID
+	return n.Name()
 }
 
 // SignalStart sends SIGUSR1 to the node, which signals our entrypoint to boot
 // see images/node/entrypoint
 func (n *Node) SignalStart() error {
-	return docker.Kill("SIGUSR1", n.nameOrID)
+	return docker.Kill("SIGUSR1", n.name)
 }
 
 // CopyTo copies the source file on the host to dest on the node
 func (n *Node) CopyTo(source, dest string) error {
-	return docker.CopyTo(source, n.nameOrID, dest)
+	return docker.CopyTo(source, n.name, dest)
 }
 
 // CopyFrom copies the source file on the node to dest on the host
@@ -95,7 +100,7 @@ func (n *Node) CopyTo(source, dest string) error {
 //     but this should go away when kubeadm automatic copy certs lands,
 //     otherwise it should be refactored in something more robust in the long term
 func (n *Node) CopyFrom(source, dest string) error {
-	return docker.CopyFrom(n.nameOrID, source, dest)
+	return docker.CopyFrom(n.name, source, dest)
 }
 
 // WaitForDocker waits for Docker to be ready on the node
@@ -223,7 +228,7 @@ func (n *Node) IP() (ip string, err error) {
 		return n.nodeCache.ip, nil
 	}
 	// retrive the IP address of the node using docker inspect
-	lines, err := docker.Inspect(n.nameOrID, "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}")
+	lines, err := docker.Inspect(n.name, "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}")
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get file")
 	}
@@ -243,7 +248,7 @@ func (n *Node) Ports(containerPort int) (hostPort int, err error) {
 		return hostPort, nil
 	}
 	// retrive the specific port mapping using docker inspect
-	lines, err := docker.Inspect(n.nameOrID, fmt.Sprintf("{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}", containerPort))
+	lines, err := docker.Inspect(n.name, fmt.Sprintf("{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}", containerPort))
 	if err != nil {
 		return -1, errors.Wrap(err, "failed to get file")
 	}
@@ -269,7 +274,7 @@ func (n *Node) Role() (role string, err error) {
 		return n.nodeCache.role, nil
 	}
 	// retrive the role the node using docker inspect
-	lines, err := docker.Inspect(n.nameOrID, fmt.Sprintf("{{index .Config.Labels %q}}", constants.NodeRoleKey))
+	lines, err := docker.Inspect(n.name, fmt.Sprintf("{{index .Config.Labels %q}}", constants.NodeRoleKey))
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get %q label", constants.NodeRoleKey)
 	}

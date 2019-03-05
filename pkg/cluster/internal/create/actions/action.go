@@ -57,3 +57,24 @@ func (ac *ActionContext) SelectNodesByRole(role string) ([]*nodes.Node, error) {
 	}
 	return out, nil
 }
+
+// ExternalLoadBalancerNode returns a node handle for the external control plane
+// loadbalancer node or nil if there isn't one
+func (ac *ActionContext) ExternalLoadBalancerNode() (*nodes.Node, error) {
+	// identify and validate external load balancer node
+	loadBalancerNodes, err := ctx.SelectNodesByRole(constants.ExternalLoadBalancerNodeRoleValue)
+	if err != nil {
+		return nil, err
+	}
+	if len(loadBalancerNodes) < 1 {
+		return nil, nil
+	}
+	if len(loadBalancerNodes) > 1 {
+		return nil, errors.Errorf(
+			"unexpected number of %s nodes %d",
+			constants.ExternalLoadBalancerNodeRoleValue,
+			len(loadBalancerNodes),
+		)
+	}
+	return loadBalancerNodes[0], nil
+}
