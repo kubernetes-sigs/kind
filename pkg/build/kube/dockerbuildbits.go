@@ -17,9 +17,11 @@ limitations under the License.
 package kube
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
+	"sigs.k8s.io/kind/pkg/util"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -97,7 +99,7 @@ func (b *DockerBuildBits) build() error {
 		"build/run.sh",
 		"make", "all",
 		"WHAT="+strings.Join(what, " "),
-		"KUBE_BUILD_PLATFORMS=linux/amd64",
+		"KUBE_BUILD_PLATFORMS="+util.GetOSandArch("/"),
 		// ensure the build isn't especially noisy..
 		"KUBE_VERBOSE=0",
 	)
@@ -141,7 +143,7 @@ func (b *DockerBuildBits) buildBash() error {
 	}
 	cmd := exec.Command(
 		"build/run.sh", "make", "all",
-		"WHAT="+strings.Join(what, " "), "KUBE_BUILD_PLATFORMS=linux/amd64",
+		"WHAT="+strings.Join(what, " "), "KUBE_BUILD_PLATFORMS="+util.GetOSandArch("/"),
 	)
 	// ensure the build isn't especially noisy..., inheret existing env
 	cmd.SetEnv(
@@ -157,7 +159,7 @@ func (b *DockerBuildBits) buildBash() error {
 
 	// mimic `make quick-release` internals, clear previous images
 	if err := os.RemoveAll(filepath.Join(
-		".", "_output", "release-images", "amd64",
+		".", "_output", "release-images", util.GetArch(),
 	)); err != nil {
 		return errors.Wrap(err, "failed to remove old release-images")
 	}
@@ -168,7 +170,8 @@ func (b *DockerBuildBits) buildBash() error {
 		"source hack/lib/version.sh;",
 		"source build/lib/release.sh;",
 		"kube::version::get_version_vars;",
-		`kube::release::create_docker_images_for_server "${LOCAL_OUTPUT_ROOT}/dockerized/bin/linux/amd64" "amd64"`,
+		fmt.Sprintf(`kube::release::create_docker_images_for_server "${LOCAL_OUTPUT_ROOT}/dockerized/bin/%s" "%s"`,
+			util.GetOSandArch("/"), util.GetArch()),
 	}
 	cmd = exec.Command("bash", "-c", strings.Join(buildImages, " "))
 	cmd.SetEnv(
@@ -187,10 +190,10 @@ func (b *DockerBuildBits) buildBash() error {
 // Paths implements Bits.Paths
 func (b *DockerBuildBits) Paths() map[string]string {
 	binDir := filepath.Join(b.kubeRoot,
-		"_output", "dockerized", "bin", "linux", "amd64",
+		"_output", "dockerized", "bin", "linux", util.GetArch(),
 	)
 	imageDir := filepath.Join(b.kubeRoot,
-		"_output", "release-images", "amd64",
+		"_output", "release-images", util.GetArch(),
 	)
 	return map[string]string{
 		// binaries (hyperkube)

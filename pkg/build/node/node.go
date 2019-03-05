@@ -22,6 +22,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"sigs.k8s.io/kind/pkg/util"
 	"strings"
 	"time"
 
@@ -100,7 +101,7 @@ func NewBuildContext(options ...Option) (ctx *BuildContext, err error) {
 		mode:      DefaultMode,
 		image:     DefaultImage,
 		baseImage: DefaultBaseImage,
-		arch:      "amd64",
+		arch:      util.GetArch(),
 	}
 	// apply user options
 	for _, option := range options {

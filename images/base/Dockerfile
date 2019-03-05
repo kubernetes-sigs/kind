@@ -24,10 +24,6 @@
 ARG BASE_IMAGE="ubuntu:18.04"
 FROM ${BASE_IMAGE}
 
-# NOTE: ARCH must be defined again after FROM
-# https://docs.docker.com/engine/reference/builder/#scope
-ARG ARCH="amd64"
-
 # setting DEBIAN_FRONTEND=noninteractive stops some apt warnings, this is not 
 # a real argument, we're (ab)using ARG to get a temporary ENV again.
 ARG DEBIAN_FRONTEND=noninteractive
@@ -75,17 +71,18 @@ ARG DOCKER_VERSION="18.06.*"
 ARG APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE="false"
 RUN curl -fsSL "https://download.docker.com/linux/$(. /etc/os-release; echo "$ID")/gpg" | apt-key add - \
     && apt-key fingerprint 0EBFCD88 \
-    && ARCH="${ARCH}" add-apt-repository \
-        "deb [arch=${ARCH}] https://download.docker.com/linux/$(. /etc/os-release; echo "$ID") $(lsb_release -cs) stable" \
+    && add-apt-repository \
+        "deb https://download.docker.com/linux/$(. /etc/os-release; echo "$ID") $(lsb_release -cs) stable" \
     && clean-install "docker-ce=${DOCKER_VERSION}"
 
 # Install CNI binaries to /opt/cni/bin
 # TODO(bentheelder): doc why / what here
 ARG CNI_VERSION="0.6.0"
-ARG CNI_TARBALL="cni-plugins-${ARCH}-v${CNI_VERSION}.tgz"
 ARG CNI_BASE_URL="https://storage.googleapis.com/kubernetes-release/network-plugins/"
-ARG CNI_URL="${CNI_BASE_URL}${CNI_TARBALL}"
-RUN curl -sSL --retry 5 --output /tmp/cni.tgz "${CNI_URL}" \
+RUN export ARCH=$(dpkg --print-architecture) \
+    && export CNI_TARBALL="cni-plugins-${ARCH}-v${CNI_VERSION}.tgz" \
+    && export CNI_URL="${CNI_BASE_URL}${CNI_TARBALL}" \
+    && curl -sSL --retry 5 --output /tmp/cni.tgz "${CNI_URL}" \
     && sha256sum /tmp/cni.tgz \
     && mkdir -p /opt/cni/bin \
     && tar -C /opt/cni/bin -xzf /tmp/cni.tgz \
