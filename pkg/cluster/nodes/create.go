@@ -30,10 +30,11 @@ import (
 	"sigs.k8s.io/kind/pkg/container/docker"
 )
 
-// FromID creates a node handle from the node (container's) ID
-func FromID(id string) *Node {
+// FromName creates a node handle from the node' Name
+func FromName(name string) *Node {
 	return &Node{
-		name: id,
+		name:  name,
+		cache: &nodeCache{},
 	}
 }
 
@@ -177,9 +178,7 @@ func createNode(name, image, clusterLabel string, role config.NodeRole, mounts [
 	// we should return a handle so the caller can clean it up
 	// we'll return a handle with the nice name though
 	if id != "" {
-		handle = &Node{
-			name: name,
-		}
+		handle = FromName(name)
 	}
 	if err != nil {
 		return handle, errors.Wrap(err, "docker run error")

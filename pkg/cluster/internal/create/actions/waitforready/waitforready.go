@@ -45,8 +45,8 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	}
 	ctx.Status.Start(
 		fmt.Sprintf(
-			"Waiting %s for the cluster to be ready ⏳",
-			a.waitTime.Round(time.Second).String(),
+			"Waiting up to %s for the cluster to be ready ⏳",
+			formatDuration(a.waitTime),
 		),
 	)
 
@@ -61,14 +61,20 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// Wait for the nodes to reach Ready status.
-	isReady := nodes.WaitForReady(node, time.Now().Add(a.waitTime))
+	startTime := time.Now()
+	isReady := nodes.WaitForReady(node, startTime.Add(a.waitTime))
 	if !isReady {
 		ctx.Status.End(false)
-		fmt.Println("WARNING: Timed out waiting for the nodes to be ready.")
+		fmt.Println(" • WARNING: Timed out waiting for the cluster to be ready.")
 		return nil
 	}
 
 	// mark success
 	ctx.Status.End(true)
+	fmt.Printf(" • Cluster ready after %s 💚\n", formatDuration(time.Now().Sub(startTime)))
 	return nil
+}
+
+func formatDuration(duration time.Duration) string {
+	return duration.Round(time.Second).String()
 }

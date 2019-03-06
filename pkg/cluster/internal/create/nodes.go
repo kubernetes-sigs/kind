@@ -163,7 +163,7 @@ func provisionNodes(
 func makeNodeNamer(clusterName string) func(string) string {
 	counter := make(map[string]int)
 	return func(role string) string {
-		count := 0
+		count := 1
 		suffix := ""
 		if v, ok := counter[role]; ok {
 			count += v

@@ -96,7 +96,7 @@ func list(visit func(string, *Node), filters ...string) error {
 		}
 		names := strings.Split(parts[0], ",")
 		cluster := parts[1]
-		visit(cluster, FromID(names[0]))
+		visit(cluster, FromName(names[0]))
 	}
 	return nil
 }

@@ -49,6 +49,7 @@ func NewActionContext(
 		Status:         status,
 		Config:         cfg,
 		ClusterContext: ctx,
+		cache:          &cachedData{},
 	}
 }
 
