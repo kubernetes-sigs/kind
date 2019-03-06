@@ -24,7 +24,6 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
-	"sigs.k8s.io/kind/pkg/cluster/internal/haproxy"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/kustomize"
@@ -63,7 +62,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 
 	// get the control plane endpoint, in case the cluster has an external load balancer in
 	// front of the control-plane nodes
-	controlPlaneEndpoint, err := getControlPlaneEndpoint(allNodes)
+	controlPlaneEndpoint, err := nodes.GetControlPlaneEndpoint(allNodes)
 	if err != nil {
 		// TODO(bentheelder): logging here
 		return err
@@ -95,26 +94,6 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	// mark success
 	ctx.Status.End(true)
 	return nil
-}
-
-// getControlPlaneEndpoint return the control plane endpoint in case the
-// cluster has an external load balancer in front of the control-plane nodes,
-// otherwise return an empty string.
-func getControlPlaneEndpoint(n []nodes.Node) (string, error) {
-	node, err := nodes.ExternalLoadBalancerNode(n)
-	if err != nil {
-		return "", err
-	}
-	// if there is no external load balancer
-	if node == nil {
-		return "", nil
-	}
-	// gets the IP of the load balancer
-	loadBalancerIP, err := node.IP()
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to get IP for node: %s", node.Name())
-	}
-	return fmt.Sprintf("%s:%d", loadBalancerIP, haproxy.ControlPlanePort), nil
 }
 
 // getKubeadmConfig generates the kubeadm config contents for the cluster
