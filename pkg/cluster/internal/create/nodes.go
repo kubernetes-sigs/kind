@@ -131,10 +131,12 @@ func provisionNodes(
 			return allNodes, err
 		}
 
-		status.Start(fmt.Sprintf("[%s] Configuring proxy 🐋", name))
-		if err := node.SetProxy(); err != nil {
-			// TODO: logging here
-			return allNodes, errors.Wrapf(err, "failed to set proxy for %s", name)
+		if nodes.NeedProxy() {
+			status.Start(fmt.Sprintf("[%s] Configuring proxy 📶", name))
+			if err := node.SetProxy(); err != nil {
+				// TODO: logging here
+				return allNodes, errors.Wrapf(err, "failed to set proxy for %s", name)
+			}
 		}
 
 		status.Start(fmt.Sprintf("[%s] Starting systemd 🖥", name))
@@ -144,7 +146,7 @@ func provisionNodes(
 			return allNodes, err
 		}
 
-		status.Start(fmt.Sprintf("[%s] Waiting for docker to be ready 🐋", name))
+		status.Start(fmt.Sprintf("[%s] Waiting for Docker to be ready 🐋", name))
 		// wait for docker to be ready
 		if !node.WaitForDocker(time.Now().Add(time.Second * 30)) {
 			// TODO(bentheelder): logging here
@@ -152,7 +154,7 @@ func provisionNodes(
 		}
 
 		// load the docker image artifacts into the docker daemon
-		status.Start(fmt.Sprintf("[%s] Pre-loading images 🐋", name))
+		status.Start(fmt.Sprintf("[%s] Pre-loading images 💾", name))
 		node.LoadImages()
 	}
 

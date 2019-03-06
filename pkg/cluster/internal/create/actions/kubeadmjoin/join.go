@@ -77,7 +77,7 @@ func joinSecondaryControlPlanes(
 	allNodes []nodes.Node,
 	secondaryControlPlanes []nodes.Node,
 ) error {
-	ctx.Status.Start("Joining control-plane nodes to Kubernetes ☸")
+	ctx.Status.Start("Joining control-plane nodes 🎮")
 	defer ctx.Status.End(false)
 
 	// TODO(bentheelder): this should be concurrent
@@ -96,7 +96,7 @@ func joinWorkers(
 	allNodes []nodes.Node,
 	workers []nodes.Node,
 ) error {
-	ctx.Status.Start("Joining worker nodes to Kubernetes ☸")
+	ctx.Status.Start("Joining worker nodes 🚜")
 	defer ctx.Status.End(false)
 
 	// TODO(bentheelder): this should be concurrent

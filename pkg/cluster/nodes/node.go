@@ -402,13 +402,18 @@ func (n *Node) WriteFile(dest, content string) error {
 	return nil
 }
 
+var proxyEnvs = []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}
+
 // SetProxy configures proxy settings for the node
+//
 // Currently it only creates systemd drop-in for Docker daemon
 // as described in Docker documentation: https://docs.docker.com/config/daemon/systemd/#http-proxy
+//
+// See also: NeedProxy
 func (n *Node) SetProxy() error {
 	// configure Docker daemon to use proxy
 	proxies := ""
-	for _, name := range []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"} {
+	for _, name := range proxyEnvs {
 		val := os.Getenv(name)
 		if val != "" {
 			proxies += fmt.Sprintf("\"%s=%s\" ", name, val)
@@ -424,4 +429,15 @@ func (n *Node) SetProxy() error {
 	}
 
 	return nil
+}
+
+// NeedProxy returns true if the host environment appears to have proxy settings
+// that should be passed to the nodes
+func NeedProxy() bool {
+	for _, env := range proxyEnvs {
+		if os.Getenv(env) != "" {
+			return true
+		}
+	}
+	return false
 }
