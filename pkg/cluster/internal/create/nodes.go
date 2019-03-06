@@ -82,8 +82,10 @@ func convertReplicas(nodes []config.Node) []config.Node {
 // that will host `kind` nodes
 func provisionNodes(
 	status *logutil.Status, cfg *config.Config, clusterName, clusterLabel string,
-) (nodesByName map[string]*nodes.Node, err error) {
-	nodesByName = map[string]*nodes.Node{}
+) ([]nodes.Node, error) {
+	defer status.End(false)
+
+	allNodes := []nodes.Node{}
 
 	// convert replicas to normal nodes
 	// TODO(bentheelder): eliminate this when we have v1alpha3
@@ -102,6 +104,7 @@ func provisionNodes(
 		// create the node into a container (docker run, but it is paused, see createNode)
 		status.Start(fmt.Sprintf("[%s] Creating node container 📦", name))
 		var node *nodes.Node
+		var err error
 		// TODO(bentheelder): decouple from config objects further
 		switch string(configNode.Role) {
 		case constants.ExternalLoadBalancerNodeRoleValue:
@@ -111,10 +114,13 @@ func provisionNodes(
 		case constants.WorkerNodeRoleValue:
 			node, err = nodes.CreateWorkerNode(name, configNode.Image, clusterLabel, configNode.ExtraMounts)
 		}
-		if err != nil {
-			return nodesByName, err
+		if node != nil {
+			// TODO(bentheelder): nodes should maybe not be pointers /shrug
+			allNodes = append(allNodes, *node)
 		}
-		nodesByName[name] = node
+		if err != nil {
+			return allNodes, err
+		}
 
 		status.Start(fmt.Sprintf("[%s] Fixing mounts 🗻", name))
 		// we need to change a few mounts once we have the container
@@ -122,36 +128,36 @@ func provisionNodes(
 		// that don't seem to be configurable, and we need that flag
 		if err := node.FixMounts(); err != nil {
 			// TODO(bentheelder): logging here
-			return nodesByName, err
+			return allNodes, err
 		}
 
 		status.Start(fmt.Sprintf("[%s] Configuring proxy 🐋", name))
 		if err := node.SetProxy(); err != nil {
 			// TODO: logging here
-			return nodesByName, errors.Wrapf(err, "failed to set proxy for %s", name)
+			return allNodes, errors.Wrapf(err, "failed to set proxy for %s", name)
 		}
 
 		status.Start(fmt.Sprintf("[%s] Starting systemd 🖥", name))
 		// signal the node container entrypoint to continue booting into systemd
 		if err := node.SignalStart(); err != nil {
 			// TODO(bentheelder): logging here
-			return nodesByName, err
+			return allNodes, err
 		}
 
 		status.Start(fmt.Sprintf("[%s] Waiting for docker to be ready 🐋", name))
 		// wait for docker to be ready
 		if !node.WaitForDocker(time.Now().Add(time.Second * 30)) {
 			// TODO(bentheelder): logging here
-			return nodesByName, errors.New("timed out waiting for docker to be ready on node")
+			return allNodes, errors.New("timed out waiting for docker to be ready on node")
 		}
 
 		// load the docker image artifacts into the docker daemon
 		status.Start(fmt.Sprintf("[%s] Pre-loading images 🐋", name))
 		node.LoadImages()
-
 	}
 
-	return nodesByName, nil
+	status.End(true)
+	return allNodes, nil
 }
 
 func makeNodeNamer(clusterName string) func(string) string {

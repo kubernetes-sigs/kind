@@ -39,6 +39,10 @@ func NewAction(waitTime time.Duration) actions.Action {
 
 // Execute runs the action
 func (a *Action) Execute(ctx *actions.ActionContext) error {
+	// skip entirely if the wait time is 0
+	if a.waitTime == time.Duration(0) {
+		return nil
+	}
 	ctx.Status.Start(
 		fmt.Sprintf(
 			"Waiting %s for the cluster to be ready ⏳",

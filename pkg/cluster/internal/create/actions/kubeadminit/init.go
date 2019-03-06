@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package init implements the kubeadm init action
-package init
+// Package kubeadminit implements the kubeadm init action
+package kubeadminit
 
 import (
 	"strings"

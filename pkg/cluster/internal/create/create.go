@@ -22,6 +22,8 @@ import (
 	"runtime"
 	"time"
 
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
+
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
@@ -29,6 +31,12 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/context"
 	"sigs.k8s.io/kind/pkg/cluster/internal/delete"
 	logutil "sigs.k8s.io/kind/pkg/log"
+
+	configaction "sigs.k8s.io/kind/pkg/cluster/internal/create/actions/config"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/kubeadminit"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/kubeadmjoin"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/loadbalancer"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/waitforready"
 )
 
 // Options holds cluster creation options
@@ -39,7 +47,7 @@ type Options struct {
 }
 
 // Cluster creates a cluster
-func Cluster(c *context.Context, cfg *config.Config, opts *Options) error {
+func Cluster(ctx *context.Context, cfg *config.Config, opts *Options) error {
 	// default config fields (important for usage as a library, where the config
 	// may be constructed in memory rather than from disk)
 	encoding.Scheme.Default(cfg)
@@ -49,66 +57,43 @@ func Cluster(c *context.Context, cfg *config.Config, opts *Options) error {
 		return err
 	}
 
-	// derive info necessary for creation
-	derived, err := Derive(cfg, c.Name())
-	if err != nil {
-		return err
-	}
-
-	// init the create context and logging
-	// TODO(bentheelder): eliminate this
-	cc := &Context{
-		Config:        cfg,
-		DerivedConfig: derived,
-		Context:       c,
-	}
-
-	cc.Status = logutil.NewStatus(os.Stdout)
-	cc.Status.MaybeWrapLogrus(log.StandardLogger())
-
-	defer cc.Status.End(false)
-
-	// TODO(bentheelder): eliminate create context
-	if opts.Retain {
-		cc.Retain = true
-	}
-	if opts.WaitForReady != time.Duration(0) {
-		cc.ExecOptions = append(cc.ExecOptions, WaitForReady(opts.WaitForReady))
-	}
+	status := logutil.NewStatus(os.Stdout)
+	status.MaybeWrapLogrus(log.StandardLogger())
 
 	// attempt to explicitly pull the required node images if they doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
-	ensureNodeImages(cc.Status, cfg)
+	ensureNodeImages(status, cfg)
 
 	// Create node containers implementing defined config Nodes
-	nodes, err := provisionNodes(cc.Status, cfg, c.Name(), c.ClusterLabel())
+	_, err := provisionNodes(status, cfg, ctx.Name(), ctx.ClusterLabel())
 	if err != nil {
 		// In case of errors nodes are deleted (except if retain is explicitly set)
 		log.Error(err)
-		if !cc.Retain {
-			delete.Cluster(c)
+		if !opts.Retain {
+			delete.Cluster(ctx)
 		}
 		return err
 	}
-	cc.Status.End(true)
 
-	// After creating node containers the Kubernetes provisioning is executed
-	// By default `kind` executes all the actions required to get a fully working
-	// Kubernetes cluster; please note that the list of actions automatically
-	// adapt to the topology defined in config
-	// TODO(fabrizio pandini): make the list of executed actions configurable from CLI
-	err = cc.Exec(nodes, []string{"haproxy", "config", "init", "join"}, cc.ExecOptions...)
-	if err != nil {
-		// In case of errors nodes are deleted (except if retain is explicitly set)
-		log.Error(err)
-		if !cc.Retain {
-			delete.Cluster(c)
+	// TODO(bentheelder): make this controllable from the command line?
+	actionsToRun := []actions.Action{
+		loadbalancer.NewAction(),                  // setup external loadbalancer
+		configaction.NewAction(),                  // setup kubeadm config
+		kubeadminit.NewAction(),                   // run kubeadm init
+		kubeadmjoin.NewAction(),                   // run kubeadm join
+		waitforready.NewAction(opts.WaitForReady), // wait for cluster readiness
+	}
+
+	// run all actions
+	actionsContext := actions.NewActionContext(cfg, ctx, status)
+	for _, action := range actionsToRun {
+		if err := action.Execute(actionsContext); err != nil {
+			return err
 		}
-		return err
 	}
 
 	// print how to set KUBECONFIG to point to the cluster etc.
-	printUsage(cc.Name())
+	printUsage(ctx.Name())
 
 	return nil
 }

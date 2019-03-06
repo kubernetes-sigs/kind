@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package config implements the kubeadm config action
-package config
+// Package kubeadmjoin implements the kubeadm config action
+package kubeadmjoin
 
 import (
 	"fmt"
