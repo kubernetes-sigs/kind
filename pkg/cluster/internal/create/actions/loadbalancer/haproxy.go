@@ -24,9 +24,9 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
-	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/internal/haproxy"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
+	"sigs.k8s.io/kind/pkg/cluster/nodes"
 )
 
 // Action implements and action for configuring and starting the
@@ -51,11 +51,20 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
+	// if there's no loadbalancer we're done
+	if loadBalancerNode == nil {
+		return nil
+	}
+
+	// otherwise notify the user
+	ctx.Status.Start("Starting the external load balancer ⚖️")
+	defer ctx.Status.End(false)
+
 	// collect info about the existing controlplane nodes
 	var backendServers = map[string]string{}
 	controlPlaneNodes, err := nodes.SelectNodesByRole(
 		allNodes,
-		constants.ControlPlaneNodeRoleValue
+		constants.ControlPlaneNodeRoleValue,
 	)
 	if err != nil {
 		return err
@@ -94,5 +103,6 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to start haproxy")
 	}
 
+	ctx.Status.End(true)
 	return nil
 }
