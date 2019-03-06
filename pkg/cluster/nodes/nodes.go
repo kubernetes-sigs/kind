@@ -34,7 +34,7 @@ func Delete(nodes ...Node) error {
 	}
 	ids := []string{}
 	for _, node := range nodes {
-		ids = append(ids, node.nameOrID)
+		ids = append(ids, node.name)
 	}
 	cmd := exec.Command(
 		"docker",

@@ -33,7 +33,7 @@ import (
 // FromID creates a node handle from the node (container's) ID
 func FromID(id string) *Node {
 	return &Node{
-		nameOrID: id,
+		name: id,
 	}
 }
 
@@ -174,7 +174,7 @@ func createNode(name, image, clusterLabel string, role config.NodeRole, mounts [
 	// we'll return a handle with the nice name though
 	if id != "" {
 		handle = &Node{
-			nameOrID: name,
+			name: name,
 		}
 	}
 	if err != nil {
