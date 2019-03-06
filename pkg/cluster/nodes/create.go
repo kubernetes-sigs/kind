@@ -68,7 +68,9 @@ func CreateControlPlaneNode(name, image, clusterLabel string, mounts []cri.Mount
 	}
 
 	// stores the port mapping into the node internal state
-	node.ports = map[int]int{kubeadm.APIServerPort: port}
+	node.cache.set(func(cache *nodeCache) {
+		cache.ports = map[int]int{kubeadm.APIServerPort: port}
+	})
 
 	return node, nil
 }
@@ -93,7 +95,9 @@ func CreateExternalLoadBalancerNode(name, image, clusterLabel string) (node *Nod
 	}
 
 	// stores the port mapping into the node internal state
-	node.ports = map[int]int{haproxy.ControlPlanePort: port}
+	node.cache.set(func(cache *nodeCache) {
+		cache.ports = map[int]int{haproxy.ControlPlanePort: port}
+	})
 
 	return node, nil
 }
