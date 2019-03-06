@@ -24,6 +24,7 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
+	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/internal/haproxy"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
 )
@@ -39,15 +40,23 @@ func NewAction() actions.Action {
 
 // Execute runs the action
 func (a *Action) Execute(ctx *actions.ActionContext) error {
-	// identify external load balancer node
-	loadBalancerNode, err := ctx.ExternalLoadBalancerNode()
+	allNodes, err := ctx.Nodes()
 	if err != nil {
 		return err
 	}
 
-	// collects info about the existing controlplane nodes
+	// identify external load balancer node
+	loadBalancerNode, err := nodes.ExternalLoadBalancerNode(allNodes)
+	if err != nil {
+		return err
+	}
+
+	// collect info about the existing controlplane nodes
 	var backendServers = map[string]string{}
-	controlPlaneNodes, err := ctx.SelectNodesByRole(constants.ControlPlaneNodeRoleValue)
+	controlPlaneNodes, err := nodes.SelectNodesByRole(
+		allNodes,
+		constants.ControlPlaneNodeRoleValue
+	)
 	if err != nil {
 		return err
 	}

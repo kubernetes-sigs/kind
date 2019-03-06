@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/haproxy"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
+	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/kustomize"
 )
 
@@ -43,7 +44,12 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Creating the kubeadm config file ⛵")
 	defer ctx.Status.End(false)
 
-	node, err := ctx.BootstrapControlPlaneNode()
+	allNodes, err := ctx.Nodes()
+	if err != nil {
+		return err
+	}
+
+	node, err := nodes.BootstrapControlPlaneNode(allNodes)
 	if err != nil {
 		return err
 	}
@@ -57,7 +63,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 
 	// get the control plane endpoint, in case the cluster has an external load balancer in
 	// front of the control-plane nodes
-	controlPlaneEndpoint, err := getControlPlaneEndpoint(ctx)
+	controlPlaneEndpoint, err := getControlPlaneEndpoint(allNodes)
 	if err != nil {
 		// TODO(bentheelder): logging here
 		return err
@@ -67,7 +73,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	kubeadmConfig, err := getKubeadmConfig(
 		ctx.Config,
 		kubeadm.ConfigData{
-			ClusterName:          ctx.Name(),
+			ClusterName:          ctx.ClusterContext.Name(),
 			KubernetesVersion:    kubeVersion,
 			ControlPlaneEndpoint: controlPlaneEndpoint,
 			APIBindPort:          kubeadm.APIServerPort,
@@ -94,8 +100,8 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 // getControlPlaneEndpoint return the control plane endpoint in case the
 // cluster has an external load balancer in front of the control-plane nodes,
 // otherwise return an empty string.
-func getControlPlaneEndpoint(ctx *actions.ActionContext) (string, error) {
-	node, err := ctx.ExternalLoadBalancerNode()
+func getControlPlaneEndpoint(n []nodes.Node) (string, error) {
+	node, err := nodes.ExternalLoadBalancerNode(n)
 	if err != nil {
 		return "", err
 	}

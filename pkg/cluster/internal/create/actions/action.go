@@ -17,13 +17,10 @@ limitations under the License.
 package actions
 
 import (
-	"sort"
-	"strings"
-
-	"github.com/pkg/errors"
+	"sync"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
-	"sigs.k8s.io/kind/pkg/cluster/constants"
+	"sigs.k8s.io/kind/pkg/cluster/internal/context"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
@@ -36,83 +33,52 @@ type Action interface {
 
 // ActionContext is data supplied to all actions
 type ActionContext struct {
-	name   string
-	Status *logutil.Status
-	Nodes  []nodes.Node
-	Config *config.Config
+	Status         *logutil.Status
+	Config         *config.Config
+	ClusterContext *context.Context
+	cache          *cachedData
 }
 
 // NewActionContext returns a new ActionContext
 func NewActionContext(
-	status *logutil.Status, clusterNodes []nodes.Node, cfg *config.Config,
-	clusterName string,
+	cfg *config.Config,
+	ctx *context.Context,
+	status *logutil.Status,
 ) *ActionContext {
 	return &ActionContext{
-		Status: status,
-		Nodes:  clusterNodes,
-		Config: cfg,
-		name:   clusterName,
+		Status:         status,
+		Config:         cfg,
+		ClusterContext: ctx,
 	}
 }
 
-// Name returns the cluster name
-func (ac *ActionContext) Name() string {
-	return ac.name
+type cachedData struct {
+	mu    sync.RWMutex
+	nodes []nodes.Node
 }
 
-// SelectNodesByRole returns a list of nodes with the matching role
-func (ac *ActionContext) SelectNodesByRole(role string) ([]*nodes.Node, error) {
-	out := []*nodes.Node{}
-	for _, node := range ac.Nodes {
-		r, err := node.Role()
-		if err != nil {
-			return nil, err
-		}
-		if r == role {
-			out = append(out, &node)
-		}
+func (cd *cachedData) getNodes() []nodes.Node {
+	cd.mu.RLock()
+	defer cd.mu.RUnlock()
+	return cd.nodes
+}
+
+func (cd *cachedData) setNodes(n []nodes.Node) {
+	cd.mu.Lock()
+	defer cd.mu.Unlock()
+	cd.nodes = n
+}
+
+// Nodes returns the list of cluster nodes, this is a cached call
+func (ac *ActionContext) Nodes() ([]nodes.Node, error) {
+	cachedNodes := ac.cache.getNodes()
+	if cachedNodes != nil {
+		return cachedNodes, nil
 	}
-	return out, nil
-}
-
-// ExternalLoadBalancerNode returns a node handle for the external control plane
-// loadbalancer node or nil if there isn't one
-func (ac *ActionContext) ExternalLoadBalancerNode() (*nodes.Node, error) {
-	// identify and validate external load balancer node
-	loadBalancerNodes, err := ac.SelectNodesByRole(constants.ExternalLoadBalancerNodeRoleValue)
+	n, err := ac.ClusterContext.ListNodes()
 	if err != nil {
 		return nil, err
 	}
-	if len(loadBalancerNodes) < 1 {
-		return nil, nil
-	}
-	if len(loadBalancerNodes) > 1 {
-		return nil, errors.Errorf(
-			"unexpected number of %s nodes %d",
-			constants.ExternalLoadBalancerNodeRoleValue,
-			len(loadBalancerNodes),
-		)
-	}
-	return loadBalancerNodes[0], nil
-}
-
-// BootstrapControlPlaneNode returns a handle to the bootstrap control plane node
-func (ac *ActionContext) BootstrapControlPlaneNode() (*nodes.Node, error) {
-	controlPlaneNodes, err := ac.SelectNodesByRole(constants.ControlPlaneNodeRoleValue)
-	if err != nil {
-		return nil, err
-	}
-	if len(controlPlaneNodes) < 1 {
-		return nil, errors.Errorf(
-			"expected at least one %s node",
-			constants.ExternalLoadBalancerNodeRoleValue,
-		)
-	}
-	// pick the first by sorting
-	// TODO(bentheelder): perhaps in the future we should mark this node
-	// specially at container creation time
-	sort.Slice(controlPlaneNodes, func(i, j int) bool {
-		return strings.Compare(controlPlaneNodes[i].Name(), controlPlaneNodes[j].Name()) > 0
-	})
-	return controlPlaneNodes[0], nil
+	ac.cache.setNodes(n)
+	return n, nil
 }
