@@ -42,7 +42,7 @@ func NewAction() actions.Action {
 
 // Execute runs the action
 func (a *action) Execute(ctx *actions.ActionContext) error {
-	ctx.Status.Start("Starting control plane 🕹️")
+	ctx.Status.Start("Starting control-plane 🕹️")
 	defer ctx.Status.End(false)
 
 	allNodes, err := ctx.Nodes()
