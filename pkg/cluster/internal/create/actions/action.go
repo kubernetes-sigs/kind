@@ -25,8 +25,8 @@ import (
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
 
-// Action defines a step of bringing up a kind cluster after initial contianer
-// creation
+// Action defines a step of bringing up a kind cluster after initial node
+// container creation
 type Action interface {
 	Execute(ctx *ActionContext) error
 }
