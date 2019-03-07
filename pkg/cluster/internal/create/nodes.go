@@ -103,7 +103,7 @@ func createNodeContainers(
 
 	// create all of the node containers, concurrently
 	desiredNodes := nodesToCreate(cfg, clusterName)
-	status.Start("Preparing node containers... " + strings.Repeat("📦", len(desiredNodes)))
+	status.Start("Preparing nodes " + strings.Repeat("📦", len(desiredNodes)))
 	nodeChan := make(chan *nodes.Node, len(desiredNodes))
 	errChan := make(chan error)
 	defer close(nodeChan)

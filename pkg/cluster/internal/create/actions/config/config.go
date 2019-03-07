@@ -40,7 +40,7 @@ func NewAction() actions.Action {
 
 // Execute runs the action
 func (a *Action) Execute(ctx *actions.ActionContext) error {
-	ctx.Status.Start("Creating the kubeadm config file 📜")
+	ctx.Status.Start("Creating kubeadm config 📜")
 	defer ctx.Status.End(false)
 
 	allNodes, err := ctx.Nodes()
