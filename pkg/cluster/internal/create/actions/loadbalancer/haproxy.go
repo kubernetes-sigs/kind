@@ -33,7 +33,7 @@ import (
 // external load balancer in front of the control-plane nodes.
 type Action struct{}
 
-// NewAction returns a new Action for configuring the load blanacer
+// NewAction returns a new Action for configuring the load balancer
 func NewAction() actions.Action {
 	return &Action{}
 }
