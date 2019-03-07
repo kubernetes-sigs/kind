@@ -88,6 +88,9 @@ func Cluster(ctx *context.Context, cfg *config.Config, opts *Options) error {
 	actionsContext := actions.NewActionContext(cfg, ctx, status)
 	for _, action := range actionsToRun {
 		if err := action.Execute(actionsContext); err != nil {
+			if !opts.Retain {
+				delete.Cluster(ctx)
+			}
 			return err
 		}
 	}
