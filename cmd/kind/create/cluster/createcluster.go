@@ -31,12 +31,20 @@ import (
 	"sigs.k8s.io/kind/pkg/util"
 )
 
+const (
+	configFlagName            = "config"
+	controlPlaneNodesFlagName = "control-plane-nodes"
+	workerNodesFLagName       = "worker-nodes"
+)
+
 type flagpole struct {
-	Name      string
-	Config    string
-	ImageName string
-	Retain    bool
-	Wait      time.Duration
+	Name          string
+	Config        string
+	ImageName     string
+	Workers       int32
+	ControlPlanes int32
+	Retain        bool
+	Wait          time.Duration
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
@@ -52,7 +60,9 @@ func NewCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "cluster context name")
-	cmd.Flags().StringVar(&flags.Config, "config", "", "path to a kind config file")
+	cmd.Flags().StringVar(&flags.Config, configFlagName, "", "path to a kind config file")
+	cmd.Flags().Int32Var(&flags.ControlPlanes, controlPlaneNodesFlagName, 1, "number of control-plane nodes in the cluster")
+	cmd.Flags().Int32Var(&flags.Workers, workerNodesFLagName, 0, "number of worker nodes in the cluster")
 	cmd.Flags().StringVar(&flags.ImageName, "image", "", "node docker image to use for booting the cluster")
 	cmd.Flags().BoolVar(&flags.Retain, "retain", false, "retain nodes for debugging when cluster creation fails")
 	cmd.Flags().DurationVar(&flags.Wait, "wait", time.Duration(0), "Wait for control plane node to be ready (default 0s)")
@@ -60,21 +70,36 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
-	// load the config
-	cfg, err := encoding.Load(flags.Config)
-	if err != nil {
-		return errors.Wrap(err, "error loading config")
+	if cmd.Flags().Changed(configFlagName) && (cmd.Flags().Changed(controlPlaneNodesFlagName) || cmd.Flags().Changed(workerNodesFLagName)) {
+		return errors.Errorf("flag --%s can't be used in combination with --%s or --%s flags", configFlagName, controlPlaneNodesFlagName, workerNodesFLagName)
 	}
 
-	// validate the config
-	err = cfg.Validate()
+	if flags.ControlPlanes < 0 || flags.Workers < 0 {
+		return errors.Errorf("flags --%s and --%s should not be a negative number", controlPlaneNodesFlagName, workerNodesFLagName)
+	}
+
+	cfg, err := encoding.NewConfig(flags.ControlPlanes, flags.Workers)
 	if err != nil {
-		log.Error("Invalid configuration!")
-		configErrors := err.(util.Errors)
-		for _, problem := range configErrors.Errors() {
-			log.Error(problem)
+		return errors.Wrap(err, "error creating config: %v")
+	}
+
+	// override the config with the one from file, if specified
+	if flags.Config != "" {
+		cfg, err = encoding.Load(flags.Config)
+		if err != nil {
+			return errors.Wrap(err, "error loading config: %v")
 		}
-		return errors.New("aborting due to invalid configuration")
+
+		// validate the config
+		err = cfg.Validate()
+		if err != nil {
+			log.Error("Invalid configuration!")
+			configErrors := err.(util.Errors)
+			for _, problem := range configErrors.Errors() {
+				log.Error(problem)
+			}
+			return errors.New("aborting due to invalid configuration")
+		}
 	}
 
 	// Check if the cluster name already exists
