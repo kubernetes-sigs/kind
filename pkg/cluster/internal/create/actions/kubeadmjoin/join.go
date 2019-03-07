@@ -134,6 +134,9 @@ func runKubeadmJoinControlPlane(
 		"ca.crt", "ca.key",
 		"front-proxy-ca.crt", "front-proxy-ca.key",
 		"sa.pub", "sa.key",
+		// TODO(someone): if we gain external etcd support these will be
+		// handled differently
+		"etcd/ca.crt", "etcd/ca.key",
 	}
 
 	// creates a temporary folder on the host that should acts as a transit area
