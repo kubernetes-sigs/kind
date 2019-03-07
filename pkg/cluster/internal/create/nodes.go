@@ -93,6 +93,7 @@ func provisionNodes(
 	// TODO(bentheelder): allow overriding defaultRoleOrder
 	sortNodes(configNodes, defaultRoleOrder)
 
+	// create a func(role string)(nodeName string)
 	nameNode := makeNodeNamer(clusterName)
 
 	// provision all nodes in the config
@@ -162,6 +163,8 @@ func provisionNodes(
 	return allNodes, nil
 }
 
+// makeNodeNamer returns a func(role string)(nodeName string)
+// used to name nodes based on their role and the clusterName
 func makeNodeNamer(clusterName string) func(string) string {
 	counter := make(map[string]int)
 	return func(role string) string {
