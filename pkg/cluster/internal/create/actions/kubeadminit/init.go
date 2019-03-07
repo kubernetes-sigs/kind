@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
+	"sigs.k8s.io/kind/pkg/cluster/internal/haproxy"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/exec"
@@ -79,12 +80,9 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	// usable with kubectl.
 	// the kubeconfig file created by kubeadm internally to the node
 	// must be modified in order to use the random host port reserved
-	// for the API server and exposed by the node
-
-	// retrives the random host where the API server is exposed
-	// TODO(fabrizio pandini): when external load-balancer will be
-	//      implemented this should be modified accordingly
-	hostPort, err := node.Ports(kubeadm.APIServerPort)
+	// for for the control plane in case a load balancer exists, or for
+	// the API server in case of single control-plane node
+	hostPort, err := getHostPort(allNodes)
 	if err != nil {
 		return errors.Wrap(err, "failed to get kubeconfig from node")
 	}
@@ -141,6 +139,33 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	// mark success
 	ctx.Status.End(true)
 	return nil
+}
+
+// getHostPort retrives the random host where the API server/the control plane is exposed
+func getHostPort(allNodes []nodes.Node) (int, error) {
+	// in case an lb is defined, the node exposing the API server to the outside world is the lb
+	node, err := nodes.ExternalLoadBalancerNode(allNodes)
+	if err != nil {
+		return 0, err
+	}
+	port := haproxy.ControlPlanePort
+
+	// if there is no lb node, the node exposing the API server to the outside world is the control-plane itself
+	if node == nil {
+		node, err = nodes.BootstrapControlPlaneNode(allNodes)
+		if err != nil {
+			return 0, err
+		}
+		port = kubeadm.APIServerPort
+	}
+
+	hostPort, err := node.Ports(port)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to get Port from node: %s", node.String())
+	}
+
+	log.Infof("kubernetes cluster should be accessible from the host using port %d exposed by node %s", hostPort, node.String())
+	return hostPort, nil
 }
 
 // a default storage class
