@@ -77,7 +77,7 @@ func joinSecondaryControlPlanes(
 	allNodes []nodes.Node,
 	secondaryControlPlanes []nodes.Node,
 ) error {
-	ctx.Status.Start("Joining control-plane nodes 🎮")
+	ctx.Status.Start("Joining more control plane nodes 🎮")
 	defer ctx.Status.End(false)
 
 	// TODO(bentheelder): this should be concurrent
