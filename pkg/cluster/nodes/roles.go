@@ -78,7 +78,7 @@ func ControlPlaneNodes(allNodes []Node) ([]Node, error) {
 	// TODO(bentheelder): perhaps in the future we should mark this node
 	// specially at container creation time
 	sort.Slice(controlPlaneNodes, func(i, j int) bool {
-		return strings.Compare(controlPlaneNodes[i].Name(), controlPlaneNodes[j].Name()) > 0
+		return strings.Compare(controlPlaneNodes[i].Name(), controlPlaneNodes[j].Name()) < 0
 	})
 	return controlPlaneNodes, nil
 }
