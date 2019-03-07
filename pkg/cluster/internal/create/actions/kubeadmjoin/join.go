@@ -100,9 +100,26 @@ func joinWorkers(
 	defer ctx.Status.End(false)
 
 	// TODO(bentheelder): this should be concurrent
+	errChan := make(chan error, len(workers))
+	defer close(errChan)
 	for _, node := range workers {
-		if err := runKubeadmJoin(ctx, allNodes, &node); err != nil {
+		node := node // capture loop variable
+		go func() {
+			errChan <- runKubeadmJoin(ctx, allNodes, &node)
+		}()
+	}
+
+	// watch for all worker joins to finish
+	// NOTE: we don't use a waitgroup because we want to exit early
+	count := 0
+	for err := range errChan {
+		// if any errored, bail out
+		if err != nil {
 			return err
+		}
+		count++
+		if count == len(workers) {
+			break
 		}
 	}
 
