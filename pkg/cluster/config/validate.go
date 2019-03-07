@@ -27,18 +27,22 @@ import (
 func (c *Config) Validate() error {
 	errs := []error{}
 
-	numByRole := make(map[NodeRole]int)
+	numByRole := make(map[NodeRole]int32)
 	// All nodes in the config should be valid
 	for i, n := range c.Nodes {
-		// update role count
-		if num, ok := numByRole[n.Role]; ok {
-			numByRole[n.Role] = 1 + num
-		} else {
-			numByRole[n.Role] = 1
-		}
 		// validate the node
 		if err := n.Validate(); err != nil {
 			errs = append(errs, errors.Errorf("invalid configuration for node %d: %v", i, err))
+		}
+		// update role count
+		replicas := int32(1)
+		if n.Replicas != nil {
+			replicas = *n.Replicas
+		}
+		if num, ok := numByRole[n.Role]; ok {
+			numByRole[n.Role] = replicas + num
+		} else {
+			numByRole[n.Role] = replicas
 		}
 	}
 
