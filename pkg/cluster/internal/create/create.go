@@ -65,8 +65,7 @@ func Cluster(ctx *context.Context, cfg *config.Config, opts *Options) error {
 	ensureNodeImages(status, cfg)
 
 	// Create node containers implementing defined config Nodes
-	_, err := provisionNodes(status, cfg, ctx.Name(), ctx.ClusterLabel())
-	if err != nil {
+	if err := provisionNodes(status, cfg, ctx.Name(), ctx.ClusterLabel()); err != nil {
 		// In case of errors nodes are deleted (except if retain is explicitly set)
 		log.Error(err)
 		if !opts.Retain {
