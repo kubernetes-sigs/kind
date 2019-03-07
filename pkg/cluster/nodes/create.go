@@ -30,10 +30,11 @@ import (
 	"sigs.k8s.io/kind/pkg/container/docker"
 )
 
-// FromID creates a node handle from the node (container's) ID
-func FromID(id string) *Node {
+// FromName creates a node handle from the node' Name
+func FromName(name string) *Node {
 	return &Node{
-		nameOrID: id,
+		name:  name,
+		cache: &nodeCache{},
 	}
 }
 
@@ -68,7 +69,9 @@ func CreateControlPlaneNode(name, image, clusterLabel string, mounts []cri.Mount
 	}
 
 	// stores the port mapping into the node internal state
-	node.ports = map[int]int{kubeadm.APIServerPort: port}
+	node.cache.set(func(cache *nodeCache) {
+		cache.ports = map[int]int{kubeadm.APIServerPort: port}
+	})
 
 	return node, nil
 }
@@ -93,7 +96,9 @@ func CreateExternalLoadBalancerNode(name, image, clusterLabel string) (node *Nod
 	}
 
 	// stores the port mapping into the node internal state
-	node.ports = map[int]int{haproxy.ControlPlanePort: port}
+	node.cache.set(func(cache *nodeCache) {
+		cache.ports = map[int]int{haproxy.ControlPlanePort: port}
+	})
 
 	return node, nil
 }
@@ -130,7 +135,7 @@ func createNode(name, image, clusterLabel string, role config.NodeRole, mounts [
 		// label the node with the cluster ID
 		"--label", clusterLabel,
 		// label the node with the role ID
-		"--label", fmt.Sprintf("%s=%s", constants.ClusterRoleKey, role),
+		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleKey, role),
 		// explicitly set the entrypoint
 		"--entrypoint=/usr/local/bin/entrypoint",
 	}
@@ -173,9 +178,7 @@ func createNode(name, image, clusterLabel string, role config.NodeRole, mounts [
 	// we should return a handle so the caller can clean it up
 	// we'll return a handle with the nice name though
 	if id != "" {
-		handle = &Node{
-			nameOrID: name,
-		}
+		handle = FromName(name)
 	}
 	if err != nil {
 		return handle, errors.Wrap(err, "docker run error")

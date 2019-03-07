@@ -36,7 +36,6 @@ require (
 	k8s.io/gengo v0.0.0-20181113154421-fd15ee9cc2f7 // indirect
 	k8s.io/klog v0.1.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20181025202442-3a9b63ab1e39 // indirect
-	k8s.io/utils v0.0.0-20181115163542-0d26856f57b3
 	sigs.k8s.io/kustomize v2.0.1+incompatible
 	sigs.k8s.io/yaml v1.1.0 // indirect
 )

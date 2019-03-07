@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,55 +14,46 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package create
+// Package kubeadminit implements the kubeadm init action
+package kubeadminit
 
 import (
 	"strings"
-	"time"
-
-	"sigs.k8s.io/kind/pkg/exec"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/pkg/errors"
 
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/exec"
 )
 
 // kubeadmInitAction implements action for executing the kubadm init
 // and a set of default post init operations like e.g. install the
 // CNI network plugin.
-type kubeadmInitAction struct{}
+type action struct{}
 
-func init() {
-	registerAction("init", newKubeadmInitAction)
+// NewAction returns a new action for kubeadm init
+func NewAction() actions.Action {
+	return &action{}
 }
 
-// newKubeadmInitAction returns a new KubeadmInitAction
-func newKubeadmInitAction() Action {
-	return &kubeadmInitAction{}
-}
+// Execute runs the action
+func (a *action) Execute(ctx *actions.ActionContext) error {
+	ctx.Status.Start("Starting control plane 🕹️")
+	defer ctx.Status.End(false)
 
-// Tasks returns the list of action tasks
-func (b *kubeadmInitAction) Tasks() []Task {
-	return []Task{
-		{
-			// Run kubeadm init on the BootstrapControlPlaneNode
-			Description: "Starting Kubernetes (this may take a minute) ☸",
-			TargetNodes: selectBootstrapControlPlaneNode,
-			Run:         runKubeadmInit,
-		},
+	allNodes, err := ctx.Nodes()
+	if err != nil {
+		return err
 	}
-}
 
-// runKubeadmConfig executes kubadm init and a set of default
-// post init operations.
-func runKubeadmInit(ec *execContext, configNode *NodeReplica) error {
 	// get the target node for this task
-	node, ok := ec.NodeFor(configNode)
-	if !ok {
-		return errors.Errorf("unable to get the handle for operating on node: %s", configNode.Name)
+	node, err := nodes.BootstrapControlPlaneNode(allNodes)
+	if err != nil {
+		return err
 	}
 
 	// run kubeadm
@@ -75,7 +66,8 @@ func runKubeadmInit(ec *execContext, configNode *NodeReplica) error {
 		// specify our generated config file
 		"--config=/kind/kubeadm.conf",
 		"--skip-token-print",
-		kubeadmVerbosityFlag,
+		// increase verbosity for debugging
+		"--v=6",
 	)
 	lines, err := exec.CombinedOutputLines(cmd)
 	log.Debug(strings.Join(lines, "\n"))
@@ -97,12 +89,13 @@ func runKubeadmInit(ec *execContext, configNode *NodeReplica) error {
 		return errors.Wrap(err, "failed to get kubeconfig from node")
 	}
 
-	kubeConfigPath := ec.KubeConfigPath()
+	kubeConfigPath := ctx.ClusterContext.KubeConfigPath()
 	if err := node.WriteKubeConfig(kubeConfigPath, hostPort); err != nil {
 		return errors.Wrap(err, "failed to get kubeconfig from node")
 	}
 
 	// install the CNI network plugin
+	// TODO(bentheelder): this should possibly be a different action?
 	// TODO(bentheelder): support other overlay networks
 	// first probe for a pre-installed manifest
 	haveDefaultCNIManifest := true
@@ -130,7 +123,7 @@ func runKubeadmInit(ec *execContext, configNode *NodeReplica) error {
 
 	// if we are only provisioning one node, remove the master taint
 	// https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#master-isolation
-	if len(ec.DerivedConfig.AllReplicas()) == 1 {
+	if len(allNodes) == 1 {
 		if err := node.Command(
 			"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf",
 			"taint", "nodes", "--all", "node-role.kubernetes.io/master-",
@@ -140,20 +133,29 @@ func runKubeadmInit(ec *execContext, configNode *NodeReplica) error {
 	}
 
 	// add the default storage class
+	// TODO(bentheelder): this should possibly be a different action?
 	if err := addDefaultStorageClass(node); err != nil {
 		return errors.Wrap(err, "failed to add default storage class")
 	}
 
-	// Wait for the control plane node to reach Ready status.
-	isReady := nodes.WaitForReady(node, time.Now().Add(ec.waitForReady))
-	if ec.waitForReady > 0 {
-		if !isReady {
-			log.Warn("timed out waiting for control plane to be ready")
-		}
-	}
-
+	// mark success
+	ctx.Status.End(true)
 	return nil
 }
+
+// a default storage class
+// we need this for e2es (StatefulSet)
+const defaultStorageClassManifest = `# host-path based default storage class
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  namespace: kube-system
+  name: standard
+  annotations:
+    storageclass.beta.kubernetes.io/is-default-class: "true"
+  labels:
+    addonmanager.kubernetes.io/mode: EnsureExists
+provisioner: kubernetes.io/host-path`
 
 func addDefaultStorageClass(controlPlane *nodes.Node) error {
 	in := strings.NewReader(defaultStorageClassManifest)

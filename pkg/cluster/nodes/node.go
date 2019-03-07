@@ -26,13 +26,13 @@ import (
 	"sigs.k8s.io/kind/pkg/util"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/util/version"
-	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 
 	"sigs.k8s.io/kind/pkg/container/docker"
@@ -45,9 +45,9 @@ import (
 // Node impleemnts exec.Cmder
 type Node struct {
 	// must be one of docker container ID or name
-	nameOrID string
+	name string
 	// cached node info etc.
-	nodeCache
+	cache *nodeCache
 }
 
 // assert Node implements Cmder
@@ -55,10 +55,7 @@ var _ exec.Cmder = &Node{}
 
 // Cmder returns an exec.Cmder that runs on the node via docker exec
 func (n *Node) Cmder() exec.Cmder {
-	if n.nodeCache.containerCmder == nil {
-		n.nodeCache.containerCmder = docker.ContainerCmder(n.nameOrID)
-	}
-	return n.nodeCache.containerCmder
+	return docker.ContainerCmder(n.name)
 }
 
 // Command returns a new exec.Cmd that will run on the node
@@ -66,30 +63,68 @@ func (n *Node) Command(command string, args ...string) exec.Cmd {
 	return n.Cmder().Command(command, args...)
 }
 
-// this is a separate struct so we can clearly the whole thing at once
-// it contains lazily initialized fields
-// like node.nodeCache = nodeCache{}
+// this is a separate struct so we can more easily ensure that this portion is
+// thread safe
 type nodeCache struct {
+	mu                sync.RWMutex
 	kubernetesVersion string
 	ip                string
 	ports             map[int]int
-	role              config.NodeRole
-	containerCmder    exec.Cmder
+	role              string
+}
+
+func (cache *nodeCache) set(setter func(*nodeCache)) {
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+	setter(cache)
+}
+
+func (cache *nodeCache) KubeVersion() string {
+	cache.mu.RLock()
+	defer cache.mu.RUnlock()
+	return cache.kubernetesVersion
+}
+
+func (cache *nodeCache) IP() string {
+	cache.mu.RLock()
+	defer cache.mu.RUnlock()
+	return cache.ip
+}
+
+func (cache *nodeCache) HostPort(p int) (int, bool) {
+	cache.mu.RLock()
+	defer cache.mu.RUnlock()
+	if cache.ports == nil {
+		return 0, false
+	}
+	v, ok := cache.ports[p]
+	return v, ok
+}
+
+func (cache *nodeCache) Role() string {
+	cache.mu.RLock()
+	defer cache.mu.RUnlock()
+	return cache.role
 }
 
 func (n *Node) String() string {
-	return n.nameOrID
+	return n.name
+}
+
+// Name returns the node's name
+func (n *Node) Name() string {
+	return n.name
 }
 
 // SignalStart sends SIGUSR1 to the node, which signals our entrypoint to boot
 // see images/node/entrypoint
 func (n *Node) SignalStart() error {
-	return docker.Kill("SIGUSR1", n.nameOrID)
+	return docker.Kill("SIGUSR1", n.name)
 }
 
 // CopyTo copies the source file on the host to dest on the node
 func (n *Node) CopyTo(source, dest string) error {
-	return docker.CopyTo(source, n.nameOrID, dest)
+	return docker.CopyTo(source, n.name, dest)
 }
 
 // CopyFrom copies the source file on the node to dest on the host
@@ -97,7 +132,7 @@ func (n *Node) CopyTo(source, dest string) error {
 //     but this should go away when kubeadm automatic copy certs lands,
 //     otherwise it should be refactored in something more robust in the long term
 func (n *Node) CopyFrom(source, dest string) error {
-	return docker.CopyFrom(n.nameOrID, source, dest)
+	return docker.CopyFrom(n.name, source, dest)
 }
 
 // WaitForDocker waits for Docker to be ready on the node
@@ -203,8 +238,9 @@ func (n *Node) FixMounts() error {
 // KubeVersion returns the Kubernetes version installed on the node
 func (n *Node) KubeVersion() (version string, err error) {
 	// use the cached version first
-	if n.nodeCache.kubernetesVersion != "" {
-		return n.nodeCache.kubernetesVersion, nil
+	cachedVersion := n.cache.KubeVersion()
+	if cachedVersion != "" {
+		return cachedVersion, nil
 	}
 	// grab kubernetes version from the node image
 	cmd := n.Command("cat", "/kind/version")
@@ -215,26 +251,33 @@ func (n *Node) KubeVersion() (version string, err error) {
 	if len(lines) != 1 {
 		return "", errors.Errorf("file should only be one line, got %d lines", len(lines))
 	}
-	n.nodeCache.kubernetesVersion = lines[0]
-	return n.nodeCache.kubernetesVersion, nil
+	version = lines[0]
+	n.cache.set(func(cache *nodeCache) {
+		cache.kubernetesVersion = version
+	})
+	return version, nil
 }
 
 // IP returns the IP address of the node
 func (n *Node) IP() (ip string, err error) {
 	// use the cached version first
-	if n.nodeCache.ip != "" {
-		return n.nodeCache.ip, nil
+	cachedIP := n.cache.IP()
+	if cachedIP != "" {
+		return cachedIP, nil
 	}
 	// retrive the IP address of the node using docker inspect
-	lines, err := docker.Inspect(n.nameOrID, "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}")
+	lines, err := docker.Inspect(n.name, "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}")
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get file")
 	}
 	if len(lines) != 1 {
 		return "", errors.Errorf("file should only be one line, got %d lines", len(lines))
 	}
-	n.nodeCache.ip = lines[0]
-	return n.nodeCache.ip, nil
+	ip = lines[0]
+	n.cache.set(func(cache *nodeCache) {
+		cache.ip = ip
+	})
+	return ip, nil
 }
 
 // Ports returns a specific port mapping for the node
@@ -242,45 +285,52 @@ func (n *Node) IP() (ip string, err error) {
 // are used for making the `kind` cluster accessible from the host machine
 func (n *Node) Ports(containerPort int) (hostPort int, err error) {
 	// use the cached version first
-	if hostPort, ok := n.nodeCache.ports[containerPort]; ok {
+	hostPort, isCached := n.cache.HostPort(containerPort)
+	if isCached {
 		return hostPort, nil
 	}
 	// retrive the specific port mapping using docker inspect
-	lines, err := docker.Inspect(n.nameOrID, fmt.Sprintf("{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}", containerPort))
+	lines, err := docker.Inspect(n.name, fmt.Sprintf("{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}", containerPort))
 	if err != nil {
 		return -1, errors.Wrap(err, "failed to get file")
 	}
 	if len(lines) != 1 {
 		return -1, errors.Errorf("file should only be one line, got %d lines", len(lines))
 	}
-
-	if n.nodeCache.ports == nil {
-		n.nodeCache.ports = map[int]int{}
-	}
-
-	n.nodeCache.ports[containerPort], err = strconv.Atoi(lines[0])
+	hostPort, err = strconv.Atoi(lines[0])
 	if err != nil {
 		return -1, errors.Wrap(err, "failed to get file")
 	}
-	return n.nodeCache.ports[containerPort], nil
+	// cache it
+	n.cache.set(func(cache *nodeCache) {
+		if cache.ports == nil {
+			cache.ports = map[int]int{}
+		}
+		cache.ports[containerPort] = hostPort
+	})
+	return hostPort, nil
 }
 
 // Role returns the role of the node
-func (n *Node) Role() (role config.NodeRole, err error) {
+func (n *Node) Role() (role string, err error) {
+	role = n.cache.Role()
 	// use the cached version first
-	if n.nodeCache.role != "" {
-		return n.nodeCache.role, nil
+	if role != "" {
+		return role, nil
 	}
 	// retrive the role the node using docker inspect
-	lines, err := docker.Inspect(n.nameOrID, fmt.Sprintf("{{index .Config.Labels %q}}", constants.ClusterRoleKey))
+	lines, err := docker.Inspect(n.name, fmt.Sprintf("{{index .Config.Labels %q}}", constants.NodeRoleKey))
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to get %q label", constants.ClusterRoleKey)
+		return "", errors.Wrapf(err, "failed to get %q label", constants.NodeRoleKey)
 	}
 	if len(lines) != 1 {
-		return "", errors.Errorf("%q label should only be one line, got %d lines", constants.ClusterRoleKey, len(lines))
+		return "", errors.Errorf("%q label should only be one line, got %d lines", constants.NodeRoleKey, len(lines))
 	}
-	n.nodeCache.role = config.NodeRole(strings.Trim(lines[0], "'"))
-	return n.nodeCache.role, nil
+	role = strings.Trim(lines[0], "'")
+	n.cache.set(func(cache *nodeCache) {
+		cache.role = role
+	})
+	return role, nil
 }
 
 // matches kubeconfig server entry like:
@@ -354,13 +404,18 @@ func (n *Node) WriteFile(dest, content string) error {
 	return nil
 }
 
+var proxyEnvs = []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}
+
 // SetProxy configures proxy settings for the node
+//
 // Currently it only creates systemd drop-in for Docker daemon
 // as described in Docker documentation: https://docs.docker.com/config/daemon/systemd/#http-proxy
+//
+// See also: NeedProxy
 func (n *Node) SetProxy() error {
 	// configure Docker daemon to use proxy
 	proxies := ""
-	for _, name := range []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"} {
+	for _, name := range proxyEnvs {
 		val := os.Getenv(name)
 		if val != "" {
 			proxies += fmt.Sprintf("\"%s=%s\" ", name, val)
@@ -376,4 +431,15 @@ func (n *Node) SetProxy() error {
 	}
 
 	return nil
+}
+
+// NeedProxy returns true if the host environment appears to have proxy settings
+// that should be passed to the nodes
+func NeedProxy() bool {
+	for _, env := range proxyEnvs {
+		if os.Getenv(env) != "" {
+			return true
+		}
+	}
+	return false
 }

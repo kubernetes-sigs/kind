@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package create
+// Package config implements the kubeadm config action
+package config
 
 import (
 	"fmt"
@@ -22,43 +23,34 @@ import (
 	"github.com/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
-	"sigs.k8s.io/kind/pkg/cluster/internal/haproxy"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
+	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/kustomize"
 )
 
-// kubeadmConfigAction implements action for creating the kubadm config
+// Action implements action for creating the kubeadm config
 // and deployng it on the bootrap control-plane node.
-type kubeadmConfigAction struct{}
+type Action struct{}
 
-func init() {
-	registerAction("config", newKubeadmConfigAction)
+// NewAction returns a new action for creating the kubadm config
+func NewAction() actions.Action {
+	return &Action{}
 }
 
-// NewKubeadmConfigAction returns a new KubeadmConfigAction
-func newKubeadmConfigAction() Action {
-	return &kubeadmConfigAction{}
-}
+// Execute runs the action
+func (a *Action) Execute(ctx *actions.ActionContext) error {
+	ctx.Status.Start("Creating the kubeadm config file 📜")
+	defer ctx.Status.End(false)
 
-// Tasks returns the list of action tasks
-func (b *kubeadmConfigAction) Tasks() []Task {
-	return []Task{
-		{
-			// Creates the kubeadm config file on the BootstrapControlPlaneNode
-			Description: "Creating the kubeadm config file ⛵",
-			TargetNodes: selectBootstrapControlPlaneNode,
-			Run:         runKubeadmConfig,
-		},
+	allNodes, err := ctx.Nodes()
+	if err != nil {
+		return err
 	}
-}
 
-// runKubeadmConfig creates a kubeadm config file locally and then
-// copies it to the node
-func runKubeadmConfig(ec *execContext, configNode *NodeReplica) error {
-	// get the target node for this task
-	node, ok := ec.NodeFor(configNode)
-	if !ok {
-		return errors.Errorf("unable to get the handle for operating on node: %s", configNode.Name)
+	node, err := nodes.BootstrapControlPlaneNode(allNodes)
+	if err != nil {
+		return err
 	}
 
 	// get installed kubernetes version from the node image
@@ -70,7 +62,7 @@ func runKubeadmConfig(ec *execContext, configNode *NodeReplica) error {
 
 	// get the control plane endpoint, in case the cluster has an external load balancer in
 	// front of the control-plane nodes
-	controlPlaneEndpoint, err := getControlPlaneEndpoint(ec)
+	controlPlaneEndpoint, err := nodes.GetControlPlaneEndpoint(allNodes)
 	if err != nil {
 		// TODO(bentheelder): logging here
 		return err
@@ -78,16 +70,16 @@ func runKubeadmConfig(ec *execContext, configNode *NodeReplica) error {
 
 	// get kubeadm config content
 	kubeadmConfig, err := getKubeadmConfig(
-		ec.Config,
-		ec.DerivedConfig,
+		ctx.Config,
 		kubeadm.ConfigData{
-			ClusterName:          ec.Name(),
+			ClusterName:          ctx.ClusterContext.Name(),
 			KubernetesVersion:    kubeVersion,
 			ControlPlaneEndpoint: controlPlaneEndpoint,
 			APIBindPort:          kubeadm.APIServerPort,
 			Token:                kubeadm.Token,
 		},
 	)
+
 	if err != nil {
 		// TODO(bentheelder): logging here
 		return errors.Wrap(err, "failed to generate kubeadm config content")
@@ -99,34 +91,14 @@ func runKubeadmConfig(ec *execContext, configNode *NodeReplica) error {
 		return errors.Wrap(err, "failed to copy kubeadm config to node")
 	}
 
+	// mark success
+	ctx.Status.End(true)
 	return nil
-}
-
-// getControlPlaneEndpoint return the control plane endpoint in case the cluster has an external load balancer in
-// front of the control-plane nodes, otherwise return an empty string.
-func getControlPlaneEndpoint(ec *execContext) (string, error) {
-	if ec.ExternalLoadBalancer() == nil {
-		return "", nil
-	}
-
-	// gets the handle for the load balancer node
-	loadBalancerHandle, ok := ec.NodeFor(ec.ExternalLoadBalancer())
-	if !ok {
-		return "", errors.Errorf("unable to get the handle for operating on node: %s", ec.ExternalLoadBalancer().Name)
-	}
-
-	// gets the IP of the load balancer
-	loadBalancerIP, err := loadBalancerHandle.IP()
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to get IP for node: %s", ec.ExternalLoadBalancer().Name)
-	}
-
-	return fmt.Sprintf("%s:%d", loadBalancerIP, haproxy.ControlPlanePort), nil
 }
 
 // getKubeadmConfig generates the kubeadm config contents for the cluster
 // by running data through the template.
-func getKubeadmConfig(cfg *config.Config, derived *DerivedConfig, data kubeadm.ConfigData) (path string, err error) {
+func getKubeadmConfig(cfg *config.Config, data kubeadm.ConfigData) (path string, err error) {
 	// generate the config contents
 	config, err := kubeadm.Config(data)
 	if err != nil {
@@ -134,13 +106,20 @@ func getKubeadmConfig(cfg *config.Config, derived *DerivedConfig, data kubeadm.C
 	}
 	// fix all the patches to have name metadata matching the generated config
 	patches, jsonPatches := setPatchNames(
-		derived.BootStrapControlPlane().KubeadmConfigPatches,
-		derived.BootStrapControlPlane().KubeadmConfigPatchesJSON6902,
+		allPatchesFromConfig(cfg),
 	)
 	// apply patches
 	// TODO(bentheelder): this does not respect per node patches at all
 	// either make patches cluster wide, or change this
 	return kustomize.Build([]string{config}, patches, jsonPatches)
+}
+
+func allPatchesFromConfig(cfg *config.Config) (patches []string, jsonPatches []kustomize.PatchJSON6902) {
+	for _, node := range cfg.Nodes {
+		patches = append(patches, node.KubeadmConfigPatches...)
+		jsonPatches = append(jsonPatches, node.KubeadmConfigPatchesJSON6902...)
+	}
+	return patches, jsonPatches
 }
 
 // setPatchNames sets the targeted object name on every patch to be the fixed

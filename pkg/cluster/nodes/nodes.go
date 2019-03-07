@@ -34,7 +34,7 @@ func Delete(nodes ...Node) error {
 	}
 	ids := []string{}
 	for _, node := range nodes {
-		ids = append(ids, node.nameOrID)
+		ids = append(ids, node.name)
 	}
 	cmd := exec.Command(
 		"docker",
@@ -96,7 +96,7 @@ func list(visit func(string, *Node), filters ...string) error {
 		}
 		names := strings.Split(parts[0], ",")
 		cluster := parts[1]
-		visit(cluster, FromID(names[0]))
+		visit(cluster, FromName(names[0]))
 	}
 	return nil
 }

@@ -58,7 +58,7 @@ func Convert_config_Config_To_v1alpha1_Config(in *config.Config, out *Config, s 
 
 	var node = in.Nodes[0]
 
-	if !node.IsControlPlane() {
+	if node.Role != config.ControlPlaneRole {
 		return errors.Errorf("invalid conversion. `kind` config without a control-plane Node cannot be converted to v1alpha1 config format %v", node)
 	}
 

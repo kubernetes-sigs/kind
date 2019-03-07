@@ -27,11 +27,46 @@ import (
 func (c *Config) Validate() error {
 	errs := []error{}
 
+	numByRole := make(map[NodeRole]int32)
 	// All nodes in the config should be valid
 	for i, n := range c.Nodes {
+		// validate the node
 		if err := n.Validate(); err != nil {
 			errs = append(errs, errors.Errorf("invalid configuration for node %d: %v", i, err))
 		}
+		// update role count
+		replicas := int32(1)
+		if n.Replicas != nil {
+			replicas = *n.Replicas
+		}
+		if num, ok := numByRole[n.Role]; ok {
+			numByRole[n.Role] = replicas + num
+		} else {
+			numByRole[n.Role] = replicas
+		}
+	}
+
+	// there must be at least one control plane node
+	numControlPlane, anyControlPlane := numByRole[ControlPlaneRole]
+	if !anyControlPlane || numControlPlane < 1 {
+		errs = append(errs, errors.Errorf("must have at least one %s node", string(ControlPlaneRole)))
+	}
+
+	// there may not be more than one load balancer
+	numLoadBlancer, _ := numByRole[ExternalLoadBalancerRole]
+	if numLoadBlancer > 1 {
+		errs = append(errs, errors.Errorf("only one %s node is supported", string(ExternalLoadBalancerRole)))
+	}
+
+	// there must be a load balancer if there are multiple control planes
+	if numControlPlane > 1 && numLoadBlancer != 1 {
+		errs = append(errs, errors.Errorf("%d > 1 %s nodes requires a %s node", numControlPlane, string(ControlPlaneRole), string(ExternalLoadBalancerRole)))
+	}
+
+	// external-etcd is not actually supported yet
+	numExternalEtcd, _ := numByRole[ExternalEtcdRole]
+	if numExternalEtcd > 0 {
+		errs = append(errs, errors.Errorf("multi node support is still a work in progress, currently %s node is not supported", string(ExternalEtcdRole)))
 	}
 
 	if len(errs) > 0 {
