@@ -45,7 +45,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	}
 	ctx.Status.Start(
 		fmt.Sprintf(
-			"Waiting up to %s for the cluster to be ready ⏳",
+			"Waiting ≤ %s for control-plane = Ready ⏳",
 			formatDuration(a.waitTime),
 		),
 	)
@@ -65,13 +65,13 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	isReady := nodes.WaitForReady(node, startTime.Add(a.waitTime))
 	if !isReady {
 		ctx.Status.End(false)
-		fmt.Println(" • WARNING: Timed out waiting for the cluster to be ready.")
+		fmt.Println(" • WARNING: Timed out waiting for Ready ⚠️")
 		return nil
 	}
 
 	// mark success
 	ctx.Status.End(true)
-	fmt.Printf(" • Cluster ready after %s 💚\n", formatDuration(time.Now().Sub(startTime)))
+	fmt.Printf(" • Ready after %s 💚\n", formatDuration(time.Now().Sub(startTime)))
 	return nil
 }
 

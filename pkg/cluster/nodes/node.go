@@ -23,7 +23,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sigs.k8s.io/kind/pkg/util"
 	"strconv"
 	"strings"
 	"sync"
@@ -37,6 +36,7 @@ import (
 
 	"sigs.k8s.io/kind/pkg/container/docker"
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/util"
 )
 
 // Node represents a handle to a kind node
@@ -163,10 +163,9 @@ func tryUntil(until time.Time, try func() bool) bool {
 func (n *Node) LoadImages() {
 	// load images cached on the node into docker
 	if err := n.Command(
-		"find",
-		"/kind/images",
-		"-name", "*.tar",
-		"-exec", "docker", "load", "-i", "{}", ";",
+		"/bin/bash", "-c",
+		// use xargs to load images in parallel
+		`find /kind/images -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) docker load -i`,
 	).Run(); err != nil {
 		log.Warningf("Failed to preload docker images: %v", err)
 		return

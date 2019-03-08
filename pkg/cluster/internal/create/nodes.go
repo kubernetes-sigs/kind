@@ -19,6 +19,7 @@ package create
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -26,6 +27,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/container/cri"
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
 
@@ -82,85 +84,150 @@ func convertReplicas(nodes []config.Node) []config.Node {
 // that will host `kind` nodes
 func provisionNodes(
 	status *logutil.Status, cfg *config.Config, clusterName, clusterLabel string,
-) ([]nodes.Node, error) {
+) error {
 	defer status.End(false)
 
-	allNodes := []nodes.Node{}
-
-	// convert replicas to normal nodes
-	// TODO(bentheelder): eliminate this when we have v1alpha3
-	configNodes := convertReplicas(cfg.Nodes)
-	// TODO(bentheelder): allow overriding defaultRoleOrder
-	sortNodes(configNodes, defaultRoleOrder)
-
-	// create a func(role string)(nodeName string)
-	nameNode := makeNodeNamer(clusterName)
-
-	// provision all nodes in the config
-	// TODO(bentheelder): handle implicit nodes as well
-	for _, configNode := range configNodes {
-		// name the node
-		name := nameNode(string(configNode.Role))
-
-		// create the node into a container (docker run, but it is paused, see createNode)
-		status.Start(fmt.Sprintf("[%s] Creating node container 📦", name))
-		var node *nodes.Node
-		var err error
-		// TODO(bentheelder): decouple from config objects further
-		switch string(configNode.Role) {
-		case constants.ExternalLoadBalancerNodeRoleValue:
-			node, err = nodes.CreateExternalLoadBalancerNode(name, configNode.Image, clusterLabel)
-		case constants.ControlPlaneNodeRoleValue:
-			node, err = nodes.CreateControlPlaneNode(name, configNode.Image, clusterLabel, configNode.ExtraMounts)
-		case constants.WorkerNodeRoleValue:
-			node, err = nodes.CreateWorkerNode(name, configNode.Image, clusterLabel, configNode.ExtraMounts)
-		}
-		if node != nil {
-			// TODO(bentheelder): nodes should maybe not be pointers /shrug
-			allNodes = append(allNodes, *node)
-		}
-		if err != nil {
-			return allNodes, err
-		}
-
-		status.Start(fmt.Sprintf("[%s] Fixing mounts 🗻", name))
-		// we need to change a few mounts once we have the container
-		// we'd do this ahead of time if we could, but --privileged implies things
-		// that don't seem to be configurable, and we need that flag
-		if err := node.FixMounts(); err != nil {
-			// TODO(bentheelder): logging here
-			return allNodes, err
-		}
-
-		if nodes.NeedProxy() {
-			status.Start(fmt.Sprintf("[%s] Configuring proxy 📶", name))
-			if err := node.SetProxy(); err != nil {
-				// TODO: logging here
-				return allNodes, errors.Wrapf(err, "failed to set proxy for %s", name)
-			}
-		}
-
-		status.Start(fmt.Sprintf("[%s] Starting systemd 🖥", name))
-		// signal the node container entrypoint to continue booting into systemd
-		if err := node.SignalStart(); err != nil {
-			// TODO(bentheelder): logging here
-			return allNodes, err
-		}
-
-		status.Start(fmt.Sprintf("[%s] Waiting for Docker to be ready 🐋", name))
-		// wait for docker to be ready
-		if !node.WaitForDocker(time.Now().Add(time.Second * 30)) {
-			// TODO(bentheelder): logging here
-			return allNodes, errors.New("timed out waiting for docker to be ready on node")
-		}
-
-		// load the docker image artifacts into the docker daemon
-		status.Start(fmt.Sprintf("[%s] Pre-loading images 💾", name))
-		node.LoadImages()
+	_, err := createNodeContainers(status, cfg, clusterName, clusterLabel)
+	if err != nil {
+		return err
 	}
 
 	status.End(true)
-	return allNodes, nil
+	return nil
+}
+
+func createNodeContainers(
+	status *logutil.Status, cfg *config.Config, clusterName, clusterLabel string,
+) ([]nodes.Node, error) {
+	defer status.End(false)
+
+	// create all of the node containers, concurrently
+	desiredNodes := nodesToCreate(cfg, clusterName)
+	status.Start("Preparing nodes " + strings.Repeat("📦", len(desiredNodes)))
+	nodeChan := make(chan *nodes.Node, len(desiredNodes))
+	errChan := make(chan error)
+	defer close(nodeChan)
+	defer close(errChan)
+	for _, desiredNode := range desiredNodes {
+		desiredNode := desiredNode // capture loop variable
+		go func() {
+			// create the node into a container (docker run, but it is paused, see createNode)
+			node, err := desiredNode.Create(clusterLabel)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			err = fixupNode(node)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			nodeChan <- node
+		}()
+	}
+
+	// collect nodes
+	allNodes := []nodes.Node{}
+	for {
+		select {
+		case node := <-nodeChan:
+			// TODO(bentheelder): nodes should maybe not be pointers /shrug
+			allNodes = append(allNodes, *node)
+			if len(allNodes) == len(desiredNodes) {
+				status.End(true)
+				return allNodes, nil
+			}
+		case err := <-errChan:
+			return nil, err
+		}
+	}
+}
+
+func fixupNode(node *nodes.Node) error {
+	// we need to change a few mounts once we have the container
+	// we'd do this ahead of time if we could, but --privileged implies things
+	// that don't seem to be configurable, and we need that flag
+	if err := node.FixMounts(); err != nil {
+		// TODO(bentheelder): logging here
+		return err
+	}
+
+	if nodes.NeedProxy() {
+		if err := node.SetProxy(); err != nil {
+			// TODO: logging here
+			return errors.Wrapf(err, "failed to set proxy for node %s", node.Name())
+		}
+	}
+
+	// signal the node container entrypoint to continue booting into systemd
+	if err := node.SignalStart(); err != nil {
+		// TODO(bentheelder): logging here
+		return err
+	}
+
+	// wait for docker to be ready
+	if !node.WaitForDocker(time.Now().Add(time.Second * 30)) {
+		// TODO(bentheelder): logging here
+		return errors.Errorf("timed out waiting for docker to be ready on node %s", node.Name())
+	}
+
+	// load the docker image artifacts into the docker daemon
+	node.LoadImages()
+
+	return nil
+}
+
+// nodeSpec describes a node to create purely from the container aspect
+// this does not inlude eg starting kubernetes (see actions for that)
+type nodeSpec struct {
+	Name        string
+	Role        string
+	Image       string
+	ExtraMounts []cri.Mount
+}
+
+func nodesToCreate(cfg *config.Config, clusterName string) []nodeSpec {
+	desiredNodes := []nodeSpec{}
+
+	// nodes are named based on the cluster name and their role, with a counter
+	nameNode := makeNodeNamer(clusterName)
+
+	// convert replicas to normal nodes
+	// TODO(bentheelder): eliminate this when we have v1alpha3 ?
+	configNodes := convertReplicas(cfg.Nodes)
+
+	// TODO(bentheelder): allow overriding defaultRoleOrder
+	sortNodes(configNodes, defaultRoleOrder)
+
+	for _, configNode := range configNodes {
+		role := string(configNode.Role)
+		desiredNodes = append(desiredNodes, nodeSpec{
+			Name:        nameNode(role),
+			Image:       configNode.Image,
+			Role:        role,
+			ExtraMounts: configNode.ExtraMounts,
+		})
+	}
+
+	// TODO(bentheelder): handle implicit nodes as well
+
+	return desiredNodes
+}
+
+func (d *nodeSpec) Create(clusterLabel string) (node *nodes.Node, err error) {
+	// create the node into a container (docker run, but it is paused, see createNode)
+	// TODO(bentheelder): decouple from config objects further
+	switch d.Role {
+	case constants.ExternalLoadBalancerNodeRoleValue:
+		node, err = nodes.CreateExternalLoadBalancerNode(d.Name, d.Image, clusterLabel)
+	case constants.ControlPlaneNodeRoleValue:
+		node, err = nodes.CreateControlPlaneNode(d.Name, d.Image, clusterLabel, d.ExtraMounts)
+	case constants.WorkerNodeRoleValue:
+		node, err = nodes.CreateWorkerNode(d.Name, d.Image, clusterLabel, d.ExtraMounts)
+	default:
+		return nil, errors.Errorf("unknown node role: %s", d.Role)
+	}
+	return node, err
 }
 
 // makeNodeNamer returns a func(role string)(nodeName string)
