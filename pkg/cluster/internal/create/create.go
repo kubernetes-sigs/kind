@@ -44,6 +44,9 @@ import (
 type Options struct {
 	Retain       bool
 	WaitForReady time.Duration
+	//TODO: Refactor this. It is a temporary solution for a phased breakdown of different
+	//      operations, specifically create. see https://github.com/kubernetes-sigs/kind/issues/324
+	SetupKubernetes bool // if kind should setup kubernetes after creating nodes
 }
 
 // Cluster creates a cluster
@@ -77,11 +80,15 @@ func Cluster(ctx *context.Context, cfg *config.Config, opts *Options) error {
 
 	// TODO(bentheelder): make this controllable from the command line?
 	actionsToRun := []actions.Action{
-		loadbalancer.NewAction(),                  // setup external loadbalancer
-		configaction.NewAction(),                  // setup kubeadm config
-		kubeadminit.NewAction(),                   // run kubeadm init
-		kubeadmjoin.NewAction(),                   // run kubeadm join
-		waitforready.NewAction(opts.WaitForReady), // wait for cluster readiness
+		loadbalancer.NewAction(), // setup external loadbalancer
+		configaction.NewAction(), // setup kubeadm config
+	}
+	if opts.SetupKubernetes {
+		actionsToRun = append(actionsToRun,
+			kubeadminit.NewAction(),                   // run kubeadm init
+			kubeadmjoin.NewAction(),                   // run kubeadm join
+			waitforready.NewAction(opts.WaitForReady), // wait for cluster readiness
+		)
 	}
 
 	// run all actions
@@ -93,6 +100,12 @@ func Cluster(ctx *context.Context, cfg *config.Config, opts *Options) error {
 			}
 			return err
 		}
+	}
+
+	if !opts.SetupKubernetes {
+		// prints how to manually setup the cluster
+		printSetupInstruction(ctx.Name())
+		return nil
 	}
 
 	// print how to set KUBECONFIG to point to the cluster etc.
@@ -130,4 +143,11 @@ func printUsage(name string) {
 			name,
 		)
 	}
+}
+
+func printSetupInstruction(name string) {
+	fmt.Printf(
+		"Nodes creation complete. You can now setup kubernetes using docker exec %s-<node> kubeadm ...\n",
+		name,
+	)
 }
