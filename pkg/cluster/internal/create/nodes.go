@@ -225,7 +225,7 @@ func (d *nodeSpec) Create(clusterLabel string) (node *nodes.Node, err error) {
 	case constants.WorkerNodeRoleValue:
 		node, err = nodes.CreateWorkerNode(d.Name, d.Image, clusterLabel, d.ExtraMounts)
 	default:
-		return nil, errors.Errorf("unkown node role: %s", d.Role)
+		return nil, errors.Errorf("unknown node role: %s", d.Role)
 	}
 	return node, err
 }
