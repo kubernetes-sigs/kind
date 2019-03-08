@@ -24,30 +24,43 @@ cd "${REPO_ROOT}"
 # exit code, if a script fails we'll set this to 1
 res=0
 
-# run all verify scripts
-echo "verifying spelling ..."
-hack/verify-spelling.sh || res=1
-cd "${REPO_ROOT}"
+# run all verify scripts, optionally skipping any of them
 
-echo "verifying gofmt ..."
-hack/verify-gofmt.sh || res=1
-cd "${REPO_ROOT}"
+if [[ "${VERIFY_SPELLING:-true}" == "true" ]]; then
+  echo "verifying spelling ..."
+  hack/verify-spelling.sh || res=1
+  cd "${REPO_ROOT}"
+fi
 
-echo "verifying golint ..."
-hack/verify-golint.sh || res=1
-cd "${REPO_ROOT}"
+if [[ "${VERIFY_GOFMT:-true}" == "true" ]]; then
+  echo "verifying gofmt ..."
+  hack/verify-gofmt.sh || res=1
+  cd "${REPO_ROOT}"
+fi
 
-echo "verifying govet ..."
-hack/verify-govet.sh || res=1
-cd "${REPO_ROOT}"
+if [[ "${VERIFY_GOLINT:-true}" == "true" ]]; then
+  echo "verifying golint ..."
+  hack/verify-golint.sh || res=1
+  cd "${REPO_ROOT}"
+fi
 
-echo "verifying generated ..."
-hack/verify-generated.sh || res=1
-cd "${REPO_ROOT}"
+if [[ "${VERIFY_GOVET:-true}" == "true" ]]; then
+  echo "verifying govet ..."
+  hack/verify-govet.sh || res=1
+  cd "${REPO_ROOT}"
+fi
 
-echo "verifying deps ..."
-hack/verify-deps.sh || res=1
-cd "${REPO_ROOT}"
+if [[ "${VERIFY_GENERATED:-true}" == "true" ]]; then
+  echo "verifying generated ..."
+  hack/verify-generated.sh || res=1
+  cd "${REPO_ROOT}"
+fi
+
+if [[ "${VERIFY_DEPS:-true}" == "true" ]]; then
+  echo "verifying deps ..."
+  hack/verify-deps.sh || res=1
+  cd "${REPO_ROOT}"
+fi
 
 # exit based on verify scripts
 if [[ "${res}" = 0 ]]; then
