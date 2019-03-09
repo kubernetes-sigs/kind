@@ -25,39 +25,44 @@ import (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Config groups all nodes in the `kind` Config.
-type Config struct {
+// Cluster contains kind cluster configuration
+type Cluster struct {
 	// TypeMeta representing the type of the object and its API schema version.
-	metav1.TypeMeta
+	metav1.TypeMeta `json:",inline"`
 
-	// Nodes contains the list of nodes defined in the `kind` Config
-	Nodes []Node `json:"nodes,"`
-}
+	// Nodes contains the list of nodes defined in the `kind` Cluster
+	Nodes []Node `json:"nodes"`
 
-// Node contains settings for a node in the `kind` Config.
-// A node in kind config represent a container that will be provisioned with all the components
-// required for the assigned role in the Kubernetes cluster.
-// If replicas is set, the desired node replica number will be generated.
-type Node struct {
-	// Replicas is the number of desired node replicas.
-	// Defaults to 1
-	Replicas *int32
-	// Role defines the role of the node in the in the Kubernetes cluster managed by `kind`
-	// Defaults to "control-plane"
-	Role NodeRole
-	// Image is the node image to use when running the cluster
-	// TODO(bentheelder): split this into image and tag?
-	Image string
+	/* Advanced fields */
+
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// strategic merge patches to `kustomize build` internally
 	// https://github.com/kubernetes/community/blob/master/contributors/devel/strategic-merge-patch.md
 	// This should be an inline yaml blob-string
-	KubeadmConfigPatches []string
+	KubeadmConfigPatches []string `json:"kubeadmConfigPatches,omitempty"`
+
 	// KubeadmConfigPatchesJSON6902 are applied to the generated kubeadm config
 	// as patchesJson6902 to `kustomize build`
-	KubeadmConfigPatchesJSON6902 []kustomize.PatchJSON6902
+	KubeadmConfigPatchesJSON6902 []kustomize.PatchJSON6902 `json:"kubeadmConfigPatchesJson6902,omitempty"`
+}
+
+// Node contains settings for a node in the `kind` Cluster.
+// A node in kind config represent a container that will be provisioned with all the components
+// required for the assigned role in the Kubernetes cluster
+type Node struct {
+	// Role defines the role of the node in the in the Kubernetes cluster
+	// created by kind
+	//
+	// Defaults to "control-plane"
+	Role NodeRole `json:"role,omitempty"`
+
+	// Image is the node image to use when creating this node
+	Image string `json:"image,omitempty"`
+
+	/* Advanced fields */
+
 	// ExtraMounts describes additional mount points for the node container
-	// These may be used to bind a hostpath
+	// These may be used to bind a hostPath
 	ExtraMounts []cri.Mount `json:"extraMounts,omitempty"`
 }
 
@@ -65,18 +70,10 @@ type Node struct {
 type NodeRole string
 
 const (
-	// ControlPlaneRole identifies a node that hosts a Kubernetes control-plane
-	// NB. in single node clusters, control-plane nodes act also as a worker nodes
+	// ControlPlaneRole identifies a node that hosts a Kubernetes control-plane.
+	//
+	// NOTE: in single node clusters, control-plane nodes act also as a worker nodes
 	ControlPlaneRole NodeRole = "control-plane"
 	// WorkerRole identifies a node that hosts a Kubernetes worker
 	WorkerRole NodeRole = "worker"
-	// ExternalEtcdRole identifies a node that hosts an external-etcd instance.
-	// WARNING: this node type is not yet implemented!
-	// Please note that `kind` nodes hosting external etcd are not kubernetes nodes
-	ExternalEtcdRole NodeRole = "external-etcd"
-	// ExternalLoadBalancerRole identifies a node that hosts an external load balancer for API server
-	// in HA configurations.
-	// WARNING: this node type is not yet implemented!
-	// Please note that `kind` nodes hosting external load balancer are not kubernetes nodes
-	ExternalLoadBalancerRole NodeRole = "external-load-balancer"
 )
