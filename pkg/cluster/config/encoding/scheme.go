@@ -26,8 +26,8 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
-	"sigs.k8s.io/kind/pkg/cluster/config/v1alpha1"
 	"sigs.k8s.io/kind/pkg/cluster/config/v1alpha2"
+	"sigs.k8s.io/kind/pkg/cluster/config/v1alpha3"
 )
 
 // Scheme is the runtime.Scheme to which all `kind` config API versions and types are registered.
@@ -43,7 +43,7 @@ func init() {
 // AddToScheme builds the scheme using all known `kind` API versions.
 func AddToScheme(scheme *runtime.Scheme) {
 	utilruntime.Must(config.AddToScheme(scheme))
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	utilruntime.Must(v1alpha3.AddToScheme(scheme))
 	utilruntime.Must(v1alpha2.AddToScheme(scheme))
 	utilruntime.Must(scheme.SetVersionPriority(v1alpha2.SchemeGroupVersion))
 }

@@ -34,18 +34,6 @@ func TestLoadCurrent(t *testing.T) {
 			ExpectError:    false,
 		},
 		{
-			TestName:       "v1alpha1 minimal",
-			Path:           "./testdata/v1alpha1/valid-minimal.yaml",
-			ExpectReplicas: []string{"control-plane"},
-			ExpectError:    false,
-		},
-		{
-			TestName:       "v1alpha1 with lifecyclehooks",
-			Path:           "./testdata/v1alpha1/valid-with-lifecyclehooks.yaml",
-			ExpectReplicas: []string{"control-plane"},
-			ExpectError:    false,
-		},
-		{
 			TestName:       "v1alpha2 minimal",
 			Path:           "./testdata/v1alpha2/valid-minimal.yaml",
 			ExpectReplicas: []string{"control-plane"},
