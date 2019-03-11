@@ -24,18 +24,31 @@ import (
 )
 
 func Convert_v1alpha2_Config_To_config_Cluster(in *Config, out *config.Cluster, s conversion.Scope) error {
-	// TODO(bentheelder): try to convert kubeadm config patches?
 	for _, node := range in.Nodes {
+		// TODO(bentheelder): if v1alpha3 does re-gain per-node patches, drop
+		// this snippet
+		// Copy config patches from nodes to the cluster level, since we only
+		// generate a cluster-wide config anyhow
+		for _, patch := range node.KubeadmConfigPatches {
+			out.KubeadmConfigPatches = append(out.KubeadmConfigPatches, patch)
+		}
+		for _, patch := range node.KubeadmConfigPatchesJSON6902 {
+			out.KubeadmConfigPatchesJSON6902 = append(out.KubeadmConfigPatchesJSON6902, patch)
+		}
+
 		// skip now-implicit external load balancers
 		if node.Role == ExternalLoadBalancerRole {
 			continue
 		}
+
+		// always convert the node
 		convertedNode := config.Node{}
 		if err := Convert_v1alpha2_Node_To_config_Node(&node, &convertedNode, s); err != nil {
 			return err
 		}
 		out.Nodes = append(out.Nodes, convertedNode)
-		// handle additional replicas
+
+		// handle additional replicas if any
 		if node.Replicas != nil && *node.Replicas > 1 {
 			for i := int32(1); i < *node.Replicas; i++ {
 				out.Nodes = append(out.Nodes, *convertedNode.DeepCopy())
@@ -51,6 +64,8 @@ func Convert_v1alpha2_Node_To_config_Node(in *Node, out *config.Node, s conversi
 
 func Convert_config_Cluster_To_v1alpha2_Config(in *config.Cluster, out *Config, s conversion.Scope) error {
 	// TODO(bentheelder): try to convert kubeadm config patches?
+	// Not sure if that makes sense since these aren't cluster wide, and we don't
+	// actually roundtrip anywho? :thinking:
 	for _, node := range in.Nodes {
 		convertedNode := Node{}
 		if err := Convert_config_Node_To_v1alpha2_Node(&node, &convertedNode, s); err != nil {
