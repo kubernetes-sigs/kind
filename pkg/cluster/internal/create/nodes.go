@@ -189,8 +189,23 @@ func nodesToCreate(cfg *config.Cluster, clusterName string) []nodeSpec {
 	configNodes := copyConfigNodes(cfg.Nodes)
 	sortNodes(configNodes, defaultRoleOrder)
 
+	// we will use these two values to determine if / how to setup the
+	// external control plane load balancer
+	controlPlanes := 0
+	controlPlaneImage := ""
+	// add all of the config nodes as desired nodes
 	for _, configNode := range configNodes {
 		role := string(configNode.Role)
+		// keep track of control planes for the load balancer
+		if role == constants.ControlPlaneNodeRoleValue {
+			controlPlanes++
+			// TODO(bentheelder): instead of keeping the first image, we
+			// should have a config field that controls this image, and use
+			// that with defaulting
+			if controlPlaneImage == "" {
+				controlPlaneImage = configNode.Image
+			}
+		}
 		desiredNodes = append(desiredNodes, nodeSpec{
 			Name:        nameNode(role),
 			Image:       configNode.Image,
@@ -199,7 +214,16 @@ func nodesToCreate(cfg *config.Cluster, clusterName string) []nodeSpec {
 		})
 	}
 
-	// TODO(bentheelder): handle implicit nodes as well
+	// add an external load balancer if there are multiple control planes
+	if controlPlanes > 1 {
+		role := constants.ExternalLoadBalancerNodeRoleValue
+		desiredNodes = append(desiredNodes, nodeSpec{
+			Name:        nameNode(role),
+			Image:       controlPlaneImage, // TODO(bentheelder): get from config instead
+			Role:        role,
+			ExtraMounts: []cri.Mount{},
+		})
+	}
 
 	return desiredNodes
 }

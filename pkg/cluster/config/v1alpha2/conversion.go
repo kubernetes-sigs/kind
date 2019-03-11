@@ -26,6 +26,10 @@ import (
 func Convert_v1alpha2_Config_To_config_Cluster(in *Config, out *config.Cluster, s conversion.Scope) error {
 	// TODO(bentheelder): try to convert kubeadm config patches?
 	for _, node := range in.Nodes {
+		// skip now-implicit external load balancers
+		if node.Role == ExternalLoadBalancerRole {
+			continue
+		}
 		convertedNode := config.Node{}
 		if err := Convert_v1alpha2_Node_To_config_Node(&node, &convertedNode, s); err != nil {
 			return err
