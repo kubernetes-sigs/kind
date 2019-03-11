@@ -34,14 +34,14 @@ type Action interface {
 // ActionContext is data supplied to all actions
 type ActionContext struct {
 	Status         *logutil.Status
-	Config         *config.Config
+	Config         *config.Cluster
 	ClusterContext *context.Context
 	cache          *cachedData
 }
 
 // NewActionContext returns a new ActionContext
 func NewActionContext(
-	cfg *config.Config,
+	cfg *config.Cluster,
 	ctx *context.Context,
 	status *logutil.Status,
 ) *ActionContext {

@@ -70,7 +70,7 @@ func (c *Context) KubeConfigPath() string {
 }
 
 // Create provisions and starts a kubernetes-in-docker cluster
-func (c *Context) Create(cfg *config.Config, options ...create.ClusterOption) error {
+func (c *Context) Create(cfg *config.Cluster, options ...create.ClusterOption) error {
 	// apply create options
 	opts := &internalcreate.Options{}
 	for _, option := range options {

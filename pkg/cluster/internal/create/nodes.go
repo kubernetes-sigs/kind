@@ -83,7 +83,7 @@ func convertReplicas(nodes []config.Node) []config.Node {
 // provisionNodes takes care of creating all the containers
 // that will host `kind` nodes
 func provisionNodes(
-	status *logutil.Status, cfg *config.Config, clusterName, clusterLabel string,
+	status *logutil.Status, cfg *config.Cluster, clusterName, clusterLabel string,
 ) error {
 	defer status.End(false)
 
@@ -97,7 +97,7 @@ func provisionNodes(
 }
 
 func createNodeContainers(
-	status *logutil.Status, cfg *config.Config, clusterName, clusterLabel string,
+	status *logutil.Status, cfg *config.Cluster, clusterName, clusterLabel string,
 ) ([]nodes.Node, error) {
 	defer status.End(false)
 
@@ -186,7 +186,7 @@ type nodeSpec struct {
 	ExtraMounts []cri.Mount
 }
 
-func nodesToCreate(cfg *config.Config, clusterName string) []nodeSpec {
+func nodesToCreate(cfg *config.Cluster, clusterName string) []nodeSpec {
 	desiredNodes := []nodeSpec{}
 
 	// nodes are named based on the cluster name and their role, with a counter

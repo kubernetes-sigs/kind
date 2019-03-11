@@ -98,7 +98,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 
 // getKubeadmConfig generates the kubeadm config contents for the cluster
 // by running data through the template.
-func getKubeadmConfig(cfg *config.Config, data kubeadm.ConfigData) (path string, err error) {
+func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData) (path string, err error) {
 	// generate the config contents
 	config, err := kubeadm.Config(data)
 	if err != nil {
@@ -114,7 +114,7 @@ func getKubeadmConfig(cfg *config.Config, data kubeadm.ConfigData) (path string,
 	return kustomize.Build([]string{config}, patches, jsonPatches)
 }
 
-func allPatchesFromConfig(cfg *config.Config) (patches []string, jsonPatches []kustomize.PatchJSON6902) {
+func allPatchesFromConfig(cfg *config.Cluster) (patches []string, jsonPatches []kustomize.PatchJSON6902) {
 	for _, node := range cfg.Nodes {
 		patches = append(patches, node.KubeadmConfigPatches...)
 		jsonPatches = append(jsonPatches, node.KubeadmConfigPatchesJSON6902...)

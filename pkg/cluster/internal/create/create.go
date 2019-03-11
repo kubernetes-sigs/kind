@@ -47,7 +47,7 @@ type Options struct {
 }
 
 // Cluster creates a cluster
-func Cluster(ctx *context.Context, cfg *config.Config, opts *Options) error {
+func Cluster(ctx *context.Context, cfg *config.Cluster, opts *Options) error {
 	// default config fields (important for usage as a library, where the config
 	// may be constructed in memory rather than from disk)
 	encoding.Scheme.Default(cfg)
