@@ -403,42 +403,53 @@ func (n *Node) WriteFile(dest, content string) error {
 	return nil
 }
 
-var proxyEnvs = []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}
+// NeedProxy returns true if the host environment appears to have proxy settings
+func NeedProxy() bool {
+	details := getProxyDetails()
+	return len(details) > 0
+}
 
 // SetProxy configures proxy settings for the node
 //
 // Currently it only creates systemd drop-in for Docker daemon
 // as described in Docker documentation: https://docs.docker.com/config/daemon/systemd/#http-proxy
 //
-// See also: NeedProxy
+// See also: NeedProxy and getProxyDetails
 func (n *Node) SetProxy() error {
+	details := getProxyDetails()
 	// configure Docker daemon to use proxy
 	proxies := ""
-	for _, name := range proxyEnvs {
-		val := os.Getenv(name)
-		if val != "" {
-			proxies += fmt.Sprintf("\"%s=%s\" ", name, val)
-		}
+	for key, val := range details {
+		proxies += fmt.Sprintf("\"%s=%s\" ", key, val)
 	}
 
-	if proxies != "" {
-		err := n.WriteFile("/etc/systemd/system/docker.service.d/http-proxy.conf",
-			"[Service]\nEnvironment="+proxies)
-		if err != nil {
-			errors.Wrap(err, "failed to create http-proxy drop-in")
-		}
+	err := n.WriteFile("/etc/systemd/system/docker.service.d/http-proxy.conf",
+		"[Service]\nEnvironment="+proxies)
+	if err != nil {
+		errors.Wrap(err, "failed to create http-proxy drop-in")
 	}
 
 	return nil
 }
 
-// NeedProxy returns true if the host environment appears to have proxy settings
+// getProxyDetails returns a struct with the host environment proxy settings
 // that should be passed to the nodes
-func NeedProxy() bool {
-	for _, env := range proxyEnvs {
-		if os.Getenv(env) != "" {
-			return true
+func getProxyDetails() map[string]string {
+	var proxyEnvs = []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}
+	var val string
+	details := make(map[string]string)
+
+	for _, name := range proxyEnvs {
+		val = os.Getenv(name)
+		if val != "" {
+			details[name] = val
+		} else {
+			val = os.Getenv(strings.ToLower(name))
+			if val != "" {
+				details[name] = val
+			}
 		}
 	}
-	return false
+	return details
+
 }
