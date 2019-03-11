@@ -45,14 +45,14 @@ func AddToScheme(scheme *runtime.Scheme) {
 	utilruntime.Must(config.AddToScheme(scheme))
 	utilruntime.Must(v1alpha3.AddToScheme(scheme))
 	utilruntime.Must(v1alpha2.AddToScheme(scheme))
-	utilruntime.Must(scheme.SetVersionPriority(v1alpha2.SchemeGroupVersion))
+	utilruntime.Must(scheme.SetVersionPriority(v1alpha3.SchemeGroupVersion))
 }
 
 // Load reads the file at path and attempts to convert into a `kind` Config; the file
 // can be one of the different API versions defined in scheme.
 // If path == "" then the default config is returned
-func Load(path string) (*config.Config, error) {
-	var latestPublicConfig = &v1alpha2.Config{}
+func Load(path string) (*config.Cluster, error) {
+	var latestPublicConfig = &v1alpha3.Cluster{}
 
 	if path != "" {
 		// read in file
@@ -63,7 +63,7 @@ func Load(path string) (*config.Config, error) {
 
 		// decode data into a internal api Config object because
 		// to leverage on conversion functions for all the api versions
-		var cfg = &config.Config{}
+		var cfg = &config.Cluster{}
 		err = runtime.DecodeInto(Codecs.UniversalDecoder(), contents, cfg)
 		if err != nil {
 			return nil, errors.Wrap(err, "decoding failure")
@@ -77,7 +77,7 @@ func Load(path string) (*config.Config, error) {
 	Scheme.Default(latestPublicConfig)
 
 	// converts to internal config
-	var cfg = &config.Config{}
+	var cfg = &config.Cluster{}
 	Scheme.Convert(latestPublicConfig, cfg, nil)
 
 	// unmarshal the file content into a `kind` Config
