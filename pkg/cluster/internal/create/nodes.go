@@ -63,19 +63,11 @@ func makeRoleToOrder(roleOrder []string) func(string) int {
 	}
 }
 
-// TODO(bentheelder): eliminate this when we have v1alpha3
-func convertReplicas(nodes []config.Node) []config.Node {
-	out := []config.Node{}
-	for _, node := range nodes {
-		replicas := int32(1)
-		if node.Replicas != nil {
-			replicas = *node.Replicas
-		}
-		for i := int32(0); i < replicas; i++ {
-			outNode := node.DeepCopy()
-			outNode.Replicas = nil
-			out = append(out, *outNode)
-		}
+// returns a deep copy of a slice of config nodes
+func copyConfigNodes(toCopy []config.Node) []config.Node {
+	out := make([]config.Node, len(toCopy))
+	for i, node := range toCopy {
+		out[i] = *node.DeepCopy()
 	}
 	return out
 }
@@ -192,11 +184,9 @@ func nodesToCreate(cfg *config.Cluster, clusterName string) []nodeSpec {
 	// nodes are named based on the cluster name and their role, with a counter
 	nameNode := makeNodeNamer(clusterName)
 
-	// convert replicas to normal nodes
-	// TODO(bentheelder): eliminate this when we have v1alpha3 ?
-	configNodes := convertReplicas(cfg.Nodes)
-
+	// copy and sort config nodes
 	// TODO(bentheelder): allow overriding defaultRoleOrder
+	configNodes := copyConfigNodes(cfg.Nodes)
 	sortNodes(configNodes, defaultRoleOrder)
 
 	for _, configNode := range configNodes {
