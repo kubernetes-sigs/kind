@@ -42,3 +42,14 @@ sectionPagesMenu = "main"
     title = "contributing"
     url = "/docs/contributing/"
     weight = 6
+
+# enable auto-generated _redirects file
+[mediaTypes."text/netlify"]
+delimiter = ""
+
+[outputFormats.REDIRECTS]
+mediaType = "text/netlify"
+baseName = "_redirects"
+
+[outputs]
+home = ["HTML", "REDIRECTS"]
