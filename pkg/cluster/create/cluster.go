@@ -40,3 +40,13 @@ func WaitForReady(interval time.Duration) ClusterOption {
 		return o
 	}
 }
+
+// SetupKubernetes configures create command to setup kubernetes after creating nodes containers
+// TODO: Refactor this. It is a temporary solution for a phased breakdown of different
+//      operations, specifically create. see https://github.com/kubernetes-sigs/kind/issues/324
+func SetupKubernetes(setupKubernetes bool) ClusterOption {
+	return func(o *internalcreate.Options) *internalcreate.Options {
+		o.SetupKubernetes = setupKubernetes
+		return o
+	}
+}
