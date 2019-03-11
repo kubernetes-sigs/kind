@@ -23,11 +23,12 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sigs.k8s.io/kind/pkg/util"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"sigs.k8s.io/kind/pkg/util"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -404,42 +405,46 @@ func (n *Node) WriteFile(dest, content string) error {
 	return nil
 }
 
-var proxyEnvs = []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}
-
 // SetProxy configures proxy settings for the node
 //
 // Currently it only creates systemd drop-in for Docker daemon
 // as described in Docker documentation: https://docs.docker.com/config/daemon/systemd/#http-proxy
 //
 // See also: NeedProxy
-func (n *Node) SetProxy() error {
+func (n *Node) SetProxy(proxyEnvs map[string]string) error {
 	// configure Docker daemon to use proxy
 	proxies := ""
-	for _, name := range proxyEnvs {
-		val := os.Getenv(name)
-		if val != "" {
-			proxies += fmt.Sprintf("\"%s=%s\" ", name, val)
-		}
+	for val, name := range proxyEnvs {
+		proxies += fmt.Sprintf("\"%s=%s\" ", name, val)
 	}
 
-	if proxies != "" {
-		err := n.WriteFile("/etc/systemd/system/docker.service.d/http-proxy.conf",
-			"[Service]\nEnvironment="+proxies)
-		if err != nil {
-			errors.Wrap(err, "failed to create http-proxy drop-in")
-		}
+	err := n.WriteFile("/etc/systemd/system/docker.service.d/http-proxy.conf",
+		"[Service]\nEnvironment="+proxies)
+	if err != nil {
+		errors.Wrap(err, "failed to create http-proxy drop-in")
 	}
 
 	return nil
 }
 
-// NeedProxy returns true if the host environment appears to have proxy settings
+// NeedProxy returns a struct with the host environment appears to have proxy settings
 // that should be passed to the nodes
-func NeedProxy() bool {
-	for _, env := range proxyEnvs {
-		if os.Getenv(env) != "" {
-			return true
+func NeedProxy() map[string]string {
+	var proxyEnvs = []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PPROXY"}
+	var val string
+	proxyEnvVars := make(map[string]string)
+
+	for _, name := range proxyEnvs {
+		val = os.Getenv(name)
+		if val != "" {
+			proxyEnvVars[name] = val
+		} else {
+			val = os.Getenv(strings.ToLower(name))
+			if val != "" {
+				proxyEnvVars[name] = val
+			}
 		}
 	}
-	return false
+	return proxyEnvVars
+
 }

@@ -96,6 +96,10 @@ func provisionNodes(
 	// create a func(role string)(nodeName string)
 	nameNode := makeNodeNamer(clusterName)
 
+	// check if nodes require proxy
+	// returns a map with the env variables as key
+	proxyEnv := nodes.NeedProxy()
+
 	// provision all nodes in the config
 	// TODO(bentheelder): handle implicit nodes as well
 	for _, configNode := range configNodes {
@@ -132,9 +136,9 @@ func provisionNodes(
 			return allNodes, err
 		}
 
-		if nodes.NeedProxy() {
+		if len(proxyEnv) > 0 {
 			status.Start(fmt.Sprintf("[%s] Configuring proxy 📶", name))
-			if err := node.SetProxy(); err != nil {
+			if err := node.SetProxy(proxyEnv); err != nil {
 				// TODO: logging here
 				return allNodes, errors.Wrapf(err, "failed to set proxy for %s", name)
 			}
