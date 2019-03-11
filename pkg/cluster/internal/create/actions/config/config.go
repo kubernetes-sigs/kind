@@ -115,11 +115,7 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData) (path string
 }
 
 func allPatchesFromConfig(cfg *config.Cluster) (patches []string, jsonPatches []kustomize.PatchJSON6902) {
-	for _, node := range cfg.Nodes {
-		patches = append(patches, node.KubeadmConfigPatches...)
-		jsonPatches = append(jsonPatches, node.KubeadmConfigPatchesJSON6902...)
-	}
-	return patches, jsonPatches
+	return cfg.KubeadmConfigPatches, cfg.KubeadmConfigPatchesJSON6902
 }
 
 // setPatchNames sets the targeted object name on every patch to be the fixed
