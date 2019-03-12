@@ -19,7 +19,6 @@ package nodes
 import (
 	"fmt"
 	"net"
-	"os"
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/kind/pkg/cluster/config"
@@ -141,18 +140,13 @@ func createNode(name, image, clusterLabel string, role config.NodeRole, mounts [
 	}
 
 	// pass proxy environment variables to be used by node's docker deamon
-	httpProxy := os.Getenv("HTTP_PROXY")
-	if httpProxy != "" {
-		runArgs = append(runArgs, "-e", "HTTP_PROXY="+httpProxy)
-	}
-	httpsProxy := os.Getenv("HTTPS_PROXY")
-	if httpsProxy != "" {
-		runArgs = append(runArgs, "-e", "HTTPS_PROXY="+httpsProxy)
-	}
-
-	noProxy := os.Getenv("NO_PROXY")
-	if noProxy != "" {
-		runArgs = append(runArgs, "-e", "NO_PROXY="+noProxy)
+	if NeedProxy() {
+		details := getProxyDetails()
+		proxies := ""
+		for key, val := range details {
+			proxies += fmt.Sprintf("-e %s=%s ", key, val)
+		}
+		runArgs = append(runArgs, proxies)
 	}
 
 	// adds node specific args
