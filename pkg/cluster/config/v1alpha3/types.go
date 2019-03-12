@@ -71,7 +71,6 @@ type NodeRole string
 
 const (
 	// ControlPlaneRole identifies a node that hosts a Kubernetes control-plane.
-	//
 	// NOTE: in single node clusters, control-plane nodes act also as a worker nodes
 	ControlPlaneRole NodeRole = "control-plane"
 	// WorkerRole identifies a node that hosts a Kubernetes worker
