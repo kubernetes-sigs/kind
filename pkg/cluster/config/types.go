@@ -28,10 +28,10 @@ import (
 // Cluster contains kind cluster configuration
 type Cluster struct {
 	// TypeMeta representing the type of the object and its API schema version.
-	metav1.TypeMeta `json:",inline"`
+	metav1.TypeMeta
 
 	// Nodes contains the list of nodes defined in the `kind` Cluster
-	Nodes []Node `json:"nodes"`
+	Nodes []Node
 
 	/* Advanced fields */
 
@@ -39,11 +39,11 @@ type Cluster struct {
 	// strategic merge patches to `kustomize build` internally
 	// https://github.com/kubernetes/community/blob/master/contributors/devel/strategic-merge-patch.md
 	// This should be an inline yaml blob-string
-	KubeadmConfigPatches []string `json:"kubeadmConfigPatches,omitempty"`
+	KubeadmConfigPatches []string
 
 	// KubeadmConfigPatchesJSON6902 are applied to the generated kubeadm config
 	// as patchesJson6902 to `kustomize build`
-	KubeadmConfigPatchesJSON6902 []kustomize.PatchJSON6902 `json:"kubeadmConfigPatchesJson6902,omitempty"`
+	KubeadmConfigPatchesJSON6902 []kustomize.PatchJSON6902
 }
 
 // Node contains settings for a node in the `kind` Cluster.
@@ -54,16 +54,16 @@ type Node struct {
 	// created by kind
 	//
 	// Defaults to "control-plane"
-	Role NodeRole `json:"role,omitempty"`
+	Role NodeRole
 
 	// Image is the node image to use when creating this node
-	Image string `json:"image,omitempty"`
+	Image string
 
 	/* Advanced fields */
 
 	// ExtraMounts describes additional mount points for the node container
 	// These may be used to bind a hostPath
-	ExtraMounts []cri.Mount `json:"extraMounts,omitempty"`
+	ExtraMounts []cri.Mount
 }
 
 // NodeRole defines possible role for nodes in a Kubernetes cluster managed by `kind`
