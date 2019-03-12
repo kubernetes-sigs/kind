@@ -31,6 +31,9 @@ type Config struct {
 	metav1.TypeMeta `json:",inline"`
 
 	// nodes contains the list of nodes defined in the `kind` Config
+	// If unset this will default to a single control-plane node
+	// Note that if more than one control plane is specified, an external
+	// control plane load balancer will be provisioned implicitly
 	Nodes []Node `json:"nodes"`
 }
 
@@ -45,7 +48,7 @@ type Node struct {
 	// Defaults to "control-plane"
 	Role NodeRole `json:"role,omitempty"`
 	// Image is the node image to use when running the cluster
-	// TODO(bentheelder): split this into image and tag?
+	// If unset a default image will be used, see defaults.Image
 	Image string `json:"image,omitempty"`
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// strategic merge patches to `kustomize build` internally

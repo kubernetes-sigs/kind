@@ -31,6 +31,9 @@ type Cluster struct {
 	metav1.TypeMeta
 
 	// Nodes contains the list of nodes defined in the `kind` Cluster
+	// If unset this will default to a single control-plane node
+	// Note that if more than one control plane is specified, an external
+	// control plane load balancer will be provisioned implicitly
 	Nodes []Node
 
 	/* Advanced fields */
@@ -57,6 +60,7 @@ type Node struct {
 	Role NodeRole
 
 	// Image is the node image to use when creating this node
+	// If unset a default image will be used, see defaults.Image
 	Image string
 
 	/* Advanced fields */
