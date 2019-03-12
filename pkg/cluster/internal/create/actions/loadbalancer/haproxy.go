@@ -96,7 +96,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	if err := loadBalancerNode.Command(
 		"/bin/sh", "-c",
 		fmt.Sprintf(
-			"docker run -d -v /kind/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro --network host --restart always %s",
+			"docker run -d -v /kind/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro --network host --restart always --name haproxy %s",
 			haproxy.Image,
 		),
 	).Run(); err != nil {
