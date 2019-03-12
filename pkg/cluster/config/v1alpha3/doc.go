@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,9 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package v1alpha1 implements the v1alpha1 apiVersion of the `kind` Config
+// Package v1alpha3 implements the v1alpha3 apiVersion of kind's cluster
+// configuration
 //
 // +k8s:deepcopy-gen=package
 // +k8s:conversion-gen=sigs.k8s.io/kind/pkg/cluster/config
 // +k8s:defaulter-gen=TypeMeta
-package v1alpha1
+package v1alpha3

@@ -31,7 +31,7 @@ func Funcs(codecs runtimeserializer.CodecFactory) []interface{} {
 	}
 }
 
-func fuzzConfig(obj *config.Config, c fuzz.Continue) {
+func fuzzConfig(obj *config.Cluster, c fuzz.Continue) {
 	c.FuzzNoCustom(obj)
 
 	// Pinning values for fields that get defaults if fuzz value is empty string or nil

@@ -29,7 +29,7 @@ import (
 
 // ensureNodeImages ensures that the node images used by the create
 // configuration are present
-func ensureNodeImages(status *logutil.Status, cfg *config.Config) {
+func ensureNodeImages(status *logutil.Status, cfg *config.Cluster) {
 	// pull each required image
 	for _, image := range requiredImages(cfg).List() {
 		// prints user friendly message
@@ -45,7 +45,7 @@ func ensureNodeImages(status *logutil.Status, cfg *config.Config) {
 }
 
 // requiredImages returns the set of images specified by the config
-func requiredImages(cfg *config.Config) sets.String {
+func requiredImages(cfg *config.Cluster) sets.String {
 	images := sets.NewString()
 	for _, node := range cfg.Nodes {
 		images.Insert(node.Image)

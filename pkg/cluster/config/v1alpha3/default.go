@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package v1alpha3
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
@@ -26,9 +26,25 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
 }
 
-// SetDefaults_Config sets uninitialized fields to their default value.
-func SetDefaults_Config(obj *Config) {
+// SetDefaults_Cluster sets uninitialized fields to their default value.
+func SetDefaults_Cluster(obj *Cluster) {
+	if len(obj.Nodes) == 0 {
+		obj.Nodes = []Node{
+			{
+				Image: defaults.Image,
+				Role:  ControlPlaneRole,
+			},
+		}
+	}
+}
+
+// SetDefaults_Node sets uninitialized fields to their default value.
+func SetDefaults_Node(obj *Node) {
 	if obj.Image == "" {
 		obj.Image = defaults.Image
+	}
+
+	if obj.Role == "" {
+		obj.Role = ControlPlaneRole
 	}
 }

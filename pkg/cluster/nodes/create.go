@@ -22,7 +22,6 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/internal/haproxy"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
@@ -59,7 +58,7 @@ func CreateControlPlaneNode(name, image, clusterLabel string, mounts []cri.Mount
 	}
 
 	node, err = createNode(
-		name, image, clusterLabel, config.ControlPlaneRole, mounts,
+		name, image, clusterLabel, constants.ControlPlaneNodeRoleValue, mounts,
 		// publish selected port for the API server
 		"--expose", fmt.Sprintf("%d", port),
 		"-p", fmt.Sprintf("%d:%d", port, kubeadm.APIServerPort),
@@ -85,7 +84,7 @@ func CreateExternalLoadBalancerNode(name, image, clusterLabel string) (node *Nod
 		return nil, errors.Wrap(err, "failed to get port for control-plane load balancer")
 	}
 
-	node, err = createNode(name, image, clusterLabel, config.ExternalLoadBalancerRole,
+	node, err = createNode(name, image, clusterLabel, constants.ExternalLoadBalancerNodeRoleValue,
 		nil,
 		// publish selected port for the control plane
 		"--expose", fmt.Sprintf("%d", port),
@@ -105,7 +104,7 @@ func CreateExternalLoadBalancerNode(name, image, clusterLabel string) (node *Nod
 
 // CreateWorkerNode creates a worker node
 func CreateWorkerNode(name, image, clusterLabel string, mounts []cri.Mount) (node *Node, err error) {
-	node, err = createNode(name, image, clusterLabel, config.WorkerRole, mounts)
+	node, err = createNode(name, image, clusterLabel, constants.WorkerNodeRoleValue, mounts)
 	if err != nil {
 		return node, err
 	}
@@ -116,7 +115,7 @@ func CreateWorkerNode(name, image, clusterLabel string, mounts []cri.Mount) (nod
 // createNode `docker run`s the node image, note that due to
 // images/node/entrypoint being the entrypoint, this container will
 // effectively be paused until we call actuallyStartNode(...)
-func createNode(name, image, clusterLabel string, role config.NodeRole, mounts []cri.Mount, extraArgs ...string) (handle *Node, err error) {
+func createNode(name, image, clusterLabel, role string, mounts []cri.Mount, extraArgs ...string) (handle *Node, err error) {
 	runArgs := []string{
 		"-d", // run the container detached
 		// running containers in a container requires privileged

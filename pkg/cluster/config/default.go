@@ -26,8 +26,8 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return RegisterDefaults(scheme)
 }
 
-// SetDefaults_Config sets uninitialized fields to their default value.
-func SetDefaults_Config(obj *Config) {
+// SetDefaults_Cluster sets uninitialized fields to their default value.
+func SetDefaults_Cluster(obj *Cluster) {
 	if len(obj.Nodes) == 0 {
 		obj.Nodes = []Node{
 			{

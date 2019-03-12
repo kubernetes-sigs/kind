@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package v1alpha3
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
@@ -26,7 +26,7 @@ const GroupName = "kind.sigs.k8s.io"
 
 var (
 	// SchemeGroupVersion is group version used to register these objects.
-	SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1alpha1"}
+	SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1alpha3"}
 	// SchemeBuilder is a type to collect functions that add data to an API
 	// object through a scheme.
 	SchemeBuilder      runtime.SchemeBuilder
@@ -45,7 +45,7 @@ func init() {
 
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
-		&Config{},
+		&Cluster{},
 	)
 
 	return nil

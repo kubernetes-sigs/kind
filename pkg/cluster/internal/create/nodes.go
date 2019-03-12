@@ -63,19 +63,11 @@ func makeRoleToOrder(roleOrder []string) func(string) int {
 	}
 }
 
-// TODO(bentheelder): eliminate this when we have v1alpha3
-func convertReplicas(nodes []config.Node) []config.Node {
-	out := []config.Node{}
-	for _, node := range nodes {
-		replicas := int32(1)
-		if node.Replicas != nil {
-			replicas = *node.Replicas
-		}
-		for i := int32(0); i < replicas; i++ {
-			outNode := node.DeepCopy()
-			outNode.Replicas = nil
-			out = append(out, *outNode)
-		}
+// returns a deep copy of a slice of config nodes
+func copyConfigNodes(toCopy []config.Node) []config.Node {
+	out := make([]config.Node, len(toCopy))
+	for i, node := range toCopy {
+		out[i] = *node.DeepCopy()
 	}
 	return out
 }
@@ -83,7 +75,7 @@ func convertReplicas(nodes []config.Node) []config.Node {
 // provisionNodes takes care of creating all the containers
 // that will host `kind` nodes
 func provisionNodes(
-	status *logutil.Status, cfg *config.Config, clusterName, clusterLabel string,
+	status *logutil.Status, cfg *config.Cluster, clusterName, clusterLabel string,
 ) error {
 	defer status.End(false)
 
@@ -97,7 +89,7 @@ func provisionNodes(
 }
 
 func createNodeContainers(
-	status *logutil.Status, cfg *config.Config, clusterName, clusterLabel string,
+	status *logutil.Status, cfg *config.Cluster, clusterName, clusterLabel string,
 ) ([]nodes.Node, error) {
 	defer status.End(false)
 
@@ -186,21 +178,34 @@ type nodeSpec struct {
 	ExtraMounts []cri.Mount
 }
 
-func nodesToCreate(cfg *config.Config, clusterName string) []nodeSpec {
+func nodesToCreate(cfg *config.Cluster, clusterName string) []nodeSpec {
 	desiredNodes := []nodeSpec{}
 
 	// nodes are named based on the cluster name and their role, with a counter
 	nameNode := makeNodeNamer(clusterName)
 
-	// convert replicas to normal nodes
-	// TODO(bentheelder): eliminate this when we have v1alpha3 ?
-	configNodes := convertReplicas(cfg.Nodes)
-
+	// copy and sort config nodes
 	// TODO(bentheelder): allow overriding defaultRoleOrder
+	configNodes := copyConfigNodes(cfg.Nodes)
 	sortNodes(configNodes, defaultRoleOrder)
 
+	// we will use these two values to determine if / how to setup the
+	// external control plane load balancer
+	controlPlanes := 0
+	controlPlaneImage := ""
+	// add all of the config nodes as desired nodes
 	for _, configNode := range configNodes {
 		role := string(configNode.Role)
+		// keep track of control planes for the load balancer
+		if role == constants.ControlPlaneNodeRoleValue {
+			controlPlanes++
+			// TODO(bentheelder): instead of keeping the first image, we
+			// should have a config field that controls this image, and use
+			// that with defaulting
+			if controlPlaneImage == "" {
+				controlPlaneImage = configNode.Image
+			}
+		}
 		desiredNodes = append(desiredNodes, nodeSpec{
 			Name:        nameNode(role),
 			Image:       configNode.Image,
@@ -209,7 +214,16 @@ func nodesToCreate(cfg *config.Config, clusterName string) []nodeSpec {
 		})
 	}
 
-	// TODO(bentheelder): handle implicit nodes as well
+	// add an external load balancer if there are multiple control planes
+	if controlPlanes > 1 {
+		role := constants.ExternalLoadBalancerNodeRoleValue
+		desiredNodes = append(desiredNodes, nodeSpec{
+			Name:        nameNode(role),
+			Image:       controlPlaneImage, // TODO(bentheelder): get from config instead
+			Role:        role,
+			ExtraMounts: []cri.Mount{},
+		})
+	}
 
 	return desiredNodes
 }
