@@ -155,7 +155,7 @@ func fixupNode(node *nodes.Node) error {
 	if nodes.NeedProxy() {
 		if err := node.SetProxy(); err != nil {
 			// TODO: logging here
-			return errors.Errorf("failed to set proxy for %s", node.Name())
+			return errors.Wrapf(err, "failed to set proxy for node %s", node.Name())
 		}
 	}
 
