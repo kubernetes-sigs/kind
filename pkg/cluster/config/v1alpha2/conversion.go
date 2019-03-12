@@ -24,16 +24,11 @@ import (
 )
 
 func Convert_v1alpha2_Config_To_config_Cluster(in *Config, out *config.Cluster, s conversion.Scope) error {
+	foundFirstControlPlane := false // in v1alpha2 the first control plane is special
 	for _, node := range in.Nodes {
-		// TODO(bentheelder): if v1alpha3 does re-gain per-node patches, drop
-		// this snippet
-		// Copy config patches from nodes to the cluster level, since we only
-		// generate a cluster-wide config anyhow
-		for _, patch := range node.KubeadmConfigPatches {
-			out.KubeadmConfigPatches = append(out.KubeadmConfigPatches, patch)
-		}
-		for _, patch := range node.KubeadmConfigPatchesJSON6902 {
-			out.KubeadmConfigPatchesJSON6902 = append(out.KubeadmConfigPatchesJSON6902, patch)
+		// skip nodes with no replicas
+		if node.Replicas != nil && *node.Replicas == 0 {
+			continue
 		}
 
 		// skip now-implicit external load balancers
@@ -41,7 +36,22 @@ func Convert_v1alpha2_Config_To_config_Cluster(in *Config, out *config.Cluster, 
 			continue
 		}
 
-		// always convert the node
+		// the first control plane is treated specially
+		if !foundFirstControlPlane {
+			if node.Role == ControlPlaneRole {
+				foundFirstControlPlane = true
+				// in particular, the first control plane's patches were
+				// respected properly when generating the kubeadm config
+				for _, patch := range node.KubeadmConfigPatches {
+					out.KubeadmConfigPatches = append(out.KubeadmConfigPatches, patch)
+				}
+				for _, patch := range node.KubeadmConfigPatchesJSON6902 {
+					out.KubeadmConfigPatchesJSON6902 = append(out.KubeadmConfigPatchesJSON6902, patch)
+				}
+			}
+		}
+
+		// convert the node
 		convertedNode := config.Node{}
 		if err := Convert_v1alpha2_Node_To_config_Node(&node, &convertedNode, s); err != nil {
 			return err
@@ -63,14 +73,27 @@ func Convert_v1alpha2_Node_To_config_Node(in *Node, out *config.Node, s conversi
 }
 
 func Convert_config_Cluster_To_v1alpha2_Config(in *config.Cluster, out *Config, s conversion.Scope) error {
-	// TODO(bentheelder): try to convert kubeadm config patches?
-	// Not sure if that makes sense since these aren't cluster wide, and we don't
-	// actually roundtrip anywho? :thinking:
+	foundFirstControlPlane := false // in v1alpha2 the first control plane is special
 	for _, node := range in.Nodes {
 		convertedNode := Node{}
 		if err := Convert_config_Node_To_v1alpha2_Node(&node, &convertedNode, s); err != nil {
 			return err
 		}
+		// the first control plane is treated specially
+		if !foundFirstControlPlane {
+			if convertedNode.Role == ControlPlaneRole {
+				foundFirstControlPlane = true
+			}
+			// in v1alpha2 mode the first control plane node is the only one
+			// for which patches were respected properly
+			for _, patch := range in.KubeadmConfigPatches {
+				convertedNode.KubeadmConfigPatches = append(convertedNode.KubeadmConfigPatches, patch)
+			}
+			for _, patch := range in.KubeadmConfigPatchesJSON6902 {
+				convertedNode.KubeadmConfigPatchesJSON6902 = append(convertedNode.KubeadmConfigPatchesJSON6902, patch)
+			}
+		}
+
 		out.Nodes = append(out.Nodes, convertedNode)
 	}
 	return nil
