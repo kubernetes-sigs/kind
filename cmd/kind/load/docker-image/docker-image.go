@@ -22,10 +22,12 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
 	clusternodes "sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/concurrent"
 	"sigs.k8s.io/kind/pkg/container/docker"
 	"sigs.k8s.io/kind/pkg/fs"
 )
@@ -68,6 +70,12 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
+	imageName := args[0]
+	// Check that the image exists locally, if not return error
+	_, err := docker.ImageInspect(imageName)
+	if err != nil {
+		return errors.Errorf("Image: %q not present locally", imageName)
+	}
 	// Check if the cluster name exists
 	known, err := cluster.IsKnown(flags.Name)
 	if err != nil {
@@ -93,16 +101,31 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 
 	// pick only the user selected nodes and ensure they exist
 	// the default is all nodes unless flags.Nodes is set
-	selectedNodes := nodes
+	candidateNodes := nodes
 	if len(flags.Nodes) > 0 {
-		selectedNodes = []clusternodes.Node{}
+		candidateNodes = []clusternodes.Node{}
 		for _, name := range flags.Nodes {
 			node, ok := nodesByName[name]
 			if !ok {
-				return errors.Errorf("unknown node: %s", name)
+				return errors.Errorf("unknown node: %q", name)
 			}
-			selectedNodes = append(selectedNodes, node)
+			candidateNodes = append(candidateNodes, node)
 		}
+	}
+
+	// pick only the nodes that don't have the image
+	selectedNodes := []clusternodes.Node{}
+	for _, node := range candidateNodes {
+		// TODO: move under pkg/
+		cmdNode := node.Command("crictl", "-r", "/var/run/containerd/containerd.sock", "inspecti", imageName)
+		if err := cmdNode.Run(); err != nil {
+			selectedNodes = append(selectedNodes, node)
+			log.Debugf("Image: %q not present on node %q", imageName, node.String())
+		}
+	}
+
+	if len(selectedNodes) == 0 {
+		return nil
 	}
 
 	// Save the image into a tar
@@ -113,21 +136,23 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	defer os.RemoveAll(dir)
 	imageTarPath := filepath.Join(dir, "image.tar")
 
-	err = docker.Save(args[0], imageTarPath)
+	err = docker.Save(imageName, imageTarPath)
 	if err != nil {
 		return err
 	}
 
-	// Load the image into every node
-	// TODO(bentheelder): this should probably be concurrent
-	for _, node := range selectedNodes {
-		if err := loadImage(imageTarPath, &node); err != nil {
-			return err
-		}
+	// Load the image on the selected nodes
+	fns := []func() error{}
+	for _, selectedNode := range selectedNodes {
+		selectedNode := selectedNode // capture loop variable
+		fns = append(fns, func() error {
+			return loadImage(imageTarPath, &selectedNode)
+		})
 	}
-	return nil
+	return concurrent.UntilError(fns)
 }
 
+// loads an image tarball onto a node
 func loadImage(imageTarName string, node *clusternodes.Node) error {
 	f, err := os.Open(imageTarName)
 	if err != nil {

@@ -25,6 +25,7 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster"
 	clusternodes "sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/concurrent"
 )
 
 type flagpole struct {
@@ -65,6 +66,11 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
+	imageTarPath := args[0]
+	// Check if file exists
+	if _, err := os.Stat(imageTarPath); err != nil {
+		return err
+	}
 	// Check if the cluster name exists
 	known, err := cluster.IsKnown(flags.Name)
 	if err != nil {
@@ -101,17 +107,18 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 			selectedNodes = append(selectedNodes, node)
 		}
 	}
-
-	// Load the image into every node
-	// TODO(bentheelder): this should probably be concurrent
-	for _, node := range selectedNodes {
-		if err := loadImage(args[0], &node); err != nil {
-			return err
-		}
+	// Load the image on the selected nodes
+	fns := []func() error{}
+	for _, selectedNode := range selectedNodes {
+		selectedNode := selectedNode // capture loop variable
+		fns = append(fns, func() error {
+			return loadImage(imageTarPath, &selectedNode)
+		})
 	}
-	return nil
+	return concurrent.UntilError(fns)
 }
 
+// loads an image tarball onto a node
 func loadImage(imageTarName string, node *clusternodes.Node) error {
 	f, err := os.Open(imageTarName)
 	if err != nil {
