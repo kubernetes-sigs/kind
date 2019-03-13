@@ -59,7 +59,7 @@ func Build(resources, patches []string, patchesJSON6902 []PatchJSON6902) (string
 	// which will add a drive letter if there is none. which drive letter is
 	// unimportant as the path is on the fake filesystem anyhow
 	if runtime.GOOS == "windows" {
-		fakeDir = `C:\\`
+		fakeDir = `C:\`
 	}
 
 	// NOTE: we always write this header as you cannot build without any resources
