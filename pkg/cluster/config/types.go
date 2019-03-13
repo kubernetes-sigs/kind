@@ -38,6 +38,9 @@ type Cluster struct {
 
 	/* Advanced fields */
 
+	// Network contains cluster wide network settings
+	Network Network
+
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// strategic merge patches to `kustomize build` internally
 	// https://github.com/kubernetes/community/blob/master/contributors/devel/strategic-merge-patch.md
@@ -82,3 +85,14 @@ const (
 	// WorkerRole identifies a node that hosts a Kubernetes worker
 	WorkerRole NodeRole = "worker"
 )
+
+// Network contains cluster wide network settings
+type Network struct {
+	// APIServerPort is the listen port on the host for the Kubernetes API Server
+	// Defaults to a random port on the host
+	APIServerPort int32
+	// APIServerListenAddress is the listen address on the host for the Kubernetes API Server
+	// This should be an IP address
+	// Defaults to 127.0.0.1
+	APIServerListenAddress string
+}

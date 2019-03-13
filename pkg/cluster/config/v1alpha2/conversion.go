@@ -55,6 +55,9 @@ func Convert_v1alpha2_Config_To_config_Cluster(in *Config, out *config.Cluster, 
 			}
 		}
 	}
+	// handle different cluster-wide default behavior between versions
+	// this was a bad default, but it is what we did in v1alpha2
+	out.Network.APIServerListenAddress = "0.0.0.0"
 	return nil
 }
 
