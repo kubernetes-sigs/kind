@@ -406,7 +406,7 @@ func (n *Node) WriteFile(dest, content string) error {
 // NeedProxy returns true if the host environment appears to have proxy settings
 func NeedProxy() bool {
 	details := getProxyDetails()
-	return len(details) > 0
+	return len(details.Envs) > 0
 }
 
 // SetProxy configures proxy settings for the node
@@ -419,7 +419,7 @@ func (n *Node) SetProxy() error {
 	details := getProxyDetails()
 	// configure Docker daemon to use proxy
 	proxies := ""
-	for key, val := range details {
+	for key, val := range details.Envs {
 		proxies += fmt.Sprintf("\"%s=%s\" ", key, val)
 	}
 
@@ -432,24 +432,30 @@ func (n *Node) SetProxy() error {
 	return nil
 }
 
+// proxyDetails contains proxy settings discovered on the host
+type proxyDetails struct {
+	Envs map[string]string
+	// future proxy details here
+}
+
 // getProxyDetails returns a struct with the host environment proxy settings
 // that should be passed to the nodes
-func getProxyDetails() map[string]string {
+func getProxyDetails() proxyDetails {
 	var proxyEnvs = []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}
 	var val string
-	details := make(map[string]string)
+	var details proxyDetails
+	details.Envs = make(map[string]string)
 
 	for _, name := range proxyEnvs {
 		val = os.Getenv(name)
 		if val != "" {
-			details[name] = val
+			details.Envs[name] = val
 		} else {
 			val = os.Getenv(strings.ToLower(name))
 			if val != "" {
-				details[name] = val
+				details.Envs[name] = val
 			}
 		}
 	}
 	return details
-
 }

@@ -141,12 +141,10 @@ func createNode(name, image, clusterLabel string, role config.NodeRole, mounts [
 
 	// pass proxy environment variables to be used by node's docker deamon
 	if NeedProxy() {
-		details := getProxyDetails()
-		proxies := ""
-		for key, val := range details {
-			proxies += fmt.Sprintf("-e %s=%s ", key, val)
+		proxyDetails := getProxyDetails()
+		for key, val := range proxyDetails.Envs {
+			runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", key, val))
 		}
-		runArgs = append(runArgs, proxies)
 	}
 
 	// adds node specific args
