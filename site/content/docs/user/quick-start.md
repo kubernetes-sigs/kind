@@ -202,12 +202,26 @@ In particular, many users may be interested in multi-node clusters. A simple
 configuration for this can be achieved with the following config file contents:
 ```yaml
 # three node (two workers) cluster config
-kind: Config
-apiVersion: kind.sigs.k8s.io/v1alpha2
+kind: Cluster
+apiVersion: kind.sigs.k8s.io/v1alpha3
 nodes:
 - role: control-plane
 - role: worker
-  replicas: 2
+- role: worker
+```
+
+You can also have a cluster with multiple control-plane nodes:
+```yaml
+# a cluster with 3 control-plane nodes and 3 workers
+kind: Cluster
+apiVersion: kind.sigs.k8s.io/v1alpha3
+nodes:
+- role: control-plane
+- role: control-plane
+- role: control-plane
+- role: worker
+- role: worker
+- role: worker
 ```
 
 ### Exporting Cluster Logs
