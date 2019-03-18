@@ -1,0 +1,4 @@
+hack/tools
+sigs.k8s.io/kind/pkg/cluster/config/v1alpha2
+sigs.k8s.io/kind/pkg/cluster/config/v1alpha3
+sigs.k8s.io/kind/pkg/cluster/config

@@ -39,13 +39,10 @@ GOLINT="${GOLINT:-$(get_golint)}"
 # we need to do this because golint ./... matches vendor...
 # we also further filter out generated k8s api code in the config packages
 # which unfortunately fails lint due to apimachinery conventions ...
-# TODO(fabrizio pandini): makes this smarter (skip only one file)
 # TODO(bentheelder): we also have to skip hack/tools for now because this is just
 # for go modules tracking of tools and has otherwise invalid imports
 # TODO(bentheelder): find a solution that does not depend on GO111MODULE="off"
 GO111MODULE="off" go list ./... | \
-  grep -v '^hack/tools$' |\
-  grep -v '^sigs.k8s.io/kind/pkg/cluster/config/v1alpha2$' | \
-  grep -v '^sigs.k8s.io/kind/pkg/cluster/config/v1alpha3$' | \
-  grep -v '^sigs.k8s.io/kind/pkg/cluster/config$' | \
+  sort -f - ${REPO_ROOT}/hack/.golint_failures ${REPO_ROOT}/hack/.golint_failures | \
+  uniq -u | \
   xargs -L1 "${GOLINT}" -set_exit_status
