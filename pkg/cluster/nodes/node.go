@@ -265,7 +265,7 @@ func (n *Node) IP() (ip string, err error) {
 		return cachedIP, nil
 	}
 	// retrive the IP address of the node using docker inspect
-	lines, err := docker.Inspect(n.name, "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}")
+	lines, err := docker.Inspect(n.name, "{{range .NetworkSettings.Networkings}}{{.IPAddress}}{{end}}")
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get file")
 	}
