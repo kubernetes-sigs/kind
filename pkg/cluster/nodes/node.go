@@ -69,7 +69,7 @@ type nodeCache struct {
 	mu                sync.RWMutex
 	kubernetesVersion string
 	ip                string
-	ports             map[int]int
+	ports             map[int32]int32
 	role              string
 }
 
@@ -91,7 +91,7 @@ func (cache *nodeCache) IP() string {
 	return cache.ip
 }
 
-func (cache *nodeCache) HostPort(p int) (int, bool) {
+func (cache *nodeCache) HostPort(p int32) (int32, bool) {
 	cache.mu.RLock()
 	defer cache.mu.RUnlock()
 	if cache.ports == nil {
@@ -282,7 +282,7 @@ func (n *Node) IP() (ip string, err error) {
 // Ports returns a specific port mapping for the node
 // Node by convention use well known ports internally, while random port
 // are used for making the `kind` cluster accessible from the host machine
-func (n *Node) Ports(containerPort int) (hostPort int, err error) {
+func (n *Node) Ports(containerPort int32) (hostPort int32, err error) {
 	// use the cached version first
 	hostPort, isCached := n.cache.HostPort(containerPort)
 	if isCached {
@@ -296,14 +296,15 @@ func (n *Node) Ports(containerPort int) (hostPort int, err error) {
 	if len(lines) != 1 {
 		return -1, errors.Errorf("file should only be one line, got %d lines", len(lines))
 	}
-	hostPort, err = strconv.Atoi(lines[0])
+	parsed, err := strconv.ParseInt(lines[0], 10, 32)
 	if err != nil {
 		return -1, errors.Wrap(err, "failed to get file")
 	}
+	hostPort = int32(parsed)
 	// cache it
 	n.cache.set(func(cache *nodeCache) {
 		if cache.ports == nil {
-			cache.ports = map[int]int{}
+			cache.ports = map[int32]int32{}
 		}
 		cache.ports[containerPort] = hostPort
 	})
@@ -343,7 +344,7 @@ var serverAddressRE = regexp.MustCompile(`^(\s+server:) https://.*:\d+$`)
 // While copyng to the host machine the control plane address
 // is replaced with local host and the control plane port with
 // a randomly generated port reserved during node creation.
-func (n *Node) WriteKubeConfig(dest string, hostPort int) error {
+func (n *Node) WriteKubeConfig(dest string, hostPort int32) error {
 	cmd := n.Command("cat", "/etc/kubernetes/admin.conf")
 	lines, err := exec.CombinedOutputLines(cmd)
 	if err != nil {

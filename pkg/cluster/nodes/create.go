@@ -38,30 +38,33 @@ func FromName(name string) *Node {
 }
 
 // helper used to get a free TCP port for the API server
-func getPort() (int, error) {
+func getPort() (int32, error) {
 	dummyListener, err := net.Listen("tcp", ":0")
 	if err != nil {
 		return 0, err
 	}
 	defer dummyListener.Close()
 	port := dummyListener.Addr().(*net.TCPAddr).Port
-	return port, nil
+	return int32(port), nil
 }
 
 // CreateControlPlaneNode creates a contol-plane node
 // and gets ready for exposing the the API server
-func CreateControlPlaneNode(name, image, clusterLabel string, mounts []cri.Mount) (node *Node, err error) {
+func CreateControlPlaneNode(name, image, clusterLabel, listenAddress string, port int32, mounts []cri.Mount) (node *Node, err error) {
 	// gets a random host port for the API server
-	port, err := getPort()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get port for API server")
+	if port == 0 {
+		p, err := getPort()
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get port for API server")
+		}
+		port = p
 	}
 
 	node, err = createNode(
 		name, image, clusterLabel, constants.ControlPlaneNodeRoleValue, mounts,
 		// publish selected port for the API server
 		"--expose", fmt.Sprintf("%d", port),
-		"-p", fmt.Sprintf("%d:%d", port, kubeadm.APIServerPort),
+		"-p", fmt.Sprintf("%s:%d:%d", listenAddress, port, kubeadm.APIServerPort),
 	)
 	if err != nil {
 		return node, err
@@ -69,7 +72,7 @@ func CreateControlPlaneNode(name, image, clusterLabel string, mounts []cri.Mount
 
 	// stores the port mapping into the node internal state
 	node.cache.set(func(cache *nodeCache) {
-		cache.ports = map[int]int{kubeadm.APIServerPort: port}
+		cache.ports = map[int32]int32{kubeadm.APIServerPort: port}
 	})
 
 	return node, nil
@@ -77,18 +80,22 @@ func CreateControlPlaneNode(name, image, clusterLabel string, mounts []cri.Mount
 
 // CreateExternalLoadBalancerNode creates an external loab balancer node
 // and gets ready for exposing the the API server and the load balancer admin console
-func CreateExternalLoadBalancerNode(name, image, clusterLabel string) (node *Node, err error) {
+func CreateExternalLoadBalancerNode(name, image, clusterLabel, listenAddress string, port int32) (node *Node, err error) {
 	// gets a random host port for control-plane load balancer
-	port, err := getPort()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get port for control-plane load balancer")
+	// gets a random host port for the API server
+	if port == 0 {
+		p, err := getPort()
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get port for API server")
+		}
+		port = p
 	}
 
 	node, err = createNode(name, image, clusterLabel, constants.ExternalLoadBalancerNodeRoleValue,
 		nil,
 		// publish selected port for the control plane
 		"--expose", fmt.Sprintf("%d", port),
-		"-p", fmt.Sprintf("%d:%d", port, haproxy.ControlPlanePort),
+		"-p", fmt.Sprintf("%s:%d:%d", listenAddress, port, haproxy.ControlPlanePort),
 	)
 	if err != nil {
 		return node, err
@@ -96,7 +103,7 @@ func CreateExternalLoadBalancerNode(name, image, clusterLabel string) (node *Nod
 
 	// stores the port mapping into the node internal state
 	node.cache.set(func(cache *nodeCache) {
-		cache.ports = map[int]int{haproxy.ControlPlanePort: port}
+		cache.ports = map[int32]int32{haproxy.ControlPlanePort: port}
 	})
 
 	return node, nil
