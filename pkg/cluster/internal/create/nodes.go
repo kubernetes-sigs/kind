@@ -217,7 +217,8 @@ func nodesToCreate(cfg *config.Cluster, clusterName string) []nodeSpec {
 		// only the external LB should reflect the port if we have
 		// multiple control planes
 		if isHA && role != constants.ExternalLoadBalancerNodeRoleValue {
-			apiServerPort = 0
+			apiServerPort = 0              // replaced with a random port
+			apiServerAddress = "127.0.0.1" // only the LB needs to be non-local
 		}
 		desiredNodes = append(desiredNodes, nodeSpec{
 			Name:             nameNode(role),
