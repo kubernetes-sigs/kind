@@ -77,7 +77,7 @@ RUN curl -fsSL "https://download.docker.com/linux/$(. /etc/os-release; echo "$ID
 
 # Install CNI binaries to /opt/cni/bin
 # TODO(bentheelder): doc why / what here
-ARG CNI_VERSION="0.6.0"
+ARG CNI_VERSION="0.7.5"
 ARG CNI_BASE_URL="https://storage.googleapis.com/kubernetes-release/network-plugins/"
 RUN export ARCH=$(dpkg --print-architecture) \
     && export CNI_TARBALL="cni-plugins-${ARCH}-v${CNI_VERSION}.tgz" \
