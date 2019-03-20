@@ -104,7 +104,7 @@ func createNodeContainers(
 		desiredNode := desiredNode // capture loop variable
 		go func() {
 			// create the node into a container (docker run, but it is paused, see createNode)
-			node, err := desiredNode.Create(clusterLabel, cfg.Networking)
+			node, err := desiredNode.Create(clusterLabel)
 			if err != nil {
 				errChan <- err
 				return
@@ -176,6 +176,9 @@ type nodeSpec struct {
 	Role        string
 	Image       string
 	ExtraMounts []cri.Mount
+	// TODO(bentheelder): replace with a cri.PortMapping when we have that
+	APIServerPort    int32
+	APIServerAddress string
 }
 
 func nodesToCreate(cfg *config.Cluster, clusterName string) []nodeSpec {
@@ -189,14 +192,11 @@ func nodesToCreate(cfg *config.Cluster, clusterName string) []nodeSpec {
 	configNodes := copyConfigNodes(cfg.Nodes)
 	sortNodes(configNodes, defaultRoleOrder)
 
-	// we will use these two values to determine if / how to setup the
-	// external control plane load balancer
+	// determine if we are HA, and what the LB will need to know for that
 	controlPlanes := 0
-	controlPlaneImage := ""
-	// add all of the config nodes as desired nodes
+	controlPlaneImage := "" // the control plane LB will use this for now
 	for _, configNode := range configNodes {
 		role := string(configNode.Role)
-		// keep track of control planes for the load balancer
 		if role == constants.ControlPlaneNodeRoleValue {
 			controlPlanes++
 			// TODO(bentheelder): instead of keeping the first image, we
@@ -206,11 +206,26 @@ func nodesToCreate(cfg *config.Cluster, clusterName string) []nodeSpec {
 				controlPlaneImage = configNode.Image
 			}
 		}
+	}
+	isHA := controlPlanes > 1
+
+	// add all of the config nodes as desired nodes
+	for _, configNode := range configNodes {
+		role := string(configNode.Role)
+		apiServerPort := cfg.Networking.APIServerPort
+		apiServerAddress := cfg.Networking.APIServerAddress
+		// only the external LB should reflect the port if we have
+		// multiple control planes
+		if isHA && role != constants.ExternalLoadBalancerNodeRoleValue {
+			apiServerPort = 0
+		}
 		desiredNodes = append(desiredNodes, nodeSpec{
-			Name:        nameNode(role),
-			Image:       configNode.Image,
-			Role:        role,
-			ExtraMounts: configNode.ExtraMounts,
+			Name:             nameNode(role),
+			Image:            configNode.Image,
+			Role:             role,
+			ExtraMounts:      configNode.ExtraMounts,
+			APIServerAddress: apiServerAddress,
+			APIServerPort:    apiServerPort,
 		})
 	}
 
@@ -229,14 +244,14 @@ func nodesToCreate(cfg *config.Cluster, clusterName string) []nodeSpec {
 }
 
 // TODO(bentheelder): remove network in favor of []cri.PortMapping when that is in
-func (d *nodeSpec) Create(clusterLabel string, net config.Networking) (node *nodes.Node, err error) {
+func (d *nodeSpec) Create(clusterLabel string) (node *nodes.Node, err error) {
 	// create the node into a container (docker run, but it is paused, see createNode)
 	// TODO(bentheelder): decouple from config objects further
 	switch d.Role {
 	case constants.ExternalLoadBalancerNodeRoleValue:
-		node, err = nodes.CreateExternalLoadBalancerNode(d.Name, d.Image, clusterLabel, net.APIServerAddress, net.APIServerPort)
+		node, err = nodes.CreateExternalLoadBalancerNode(d.Name, d.Image, clusterLabel, d.APIServerAddress, d.APIServerPort)
 	case constants.ControlPlaneNodeRoleValue:
-		node, err = nodes.CreateControlPlaneNode(d.Name, d.Image, clusterLabel, net.APIServerAddress, net.APIServerPort, d.ExtraMounts)
+		node, err = nodes.CreateControlPlaneNode(d.Name, d.Image, clusterLabel, d.APIServerAddress, d.APIServerPort, d.ExtraMounts)
 	case constants.WorkerNodeRoleValue:
 		node, err = nodes.CreateWorkerNode(d.Name, d.Image, clusterLabel, d.ExtraMounts)
 	default:
