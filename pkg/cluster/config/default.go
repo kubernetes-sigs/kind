@@ -28,6 +28,7 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 
 // SetDefaults_Cluster sets uninitialized fields to their default value.
 func SetDefaults_Cluster(obj *Cluster) {
+	// default to a one node cluster
 	if len(obj.Nodes) == 0 {
 		obj.Nodes = []Node{
 			{
@@ -35,6 +36,11 @@ func SetDefaults_Cluster(obj *Cluster) {
 				Role:  ControlPlaneRole,
 			},
 		}
+	}
+	// default to listening on 127.0.0.1:randomPort
+	// TODO(bentheelder): this defaulting will need to be ipv6 aware as well
+	if obj.Networking.APIServerAddress == "" {
+		obj.Networking.APIServerAddress = "127.0.0.1"
 	}
 }
 
