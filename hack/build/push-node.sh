@@ -39,8 +39,9 @@ DATE="$(date +v%Y%m%d)"
 TAG="${DATE}-$(git describe --always --dirty)"
 
 # build
+KUBEROOT="${KUBEROOT:-${GOPATH}/src/k8s.io/kubernetes}"
 set -x
-"${KIND}" build node-image --image="kindest/node:${TAG}"
+"${KIND}" build node-image --image="kindest/node:${TAG}" --kube-root="${KUBEROOT}"
 
 # re-tag with kubernetes version
 IMG="kindest/node:${TAG}"
