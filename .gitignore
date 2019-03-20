@@ -1,3 +1,6 @@
+# ignore the kind binary at the root of the project
+/kind
+
 # build outputs
 /_output
 /_artifacts
