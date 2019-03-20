@@ -22,9 +22,10 @@ import (
 	"os"
 	"path"
 	"regexp"
-	"sigs.k8s.io/kind/pkg/util"
 	"strings"
 	"time"
+
+	"sigs.k8s.io/kind/pkg/util"
 
 	"k8s.io/apimachinery/pkg/util/version"
 
@@ -43,7 +44,7 @@ import (
 const DefaultImage = "kindest/node:latest"
 
 // DefaultBaseImage is the default base image used
-const DefaultBaseImage = "kindest/base:v20190211-a8c9fc8"
+const DefaultBaseImage = "kindest/base:v20190320-962dc1b"
 
 // DefaultMode is the default kubernetes build mode for the built image
 // see pkg/build/kube.Bits
