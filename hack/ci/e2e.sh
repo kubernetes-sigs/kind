@@ -98,13 +98,13 @@ create_cluster() {
     cat <<EOF > "${ARTIFACTS}/kind-config.yaml"
 # config for 1 control plane node and 2 workers
 # necessary for conformance
-kind: Config
-apiVersion: kind.sigs.k8s.io/v1alpha2
+kind: Cluster
+apiVersion: kind.sigs.k8s.io/v1alpha3
 nodes:
 # the control plane node
 - role: control-plane
 - role: worker
-  replicas: 2
+- role: worker
 EOF
     # mark the cluster as up for cleanup
     # even if kind create fails, kind delete can clean up after it
