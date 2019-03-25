@@ -18,6 +18,7 @@ package encoding
 
 import (
 	"io/ioutil"
+	"os"
 
 	"github.com/pkg/errors"
 
@@ -53,10 +54,16 @@ func AddToScheme(scheme *runtime.Scheme) {
 // If path == "" then the default config is returned
 func Load(path string) (*config.Cluster, error) {
 	var latestPublicConfig = &v1alpha3.Cluster{}
+	var err error
+	var contents []byte
 
 	if path != "" {
 		// read in file
-		contents, err := ioutil.ReadFile(path)
+		if path == "-" {
+			contents, err = ioutil.ReadAll(os.Stdin)
+		} else {
+			contents, err = ioutil.ReadFile(path)
+		}
 		if err != nil {
 			return nil, err
 		}
