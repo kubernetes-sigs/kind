@@ -103,6 +103,8 @@ kubeletConfiguration:
       nodefs.available: "0%"
       nodefs.inodesFree: "0%"
       imagefs.available: "0%"
+controllerManagerExtraArgs:
+  enable-hostpath-provisioner: "true"
 `
 
 // ConfigTemplateAlphaV3 is the kubadm config template for API version v1alpha3
@@ -128,6 +130,8 @@ apiServerExtraVolumes:
 # so we need to ensure the cert is valid for localhost so we can talk
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServerCertSANs: [localhost]
+controllerManagerExtraArgs:
+  enable-hostpath-provisioner: "true"
 ---
 apiVersion: kubeadm.k8s.io/v1alpha3
 kind: InitConfiguration
@@ -183,6 +187,9 @@ controlPlaneEndpoint: {{ .ControlPlaneEndpoint }}
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServer:
   certSANs: [localhost]
+controllerManager:
+  extraArgs:
+    enable-hostpath-provisioner: "true"
 ---
 apiVersion: kubeadm.k8s.io/v1beta1
 kind: InitConfiguration
