@@ -99,7 +99,6 @@ func joinWorkers(
 	ctx.Status.Start("Joining worker nodes 🚜")
 	defer ctx.Status.End(false)
 
-	// TODO(bentheelder): this should be concurrent
 	errChan := make(chan error, len(workers))
 	defer close(errChan)
 	for _, node := range workers {
