@@ -62,6 +62,21 @@ func init() {
 	RegisterNamedBits("tar", NewTarBits)
 }
 
+// TarBitsExtract extracts bits for a given buildID to the given extractPath.
+// Please see the NewTarBits and its explanation of "kubeRoot" for information
+// on valid buildID values.
+func TarBitsExtract(buildID, extractPath string) error {
+	bits, err := NewTarBits(buildID)
+	if err != nil {
+		return err
+	}
+	tarBits := bits.(*TarBits)
+	if _, err := tarBits.extract(tarBits.kubeRoot, extractPath); err != nil {
+		return err
+	}
+	return nil
+}
+
 // NewTarBits returns a new Bits backed by a version file, the release image
 // archives and the kubeadm, kubectl, and kubelet binaries. The given kubeRoot
 // may be defined three ways:
