@@ -41,6 +41,9 @@ type Bits interface {
 	// TODO(bentheelder): eliminate install, make install file-copies only,
 	// support cross-building
 	Install(InstallContext) error
+	// Clean is called after the image has been built and gives a Bits
+	// implementation an opportunity to clean up after itself.
+	Clean()
 }
 
 // InstallContext should be implemented by users of Bits

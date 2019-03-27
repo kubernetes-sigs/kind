@@ -85,6 +85,9 @@ func (b *BazelBuildBits) Build() error {
 	return buildVersionFile(b.kubeRoot)
 }
 
+// Clean implements the Bits.Clean interface.
+func (b *BazelBuildBits) Clean() {}
+
 func (b *BazelBuildBits) findPaths(bazelGoosGoarch string) map[string]string {
 	// https://docs.bazel.build/versions/master/output_directories.html
 	binDir := filepath.Join(b.kubeRoot, "bazel-bin")

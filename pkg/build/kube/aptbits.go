@@ -45,6 +45,9 @@ func (b *AptBits) Build() error {
 	return nil
 }
 
+// Clean implements the Bits.Clean interface.
+func (b *AptBits) Clean() {}
+
 // Paths implements Bits.Paths
 func (b *AptBits) Paths() map[string]string {
 	return map[string]string{}

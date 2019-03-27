@@ -21,8 +21,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"sigs.k8s.io/kind/pkg/util"
 	"strings"
+
+	"sigs.k8s.io/kind/pkg/util"
 
 	"github.com/pkg/errors"
 
@@ -85,6 +86,9 @@ func (b *DockerBuildBits) Build() error {
 	// capture version info
 	return buildVersionFile(b.kubeRoot)
 }
+
+// Clean implements the Bits.Clean interface.
+func (b *DockerBuildBits) Clean() {}
 
 // binary and image build when we have `make quick-release-images` support
 func (b *DockerBuildBits) build() error {

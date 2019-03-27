@@ -155,6 +155,14 @@ func (b *TarBits) Build() error {
 	return nil
 }
 
+// Clean implements the Bits.Clean interface.
+func (b *TarBits) Clean() {
+	if b.tempData {
+		os.RemoveAll(b.dataPath)
+		log.WithField("path", b.dataPath).Debug("Removed temporary files")
+	}
+}
+
 // Paths implements Bits.Paths
 func (b *TarBits) Paths() map[string]string {
 	return b.paths

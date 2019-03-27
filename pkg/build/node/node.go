@@ -315,6 +315,9 @@ func (c *BuildContext) buildImage(dir string) error {
 		return err
 	}
 
+	// Let Bits clean up after itself.
+	c.bits.Clean()
+
 	log.Info("Image build completed.")
 	return nil
 }
