@@ -23,6 +23,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -50,6 +51,9 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 
 	// join secondary control plane nodes if any
 	secondaryControlPlanes, err := nodes.SecondaryControlPlaneNodes(allNodes)
+	if err != nil {
+		return err
+	}
 	if len(secondaryControlPlanes) > 0 {
 		if err := joinSecondaryControlPlanes(
 			ctx, allNodes, secondaryControlPlanes,
@@ -80,7 +84,8 @@ func joinSecondaryControlPlanes(
 	ctx.Status.Start("Joining more control-plane nodes 🎮")
 	defer ctx.Status.End(false)
 
-	// TODO(bentheelder): this should be concurrent
+	// TODO(bentheelder): it's too bad we can't do this concurrently
+	// (this is not safe currently)
 	for _, node := range secondaryControlPlanes {
 		if err := runKubeadmJoinControlPlane(ctx, allNodes, &node); err != nil {
 			return err
@@ -99,27 +104,29 @@ func joinWorkers(
 	ctx.Status.Start("Joining worker nodes 🚜")
 	defer ctx.Status.End(false)
 
-	// TODO(bentheelder): this should be concurrent
+	// create a channel for receieving worker results
 	errChan := make(chan error, len(workers))
-	defer close(errChan)
+	// create the workers concurrently
+	var wg sync.WaitGroup
 	for _, node := range workers {
 		node := node // capture loop variable
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			errChan <- runKubeadmJoin(ctx, allNodes, &node)
 		}()
 	}
 
-	// watch for all worker joins to finish
-	// NOTE: we don't use a waitgroup because we want to exit early
-	count := 0
+	// wait for all workers to be done before closing the channel
+	go func() {
+		defer close(errChan)
+		wg.Wait()
+	}()
+
+	// return the first error encountered if any
 	for err := range errChan {
-		// if any errored, bail out
 		if err != nil {
 			return err
-		}
-		count++
-		if count == len(workers) {
-			break
 		}
 	}
 

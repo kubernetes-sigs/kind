@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -79,8 +80,7 @@ func provisionNodes(
 ) error {
 	defer status.End(false)
 
-	_, err := createNodeContainers(status, cfg, clusterName, clusterLabel)
-	if err != nil {
+	if err := createNodeContainers(status, cfg, clusterName, clusterLabel); err != nil {
 		return err
 	}
 
@@ -90,19 +90,21 @@ func provisionNodes(
 
 func createNodeContainers(
 	status *logutil.Status, cfg *config.Cluster, clusterName, clusterLabel string,
-) ([]nodes.Node, error) {
+) error {
 	defer status.End(false)
 
-	// create all of the node containers, concurrently
+	// compute the desired nodes, and inform the user that we are setting them up
 	desiredNodes := nodesToCreate(cfg, clusterName)
 	status.Start("Preparing nodes " + strings.Repeat("📦", len(desiredNodes)))
-	nodeChan := make(chan *nodes.Node, len(desiredNodes))
-	errChan := make(chan error)
-	defer close(nodeChan)
-	defer close(errChan)
+
+	// create all of the node containers, concurrently
+	errChan := make(chan error, len(desiredNodes))
+	var wg sync.WaitGroup
 	for _, desiredNode := range desiredNodes {
 		desiredNode := desiredNode // capture loop variable
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			// create the node into a container (docker run, but it is paused, see createNode)
 			node, err := desiredNode.Create(clusterLabel)
 			if err != nil {
@@ -114,25 +116,25 @@ func createNodeContainers(
 				errChan <- err
 				return
 			}
-			nodeChan <- node
+			errChan <- nil
 		}()
 	}
 
-	// collect nodes
-	allNodes := []nodes.Node{}
-	for {
-		select {
-		case node := <-nodeChan:
-			// TODO(bentheelder): nodes should maybe not be pointers /shrug
-			allNodes = append(allNodes, *node)
-			if len(allNodes) == len(desiredNodes) {
-				status.End(true)
-				return allNodes, nil
-			}
-		case err := <-errChan:
-			return nil, err
+	// wait for all node creation to be done before closing
+	go func() {
+		defer close(errChan)
+		wg.Wait()
+	}()
+
+	// return the first error encountered if any
+	for err := range errChan {
+		if err != nil {
+			return err
 		}
 	}
+
+	status.End(true)
+	return nil
 }
 
 func fixupNode(node *nodes.Node) error {
