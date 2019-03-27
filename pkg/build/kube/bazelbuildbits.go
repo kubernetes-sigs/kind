@@ -62,7 +62,7 @@ func (b *BazelBuildBits) Build() error {
 
 	// TODO(bentheelder): we assume the host arch, but cross compiling should
 	// be possible now
-	bazelGoosGoarch := util.GetOSandArch("_")
+	bazelGoosGoarch := fmt.Sprintf("linux_%s", util.GetArch())
 
 	// build artifacts
 	cmd := exec.Command(
