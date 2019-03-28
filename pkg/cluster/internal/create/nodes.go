@@ -236,10 +236,12 @@ func nodesToCreate(cfg *config.Cluster, clusterName string) []nodeSpec {
 	if controlPlanes > 1 {
 		role := constants.ExternalLoadBalancerNodeRoleValue
 		desiredNodes = append(desiredNodes, nodeSpec{
-			Name:        nameNode(role),
-			Image:       controlPlaneImage, // TODO(bentheelder): get from config instead
-			Role:        role,
-			ExtraMounts: []cri.Mount{},
+			Name:             nameNode(role),
+			Image:            controlPlaneImage, // TODO(bentheelder): get from config instead
+			Role:             role,
+			ExtraMounts:      []cri.Mount{},
+			APIServerAddress: cfg.Networking.APIServerAddress,
+			APIServerPort:    cfg.Networking.APIServerPort,
 		})
 	}
 

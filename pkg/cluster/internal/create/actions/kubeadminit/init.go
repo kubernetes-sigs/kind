@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
+	"sigs.k8s.io/kind/pkg/cluster/internal/haproxy"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/exec"
@@ -81,10 +82,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	// must be modified in order to use the random host port reserved
 	// for the API server and exposed by the node
 
-	// retrives the random host where the API server is exposed
-	// TODO(fabrizio pandini): when external load-balancer will be
-	//      implemented this should be modified accordingly
-	hostPort, err := node.Ports(kubeadm.APIServerPort)
+	hostPort, err := getAPIServerPort(allNodes)
 	if err != nil {
 		return errors.Wrap(err, "failed to get kubeconfig from node")
 	}
@@ -141,6 +139,28 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	// mark success
 	ctx.Status.End(true)
 	return nil
+}
+
+// getAPIServerPort returns the port on the host on which the APIServer
+// is exposed
+func getAPIServerPort(allNodes []nodes.Node) (int32, error) {
+	// select the external loadbalancer first
+	node, err := nodes.ExternalLoadBalancerNode(allNodes)
+	if err != nil {
+		return 0, err
+	}
+	// node will be nil if there is no load balancer
+	if node != nil {
+		return node.Ports(haproxy.ControlPlanePort)
+	}
+
+	// fallback to the bootstrap control plane
+	node, err = nodes.BootstrapControlPlaneNode(allNodes)
+	if err != nil {
+		return 0, err
+	}
+
+	return node.Ports(kubeadm.APIServerPort)
 }
 
 // a default storage class
