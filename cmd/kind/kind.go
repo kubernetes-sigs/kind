@@ -26,6 +26,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/cmd/kind/build"
+	"sigs.k8s.io/kind/cmd/kind/completion"
 	"sigs.k8s.io/kind/cmd/kind/create"
 	"sigs.k8s.io/kind/cmd/kind/delete"
 	"sigs.k8s.io/kind/cmd/kind/export"
@@ -64,6 +65,7 @@ func NewCommand() *cobra.Command {
 	)
 	// add all top level subcommands
 	cmd.AddCommand(build.NewCommand())
+	cmd.AddCommand(completion.NewCommand())
 	cmd.AddCommand(create.NewCommand())
 	cmd.AddCommand(delete.NewCommand())
 	cmd.AddCommand(export.NewCommand())
