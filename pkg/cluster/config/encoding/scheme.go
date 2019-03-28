@@ -18,6 +18,7 @@ package encoding
 
 import (
 	"io/ioutil"
+	"os"
 
 	"github.com/pkg/errors"
 
@@ -51,12 +52,21 @@ func AddToScheme(scheme *runtime.Scheme) {
 // Load reads the file at path and attempts to convert into a `kind` Config; the file
 // can be one of the different API versions defined in scheme.
 // If path == "" then the default config is returned
+// If path == "-" then reads from stdin
 func Load(path string) (*config.Cluster, error) {
 	var latestPublicConfig = &v1alpha3.Cluster{}
 
 	if path != "" {
-		// read in file
-		contents, err := ioutil.ReadFile(path)
+		var err error
+		var contents []byte
+
+		if path == "-" {
+			// read in stdin
+			contents, err = ioutil.ReadAll(os.Stdin)
+		} else {
+			// read in file
+			contents, err = ioutil.ReadFile(path)
+		}
 		if err != nil {
 			return nil, err
 		}
