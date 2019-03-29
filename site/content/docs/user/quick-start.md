@@ -136,6 +136,8 @@ and / or:
 See [Kubernetes imagePullPolicy][Kubernetes imagePullPolicy] for more information.
 
 
+See also: [Using kind with Private Registries][Private Registries].
+
 ## Building Images
 
 kind runs a local Kubernetes cluster by using Docker containers as "nodes".
@@ -271,3 +273,4 @@ kind, the Kubernetes cluster itself, etc.
 [install docker]: https://docs.docker.com/install/
 [CGO]: https://golang.org/cmd/cgo/
 [Kubernetes imagePullPolicy]: https://kubernetes.io/docs/concepts/containers/images/#updating-images
+[Private Registries]: /docs/user/private-registries
