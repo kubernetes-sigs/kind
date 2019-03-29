@@ -25,6 +25,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/version"
 )
 
+// Define default Pod and Service subnets to avoid networking problems
+const (
+	DefaultPodSubnet          = "100.64.0.0/12"
+	DefaultServicesSubnet     = "10.96.0.0/12"
+)
+
 // ConfigData is supplied to the kubeadm config template, with values populated
 // by the cluster package
 type ConfigData struct {
@@ -47,6 +53,10 @@ type ConfigData struct {
 type DerivedConfigData struct {
 	// DockerStableTag is automatically derived from KubernetesVersion
 	DockerStableTag string
+	// PodSubnet specify range of IP addresses for the pod network.
+	PodSubnet string
+	// ServiceSubnet specify range of IP address for service VIPs.
+	ServiceSubnet string
 }
 
 // Derive automatically derives DockerStableTag if not specified
@@ -54,6 +64,10 @@ func (c *ConfigData) Derive() {
 	if c.DockerStableTag == "" {
 		c.DockerStableTag = strings.Replace(c.KubernetesVersion, "+", "_", -1)
 	}
+
+	// We set always pod and service subnets to avoid they can be override
+	c.PodSubnet = DefaultPodSubnet
+	c.ServiceSubnet = DefaultServicesSubnet
 }
 
 // See docs for these APIs at:
@@ -115,6 +129,9 @@ metadata:
   name: config
 kubernetesVersion: {{.KubernetesVersion}}
 clusterName: "{{.ClusterName}}"
+networking:
+  podSubnet: "{{ .PodSubnet }}"
+  serviceSubnet: "{{ .ServiceSubnet }}"
 {{ if .ControlPlaneEndpoint -}}
 controlPlaneEndpoint: {{ .ControlPlaneEndpoint }}
 {{- end }}
@@ -190,6 +207,10 @@ apiServer:
 controllerManager:
   extraArgs:
     enable-hostpath-provisioner: "true"
+networking:
+  podSubnet: "{{ .PodSubnet }}"
+  serviceSubnet: "{{ .ServiceSubnet }}"
+
 ---
 apiVersion: kubeadm.k8s.io/v1beta1
 kind: InitConfiguration
