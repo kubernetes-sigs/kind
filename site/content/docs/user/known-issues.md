@@ -27,12 +27,21 @@ It may additionally be helpful to:
 `kind` cannot run properly if containers on your machine / host are backed by a
 [Btrfs](https://en.wikipedia.org/wiki/Btrfs) filesystem.
 
-This should only be relevant on linux, on which you can check with:
+This should only be relevant on Linux, on which you can check with:
 
-`stat --file-system --format=%T $(docker info --format {{.DockerRootDir}})`
+```
+docker info | grep -i storage
+```
 
-To fix this you must ensure that your containers are not backed by Btrfs, there
-is no other known workaround at this time.
+As a workaround, create the following configuration in `/etc/docker/daemon.json`:
+
+```
+{
+  "storage-driver": "overlay2"
+}
+```
+
+After restarting the Docker daemon you should see that Docker is now using the `overlay2` storage driver instead of `btrfs`.
 
 ## Failing to apply overlay network
 There are two known causes for problems while applying the overlay network
