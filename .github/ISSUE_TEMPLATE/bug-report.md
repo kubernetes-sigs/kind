@@ -18,7 +18,7 @@ labels: kind/bug
 
 **Environment:**
 
-- KIND version: (use `kind version`):
+- Kind version: (use `kind version`):
 - Kubernetes version: (use `kubectl version`):
 - Docker version: (use `docker info`):
 - OS (e.g. from `/etc/os-release`):
