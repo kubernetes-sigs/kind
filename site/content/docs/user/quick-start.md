@@ -227,7 +227,7 @@ nodes:
 ```
 
 ### Configure kind to use a proxy
-If you are running kind in an environment that requires a proxy to connect outside you may need to use it.
+If you are running kind in an environment that requires a proxy, you may need to configure kind to use it.
 
 You can configure kind to use a proxy using the environment variables (uppercase takes precedence):
 
