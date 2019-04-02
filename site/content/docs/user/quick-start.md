@@ -226,6 +226,18 @@ nodes:
 - role: worker
 ```
 
+### Configure kind to use a proxy
+If you are running kind in an environment that requires a proxy to connect outside you may need to use it.
+
+You can configure kind to use a proxy using the environment variables (uppercase takes precedence):
+
+* HTTP_PROXY or http_proxy
+* HTTPS_PROXY or https_proxy
+* NO_PROXY or no_proxy
+
+**Note**: If you set a proxy it would be used for all the connections requests.
+It's important that you define what addresses doesn't need to be proxied with the NO_PROXY variable, typically you should avoid to proxy your docker network range `NO_PROXY=172.17.0.0/16`
+
 ### Exporting Cluster Logs
 kind has the ability to export all kind related logs for you to explore.
 To export all logs from the default cluster (context name `kind`):
