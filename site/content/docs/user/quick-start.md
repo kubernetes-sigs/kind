@@ -229,7 +229,7 @@ nodes:
 ### Configure kind to use a proxy
 If you are running kind in an environment that requires a proxy, you may need to configure kind to use it.
 
-You can configure kind to use a proxy using the environment variables (uppercase takes precedence):
+You can configure kind to use a proxy using one or more of the following [environment variables][proxy environment variables] (uppercase takes precedence):
 
 * HTTP_PROXY or http_proxy
 * HTTPS_PROXY or https_proxy
@@ -283,6 +283,7 @@ kind, the Kubernetes cluster itself, etc.
 [kubectl]: https://kubernetes.io/docs/reference/kubectl/overview/
 [Docker resource lims]: https://docs.docker.com/docker-for-mac/#advanced
 [install docker]: https://docs.docker.com/install/
+[proxy environment variables]: https://docs.docker.com/network/proxy/#use-environment-variables
 [CGO]: https://golang.org/cmd/cgo/
 [Kubernetes imagePullPolicy]: https://kubernetes.io/docs/concepts/containers/images/#updating-images
 [Private Registries]: /docs/user/private-registries
