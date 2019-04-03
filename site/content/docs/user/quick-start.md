@@ -226,6 +226,18 @@ nodes:
 - role: worker
 ```
 
+### Configure kind to use a proxy
+If you are running kind in an environment that requires a proxy, you may need to configure kind to use it.
+
+You can configure kind to use a proxy using one or more of the following [environment variables][proxy environment variables] (uppercase takes precedence):
+
+* HTTP_PROXY or http_proxy
+* HTTPS_PROXY or https_proxy
+* NO_PROXY or no_proxy
+
+**Note**: If you set a proxy it would be used for all the connections requests.
+It's important that you define what addresses doesn't need to be proxied with the NO_PROXY variable, typically you should avoid to proxy your docker network range `NO_PROXY=172.17.0.0/16`
+
 ### Exporting Cluster Logs
 kind has the ability to export all kind related logs for you to explore.
 To export all logs from the default cluster (context name `kind`):
@@ -271,6 +283,7 @@ kind, the Kubernetes cluster itself, etc.
 [kubectl]: https://kubernetes.io/docs/reference/kubectl/overview/
 [Docker resource lims]: https://docs.docker.com/docker-for-mac/#advanced
 [install docker]: https://docs.docker.com/install/
+[proxy environment variables]: https://docs.docker.com/network/proxy/#use-environment-variables
 [CGO]: https://golang.org/cmd/cgo/
 [Kubernetes imagePullPolicy]: https://kubernetes.io/docs/concepts/containers/images/#updating-images
 [Private Registries]: /docs/user/private-registries
