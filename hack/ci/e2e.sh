@@ -66,7 +66,10 @@ build() {
     fi
 
     # build the node image w/ kubernetes
-    kind build node-image --type=bazel
+    # TODO(bentheelder): remove the kube-root flag after we make kind try to
+    # find this in a go module compatible way
+    kind build node-image --type=bazel \
+        --kube-root="$(go env GOPATH)/src/k8s.io/kubernetes"
 
     # make sure we have e2e requirements
     #make all WHAT="cmd/kubectl test/e2e/e2e.test vendor/github.com/onsi/ginkgo/ginkgo"
