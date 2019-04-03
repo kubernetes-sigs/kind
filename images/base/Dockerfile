@@ -78,6 +78,7 @@ RUN curl -fsSL "https://download.docker.com/linux/$(. /etc/os-release; echo "$ID
 # Enable CRI for containerd
 RUN mkdir -p /etc/docker && echo '{"cri-containerd": true}' > /etc/docker/daemon.json
 RUN mkdir -p /etc/containerd && containerd config default > /etc/containerd/config.toml
+RUN sed -i "s/overlayfs/native/" /etc/containerd/config.toml
 
 # Install CNI binaries to /opt/cni/bin
 # TODO(bentheelder): doc why / what here
@@ -91,6 +92,11 @@ RUN export ARCH=$(dpkg --print-architecture) \
     && mkdir -p /opt/cni/bin \
     && tar -C /opt/cni/bin -xzf /tmp/cni.tgz \
     && rm -rf /tmp/cni.tgz
+
+# Install crictl to /usr/local/bin
+ARG CRICTL_VERSION="v1.13.0"
+RUN export ARCH=$(dpkg --print-architecture) \
+    && curl -fSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz" | tar xzC /usr/local/bin
 
 # tell systemd that it is in docker (it will check for the container env)
 # https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/

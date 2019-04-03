@@ -167,7 +167,17 @@ func (n *Node) LoadImages() {
 		// use xargs to load images in parallel
 		`find /kind/images -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) docker load -i`,
 	).Run(); err != nil {
-		log.Warningf("Failed to preload docker images: %v", err)
+		log.Warningf("Failed to preload images into docker: %v", err)
+		return
+	}
+
+	// load images cached on the node into containerd
+	if err := n.Command(
+		"/bin/bash", "-c",
+		// use xargs to load images in parallel
+		`docker images --format "{{.Repository}}:{{.Tag}}" | while read -r line; do echo "$line" && docker save "$line" > tmp.tar && ctr --namespace=k8s.io images import --snapshotter=native tmp.tar && rm tmp.tar; done`,
+	).Run(); err != nil {
+		log.Warningf("Failed to preload images into containerd: %v", err)
 		return
 	}
 
