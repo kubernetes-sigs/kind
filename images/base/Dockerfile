@@ -62,9 +62,9 @@ RUN clean-install \
 # - add the fingerprint
 # - add the repository
 # - update apt, install docker, cleanup
-# NOTE: 18.06 is officially supported by Kubernetes currently, so we pin to that.
+# NOTE: 18.09 is officially supported by Kubernetes currently, so we pin to that.
 # https://kubernetes.io/docs/tasks/tools/install-kubeadm/
-ARG DOCKER_VERSION="18.06.*"
+ARG DOCKER_VERSION="5:18.09.*"
 # another temporary env, not a real argument. setting this to a non-zero value
 # silences this warning from apt-key:
 # "Warning: apt-key output should not be parsed (stdout is not a terminal)"
@@ -74,6 +74,10 @@ RUN curl -fsSL "https://download.docker.com/linux/$(. /etc/os-release; echo "$ID
     && add-apt-repository \
         "deb https://download.docker.com/linux/$(. /etc/os-release; echo "$ID") $(lsb_release -cs) stable" \
     && clean-install "docker-ce=${DOCKER_VERSION}"
+
+# Enable CRI for containerd
+RUN mkdir -p /etc/docker && echo '{"cri-containerd": true}' > /etc/docker/daemon.json
+RUN mkdir -p /etc/containerd && containerd config default > /etc/containerd/config.toml
 
 # Install CNI binaries to /opt/cni/bin
 # TODO(bentheelder): doc why / what here
