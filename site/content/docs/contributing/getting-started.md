@@ -119,3 +119,4 @@ See also: the Kubernetes [community page].
 [@munnerz]: https://github.com/munnerz
 [community page]: http://kubernetes.io/community/
 [modules]: https://github.com/golang/go/wiki/Modules
+[SIG-Testing Mailing List]: https://groups.google.com/forum/#!forum/kubernetes-sig-testing
