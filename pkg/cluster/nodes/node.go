@@ -372,8 +372,7 @@ func (n *Node) WriteKubeConfig(dest string, hostPort int32) error {
 	return ioutil.WriteFile(dest, buff.Bytes(), 0600)
 }
 
-// WriteFile writes temporary file on the host
-// and copies it to the node
+// WriteFile writes content to dest on the node
 func (n *Node) WriteFile(dest, content string) error {
 	// create destination directory
 	cmd := n.Command("mkdir", "-p", filepath.Dir(dest))
@@ -382,26 +381,7 @@ func (n *Node) WriteFile(dest, content string) error {
 		return errors.Wrapf(err, "failed to create directory %s", dest)
 	}
 
-	// create temporary file
-	ftmp, err := ioutil.TempFile("", "")
-	if err != nil {
-		return errors.Wrap(err, "failed to create temporary file")
-	}
-
-	path := ftmp.Name()
-	defer os.Remove(path)
-
-	// write content to the temp file
-	_, err = ftmp.WriteString(content)
-	if err != nil {
-		return errors.Wrap(err, "failed to write content to the file")
-	}
-
-	// copy the temp file from the host to the node
-	if err := n.CopyTo(path, dest); err != nil {
-		return errors.Wrap(err, "failed to copy file to the node")
-	}
-	return nil
+	return n.Command("cp", "/dev/stdin", dest).SetStdin(strings.NewReader(content)).Run()
 }
 
 // NeedProxy returns true if the host environment appears to have proxy settings
