@@ -103,26 +103,42 @@ func (b *BazelBuildBits) findPaths(bazelGoosGoarch string) map[string]string {
 		// TODO(bentheelder): probably we should use our own config instead :-)
 		filepath.Join(b.kubeRoot, "build", "debs", "kubelet.service"): "systemd/kubelet.service",
 		filepath.Join(b.kubeRoot, "build", "debs", "10-kubeadm.conf"): "systemd/10-kubeadm.conf",
-		// binaries
-		filepath.Join(
-			binDir, "cmd", "kubeadm",
-			// pure-go binary
-			fmt.Sprintf("%s_pure_stripped", bazelGoosGoarch), "kubeadm",
-		): "bin/kubeadm",
-		filepath.Join(
-			binDir, "cmd", "kubectl",
-			// pure-go binary
-			fmt.Sprintf("%s_pure_stripped", bazelGoosGoarch), "kubectl",
-		): "bin/kubectl",
 	}
 
-	// paths that changed: kubelet binary
+	// binaries that may be in different locations
+	kubeadmPureStrippedPath := filepath.Join(
+		binDir, "cmd", "kubeadm",
+		fmt.Sprintf("%s_pure_stripped", bazelGoosGoarch), "kubeadm",
+	)
+	kubeadmStrippedPath := filepath.Join(
+		binDir, "cmd", "kubeadm",
+		fmt.Sprintf("%s_stripped", bazelGoosGoarch), "kubeadm",
+	)
+	kubectlPureStrippedPath := filepath.Join(
+		binDir, "cmd", "kubectl",
+		fmt.Sprintf("%s_pure_stripped", bazelGoosGoarch), "kubectl",
+	)
+	kubectlStrippedPath := filepath.Join(
+		binDir, "cmd", "kubectl",
+		fmt.Sprintf("%s_stripped", bazelGoosGoarch), "kubectl",
+	)
 	oldKubeletPath := filepath.Join(
 		binDir, "cmd", "kubelet",
-		// cgo binary
 		fmt.Sprintf("%s_stripped", bazelGoosGoarch), "kubelet",
 	)
 	newKubeletPath := filepath.Join(binDir, "cmd", "kubelet", "kubelet")
+
+	// look for one path then fall back to the alternate for each
+	if _, err := os.Stat(kubeadmPureStrippedPath); os.IsNotExist(err) {
+		paths[kubeadmStrippedPath] = "bin/kubeadm"
+	} else {
+		paths[kubeadmPureStrippedPath] = "bin/kubeadm"
+	}
+	if _, err := os.Stat(kubectlPureStrippedPath); os.IsNotExist(err) {
+		paths[kubectlStrippedPath] = "bin/kubectl"
+	} else {
+		paths[kubectlPureStrippedPath] = "bin/kubectl"
+	}
 	if _, err := os.Stat(oldKubeletPath); os.IsNotExist(err) {
 		paths[newKubeletPath] = "bin/kubelet"
 	} else {
