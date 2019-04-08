@@ -216,6 +216,7 @@ flag:
 kind create cluster --config kind-example-config.yaml
 ```
 
+#### Multi-node clusters
 In particular, many users may be interested in multi-node clusters. A simple
 configuration for this can be achieved with the following config file contents:
 ```yaml
@@ -228,6 +229,7 @@ nodes:
 - role: worker
 ```
 
+#### Control-plane HA
 You can also have a cluster with multiple control-plane nodes:
 ```yaml
 # a cluster with 3 control-plane nodes and 3 workers
@@ -280,10 +282,24 @@ nodes:
 - role: control-plane
 # the three workers
 - role: worker
+```
+
+#### IPv6 clusters
+You can run ipv6 only clusters using `kind`, but first you need to
+[enable ipv6 in your docker daemon][docker enable ipv6].
+
+```yaml
+# an ipv6 cluster
+kind: Cluster
+apiVersion: kind.sigs.k8s.io/v1alpha3
+networking:
+  ipFamily: ipv6
+nodes:
+# the control plane node
+- role: control-plane
 - role: worker
 - role: worker
 ```
-
 
 ### Configure kind to use a proxy
 If you are running kind in an environment that requires a proxy, you may need to configure kind to use it.
@@ -347,3 +363,4 @@ kind, the Kubernetes cluster itself, etc.
 [Kubernetes imagePullPolicy]: https://kubernetes.io/docs/concepts/containers/images/#updating-images
 [Private Registries]: /docs/user/private-registries
 [customize control plane with kubeadm]: https://kubernetes.io/docs/setup/independent/control-plane-flags/
+[docker enable ipv6]: https://docs.docker.com/config/daemon/ipv6/
