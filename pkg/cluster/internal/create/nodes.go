@@ -21,7 +21,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -158,15 +157,6 @@ func fixupNode(node *nodes.Node) error {
 		// TODO(bentheelder): logging here
 		return err
 	}
-
-	// wait for docker to be ready
-	if !node.WaitForDocker(time.Now().Add(time.Second * 60)) {
-		// TODO(bentheelder): logging here
-		return errors.Errorf("timed out waiting for docker to be ready on node %s", node.Name())
-	}
-
-	// load the docker image artifacts into the docker daemon
-	node.LoadImages()
 
 	return nil
 }

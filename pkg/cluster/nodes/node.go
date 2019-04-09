@@ -26,17 +26,13 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
-	"k8s.io/apimachinery/pkg/util/version"
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 
 	"sigs.k8s.io/kind/pkg/container/docker"
 	"sigs.k8s.io/kind/pkg/exec"
-	"sigs.k8s.io/kind/pkg/util"
 )
 
 // Node represents a handle to a kind node
@@ -135,69 +131,6 @@ func (n *Node) CopyFrom(source, dest string) error {
 	return docker.CopyFrom(n.name, source, dest)
 }
 
-// WaitForDocker waits for Docker to be ready on the node
-// it returns true on success, and false on a timeout
-func (n *Node) WaitForDocker(until time.Time) bool {
-	return tryUntil(until, func() bool {
-		cmd := n.Command("systemctl", "is-active", "docker")
-		out, err := exec.CombinedOutputLines(cmd)
-		if err != nil {
-			return false
-		}
-		return len(out) == 1 && out[0] == "active"
-	})
-}
-
-// helper that calls `try()`` in a loop until the deadline `until`
-// has passed or `try()`returns true, returns wether try ever returned true
-func tryUntil(until time.Time, try func() bool) bool {
-	for until.After(time.Now()) {
-		if try() {
-			return true
-		}
-	}
-	return false
-}
-
-// LoadImages loads image tarballs stored on the node into docker on the node
-func (n *Node) LoadImages() {
-	// load images cached on the node into docker
-	if err := n.Command(
-		"/bin/bash", "-c",
-		// use xargs to load images in parallel
-		`find /kind/images -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) docker load -i`,
-	).Run(); err != nil {
-		log.Warningf("Failed to preload docker images: %v", err)
-		return
-	}
-
-	// if this fails, we don't care yet, but try to get the kubernetes version
-	// and see if we can skip retagging for amd64
-	// if this fails, we can just assume some unknown version and re-tag
-	// in a future release of kind, we can probably drop v1.11 support
-	// and remove the logic below this comment entirely
-	if rawVersion, err := n.KubeVersion(); err == nil {
-		if ver, err := version.ParseGeneric(rawVersion); err == nil {
-			if !ver.LessThan(version.MustParseSemantic("v1.12.0")) {
-				return
-			}
-		}
-	}
-
-	// for older releases, we need the images to have the arch in their name
-	// bazel built images were missing these, newer releases do not use them
-	// for any builds ...
-	// retag images that are missing -amd64 as image:tag -> image-amd64:tag
-	// TODO(bentheelder): this is a bit gross, move this logic out of bash
-	if err := n.Command(
-		"/bin/bash", "-c",
-		fmt.Sprintf(`docker images --format='{{.Repository}}:{{.Tag}}' | grep -v %s | xargs -L 1 -I '{}' /bin/bash -c 'docker tag "{}" "$(echo "{}" | sed s/:/-%s:/)"'`,
-			util.GetArch(), util.GetArch()),
-	).Run(); err != nil {
-		log.Warningf("Failed to re-tag docker images: %v", err)
-	}
-}
-
 // FixMounts will correct mounts in the node container to meet the right
 // sharing and permissions for systemd and Docker / Kubernetes
 func (n *Node) FixMounts() error {
@@ -219,16 +152,6 @@ func (n *Node) FixMounts() error {
 	// however, we need other things from `docker run --privileged` ...
 	// and this flag also happens to make /sys rw, amongst other things
 	if err := n.Command("mount", "-o", "remount,ro", "/sys").Run(); err != nil {
-		return err
-	}
-	// kubernetes needs shared mount propagation
-	if err := n.Command("mount", "--make-shared", "/").Run(); err != nil {
-		return err
-	}
-	if err := n.Command("mount", "--make-shared", "/run").Run(); err != nil {
-		return err
-	}
-	if err := n.Command("mount", "--make-shared", "/var/lib/docker").Run(); err != nil {
 		return err
 	}
 	return nil
@@ -403,6 +326,8 @@ func (n *Node) SetProxy() error {
 	for key, val := range details.Envs {
 		proxies += fmt.Sprintf("\"%s=%s\" ", key, val)
 	}
+
+	// TODO(bentheelder): containerd
 
 	err := n.WriteFile("/etc/systemd/system/docker.service.d/http-proxy.conf",
 		"[Service]\nEnvironment="+proxies)

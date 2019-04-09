@@ -134,3 +134,14 @@ func WaitForReady(node *Node, until time.Time) bool {
 		return true
 	})
 }
+
+// helper that calls `try()`` in a loop until the deadline `until`
+// has passed or `try()`returns true, returns wether try ever returned true
+func tryUntil(until time.Time, try func() bool) bool {
+	for until.After(time.Now()) {
+		if try() {
+			return true
+		}
+	}
+	return false
+}
