@@ -391,8 +391,11 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 		return err
 	}
 
-	// all builds should isntall the default CNI images currently
+	// all builds should install the default CNI images currently
 	requiredImages = append(requiredImages, defaultCNIImages...)
+
+	// install the haproxy image
+	requiredImages = append(requiredImages, defaultHAProxyImage)
 
 	// Create "images" subdir.
 	imagesDir := path.Join(dir, "bits", "images")

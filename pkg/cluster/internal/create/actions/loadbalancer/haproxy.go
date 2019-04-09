@@ -21,12 +21,14 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/haproxy"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/exec"
 )
 
 // Action implements and action for configuring and starting the
@@ -92,12 +94,31 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to copy haproxy config to node")
 	}
 
+	// pick a haproxy image and tag that is already loaded in the node-image
+	haProxyImage := "haproxy"
+	cmd := loadBalancerNode.Command(
+		"/bin/sh", "-c",
+		fmt.Sprintf("docker image ls %s --format \"{{.Tag}}\"", haProxyImage),
+	)
+	lines, err := exec.CombinedOutputLines(cmd)
+	if err != nil {
+		return errors.Wrap(err, "failed to list the available haproxy image tags")
+	}
+	var haProxyTag string
+	if len(lines) == 0 {
+		defaultTag := "1.8.14-alpine"
+		log.Debugf("found no haproxy image tags. using %q", defaultTag)
+		haProxyTag = defaultTag
+	} else {
+		haProxyTag = lines[0]
+	}
+
 	// starts a docker container with HA proxy load balancer
 	if err := loadBalancerNode.Command(
 		"/bin/sh", "-c",
 		fmt.Sprintf(
-			"docker run -d -v /kind/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro --network host --restart always --name haproxy %s",
-			haproxy.Image,
+			"docker run -d -v /kind/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro --network host --restart always --name haproxy %s:%s",
+			haProxyImage, haProxyTag,
 		),
 	).Run(); err != nil {
 		return errors.Wrap(err, "failed to start haproxy")

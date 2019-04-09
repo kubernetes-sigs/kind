@@ -23,6 +23,9 @@ const (
 	defaultCNIManifestLocation = "/kind/manifests/default-cni.yaml"
 )
 
+// defaultHAProxyImage defines the haproxy image:tag
+const defaultHAProxyImage = "haproxy:1.8.14-alpine"
+
 /*
 The default CNI manifest and images are from weave currently.
 

@@ -18,6 +18,3 @@ package haproxy
 
 // ControlPlanePort defines the port where the control plane is listening on the load balancer node
 const ControlPlanePort = 6443
-
-// Image defines the haproxy image:tag
-const Image = "haproxy:1.8.14-alpine"
