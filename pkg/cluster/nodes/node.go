@@ -138,6 +138,8 @@ func (n *Node) CopyFrom(source, dest string) error {
 // WaitForDocker waits for Docker to be ready on the node
 // it returns true on success, and false on a timeout
 func (n *Node) WaitForDocker(until time.Time) bool {
+	// TODO(bentheelder): eliminate
+	return true
 	return tryUntil(until, func() bool {
 		cmd := n.Command("systemctl", "is-active", "docker")
 		out, err := exec.CombinedOutputLines(cmd)
@@ -161,13 +163,26 @@ func tryUntil(until time.Time, try func() bool) bool {
 
 // LoadImages loads image tarballs stored on the node into docker on the node
 func (n *Node) LoadImages() {
-	// load images cached on the node into docker
+	// TODO(bentheelder): detect and select CRI
+	/*
+		// load images cached on the node into docker
+		if err := n.Command(
+			"/bin/bash", "-c",
+			// use xargs to load images in parallel
+			`find /kind/images -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) docker load -i`,
+		).Run(); err != nil {
+			log.Warningf("Failed to preload docker images: %v", err)
+			return
+		}
+	*/
+
+	// load images cached on the node into containerd
 	if err := n.Command(
 		"/bin/bash", "-c",
 		// use xargs to load images in parallel
-		`find /kind/images -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) docker load -i`,
+		`find /kind/images -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import`,
 	).Run(); err != nil {
-		log.Warningf("Failed to preload docker images: %v", err)
+		log.Warningf("Failed to preload images into containerd: %v", err)
 		return
 	}
 
@@ -219,16 +234,6 @@ func (n *Node) FixMounts() error {
 	// however, we need other things from `docker run --privileged` ...
 	// and this flag also happens to make /sys rw, amongst other things
 	if err := n.Command("mount", "-o", "remount,ro", "/sys").Run(); err != nil {
-		return err
-	}
-	// kubernetes needs shared mount propagation
-	if err := n.Command("mount", "--make-shared", "/").Run(); err != nil {
-		return err
-	}
-	if err := n.Command("mount", "--make-shared", "/run").Run(); err != nil {
-		return err
-	}
-	if err := n.Command("mount", "--make-shared", "/var/lib/docker").Run(); err != nil {
 		return err
 	}
 	return nil
