@@ -308,7 +308,19 @@ func (c *BuildContext) buildImage(dir string) error {
 	}
 
 	// Save the image changes to a new image
-	cmd := exec.Command("docker", "commit", containerID, c.image)
+	cmd := exec.Command(
+		"docker", "commit",
+		/*
+			The snapshot storage must be a volume to avoid overlay on overlay
+
+			NOTE: we do this last because changing a volume with a docker image
+			must occur before defining it.
+
+			See: https://docs.docker.com/engine/reference/builder/#volume
+		*/
+		"--change", `VOLUME [ "/var/lib/containerd" ]`,
+		containerID, c.image,
+	)
 	exec.InheritOutput(cmd)
 	if err = cmd.Run(); err != nil {
 		log.Errorf("Image build Failed! %v", err)
@@ -436,6 +448,18 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 		log.Errorf("Image build Failed! Failed chown images dir %v", err)
 		return err
 	}
+
+	// preload images into containerd
+	// TODO(bentheelder): we can skip the move and chown steps if we go directly to this
+	if err = inheritOutputAndRun(cmder.Command(
+		"bash", "-c",
+		// TODO(bentheelder): error handling, handle when we are using a base image that does not have containerd?
+		`containerd & find /kind/images -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import; kill %1; rm -rf /kind/images/*`,
+	)); err != nil {
+		log.Errorf("Image build Failed! Failed to load images into containerd %v", err)
+		return err
+	}
+
 	return nil
 }
 

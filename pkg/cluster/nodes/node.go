@@ -138,7 +138,7 @@ func (n *Node) CopyFrom(source, dest string) error {
 // WaitForDocker waits for Docker to be ready on the node
 // it returns true on success, and false on a timeout
 func (n *Node) WaitForDocker(until time.Time) bool {
-	// TODO(bentheelder): eliminate
+	// TODO(bentheelder): this should depend on the image
 	return true
 	return tryUntil(until, func() bool {
 		cmd := n.Command("systemctl", "is-active", "docker")
@@ -163,26 +163,15 @@ func tryUntil(until time.Time, try func() bool) bool {
 
 // LoadImages loads image tarballs stored on the node into docker on the node
 func (n *Node) LoadImages() {
-	// TODO(bentheelder): detect and select CRI
-	/*
-		// load images cached on the node into docker
-		if err := n.Command(
-			"/bin/bash", "-c",
-			// use xargs to load images in parallel
-			`find /kind/images -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) docker load -i`,
-		).Run(); err != nil {
-			log.Warningf("Failed to preload docker images: %v", err)
-			return
-		}
-	*/
-
-	// load images cached on the node into containerd
+	// TODO(bentheelder): this should depend on the image
+	return
+	// load images cached on the node into docker
 	if err := n.Command(
 		"/bin/bash", "-c",
 		// use xargs to load images in parallel
-		`find /kind/images -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import`,
+		`find /kind/images -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) docker load -i`,
 	).Run(); err != nil {
-		log.Warningf("Failed to preload images into containerd: %v", err)
+		log.Warningf("Failed to preload docker images: %v", err)
 		return
 	}
 
@@ -408,6 +397,8 @@ func (n *Node) SetProxy() error {
 	for key, val := range details.Envs {
 		proxies += fmt.Sprintf("\"%s=%s\" ", key, val)
 	}
+
+	// TODO(bentheelder): containerd
 
 	err := n.WriteFile("/etc/systemd/system/docker.service.d/http-proxy.conf",
 		"[Service]\nEnvironment="+proxies)
