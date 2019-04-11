@@ -102,6 +102,8 @@ create_cluster() {
 # necessary for conformance
 kind: Cluster
 apiVersion: kind.sigs.k8s.io/v1alpha3
+networking:
+  ipFamily: ${IP_FAMILY:-ipv4}
 nodes:
 # the control plane node
 - role: control-plane
