@@ -160,7 +160,7 @@ func fixupNode(node *nodes.Node) error {
 	}
 
 	// wait for docker to be ready
-	if !node.WaitForDocker(time.Now().Add(time.Second * 30)) {
+	if !node.WaitForDocker(time.Now().Add(time.Second * 60)) {
 		// TODO(bentheelder): logging here
 		return errors.Errorf("timed out waiting for docker to be ready on node %s", node.Name())
 	}
