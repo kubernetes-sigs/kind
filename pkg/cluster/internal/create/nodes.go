@@ -271,7 +271,7 @@ func makeNodeNamer(clusterName string) func(string) string {
 	counter := make(map[string]int)
 	return func(role string) string {
 		count := 1
-		suffix := ""
+		suffix := "1"
 		if v, ok := counter[role]; ok {
 			count += v
 			suffix = fmt.Sprintf("%d", count)
