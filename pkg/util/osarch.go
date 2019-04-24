@@ -41,6 +41,8 @@ func GetArch() string {
 		return "amd64"
 	case "arm64":
 		return "arm64"
+	case "ppc64le":
+		return "ppc64le"
 	}
 	panic(fmt.Sprintf("unsupported architecture %s", runtime.GOARCH))
 }
