@@ -76,14 +76,16 @@ RUN curl -fsSL "https://download.docker.com/linux/$(. /etc/os-release; echo "$ID
     && clean-install "docker-ce=${DOCKER_VERSION}"
 
 # Enable CRI for containerd
-RUN mkdir -p /etc/docker && echo '{"cri-containerd": true}' > /etc/docker/daemon.json
-RUN mkdir -p /etc/containerd && containerd config default > /etc/containerd/config.toml
+RUN if [ -x "$(command -v containerd)" ]; then \
+  mkdir -p /etc/docker && echo '{"cri-containerd": true}' > /etc/docker/daemon.json;\
+  mkdir -p /etc/containerd && containerd config default > /etc/containerd/config.toml;\
+fi
 
 # Install CNI binaries to /opt/cni/bin
 # TODO(bentheelder): doc why / what here
 ARG CNI_VERSION="0.7.5"
 ARG CNI_BASE_URL="https://storage.googleapis.com/kubernetes-release/network-plugins/"
-RUN export ARCH=$(dpkg --print-architecture) \
+RUN export ARCH=$(dpkg --print-architecture| sed 's/ppc64el/ppc64le/') \
     && export CNI_TARBALL="cni-plugins-${ARCH}-v${CNI_VERSION}.tgz" \
     && export CNI_URL="${CNI_BASE_URL}${CNI_TARBALL}" \
     && curl -sSL --retry 5 --output /tmp/cni.tgz "${CNI_URL}" \

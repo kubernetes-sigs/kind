@@ -18,6 +18,7 @@ limitations under the License.
 package base
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sigs.k8s.io/kind/pkg/util"
@@ -32,12 +33,16 @@ import (
 // DefaultImage is the default name:tag of the built base image
 const DefaultImage = "kindest/base:latest"
 
+// DefaultDockerVersion is the default docker version to be used for base-image
+const DefaultDockerVersion = "5:18.09.*"
+
 // BuildContext is used to build the kind node base image, and contains
 // build configuration
 type BuildContext struct {
 	// option fields
-	sourceDir string
-	image     string
+	sourceDir     string
+	image         string
+	dockerVersion string
 	// non option fields
 	goCmd string // TODO(bentheelder): should be an option possibly
 	arch  string // TODO(bentheelder): should be an option
@@ -60,13 +65,21 @@ func WithImage(image string) Option {
 	}
 }
 
+// WithDockerVersion configures a NewBuildContext to use the docker version `dockerVersion`
+func WithDockerVersion(dockerVersion string) Option {
+	return func(b *BuildContext) {
+		b.dockerVersion = dockerVersion
+	}
+}
+
 // NewBuildContext creates a new BuildContext with
 // default configuration
 func NewBuildContext(options ...Option) *BuildContext {
 	ctx := &BuildContext{
-		image: DefaultImage,
-		goCmd: "go",
-		arch:  util.GetArch(),
+		image:         DefaultImage,
+		dockerVersion: DefaultDockerVersion,
+		goCmd:         "go",
+		arch:          util.GetArch(),
 	}
 	for _, option := range options {
 		option(ctx)
@@ -136,8 +149,9 @@ func (c *BuildContext) buildEntrypoint(dir string) error {
 }
 
 func (c *BuildContext) buildImage(dir string) error {
+	dockerVersionArg := fmt.Sprintf("DOCKER_VERSION=%s", c.dockerVersion)
 	// build the image, tagged as tagImageAs, using the our tempdir as the context
-	cmd := exec.Command("docker", "build", "-t", c.image, dir)
+	cmd := exec.Command("docker", "build", "--build-arg", dockerVersionArg, "-t", c.image, dir)
 	log.Info("Starting Docker build ...")
 	exec.InheritOutput(cmd)
 	err := cmd.Run()

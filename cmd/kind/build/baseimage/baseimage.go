@@ -24,8 +24,9 @@ import (
 )
 
 type flagpole struct {
-	Source string
-	Image  string
+	Source        string
+	Image         string
+	DockerVersion string
 }
 
 // NewCommand returns a new cobra.Command for building the base image
@@ -51,6 +52,11 @@ func NewCommand() *cobra.Command {
 		base.DefaultImage,
 		"name:tag of the resulting image to be built",
 	)
+	cmd.Flags().StringVar(
+		&flags.DockerVersion, "docker-version",
+		base.DefaultDockerVersion,
+		"docker version to be installed",
+	)
 	return cmd
 }
 
@@ -59,6 +65,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	ctx := base.NewBuildContext(
 		base.WithImage(flags.Image),
 		base.WithSourceDir(flags.Source),
+		base.WithDockerVersion(flags.DockerVersion),
 	)
 	if err := ctx.Build(); err != nil {
 		return errors.Wrap(err, "build failed")
