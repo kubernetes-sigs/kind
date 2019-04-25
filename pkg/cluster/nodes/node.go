@@ -231,6 +231,10 @@ func (n *Node) FixMounts() error {
 	if err := n.Command("mount", "--make-shared", "/var/lib/docker").Run(); err != nil {
 		return err
 	}
+	// use kind as product name to avoid issues with features that depends on it
+	if err := n.Command("mount", "-o", "ro,bind", "/kind/product_name", "/sys/class/dmi/id/product_name").Run(); err != nil {
+		return err
+	}
 	return nil
 }
 

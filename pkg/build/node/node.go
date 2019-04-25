@@ -276,6 +276,13 @@ func (c *BuildContext) buildImage(dir string) error {
 		log.Errorf("Image build Failed! %v", err)
 		return err
 	}
+	// create product_name file
+	if err = execInBuild("/bin/sh", "-c",
+		`echo "kind" > /kind/product_name`,
+	); err != nil {
+		log.Errorf("Image build Failed! %v", err)
+		return err
+	}
 
 	// copy artifacts in
 	if err = execInBuild("rsync", "-r", "/build/bits/", "/kind/"); err != nil {
