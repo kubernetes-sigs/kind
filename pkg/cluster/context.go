@@ -23,6 +23,7 @@ import (
 	internalcontext "sigs.k8s.io/kind/pkg/cluster/internal/context"
 	internalcreate "sigs.k8s.io/kind/pkg/cluster/internal/create"
 	internaldelete "sigs.k8s.io/kind/pkg/cluster/internal/delete"
+	internalrestart "sigs.k8s.io/kind/pkg/cluster/internal/restart"
 	"sigs.k8s.io/kind/pkg/cluster/logs"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 )
@@ -98,4 +99,9 @@ func (c *Context) CollectLogs(dir string) error {
 		return err
 	}
 	return logs.Collect(nodes, dir)
+}
+
+// Restart a kubernetes-in-docker cluster
+func (c *Context) Restart() error {
+	return internalrestart.Cluster(c.ic)
 }

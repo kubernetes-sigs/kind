@@ -134,3 +134,49 @@ func WaitForReady(node *Node, until time.Time) bool {
 		return true
 	})
 }
+
+// Restart restarts nodes by name / ID (see Node.String())
+func Restart(nodes []Node) error {
+	if len(nodes) == 0 {
+		return nil
+	}
+	ids := []string{}
+	for _, node := range nodes {
+		ids = append(ids, node.name)
+	}
+	cmd := exec.Command(
+		"docker",
+		append(
+			[]string{
+				"restart",
+				// the default wait time is 10s
+				"--time=1",
+			},
+			ids...,
+		)...,
+	)
+
+	if err := cmd.Run(); err != nil {
+		// TODO: logging here
+		return err
+	}
+
+	for _, node := range nodes {
+
+		if err := node.FixMounts(); err != nil {
+			// TODO: logging here
+			return err
+		}
+
+		if err := node.SignalStart(); err != nil {
+			// TODO: logging here
+			return err
+		}
+
+		if !node.WaitForDocker(time.Now().Add(time.Second * 30)) {
+			return errors.Errorf("timed out waiting for docker to be ready on node %s", node.Name())
+		}
+	}
+
+	return nil
+}
