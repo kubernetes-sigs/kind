@@ -60,6 +60,17 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Starting the external load balancer ⚖️")
 	defer ctx.Status.End(false)
 
+	err = ConfigHAProxy(loadBalancerNode, allNodes)
+	if err != nil {
+		return err
+	}
+
+	ctx.Status.End(true)
+	return nil
+}
+
+// ConfigHAProxy is common method for HAProxy
+func ConfigHAProxy(loadBalancerNode *nodes.Node, allNodes []nodes.Node) error {
 	// collect info about the existing controlplane nodes
 	var backendServers = map[string]string{}
 	controlPlaneNodes, err := nodes.SelectNodesByRole(
@@ -103,6 +114,5 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to start haproxy")
 	}
 
-	ctx.Status.End(true)
 	return nil
 }
