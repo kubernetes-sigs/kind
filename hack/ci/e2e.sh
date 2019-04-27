@@ -117,7 +117,7 @@ nodes:
   - hostPath: /tmp/audit-policy.yaml
     containerPath: /etc/kubernetes/audit-policy.yaml
 - role: worker
-- role: worker
+  replicas: 2
 kubeadmConfigPatches:
 - |
   apiVersion: kubeadm.k8s.io/v1beta1
