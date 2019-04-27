@@ -100,8 +100,6 @@ create_cluster() {
     # create the audit-policy necessary for API Coverage
     # https://kubernetes.io/docs/tasks/debug-application-cluster/audit/#audit-policy
     cp $(dirname $0)/audit-policy.yaml /tmp/audit-policy.yaml
-    # env dump to help write branching logic
-    env
     # create the config file
     cat <<EOF > "${ARTIFACTS}/kind-config.yaml"
 # config for 1 control plane node and 2 workers
@@ -117,8 +115,13 @@ nodes:
   - hostPath: /tmp/audit-policy.yaml
     containerPath: /etc/kubernetes/audit-policy.yaml
 - role: worker
-  replicas: 2
-# we use the oldest compatible version
+- role: worker
+EOF
+    KUBEADM_MINOR=$(kubectl version --client=true 2>&1 | perl -pe 's/(^.*Minor:")([0-9]+)(.*$)/\2/')
+    if echo $KUBEADMIN_MINOR | grep 11\\\|12\\\|13
+    then
+        echo Patching for kubeadm.k8s.io/v1alpha2
+        cat <<ALPHA2_CONFIG > "${ARTIFACTS}/kind-config.yaml"
 kubeadmConfigPatches:
 - |
   apiVersion: kubeadm.k8s.io/v1alpha2
@@ -140,29 +143,34 @@ kubeadmConfigPatches:
     readOnly: false
     hostPath: /var/log/apiserver-audit.log
     mountPath: /var/log/apiserver-audit.log
+ALPHA2_CONFIG
+    else
+        echo Patching for kubeadm.k8s.io/v1beta1
+        cat <<BETA1_CONFIG > "${ARTIFACTS}/kind-config.yaml"
+# we use the oldest compatible version
 # v1alpha3 doesn't work for 1.11-1.13
 # v1alpha2 does and also works for 1.14-1.15
-# kubeadmConfigPatches:
-# - |
-#   apiVersion: kubeadm.k8s.io/v1beta1
-#   kind: ClusterConfiguration
-#   metadata:
-#     name: config
-#   apiServer:
-#     timeoutForControlPlane: 5m0s
-#     extraArgs:
-#       audit-log-path: /var/log/apiserver-audit.log
-#       audit-policy-file: /etc/kubernetes/audit-policy.yaml
-#     extraVolumes:
-#     - hostPath: /etc/kubernetes/audit-policy.yaml
-#       mountPath: /etc/kubernetes/audit-policy.yaml
-#       name: auditpolicy
-#       readOnly: true
-#     - hostPath: /var/log/apiserver-audit.log
-#       mountPath: /var/log/apiserver-audit.log
-#       name: auditlog
-#       readOnly: false
-EOF
+kubeadmConfigPatches:
+- |
+  apiVersion: kubeadm.k8s.io/v1beta1
+  kind: ClusterConfiguration
+  metadata:
+    name: config
+  apiServer:
+    extraArgs:
+      audit-log-path: /var/log/apiserver-audit.log
+      audit-policy-file: /etc/kubernetes/audit-policy.yaml
+    extraVolumes:
+    - hostPath: /etc/kubernetes/audit-policy.yaml
+      mountPath: /etc/kubernetes/audit-policy.yaml
+      name: auditpolicy
+      readOnly: true
+    - hostPath: /var/log/apiserver-audit.log
+      mountPath: /var/log/apiserver-audit.log
+      name: auditlog
+      readOnly: false
+BETA1_CONFIG
+    fi
     # mark the cluster as up for cleanup
     # even if kind create fails, kind delete can clean up after it
     KIND_IS_UP=true
