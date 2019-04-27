@@ -17,14 +17,17 @@ limitations under the License.
 package logs
 
 import (
+	"archive/tar"
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+	"io"
 	"os"
+	osexec "os/exec"
 	"path/filepath"
-	"strings"
-	"sync"
-
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/util"
+	"sync"
 )
 
 type errFn func() error
@@ -65,8 +68,24 @@ func Collect(nodes []nodes.Node, dir string) error {
 	// add a log collection method for each node
 	for _, n := range nodes {
 		node := n // https://golang.org/doc/faq#closures_and_goroutines
+		name := node.String()
+		// grab all logs under /var/log (pods and containers)
+		cmd := osexec.Command("docker", "exec", name, "tar", "--hard-dereference", "-C", "/var/log", "-chf", "-", ".")
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			return err
+		}
+		if err := cmd.Start(); err != nil {
+			return err
+		}
+		log.Debugf("Running: %v %v", cmd.Path, cmd.Args)
+		if err := untar(stdout, filepath.Join(dir, name)); err != nil {
+			return errors.Wrapf(err, "Untarring %q: %v", name, err)
+		}
+		if err := cmd.Wait(); err != nil {
+			return err
+		}
 		fns = append(fns, func() error {
-			name := node.String()
 			return coalesce(
 				// record info about the node container
 				execToPathFn(
@@ -90,33 +109,6 @@ func Collect(nodes []nodes.Node, dir string) error {
 					node.Command("journalctl", "--no-pager", "-u", "docker.service"),
 					filepath.Join(name, "docker.log"),
 				),
-				// grab all container / pod logs
-				// NOTE: we cannot just docker cp this directory because
-				// it is mostly symlinks, so we must list and resolve the symlinks
-				func() error {
-					// collect up file names
-					files, err := exec.CombinedOutputLines(
-						node.Command("find", "-L", "/var/log", "-type", "f"),
-					)
-					if err != nil {
-						return err
-					}
-					// for each file, we want to copy it out at the path
-					// we find it (symlink or not), so we pipe cat in the container
-					// to a file in our logs dir on the host
-					copyFns := []errFn{}
-					for _, f := range files {
-						file := f // https://golang.org/doc/faq#closures_and_goroutines
-						targetPath := strings.TrimPrefix(file, "/var/log/")
-						copyFns = append(copyFns, func() error {
-							return execToPath(
-								node.Command("cat", file),
-								filepath.Join(name, targetPath),
-							)
-						})
-					}
-					return coalesce(copyFns...)
-				},
 			)
 		})
 	}
@@ -151,4 +143,50 @@ func coalesce(fns ...errFn) error {
 		return errs[0]
 	}
 	return nil
+}
+
+// untar reads the tar file from r and writes it into dir.
+func untar(r io.Reader, dir string) (err error) {
+	tr := tar.NewReader(r)
+	for {
+		f, err := tr.Next()
+
+		switch {
+		case err == io.EOF:
+			return nil
+		case err != nil:
+			return errors.Wrapf(err, "tar reading error: %v", err)
+		case f == nil:
+			continue
+		}
+
+		rel := filepath.FromSlash(f.Name)
+		abs := filepath.Join(dir, rel)
+
+		switch f.Typeflag {
+		case tar.TypeReg:
+			wf, err := os.OpenFile(abs, os.O_CREATE|os.O_RDWR, os.FileMode(f.Mode))
+			if err != nil {
+				return err
+			}
+			n, err := io.Copy(wf, tr)
+			if closeErr := wf.Close(); closeErr != nil && err == nil {
+				err = closeErr
+			}
+			if err != nil {
+				return errors.Errorf("error writing to %s: %v", abs, err)
+			}
+			if n != f.Size {
+				return errors.Errorf("only wrote %d bytes to %s; expected %d", n, abs, f.Size)
+			}
+		case tar.TypeDir:
+			if _, err := os.Stat(abs); err != nil {
+				if err := os.MkdirAll(abs, 0755); err != nil {
+					return err
+				}
+			}
+		default:
+			log.Warningf("tar file entry %s contained unsupported file type %v", f.Name, f.Typeflag)
+		}
+	}
 }
