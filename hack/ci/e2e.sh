@@ -118,7 +118,7 @@ nodes:
 - role: worker
 EOF
     KUBEADM_MINOR=$(kubectl version --client=true 2>&1 | perl -pe 's/(^.*Minor:")([0-9]+)(.*$)/\2/')
-    if echo $KUBEADMIN_MINOR | grep 11\\\|12\\\|13
+    if echo $KUBEADM_MINOR | grep 11\\\|12\\\|13
     then
         echo Patching for kubeadm.k8s.io/v1alpha2
         cat <<ALPHA2_CONFIG > "${ARTIFACTS}/kind-config.yaml"
