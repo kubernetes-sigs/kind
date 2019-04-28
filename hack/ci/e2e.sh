@@ -100,6 +100,7 @@ create_cluster() {
     # create the audit-policy necessary for API Coverage
     # https://kubernetes.io/docs/tasks/debug-application-cluster/audit/#audit-policy
     cp $(dirname $0)/audit-policy.yaml /tmp/audit-policy.yaml
+    touch "${ARTIFACTS}/apiserver-audit.log"
     # create the config file
     cat <<EOF > "${ARTIFACTS}/kind-config.yaml"
 # config for 1 control plane node and 2 workers
@@ -110,65 +111,63 @@ nodes:
 # the control plane node
 - role: control-plane
   extraMounts:
-  - hostPath: "${ARTIFACTS}/logs/apiserver-audit.log"
-    containerPath: /var/log/apiserver-audit.log
   - hostPath: /tmp/audit-policy.yaml
     containerPath: /etc/kubernetes/audit-policy.yaml
+  - hostPath: "${ARTIFACTS}/apiserver-audit.log"
+    containerPath: /var/log/apiserver-audit.log
 - role: worker
 - role: worker
-EOF
-    KUBEADM_MINOR=$(kubectl version --client=true 2>&1 | perl -pe 's/(^.*Minor:")([0-9]+)(.*$)/\2/')
-    if echo $KUBEADM_MINOR | grep 11\\\|12\\\|13
-    then
-        echo Patching for kubeadm.k8s.io/v1alpha2
-        cat <<ALPHA2_CONFIG > "${ARTIFACTS}/kind-config.yaml"
 kubeadmConfigPatches:
 - |
-  apiVersion: kubeadm.k8s.io/v1alpha2
   kind: ClusterConfiguration
   metadata:
     name: config
+EOF
+    KUBEADM_MINOR=$(kubeadm version 2>&1 | perl -pe 's/(^.*Minor:")([0-9]+)(.*$)/\2/')
+    kubeadm version >  "${ARTIFACTS}/kubeadmi-version"
+    echo $KUBEADM_MINOR > "${ARTIFACTS}/kubeadm_minor"
+    if echo $KUBEADM_MINOR | grep 11\\\|12
+    then
+        echo Patching for kubeadm.k8s.io/v1alpha3
+        cat <<ALPHA3_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
+  # v1alpha2 works for kubeadm 1.11-1.12
+  apiVersion: kubeadm.k8s.io/v1alpha3
   apiServer:
     extraArgs:
       audit-log-path: /var/log/apiserver-audit.log
       audit-policy-file: /etc/kubernetes/audit-policy.yaml
   apiServerExtraVolumes:
   - name: auditpolicy
-    pathType: FileOrCreate
+    pathType: File
     readOnly: true
     hostPath: /etc/kubernetes/audit-policy.yaml
     mountPath: /etc/kubernetes/audit-policy.yaml
   - name: auditlog
-    pathType: FileOrCreate
+    pathType: File
     readOnly: false
     hostPath: /var/log/apiserver-audit.log
     mountPath: /var/log/apiserver-audit.log
-ALPHA2_CONFIG
+ALPHA3_CONFIG
     else
         echo Patching for kubeadm.k8s.io/v1beta1
-        cat <<BETA1_CONFIG > "${ARTIFACTS}/kind-config.yaml"
-# we use the oldest compatible version
-# v1alpha3 doesn't work for 1.11-1.13
-# v1alpha2 does and also works for 1.14-1.15
-kubeadmConfigPatches:
-- |
+        cat <<BETA1_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
+  # v1beta1 works for 1.13-1.14
   apiVersion: kubeadm.k8s.io/v1beta1
-  kind: ClusterConfiguration
-  metadata:
-    name: config
   apiServer:
     extraArgs:
       audit-log-path: /var/log/apiserver-audit.log
       audit-policy-file: /etc/kubernetes/audit-policy.yaml
     extraVolumes:
-    - hostPath: /etc/kubernetes/audit-policy.yaml
-      mountPath: /etc/kubernetes/audit-policy.yaml
-      name: auditpolicy
+    - name: auditpolicy
+      pathType: File
       readOnly: true
-    - hostPath: /var/log/apiserver-audit.log
-      mountPath: /var/log/apiserver-audit.log
-      name: auditlog
+      hostPath: /etc/kubernetes/audit-policy.yaml
+      mountPath: /etc/kubernetes/audit-policy.yaml
+    - name: auditlog
+      pathType: File
       readOnly: false
+      hostPath: /var/log/apiserver-audit.log
+      mountPath: /var/log/apiserver-audit.log
 BETA1_CONFIG
     fi
     # mark the cluster as up for cleanup
