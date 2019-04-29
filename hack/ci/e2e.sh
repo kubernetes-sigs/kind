@@ -124,9 +124,11 @@ kubeadmConfigPatches:
     name: config
 EOF
     KUBEADM_MINOR=$(kubeadm version 2>&1 | perl -pe 's/(^.*Minor:")([0-9]+)(.*$)/\2/')
-    kubeadm version >  "${ARTIFACTS}/kubeadmi-version"
-    echo $KUBEADM_MINOR > "${ARTIFACTS}/kubeadm_minor"
-    if echo $KUBEADM_MINOR | grep 11\\\|12
+    env
+    find /
+    #kubeadm version >  "${ARTIFACTS}/kubeadmi-version"
+    #echo $KUBEADM_MINOR > "${ARTIFACTS}/kubeadm_minor"
+    if echo $JOB_NAME | grep 1-11\\\|1-12
     then
         echo Patching for kubeadm.k8s.io/v1alpha3
         cat <<ALPHA3_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
