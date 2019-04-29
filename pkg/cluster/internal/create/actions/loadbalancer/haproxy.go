@@ -65,11 +65,22 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
+	// starts a docker container with HA proxy load balancer
+	if err := loadBalancerNode.Command(
+		"/bin/sh", "-c",
+		fmt.Sprintf(
+			"docker run -d -v /kind/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro --network host --restart always --name haproxy %s",
+			haproxy.Image,
+		),
+	).Run(); err != nil {
+		return errors.Wrap(err, "failed to start haproxy")
+	}
+
 	ctx.Status.End(true)
 	return nil
 }
 
-// ConfigHAProxy is common method for HAProxy
+// ConfigHAProxy is common method for write HAProxy's config file
 func ConfigHAProxy(loadBalancerNode *nodes.Node, allNodes []nodes.Node) error {
 	// collect info about the existing controlplane nodes
 	var backendServers = map[string]string{}
@@ -101,17 +112,6 @@ func ConfigHAProxy(loadBalancerNode *nodes.Node, allNodes []nodes.Node) error {
 	if err := loadBalancerNode.WriteFile("/kind/haproxy.cfg", haproxyConfig); err != nil {
 		// TODO: logging here
 		return errors.Wrap(err, "failed to copy haproxy config to node")
-	}
-
-	// starts a docker container with HA proxy load balancer
-	if err := loadBalancerNode.Command(
-		"/bin/sh", "-c",
-		fmt.Sprintf(
-			"docker run -d -v /kind/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro --network host --restart always --name haproxy %s",
-			haproxy.Image,
-		),
-	).Run(); err != nil {
-		return errors.Wrap(err, "failed to start haproxy")
 	}
 
 	return nil
