@@ -20,7 +20,6 @@ package base
 import (
 	"os"
 	"path/filepath"
-	"sigs.k8s.io/kind/pkg/util"
 
 	log "github.com/sirupsen/logrus"
 
@@ -38,9 +37,6 @@ type BuildContext struct {
 	// option fields
 	sourceDir string
 	image     string
-	// non option fields
-	goCmd string // TODO(bentheelder): should be an option possibly
-	arch  string // TODO(bentheelder): should be an option
 }
 
 // Option is BuildContext configuration option supplied to NewBuildContext
@@ -65,8 +61,6 @@ func WithImage(image string) Option {
 func NewBuildContext(options ...Option) *BuildContext {
 	ctx := &BuildContext{
 		image: DefaultImage,
-		goCmd: "go",
-		arch:  util.GetArch(),
 	}
 	for _, option := range options {
 		option(ctx)
@@ -105,34 +99,8 @@ func (c *BuildContext) Build() (err error) {
 
 	log.Infof("Building base image in: %s", buildDir)
 
-	// build the entrypoint binary first
-	if err := c.buildEntrypoint(buildDir); err != nil {
-		return err
-	}
-
 	// then the actual docker image
 	return c.buildImage(buildDir)
-}
-
-// builds the entrypoint binary
-func (c *BuildContext) buildEntrypoint(dir string) error {
-	// NOTE: this binary only uses the go1 stdlib, and is a single file
-	entrypointSrc := filepath.Join(dir, "entrypoint", "main.go")
-	entrypointDest := filepath.Join(dir, "entrypoint", "entrypoint")
-
-	cmd := exec.Command(c.goCmd, "build", "-o", entrypointDest, entrypointSrc)
-	// TODO(bentheelder): we may need to map between docker image arch and GOARCH
-	cmd.SetEnv(append(os.Environ(), "GOOS=linux", "GOARCH="+c.arch)...)
-
-	// actually build
-	log.Info("Building entrypoint binary ...")
-	exec.InheritOutput(cmd)
-	if err := cmd.Run(); err != nil {
-		log.Errorf("Entrypoint build Failed! %v", err)
-		return err
-	}
-	log.Info("Entrypoint build completed.")
-	return nil
 }
 
 func (c *BuildContext) buildImage(dir string) error {

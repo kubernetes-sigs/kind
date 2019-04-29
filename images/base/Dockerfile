@@ -88,7 +88,7 @@ STOPSIGNAL SIGRTMIN+3
 # basically this just lets us set up some things before continuing on to systemd
 # while preserving that systemd is PID1
 # for how we leverage this, see pkg/cluster
-COPY [ "entrypoint/entrypoint", "/usr/local/bin/" ]
+COPY [ "entrypoint", "/usr/local/bin/" ]
 # We need systemd to be PID1 to run the various services (docker, kubelet, etc.)
 # NOTE: this is *only* for documentation, the entrypoint is overridden at runtime
 ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]

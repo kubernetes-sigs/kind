@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# Copyright 2019 The Kubernetes Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+configure_proxy() {
+    mkdir -p /etc/systemd/system/containerd.service.d/
+    cat <<EOF >/etc/systemd/system/containerd.service.d/http-proxy.conf
+[Service]
+Environment="HTTP_PROXY=${HTTP_PROXY:-}"
+Environment="HTTPS_PROXY=${HTTPS_PROXY:-}"
+Environment="NO_PROXY=${NO_PROXY:-}"
+EOF
+}
+
+fix_mount() {
+    # necessary only when userns-remap is enabled on the host, but harmless
+    # The binary /bin/mount should be owned by root and have the setuid bit
+    chown root:root /bin/mount
+    chmod -s /bin/mount
+
+    # systemd-in-a-container should have read only /sys
+    # https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
+    # however, we need other things from `docker run --privileged` ...
+    # and this flag also happens to make /sys rw, amongst other things
+    mount -o remount,ro /sys
+}
+
+fix_machine_id() {
+    # Deletes the machine-id embedded in the node image and generates a new one.
+	# This is necessary because both kubelet and other components like weave net
+	# use machine-id internally to distinguish nodes.
+	rm -f /etc/machine-id
+	systemd-machine-id-setup
+}
+
+# run pre-init fixups
+fix_mount
+fix_machine_id
+configure_proxy
+
+# we want the command (expected to be systemd) to be PID1, so exec to it
+exec "$@"

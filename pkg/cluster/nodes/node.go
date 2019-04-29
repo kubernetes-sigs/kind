@@ -112,12 +112,6 @@ func (n *Node) Name() string {
 	return n.name
 }
 
-// SignalStart sends SIGUSR1 to the node, which signals our entrypoint to boot
-// see images/node/entrypoint
-func (n *Node) SignalStart() error {
-	return docker.Kill("SIGUSR1", n.name)
-}
-
 // CopyTo copies the source file on the host to dest on the node
 func (n *Node) CopyTo(source, dest string) error {
 	return docker.CopyTo(source, n.name, dest)
@@ -129,32 +123,6 @@ func (n *Node) CopyTo(source, dest string) error {
 //     otherwise it should be refactored in something more robust in the long term
 func (n *Node) CopyFrom(source, dest string) error {
 	return docker.CopyFrom(n.name, source, dest)
-}
-
-// FixMounts will correct mounts in the node container to meet the right
-// sharing and permissions for systemd and Docker / Kubernetes
-func (n *Node) FixMounts() error {
-	// Check if userns-remap is enabled
-	if docker.UsernsRemap() {
-		// The binary /bin/mount should be owned by root:root in order to execute
-		// the following mount commands
-		if err := n.Command("chown", "root:root", "/bin/mount").Run(); err != nil {
-			return err
-		}
-		// The binary /bin/mount should have the setuid bit
-		if err := n.Command("chmod", "-s", "/bin/mount").Run(); err != nil {
-			return err
-		}
-	}
-
-	// systemd-in-a-container should have read only /sys
-	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
-	// however, we need other things from `docker run --privileged` ...
-	// and this flag also happens to make /sys rw, amongst other things
-	if err := n.Command("mount", "-o", "remount,ro", "/sys").Run(); err != nil {
-		return err
-	}
-	return nil
 }
 
 // KubeVersion returns the Kubernetes version installed on the node
@@ -305,37 +273,6 @@ func (n *Node) WriteFile(dest, content string) error {
 	}
 
 	return n.Command("cp", "/dev/stdin", dest).SetStdin(strings.NewReader(content)).Run()
-}
-
-// NeedProxy returns true if the host environment appears to have proxy settings
-func NeedProxy() bool {
-	details := getProxyDetails()
-	return len(details.Envs) > 0
-}
-
-// SetProxy configures proxy settings for the node
-//
-// Currently it only creates systemd drop-in for Docker daemon
-// as described in Docker documentation: https://docs.docker.com/config/daemon/systemd/#http-proxy
-//
-// See also: NeedProxy and getProxyDetails
-func (n *Node) SetProxy() error {
-	details := getProxyDetails()
-	// configure Docker daemon to use proxy
-	proxies := ""
-	for key, val := range details.Envs {
-		proxies += fmt.Sprintf("\"%s=%s\" ", key, val)
-	}
-
-	// TODO(bentheelder): containerd
-
-	err := n.WriteFile("/etc/systemd/system/docker.service.d/http-proxy.conf",
-		"[Service]\nEnvironment="+proxies)
-	if err != nil {
-		errors.Wrap(err, "failed to create http-proxy drop-in")
-	}
-
-	return nil
 }
 
 // proxyDetails contains proxy settings discovered on the host

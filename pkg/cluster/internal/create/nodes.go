@@ -105,12 +105,7 @@ func createNodeContainers(
 		go func() {
 			defer wg.Done()
 			// create the node into a container (docker run, but it is paused, see createNode)
-			node, err := desiredNode.Create(clusterLabel)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			err = fixupNode(node)
+			_, err := desiredNode.Create(clusterLabel)
 			if err != nil {
 				errChan <- err
 				return
@@ -133,31 +128,6 @@ func createNodeContainers(
 	}
 
 	status.End(true)
-	return nil
-}
-
-func fixupNode(node *nodes.Node) error {
-	// we need to change a few mounts once we have the container
-	// we'd do this ahead of time if we could, but --privileged implies things
-	// that don't seem to be configurable, and we need that flag
-	if err := node.FixMounts(); err != nil {
-		// TODO(bentheelder): logging here
-		return err
-	}
-
-	if nodes.NeedProxy() {
-		if err := node.SetProxy(); err != nil {
-			// TODO: logging here
-			return errors.Wrapf(err, "failed to set proxy for node %s", node.Name())
-		}
-	}
-
-	// signal the node container entrypoint to continue booting into systemd
-	if err := node.SignalStart(); err != nil {
-		// TODO(bentheelder): logging here
-		return err
-	}
-
 	return nil
 }
 
