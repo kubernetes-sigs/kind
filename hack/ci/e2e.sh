@@ -108,7 +108,7 @@ create_cluster() {
 kind: Cluster
 apiVersion: kind.sigs.k8s.io/v1alpha3
 nodes:
-# the control plane node
+# the control plane node / apiservers
 - role: control-plane
   extraMounts:
   - hostPath: /tmp/audit-policy.yaml
@@ -123,9 +123,9 @@ kubeadmConfigPatches:
   metadata:
     name: config
 EOF
-    KUBEADM_MINOR=$(kubeadm version 2>&1 | perl -pe 's/(^.*Minor:")([0-9]+)(.*$)/\2/')
     env
     find /
+    #KUBEADM_MINOR=$(kubeadm version 2>&1 | perl -pe 's/(^.*Minor:")([0-9]+)(.*$)/\2/')
     #kubeadm version >  "${ARTIFACTS}/kubeadmi-version"
     #echo $KUBEADM_MINOR > "${ARTIFACTS}/kubeadm_minor"
     if echo $JOB_NAME | grep 1-11\\\|1-12
