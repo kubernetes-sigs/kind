@@ -128,12 +128,12 @@ EOF
     #KUBEADM_MINOR=$(kubeadm version 2>&1 | perl -pe 's/(^.*Minor:")([0-9]+)(.*$)/\2/')
     #kubeadm version >  "${ARTIFACTS}/kubeadmi-version"
     #echo $KUBEADM_MINOR > "${ARTIFACTS}/kubeadm_minor"
-    if echo $JOB_NAME | grep 1-11\\\|1-12
+    if echo $JOB_NAME | grep 1-11\\\|1-12\\\|1-13
     then
-        echo Patching for kubeadm.k8s.io/v1alpha3
-        cat <<ALPHA3_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
+        echo Patching for kubeadm.k8s.io/v1alpha2
+        cat <<ALPHA_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
   # v1alpha2 works for kubeadm 1.11-1.12
-  apiVersion: kubeadm.k8s.io/v1alpha3
+  apiVersion: kubeadm.k8s.io/v1alpha2
   apiServer:
     extraArgs:
       audit-log-path: /var/log/apiserver-audit.log
@@ -149,7 +149,7 @@ EOF
     readOnly: false
     hostPath: /var/log/apiserver-audit.log
     mountPath: /var/log/apiserver-audit.log
-ALPHA3_CONFIG
+ALPHA_CONFIG
     else
         echo Patching for kubeadm.k8s.io/v1beta1
         cat <<BETA1_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
