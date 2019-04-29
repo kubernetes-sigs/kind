@@ -85,7 +85,7 @@ func imagesBaseDockerfile() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "images/base/Dockerfile", size: 0, mode: os.FileMode(438), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "images/base/Dockerfile", size: 0, mode: os.FileMode(511), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -105,7 +105,7 @@ func imagesBaseCleanInstall() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "images/base/clean-install", size: 0, mode: os.FileMode(438), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "images/base/clean-install", size: 0, mode: os.FileMode(511), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -125,7 +125,7 @@ func imagesBaseEntrypoint() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "images/base/entrypoint", size: 0, mode: os.FileMode(438), modTime: time.Unix(0, 0)}
+	info := bindataFileInfo{name: "images/base/entrypoint", size: 0, mode: os.FileMode(511), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
