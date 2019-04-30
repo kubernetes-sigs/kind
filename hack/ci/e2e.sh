@@ -126,8 +126,8 @@ EOF
         cat <<ALPHA_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
 kubeadmConfigPatches:
 - |
-  #metadata:
-  #  name: config
+  metadata:
+    name: config
   # v1alpha2 works for kubeadm 1.11-1.12
   kind: MasterConfiguration
   apiVersion: kubeadm.k8s.io/v1alpha2
@@ -152,6 +152,8 @@ ALPHA_CONFIG
         cat <<BETA1_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
 kubeadmConfigPatches:
 - |
+  metadata:
+    name: config
   # v1beta1 works for 1.13+
   kind: ClusterConfiguration
   apiVersion: kubeadm.k8s.io/v1beta1
