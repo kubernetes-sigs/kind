@@ -72,9 +72,10 @@ func CombinedOutputLines(cmd Cmd) (lines []string, err error) {
 }
 
 // InheritOutput sets cmd's output to write to the current process's stdout and stderr
-func InheritOutput(cmd Cmd) {
+func InheritOutput(cmd Cmd) Cmd {
 	cmd.SetStderr(os.Stderr)
 	cmd.SetStdout(os.Stdout)
+	return cmd
 }
 
 // RunLoggingOutputOnFail runs the cmd, logging error output if Run returns an error

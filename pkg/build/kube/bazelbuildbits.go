@@ -21,8 +21,12 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
+
+	"sigs.k8s.io/kind/pkg/container/docker"
 
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/util/version"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/util"
 )
@@ -62,7 +66,8 @@ func (b *BazelBuildBits) Build() error {
 
 	// TODO(bentheelder): we assume the host arch, but cross compiling should
 	// be possible now
-	bazelGoosGoarch := fmt.Sprintf("linux_%s", util.GetArch())
+	arch := util.GetArch()
+	bazelGoosGoarch := fmt.Sprintf("linux_%s", arch)
 
 	// build artifacts
 	cmd := exec.Command(
@@ -82,7 +87,68 @@ func (b *BazelBuildBits) Build() error {
 	b.paths = b.findPaths(bazelGoosGoarch)
 
 	// capture version info
-	return buildVersionFile(b.kubeRoot)
+	rawVersion, err := buildVersionFile(b.kubeRoot)
+	if err != nil {
+		return err
+	}
+
+	// additional special handling for old kubernetes versions + bazel
+	// before Kubernetes v1.12.0 kubeadm requires arch specific images, instead
+	// later releases use manifest list images
+	// we must re-tag them here
+	ver, err := version.ParseGeneric(rawVersion)
+	if err != nil {
+		return err
+	}
+	// only < 1.12.0 has this problem
+	if !ver.LessThan(version.MustParseSemantic("v1.12.0")) {
+		return nil
+	}
+
+	// fix all tar files
+	for path := range b.paths {
+		if !strings.HasSuffix(path, ".tar") {
+			continue
+		}
+		if err := fixOldImageTags(path, arch); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func fixOldImageTags(path, arch string) error {
+	// open input at path and create a fixed file at path+.fixed
+	in, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	out, err := os.Create(path + ".fixed")
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// create a tarball with corrected tags
+	archSuffix := "-" + arch
+	repositoryFixer := func(repository string) string {
+		if !strings.HasSuffix(repository, archSuffix) {
+			println("fixed: " + repository + " -> " + repository + archSuffix)
+			repository = repository + archSuffix
+		}
+		return repository
+	}
+	if err := docker.EditArchiveRepositories(in, out, repositoryFixer); err != nil {
+		return err
+	}
+
+	// replace the original file with the fixed file
+	in.Close()
+	out.Sync()
+	out.Close()
+	return os.Rename(out.Name(), in.Name())
 }
 
 func (b *BazelBuildBits) findPaths(bazelGoosGoarch string) map[string]string {

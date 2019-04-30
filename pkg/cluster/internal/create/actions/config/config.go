@@ -57,7 +57,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	kubeVersion, err := node.KubeVersion()
 	if err != nil {
 		// TODO(bentheelder): logging here
-		return errors.Wrap(err, "failed to get kubernetes version from node: %v")
+		return errors.Wrap(err, "failed to get kubernetes version from node")
 	}
 
 	// get the control plane endpoint, in case the cluster has an external load balancer in

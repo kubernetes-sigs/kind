@@ -84,7 +84,8 @@ func (b *DockerBuildBits) Build() error {
 	}
 
 	// capture version info
-	return buildVersionFile(b.kubeRoot)
+	_, err = buildVersionFile(b.kubeRoot)
+	return err
 }
 
 func dockerBuildOsAndArch() string {

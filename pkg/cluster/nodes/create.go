@@ -146,11 +146,9 @@ func createNode(name, image, clusterLabel, role string, mounts []cri.Mount, extr
 	}
 
 	// pass proxy environment variables to be used by node's docker deamon
-	if NeedProxy() {
-		proxyDetails := getProxyDetails()
-		for key, val := range proxyDetails.Envs {
-			runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", key, val))
-		}
+	proxyDetails := getProxyDetails()
+	for key, val := range proxyDetails.Envs {
+		runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", key, val))
 	}
 
 	// adds node specific args
@@ -180,17 +178,6 @@ func createNode(name, image, clusterLabel, role string, mounts []cri.Mount, extr
 	}
 	if err != nil {
 		return handle, errors.Wrap(err, "docker run error")
-	}
-
-	// Deletes the machine-id embedded in the node image and regenerate a new one.
-	// This is necessary because both kubelet and other components like weave net
-	// use machine-id internally to distinguish nodes.
-	if err := handle.Command("rm", "-f", "/etc/machine-id").Run(); err != nil {
-		return handle, errors.Wrap(err, "machine-id-setup error")
-	}
-
-	if err := handle.Command("systemd-machine-id-setup").Run(); err != nil {
-		return handle, errors.Wrap(err, "machine-id-setup error")
 	}
 
 	return handle, nil

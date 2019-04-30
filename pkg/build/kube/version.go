@@ -31,10 +31,11 @@ import (
 // buildVersionFile creates a file for the kubernetes git version in
 // ./_output/version based on hack/print-workspace-status.sh,
 // these are built into the node image and consumed by the cluster tooling
-func buildVersionFile(kubeRoot string) error {
+// the raw version is also returned
+func buildVersionFile(kubeRoot string) (string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
-		return err
+		return "", err
 	}
 	os.Chdir(kubeRoot)
 	// make sure we cd back when done
@@ -44,7 +45,7 @@ func buildVersionFile(kubeRoot string) error {
 	cmd := exec.Command("hack/print-workspace-status.sh")
 	output, err := exec.CombinedOutputLines(cmd)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// we will place the file in _output with other build artifacts
@@ -56,27 +57,27 @@ func buildVersionFile(kubeRoot string) error {
 	_ = os.Mkdir(outputDir, os.ModePerm)
 
 	// parse it, and populate it into _output/git_version
-	wroteVersion := false
+	version := ""
 	for _, line := range output {
 		parts := strings.SplitN(line, " ", 2)
 		if len(parts) != 2 {
 			log.Errorf("Could not parse kubernetes version, output: %s", strings.Join(output, "\n"))
-			return errors.New("could not parse kubernetes version")
+			return "", errors.New("could not parse kubernetes version")
 		}
 		if parts[0] == "gitVersion" {
+			version = parts[1]
 			if err := ioutil.WriteFile(
 				filepath.Join(outputDir, "git_version"),
-				[]byte(parts[1]),
+				[]byte(version),
 				0777,
 			); err != nil {
-				return errors.Wrap(err, "failed to write version file")
+				return "", errors.Wrap(err, "failed to write version file")
 			}
-			wroteVersion = true
 		}
 	}
-	if !wroteVersion {
+	if version == "" {
 		log.Errorf("Could not obtain kubernetes version, output: %s", strings.Join(output, "\n"))
-		return errors.New("could not obtain kubernetes version")
+		return "", errors.New("could not obtain kubernetes version")
 	}
-	return nil
+	return version, nil
 }

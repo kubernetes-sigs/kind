@@ -98,6 +98,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	}
 
 	// Load the image into every node
+	// TODO(bentheelder): this should probably be concurrent
 	for _, node := range selectedNodes {
 		if err := loadImage(args[0], &node); err != nil {
 			return err
@@ -107,20 +108,10 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 }
 
 func loadImage(imageTarName string, node *clusternodes.Node) error {
-	// Copy image tar to each node
 	f, err := os.Open(imageTarName)
 	if err != nil {
 		return errors.Wrap(err, "failed to open image")
 	}
 	defer f.Close()
-
-	// Load image into each node
-	cmd := node.Command(
-		"docker", "load",
-	)
-	cmd.SetStdin(f)
-	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "failed to load image")
-	}
-	return nil
+	return node.LoadImageArchive(f)
 }

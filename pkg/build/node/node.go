@@ -44,7 +44,7 @@ import (
 const DefaultImage = "kindest/node:latest"
 
 // DefaultBaseImage is the default base image used
-const DefaultBaseImage = "kindest/base:v20190402-b53e1df"
+const DefaultBaseImage = "kindest/base:v20190430-8023742"
 
 // DefaultMode is the default kubernetes build mode for the built image
 // see pkg/build/kube.Bits
@@ -255,7 +255,7 @@ func (c *BuildContext) buildImage(dir string) error {
 		}()
 	}
 	if err != nil {
-		log.Errorf("Image build Failed! %v", err)
+		log.Errorf("Image build Failed! Failed to create build container: %v", err)
 		return err
 	}
 
@@ -273,13 +273,13 @@ func (c *BuildContext) buildImage(dir string) error {
 
 	// make artifacts directory
 	if err = execInBuild("mkdir", "/kind/"); err != nil {
-		log.Errorf("Image build Failed! %v", err)
+		log.Errorf("Image build Failed! Failed to make directory %v", err)
 		return err
 	}
 
 	// copy artifacts in
 	if err = execInBuild("rsync", "-r", "/build/bits/", "/kind/"); err != nil {
-		log.Errorf("Image build Failed! %v", err)
+		log.Errorf("Image build Failed! Failed to sync bits: %v", err)
 		return err
 	}
 
@@ -289,7 +289,7 @@ func (c *BuildContext) buildImage(dir string) error {
 		containerID: containerID,
 	}
 	if err = c.bits.Install(ic); err != nil {
-		log.Errorf("Image build Failed! %v", err)
+		log.Errorf("Image build Failed! Failed to install Kubernetes: %v", err)
 		return err
 	}
 
@@ -297,21 +297,33 @@ func (c *BuildContext) buildImage(dir string) error {
 	if err = execInBuild("/bin/sh", "-c",
 		`echo "KUBELET_EXTRA_ARGS=--fail-swap-on=false" >> /etc/default/kubelet`,
 	); err != nil {
-		log.Errorf("Image build Failed! %v", err)
+		log.Errorf("Image build Failed! Failed to add kubelet extra args: %v", err)
 		return err
 	}
 
 	// pre-pull images that were not part of the build
 	if err = c.prePullImages(dir, containerID); err != nil {
-		log.Errorf("Image build Failed! %v", err)
+		log.Errorf("Image build Failed! Failed to pull Images: %v", err)
 		return err
 	}
 
 	// Save the image changes to a new image
-	cmd := exec.Command("docker", "commit", containerID, c.image)
+	cmd := exec.Command(
+		"docker", "commit",
+		/*
+			The snapshot storage must be a volume to avoid overlay on overlay
+
+			NOTE: we do this last because changing a volume with a docker image
+			must occur before defining it.
+
+			See: https://docs.docker.com/engine/reference/builder/#volume
+		*/
+		"--change", `VOLUME [ "/var/lib/containerd" ]`,
+		containerID, c.image,
+	)
 	exec.InheritOutput(cmd)
 	if err = cmd.Run(); err != nil {
-		log.Errorf("Image build Failed! %v", err)
+		log.Errorf("Image build Failed! Failed to save image: %v", err)
 		return err
 	}
 
@@ -436,6 +448,24 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 		log.Errorf("Image build Failed! Failed chown images dir %v", err)
 		return err
 	}
+
+	// preload images into containerd
+	// TODO(bentheelder): we can skip the move and chown steps if we go directly to this
+	// NOTE: we _expect_ errors on import, because containerd will try to unpack into
+	// the snapshotter, but we're actually just trying to get the images into the content
+	// store.
+	// see https://github.com/containerd/containerd/blob/master/design/architecture.md
+	// TODO(bentheelder): the API is actually Import(); Unpack(), we should be able
+	// to skip unpackaging and avoid the errors
+	if err = inheritOutputAndRun(cmder.Command(
+		"bash", "-c",
+		// TODO(bentheelder): error handling? (this will always return the rm)
+		`containerd & find /kind/images -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import; kill %1; rm -rf /kind/images/*`,
+	)); err != nil {
+		log.Errorf("Image build Failed! Failed to load images into containerd %v", err)
+		return err
+	}
+
 	return nil
 }
 
