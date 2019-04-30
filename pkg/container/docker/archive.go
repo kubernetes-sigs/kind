@@ -98,9 +98,15 @@ func EditArchiveRepositories(reader io.Reader, writer io.Writer, edit func(strin
 		// edit the repostories and manifests files when we find them
 		if hdr.Name == "repositories" {
 			b, err = editRepositories(b, edit)
+			if err != nil {
+				return err
+			}
 			hdr.Size = int64(len(b))
 		} else if hdr.Name == "manifest.json" {
 			b, err = editManifestRepositories(b, edit)
+			if err != nil {
+				return err
+			}
 			hdr.Size = int64(len(b))
 		}
 

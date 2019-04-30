@@ -48,6 +48,9 @@ func NewAction() actions.Action {
 // Execute runs the action
 func (a *Action) Execute(ctx *actions.ActionContext) error {
 	allNodes, err := ctx.Nodes()
+	if err != nil {
+		return err
+	}
 
 	// join secondary control plane nodes if any
 	secondaryControlPlanes, err := nodes.SecondaryControlPlaneNodes(allNodes)
