@@ -123,12 +123,9 @@ kubeadmConfigPatches:
   metadata:
     name: config
 EOF
-    env
-    find /
     #KUBEADM_MINOR=$(kubeadm version 2>&1 | perl -pe 's/(^.*Minor:")([0-9]+)(.*$)/\2/')
     #kubeadm version >  "${ARTIFACTS}/kubeadmi-version"
-    #echo $KUBEADM_MINOR > "${ARTIFACTS}/kubeadm_minor"
-    if echo $JOB_NAME | grep 1-11\\\|1-12\\\|1-13
+    if echo $JOB_NAME | grep 1-12
     then
         echo Patching for kubeadm.k8s.io/v1alpha2
         cat <<ALPHA_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
@@ -153,7 +150,7 @@ ALPHA_CONFIG
     else
         echo Patching for kubeadm.k8s.io/v1beta1
         cat <<BETA1_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
-  # v1beta1 works for 1.13-1.14
+  # v1beta1 works for 1.13+
   apiVersion: kubeadm.k8s.io/v1beta1
   apiServer:
     extraArgs:
