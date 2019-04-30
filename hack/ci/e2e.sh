@@ -117,10 +117,6 @@ nodes:
     containerPath: /var/log/apiserver-audit.log
 - role: worker
 - role: worker
-kubeadmConfigPatches:
-- |
-  metadata:
-    name: config
 EOF
     # open to other ways to detect the kubeadm version
     # MasterConfiguration changed to ClusterConfiguration in 1.13
@@ -128,6 +124,10 @@ EOF
     then
         echo Patching for kubeadm.k8s.io/v1alpha2
         cat <<ALPHA_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
+kubeadmConfigPatches:
+- |
+  #metadata:
+  #  name: config
   # v1alpha2 works for kubeadm 1.11-1.12
   kind: MasterConfiguration
   apiVersion: kubeadm.k8s.io/v1alpha2
@@ -150,6 +150,8 @@ ALPHA_CONFIG
     else
         echo Patching for kubeadm.k8s.io/v1beta1
         cat <<BETA1_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
+kubeadmConfigPatches:
+- |
   # v1beta1 works for 1.13+
   kind: ClusterConfiguration
   apiVersion: kubeadm.k8s.io/v1beta1
