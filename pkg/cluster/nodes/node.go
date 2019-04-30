@@ -19,6 +19,7 @@ package nodes
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -273,6 +274,20 @@ func (n *Node) WriteFile(dest, content string) error {
 	}
 
 	return n.Command("cp", "/dev/stdin", dest).SetStdin(strings.NewReader(content)).Run()
+}
+
+// LoadImageArchive will load the image contents in the image reader to the
+// k8s.io namespace on the node such that the image can be used from a
+// Kubernetes pod
+func (n *Node) LoadImageArchive(image io.Reader) error {
+	cmd := n.Command(
+		"ctr", "--namespace=k8s.io", "images", "import", "-",
+	)
+	cmd.SetStdin(image)
+	if err := cmd.Run(); err != nil {
+		return errors.Wrap(err, "failed to load image")
+	}
+	return nil
 }
 
 // proxyDetails contains proxy settings discovered on the host
