@@ -71,7 +71,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 
 	// mark success
 	ctx.Status.End(true)
-	fmt.Printf(" • Ready after %s 💚\n", formatDuration(time.Now().Sub(startTime)))
+	fmt.Printf(" • Ready after %s 💚\n", formatDuration(time.Since(startTime)))
 	return nil
 }
 
