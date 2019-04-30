@@ -105,7 +105,7 @@ kubeletConfiguration:
 controllerManagerExtraArgs:
   enable-hostpath-provisioner: "true"
 nodeRegistration:
-	criSocket: "/run/containerd/containerd.sock"
+  criSocket: "/run/containerd/containerd.sock"
 ---
 apiVersion: kubeadm.k8s.io/v1alpha2
 kind: NodeConfiguration
