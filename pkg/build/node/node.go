@@ -457,11 +457,11 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	// see https://github.com/containerd/containerd/blob/master/design/architecture.md
 	// TODO(bentheelder): the API is actually Import(); Unpack(), we should be able
 	// to skip unpackaging and avoid the errors
-	if err = cmder.Command(
+	if err = inheritOutputAndRun(cmder.Command(
 		"bash", "-c",
 		// TODO(bentheelder): error handling? (this will always return the rm)
 		`containerd & find /kind/images -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import; kill %1; rm -rf /kind/images/*`,
-	).Run(); err != nil {
+	)); err != nil {
 		log.Errorf("Image build Failed! Failed to load images into containerd %v", err)
 		return err
 	}

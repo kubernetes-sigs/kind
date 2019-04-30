@@ -138,6 +138,7 @@ func fixOldImageTags(path, arch string) error {
 		for repository, tagsToRefs := range tags {
 			// ensure the suffix
 			if !strings.HasSuffix(repository, archSuffix) {
+				println("fixed: " + repository + " -> " + repository + archSuffix)
 				repository = repository + archSuffix
 			}
 			fixed[repository] = tagsToRefs
