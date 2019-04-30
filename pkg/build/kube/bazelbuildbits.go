@@ -132,20 +132,15 @@ func fixOldImageTags(path, arch string) error {
 	defer out.Close()
 
 	// create a tarball with corrected tags
-	tagFixer := func(tags docker.ArchiveRepositories) docker.ArchiveRepositories {
-		archSuffix := "-" + arch
-		fixed := make(docker.ArchiveRepositories)
-		for repository, tagsToRefs := range tags {
-			// ensure the suffix
-			if !strings.HasSuffix(repository, archSuffix) {
-				println("fixed: " + repository + " -> " + repository + archSuffix)
-				repository = repository + archSuffix
-			}
-			fixed[repository] = tagsToRefs
+	archSuffix := "-" + arch
+	repositoryFixer := func(repository string) string {
+		if !strings.HasSuffix(repository, archSuffix) {
+			println("fixed: " + repository + " -> " + repository + archSuffix)
+			repository = repository + archSuffix
 		}
-		return fixed
+		return repository
 	}
-	if err := docker.EditArchiveRepositories(in, out, tagFixer); err != nil {
+	if err := docker.EditArchiveRepositories(in, out, repositoryFixer); err != nil {
 		return err
 	}
 

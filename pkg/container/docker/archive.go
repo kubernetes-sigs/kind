@@ -25,6 +25,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -76,15 +77,8 @@ func GetArchiveTags(path string) ([]string, error) {
 	return res, nil
 }
 
-// ArchiveRepositories represents repository:tag:ref
-//
-// https://github.com/moby/moby/blob/master/image/spec/v1.md
-// https://github.com/moby/moby/blob/master/image/spec/v1.1.md
-// https://github.com/moby/moby/blob/master/image/spec/v1.2.md
-type ArchiveRepositories map[string]map[string]string
-
 // EditArchiveRepositories applies edit to reader's repositories file
-func EditArchiveRepositories(reader io.Reader, writer io.Writer, edit func(ArchiveRepositories) ArchiveRepositories) error {
+func EditArchiveRepositories(reader io.Reader, writer io.Writer, edit func(string) string) error {
 	tarReader := tar.NewReader(reader)
 	tarWriter := tar.NewWriter(writer)
 	// iterate all entries in the tarball
@@ -101,19 +95,12 @@ func EditArchiveRepositories(reader io.Reader, writer io.Writer, edit func(Archi
 			return err
 		}
 
-		// parse the tags if we found the repositories file
+		// edit the repostories and manifests files when we find them
 		if hdr.Name == "repositories" {
-			tags, err := parseRepositories(b)
-			if err != nil {
-				return err
-			}
-			// run the user's edit function
-			edit(tags)
-			// marshal back the tags for writing
-			b, err = json.Marshal(tags)
-			if err != nil {
-				return err
-			}
+			b, err = editRepositories(b, edit)
+			hdr.Size = int64(len(b))
+		} else if hdr.Name == "manifest.json" {
+			b, err = editManifestRepositories(b, edit)
 			hdr.Size = int64(len(b))
 		}
 
@@ -129,9 +116,62 @@ func EditArchiveRepositories(reader io.Reader, writer io.Writer, edit func(Archi
 	}
 }
 
+/* helpers */
+
+// archiveRepositories represents repository:tag:ref
+//
+// https://github.com/moby/moby/blob/master/image/spec/v1.md
+// https://github.com/moby/moby/blob/master/image/spec/v1.1.md
+// https://github.com/moby/moby/blob/master/image/spec/v1.2.md
+type archiveRepositories map[string]map[string]string
+
+func editRepositories(raw []byte, edit func(string) string) ([]byte, error) {
+	tags, err := parseRepositories(raw)
+	if err != nil {
+		return nil, err
+	}
+
+	fixed := make(archiveRepositories)
+	for repository, tagsToRefs := range tags {
+		fixed[edit(repository)] = tagsToRefs
+	}
+
+	return json.Marshal(fixed)
+}
+
+// https://github.com/moby/moby/blob/master/image/spec/v1.2.md#combined-image-json--filesystem-changeset-format
+type metadataEntry struct {
+	Config   string   `json:"Config"`
+	RepoTags []string `json:"RepoTags"`
+	Layers   []string `json:"Layers"`
+}
+
+func editManifestRepositories(raw []byte, edit func(string) string) ([]byte, error) {
+	var entries []metadataEntry
+	if err := json.Unmarshal(raw, &entries); err != nil {
+		return nil, err
+	}
+
+	for i, entry := range entries {
+		fixed := make([]string, len(entry.RepoTags))
+		for i, tag := range entry.RepoTags {
+			parts := strings.Split(tag, ":")
+			if len(parts) > 2 {
+				return nil, fmt.Errorf("invalid repotag: %s", entry)
+			}
+			parts[0] = edit(parts[0])
+			fixed[i] = strings.Join(parts, ":")
+		}
+
+		entries[i].RepoTags = fixed
+	}
+
+	return json.Marshal(entries)
+}
+
 // returns repository:tag:ref
-func parseRepositories(data []byte) (ArchiveRepositories, error) {
-	var repoTags ArchiveRepositories
+func parseRepositories(data []byte) (archiveRepositories, error) {
+	var repoTags archiveRepositories
 	if err := json.Unmarshal(data, &repoTags); err != nil {
 		return nil, err
 	}
