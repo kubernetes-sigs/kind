@@ -135,7 +135,6 @@ EOF
     extraArgs:
       audit-log-path: /var/log/apiserver-audit.log
       audit-policy-file: /etc/kubernetes/audit-policy.yaml
-      audit-log-maxsize: \"2000\"
   apiServerExtraVolumes:
   - name: auditpolicy
     pathType: File
@@ -158,7 +157,6 @@ ALPHA_CONFIG
     extraArgs:
       audit-log-path: /var/log/apiserver-audit.log
       audit-policy-file: /etc/kubernetes/audit-policy.yaml
-      audit-log-maxsize: \\"2000\\"
     extraVolumes:
     - name: auditpolicy
       pathType: File
