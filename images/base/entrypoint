@@ -49,9 +49,17 @@ fix_machine_id() {
 	systemd-machine-id-setup
 }
 
+fix_product_name() {
+    # this is a small fix to hide the underlying hardware and fix issue #426
+    # https://github.com/kubernetes-sigs/kind/issues/426
+    echo "kind" > /kind/product_name
+    mount -o ro,bind /kind/product_name /sys/class/dmi/id/product_name
+}
+
 # run pre-init fixups
 fix_mount
 fix_machine_id
+fix_product_name
 configure_proxy
 
 # we want the command (expected to be systemd) to be PID1, so exec to it
