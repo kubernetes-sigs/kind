@@ -90,7 +90,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	// the default is all nodes unless flags.Nodes is set
 	selectedNodes := nodes
 	if len(flags.Nodes) > 0 {
-		selectedNodes := []clusternodes.Node{}
+		selectedNodes = []clusternodes.Node{}
 		for _, name := range flags.Nodes {
 			node, ok := nodesByName[name]
 			if !ok {
