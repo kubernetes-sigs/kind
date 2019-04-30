@@ -119,22 +119,23 @@ nodes:
 - role: worker
 kubeadmConfigPatches:
 - |
-  kind: ClusterConfiguration
   metadata:
     name: config
 EOF
-    #KUBEADM_MINOR=$(kubeadm version 2>&1 | perl -pe 's/(^.*Minor:")([0-9]+)(.*$)/\2/')
-    #kubeadm version >  "${ARTIFACTS}/kubeadmi-version"
-    if echo $JOB_NAME | grep 1-12
+    # open to other ways to detect the kubeadm version
+    # MasterConfiguration changed to ClusterConfiguration in 1.13
+    if echo $JOB_NAME | grep 1-11\\\|1-12
     then
         echo Patching for kubeadm.k8s.io/v1alpha2
         cat <<ALPHA_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
   # v1alpha2 works for kubeadm 1.11-1.12
+  kind: MasterConfiguration
   apiVersion: kubeadm.k8s.io/v1alpha2
   apiServer:
     extraArgs:
       audit-log-path: /var/log/apiserver-audit.log
       audit-policy-file: /etc/kubernetes/audit-policy.yaml
+      audit-log-maxsize: 2000
   apiServerExtraVolumes:
   - name: auditpolicy
     pathType: File
@@ -151,11 +152,13 @@ ALPHA_CONFIG
         echo Patching for kubeadm.k8s.io/v1beta1
         cat <<BETA1_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
   # v1beta1 works for 1.13+
+  kind: ClusterConfiguration
   apiVersion: kubeadm.k8s.io/v1beta1
   apiServer:
     extraArgs:
       audit-log-path: /var/log/apiserver-audit.log
       audit-policy-file: /etc/kubernetes/audit-policy.yaml
+      audit-log-maxsize: 2000
     extraVolumes:
     - name: auditpolicy
       pathType: File
