@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package kubeadmjoin implements the kubeadm config action
+// Package kubeadmjoin implements the kubeadm join action
 package kubeadmjoin
 
 import (
@@ -36,11 +36,11 @@ import (
 	"sigs.k8s.io/kind/pkg/fs"
 )
 
-// Action implements action for creating the kubeadm config
+// Action implements action for creating the kubeadm join
 // and deployng it on the bootrap control-plane node.
 type Action struct{}
 
-// NewAction returns a new action for creating the kubadm config
+// NewAction returns a new action for creating the kubeadm jion
 func NewAction() actions.Action {
 	return &Action{}
 }
@@ -214,6 +214,7 @@ func runKubeadmJoinControlPlane(
 		"--ignore-preflight-errors=all",
 		// increase verbosity for debug
 		"--v=6",
+		"--cri-socket=/run/containerd/containerd.sock",
 	)
 	lines, err := exec.CombinedOutputLines(cmd)
 	log.Debug(strings.Join(lines, "\n"))
@@ -238,6 +239,7 @@ func runKubeadmJoin(
 	}
 
 	// run kubeadm join
+	// TODO(bentheelder): this should be using the config file
 	cmd := node.Command(
 		"kubeadm", "join",
 		// the join command uses the docker ip and a well know port that
@@ -251,6 +253,7 @@ func runKubeadmJoin(
 		"--ignore-preflight-errors=all",
 		// increase verbosity for debugging
 		"--v=6",
+		"--cri-socket=/run/containerd/containerd.sock",
 	)
 	lines, err := exec.CombinedOutputLines(cmd)
 	log.Debug(strings.Join(lines, "\n"))
