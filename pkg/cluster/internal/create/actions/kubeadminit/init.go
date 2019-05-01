@@ -25,8 +25,8 @@ import (
 	"github.com/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
-	"sigs.k8s.io/kind/pkg/cluster/internal/haproxy"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
+	"sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/exec"
 )
@@ -151,7 +151,7 @@ func getAPIServerPort(allNodes []nodes.Node) (int32, error) {
 	}
 	// node will be nil if there is no load balancer
 	if node != nil {
-		return node.Ports(haproxy.ControlPlanePort)
+		return node.Ports(loadbalancer.ControlPlanePort)
 	}
 
 	// fallback to the bootstrap control plane

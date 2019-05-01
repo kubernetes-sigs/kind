@@ -22,8 +22,8 @@ import (
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/kind/pkg/cluster/constants"
-	"sigs.k8s.io/kind/pkg/cluster/internal/haproxy"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
+	"sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer"
 	"sigs.k8s.io/kind/pkg/container/cri"
 	"sigs.k8s.io/kind/pkg/container/docker"
 )
@@ -94,7 +94,7 @@ func CreateExternalLoadBalancerNode(name, image, clusterLabel, listenAddress str
 		nil,
 		// publish selected port for the control plane
 		"--expose", fmt.Sprintf("%d", port),
-		"-p", fmt.Sprintf("%s:%d:%d", listenAddress, port, haproxy.ControlPlanePort),
+		"-p", fmt.Sprintf("%s:%d:%d", listenAddress, port, loadbalancer.ControlPlanePort),
 	)
 	if err != nil {
 		return node, err
@@ -102,7 +102,7 @@ func CreateExternalLoadBalancerNode(name, image, clusterLabel, listenAddress str
 
 	// stores the port mapping into the node internal state
 	node.cache.set(func(cache *nodeCache) {
-		cache.ports = map[int32]int32{haproxy.ControlPlanePort: port}
+		cache.ports = map[int32]int32{loadbalancer.ControlPlanePort: port}
 	})
 
 	return node, nil
@@ -141,8 +141,6 @@ func createNode(name, image, clusterLabel, role string, mounts []cri.Mount, extr
 		"--label", clusterLabel,
 		// label the node with the role ID
 		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleKey, role),
-		// explicitly set the entrypoint
-		"--entrypoint=/usr/local/bin/entrypoint",
 	}
 
 	// pass proxy environment variables to be used by node's docker deamon
@@ -160,22 +158,14 @@ func createNode(name, image, clusterLabel, role string, mounts []cri.Mount, extr
 		runArgs = append(runArgs, "--userns=host")
 	}
 
-	id, err := docker.Run(
+	err = docker.Run(
 		image,
 		docker.WithRunArgs(runArgs...),
-		docker.WithContainerArgs(
-			// explicitly pass the entrypoint argument
-			"/sbin/init",
-		),
 		docker.WithMounts(mounts),
 	)
 
-	// if there is a returned ID then we did create a container
 	// we should return a handle so the caller can clean it up
-	// we'll return a handle with the nice name though
-	if id != "" {
-		handle = FromName(name)
-	}
+	handle = FromName(name)
 	if err != nil {
 		return handle, errors.Wrap(err, "docker run error")
 	}

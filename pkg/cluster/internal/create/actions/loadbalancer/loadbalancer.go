@@ -24,9 +24,10 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
-	"sigs.k8s.io/kind/pkg/cluster/internal/haproxy"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
+	"sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/container/docker"
 )
 
 // Action implements and action for configuring and starting the
@@ -57,7 +58,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// otherwise notify the user
-	ctx.Status.Start("Starting the external load balancer ⚖️")
+	ctx.Status.Start("Configuring the external load balancer ⚖️")
 	defer ctx.Status.End(false)
 
 	// collect info about the existing controlplane nodes
@@ -77,30 +78,24 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		backendServers[n.Name()] = fmt.Sprintf("%s:%d", controlPlaneIP, kubeadm.APIServerPort)
 	}
 
-	// create haproxy config data
-	haproxyConfig, err := haproxy.Config(&haproxy.ConfigData{
-		ControlPlanePort: haproxy.ControlPlanePort,
+	// create loadbalancer config data
+	loadbalancerConfig, err := loadbalancer.Config(&loadbalancer.ConfigData{
+		ControlPlanePort: loadbalancer.ControlPlanePort,
 		BackendServers:   backendServers,
 	})
 	if err != nil {
-		return errors.Wrap(err, "failed to generate haproxy data")
+		return errors.Wrap(err, "failed to generate loadbalancer config data")
 	}
 
-	// create haproxy config on the node
-	if err := loadBalancerNode.WriteFile("/kind/haproxy.cfg", haproxyConfig); err != nil {
+	// create loadbalancer config on the node
+	if err := loadBalancerNode.WriteFile(loadbalancer.ConfigPath, loadbalancerConfig); err != nil {
 		// TODO: logging here
-		return errors.Wrap(err, "failed to copy haproxy config to node")
+		return errors.Wrap(err, "failed to copy loadbalancer config to node")
 	}
 
-	// starts a docker container with HA proxy load balancer
-	if err := loadBalancerNode.Command(
-		"/bin/sh", "-c",
-		fmt.Sprintf(
-			"docker run -d -v /kind/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro --network host --restart always --name haproxy %s",
-			haproxy.Image,
-		),
-	).Run(); err != nil {
-		return errors.Wrap(err, "failed to start haproxy")
+	// reload the config
+	if err := docker.Kill("SIGHUP", loadBalancerNode.Name()); err != nil {
+		return errors.Wrap(err, "failed to reload loadbalancer")
 	}
 
 	ctx.Status.End(true)

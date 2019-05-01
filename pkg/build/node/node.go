@@ -25,19 +25,18 @@ import (
 	"strings"
 	"time"
 
-	"sigs.k8s.io/kind/pkg/util"
-
-	"k8s.io/apimachinery/pkg/util/version"
-
-	"k8s.io/apimachinery/pkg/util/sets"
-
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/version"
 
 	"sigs.k8s.io/kind/pkg/build/kube"
 	"sigs.k8s.io/kind/pkg/container/docker"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
+	"sigs.k8s.io/kind/pkg/util"
 )
 
 // DefaultImage is the default name:tag for the built image
@@ -473,7 +472,8 @@ func (c *BuildContext) createBuildContainer(buildDir string) (id string, err err
 	// attempt to explicitly pull the image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
 	_, _ = docker.PullIfNotPresent(c.baseImage, 4)
-	id, err = docker.Run(
+	id = "kind-build-" + uuid.New().String()
+	err = docker.Run(
 		c.baseImage,
 		docker.WithRunArgs(
 			"-d", // make the client exit while the container continues to run
@@ -482,6 +482,7 @@ func (c *BuildContext) createBuildContainer(buildDir string) (id string, err err
 			"-v", fmt.Sprintf("%s:/build", buildDir),
 			// the container should hang forever so we can exec in it
 			"--entrypoint=sleep",
+			"--name="+id,
 		),
 		docker.WithContainerArgs(
 			"infinity", // sleep infinitely to keep the container around

@@ -11,6 +11,7 @@ require (
 	github.com/gogo/protobuf v1.1.1 // indirect
 	github.com/golang/lint v0.0.0-20180702182130-06c8688daad7
 	github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf
+	github.com/google/uuid v1.1.1
 	github.com/googleapis/gnostic v0.2.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.5 // indirect

@@ -26,6 +26,7 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/constants"
+	"sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/container/cri"
 	logutil "sigs.k8s.io/kind/pkg/log"
@@ -197,7 +198,7 @@ func nodesToCreate(cfg *config.Cluster, clusterName string) []nodeSpec {
 		role := constants.ExternalLoadBalancerNodeRoleValue
 		desiredNodes = append(desiredNodes, nodeSpec{
 			Name:             nameNode(role),
-			Image:            controlPlaneImage, // TODO(bentheelder): get from config instead
+			Image:            loadbalancer.Image, // TODO(bentheelder): get from config instead
 			Role:             role,
 			ExtraMounts:      []cri.Mount{},
 			APIServerAddress: cfg.Networking.APIServerAddress,

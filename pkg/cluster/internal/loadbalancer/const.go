@@ -14,10 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package haproxy
+package loadbalancer
 
 // ControlPlanePort defines the port where the control plane is listening on the load balancer node
 const ControlPlanePort = 6443
 
-// Image defines the haproxy image:tag
-const Image = "haproxy:1.8.14-alpine"
+// Image defines the loadbalancer image:tag
+const Image = "nginx:1.15.12-alpine"
+
+// ConfigPath defines the path to the config file in the image
+const ConfigPath = "/etc/nginx/nginx.conf"
