@@ -123,7 +123,7 @@ EOF
     KUBE_VERSION=$(docker run --rm --entrypoint cat kindest/node:latest /kind/version)
     echo KUBE_VERSION=$KUBE_VERSION
     # MasterConfiguration changed to ClusterConfiguration in 1.13
-    if echo $KUBE_VERSION | grep ^v1.11\\\|^v1.12
+    if echo $KUBE_VERSION | grep ^v1.11
     then
         echo Patching for kubeadm.k8s.io/v1alpha2
         cat <<ALPHA_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
@@ -131,7 +131,7 @@ kubeadmConfigPatches:
 - |
   metadata:
     name: config
-  # v1alpha2 works for kubeadm 1.11-1.12
+  # v1alpha2 works for kubeadm 1.11
   kind: MasterConfiguration
   apiVersion: kubeadm.k8s.io/v1alpha2
   apiServer:
@@ -150,6 +150,59 @@ kubeadmConfigPatches:
     hostPath: /var/log/apiserver-audit.log
     mountPath: /var/log/apiserver-audit.log
 ALPHA_CONFIG
+    elif echo $KUBE_VERSION | grep ^v1.12
+        echo Patching for kubeadm.k8s.io/v1alpha3
+        cat <<ALPHA_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
+kubeadmConfigPatches:
+- |
+  metadata:
+    name: config
+  # v1alpha3 works for kubeadm 1.12
+  kind: MasterConfiguration
+  apiVersion: kubeadm.k8s.io/v1alpha3
+  apiServer:
+    extraArgs:
+      audit-log-path: /var/log/apiserver-audit.log
+      audit-policy-file: /etc/kubernetes/audit-policy.yaml
+  apiServerExtraVolumes:
+  - name: auditpolicy
+    pathType: File
+    readOnly: true
+    hostPath: /etc/kubernetes/audit-policy.yaml
+    mountPath: /etc/kubernetes/audit-policy.yaml
+  - name: auditlog
+    pathType: File
+    readOnly: false
+    hostPath: /var/log/apiserver-audit.log
+    mountPath: /var/log/apiserver-audit.log
+ALPHA_CONFIG
+    elif echo $KUBE_VERSION | grep ^v1.13
+            echo Patching for kubeadm.k8s.io/v1alpha3
+            cat <<ALPHA_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
+kubeadmConfigPatches:
+- |
+  metadata:
+    name: config
+  # v1alpha? works for kubeadm 1.13
+  kind: MasterConfiguration
+  apiVersion: kubeadm.k8s.io/v1alpha3
+  apiServer:
+    extraArgs:
+      audit-log-path: /var/log/apiserver-audit.log
+      audit-policy-file: /etc/kubernetes/audit-policy.yaml
+  apiServerExtraVolumes:
+  - name: auditpolicy
+    pathType: File
+    readOnly: true
+    hostPath: /etc/kubernetes/audit-policy.yaml
+    mountPath: /etc/kubernetes/audit-policy.yaml
+  - name: auditlog
+    pathType: File
+    readOnly: false
+    hostPath: /var/log/apiserver-audit.log
+    mountPath: /var/log/apiserver-audit.log
+ALPHA_CONFIG
+        else
     else
         echo Patching for kubeadm.k8s.io/v1beta1
         cat <<BETA1_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
@@ -157,7 +210,7 @@ kubeadmConfigPatches:
 - |
   metadata:
     name: config
-  # v1beta1 works for 1.13+
+  # v1beta1 works for 1.14+
   kind: ClusterConfiguration
   apiVersion: kubeadm.k8s.io/v1beta1
   apiServer:
