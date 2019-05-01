@@ -258,6 +258,8 @@ func (c *BuildContext) buildImage(dir string) error {
 		return err
 	}
 
+	log.Info("Building in " + containerID)
+
 	// helper we will use to run "build steps"
 	execInBuild := func(command ...string) error {
 		cmd := exec.Command("docker",
