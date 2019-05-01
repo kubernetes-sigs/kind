@@ -102,6 +102,7 @@ create_cluster() {
     cp $(dirname $0)/audit-policy.yaml /tmp/audit-policy.yaml
     touch "${ARTIFACTS}/apiserver-audit.log"
     # create the config file
+
     cat <<EOF > "${ARTIFACTS}/kind-config.yaml"
 # config for 1 control plane node and 2 workers
 # necessary for conformance
@@ -119,10 +120,10 @@ nodes:
 - role: worker
 EOF
     # open to other ways to detect the kubeadm version
-    # MasterConfiguration changed to ClusterConfiguration in 1.13
     KUBE_VERSION=$(docker run --rm --entrypoint cat kindest/node:latest /kind/version)
     echo KUBE_VERSION=$KUBE_VERSION
-    if echo $JOB_NAME | grep 1-11\\\|1-12
+    # MasterConfiguration changed to ClusterConfiguration in 1.13
+    if echo $KUBE_VERSION | grep ^v1.11\\\|^v1.12
     then
         echo Patching for kubeadm.k8s.io/v1alpha2
         cat <<ALPHA_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
