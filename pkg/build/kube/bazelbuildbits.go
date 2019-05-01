@@ -118,6 +118,7 @@ func (b *BazelBuildBits) Build() error {
 	return nil
 }
 
+// fixes the missing -$arch suffix on old kubernetes image archives
 func fixOldImageTags(path, arch string) error {
 	// open input at path and create a fixed file at path+.fixed
 	in, err := os.Open(path)

@@ -77,8 +77,17 @@ func GetArchiveTags(path string) ([]string, error) {
 	return res, nil
 }
 
-// EditArchiveRepositories applies edit to reader's repositories file
-func EditArchiveRepositories(reader io.Reader, writer io.Writer, edit func(string) string) error {
+// EditArchiveRepositories applies edit to reader's image repositories,
+// IE the repository part of repository:tag in image tags
+// This supports v1 / v1.1 / v1.2 Docker Image Archives
+//
+// editRepositories should be a function that returns the input or an edited
+// form, where hte input is the image repository
+//
+// https://github.com/moby/moby/blob/master/image/spec/v1.md
+// https://github.com/moby/moby/blob/master/image/spec/v1.1.md
+// https://github.com/moby/moby/blob/master/image/spec/v1.2.md
+func EditArchiveRepositories(reader io.Reader, writer io.Writer, editRepositories func(string) string) error {
 	tarReader := tar.NewReader(reader)
 	tarWriter := tar.NewWriter(writer)
 	// iterate all entries in the tarball
@@ -97,13 +106,13 @@ func EditArchiveRepositories(reader io.Reader, writer io.Writer, edit func(strin
 
 		// edit the repostories and manifests files when we find them
 		if hdr.Name == "repositories" {
-			b, err = editRepositories(b, edit)
+			b, err = editRepositoriesFile(b, editRepositories)
 			if err != nil {
 				return err
 			}
 			hdr.Size = int64(len(b))
 		} else if hdr.Name == "manifest.json" {
-			b, err = editManifestRepositories(b, edit)
+			b, err = editManifestRepositories(b, editRepositories)
 			if err != nil {
 				return err
 			}
@@ -131,7 +140,7 @@ func EditArchiveRepositories(reader io.Reader, writer io.Writer, edit func(strin
 // https://github.com/moby/moby/blob/master/image/spec/v1.2.md
 type archiveRepositories map[string]map[string]string
 
-func editRepositories(raw []byte, edit func(string) string) ([]byte, error) {
+func editRepositoriesFile(raw []byte, editRepositories func(string) string) ([]byte, error) {
 	tags, err := parseRepositories(raw)
 	if err != nil {
 		return nil, err
@@ -139,7 +148,7 @@ func editRepositories(raw []byte, edit func(string) string) ([]byte, error) {
 
 	fixed := make(archiveRepositories)
 	for repository, tagsToRefs := range tags {
-		fixed[edit(repository)] = tagsToRefs
+		fixed[editRepositories(repository)] = tagsToRefs
 	}
 
 	return json.Marshal(fixed)
@@ -152,7 +161,8 @@ type metadataEntry struct {
 	Layers   []string `json:"Layers"`
 }
 
-func editManifestRepositories(raw []byte, edit func(string) string) ([]byte, error) {
+// applies
+func editManifestRepositories(raw []byte, editRepositories func(string) string) ([]byte, error) {
 	var entries []metadataEntry
 	if err := json.Unmarshal(raw, &entries); err != nil {
 		return nil, err
@@ -165,7 +175,7 @@ func editManifestRepositories(raw []byte, edit func(string) string) ([]byte, err
 			if len(parts) > 2 {
 				return nil, fmt.Errorf("invalid repotag: %s", entry)
 			}
-			parts[0] = edit(parts[0])
+			parts[0] = editRepositories(parts[0])
 			fixed[i] = strings.Join(parts, ":")
 		}
 
