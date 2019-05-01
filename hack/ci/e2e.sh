@@ -120,6 +120,8 @@ nodes:
 EOF
     # open to other ways to detect the kubeadm version
     # MasterConfiguration changed to ClusterConfiguration in 1.13
+    KUBE_VERSION=$(docker run --rm --entrypoint cat kindest/node:latest /kind/version)
+    echo KUBE_VERSION=$KUBE_VERSION
     if echo $JOB_NAME | grep 1-11\\\|1-12
     then
         echo Patching for kubeadm.k8s.io/v1alpha2
