@@ -19,6 +19,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -111,7 +112,24 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData) (path string
 	// apply patches
 	// TODO(bentheelder): this does not respect per node patches at all
 	// either make patches cluster wide, or change this
-	return kustomize.Build([]string{config}, patches, jsonPatches)
+	patched, err := kustomize.Build([]string{config}, patches, jsonPatches)
+	if err != nil {
+		return "", err
+	}
+	return removeMetadata(patched), nil
+}
+
+// trims out the metadata.name we put in the config for kustomize matching,
+// kubeadm will complain about this otherwise
+func removeMetadata(kustomized string) string {
+	return strings.Replace(
+		kustomized,
+		`metadata:
+  name: config
+`,
+		"",
+		-1,
+	)
 }
 
 func allPatchesFromConfig(cfg *config.Cluster) (patches []string, jsonPatches []kustomize.PatchJSON6902) {
