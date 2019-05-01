@@ -141,8 +141,6 @@ func createNode(name, image, clusterLabel, role string, mounts []cri.Mount, extr
 		"--label", clusterLabel,
 		// label the node with the role ID
 		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleKey, role),
-		// explicitly set the entrypoint
-		"--entrypoint=/usr/local/bin/entrypoint",
 	}
 
 	// pass proxy environment variables to be used by node's docker deamon
@@ -163,10 +161,6 @@ func createNode(name, image, clusterLabel, role string, mounts []cri.Mount, extr
 	id, err := docker.Run(
 		image,
 		docker.WithRunArgs(runArgs...),
-		docker.WithContainerArgs(
-			// explicitly pass the entrypoint argument
-			"/sbin/init",
-		),
 		docker.WithMounts(mounts),
 	)
 

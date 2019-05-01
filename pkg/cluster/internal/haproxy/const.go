@@ -20,4 +20,4 @@ package haproxy
 const ControlPlanePort = 6443
 
 // Image defines the haproxy image:tag
-const Image = "haproxy:1.8.14-alpine"
+const Image = "kindest/haproxy:0.1.0" //"haproxy:1.8.14-alpine"
