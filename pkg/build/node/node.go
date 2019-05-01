@@ -319,6 +319,8 @@ func (c *BuildContext) buildImage(dir string) error {
 			See: https://docs.docker.com/engine/reference/builder/#volume
 		*/
 		"--change", `VOLUME [ "/var/lib/containerd" ]`,
+		// we need to put this back after changing it when running the image
+		"--change", `ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]`,
 		containerID, c.image,
 	)
 	exec.InheritOutput(cmd)

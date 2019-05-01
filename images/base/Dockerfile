@@ -90,7 +90,7 @@ STOPSIGNAL SIGRTMIN+3
 # for how we leverage this, see pkg/cluster
 COPY [ "entrypoint", "/usr/local/bin/" ]
 # We need systemd to be PID1 to run the various services (docker, kubelet, etc.)
-# NOTE: this is *only* for documentation, the entrypoint is overridden at runtime
+# NOTE: this is *only* for documentation, the entrypoint is overridden by the node image
 ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]
 
 # TODO(bentheelder): deal with systemd MAC address assignment
