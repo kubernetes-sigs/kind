@@ -142,12 +142,16 @@ run_tests() {
     )"
 
     # ginkgo regexes
-    SKIP="${SKIP:-"Alpha|Kubectl|\\[(Disruptive|Feature:[^\\]]+|Flaky)\\]"}"
+    SKIP="${SKIP:-}"
     FOCUS="${FOCUS:-"\\[Conformance\\]"}"
     # if we set PARALLEL=true, skip serial tests set --ginkgo-parallel
     PARALLEL="${PARALLEL:-false}"
     if [[ "${PARALLEL}" == "true" ]]; then
-        SKIP="\\[Serial\\]|${SKIP}"
+        if [[ -z "${SKIP}" ]]; then
+            SKIP="\\[Serial\\]"
+        else
+            SKIP="\\[Serial\\]|${SKIP}"
+        fi
         KUBETEST_ARGS="${KUBETEST_ARGS} --ginkgo-parallel"
     fi
 
