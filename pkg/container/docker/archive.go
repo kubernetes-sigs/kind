@@ -82,7 +82,7 @@ func GetArchiveTags(path string) ([]string, error) {
 // This supports v1 / v1.1 / v1.2 Docker Image Archives
 //
 // editRepositories should be a function that returns the input or an edited
-// form, where hte input is the image repository
+// form, where the input is the image repository
 //
 // https://github.com/moby/moby/blob/master/image/spec/v1.md
 // https://github.com/moby/moby/blob/master/image/spec/v1.1.md
