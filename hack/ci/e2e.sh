@@ -126,7 +126,7 @@ EOF
     if echo $KUBE_VERSION | grep ^v1.11
     then
         echo Patching for kubeadm.k8s.io/v1alpha2
-        cat <<ALPHA_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
+        cat <<ALPHA2_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
 kubeadmConfigPatches:
 - |
   metadata:
@@ -149,10 +149,10 @@ kubeadmConfigPatches:
     readOnly: false
     hostPath: /var/log/apiserver-audit.log
     mountPath: /var/log/apiserver-audit.log
-ALPHA_CONFIG
+ALPHA2_CONFIG
     elif echo $KUBE_VERSION | grep ^v1.12
         echo Patching for kubeadm.k8s.io/v1alpha3
-        cat <<ALPHA_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
+        cat <<ALPHA3_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
 kubeadmConfigPatches:
 - |
   metadata:
@@ -175,17 +175,17 @@ kubeadmConfigPatches:
     readOnly: false
     hostPath: /var/log/apiserver-audit.log
     mountPath: /var/log/apiserver-audit.log
-ALPHA_CONFIG
+ALPHA3_CONFIG
     elif echo $KUBE_VERSION | grep ^v1.13
-            echo Patching for kubeadm.k8s.io/v1alpha3
-            cat <<ALPHA_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
+            echo Patching for kubeadm.k8s.io/v1alpha4
+            cat <<ALPHA4_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
 kubeadmConfigPatches:
 - |
   metadata:
     name: config
   # v1alpha? works for kubeadm 1.13
   kind: MasterConfiguration
-  apiVersion: kubeadm.k8s.io/v1alpha3
+  apiVersion: kubeadm.k8s.io/v1alpha4
   apiServer:
     extraArgs:
       audit-log-path: /var/log/apiserver-audit.log
@@ -201,8 +201,7 @@ kubeadmConfigPatches:
     readOnly: false
     hostPath: /var/log/apiserver-audit.log
     mountPath: /var/log/apiserver-audit.log
-ALPHA_CONFIG
-        else
+ALPHA4_CONFIG
     else
         echo Patching for kubeadm.k8s.io/v1beta1
         cat <<BETA1_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
