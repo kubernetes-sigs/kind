@@ -151,6 +151,7 @@ kubeadmConfigPatches:
     mountPath: /var/log/apiserver-audit.log
 ALPHA2_CONFIG
     elif echo $KUBE_VERSION | grep ^v1.12
+    then
         echo Patching for kubeadm.k8s.io/v1alpha3
         cat <<ALPHA3_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
 kubeadmConfigPatches:
@@ -177,8 +178,9 @@ kubeadmConfigPatches:
     mountPath: /var/log/apiserver-audit.log
 ALPHA3_CONFIG
     elif echo $KUBE_VERSION | grep ^v1.13
-            echo Patching for kubeadm.k8s.io/v1alpha4
-            cat <<ALPHA4_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
+    then
+         echo Patching for kubeadm.k8s.io/v1alpha4
+         cat <<ALPHA4_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
 kubeadmConfigPatches:
 - |
   metadata:
