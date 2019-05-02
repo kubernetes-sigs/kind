@@ -17,16 +17,11 @@ limitations under the License.
 package docker
 
 import (
-	"regexp"
-
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/container/cri"
 	"sigs.k8s.io/kind/pkg/exec"
 )
-
-// Docker container IDs are hex, more than one character, and on their own line
-var containerIDRegex = regexp.MustCompile("^[a-f0-9]+$")
 
 // RunOpt is an option for Run
 type RunOpt func(*runOpts) *runOpts
