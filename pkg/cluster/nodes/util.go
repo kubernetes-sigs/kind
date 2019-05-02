@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"sigs.k8s.io/kind/pkg/cluster/internal/haproxy"
+	"sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer"
 )
 
 // GetControlPlaneEndpoint returns the control plane endpoint in case the
@@ -31,14 +31,16 @@ func GetControlPlaneEndpoint(allNodes []Node) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// if there is no external load balancer
+	// if there is no external load balancer return the empty string
 	if node == nil {
 		return "", nil
 	}
-	// gets the IP of the load balancer
+
+	// get the IP and port for the load balancer
 	loadBalancerIP, err := node.IP()
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get IP for node: %s", node.Name())
 	}
-	return fmt.Sprintf("%s:%d", loadBalancerIP, haproxy.ControlPlanePort), nil
+
+	return fmt.Sprintf("%s:%d", loadBalancerIP, loadbalancer.ControlPlanePort), nil
 }

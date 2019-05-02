@@ -14,5 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package haproxy contains haproxy related constants and configuration
-package haproxy
+// Package loadbalancer contains external loadbalancer related constants and configuration
+package loadbalancer

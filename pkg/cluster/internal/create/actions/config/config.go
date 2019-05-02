@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
@@ -85,6 +86,8 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		// TODO(bentheelder): logging here
 		return errors.Wrap(err, "failed to generate kubeadm config content")
 	}
+
+	log.Debug("Using kubeadm config:\n" + kubeadmConfig)
 
 	// copy the config to the node
 	if err := node.WriteFile("/kind/kubeadm.conf", kubeadmConfig); err != nil {

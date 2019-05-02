@@ -19,7 +19,6 @@ package docker
 import (
 	"regexp"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/container/cri"
@@ -68,8 +67,7 @@ func WithMounts(mounts []cri.Mount) RunOpt {
 }
 
 // Run creates a container with "docker run", with some error handling
-// it will return the ID of the created container if any, even on error
-func Run(image string, opts ...RunOpt) (id string, err error) {
+func Run(image string, opts ...RunOpt) error {
 	o := &runOpts{}
 	for _, opt := range opts {
 		o = opt(o)
@@ -91,15 +89,7 @@ func Run(image string, opts ...RunOpt) (id string, err error) {
 		for _, line := range output {
 			log.Error(line)
 		}
-		return "", err
+		return err
 	}
-	// if docker created a container the id will be the first line and match
-	// validate the output and get the id
-	if len(output) < 1 {
-		return "", errors.New("failed to get container id, received no output from docker run")
-	}
-	if !containerIDRegex.MatchString(output[0]) {
-		return "", errors.Errorf("failed to get container id, output did not match: %v", output)
-	}
-	return output[0], nil
+	return nil
 }
