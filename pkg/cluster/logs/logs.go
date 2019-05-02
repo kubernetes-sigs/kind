@@ -18,16 +18,16 @@ package logs
 
 import (
 	"archive/tar"
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"os"
-	osexec "os/exec"
 	"path/filepath"
+	"sync"
+
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/util"
-	"sync"
 )
 
 type errFn func() error
@@ -70,21 +70,15 @@ func Collect(nodes []nodes.Node, dir string) error {
 		node := n // https://golang.org/doc/faq#closures_and_goroutines
 		name := node.String()
 		// grab all logs under /var/log (pods and containers)
-		cmd := osexec.Command("docker", "exec", name, "tar", "--hard-dereference", "-C", "/var/log", "-chf", "-", ".")
-		stdout, err := cmd.StdoutPipe()
-		if err != nil {
-			return err
-		}
-		if err := cmd.Start(); err != nil {
-			return err
-		}
-		log.Debugf("Running: %v %v", cmd.Path, cmd.Args)
-		if err := untar(stdout, filepath.Join(dir, name)); err != nil {
-			return errors.Wrapf(err, "Untarring %q: %v", name, err)
-		}
-		if err := cmd.Wait(); err != nil {
-			return err
-		}
+		cmd := node.Command("tar", "--hard-dereference", "-C", "/var/log", "-chf", "-", ".")
+
+		exec.RunWithStdoutReader(cmd, func(outReader io.Reader) error {
+			if err := untar(outReader, filepath.Join(dir, name)); err != nil {
+				return errors.Wrapf(err, "Untarring %q: %v", name, err)
+			}
+			return nil
+		})
+
 		fns = append(fns, func() error {
 			return coalesce(
 				// record info about the node container
