@@ -111,11 +111,6 @@ apiVersion: kind.sigs.k8s.io/v1alpha3
 nodes:
 # the control plane node / apiservers
 - role: control-plane
-  extraMounts:
-  - hostPath: /tmp/audit-policy.yaml
-    containerPath: /etc/kubernetes/audit-policy.yaml
-  - hostPath: "${ARTIFACTS}/apiserver-audit.log"
-    containerPath: /var/log/apiserver-audit.log
 - role: worker
 - role: worker
 EOF
@@ -127,6 +122,11 @@ EOF
     then
         echo Patching for kubeadm.k8s.io/v1alpha2
         cat <<ALPHA2_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
+  extraMounts:
+  - hostPath: /tmp/audit-policy.yaml
+    containerPath: /etc/kubernetes/audit-policy.yaml
+  - hostPath: "${ARTIFACTS}/apiserver-audit.log"
+    containerPath: /var/log/apiserver-audit.log
 kubeadmConfigPatches:
 - |
   metadata:
@@ -152,61 +152,18 @@ kubeadmConfigPatches:
 ALPHA2_CONFIG
     elif echo $KUBE_VERSION | grep ^v1.12
     then
-        echo Patching for kubeadm.k8s.io/v1alpha3
-        cat <<ALPHA3_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
-kubeadmConfigPatches:
-- |
-  metadata:
-    name: config
-  # v1alpha3 works for kubeadm 1.12
-  kind: MasterConfiguration
-  apiVersion: kubeadm.k8s.io/v1alpha3
-  apiServer:
-    extraArgs:
-      audit-log-path: /var/log/apiserver-audit.log
-      audit-policy-file: /etc/kubernetes/audit-policy.yaml
-  apiServerExtraVolumes:
-  - name: auditpolicy
-    pathType: File
-    readOnly: true
-    hostPath: /etc/kubernetes/audit-policy.yaml
-    mountPath: /etc/kubernetes/audit-policy.yaml
-  - name: auditlog
-    pathType: File
-    readOnly: false
-    hostPath: /var/log/apiserver-audit.log
-    mountPath: /var/log/apiserver-audit.log
-ALPHA3_CONFIG
+        echo not Patching for v1.12 kubeadm.k8s.io/v1alpha3?
     elif echo $KUBE_VERSION | grep ^v1.13
     then
-         echo Patching for kubeadm.k8s.io/v1alpha4
-         cat <<ALPHA4_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
-kubeadmConfigPatches:
-- |
-  metadata:
-    name: config
-  # v1alpha? works for kubeadm 1.13
-  kind: MasterConfiguration
-  apiVersion: kubeadm.k8s.io/v1alpha4
-  apiServer:
-    extraArgs:
-      audit-log-path: /var/log/apiserver-audit.log
-      audit-policy-file: /etc/kubernetes/audit-policy.yaml
-  apiServerExtraVolumes:
-  - name: auditpolicy
-    pathType: File
-    readOnly: true
-    hostPath: /etc/kubernetes/audit-policy.yaml
-    mountPath: /etc/kubernetes/audit-policy.yaml
-  - name: auditlog
-    pathType: File
-    readOnly: false
-    hostPath: /var/log/apiserver-audit.log
-    mountPath: /var/log/apiserver-audit.log
-ALPHA4_CONFIG
+        echo not Patching for v1.13 kubeadm.k8s.io/v1alpha4?
     else
         echo Patching for kubeadm.k8s.io/v1beta1
         cat <<BETA1_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
+  extraMounts:
+  - hostPath: /tmp/audit-policy.yaml
+    containerPath: /etc/kubernetes/audit-policy.yaml
+  - hostPath: "${ARTIFACTS}/apiserver-audit.log"
+    containerPath: /var/log/apiserver-audit.log
 kubeadmConfigPatches:
 - |
   metadata:
