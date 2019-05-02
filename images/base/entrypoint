@@ -19,12 +19,15 @@ set -o nounset
 set -o pipefail
 
 configure_proxy() {
+  # Don't use proxy for the local network
+  LOCAL_NETWORK=$(ip route list dev eth0 proto kernel | awk '{ print $1 }')
+
   mkdir -p /etc/systemd/system/containerd.service.d/
   cat <<EOF >/etc/systemd/system/containerd.service.d/http-proxy.conf
 [Service]
 Environment="HTTP_PROXY=${HTTP_PROXY:-}"
 Environment="HTTPS_PROXY=${HTTPS_PROXY:-}"
-Environment="NO_PROXY=${NO_PROXY:-}"
+Environment="NO_PROXY=${NO_PROXY:-localhost},${LOCAL_NETWORK}"
 EOF
 }
 
