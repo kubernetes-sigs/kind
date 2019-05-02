@@ -93,3 +93,29 @@ func RunLoggingOutputOnFail(cmd Cmd) error {
 	}
 	return err
 }
+
+// RunWithStdoutReader runs cmd with stdout piped to readerFunc
+func RunWithStdoutReader(cmd Cmd, readerFunc func(io.Reader) error) error {
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		return err
+	}
+	defer pw.Close()
+	defer pr.Close()
+	cmd.SetStdout(pw)
+
+	errChan := make(chan error, 1)
+	go func() {
+		errChan <- readerFunc(pr)
+	}()
+
+	err = cmd.Run()
+	err2 := <-errChan
+	if err != nil {
+		return err
+	}
+	if err2 != nil {
+		return err2
+	}
+	return nil
+}
