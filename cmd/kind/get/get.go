@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/cmd/kind/get/clusters"
+	"sigs.k8s.io/kind/cmd/kind/get/kubeconfig"
 	"sigs.k8s.io/kind/cmd/kind/get/kubeconfigpath"
 	"sigs.k8s.io/kind/cmd/kind/get/nodes"
 )
@@ -31,12 +32,13 @@ func NewCommand() *cobra.Command {
 		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
 		Use:   "get",
-		Short: "Gets one of [clusters, nodes, kubeconfig-path]",
-		Long:  "Gets one of [clusters, nodes, kubeconfig-path]",
+		Short: "Gets one of [clusters, nodes, kubeconfig, kubeconfig-path]",
+		Long:  "Gets one of [clusters, nodes, kubeconfig, kubeconfig-path]",
 	}
 	// add subcommands
 	cmd.AddCommand(clusters.NewCommand())
 	cmd.AddCommand(nodes.NewCommand())
+	cmd.AddCommand(kubeconfig.NewCommand())
 	cmd.AddCommand(kubeconfigpath.NewCommand())
 	return cmd
 }
