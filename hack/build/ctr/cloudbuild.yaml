@@ -1,0 +1,28 @@
+# simple cloudbuild to build github.com/contianerd/containerd/cmd/ctr
+steps:
+- name: gcr.io/cloud-builders/go:debian
+  args:
+  - build
+  - -o
+  - ./bin/ctr
+  - -ldflags
+  # https://github.com/containerd/containerd/blob/a17c8095716415cebb1157a27db5fccace56b0fc/Makefile#L94
+  - -s -w -X ${_PKG}/version.Version=${_VERSION} -X ${_PKG}/version.Revision=${_REVISION} -X ${_PKG}/version.Package=${_PKG}
+  - ${_PKG}/cmd/ctr
+  env:
+  - PROJECT_ROOT=github.com/containerd/containerd
+  - CGO_ENABLED=0
+  - GOARCH=${_GOARCH}
+  - GOOS=${_GOOS}
+substitutions:
+  _GOOS: linux
+  _GOARCH: amd64
+  _BUCKET: bentheelder-kind-dev/containerd
+  _PKG: github.com/containerd/containerd
+  _VERSION: unknown
+  _REVISION: unknown
+artifacts:
+  objects:
+    location: gs://${_BUCKET}/${_GOOS}/${_GOARCH}/
+    paths:
+    - bin/ctr

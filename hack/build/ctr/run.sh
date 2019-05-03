@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# Copyright 2019 The Kubernetes Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# simple script to run cloudbuilds for ctr for each arch kind supports
+# NOTE: this is temporary, we only need to build ctr until our (tiny!)
+# --no-unpack patch is available in the standard package
+
+set -o errexit
+set -o nounset
+set -o pipefail
+set -o xtrace
+
+# cd to the repo root
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "${REPO_ROOT}"
+
+# options
+PROJECT="${PROJECT:-bentheelder-kind-dev}"
+BUCKET="${BUCKET:-bentheelder-kind-dev/containerd}"
+# https://github.com/BenTheElder/containerd/tree/kind
+# https://github.com/containerd/containerd/pull/3259
+CONTAINERD_SOURCE="${CONTAINERD_SOURCE:-$(go env GOPATH)/src/github.com/containerd/containerd}"
+CONTAINERD_BRANCH="${CONTAINERD_BRANCH:-kind}"
+CTR_CLOUDBUILD="${REPO_ROOT}/hack/build/ctr/cloudbuild.yaml"
+
+# make sure we submit the build to the righr project
+gcloud config set core/project "${PROJECT}"
+
+# make sure we cleanup on exit
+cleanup() {
+    rm -f "${CONTAINERD_SOURCE}/.gcloudignore"
+}
+trap cleanup EXIT INT
+
+# cd to containerd, checkout the patched branch
+cd "${CONTAINERD_SOURCE}"
+git checkout "${CONTAINERD_BRANCH}"
+
+# TODO(bentheelder): this is hacky, compute what the makefile would have computed
+# so we can just go build the one package with our own flags
+# https://github.com/containerd/containerd/blob/a17c8095716415cebb1157a27db5fccace56b0fc/Makefile#L22-L24
+VERSION=$(git describe --match 'v[0-9]*' --dirty='.m' --always)
+REVISION=$(git rev-parse HEAD)$(if ! git diff --no-ext-diff --quiet --exit-code; then echo .m; fi)
+
+# we need to upload .git for version detection, so add a blank .gcloudignore
+# https://cloud.google.com/sdk/gcloud/reference/topic/gcloudignore
+touch .gcloudignore
+
+# submit a build for each arch
+GOARCHES=(
+  "arm64"
+  "amd64"
+  "ppc64le"
+)
+for arch in "${GOARCHES[@]}"; do
+  gcloud builds submit \
+    --config="${CTR_CLOUDBUILD}" \
+    --substitutions="_GOARCH=${arch},_BUCKET=${BUCKET},_VERSION=${VERSION},_REVISION=${REVISION}" \
+    .
+done
