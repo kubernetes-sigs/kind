@@ -77,8 +77,11 @@ RUN clean-install \
     && echo "done installing packages"
 
 # debug containerd version and create default config
+# additionally, disable some plugins we don't use / support
 RUN containerd --version \
-    && mkdir -p /etc/containerd && containerd config default > /etc/containerd/config.toml
+    && mkdir -p /etc/containerd \
+    && echo 'disabled_plugins = ["aufs", "btrfs", "zfs"]' > /etc/containerd/config.toml \
+    && containerd config default >> /etc/containerd/config.toml
 
 # Install CNI binaries to /opt/cni/bin
 # TODO(bentheelder): doc why / what here
