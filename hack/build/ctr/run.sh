@@ -35,14 +35,8 @@ CONTAINERD_SOURCE="${CONTAINERD_SOURCE:-$(go env GOPATH)/src/github.com/containe
 CONTAINERD_BRANCH="${CONTAINERD_BRANCH:-kind}"
 CTR_CLOUDBUILD="${REPO_ROOT}/hack/build/ctr/cloudbuild.yaml"
 
-# make sure we submit the build to the righr project
+# make sure we submit the build to the right project
 gcloud config set core/project "${PROJECT}"
-
-# make sure we cleanup on exit
-cleanup() {
-    rm -f "${CONTAINERD_SOURCE}/.gcloudignore"
-}
-trap cleanup EXIT INT
 
 # cd to containerd, checkout the patched branch
 cd "${CONTAINERD_SOURCE}"
@@ -53,10 +47,6 @@ git checkout "${CONTAINERD_BRANCH}"
 # https://github.com/containerd/containerd/blob/a17c8095716415cebb1157a27db5fccace56b0fc/Makefile#L22-L24
 VERSION=$(git describe --match 'v[0-9]*' --dirty='.m' --always)
 REVISION=$(git rev-parse HEAD)$(if ! git diff --no-ext-diff --quiet --exit-code; then echo .m; fi)
-
-# we need to upload .git for version detection, so add a blank .gcloudignore
-# https://cloud.google.com/sdk/gcloud/reference/topic/gcloudignore
-touch .gcloudignore
 
 # submit a build for each arch
 GOARCHES=(
