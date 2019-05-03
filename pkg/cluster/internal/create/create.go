@@ -33,6 +33,8 @@ import (
 	logutil "sigs.k8s.io/kind/pkg/log"
 
 	configaction "sigs.k8s.io/kind/pkg/cluster/internal/create/actions/config"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installcni"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installstorage"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/kubeadminit"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/kubeadmjoin"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/loadbalancer"
@@ -85,6 +87,8 @@ func Cluster(ctx *context.Context, cfg *config.Cluster, opts *Options) error {
 	if opts.SetupKubernetes {
 		actionsToRun = append(actionsToRun,
 			kubeadminit.NewAction(),                   // run kubeadm init
+			installcni.NewAction(),                    // install CNI
+			installstorage.NewAction(),                // install StorageClass
 			kubeadmjoin.NewAction(),                   // run kubeadm join
 			waitforready.NewAction(opts.WaitForReady), // wait for cluster readiness
 		)

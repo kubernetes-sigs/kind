@@ -18,6 +18,12 @@ limitations under the License.
 package kubeadminit
 
 import (
+	"bytes"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -88,35 +94,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	kubeConfigPath := ctx.ClusterContext.KubeConfigPath()
-	if err := node.WriteKubeConfig(kubeConfigPath, hostPort); err != nil {
+	if err := writeKubeConfig(node, kubeConfigPath, hostPort); err != nil {
 		return errors.Wrap(err, "failed to get kubeconfig from node")
-	}
-
-	// install the CNI network plugin
-	// TODO(bentheelder): this should possibly be a different action?
-	// TODO(bentheelder): support other overlay networks
-	// first probe for a pre-installed manifest
-	haveDefaultCNIManifest := true
-	if err := node.Command("test", "-f", "/kind/manifests/default-cni.yaml").Run(); err != nil {
-		haveDefaultCNIManifest = false
-	}
-	if haveDefaultCNIManifest {
-		// we found the default manifest, install that
-		// the images should already be loaded along with kubernetes
-		if err := node.Command(
-			"kubectl", "create", "--kubeconfig=/etc/kubernetes/admin.conf",
-			"-f", "/kind/manifests/default-cni.yaml",
-		).Run(); err != nil {
-			return errors.Wrap(err, "failed to apply overlay network")
-		}
-	} else {
-		// fallback to our old pattern of installing weave using their recommended method
-		if err := node.Command(
-			"/bin/sh", "-c",
-			`kubectl apply --kubeconfig=/etc/kubernetes/admin.conf -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version --kubeconfig=/etc/kubernetes/admin.conf | base64 | tr -d '\n')"`,
-		).Run(); err != nil {
-			return errors.Wrap(err, "failed to apply overlay network")
-		}
 	}
 
 	// if we are only provisioning one node, remove the master taint
@@ -130,15 +109,48 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 	}
 
-	// add the default storage class
-	// TODO(bentheelder): this should possibly be a different action?
-	if err := addDefaultStorageClass(node); err != nil {
-		return errors.Wrap(err, "failed to add default storage class")
-	}
-
 	// mark success
 	ctx.Status.End(true)
 	return nil
+}
+
+// matches kubeconfig server entry like:
+//    server: https://172.17.0.2:6443
+// which we rewrite to:
+//    server: https://localhost:$PORT
+var serverAddressRE = regexp.MustCompile(`^(\s+server:) https://.*:\d+$`)
+
+// writeKubeConfig writes a fixed KUBECONFIG to dest
+// this should only be called on a control plane node
+// While copyng to the host machine the control plane address
+// is replaced with local host and the control plane port with
+// a randomly generated port reserved during node creation.
+func writeKubeConfig(n *nodes.Node, dest string, hostPort int32) error {
+	cmd := n.Command("cat", "/etc/kubernetes/admin.conf")
+	lines, err := exec.CombinedOutputLines(cmd)
+	if err != nil {
+		return errors.Wrap(err, "failed to get kubeconfig from node")
+	}
+
+	// fix the config file, swapping out the server for the forwarded localhost:port
+	var buff bytes.Buffer
+	for _, line := range lines {
+		match := serverAddressRE.FindStringSubmatch(line)
+		if len(match) > 1 {
+			line = fmt.Sprintf("%s https://localhost:%d", match[1], hostPort)
+		}
+		buff.WriteString(line)
+		buff.WriteString("\n")
+	}
+
+	// create the directory to contain the KUBECONFIG file.
+	// 0755 is taken from client-go's config handling logic: https://github.com/kubernetes/client-go/blob/5d107d4ebc00ee0ea606ad7e39fd6ce4b0d9bf9e/tools/clientcmd/loader.go#L412
+	err = os.MkdirAll(filepath.Dir(dest), 0755)
+	if err != nil {
+		return errors.Wrap(err, "failed to create kubeconfig output directory")
+	}
+
+	return ioutil.WriteFile(dest, buff.Bytes(), 0600)
 }
 
 // getAPIServerPort returns the port on the host on which the APIServer
@@ -161,28 +173,4 @@ func getAPIServerPort(allNodes []nodes.Node) (int32, error) {
 	}
 
 	return node.Ports(kubeadm.APIServerPort)
-}
-
-// a default storage class
-// we need this for e2es (StatefulSet)
-const defaultStorageClassManifest = `# host-path based default storage class
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  namespace: kube-system
-  name: standard
-  annotations:
-    storageclass.beta.kubernetes.io/is-default-class: "true"
-  labels:
-    addonmanager.kubernetes.io/mode: EnsureExists
-provisioner: kubernetes.io/host-path`
-
-func addDefaultStorageClass(controlPlane *nodes.Node) error {
-	in := strings.NewReader(defaultStorageClassManifest)
-	cmd := controlPlane.Command(
-		"kubectl",
-		"--kubeconfig=/etc/kubernetes/admin.conf", "apply", "-f", "-",
-	)
-	cmd.SetStdin(in)
-	return cmd.Run()
 }
