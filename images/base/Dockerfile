@@ -37,7 +37,24 @@ RUN chmod +x /usr/local/bin/clean-install
 # - packages needed for kubernetes components
 # - misc packages kind uses itself
 # Then we cleanup (removing unwanted systemd services)
-# Finally we disable kmsg in journald
+# Then we disable kmsg in journald (these log entries would be confusing)
+#
+# ********************************<TEMPORARY>***********************************
+#
+# We then download a ctr binary with a tiny additional feature
+# we use that is not yet merged / packaged.
+#
+# See: https://github.com/containerd/containerd/pull/3259
+#
+# This binary is built with hack/build/ctr/run.sh
+# Sources: https://github.com/BenTheElder/containerd/tree/kind
+# Additional commit:
+# https://github.com/BenTheElder/containerd/commit/cb7c780af2394ab08d5d8a3932ca7437074ae179
+#
+# TODO(bentheelder): remove this once --no-unpack is packaged upstream.
+#
+# *******************************</TEMPORARY>***********************************
+#
 # https://developers.redhat.com/blog/2014/05/05/running-systemd-within-docker-container/
 RUN clean-install \
       systemd systemd-sysv libsystemd0 \
@@ -53,6 +70,10 @@ RUN clean-install \
     && rm -f /lib/systemd/system/basic.target.wants/* \
     && echo "ReadKMsg=no" >> /etc/systemd/journald.conf \
     && systemctl enable containerd \
+    && export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') \
+    && curl -fSL -o /usr/local/bin/ctr \
+      "https://storage.googleapis.com/bentheelder-kind-dev/containerd/linux/${ARCH}/ctr" \
+    && chmod +x /usr/local/bin/ctr \
     && echo "done installing packages"
 
 # debug containerd version and create default config
@@ -63,7 +84,7 @@ RUN containerd --version \
 # TODO(bentheelder): doc why / what here
 ARG CNI_VERSION="0.7.5"
 ARG CNI_BASE_URL="https://storage.googleapis.com/kubernetes-release/network-plugins/"
-RUN export ARCH=$(dpkg --print-architecture| sed 's/ppc64el/ppc64le/') \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') \
     && export CNI_TARBALL="cni-plugins-${ARCH}-v${CNI_VERSION}.tgz" \
     && export CNI_URL="${CNI_BASE_URL}${CNI_TARBALL}" \
     && curl -sSL --retry 5 --output /tmp/cni.tgz "${CNI_URL}" \
@@ -74,7 +95,7 @@ RUN export ARCH=$(dpkg --print-architecture| sed 's/ppc64el/ppc64le/') \
 
 # Install crictl to /usr/local/bin
 ARG CRICTL_VERSION="v1.14.0"
-RUN export ARCH=$(dpkg --print-architecture) \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') \
     && curl -fSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz" | tar xzC /usr/local/bin
 
 # tell systemd that it is in docker (it will check for the container env)
