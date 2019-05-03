@@ -454,16 +454,9 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 
 	// preload images into containerd
 	// TODO(bentheelder): we can skip the move and chown steps if we go directly to this
-	// NOTE: we _expect_ errors on import, because containerd will try to unpack into
-	// the snapshotter, but we're actually just trying to get the images into the content
-	// store.
-	// see https://github.com/containerd/containerd/blob/master/design/architecture.md
-	// TODO(bentheelder): the API is actually Import(); Unpack(), we should be able
-	// to skip unpackaging and avoid the errors
 	if err = inheritOutputAndRun(cmder.Command(
 		"bash", "-c",
-		// TODO(bentheelder): error handling? (this will always return the rm)
-		`containerd & find /kind/images -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import --no-unpack; kill %1; rm -rf /kind/images/*`,
+		`containerd & find /kind/images -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import --no-unpack && kill %1 && rm -rf /kind/images/*`,
 	)); err != nil {
 		log.Errorf("Image build Failed! Failed to load images into containerd %v", err)
 		return err
