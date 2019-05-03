@@ -463,7 +463,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	if err = inheritOutputAndRun(cmder.Command(
 		"bash", "-c",
 		// TODO(bentheelder): error handling? (this will always return the rm)
-		`containerd & find /kind/images -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import; kill %1; rm -rf /kind/images/*`,
+		`containerd & find /kind/images -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import --no-unpack; kill %1; rm -rf /kind/images/*`,
 	)); err != nil {
 		log.Errorf("Image build Failed! Failed to load images into containerd %v", err)
 		return err
