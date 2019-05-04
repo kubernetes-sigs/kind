@@ -21,16 +21,14 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sync"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/exec"
-	"sigs.k8s.io/kind/pkg/util"
-)
 
-type errFn func() error
+	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/concurrent"
+	"sigs.k8s.io/kind/pkg/exec"
+)
 
 // Collect collects logs related to / from the cluster nodes and the host
 // system to the specified directory
@@ -57,7 +55,7 @@ func Collect(nodes []nodes.Node, dir string) error {
 		}
 	}
 	// construct a slice of methods to collect logs
-	fns := []errFn{
+	fns := []func() error{
 		// TODO(bentheelder): record the kind version here as well
 		// record info about the host docker
 		execToPathFn(
@@ -80,7 +78,7 @@ func Collect(nodes []nodes.Node, dir string) error {
 		})
 
 		fns = append(fns, func() error {
-			return coalesce(
+			return concurrent.Coalesce(
 				// record info about the node container
 				execToPathFn(
 					exec.Command("docker", "inspect", name),
@@ -110,37 +108,9 @@ func Collect(nodes []nodes.Node, dir string) error {
 			)
 		})
 	}
-	// run and collect up all errors
-	return coalesce(fns...)
-}
 
-// colaese runs fns concurrently, returning an Errors if there are > 1 errors
-func coalesce(fns ...errFn) error {
-	// run all fns concurrently
-	ch := make(chan error, len(fns))
-	var wg sync.WaitGroup
-	for _, fn := range fns {
-		wg.Add(1)
-		go func(f errFn) {
-			defer wg.Done()
-			ch <- f()
-		}(fn)
-	}
-	wg.Wait()
-	close(ch)
-	// collect up and return errors
-	errs := []error{}
-	for err := range ch {
-		if err != nil {
-			errs = append(errs, err)
-		}
-	}
-	if len(errs) > 1 {
-		return util.Flatten(errs)
-	} else if len(errs) == 1 {
-		return errs[0]
-	}
-	return nil
+	// run and collect up all errors
+	return concurrent.Coalesce(fns...)
 }
 
 // untar reads the tar file from r and writes it into dir.

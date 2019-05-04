@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"sync"
 
 	"github.com/pkg/errors"
 
@@ -28,6 +27,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/concurrent"
 	"sigs.k8s.io/kind/pkg/container/cri"
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
@@ -98,34 +98,17 @@ func createNodeContainers(
 	status.Start("Preparing nodes " + strings.Repeat("📦", len(desiredNodes)))
 
 	// create all of the node containers, concurrently
-	errChan := make(chan error, len(desiredNodes))
-	var wg sync.WaitGroup
+	fns := []func() error{}
 	for _, desiredNode := range desiredNodes {
 		desiredNode := desiredNode // capture loop variable
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			// create the node into a container (docker run, but it is paused, see createNode)
+		fns = append(fns, func() error {
+			// create the node into a container (~= docker run -d)
 			_, err := desiredNode.Create(clusterLabel)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			errChan <- nil
-		}()
-	}
-
-	// wait for all node creation to be done before closing
-	go func() {
-		defer close(errChan)
-		wg.Wait()
-	}()
-
-	// return the first error encountered if any
-	for err := range errChan {
-		if err != nil {
 			return err
-		}
+		})
+	}
+	if err := concurrent.UntilError(fns); err != nil {
+		return err
 	}
 
 	status.End(true)

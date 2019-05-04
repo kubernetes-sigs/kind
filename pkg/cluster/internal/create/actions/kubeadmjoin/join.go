@@ -23,7 +23,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -32,6 +31,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/concurrent"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
 )
@@ -107,30 +107,16 @@ func joinWorkers(
 	ctx.Status.Start("Joining worker nodes 🚜")
 	defer ctx.Status.End(false)
 
-	// create a channel for receieving worker results
-	errChan := make(chan error, len(workers))
 	// create the workers concurrently
-	var wg sync.WaitGroup
+	fns := []func() error{}
 	for _, node := range workers {
 		node := node // capture loop variable
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			errChan <- runKubeadmJoin(ctx, allNodes, &node)
-		}()
+		fns = append(fns, func() error {
+			return runKubeadmJoin(ctx, allNodes, &node)
+		})
 	}
-
-	// wait for all workers to be done before closing the channel
-	go func() {
-		defer close(errChan)
-		wg.Wait()
-	}()
-
-	// return the first error encountered if any
-	for err := range errChan {
-		if err != nil {
-			return err
-		}
+	if err := concurrent.UntilError(fns); err != nil {
+		return err
 	}
 
 	ctx.Status.End(true)
