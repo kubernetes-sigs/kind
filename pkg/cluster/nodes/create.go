@@ -124,6 +124,7 @@ func CreateWorkerNode(name, image, clusterLabel string, mounts []cri.Mount) (nod
 func createNode(name, image, clusterLabel, role string, mounts []cri.Mount, extraArgs ...string) (handle *Node, err error) {
 	runArgs := []string{
 		"-d", // run the container detached
+		"-t", // allocate a tty for entrypoint logs
 		// running containers in a container requires privileged
 		// NOTE: we could try to replicate this with --cap-add, and use less
 		// privileges, but this flag also changes some mounts that are necessary
