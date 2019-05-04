@@ -57,6 +57,7 @@ build() {
 echo "Building in parallel for:"
 build "linux" "amd64" & \
 build "linux" "arm64" & \
+build "linux" "ppc64le" & \
 build "darwin" "amd64" & \
 build "windows" "amd64" & \
 wait
