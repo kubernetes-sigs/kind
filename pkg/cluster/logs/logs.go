@@ -88,6 +88,10 @@ func Collect(nodes []nodes.Node, dir string) error {
 				),
 				// grab all of the node logs
 				execToPathFn(
+					exec.Command("docker", "logs", name),
+					filepath.Join(name, "serial.log"),
+				),
+				execToPathFn(
 					node.Command("cat", "/kind/version"),
 					filepath.Join(name, "kubernetes-version.txt"),
 				),
