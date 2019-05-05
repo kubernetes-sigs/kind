@@ -44,7 +44,7 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().StringVar(
 		&flags.Source, "source",
 		"",
-		"path to the base image sources",
+		"path to the base image sources, autodetected by default",
 	)
 	cmd.Flags().StringVar(
 		&flags.Image, "image",

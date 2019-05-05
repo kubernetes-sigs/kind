@@ -40,7 +40,7 @@ TAG="${DATE}-$(git describe --always --dirty)"
 IMAGE="kindest/base:${TAG}"
 
 # build
-(set -x; "${KIND}" build base-image --image="${IMAGE}")
+(set -x; "${KIND}" build base-image --image="${IMAGE}" --source="${REPO_ROOT}/images/base/")
 
 # push
 docker push "${IMAGE}"

@@ -18,12 +18,13 @@ limitations under the License.
 package base
 
 import (
+	"go/build"
 	"os"
 	"path/filepath"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"sigs.k8s.io/kind/pkg/build/base/sources"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
 )
@@ -79,22 +80,20 @@ func (c *BuildContext) Build() (err error) {
 	defer os.RemoveAll(tmpDir)
 
 	// populate with image sources
-	// if SourceDir is unset, use the baked in sources
+	// if SourceDir is unset then try to autodetect source dir
 	buildDir := tmpDir
 	if c.sourceDir == "" {
-		// populate with image sources
-		err = sources.RestoreAssets(buildDir, "images/base")
+		pkg, err := build.Default.Import("sigs.k8s.io/kind", build.Default.GOPATH, build.FindOnly)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed to locate sources")
 		}
-		buildDir = filepath.Join(buildDir, "images", "base")
+		c.sourceDir = filepath.Join(pkg.Dir, "images", "base")
+	}
 
-	} else {
-		err = fs.Copy(c.sourceDir, buildDir)
-		if err != nil {
-			log.Errorf("failed to copy sources to build dir %v", err)
-			return err
-		}
+	err = fs.Copy(c.sourceDir, buildDir)
+	if err != nil {
+		log.Errorf("failed to copy sources to build dir %v", err)
+		return err
 	}
 
 	log.Infof("Building base image in: %s", buildDir)
