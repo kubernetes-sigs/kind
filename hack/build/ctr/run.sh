@@ -29,18 +29,21 @@ cd "${REPO_ROOT}"
 # options
 PROJECT="${PROJECT:-bentheelder-kind-dev}"
 BUCKET="${BUCKET:-bentheelder-kind-dev/containerd}"
-# https://github.com/BenTheElder/containerd/tree/kind
+# default to the merge commit for:
 # https://github.com/containerd/containerd/pull/3259
+# ->
+# https://github.com/containerd/containerd/commit/d71c7ada27959fe04fad5390367e4fab215334b3
 CONTAINERD_SOURCE="${CONTAINERD_SOURCE:-$(go env GOPATH)/src/github.com/containerd/containerd}"
-CONTAINERD_BRANCH="${CONTAINERD_BRANCH:-kind}"
+CONTAINERD_REF="${CONTAINERD_REF:-d71c7ada27959fe04fad5390367e4fab215334b3}"
 CTR_CLOUDBUILD="${REPO_ROOT}/hack/build/ctr/cloudbuild.yaml"
 
 # make sure we submit the build to the right project
 gcloud config set core/project "${PROJECT}"
 
-# cd to containerd, checkout the patched branch
+# get current working directory to be the desired containerd ref
 cd "${CONTAINERD_SOURCE}"
-git checkout "${CONTAINERD_BRANCH}"
+git fetch --all
+git checkout "${CONTAINERD_REF}"
 
 # TODO(bentheelder): this is hacky, compute what the makefile would have computed
 # so we can just go build the one package with our own flags
