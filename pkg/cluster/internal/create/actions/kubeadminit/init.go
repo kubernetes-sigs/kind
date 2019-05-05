@@ -34,7 +34,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/exec"
 
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 // kubeadmInitAction implements action for executing the kubadm init
@@ -94,7 +94,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	kubeConfigPath := ctx.ClusterContext.KubeConfigPath()
-	if err := writeKubeConfig(node, kubeConfigPath, hostPort); err != nil {
+	clusterName := ctx.ClusterContext.Name()
+	if err := writeKubeConfig(node, kubeConfigPath, hostPort, clusterName); err != nil {
 		return errors.Wrap(err, "failed to get kubeconfig from node")
 	}
 
@@ -122,7 +123,9 @@ type genericYaml map[string]interface{}
 // While copying to the host machine the control plane address
 // is replaced with local host and the control plane port with
 // a randomly generated port reserved during node creation.
-func writeKubeConfig(n *nodes.Node, dest string, hostPort int32) error {
+// We also make the user reference id unique to allow to use
+// multiple kubeconfig files in the KUBECONFIG variable
+func writeKubeConfig(n *nodes.Node, dest string, hostPort int32, userSuffix string) error {
 	cmd := n.Command("cat", "/etc/kubernetes/admin.conf")
 	buff, err := exec.Output(cmd)
 	if err != nil {
@@ -134,7 +137,7 @@ func writeKubeConfig(n *nodes.Node, dest string, hostPort int32) error {
 		return errors.Wrap(err, "failed to parse kubeconfig file")
 	}
 
-	// fix the config file, swapping out the server for the forwarded localhost:port
+	// Swap out the server for the forwarded localhost:port
 	cluster := config["clusters"].([]interface{})[0].(map[interface{}]interface{})
 	for k, v := range cluster {
 		if k == "cluster" {
@@ -149,6 +152,41 @@ func writeKubeConfig(n *nodes.Node, dest string, hostPort int32) error {
 		}
 	}
 
+	// Must make the user reference id unique to our cluster to allow
+	// for using the kubeconfig file of multiple clusters at the same
+	// time in the KUBECONFIG variable.
+
+	// Add a suffix to the user reference id in the context section
+	// which is in the "contexts[0].context.user" field.
+	context := config["contexts"].([]interface{})[0].(map[interface{}]interface{})
+	var newUserName, oldUserName string
+	for k, v := range context {
+		if k == "context" {
+			contextMap := v.(map[interface{}]interface{})
+			for k, v = range contextMap {
+				if k == "user" {
+					oldUserName = fmt.Sprintf("%s", v)
+					newUserName = fmt.Sprintf("%s-%s", oldUserName, userSuffix)
+					contextMap[k] = newUserName
+					break
+				}
+			}
+			break
+		}
+	}
+
+	// Use the new user reference id in the users section
+	// which is in the "users[0].name" field.
+	// In the same loop, add the 'username' field in the "users[0].user" section.
+	user := config["users"].([]interface{})[0].(map[interface{}]interface{})
+	for k := range user {
+		if k == "name" {
+			user[k] = newUserName
+		} else if k == "user" {
+			userMap := user[k].(map[interface{}]interface{})
+			userMap["username"] = oldUserName
+		}
+	}
 	buff, err = yaml.Marshal(config)
 	if err != nil {
 		return errors.Wrap(err, "failed to create new yaml output for kubeconfig")
