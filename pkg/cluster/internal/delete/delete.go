@@ -46,5 +46,10 @@ func Cluster(c *context.Context) error {
 		fmt.Printf("$KUBECONFIG is still set to use %s even though that file has been deleted, remember to unset it\n", c.KubeConfigPath())
 	}
 
-	return nodes.Delete(n...)
+	err = nodes.Delete(n...)
+	if err != nil {
+		return errors.Wrap(err, "error deleting nodes")
+	}
+	// after all nodes have been deleted, we need delete the network
+	return nodes.DeleteNetwork(c.Name())
 }

@@ -177,12 +177,3 @@ func createNode(name, image, clusterLabel, role string, mounts []cri.Mount, extr
 
 	return handle, nil
 }
-
-// CreateNetwork create a bridge network for kind's cluster
-func CreateNetwork(name string) error {
-	if err := docker.CreateNetwork(name); err != nil {
-		return err
-	}
-
-	return nil
-}
