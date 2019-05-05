@@ -80,7 +80,24 @@ func provisionNodes(
 ) error {
 	defer status.End(false)
 
+	// create bridge network for nodes.
+	if err := createNetwork(status, clusterName); err != nil {
+		return err
+	}
+
 	if err := createNodeContainers(status, cfg, clusterName, clusterLabel); err != nil {
+		return err
+	}
+
+	status.End(true)
+	return nil
+}
+
+func createNetwork(status *logutil.Status, clusterName string) error {
+	defer status.End(false)
+
+	status.Start("Creating bridge network 🌉")
+	if err := nodes.CreateNetwork(clusterName); err != nil {
 		return err
 	}
 
