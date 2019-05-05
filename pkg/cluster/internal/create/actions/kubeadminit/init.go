@@ -18,12 +18,10 @@ limitations under the License.
 package kubeadminit
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -35,6 +33,8 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/exec"
+
+	yaml "gopkg.in/yaml.v2"
 )
 
 // kubeadmInitAction implements action for executing the kubadm init
@@ -114,33 +114,44 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	return nil
 }
 
-// matches kubeconfig server entry like:
-//    server: https://172.17.0.2:6443
-// which we rewrite to:
-//    server: https://localhost:$PORT
-var serverAddressRE = regexp.MustCompile(`^(\s+server:) https://.*:\d+$`)
+
+type genericYaml map[string]interface{}
 
 // writeKubeConfig writes a fixed KUBECONFIG to dest
 // this should only be called on a control plane node
-// While copyng to the host machine the control plane address
+// While copying to the host machine the control plane address
 // is replaced with local host and the control plane port with
 // a randomly generated port reserved during node creation.
 func writeKubeConfig(n *nodes.Node, dest string, hostPort int32) error {
 	cmd := n.Command("cat", "/etc/kubernetes/admin.conf")
-	lines, err := exec.CombinedOutputLines(cmd)
+	buff, err := exec.Output(cmd)
 	if err != nil {
 		return errors.Wrap(err, "failed to get kubeconfig from node")
 	}
 
+	var config genericYaml
+	if err = yaml.Unmarshal(buff, &config); err != nil {
+		return errors.Wrap(err, "failed to parse kubeconfig file")
+	}
+
 	// fix the config file, swapping out the server for the forwarded localhost:port
-	var buff bytes.Buffer
-	for _, line := range lines {
-		match := serverAddressRE.FindStringSubmatch(line)
-		if len(match) > 1 {
-			line = fmt.Sprintf("%s https://localhost:%d", match[1], hostPort)
+	cluster := config["clusters"].([]interface{})[0].(map[interface{}]interface{})
+	for k, v := range cluster {
+		if k == "cluster" {
+			clusterMap := v.(map[interface{}]interface{})
+			for k, v = range clusterMap {
+				if k == "server" {
+					clusterMap[k] = fmt.Sprintf("https://localhost:%d", hostPort)
+					break
+				}
+			}
+			break
 		}
-		buff.WriteString(line)
-		buff.WriteString("\n")
+	}
+
+	buff, err = yaml.Marshal(config)
+	if err != nil {
+		return errors.Wrap(err, "failed to create new yaml output for kubeconfig")
 	}
 
 	// create the directory to contain the KUBECONFIG file.
@@ -150,7 +161,7 @@ func writeKubeConfig(n *nodes.Node, dest string, hostPort int32) error {
 		return errors.Wrap(err, "failed to create kubeconfig output directory")
 	}
 
-	return ioutil.WriteFile(dest, buff.Bytes(), 0600)
+	return ioutil.WriteFile(dest, buff, 0600)
 }
 
 // getAPIServerPort returns the port on the host on which the APIServer
