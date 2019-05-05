@@ -42,6 +42,12 @@ fix_mount() {
   # however, we need other things from `docker run --privileged` ...
   # and this flag also happens to make /sys rw, amongst other things
   mount -o remount,ro /sys
+
+  # for mount propagation
+  # TODO(bentheelder): determine which exact mounts we need to do this on
+  mount --make-shared /
+  mount --make-shared /run
+  mount --make-shared /var/lib/containerd
 }
 
 fix_machine_id() {
