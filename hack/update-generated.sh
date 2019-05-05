@@ -26,7 +26,6 @@ export GO111MODULE="off"
 # install go-bindata from vendor locally
 OUTPUT_GOBIN="${REPO_ROOT}/_output/bin"
 cd "${REPO_ROOT}"
-GOBIN="${OUTPUT_GOBIN}" go install ./vendor/github.com/jteeuwen/go-bindata/go-bindata
 GOBIN="${OUTPUT_GOBIN}" go install ./vendor/k8s.io/code-generator/cmd/defaulter-gen
 GOBIN="${OUTPUT_GOBIN}" go install ./vendor/k8s.io/code-generator/cmd/deepcopy-gen
 GOBIN="${OUTPUT_GOBIN}" go install ./vendor/k8s.io/code-generator/cmd/conversion-gen
