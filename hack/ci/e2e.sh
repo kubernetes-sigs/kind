@@ -103,6 +103,14 @@ create_cluster() {
 # necessary for conformance
 kind: Cluster
 apiVersion: kind.sigs.k8s.io/v1alpha3
+kubeadmConfigPatches:
+- |
+  apiVersion: kubeadm.k8s.io/v1beta1
+  kind: ClusterConfiguration
+  metadata:
+    name: config
+  networking:
+    podSubnet: 10.244.0.0/16
 nodes:
 # the control plane node
 - role: control-plane
