@@ -56,7 +56,7 @@ func addResolve(node *Node) error {
 	}
 
 	// filter the loopback addresses
-	re := regexp.MustCompile("(?m)[\r\n]+^.*127.0.0.1.*$")
+	re := regexp.MustCompile("(?m)[\r\n]+^.*((127.([0-9]{1,3}.){2}[0-9]{1,3})|(::1)).*$")
 	content := re.ReplaceAllString(string(resolv), "")
 
 	err = node.WriteFile("/kind/resolv.conf", content)
