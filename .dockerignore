@@ -1,0 +1,6 @@
+.git/*
+
+_output/*
+_artifacts/*
+
+.vscode/*

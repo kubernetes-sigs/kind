@@ -34,12 +34,62 @@ func TempDir(dir, prefix string) (name string, err error) {
 	if err != nil {
 		return "", err
 	}
+
+	return fixTempPath(name), nil
+}
+
+func fixTempPath(path string) string {
 	// on macOS $TMPDIR is typically /var/..., which is not mountable
 	// /private/var/... is the mountable equivalent
-	if runtime.GOOS == "darwin" && strings.HasPrefix(name, "/var/") {
-		name = filepath.Join("/private", name)
+	if runtime.GOOS == "darwin" && strings.HasPrefix(path, "/var/") {
+		path = filepath.Join("/private", path)
 	}
-	return name, nil
+	return path
+}
+
+// TempFile is like ioutil.TempDir, but more docker friendly
+func TempFile(dir, prefix string) (f *os.File, err error) {
+	// create a tempdir as normal
+	f, err = ioutil.TempFile(dir, prefix)
+	if err != nil {
+		return nil, err
+	}
+
+	// figure out if the path is a problem, if so re-open at the fixed path
+	name := f.Name()
+	fixedName := fixTempPath(name)
+	// if we are going to use the same name, just return the original handle
+	if name == fixedName {
+		return f, nil
+	}
+
+	// otherwise re-open
+	fixed, err := os.Open(fixedName)
+	f.Close()
+	if err != nil {
+		// don't leak a file if we fail
+		os.Remove(name)
+		return nil, err
+	}
+	return fixed, nil
+}
+
+func AtomicWriteFile(path string, writeContent func(io.Writer) error) error {
+	// create a tempfile in the same dir
+	// rename is only safe within the same device, this is an easy solution
+	dir := filepath.Dir(path)
+	f, err := TempFile(dir, "")
+	if err != nil {
+		return err
+	}
+
+	if err := writeContent(f); err != nil {
+		// cleanup the tempfile
+		os.Remove(f.Name())
+		return err
+	}
+
+	return os.Rename(f.Name(), path)
 }
 
 // Copy recursively directories, symlinks, files copies from src to dst
