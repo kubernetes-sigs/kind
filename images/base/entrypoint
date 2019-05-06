@@ -61,8 +61,10 @@ fix_machine_id() {
 fix_product_name() {
   # this is a small fix to hide the underlying hardware and fix issue #426
   # https://github.com/kubernetes-sigs/kind/issues/426
-  echo "kind" > /kind/product_name
-  mount -o ro,bind /kind/product_name /sys/class/dmi/id/product_name
+  if [[ $(cat /sys/class/dmi/id/product_name) =~ Google ]]; then
+    echo "kind" > /kind/product_name
+    mount -o ro,bind /kind/product_name /sys/class/dmi/id/product_name
+  fi
 }
 
 # run pre-init fixups
