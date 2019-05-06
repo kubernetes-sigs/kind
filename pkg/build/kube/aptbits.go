@@ -52,6 +52,11 @@ func (b *AptBits) Paths() map[string]string {
 
 // Install implements Bits.Install
 func (b *AptBits) Install(install InstallContext) error {
+	// install gnupg2 package
+	if err := install.Run("/bin/sh", "-c", `clean-install gnupg2`); err != nil {
+		log.Errorf("Installing gnupg2 package failed! %v", err)
+		return err
+	}
 	// add apt repo
 	addKey := `curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -`
 	addSources := `cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
