@@ -75,6 +75,11 @@ func CreateControlPlaneNode(name, image, clusterLabel, listenAddress string, por
 		cache.ports = map[int32]int32{kubeadm.APIServerPort: port}
 	})
 
+	// to avoid the DNS crash we need copy host's /etc/resolv.conf to node
+	// ref: https://github.com/kubernetes-sigs/kind/pull/484#issuecomment-489469044
+
+	node.CopyTo("/etc/resolv.conf", "/kind/resolv.conf")
+
 	return node, nil
 }
 
