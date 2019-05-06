@@ -102,7 +102,8 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') \
 # Install crictl to /usr/local/bin
 ARG CRICTL_VERSION="v1.14.0"
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') \
-    && curl -fSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz" | tar xzC /usr/local/bin
+    && curl -fSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz" | tar xzC /usr/local/bin \
+    && echo 'runtime-endpoint: unix:///var/run/containerd/containerd.sock' > /etc/crictl.yaml
 
 # tell systemd that it is in docker (it will check for the container env)
 # https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
