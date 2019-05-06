@@ -104,6 +104,7 @@ kubeletConfiguration:
       nodefs.available: "0%"
       nodefs.inodesFree: "0%"
       imagefs.available: "0%"
+    resolvConf: /kind/resolv.conf
 controllerManagerExtraArgs:
   enable-hostpath-provisioner: "true"
 nodeRegistration:
@@ -181,6 +182,7 @@ evictionHard:
   nodefs.available: "0%"
   nodefs.inodesFree: "0%"
   imagefs.available: "0%"
+resolvConf: /kind/resolv.conf
 ---
 # no-op entry that exists solely so it can be patched
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
@@ -245,6 +247,7 @@ evictionHard:
   nodefs.available: "0%"
   nodefs.inodesFree: "0%"
   imagefs.available: "0%"
+resolvConf: /kind/resolv.conf
 ---
 # no-op entry that exists solely so it can be patched
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
