@@ -102,8 +102,8 @@ func Collect(nodes []nodes.Node, dir string) error {
 					filepath.Join(name, "kubelet.log"),
 				),
 				execToPathFn(
-					node.Command("journalctl", "--no-pager", "-u", "docker.service"),
-					filepath.Join(name, "docker.log"),
+					node.Command("journalctl", "--no-pager", "-u", "containerd.service"),
+					filepath.Join(name, "containerd.log"),
 				),
 			)
 		})
