@@ -36,6 +36,8 @@ type ConfigData struct {
 	APIBindPort int
 	// The Token for TLS bootstrap
 	Token string
+	// The subnet used for pods
+	PodSubnet string
 	// DerivedConfigData is populated by Derive()
 	// These auto-generated fields are available to Config templates,
 	// but not meant to be set by hand
@@ -106,6 +108,8 @@ controllerManagerExtraArgs:
   enable-hostpath-provisioner: "true"
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
+networking:
+  podSubnet: {{ .PodSubnet }}
 ---
 apiVersion: kubeadm.k8s.io/v1alpha2
 kind: NodeConfiguration
@@ -140,6 +144,8 @@ apiServerExtraVolumes:
 apiServerCertSANs: [localhost]
 controllerManagerExtraArgs:
   enable-hostpath-provisioner: "true"
+networking:
+  podSubnet: {{ .PodSubnet }}
 ---
 apiVersion: kubeadm.k8s.io/v1alpha3
 kind: InitConfiguration
@@ -202,6 +208,8 @@ apiServer:
 controllerManager:
   extraArgs:
     enable-hostpath-provisioner: "true"
+networking:
+  podSubnet: {{ .PodSubnet }}
 ---
 apiVersion: kubeadm.k8s.io/v1beta1
 kind: InitConfiguration
