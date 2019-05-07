@@ -22,4 +22,5 @@ set -o pipefail
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
-docker build -f images/kindnetd/Dockerfile .
+# TODO: verisoning
+docker build -t kindest/kindnetd:0.1.0 -f images/kindnetd/Dockerfile .

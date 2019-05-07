@@ -19,16 +19,22 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"os"
+	"text/template"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/vishvananda/netlink"
 	"github.com/vishvananda/netlink/nl"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
+	"sigs.k8s.io/kind/pkg/fs"
 )
 
 func main() {
@@ -49,7 +55,7 @@ func main() {
 		panic(fmt.Sprintf(
 			"hostIP(= %q) != podIP(= %q) but must be running with host network: ",
 			hostIP, podIP,
-		)
+		))
 	}
 
 	// used to track if the cni config inputs changed
@@ -78,7 +84,7 @@ func main() {
 				// if it changed, write out the new config
 				if cniData != lastCNIData {
 					if err := writeCNIConfig(cniData); err != nil {
-						panic(err.String())
+						panic(err.Error())
 					}
 					lastCNIData = cniData
 				}
@@ -91,7 +97,7 @@ func main() {
 				fmt.Printf("Node %v has no CIDR, ignoring\n", node.Name)
 				continue
 			}
-			
+
 			dst, err := netlink.ParseIPNet(node.Spec.PodCIDR)
 			if err != nil {
 				panic(err.Error())
@@ -121,7 +127,7 @@ func main() {
 	}
 }
 
-func internalIP(node *corev1.Node) string {
+func internalIP(node corev1.Node) string {
 	for _, address := range node.Status.Addresses {
 		if address.Type == "InternalIP" {
 			return address.Address
@@ -130,13 +136,12 @@ func internalIP(node *corev1.Node) string {
 	return ""
 }
 
-func computeCNIConfigInputs(node *corev1.Node) cniConfigInputs {
+func computeCNIConfigInputs(node corev1.Node) cniConfigInputs {
 	podCIDR := node.Spec.PodCIDR
 	return cniConfigInputs{
 		PodCIDR: podCIDR,
 	}
 }
-
 
 func writeCNIConfig(data cniConfigInputs) error {
 	return fs.AtomicWriteFile("/etc/cni/net.d/10-kindnet.conflist", func(w io.Writer) error {
@@ -147,7 +152,6 @@ func writeCNIConfig(data cniConfigInputs) error {
 		return t.Execute(w, &data)
 	})
 }
-
 
 type cniConfigInputs struct {
 	PodCIDR string
