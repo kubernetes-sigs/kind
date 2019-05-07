@@ -51,6 +51,7 @@ func main() {
 	// obtain the host and pod ip addresses
 	// if both ips are different we are not using the host network
 	hostIP, podIP := os.Getenv("HOST_IP"), os.Getenv("POD_IP")
+	fmt.Printf("hostIP = %s\npodIP = %s\n", hostIP, podIP)
 	if hostIP != podIP {
 		panic(fmt.Sprintf(
 			"hostIP(= %q) != podIP(= %q) but must be running with host network: ",
@@ -74,15 +75,18 @@ func main() {
 		for _, node := range nodes.Items {
 			// Obtain node internal IP
 			nodeIP := internalIP(node)
+			fmt.Printf("Handling node with IP: %s\n", nodeIP)
 
 			// this is our node, handle it specially
 			// we don't need to add routes, but we might need to update
 			// the cni config
 			if nodeIP == hostIP {
+				fmt.Printf("handling current node\n")
 				// compute the current cni config inputs
 				cniData := computeCNIConfigInputs(node)
 				// if it changed, write out the new config
 				if cniData != lastCNIData {
+					fmt.Printf("Writing CNI data\n")
 					if err := writeCNIConfig(cniData); err != nil {
 						panic(err.Error())
 					}

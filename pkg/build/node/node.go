@@ -419,10 +419,13 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	pulled := []string{}
 	for i, image := range requiredImages {
 		if !builtImages.Has(image) {
-			fmt.Printf("Pulling: %s\n", image)
-			err := docker.Pull(image, 2)
+			fmt.Printf("Ensuring: %s\n", image)
+			neededToPull, err := docker.PullIfNotPresent(image, 2)
 			if err != nil {
 				return err
+			}
+			if neededToPull {
+				fmt.Printf("Pulled: %s\n", image)
 			}
 			// TODO(bentheelder): generate a friendlier name
 			pullName := fmt.Sprintf("%d.tar", i)
