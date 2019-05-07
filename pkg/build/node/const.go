@@ -139,11 +139,9 @@ data:
       "plugins": [
         {
           "type": "bridge",
-          "bridge": "kind0",
-          "capabilities": {"ipRanges": true},
-          "isGateway": true,
+          "ipMasq": true,
+          "isDefaultGateway": true,
           "hairpinMode": true,
-          "ipMasq": false,
           "ipam": {
             "type": "host-local",
             "routes": [
@@ -161,8 +159,9 @@ data:
         },
         {
           "type": "portmap",
-          "capabilities": {"portMappings": true},
-          "snat": false
+          "capabilities": {
+            "portMappings": true
+          }
         }
       ]
     }
