@@ -51,7 +51,7 @@ popd > /dev/null
 RES=0
 ERROR_LOG="${TMP_DIR}/errors.log"
 echo "Checking spelling ..."
-git ls-files | grep -v -e vendor | xargs "${BIN_PATH}/misspell" > "${ERROR_LOG}"
+git ls-files | grep -v -e "vendor\|go.\(sum\|mod\)" | xargs "${BIN_PATH}/misspell" > "${ERROR_LOG}"
 if [[ -s "${ERROR_LOG}" ]]; then
   sed 's/^/error: /' "${ERROR_LOG}" # add 'error' to each line to highlight in e2e status
   echo "Found spelling errors!"
