@@ -22,6 +22,11 @@ REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
 # TODO: verisoning
-IMAGE="kindest/kindnetd"
-VERSION="0.1.0"
-docker build -t "${IMAGE}:${VERSION}" -f images/kindnetd/Dockerfile .
+IMAGE="${IMAGE:-kindest/kindnetd}"
+TAG="${TAG:-$(cat images/kindnetd/VERSION)}"
+GOARCH="${GOARCH:-amd64}"
+docker build \
+  -t "${IMAGE}:${TAG}" \
+  --build-arg="GOARCH=${GOARCH}"\
+  -f images/kindnetd/Dockerfile \
+  .
