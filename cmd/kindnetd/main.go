@@ -70,7 +70,7 @@ func main() {
 
 	// used to track if the cni config inputs changed and write the config
 	cniConfigWriter := &CNIConfigWriter{
-		path: CNIConfigPath,
+		path:     CNIConfigPath,
 		template: os.Getenv("CNI_CONFIG_TEMPLATE"),
 	}
 	// setup nodes reconcile function, closes over arguments
@@ -95,21 +95,21 @@ func main() {
 }
 
 // nodeNodesReconciler returns a reconciliation func for nodes
-func makeNodesReconciler(cniConfigWriter *CNIConfigWriter, hostIP string) (func(*corev1.NodeList) error) {
+func makeNodesReconciler(cniConfigWriter *CNIConfigWriter, hostIP string) func(*corev1.NodeList) error {
 	// reconciles a node
 	reconcileNode := func(node corev1.Node) error {
 		// first get this node's IP
 		nodeIP := internalIP(node)
 		fmt.Printf("Handling node with IP: %s\n", nodeIP)
-		
+
 		// This is our node. We don't need to add routes, but we might need to
 		// update the cni config.
 		if nodeIP == hostIP {
 			fmt.Printf("handling current node\n")
 			// compute the current cni config inputs
 			if err := cniConfigWriter.Write(
-					ComputeCNIConfigInputs(node),
-				); err != nil {
+				ComputeCNIConfigInputs(node),
+			); err != nil {
 				return err
 			}
 			// we're done handling this node
@@ -191,12 +191,12 @@ const CNIConfigPath = "/etc/cni/net.d/10-kindnet.conflist"
 // CNIConfigWriter no-ops re-writing config with the same inputs
 // NOTE: should only be called from a single goroutine
 type CNIConfigWriter struct {
-	path string
-	template string
+	path       string
+	template   string
 	lastInputs CNIConfigInputs
 }
 
-// Write will write the config based on 
+// Write will write the config based on
 func (c *CNIConfigWriter) Write(inputs CNIConfigInputs) error {
 	if inputs == c.lastInputs {
 		return nil
@@ -205,7 +205,7 @@ func (c *CNIConfigWriter) Write(inputs CNIConfigInputs) error {
 	// use an extension not recognized by CNI to write the contents initially
 	// https://github.com/containerd/go-cni/blob/891c2a41e18144b2d7921f971d6c9789a68046b2/opts.go#L170
 	// then we can rename to atomically make the file appear
-	f, err := os.Create(c.path+".temp")
+	f, err := os.Create(c.path + ".temp")
 	if err != nil {
 		return err
 	}
