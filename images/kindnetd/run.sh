@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Copyright 2019 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,19 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# STEP 1: Build kindnetd binary
-FROM golang:1.12 AS builder
-# golang envs
-ARG GOARCH="amd64"
-ARG GOOS=linux
-ENV CGO_ENABLED=0
-# copy in sources
-WORKDIR /go/src/sigs.k8s.io/kind
-COPY . .
-# build
-RUN go build -o /go/bin/kindnetd ./cmd/kindnetd
+set -o nounset
+set -o errexit
+set -o pipefail
 
-# STEP 2: Build small image
-FROM scratch
-COPY --from=builder /go/bin/kindnetd /bin/kindnetd
-CMD ["/bin/kindnetd"]
+# cd to the repo root
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "${REPO_ROOT}"
+
+# TODO: verisoning
+IMAGE="kindest/kindnetd"
+VERSION="0.1.0"
+docker build -t "${IMAGE}:${VERSION}" -f images/kindnetd/Dockerfile .
