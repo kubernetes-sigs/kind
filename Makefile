@@ -45,8 +45,16 @@ make-cache:
 clean-cache:
 	docker volume rm $(CACHE_VOLUME)
 
+# creates the output directory
+out-dir:
+	mkdir -p $(REPO_ROOT)/_output/bin
+
+# cleans the output directory
+clean-output:
+	rm -rf $(REPO_ROOT)/_output
+
 # builds kind in a container, outputs to $(REPO_ROOT)/_output/bin
-kind: make-cache
+kind: make-cache out-dir
 	docker run \
 		--rm \
 		-v $(CACHE_VOLUME):/go \
@@ -69,6 +77,6 @@ install: build
 	cp $(HOST_OUT_DIR)/kind $(INSTALL_DIR)/kind
 
 # standard cleanup target
-clean: clean-cache
+clean: clean-cache clean-output
 
-.PHONY: all make-cache clean-cache kind build install clean
+.PHONY: all make-cache clean-cache out-dir clean-output kind build install clean
