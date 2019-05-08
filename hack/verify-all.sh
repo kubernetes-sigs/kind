@@ -56,12 +56,6 @@ if [[ "${VERIFY_GENERATED:-true}" == "true" ]]; then
   cd "${REPO_ROOT}"
 fi
 
-if [[ "${VERIFY_DEPS:-true}" == "true" ]]; then
-  echo "verifying deps ..."
-  hack/verify-deps.sh || res=1
-  cd "${REPO_ROOT}"
-fi
-
 # exit based on verify scripts
 if [[ "${res}" = 0 ]]; then
   echo ""

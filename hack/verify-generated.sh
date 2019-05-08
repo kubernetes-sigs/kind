@@ -26,52 +26,41 @@ cd "${REPO_ROOT}"
 BINDIR="${REPO_ROOT}/_output/bin"
 mkdir -p "${BINDIR}"
 
-# TMP_GOPATH is used in make_temp_root
-TMP_GOPATH="$(TMPDIR="${BINDIR}" mktemp -d "${BINDIR}/verify-deps.XXXXX")"
+# TMP_REPO is used in make_temp_repo_copy
+TMP_REPO="$(TMPDIR="${BINDIR}" mktemp -d "${BINDIR}/verify-deps.XXXXX")"
 
-# exit trap cleanup for TMP_GOPATH
+# exit trap cleanup for TMP_REPO
 cleanup() {
-  if [[ -n "${TMP_GOPATH}" ]]; then
-    rm -rf "${TMP_GOPATH}"
+  if [[ -n "${TMP_REPO}" ]]; then
+    rm -rf "${TMP_REPO}"
   fi
 }
 
-# cp -r without any warnings for symlinks ¯\_(ツ)_/¯
-quiet_recursive_cp() {
-  cp -r "${1}" "${2}" >/dev/null 2>&1
-}
-
-# copies repo into a temp root saved to TMP_GOPATH
-make_temp_root() {
-  # make a fake gopath
-  local fake_root="${TMP_GOPATH}/src/sigs.k8s.io/kind"
-  mkdir -p "${fake_root}"
-  export -f quiet_recursive_cp
+# copies repo into a temp root saved to TMP_REPO
+make_temp_repo_copy() {
   # we need to copy everything but _output (which is .gitignore anyhow)
   find . \
     -mindepth 1 -maxdepth 1 \
     -type d -path "./_output" -prune -o \
-    -exec bash -c 'quiet_recursive_cp "${0}" "${1}/${0}"' {} "${fake_root}" \;
+    -exec bash -c 'cp -r "${0}" "${1}/${0}" >/dev/null 2>&1' {} "${TMP_REPO}" \;
 }
 
 main() {
   trap cleanup EXIT
 
   # copy repo root into tempdir under ./_output
-  make_temp_root
-  local fake_root="${TMP_GOPATH}/src/sigs.k8s.io/kind"
+  make_temp_repo_copy
 
   # run generated code update script
-  cd "${fake_root}"
-  GOPATH="${TMP_GOPATH}" PATH="${TMP_GOPATH}/bin:${PATH}" hack/update-generated.sh
+  cd "${TMP_REPO}"
+  hack/update-generated.sh
 
   # make sure the temp repo has no changes relative to the real repo
   diff=$(diff -Nupr \
           -x ".git" \
           -x "_output" \
-          -x "vendor/github.com/jteeuwen/go-bindata/testdata" \
-          -x "vendor/github.com/golang/dep/internal/fs/testdata/symlinks" \
-         "${REPO_ROOT}" "${fake_root}" 2>/dev/null || true)
+          -x "vendor" \
+         "${REPO_ROOT}" "${TMP_REPO}" 2>/dev/null || true)
   if [[ -n "${diff}" ]]; then
     echo "unexpectedly dirty working directory after hack/update-generated.sh" >&2
     echo "" >&2

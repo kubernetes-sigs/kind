@@ -19,32 +19,49 @@ set -o errexit
 set -o pipefail
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "${REPO_ROOT}"
 
-# TODO(bentheelder): find a solution that does not depend on GO111MODULE="off"
+# enable modules and the proxy cache
+export GO111MODULE="on"
+GOPROXY="${GOPROXY:-https://proxy.golang.org}"
+export GOPROXY
+
+# build the generators
+BINDIR="${REPO_ROOT}/_output/bin"
+go build -o "${BINDIR}/defaulter-gen" k8s.io/code-generator/cmd/defaulter-gen
+go build -o "${BINDIR}/deepcopy-gen" k8s.io/code-generator/cmd/deepcopy-gen
+go build -o "${BINDIR}/conversion-gen" k8s.io/code-generator/cmd/conversion-gen
+
+# turn off module mode before running the generators
+# https://github.com/kubernetes/code-generator/issues/69
+# we also need to populate vendor
+go mod vendor
 export GO111MODULE="off"
 
-# install go-bindata from vendor locally
-OUTPUT_GOBIN="${REPO_ROOT}/_output/bin"
-cd "${REPO_ROOT}"
-GOBIN="${OUTPUT_GOBIN}" go install ./vendor/k8s.io/code-generator/cmd/defaulter-gen
-GOBIN="${OUTPUT_GOBIN}" go install ./vendor/k8s.io/code-generator/cmd/deepcopy-gen
-GOBIN="${OUTPUT_GOBIN}" go install ./vendor/k8s.io/code-generator/cmd/conversion-gen
+# fake being in a gopath
+FAKE_GOPATH="$(mktemp -d)"
+trap 'rm -rf ${FAKE_GOPATH}' EXIT
 
-# go generate (using go-bindata)
-# NOTE: go will only take package paths, not absolute directories
-export PATH="${OUTPUT_GOBIN}:${PATH}"
-go generate ./...
+FAKE_REPOPATH="${FAKE_GOPATH}/src/sigs.k8s.io/kind"
+mkdir -p "$(dirname "${FAKE_REPOPATH}")" && ln -s "${REPO_ROOT}" "${FAKE_REPOPATH}"
 
-deepcopy-gen -i ./pkg/cluster/config/ -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
-defaulter-gen -i ./pkg/cluster/config/ -O zz_generated.default --go-header-file hack/boilerplate.go.txt
+export GOPATH="${FAKE_GOPATH}"
+cd "${FAKE_REPOPATH}"
 
-deepcopy-gen -i ./pkg/cluster/config/v1alpha2 -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
-defaulter-gen -i ./pkg/cluster/config/v1alpha2 -O zz_generated.default --go-header-file hack/boilerplate.go.txt
-conversion-gen -i ./pkg/cluster/config/v1alpha2 -O zz_generated.conversion --go-header-file hack/boilerplate.go.txt
+# run the generators
+"${BINDIR}/deepcopy-gen" -i ./pkg/cluster/config/ -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
+"${BINDIR}/defaulter-gen" -i ./pkg/cluster/config/ -O zz_generated.default --go-header-file hack/boilerplate.go.txt
 
-deepcopy-gen -i ./pkg/cluster/config/v1alpha3 -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
-defaulter-gen -i ./pkg/cluster/config/v1alpha3 -O zz_generated.default --go-header-file hack/boilerplate.go.txt
-conversion-gen -i ./pkg/cluster/config/v1alpha3 -O zz_generated.conversion --go-header-file hack/boilerplate.go.txt
+"${BINDIR}/deepcopy-gen" -i ./pkg/cluster/config/v1alpha2 -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
+"${BINDIR}/defaulter-gen" -i ./pkg/cluster/config/v1alpha2 -O zz_generated.default --go-header-file hack/boilerplate.go.txt
+"${BINDIR}/conversion-gen" -i ./pkg/cluster/config/v1alpha2 -O zz_generated.conversion --go-header-file hack/boilerplate.go.txt
+
+"${BINDIR}/deepcopy-gen" -i ./pkg/cluster/config/v1alpha3 -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
+"${BINDIR}/defaulter-gen" -i ./pkg/cluster/config/v1alpha3 -O zz_generated.default --go-header-file hack/boilerplate.go.txt
+"${BINDIR}/conversion-gen" -i ./pkg/cluster/config/v1alpha3 -O zz_generated.conversion --go-header-file hack/boilerplate.go.txt
+
+export GO111MODULE="on"
+cd $REPO_ROOT
 
 # gofmt the tree
-find . -path "./vendor" -prune -o -name "*.go" -type f -print0 | xargs -0 gofmt -s -w
+find . -name "*.go" -type f -print0 | xargs -0 gofmt -s -w

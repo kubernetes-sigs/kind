@@ -46,12 +46,11 @@ install_kind() {
     TMP_DIR=$(mktemp -d)
     # ensure bin dir
     mkdir -p "${TMP_DIR}/bin"
-    # if we have a kind checkout, install that to the tmpdir, otherwise go get it
-    if [[ $(go list sigs.k8s.io/kind) = "sigs.k8s.io/kind" ]]; then
-        env "GOBIN=${TMP_DIR}/bin" go install sigs.k8s.io/kind
-    else
-        env "GOPATH=${TMP_DIR}" go get -u sigs.k8s.io/kind
-    fi
+    # install
+    local script_dir
+    script_dir="$(dirname "${BASH_SOURCE[0]}")"
+    make -C "${script_dir}/../.." install INSTALL_PATH="${TMP_DIR}/bin"
+    # ensure it is in path
     PATH="${TMP_DIR}/bin:${PATH}"
     export PATH
 }
