@@ -18,8 +18,6 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
-set -x;
-
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
@@ -55,4 +53,4 @@ export GO111MODULE="off"
 export GO111MODULE="on"
 
 # gofmt the tree
-find . -path "./vendor" -prune -o -name "*.go" -type f -print0 | xargs -0 gofmt -s -w
+find . -name "*.go" -type f -print0 | xargs -0 gofmt -s -w

@@ -46,7 +46,6 @@ make_temp_repo_copy() {
 }
 
 main() {
-  set -x;
   trap cleanup EXIT
 
   # copy repo root into tempdir under ./_output
@@ -60,8 +59,7 @@ main() {
   diff=$(diff -Nupr \
           -x ".git" \
           -x "_output" \
-          -x "vendor/github.com/jteeuwen/go-bindata/testdata" \
-          -x "vendor/github.com/golang/dep/internal/fs/testdata/symlinks" \
+          -x "vendor" \
          "${REPO_ROOT}" "${TMP_REPO}" 2>/dev/null || true)
   if [[ -n "${diff}" ]]; then
     echo "unexpectedly dirty working directory after hack/update-generated.sh" >&2

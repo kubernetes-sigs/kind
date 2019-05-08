@@ -22,7 +22,7 @@ REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
 # check for gofmt diffs
-diff=$(find . -name "*.go" | grep -v "\\/vendor\\/" | xargs gofmt -s -d 2>&1)
+diff=$(find . -name "*.go" -type f -print0 | xargs -0 gofmt -s -d 2>&1)
 if [[ -n "${diff}" ]]; then
   echo "${diff}"
   echo
