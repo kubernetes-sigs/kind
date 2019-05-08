@@ -71,11 +71,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 	for _, n := range controlPlaneNodes {
-		controlPlaneIP, err := n.IP()
-		if err != nil {
-			return errors.Wrapf(err, "failed to get IP for node %s", n.Name())
-		}
-		backendServers[n.Name()] = fmt.Sprintf("%s:%d", controlPlaneIP, kubeadm.APIServerPort)
+		backendServers[n.Name()] = fmt.Sprintf("%s:%d", n.Name(), kubeadm.APIServerPort)
 	}
 
 	// create loadbalancer config data
