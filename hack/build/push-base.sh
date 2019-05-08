@@ -21,18 +21,9 @@ set -o pipefail
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
-# place to stick temp binaries
-BINDIR="${REPO_ROOT}/_output/bin"
-
-# install kind from the repo into $BINDIR
-get_kind() {
-  # build kind from the repo and use that ...
-  GOBIN="${BINDIR}" go install .
-  echo "${BINDIR}/kind"
-}
-
-# select kind binary to use
-KIND="${KIND:-$(get_kind)}"
+# ensure we have up to date kind
+make build
+KIND="${REPO_ROOT}/_output/bin/kind"
 
 # generate tag
 DATE="$(date +v%Y%m%d)"
@@ -44,4 +35,3 @@ IMAGE="kindest/base:${TAG}"
 
 # push
 docker push "${IMAGE}"
-
