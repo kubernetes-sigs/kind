@@ -46,6 +46,8 @@ install_kind() {
     TMP_DIR=$(mktemp -d)
     # ensure bin dir
     mkdir -p "${TMP_DIR}/bin"
+    # kind requries go modules now
+    export GO111MODULE="on"
     # if we have a kind checkout, install that to the tmpdir, otherwise go get it
     if [[ $(go list sigs.k8s.io/kind) = "sigs.k8s.io/kind" ]]; then
         env "GOBIN=${TMP_DIR}/bin" go install sigs.k8s.io/kind
