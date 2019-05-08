@@ -38,6 +38,16 @@ go build -o "${BINDIR}/conversion-gen" k8s.io/code-generator/cmd/conversion-gen
 go mod vendor
 export GO111MODULE="off"
 
+# fake being in a gopath
+FAKE_GOPATH="$(mktemp -d)"
+trap 'rm -rf ${FAKE_GOPATH}' EXIT
+
+FAKE_REPOPATH="${FAKE_GOPATH}/src/sigs.k8s.io/kind"
+mkdir -p "$(dirname "${FAKE_REPOPATH}")" && ln -s "${REPO_ROOT}" "${FAKE_REPOPATH}"
+
+export GOPATH="${FAKE_GOPATH}"
+cd "${FAKE_REPOPATH}"
+
 # run the generators
 "${BINDIR}/deepcopy-gen" -i ./pkg/cluster/config/ -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
 "${BINDIR}/defaulter-gen" -i ./pkg/cluster/config/ -O zz_generated.default --go-header-file hack/boilerplate.go.txt
@@ -51,6 +61,7 @@ export GO111MODULE="off"
 "${BINDIR}/conversion-gen" -i ./pkg/cluster/config/v1alpha3 -O zz_generated.conversion --go-header-file hack/boilerplate.go.txt
 
 export GO111MODULE="on"
+cd $REPO_ROOT
 
 # gofmt the tree
 find . -name "*.go" -type f -print0 | xargs -0 gofmt -s -w
