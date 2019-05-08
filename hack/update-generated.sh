@@ -36,6 +36,8 @@ go build -o "${BINDIR}/conversion-gen" k8s.io/code-generator/cmd/conversion-gen
 
 # turn off module mode before running the generators
 # https://github.com/kubernetes/code-generator/issues/69
+# we also need to populate vendor
+go mod vendor
 export GO111MODULE="off"
 
 # run the generators

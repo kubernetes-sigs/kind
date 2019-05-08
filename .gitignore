@@ -2,6 +2,9 @@
 /_output
 /_artifacts
 
+# used for the code generators
+/vendor
+
 # macOS
 .DS_Store
 
