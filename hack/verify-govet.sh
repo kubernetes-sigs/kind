@@ -22,10 +22,9 @@ set -o pipefail
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
-# TODO(bentheelder): we have to skip hack/tools for now because this is just
-# for go modules tracking of tools and has otherwise invalid imports
-# TODO(bentheelder): find a solution that does not depend on GO111MODULE="off"
-export GO111MODULE="off"
-go list ./... |\
-  grep -v '^sigs.k8s.io/kind/hack/tools$' |\
-  xargs -L1 go vet
+# enable modules and the proxy cache
+export GO111MODULE="on"
+GOPROXY="${GOPROXY:-https://proxy.golang.org}"
+export GOPROXY
+
+go vet ./pkg/... ./cmd/... .
