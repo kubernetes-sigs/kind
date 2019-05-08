@@ -16,9 +16,16 @@
 # Only requires docker on the host
 
 # settings
+REPO_ROOT=$(PWD)
+# autodetect host GOOS and GOARCH by default, even if go is not installed
+GOOS=$(shell hack/goos.sh)
+GOARCH=$(shell hack/goarch.sh)
+# use the official module proxy by default
+GOPROXY=https://proxy.golang.org
+# default build image
 GO_VERSION=1.12.5
 GO_IMAGE=golang:$(GO_VERSION)
-REPO_ROOT=$(PWD)
+# docker volume name, used as a go module / build cache
 CACHE_VOLUME=kind-build-cache
 
 # variables for consistent logic, don't override these
@@ -44,6 +51,11 @@ kind: make-cache
 		-e GOCACHE=/go/cache \
 		-v $(REPO_ROOT):$(CONTAINER_REPO_DIR) \
 		-w $(CONTAINER_REPO_DIR) \
+		-e GO111MODULE=on \
+		-e GOPROXY=$(GOPROXY) \
+		-e CGO_ENABLED=0 \
+		-e GOOS=$(GOOS) \
+		-e GOARCH=$(GOARCH) \
 		$(GO_IMAGE) \
 		go build -v -o $(CONTAINER_OUT_DIR)/kind .
 
