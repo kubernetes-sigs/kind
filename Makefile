@@ -18,8 +18,8 @@
 # settings
 REPO_ROOT=$(PWD)
 # autodetect host GOOS and GOARCH by default, even if go is not installed
-GOOS=$(shell hack/goos.sh)
-GOARCH=$(shell hack/goarch.sh)
+GOOS=$(shell hack/util/goos.sh)
+GOARCH=$(shell hack/util/goarch.sh)
 # use the official module proxy by default
 GOPROXY=https://proxy.golang.org
 # default build image
