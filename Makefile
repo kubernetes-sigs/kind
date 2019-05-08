@@ -16,7 +16,7 @@
 # Only requires docker on the host
 
 # settings
-REPO_ROOT=$(PWD)
+REPO_ROOT:=${CURDIR}
 # autodetect host GOOS and GOARCH by default, even if go is not installed
 GOOS=$(shell hack/util/goos.sh)
 GOARCH=$(shell hack/util/goarch.sh)
