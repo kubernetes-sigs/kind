@@ -16,7 +16,7 @@
 # Only requires docker on the host
 
 # settings
-GO_VERSION=1.12.4
+GO_VERSION=1.12.5
 GO_IMAGE=golang:$(GO_VERSION)
 REPO_ROOT=$(PWD)
 CACHE_VOLUME=kind-build-cache
