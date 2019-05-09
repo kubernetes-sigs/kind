@@ -1,8 +1,9 @@
-# build outputs
+# build and test outputs
+/bin
 /_output
 /_artifacts
 
-# used for the code generators
+# used for the code generators only
 /vendor
 
 # macOS

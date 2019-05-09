@@ -18,7 +18,7 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
-REPO_ROOT=$(git rev-parse --show-toplevel)
+REPO_ROOT="${REPO_ROOT:-$(git rev-parse --show-toplevel)}"
 cd "${REPO_ROOT}"
 
 # enable modules and the proxy cache
@@ -27,7 +27,7 @@ GOPROXY="${GOPROXY:-https://proxy.golang.org}"
 export GOPROXY
 
 # build the generators
-BINDIR="${REPO_ROOT}/_output/bin"
+BINDIR="${REPO_ROOT}/bin"
 go build -o "${BINDIR}/defaulter-gen" k8s.io/code-generator/cmd/defaulter-gen
 go build -o "${BINDIR}/deepcopy-gen" k8s.io/code-generator/cmd/deepcopy-gen
 go build -o "${BINDIR}/conversion-gen" k8s.io/code-generator/cmd/conversion-gen
