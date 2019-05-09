@@ -77,7 +77,7 @@ build: kind
 
 # use: make install INSTALL_DIR=/usr/local/bin
 install: build
-	cp $(OUT_DIR)/kind $(INSTALL_DIR)/kind
+	install $(OUT_DIR)/kind $(INSTALL_DIR)/kind
 
 # standard cleanup target
 clean: clean-cache clean-output
