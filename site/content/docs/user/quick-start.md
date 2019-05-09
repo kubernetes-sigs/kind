@@ -14,12 +14,26 @@ This guide covers getting started with the `kind` command.
 
 ## Installation
 
-You can install `kind` with `go get -u sigs.k8s.io/kind`. This will put `kind` in
-`$(go env GOPATH)/bin`. You may need to add that directory to your `$PATH` as
+You can install the latest bleeding edge kind code with `GO111MODULE="on" go get -u sigs.k8s.io/kind@master`.
+
+**NOTE**: please use the latest go to do this, ideally go 1.12.5 or greater.
+
+This will put `kind` in `$(go env GOPATH)/bin`. You may need to add that directory to your `$PATH` as
 shown [here](https://golang.org/doc/code.html#GOPATH) if you encounter the error
 `kind: command not found` after installation.
 
-To use `kind`, you will also need to [install docker].  
+Without installing go, kind can be built reproducibly with docker using `make install`.
+
+Stable binaries are also available on the [releases] page. Stable releases are
+generally recommended for CI usage in particular.
+To install, download the binary for your platform from "Assets" and place this
+into your `$PATH`. E.G. for macOS:
+
+```
+wget https://github.com/kubernetes-sigs/kind/releases/download/0.2.1/kind-darwin-amd64
+chmod +x kind-darwin-amd64
+mv kind-darwin-amd64 /some-dir-in-your-PATH/kind
+```
 
 ## Creating a Cluster
 
