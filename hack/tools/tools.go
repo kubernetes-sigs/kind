@@ -8,7 +8,7 @@ package tools
 
 import (
 	// linter(s)
-	_ "github.com/golang/lint/golint"
+	_ "golang.org/x/lint"
 
 	// for packing binary data
 	_ "github.com/jteeuwen/go-bindata/go-bindata"
