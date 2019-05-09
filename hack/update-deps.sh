@@ -33,3 +33,6 @@ GOPROXY="${GOPROXY:-https://proxy.golang.org}"
 export GOPROXY
 
 go mod tidy
+
+cd "hack/tools"
+go mod tidy
