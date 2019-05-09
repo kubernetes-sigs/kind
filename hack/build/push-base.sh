@@ -23,7 +23,7 @@ cd "${REPO_ROOT}"
 
 # ensure we have up to date kind
 make build
-KIND="${REPO_ROOT}/_output/bin/kind"
+KIND="${REPO_ROOT}/bin/kind"
 
 # generate tag
 DATE="$(date +v%Y%m%d)"

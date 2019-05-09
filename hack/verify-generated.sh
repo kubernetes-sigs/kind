@@ -23,7 +23,7 @@ cd "${REPO_ROOT}"
 
 
 # place to stick temp binaries
-BINDIR="${REPO_ROOT}/_output/bin"
+BINDIR="${REPO_ROOT}/bin"
 mkdir -p "${BINDIR}"
 
 # TMP_REPO is used in make_temp_repo_copy
@@ -38,10 +38,14 @@ cleanup() {
 
 # copies repo into a temp root saved to TMP_REPO
 make_temp_repo_copy() {
-  # we need to copy everything but _output (which is .gitignore anyhow)
+  # we need to copy everything but bin (and the old _output) (which is .gitignore anyhow)
   find . \
     -mindepth 1 -maxdepth 1 \
-    -type d -path "./_output" -prune -o \
+    \( \
+      -type d -path "./.git" -o \
+      -type d -path "./bin" -o \
+      -type d -path "./_output" \
+    \) -prune -o \
     -exec bash -c 'cp -r "${0}" "${1}/${0}" >/dev/null 2>&1' {} "${TMP_REPO}" \;
 }
 
@@ -53,11 +57,12 @@ main() {
 
   # run generated code update script
   cd "${TMP_REPO}"
-  hack/update-generated.sh
+  REPO_ROOT="${TMP_REPO}" hack/update-generated.sh
 
   # make sure the temp repo has no changes relative to the real repo
   diff=$(diff -Nupr \
           -x ".git" \
+          -x "bin" \
           -x "_output" \
           -x "vendor" \
          "${REPO_ROOT}" "${TMP_REPO}" 2>/dev/null || true)

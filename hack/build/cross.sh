@@ -23,7 +23,7 @@ set -o pipefail
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
-OUT="${REPO_ROOT}/_output/bin"
+OUT="${REPO_ROOT}/bin"
 mkdir -p "${OUT}"
 
 CLEAN="false"
