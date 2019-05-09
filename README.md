@@ -9,7 +9,7 @@
 kind is a tool for running local Kubernetes clusters using Docker container "nodes".  
 kind is primarily designed for testing Kubernetes 1.11+, initially targeting the [conformance tests].
 
-If you have [go] and [docker] installed `go get -u sigs.k8s.io/kind && kind create cluster` is all you need!
+If you have [go] and [docker] installed `GO111MODULE="on" go get -u sigs.k8s.io/kind@master && kind create cluster` is all you need!
 
 <img src="https://gist.githubusercontent.com/BenTheElder/621bc321fc6d9506fd936feb36d32dd0/raw/13fe81c219e64b4917575c8988e06719c072c7f1/kind-demo.gif" alt="2x speed `kind create cluster` demo" />
 
@@ -25,10 +25,26 @@ kind bootstraps each "node" with [kubeadm][kubeadm]. For more details see [the d
 
 ## Installation and usage
 
-You can install kind with `go get -u sigs.k8s.io/kind`. This will put `kind` in
-`$(go env GOPATH)/bin`. You may need to add that directory to your `$PATH` as
+You can install the latest bleeding edge kind code with `GO111MODULE="on" go get -u sigs.k8s.io/kind@master`.
+
+**NOTE**: please use the latest go to do this, ideally go 1.12.5 or greater.
+
+This will put `kind` in `$(go env GOPATH)/bin`. You may need to add that directory to your `$PATH` as
 shown [here](https://golang.org/doc/code.html#GOPATH) if you encounter the error
 `kind: command not found` after installation.
+
+Without installing go, kind can be built reproducibly with docker using `make install`.
+
+Stable binaries are also available on the [releases] page. Stable releases are
+generally recommended for CI usage in particular.
+To install, download the binary for your platform from "Assets" and place this
+into your `$PATH`. E.G. for macOS:
+
+```console
+wget https://github.com/kubernetes-sigs/kind/releases/download/0.2.1/kind-darwin-amd64
+chmod +x kind-darwin-amd64
+mv kind-darwin-amd64 /some-dir-in-your-PATH/kind
+```
 
 To use kind, you will need to [install docker].  
 Once you have docker running you can create a cluster with `kind create cluster`  
@@ -110,3 +126,4 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [@BenTheElder]: https://github.com/BenTheElder
 [@munnerz]: https://github.com/munnerz
 [contributor guide]: https://kind.sigs.k8s.io/docs/contributing/getting-started
+[releases]: https://github.com/kubernetes-sigs/kind/releases
