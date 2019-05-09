@@ -28,9 +28,13 @@ export GOPROXY
 
 # build the generators
 BINDIR="${REPO_ROOT}/bin"
+# use the tools module
+cd "hack/tools"
 go build -o "${BINDIR}/defaulter-gen" k8s.io/code-generator/cmd/defaulter-gen
 go build -o "${BINDIR}/deepcopy-gen" k8s.io/code-generator/cmd/deepcopy-gen
 go build -o "${BINDIR}/conversion-gen" k8s.io/code-generator/cmd/conversion-gen
+# go back to the root
+cd "${REPO_ROOT}"
 
 # turn off module mode before running the generators
 # https://github.com/kubernetes/code-generator/issues/69

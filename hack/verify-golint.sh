@@ -27,4 +27,12 @@ export GO111MODULE="on"
 GOPROXY="${GOPROXY:-https://proxy.golang.org}"
 export GOPROXY
 
-go run golang.org/x/lint/golint -set_exit_status ./pkg/... ./cmd/... .
+# build golint
+BINDIR="${REPO_ROOT}/bin"
+# use the tools module
+cd "hack/tools"
+go build -o "${BINDIR}/golint" golang.org/x/lint/golint
+# go back to the root
+cd "${REPO_ROOT}"
+
+"${BINDIR}/golint" -set_exit_status ./pkg/... ./cmd/... .
