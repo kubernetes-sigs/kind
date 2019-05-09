@@ -29,9 +29,10 @@ You can install the latest bleeding edge kind code with `GO111MODULE="on" go get
 
 **NOTE**: please use the latest go to do this, ideally go 1.12.5 or greater.
 
-This will put `kind` in `$(go env GOPATH)/bin`. You may need to add that directory to your `$PATH` as
-shown [here](https://golang.org/doc/code.html#GOPATH) if you encounter the error
-`kind: command not found` after installation.
+This will put `kind` in `$(go env GOPATH)/bin`. If you encounter the error
+`kind: command not found` after installation then you may need to either add that directory to your `$PATH` as
+shown [here](https://golang.org/doc/code.html#GOPATH) or do manual installation by cloning the repo and run 
+`make install` from the repository.
 
 Without installing go, kind can be built reproducibly with docker using `make install`.
 
