@@ -9,7 +9,6 @@ require (
 	github.com/go-openapi/spec v0.17.2 // indirect
 	github.com/go-openapi/swag v0.17.2 // indirect
 	github.com/gogo/protobuf v1.1.1 // indirect
-	github.com/golang/lint v0.0.0-20180702182130-06c8688daad7
 	github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf
 	github.com/google/uuid v1.1.1
 	github.com/googleapis/gnostic v0.2.0 // indirect
@@ -25,7 +24,7 @@ require (
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.2 // indirect
 	golang.org/x/crypto v0.0.0-20180910181607-0e37d006457b
-	golang.org/x/lint v0.0.0-20180702182130-06c8688daad7 // indirect
+	golang.org/x/lint v0.0.0-20180702182130-06c8688daad7
 	golang.org/x/tools v0.0.0-20180911133044-677d2ff680c1 // indirect
 	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
 	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect

@@ -27,4 +27,4 @@ export GO111MODULE="on"
 GOPROXY="${GOPROXY:-https://proxy.golang.org}"
 export GOPROXY
 
-go run github.com/golang/lint/golint -set_exit_status ./pkg/... ./cmd/... .
+go run golang.org/x/lint/golint -set_exit_status ./pkg/... ./cmd/... .
