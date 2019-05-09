@@ -26,6 +26,7 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/context"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/container/docker"
 )
 
 // Cluster deletes the cluster identified by ctx
@@ -51,5 +52,5 @@ func Cluster(c *context.Context) error {
 		return errors.Wrap(err, "error deleting nodes")
 	}
 	// after all nodes have been deleted, we need delete the network
-	return nodes.DeleteNetwork(c.Name())
+	return docker.DeleteNetwork(c.Name())
 }

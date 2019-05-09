@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/concurrent"
 	"sigs.k8s.io/kind/pkg/container/cri"
+	"sigs.k8s.io/kind/pkg/container/docker"
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
 
@@ -97,7 +98,7 @@ func createNetwork(status *logutil.Status, clusterName string) error {
 	defer status.End(false)
 
 	status.Start("Creating bridge network 🌉")
-	if err := nodes.CreateNetwork(clusterName); err != nil {
+	if err := docker.CreateNetwork(clusterName); err != nil {
 		return err
 	}
 
