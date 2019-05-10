@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/kubeadmjoin"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/loadbalancer"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/waitforready"
+	"sigs.k8s.io/kind/pkg/util"
 )
 
 // Options holds cluster creation options
@@ -46,6 +47,7 @@ import (
 type Options struct {
 	Retain       bool
 	WaitForReady time.Duration
+	Use          bool
 	//TODO: Refactor this. It is a temporary solution for a phased breakdown of different
 	//      operations, specifically create. see https://github.com/kubernetes-sigs/kind/issues/324
 	SetupKubernetes bool // if kind should setup kubernetes after creating nodes
@@ -119,8 +121,49 @@ func Cluster(ctx *context.Context, cfg *config.Cluster, opts *Options) error {
 		return nil
 	}
 
-	// print how to set KUBECONFIG to point to the cluster etc.
-	printUsage(ctx.Name())
+	if opts.Use {
+		if err := setupKubeconfig(ctx, cfg); err != nil {
+			return err
+		}
+		printFootnote()
+	} else {
+		// print how to set KUBECONFIG to point to the cluster etc.
+		printUsage(ctx.Name())
+	}
+
+	return nil
+}
+
+func setupKubeconfig(ctx *context.Context, cfg *config.Cluster) error {
+
+	pki := util.NewKubeConfig()
+	certData, err := pki.CertData(ctx.KubeConfigPath())
+	if err != nil {
+		return err
+	}
+
+	pkiPaths, err := pki.CertDataPath(certData)
+	if err != nil {
+		return err
+	}
+
+	var server string
+	for _, v := range certData.Clusters {
+		server = v.Server
+	}
+
+	kcs := &util.KubeConfigSetup{
+		ClusterName:          ctx.Name(),
+		ClusterServerAddress: server,
+		ClientCertificate:    pkiPaths.ClientCertPath,
+		ClientKey:            pkiPaths.ClientKeyPath,
+		CertificateAuthority: pkiPaths.CertificateAuthorityPath,
+	}
+
+	kcs.SetKubeConfigFile(util.DefaultKubeconfigFile)
+	if err := util.SetupKubeConfig(kcs); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -161,4 +204,8 @@ func printSetupInstruction(name string) {
 		"Nodes creation complete. You can now setup kubernetes using docker exec %s-<node> kubeadm ...\n",
 		name,
 	)
+}
+
+func printFootnote() {
+	fmt.Print("\nYou can now use the cluster:\nkubectl cluster-info\n")
 }

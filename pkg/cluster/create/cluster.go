@@ -41,6 +41,14 @@ func WaitForReady(interval time.Duration) ClusterOption {
 	}
 }
 
+// Use configures the cluster created to be active cluster after its creation
+func Use(use bool) ClusterOption {
+	return func(o *internalcreate.Options) *internalcreate.Options {
+		o.Use = use
+		return o
+	}
+}
+
 // SetupKubernetes configures create command to setup kubernetes after creating nodes containers
 // TODO: Refactor this. It is a temporary solution for a phased breakdown of different
 //      operations, specifically create. see https://github.com/kubernetes-sigs/kind/issues/324

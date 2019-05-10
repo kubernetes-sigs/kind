@@ -36,6 +36,7 @@ type flagpole struct {
 	Config    string
 	ImageName string
 	Retain    bool
+	Use       bool
 	Wait      time.Duration
 }
 
@@ -55,6 +56,7 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().StringVar(&flags.Config, "config", "", "path to a kind config file")
 	cmd.Flags().StringVar(&flags.ImageName, "image", "", "node docker image to use for booting the cluster")
 	cmd.Flags().BoolVar(&flags.Retain, "retain", false, "retain nodes for debugging when cluster creation fails")
+	cmd.Flags().BoolVar(&flags.Use, "use", false, "set KUBECONFIG to the configuration of this cluster, once it's created")
 	cmd.Flags().DurationVar(&flags.Wait, "wait", time.Duration(0), "Wait for control plane node to be ready (default 0s)")
 	return cmd
 }
@@ -106,6 +108,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	if err = ctx.Create(cfg,
 		create.Retain(flags.Retain),
 		create.WaitForReady(flags.Wait),
+		create.Use(flags.Use),
 	); err != nil {
 		return errors.Wrap(err, "failed to create cluster")
 	}
