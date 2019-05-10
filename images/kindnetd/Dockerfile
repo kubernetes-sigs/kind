@@ -19,11 +19,12 @@ ARG GOARCH="amd64"
 ARG GOOS=linux
 ENV CGO_ENABLED=0
 ENV GO111MODULE="on"
+ENV GOPROXY=https://proxy.golang.org
 # copy in sources
-WORKDIR /go/src/sigs.k8s.io/kind
+WORKDIR /src
 COPY . .
 # build
-RUN go build -o /go/bin/kindnetd ./cmd/kindnetd
+RUN go build -o /go/bin/kindnetd .
 
 # STEP 2: Build small image
 FROM scratch

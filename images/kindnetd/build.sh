@@ -29,4 +29,4 @@ docker build \
   -t "${IMAGE}:${TAG}" \
   --build-arg="GOARCH=${GOARCH}"\
   -f images/kindnetd/Dockerfile \
-  .
+  "${REPO_ROOT}/cmd/kindnetd"
