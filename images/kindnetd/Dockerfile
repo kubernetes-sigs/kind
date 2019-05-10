@@ -13,11 +13,12 @@
 # limitations under the License.
 
 # STEP 1: Build kindnetd binary
-FROM golang:1.12 AS builder
+FROM golang:1.12.5 AS builder
 # golang envs
 ARG GOARCH="amd64"
 ARG GOOS=linux
 ENV CGO_ENABLED=0
+ENV GO111MODULE="on"
 # copy in sources
 WORKDIR /go/src/sigs.k8s.io/kind
 COPY . .
