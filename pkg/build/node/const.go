@@ -139,7 +139,7 @@ data:
       "plugins": [
         {
           "type": "bridge",
-          "ipMasq": true,
+          "ipMasq": false,
           "isDefaultGateway": true,
           "hairpinMode": true,
           "ipam": {
@@ -154,7 +154,8 @@ data:
                   "subnet": "{{ .PodCIDR }}"
                 }
               ]
-            ]
+            ],
+            "dataDir": "/run/cni-ipam-state"
           }
         },
         {
@@ -221,5 +222,58 @@ spec:
         - name: cni-cfg
           hostPath:
             path: /etc/cni/net.d
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: ip-masq-agent
+  namespace: kube-system
+  labels:
+    tier: node
+    app: kindnet
+data:
+  config: |-
+    nonMasqueradeCIDRs:
+      - 10.244.0.0/16
+    masqLinkLocal: false
+    resyncInterval: 60s
+
+---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: ip-masq-agent
+  namespace: kube-system
+spec:
+  template:
+    metadata:
+      labels:
+        tier: node
+        app: kindnet
+        k8s-app: ip-masq-agent
+    spec:
+      hostNetwork: true
+      tolerations:
+      - operator: Exists
+        effect: NoSchedule
+      serviceAccountName: kindnet
+      containers:
+      - name: ip-masq-agent
+        image: gcr.io/google-containers/ip-masq-agent-amd64:v2.0.0
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: config
+            mountPath: /etc/config
+      volumes:
+        - name: config
+          configMap:
+            # Note this ConfigMap must be created in the same namespace as the daemon pods - this spec uses kube-system
+            name: ip-masq-agent
+            optional: true
+            items:
+              # The daemon looks for its config in a YAML file at /etc/config/ip-masq-agent
+              - key: config
+                path: ip-masq-agent
 ---
 `
