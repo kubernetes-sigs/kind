@@ -35,6 +35,8 @@ CACHE_VOLUME=kind-build-cache
 CONTAINER_REPO_DIR=/src/kind
 CONTAINER_OUT_DIR=$(CONTAINER_REPO_DIR)/bin
 OUT_DIR=$(REPO_ROOT)/bin
+UID:=$(shell id -u)
+GID:=$(shell id -g)
 
 # standard "make" target -> builds
 all: build
@@ -69,6 +71,7 @@ kind: make-cache out-dir
 		-e CGO_ENABLED=0 \
 		-e GOOS=$(GOOS) \
 		-e GOARCH=$(GOARCH) \
+		--user $(UID):$(GID) \
 		$(GO_IMAGE) \
 		go build -v -o /out/kind .
 
