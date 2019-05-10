@@ -22,9 +22,9 @@ ENV CGO_ENABLED=0
 WORKDIR /go/src/sigs.k8s.io/kind
 COPY . .
 # build
-RUN go build -o /go/bin/kindnet ./cmd/kindnetd
+RUN go build -o /go/bin/kindnetd ./cmd/kindnetd
 
 # STEP 2: Build small image
 FROM scratch
-COPY --from=builder /go/bin/kindnet /bin/kindnet
-CMD ["/bin/kindnet"]
+COPY --from=builder /go/bin/kindnetd /bin/kindnetd
+CMD ["/bin/kindnetd"]
