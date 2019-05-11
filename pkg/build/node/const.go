@@ -27,9 +27,10 @@ const (
 The default CNI manifest and images are our own tiny kindnet
 */
 
-var defaultCNIImages = []string{"kindest/kindnetd:0.1.0"}
+var defaultCNIImages = []string{"kindest/kindnetd:0.1.0", "k8s.gcr.io/ip-masq-agent:v2.4.0"}
 
 const defaultCNIManifest = `
+# kindnetd networking manifest
 ---
 apiVersion: extensions/v1beta1
 kind: PodSecurityPolicy
@@ -217,10 +218,65 @@ spec:
         securityContext:
           privileged: false
           capabilities:
-             add: ["NET_ADMIN"]
+            add: ["NET_RAW", "NET_ADMIN"]
       volumes:
         - name: cni-cfg
           hostPath:
             path: /etc/cni/net.d
+---
+# ipmasq agent
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: ip-masq-agent
+  namespace: kube-system
+  labels:
+    tier: node
+    app: kindnet
+data:
+  config: |-
+    nonMasqueradeCIDRs:
+      - 10.244.0.0/16
+    masqLinkLocal: false
+    resyncInterval: 60s
+---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: ip-masq-agent
+  namespace: kube-system
+spec:
+  template:
+    metadata:
+      labels:
+        tier: node
+        app: kindnet
+        k8s-app: ip-masq-agent
+    spec:
+      hostNetwork: true
+      tolerations:
+      - operator: Exists
+        effect: NoSchedule
+      serviceAccountName: kindnet
+      containers:
+      - name: ip-masq-agent
+        image: k8s.gcr.io/ip-masq-agent:v2.4.0
+        securityContext:
+          privileged: false
+          capabilities:
+            add: ["NET_ADMIN", "NET_RAW"]
+        volumeMounts:
+          - name: config
+            mountPath: /etc/config
+      volumes:
+        - name: config
+          configMap:
+            # Note this ConfigMap must be created in the same namespace as the daemon pods - this spec uses kube-system
+            name: ip-masq-agent
+            optional: true
+            items:
+              # The daemon looks for its config in a YAML file at /etc/config/ip-masq-agent
+              - key: config
+                path: ip-masq-agent
 ---
 `
