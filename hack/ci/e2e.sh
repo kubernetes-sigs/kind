@@ -166,8 +166,8 @@ ALPHA2_CONFIG
     containerPath: /var/log/apiserver-audit.log
 kubeadmConfigPatches:
 - |
-  metadata:
-    name: config
+  # metadata:
+  #   name: config
   # v1beta1 works for 1.14+
   kind: ClusterConfiguration
   apiVersion: kubeadm.k8s.io/v1beta1
