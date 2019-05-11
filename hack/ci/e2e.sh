@@ -120,7 +120,7 @@ EOF
     # MasterConfiguration changed to ClusterConfiguration in 1.13
     if echo $KUBE_VERSION | grep ^v1.11
     then
-        echo Patching for kubeadm.k8s.io/v1alpha2
+        echo Patching 1.11 for kubeadm.k8s.io/v1alpha2
         cat <<ALPHA2_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
   extraMounts:
   - hostPath: /tmp/audit-policy.yaml
@@ -129,11 +129,11 @@ EOF
     containerPath: /var/log/apiserver-audit.log
 kubeadmConfigPatches:
 - |
+  # v1alpha2 works for kubeadm 1.11
+  apiVersion: kubeadm.k8s.io/v1alpha2
+  kind: MasterConfiguration
   metadata:
     name: config
-  # v1alpha2 works for kubeadm 1.11
-  kind: MasterConfiguration
-  apiVersion: kubeadm.k8s.io/v1alpha2
   apiServer:
     extraArgs:
       audit-log-path: /var/log/apiserver-audit.log
@@ -156,8 +156,11 @@ ALPHA2_CONFIG
     elif echo $KUBE_VERSION | grep ^v1.13
     then
         echo not Patching for v1.13 kubeadm.k8s.io/v1alpha4?
+    elif echo $KUBE_VERSION | grep ^v1.14
+    then
+        echo not Patching for v1.14 kubeadm.k8s.io/v1beta1?
     else
-        echo Patching for kubeadm.k8s.io/v1beta1
+        echo Patching master for kubeadm.k8s.io/v1beta1
         cat <<BETA1_CONFIG >> "${ARTIFACTS}/kind-config.yaml"
   extraMounts:
   - hostPath: /tmp/audit-policy.yaml
@@ -166,11 +169,11 @@ ALPHA2_CONFIG
     containerPath: /var/log/apiserver-audit.log
 kubeadmConfigPatches:
 - |
-  # metadata:
-  #   name: config
   # v1beta1 works for 1.14+
-  kind: ClusterConfiguration
   apiVersion: kubeadm.k8s.io/v1beta1
+  kind: ClusterConfiguration
+  metadata:
+    name: config
   apiServer:
     extraArgs:
       audit-log-path: /var/log/apiserver-audit.log
