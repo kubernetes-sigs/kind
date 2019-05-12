@@ -18,12 +18,7 @@ limitations under the License.
 package kubeadminit
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"regexp"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -35,6 +30,8 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/exec"
+
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 // kubeadmInitAction implements action for executing the kubadm init
@@ -94,7 +91,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	kubeConfigPath := ctx.ClusterContext.KubeConfigPath()
-	if err := writeKubeConfig(node, kubeConfigPath, hostPort); err != nil {
+	clusterName := ctx.ClusterContext.Name()
+	if err := writeKubeConfig(node, kubeConfigPath, hostPort, clusterName); err != nil {
 		return errors.Wrap(err, "failed to get kubeconfig from node")
 	}
 
@@ -114,43 +112,26 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	return nil
 }
 
-// matches kubeconfig server entry like:
-//    server: https://172.17.0.2:6443
-// which we rewrite to:
-//    server: https://localhost:$PORT
-var serverAddressRE = regexp.MustCompile(`^(\s+server:) https://.*:\d+$`)
-
 // writeKubeConfig writes a fixed KUBECONFIG to dest
 // this should only be called on a control plane node
-// While copyng to the host machine the control plane address
+// While copying to the host machine the control plane address
 // is replaced with local host and the control plane port with
 // a randomly generated port reserved during node creation.
-func writeKubeConfig(n *nodes.Node, dest string, hostPort int32) error {
+func writeKubeConfig(n *nodes.Node, dest string, hostPort int32, clusterName string) error {
 	cmd := n.Command("cat", "/etc/kubernetes/admin.conf")
-	lines, err := exec.CombinedOutputLines(cmd)
+	buff, err := exec.Output(cmd)
 	if err != nil {
 		return errors.Wrap(err, "failed to get kubeconfig from node")
 	}
 
-	// fix the config file, swapping out the server for the forwarded localhost:port
-	var buff bytes.Buffer
-	for _, line := range lines {
-		match := serverAddressRE.FindStringSubmatch(line)
-		if len(match) > 1 {
-			line = fmt.Sprintf("%s https://localhost:%d", match[1], hostPort)
-		}
-		buff.WriteString(line)
-		buff.WriteString("\n")
-	}
-
-	// create the directory to contain the KUBECONFIG file.
-	// 0755 is taken from client-go's config handling logic: https://github.com/kubernetes/client-go/blob/5d107d4ebc00ee0ea606ad7e39fd6ce4b0d9bf9e/tools/clientcmd/loader.go#L412
-	err = os.MkdirAll(filepath.Dir(dest), 0755)
+	config, err := clientcmd.Load(buff)
 	if err != nil {
-		return errors.Wrap(err, "failed to create kubeconfig output directory")
+		return errors.Wrap(err, "failed to load kubeconfig file")
 	}
+	// Swap out the server for the forwarded localhost:port
+	config.Clusters[clusterName].Server = fmt.Sprintf("https://localhost:%d", hostPort)
 
-	return ioutil.WriteFile(dest, buff.Bytes(), 0600)
+	return clientcmd.WriteToFile(*config, dest)
 }
 
 // getAPIServerPort returns the port on the host on which the APIServer
