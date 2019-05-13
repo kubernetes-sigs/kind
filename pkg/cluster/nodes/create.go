@@ -74,8 +74,7 @@ func CreateControlPlaneNode(name, image, clusterName, clusterLabel, listenAddres
 		cache.ports = map[int32]int32{kubeadm.APIServerPort: port}
 	})
 
-	err = addResolve(node)
-	if err != nil {
+	if err := addResolve(node); err != nil {
 		return node, err
 	}
 
@@ -120,8 +119,7 @@ func CreateWorkerNode(name, image, clusterName, clusterLabel string, mounts []cr
 		return node, err
 	}
 
-	err = addResolve(node)
-	if err != nil {
+	if err = addResolve(node); err != nil {
 		return node, err
 	}
 
