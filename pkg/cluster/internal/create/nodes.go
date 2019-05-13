@@ -121,7 +121,7 @@ func createNodeContainers(
 		desiredNode := desiredNode // capture loop variable
 		fns = append(fns, func() error {
 			// create the node into a container (~= docker run -d)
-			_, err := desiredNode.Create(clusterLabel)
+			_, err := desiredNode.Create(clusterName, clusterLabel)
 			return err
 		})
 	}
@@ -211,16 +211,16 @@ func nodesToCreate(cfg *config.Cluster, clusterName string) []nodeSpec {
 }
 
 // TODO(bentheelder): remove network in favor of []cri.PortMapping when that is in
-func (d *nodeSpec) Create(clusterLabel string) (node *nodes.Node, err error) {
+func (d *nodeSpec) Create(clusterName, clusterLabel string) (node *nodes.Node, err error) {
 	// create the node into a container (docker run, but it is paused, see createNode)
 	// TODO(bentheelder): decouple from config objects further
 	switch d.Role {
 	case constants.ExternalLoadBalancerNodeRoleValue:
-		node, err = nodes.CreateExternalLoadBalancerNode(d.Name, d.Image, clusterLabel, d.APIServerAddress, d.APIServerPort)
+		node, err = nodes.CreateExternalLoadBalancerNode(d.Name, d.Image, clusterName, clusterLabel, d.APIServerAddress, d.APIServerPort)
 	case constants.ControlPlaneNodeRoleValue:
-		node, err = nodes.CreateControlPlaneNode(d.Name, d.Image, clusterLabel, d.APIServerAddress, d.APIServerPort, d.ExtraMounts)
+		node, err = nodes.CreateControlPlaneNode(d.Name, d.Image, clusterName, clusterLabel, d.APIServerAddress, d.APIServerPort, d.ExtraMounts)
 	case constants.WorkerNodeRoleValue:
-		node, err = nodes.CreateWorkerNode(d.Name, d.Image, clusterLabel, d.ExtraMounts)
+		node, err = nodes.CreateWorkerNode(d.Name, d.Image, clusterName, clusterLabel, d.ExtraMounts)
 	default:
 		return nil, errors.Errorf("unknown node role: %s", d.Role)
 	}

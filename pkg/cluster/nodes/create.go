@@ -19,7 +19,6 @@ package nodes
 import (
 	"fmt"
 	"net"
-	"strings"
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/kind/pkg/cluster/constants"
@@ -50,7 +49,7 @@ func getPort() (int32, error) {
 
 // CreateControlPlaneNode creates a contol-plane node
 // and gets ready for exposing the the API server
-func CreateControlPlaneNode(name, image, clusterLabel, listenAddress string, port int32, mounts []cri.Mount) (node *Node, err error) {
+func CreateControlPlaneNode(name, image, clusterName, clusterLabel, listenAddress string, port int32, mounts []cri.Mount) (node *Node, err error) {
 	// gets a random host port for the API server
 	if port == 0 {
 		p, err := getPort()
@@ -61,7 +60,7 @@ func CreateControlPlaneNode(name, image, clusterLabel, listenAddress string, por
 	}
 
 	node, err = createNode(
-		name, image, clusterLabel, constants.ControlPlaneNodeRoleValue, mounts,
+		name, image, clusterName, clusterLabel, constants.ControlPlaneNodeRoleValue, mounts,
 		// publish selected port for the API server
 		"--expose", fmt.Sprintf("%d", port),
 		"-p", fmt.Sprintf("%s:%d:%d", listenAddress, port, kubeadm.APIServerPort),
@@ -85,7 +84,7 @@ func CreateControlPlaneNode(name, image, clusterLabel, listenAddress string, por
 
 // CreateExternalLoadBalancerNode creates an external loab balancer node
 // and gets ready for exposing the the API server and the load balancer admin console
-func CreateExternalLoadBalancerNode(name, image, clusterLabel, listenAddress string, port int32) (node *Node, err error) {
+func CreateExternalLoadBalancerNode(name, image, clusterName, clusterLabel, listenAddress string, port int32) (node *Node, err error) {
 	// gets a random host port for control-plane load balancer
 	// gets a random host port for the API server
 	if port == 0 {
@@ -96,7 +95,7 @@ func CreateExternalLoadBalancerNode(name, image, clusterLabel, listenAddress str
 		port = p
 	}
 
-	node, err = createNode(name, image, clusterLabel, constants.ExternalLoadBalancerNodeRoleValue,
+	node, err = createNode(name, image, clusterName, clusterLabel, constants.ExternalLoadBalancerNodeRoleValue,
 		nil,
 		// publish selected port for the control plane
 		"--expose", fmt.Sprintf("%d", port),
@@ -115,8 +114,8 @@ func CreateExternalLoadBalancerNode(name, image, clusterLabel, listenAddress str
 }
 
 // CreateWorkerNode creates a worker node
-func CreateWorkerNode(name, image, clusterLabel string, mounts []cri.Mount) (node *Node, err error) {
-	node, err = createNode(name, image, clusterLabel, constants.WorkerNodeRoleValue, mounts)
+func CreateWorkerNode(name, image, clusterName, clusterLabel string, mounts []cri.Mount) (node *Node, err error) {
+	node, err = createNode(name, image, clusterName, clusterLabel, constants.WorkerNodeRoleValue, mounts)
 	if err != nil {
 		return node, err
 	}
@@ -133,7 +132,7 @@ func CreateWorkerNode(name, image, clusterLabel string, mounts []cri.Mount) (nod
 // createNode `docker run`s the node image, note that due to
 // images/node/entrypoint being the entrypoint, this container will
 // effectively be paused until we call actuallyStartNode(...)
-func createNode(name, image, clusterLabel, role string, mounts []cri.Mount, extraArgs ...string) (handle *Node, err error) {
+func createNode(name, image, clusterName, clusterLabel, role string, mounts []cri.Mount, extraArgs ...string) (handle *Node, err error) {
 	runArgs := []string{
 		"-d", // run the container detached
 		"-t", // allocate a tty for entrypoint logs
@@ -155,8 +154,7 @@ func createNode(name, image, clusterLabel, role string, mounts []cri.Mount, extr
 		// label the node with the role ID
 		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleKey, role),
 		// connect node to network
-		// TODO(Jintao Zhang): split just for get clustername.
-		"--network", strings.Split(name, "-")[0],
+		"--network", clusterName,
 	}
 
 	// pass proxy environment variables to be used by node's docker deamon
