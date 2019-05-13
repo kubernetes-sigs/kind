@@ -17,6 +17,9 @@ limitations under the License.
 package docker
 
 import (
+	"fmt"
+
+	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
@@ -26,6 +29,7 @@ func CreateNetwork(networkName string) error {
 		"docker", "network",
 		"create",
 		"--driver=bridge",
+		"--label="+fmt.Sprintf("%s=%s", constants.ClusterLabelKey, networkName),
 		networkName,
 	)
 	return cmd.Run()
