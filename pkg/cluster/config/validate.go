@@ -17,6 +17,8 @@ limitations under the License.
 package config
 
 import (
+	"net"
+
 	"github.com/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/util"
@@ -46,6 +48,11 @@ func (c *Cluster) Validate() error {
 	numControlPlane, anyControlPlane := numByRole[ControlPlaneRole]
 	if !anyControlPlane || numControlPlane < 1 {
 		errs = append(errs, errors.Errorf("must have at least one %s node", string(ControlPlaneRole)))
+	}
+
+	// podSubnet should be a valid CIDR
+	if _, _, err := net.ParseCIDR(c.Networking.PodSubnet); err != nil {
+		errs = append(errs, errors.Wrapf(err, "invalid podSubnet"))
 	}
 
 	if len(errs) > 0 {
