@@ -62,7 +62,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	// backwards compatibility for mounting your own manifest file to the default
 	// location
 	// NOTE: this is intentionally undocumented, as an internal implementation
-	// detail. Going forward users should disable the defalut CNI and install
+	// detail. Going forward users should disable the default CNI and install
 	// their own, or use the default. The internal templating mechanism is
 	// not intended for external usage and is unstable.
 	if strings.Contains(manifest, "would you kindly template this file") {
