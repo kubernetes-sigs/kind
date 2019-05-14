@@ -18,6 +18,10 @@ limitations under the License.
 package installcni
 
 import (
+	"bytes"
+	"html/template"
+	"strings"
+
 	"github.com/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
@@ -47,30 +51,45 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
-	// install the CNI network plugin
-	// TODO(bentheelder): support other overlay networks
-	// first probe for a pre-installed manifest
-	haveDefaultCNIManifest := true
-	if err := node.Command("test", "-f", "/kind/manifests/default-cni.yaml").Run(); err != nil {
-		haveDefaultCNIManifest = false
+	// read the manifest from the node
+	var raw bytes.Buffer
+	if err := node.Command("cat", "/kind/manifests/default-cni.yaml").SetStdout(&raw).Run(); err != nil {
+		return errors.Wrap(err, "failed to read CNI manifest")
 	}
-	if haveDefaultCNIManifest {
-		// we found the default manifest, install that
-		// the images should already be loaded along with kubernetes
-		if err := node.Command(
-			"kubectl", "create", "--kubeconfig=/etc/kubernetes/admin.conf",
-			"-f", "/kind/manifests/default-cni.yaml",
-		).Run(); err != nil {
-			return errors.Wrap(err, "failed to apply overlay network")
+	manifest := raw.String()
+
+	// TODO: remove this check?
+	// backwards compatibility for mounting your own manifest file to the default
+	// location
+	// NOTE: this is intentionally undocumented, as an internal implementation
+	// detail. Going forward users should disable the default CNI and install
+	// their own, or use the default. The internal templating mechanism is
+	// not intended for external usage and is unstable.
+	if strings.Contains(manifest, "would you kindly template this file") {
+		t, err := template.New("cni-manifest").Parse(manifest)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse CNI manifest template")
 		}
-	} else {
-		// fallback to our old pattern of installing weave using their recommended method
-		if err := node.Command(
-			"/bin/sh", "-c",
-			`kubectl apply --kubeconfig=/etc/kubernetes/admin.conf -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version --kubeconfig=/etc/kubernetes/admin.conf | base64 | tr -d '\n')"`,
-		).Run(); err != nil {
-			return errors.Wrap(err, "failed to apply overlay network")
+		// TODO(bentheelder): make podsubnet configurable
+		var out bytes.Buffer
+		err = t.Execute(&out, &struct {
+			PodSubnet string
+		}{
+			PodSubnet: "10.244.0.0/16",
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to execute CNI manifest template")
 		}
+		manifest = out.String()
+	}
+
+	// install the manifest
+	// TODO(bentheelder): optionally skip this entire action
+	if err := node.Command(
+		"kubectl", "create", "--kubeconfig=/etc/kubernetes/admin.conf",
+		"-f", "-",
+	).SetStdin(strings.NewReader(manifest)).Run(); err != nil {
+		return errors.Wrap(err, "failed to apply overlay network")
 	}
 
 	// mark success
