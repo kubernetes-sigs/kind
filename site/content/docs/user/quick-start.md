@@ -208,9 +208,13 @@ kind build base-image --image base:v0.1.0
 When creating your kind cluster, via `create cluster`, you can use a
 configuration file to run specific commands before or after systemd or kubeadm
 run.
-To specify a configuration file when creating a cluster, use the `--config`
-flag.
 For a sample kind configuration file see [kind-example-config][kind-example-config].
+To specify a configuration file when creating a cluster, use the `--config`
+flag:
+
+```
+kind create cluster --config kind-example-config.yaml
+```
 
 In particular, many users may be interested in multi-node clusters. A simple
 configuration for this can be achieved with the following config file contents:
