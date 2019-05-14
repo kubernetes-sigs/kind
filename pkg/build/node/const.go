@@ -31,6 +31,7 @@ var defaultCNIImages = []string{"kindest/kindnetd:0.1.0", "k8s.gcr.io/ip-masq-ag
 
 const defaultCNIManifest = `
 # kindnetd networking manifest
+# would you kindly template this file
 ---
 apiVersion: extensions/v1beta1
 kind: PodSecurityPolicy
@@ -153,7 +154,7 @@ data:
             "ranges": [
               [
                 {
-                  "subnet": "{{ .PodCIDR }}"
+                  "subnet": "{{"{{ .PodCIDR }}"}}"
                 }
               ]
             ]
@@ -236,7 +237,7 @@ metadata:
 data:
   config: |-
     nonMasqueradeCIDRs:
-      - 10.244.0.0/16
+      - {{ .PodSubnet }}
     masqLinkLocal: false
     resyncInterval: 60s
 ---
