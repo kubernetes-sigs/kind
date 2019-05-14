@@ -109,7 +109,7 @@ controllerManagerExtraArgs:
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
 networking:
-  podSubnet: {{ .PodSubnet }}
+  podSubnet: "{{ .PodSubnet }}"
 ---
 apiVersion: kubeadm.k8s.io/v1alpha2
 kind: NodeConfiguration
@@ -145,7 +145,7 @@ apiServerCertSANs: [localhost]
 controllerManagerExtraArgs:
   enable-hostpath-provisioner: "true"
 networking:
-  podSubnet: {{ .PodSubnet }}
+  podSubnet: "{{ .PodSubnet }}"
 ---
 apiVersion: kubeadm.k8s.io/v1alpha3
 kind: InitConfiguration
@@ -209,7 +209,7 @@ controllerManager:
   extraArgs:
     enable-hostpath-provisioner: "true"
 networking:
-  podSubnet: {{ .PodSubnet }}
+  podSubnet: "{{ .PodSubnet }}"
 ---
 apiVersion: kubeadm.k8s.io/v1beta1
 kind: InitConfiguration
