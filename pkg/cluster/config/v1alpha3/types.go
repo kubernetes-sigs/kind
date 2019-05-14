@@ -96,4 +96,7 @@ type Networking struct {
 	//
 	// Defaults to 127.0.0.1
 	APIServerAddress string `json:"apiServerAddress,omitempty"`
+	// PodSubnet is the CIDR used for pod IPs
+	// kind will select a default if unspecified
+	PodSubnet string `json:"podSubnet,omitempty"`
 }

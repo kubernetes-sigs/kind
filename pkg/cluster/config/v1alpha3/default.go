@@ -46,6 +46,10 @@ func SetDefaults_Cluster(obj *Cluster) {
 	if obj.Networking.APIServerAddress == "" {
 		obj.Networking.APIServerAddress = "127.0.0.1"
 	}
+	// default the pod CIDR
+	if obj.Networking.PodSubnet == "" {
+		obj.Networking.PodSubnet = "10.244.0.0/16"
+	}
 }
 
 // SetDefaults_Node sets uninitialized fields to their default value.
