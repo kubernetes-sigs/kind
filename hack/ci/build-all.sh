@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# simple script to ensure all of our builds work
+# simple CI script to verify kind's own sources
+# TODO(bentheelder): rename / refactor. consider building kindnetd
 
 set -o errexit
 set -o nounset
@@ -28,5 +29,11 @@ export GO111MODULE="on"
 GOPROXY="${GOPROXY:-https://proxy.golang.org}"
 export GOPROXY
 
-# build
+# build and kind
 go install -v .
+go test -v ./...
+
+# build and test kindnetd
+cd ./cmd/kindnetd
+go install -v .
+go test -v ./...
