@@ -33,10 +33,10 @@ const defaultCNIManifest = `
 # kindnetd networking manifest
 # would you kindly template this file
 ---
-apiVersion: extensions/v1beta1
+apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
-  name: psp.kindnet.unprivileged
+  name: kindnet
   annotations:
     seccomp.security.alpha.kubernetes.io/allowedProfileNames: docker/default
     seccomp.security.alpha.kubernetes.io/defaultProfileName: docker/default
@@ -82,16 +82,14 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: kindnet
 rules:
-  - apiGroups: ['extensions']
-    resources: ['podsecuritypolicies']
-    verbs: ['use']
-    resourceNames: ['psp.kindnet.unprivileged']
   - apiGroups:
-      - ""
+    - policy
     resources:
-      - pods
+    - podsecuritypolicies
     verbs:
-      - get
+    - use
+    resourceNames: 
+    - kindnet
   - apiGroups:
       - ""
     resources:
@@ -99,12 +97,6 @@ rules:
     verbs:
       - list
       - watch
-  - apiGroups:
-      - ""
-    resources:
-      - nodes/status
-    verbs:
-      - patch
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -133,11 +125,12 @@ metadata:
   labels:
     tier: node
     app: kindnet
+    k8s-app: kindnet
 data:
   cni-conf-template.json: |
     {
       "cniVersion": "0.3.1",
-      "name": "kindOfBridge",
+      "name": "kindnet",
       "plugins": [
         {
           "type": "bridge",
@@ -172,17 +165,19 @@ data:
 apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
-  name: kindnet-ds
+  name: kindnet
   namespace: kube-system
   labels:
     tier: node
-    app: kindnet 
+    app: kindnet
+    k8s-app: kindnet
 spec:
   template:
     metadata:
       labels:
         tier: node
         app: kindnet
+        k8s-app: kindnet
     spec:
       hostNetwork: true
       tolerations:
@@ -219,11 +214,80 @@ spec:
         securityContext:
           privileged: false
           capabilities:
-            add: ["NET_RAW", "NET_ADMIN"]
+            add: ["NET_ADMIN"]
       volumes:
         - name: cni-cfg
           hostPath:
             path: /etc/cni/net.d
+---
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: ip-masq-agent
+  annotations:
+    seccomp.security.alpha.kubernetes.io/allowedProfileNames: docker/default
+    seccomp.security.alpha.kubernetes.io/defaultProfileName: docker/default
+    apparmor.security.beta.kubernetes.io/allowedProfileNames: runtime/default
+    apparmor.security.beta.kubernetes.io/defaultProfileName: runtime/default
+spec:
+  privileged: false
+  volumes:
+    - configMap
+  readOnlyRootFilesystem: false
+  # Users and groups
+  runAsUser:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  fsGroup:
+    rule: RunAsAny
+  # Privilege Escalation
+  allowPrivilegeEscalation: false
+  defaultAllowPrivilegeEscalation: false
+  # Capabilities
+  allowedCapabilities: ['NET_RAW', 'NET_ADMIN']
+  defaultAddCapabilities: []
+  requiredDropCapabilities: []
+  # Host namespaces
+  hostPID: false
+  hostIPC: false
+  hostNetwork: true
+  # SELinux
+  seLinux:
+    rule: 'RunAsAny'
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: ip-masq-agent
+rules:
+  - apiGroups:
+      - policy
+    resources:
+      - podsecuritypolicies
+    verbs:
+      - use
+    resourceNames:
+      - ip-masq-agent
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: ip-masq-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ip-masq-agent
+subjects:
+- kind: ServiceAccount
+  name: ip-masq-agent
+  namespace: kube-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ip-masq-agent
+  namespace: kube-system
 ---
 # ipmasq agent
 kind: ConfigMap
@@ -233,7 +297,8 @@ metadata:
   namespace: kube-system
   labels:
     tier: node
-    app: kindnet
+    app: ip-masq-agent
+    k8s-app: ip-masq-agent
 data:
   config: |-
     nonMasqueradeCIDRs:
@@ -251,21 +316,21 @@ spec:
     metadata:
       labels:
         tier: node
-        app: kindnet
+        app: ip-masq-agent
         k8s-app: ip-masq-agent
     spec:
       hostNetwork: true
       tolerations:
       - operator: Exists
         effect: NoSchedule
-      serviceAccountName: kindnet
+      serviceAccountName: ip-masq-agent
       containers:
       - name: ip-masq-agent
         image: k8s.gcr.io/ip-masq-agent:v2.4.0
         securityContext:
           privileged: false
           capabilities:
-            add: ["NET_ADMIN", "NET_RAW"]
+            add: ["NET_RAW", "NET_ADMIN"]
         volumeMounts:
           - name: config
             mountPath: /etc/config
