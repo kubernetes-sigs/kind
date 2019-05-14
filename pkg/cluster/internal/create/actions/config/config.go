@@ -79,7 +79,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 			ControlPlaneEndpoint: controlPlaneEndpoint,
 			APIBindPort:          kubeadm.APIServerPort,
 			Token:                kubeadm.Token,
-			PodSubnet:            "10.244.0.0/16", // TODO: make configurable
+			PodSubnet:            ctx.Config.Networking.PodSubnet,
 		},
 	)
 

@@ -70,12 +70,11 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to parse CNI manifest template")
 		}
-		// TODO(bentheelder): make podsubnet configurable
 		var out bytes.Buffer
 		err = t.Execute(&out, &struct {
 			PodSubnet string
 		}{
-			PodSubnet: "10.244.0.0/16",
+			PodSubnet: ctx.Config.Networking.PodSubnet,
 		})
 		if err != nil {
 			return errors.Wrap(err, "failed to execute CNI manifest template")
