@@ -9,6 +9,7 @@ package tools
 import (
 	// linter(s)
 	_ "golang.org/x/lint"
+	_ "honnef.co/go/tools/cmd/staticcheck"
 
 	// kubernetes code generators
 	_ "k8s.io/code-generator/cmd/conversion-gen"
