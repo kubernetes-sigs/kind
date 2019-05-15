@@ -136,7 +136,7 @@ func fixOldImageTags(path, arch string) error {
 	archSuffix := "-" + arch
 	repositoryFixer := func(repository string) string {
 		if !strings.HasSuffix(repository, archSuffix) {
-			println("fixed: " + repository + " -> " + repository + archSuffix)
+			fmt.Println("fixed: " + repository + " -> " + repository + archSuffix)
 			repository = repository + archSuffix
 		}
 		return repository
