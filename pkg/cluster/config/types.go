@@ -99,4 +99,7 @@ type Networking struct {
 	// PodSubnet is the CIDR used for pod IPs
 	// kind will select a default if unspecified
 	PodSubnet string
+	// If DisableDefaultCNI is true, kind will not install the default CNI setup.
+	// Instead the user should install their own CNI after creating the cluster.
+	DisableDefaultCNI bool
 }
