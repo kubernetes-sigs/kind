@@ -86,8 +86,16 @@ func Cluster(ctx *context.Context, cfg *config.Cluster, opts *Options) error {
 	}
 	if opts.SetupKubernetes {
 		actionsToRun = append(actionsToRun,
-			kubeadminit.NewAction(),                   // run kubeadm init
-			installcni.NewAction(),                    // install CNI
+			kubeadminit.NewAction(), // run kubeadm init
+		)
+		// this step might be skipped, but is next after init
+		if !cfg.Networking.DisableDefaultCNI {
+			actionsToRun = append(actionsToRun,
+				installcni.NewAction(), // install CNI
+			)
+		}
+		// add remaining steps
+		actionsToRun = append(actionsToRun,
 			installstorage.NewAction(),                // install StorageClass
 			kubeadmjoin.NewAction(),                   // run kubeadm join
 			waitforready.NewAction(opts.WaitForReady), // wait for cluster readiness
