@@ -47,9 +47,15 @@ func Cluster(c *context.Context) error {
 		fmt.Printf("$KUBECONFIG is still set to use %s even though that file has been deleted, remember to unset it\n", c.KubeConfigPath())
 	}
 
+	// before delete node, we inspect it to get network name.
+	networkName, err := docker.Inspect(n[0].Name(), "{{range $name, $_:=.NetworkSettings.Networks}}{{$name}}{{end}}")
+	if err != nil {
+		return errors.Wrap(err, "error inspect nodes")
+	}
+
 	if err := nodes.Delete(n...); err != nil {
 		return errors.Wrap(err, "error deleting nodes")
 	}
 	// after all nodes have been deleted, we need delete the network
-	return docker.DeleteNetwork(c.Name())
+	return docker.DeleteNetwork(networkName[0])
 }

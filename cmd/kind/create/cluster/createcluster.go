@@ -88,6 +88,10 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 
 	// create a cluster context and create the cluster
 	ctx := cluster.NewContext(flags.Name)
+	// using cluster name as bridge network name
+	if cfg.Networking.BridgeName == "" {
+		cfg.Networking.BridgeName = flags.Name
+	}
 	if flags.ImageName != "" {
 		// Apply image override to all the Nodes defined in Config
 		// TODO(fabrizio pandini): this should be reconsidered when implementing

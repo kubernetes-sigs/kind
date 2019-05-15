@@ -44,3 +44,17 @@ func DeleteNetwork(networkName string) error {
 	)
 	return cmd.Run()
 }
+
+// IsNetworkExist check if the network exist
+func IsNetworkExist(networkName string) bool {
+	cmd := exec.Command(
+		"docker", "network",
+		"inspect",
+		networkName,
+	)
+	if err := cmd.Run(); err != nil {
+		return false
+	}
+
+	return true
+}

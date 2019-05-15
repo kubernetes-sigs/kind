@@ -81,9 +81,12 @@ func provisionNodes(
 ) error {
 	defer status.End(false)
 
-	// create bridge network for nodes.
-	if err := createNetwork(status, clusterName); err != nil {
-		return err
+	// check if the network is exist.
+	if !docker.IsNetworkExist(cfg.Networking.BridgeName) {
+		// create bridge network for nodes.
+		if err := createNetwork(status, cfg.Networking.BridgeName); err != nil {
+			return err
+		}
 	}
 
 	if err := createNodeContainers(status, cfg, clusterName, clusterLabel); err != nil {
@@ -121,7 +124,7 @@ func createNodeContainers(
 		desiredNode := desiredNode // capture loop variable
 		fns = append(fns, func() error {
 			// create the node into a container (~= docker run -d)
-			_, err := desiredNode.Create(clusterName, clusterLabel)
+			_, err := desiredNode.Create(cfg.Networking.BridgeName, clusterLabel)
 			return err
 		})
 	}
@@ -211,16 +214,16 @@ func nodesToCreate(cfg *config.Cluster, clusterName string) []nodeSpec {
 }
 
 // TODO(bentheelder): remove network in favor of []cri.PortMapping when that is in
-func (d *nodeSpec) Create(clusterName, clusterLabel string) (node *nodes.Node, err error) {
+func (d *nodeSpec) Create(networkName, clusterLabel string) (node *nodes.Node, err error) {
 	// create the node into a container (docker run, but it is paused, see createNode)
 	// TODO(bentheelder): decouple from config objects further
 	switch d.Role {
 	case constants.ExternalLoadBalancerNodeRoleValue:
-		node, err = nodes.CreateExternalLoadBalancerNode(d.Name, d.Image, clusterName, clusterLabel, d.APIServerAddress, d.APIServerPort)
+		node, err = nodes.CreateExternalLoadBalancerNode(d.Name, d.Image, networkName, clusterLabel, d.APIServerAddress, d.APIServerPort)
 	case constants.ControlPlaneNodeRoleValue:
-		node, err = nodes.CreateControlPlaneNode(d.Name, d.Image, clusterName, clusterLabel, d.APIServerAddress, d.APIServerPort, d.ExtraMounts)
+		node, err = nodes.CreateControlPlaneNode(d.Name, d.Image, networkName, clusterLabel, d.APIServerAddress, d.APIServerPort, d.ExtraMounts)
 	case constants.WorkerNodeRoleValue:
-		node, err = nodes.CreateWorkerNode(d.Name, d.Image, clusterName, clusterLabel, d.ExtraMounts)
+		node, err = nodes.CreateWorkerNode(d.Name, d.Image, networkName, clusterLabel, d.ExtraMounts)
 	default:
 		return nil, errors.Errorf("unknown node role: %s", d.Role)
 	}
