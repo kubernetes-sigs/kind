@@ -27,7 +27,7 @@ const (
 The default CNI manifest and images are our own tiny kindnet
 */
 
-var defaultCNIImages = []string{"kindest/kindnetd:0.1.0", "k8s.gcr.io/ip-masq-agent:v2.4.0"}
+var defaultCNIImages = []string{"kindest/kindnetd:0.1.0", "k8s.gcr.io/ip-masq-agent:v2.4.1"}
 
 const defaultCNIManifest = `
 # kindnetd networking manifest
