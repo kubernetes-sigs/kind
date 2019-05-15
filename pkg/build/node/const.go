@@ -326,7 +326,7 @@ spec:
       serviceAccountName: ip-masq-agent
       containers:
       - name: ip-masq-agent
-        image: k8s.gcr.io/ip-masq-agent:v2.4.0
+        image: k8s.gcr.io/ip-masq-agent:v2.4.1
         securityContext:
           privileged: false
           capabilities:
