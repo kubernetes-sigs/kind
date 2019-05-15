@@ -104,6 +104,7 @@ func autoConvert_v1alpha3_Networking_To_config_Networking(in *Networking, out *c
 	out.APIServerPort = in.APIServerPort
 	out.APIServerAddress = in.APIServerAddress
 	out.PodSubnet = in.PodSubnet
+	out.DisableDefaultCNI = in.DisableDefaultCNI
 	return nil
 }
 
@@ -116,6 +117,7 @@ func autoConvert_config_Networking_To_v1alpha3_Networking(in *config.Networking,
 	out.APIServerPort = in.APIServerPort
 	out.APIServerAddress = in.APIServerAddress
 	out.PodSubnet = in.PodSubnet
+	out.DisableDefaultCNI = in.DisableDefaultCNI
 	return nil
 }
 
