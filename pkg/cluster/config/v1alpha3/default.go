@@ -41,14 +41,32 @@ func SetDefaults_Cluster(obj *Cluster) {
 			},
 		}
 	}
-	// default to listening on 127.0.0.1:randomPort
-	// TODO(bentheelder): this defaulting will need to be ipv6 aware as well
+	if obj.Networking.IPFamily == "" {
+		obj.Networking.IPFamily = "ipv4"
+	}
+	// default to listening on 127.0.0.1:randomPort on ipv4
+	// and [::1]:randomPort on ipv6
 	if obj.Networking.APIServerAddress == "" {
 		obj.Networking.APIServerAddress = "127.0.0.1"
+		if obj.Networking.IPFamily == "ipv6" {
+			obj.Networking.APIServerAddress = "::1"
+		}
 	}
 	// default the pod CIDR
 	if obj.Networking.PodSubnet == "" {
 		obj.Networking.PodSubnet = "10.244.0.0/16"
+		if obj.Networking.IPFamily == "ipv6" {
+			obj.Networking.PodSubnet = "fd00:10:244::/64"
+		}
+	}
+	// default the service CIDR using the kubeadm default
+	// https://github.com/kubernetes/kubernetes/blob/746404f82a28e55e0b76ffa7e40306fb88eb3317/cmd/kubeadm/app/apis/kubeadm/v1beta2/defaults.go#L32
+	// Note: kubeadm is doing it already but this simplifies kind's logic
+	if obj.Networking.ServiceSubnet == "" {
+		obj.Networking.ServiceSubnet = "10.96.0.0/12"
+		if obj.Networking.IPFamily == "ipv6" {
+			obj.Networking.ServiceSubnet = "fd00:10:96::/112"
+		}
 	}
 }
 

@@ -62,7 +62,8 @@ func (n *Node) Command(command string, args ...string) exec.Cmd {
 type nodeCache struct {
 	mu                sync.RWMutex
 	kubernetesVersion string
-	ip                string
+	ipv4              string
+	ipv6              string
 	ports             map[int32]int32
 	role              string
 }
@@ -79,10 +80,10 @@ func (cache *nodeCache) KubeVersion() string {
 	return cache.kubernetesVersion
 }
 
-func (cache *nodeCache) IP() string {
+func (cache *nodeCache) IP() (string, string) {
 	cache.mu.RLock()
 	defer cache.mu.RUnlock()
-	return cache.ip
+	return cache.ipv4, cache.ipv6
 }
 
 func (cache *nodeCache) HostPort(p int32) (int32, bool) {
@@ -147,25 +148,30 @@ func (n *Node) KubeVersion() (version string, err error) {
 }
 
 // IP returns the IP address of the node
-func (n *Node) IP() (ip string, err error) {
+func (n *Node) IP() (ipv4 string, ipv6 string, err error) {
 	// use the cached version first
-	cachedIP := n.cache.IP()
-	if cachedIP != "" {
-		return cachedIP, nil
+	cachedIPv4, cachedIPv6 := n.cache.IP()
+	// TODO: this assumes there are always ipv4 and ipv6 cached addresses
+	if cachedIPv4 != "" && cachedIPv6 != "" {
+		return cachedIPv4, cachedIPv6, nil
 	}
 	// retrive the IP address of the node using docker inspect
-	lines, err := docker.Inspect(n.name, "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}")
+	lines, err := docker.Inspect(n.name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get file")
+		return "", "", errors.Wrap(err, "failed to get container details")
 	}
 	if len(lines) != 1 {
-		return "", errors.Errorf("file should only be one line, got %d lines", len(lines))
+		return "", "", errors.Errorf("file should only be one line, got %d lines", len(lines))
 	}
-	ip = lines[0]
+	ips := strings.Split(lines[0], ",")
+	if len(ips) != 2 {
+		return "", "", errors.Errorf("container addresses should have 2 values, got %d values", len(ips))
+	}
 	n.cache.set(func(cache *nodeCache) {
-		cache.ip = ip
+		cache.ipv4 = ips[0]
+		cache.ipv6 = ips[1]
 	})
-	return ip, nil
+	return ips[0], ips[1], nil
 }
 
 // Ports returns a specific port mapping for the node
@@ -274,4 +280,21 @@ func getProxyDetails() proxyDetails {
 		}
 	}
 	return details
+}
+
+// EnableIPv6 enables IPv6 inside the node container and in the inner docker daemon
+func (n *Node) EnableIPv6() error {
+	// enable ipv6
+	cmd := n.Command("sysctl", "net.ipv6.conf.all.disable_ipv6=0")
+	err := exec.RunLoggingOutputOnFail(cmd)
+	if err != nil {
+		return errors.Wrap(err, "failed to enable ipv6")
+	}
+	// enable ipv6 forwarding
+	cmd = n.Command("sysctl", "net.ipv6.conf.all.forwarding=1")
+	err = exec.RunLoggingOutputOnFail(cmd)
+	if err != nil {
+		return errors.Wrap(err, "failed to enable ipv6 forwarding")
+	}
+	return nil
 }

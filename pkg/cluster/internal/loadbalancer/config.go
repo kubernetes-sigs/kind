@@ -27,6 +27,7 @@ import (
 type ConfigData struct {
 	ControlPlanePort int
 	BackendServers   map[string]string
+	IPv6             bool
 }
 
 // DefaultConfigTemplate is the loadbalancer config template
@@ -42,6 +43,9 @@ stream {
 
     server {
         listen {{ .ControlPlanePort }};
+        {{ if .IPv6 -}}
+        listen [::]:{{ .ControlPlanePort }};
+        {{- end }}
         proxy_pass tcp_backend;
     }
 }

@@ -45,6 +45,10 @@ type ConfigData struct {
 	Token string
 	// The subnet used for pods
 	PodSubnet string
+	// The subnet used for services
+	ServiceSubnet string
+	// IPv4 values take precedence over IPv6 by default, if true set IPv6 default values
+	IPv6 bool
 	// DerivedConfigData is populated by Derive()
 	// These auto-generated fields are available to Config templates,
 	// but not meant to be set by hand
@@ -104,9 +108,14 @@ apiServerExtraVolumes:
 # on docker for mac we have to expose the api server via port forward,
 # so we need to ensure the cert is valid for localhost so we can talk
 # to the cluster after rewriting the kubeconfig to point to localhost
-apiServerCertSANs: [localhost, {{.APIServerAddress}}]
+apiServerCertSANs: [localhost, "{{.APIServerAddress}}"]
 kubeletConfiguration:
   baseConfig:
+    # configure ipv6 addresses in IPv6 mode
+    {{ if .IPv6 -}}
+    address: "::"
+    healthzBindAddress: "::"
+    {{- end }}
     # disable disk resource management by default
     # kubelet will see the host disk that the inner container runtime
     # is ultimately backed by and attempt to recover disk space.
@@ -151,6 +160,9 @@ metadata:
 kubernetesVersion: {{.KubernetesVersion}}
 clusterName: "{{.ClusterName}}"
 controlPlaneEndpoint: {{ .ControlPlaneEndpoint }}
+networking:
+  podSubnet: "{{ .PodSubnet }}"
+  serviceSubnet: "{{ .ServiceSubnet }}"
 # we need nsswitch.conf so we use /etc/hosts
 # https://github.com/kubernetes/kubernetes/issues/69195
 apiServerExtraVolumes:
@@ -162,7 +174,7 @@ apiServerExtraVolumes:
 # on docker for mac we have to expose the api server via port forward,
 # so we need to ensure the cert is valid for localhost so we can talk
 # to the cluster after rewriting the kubeconfig to point to localhost
-apiServerCertSANs: [localhost, {{.APIServerAddress}}]
+apiServerCertSANs: [localhost, "{{.APIServerAddress}}"]
 controllerManagerExtraArgs:
   enable-hostpath-provisioner: "true"
 networking:
@@ -210,6 +222,11 @@ apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 metadata:
   name: config
+# configure ipv6 addresses in IPv6 mode
+{{ if .IPv6 -}}
+address: "::"
+healthzBindAddress: "::"
+{{- end }}
 # disable disk resource management by default
 # kubelet will see the host disk that the inner container runtime
 # is ultimately backed by and attempt to recover disk space. we don't want that.
@@ -239,12 +256,24 @@ controlPlaneEndpoint: {{ .ControlPlaneEndpoint }}
 # so we need to ensure the cert is valid for localhost so we can talk
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServer:
-  certSANs: [localhost, {{.APIServerAddress}}]
+  certSANs: [localhost, "{{.APIServerAddress}}"]
 controllerManager:
   extraArgs:
     enable-hostpath-provisioner: "true"
+    # configure ipv6 default addresses for IPv6 clusters
+    {{ if .IPv6 -}}
+    bind-address: "::"
+    {{- end }}
+scheduler:
+  extraArgs:
+    # configure ipv6 default addresses for IPv6 clusters
+    {{ if .IPv6 -}}
+    address: "::"
+    bind-address: "::1"
+    {{- end }}
 networking:
   podSubnet: "{{ .PodSubnet }}"
+  serviceSubnet: "{{ .ServiceSubnet }}"
 ---
 apiVersion: kubeadm.k8s.io/v1beta1
 kind: InitConfiguration
@@ -290,6 +319,11 @@ apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 metadata:
   name: config
+# configure ipv6 addresses in IPv6 mode
+{{ if .IPv6 -}}
+address: "::"
+healthzBindAddress: "::"
+{{- end }}
 # disable disk resource management by default
 # kubelet will see the host disk that the inner container runtime
 # is ultimately backed by and attempt to recover disk space. we don't want that.
@@ -319,12 +353,24 @@ controlPlaneEndpoint: {{ .ControlPlaneEndpoint }}
 # so we need to ensure the cert is valid for localhost so we can talk
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServer:
-  certSANs: [localhost, {{.APIServerAddress}}]
+  certSANs: [localhost, "{{.APIServerAddress}}"]
 controllerManager:
   extraArgs:
     enable-hostpath-provisioner: "true"
+    # configure ipv6 default addresses for IPv6 clusters
+    {{ if .IPv6 -}}
+    bind-address: "::"
+    {{- end }}
+scheduler:
+  extraArgs:
+    # configure ipv6 default addresses for IPv6 clusters
+    {{ if .IPv6 -}}
+    address: "::"
+    bind-address: "::1"
+    {{- end }}
 networking:
   podSubnet: "{{ .PodSubnet }}"
+  serviceSubnet: "{{ .ServiceSubnet }}"
 ---
 apiVersion: kubeadm.k8s.io/v1beta2
 kind: InitConfiguration
@@ -370,6 +416,11 @@ apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 metadata:
   name: config
+# configure ipv6 addresses in IPv6 mode
+{{ if .IPv6 -}}
+address: "::"
+healthzBindAddress: "::"
+{{- end }}
 # disable disk resource management by default
 # kubelet will see the host disk that the inner container runtime
 # is ultimately backed by and attempt to recover disk space. we don't want that.

@@ -42,6 +42,8 @@ func fuzzConfig(obj *config.Cluster, c fuzz.Continue) {
 	}}
 	obj.Networking.APIServerAddress = "127.0.0.1"
 	obj.Networking.PodSubnet = "10.244.0.0/16"
+	obj.Networking.ServiceSubnet = "10.96.0.0/12"
+	obj.Networking.IPFamily = "ipv4"
 }
 
 func fuzzNode(obj *config.Node, c fuzz.Continue) {

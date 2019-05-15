@@ -65,11 +65,17 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to get kubernetes version from node")
 	}
 
-	// get the control plane endpoint
-	controlPlaneEndpoint, err := nodes.GetControlPlaneEndpoint(allNodes)
+	// get the control plane endpoint, in case the cluster has an external load balancer in
+	// front of the control-plane nodes
+	controlPlaneEndpoint, controlPlaneEndpointIPv6, err := nodes.GetControlPlaneEndpoint(allNodes)
 	if err != nil {
 		// TODO(bentheelder): logging here
 		return err
+	}
+
+	// configure the right protocol addresses
+	if ctx.Config.Networking.IPFamily == "ipv6" {
+		controlPlaneEndpoint = controlPlaneEndpointIPv6
 	}
 
 	// create kubeadm init config
@@ -83,7 +89,9 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		APIServerAddress:     ctx.Config.Networking.APIServerAddress,
 		Token:                kubeadm.Token,
 		PodSubnet:            ctx.Config.Networking.PodSubnet,
+		ServiceSubnet:        ctx.Config.Networking.ServiceSubnet,
 		ControlPlane:         true,
+		IPv6:                 ctx.Config.Networking.IPFamily == "ipv6",
 	}
 
 	fns = append(fns, func() error {
@@ -193,12 +201,16 @@ func setPatchNames(patches []string, jsonPatches []kustomize.PatchJSON6902) ([]s
 // writeKubeadmConfig writes the kubeadm configuration in the specified node
 func writeKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node *nodes.Node) error {
 	// get the node ip address
-	nodeAddress, err := node.IP()
+	nodeAddress, nodeAddressIPv6, err := node.IP()
 	if err != nil {
 		return errors.Wrap(err, "failed to get IP for node")
 	}
 
 	data.NodeAddress = nodeAddress
+	// configure the right protocol addresses
+	if cfg.Networking.IPFamily == "ipv6" {
+		data.NodeAddress = nodeAddressIPv6
+	}
 
 	kubeadmConfig, err := getKubeadmConfig(cfg, data)
 

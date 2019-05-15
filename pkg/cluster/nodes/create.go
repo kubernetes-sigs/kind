@@ -59,11 +59,12 @@ func CreateControlPlaneNode(name, image, clusterLabel, listenAddress string, por
 		port = p
 	}
 
+	portMapping := net.JoinHostPort(listenAddress, fmt.Sprintf("%d", port)) + fmt.Sprintf(":%d", kubeadm.APIServerPort)
 	node, err = createNode(
 		name, image, clusterLabel, constants.ControlPlaneNodeRoleValue, mounts,
 		// publish selected port for the API server
 		"--expose", fmt.Sprintf("%d", port),
-		"-p", fmt.Sprintf("%s:%d:%d", listenAddress, port, kubeadm.APIServerPort),
+		"-p", portMapping,
 	)
 	if err != nil {
 		return node, err
@@ -90,11 +91,12 @@ func CreateExternalLoadBalancerNode(name, image, clusterLabel, listenAddress str
 		port = p
 	}
 
+	portMapping := net.JoinHostPort(listenAddress, fmt.Sprintf("%d", port)) + fmt.Sprintf(":%d", loadbalancer.ControlPlanePort)
 	node, err = createNode(name, image, clusterLabel, constants.ExternalLoadBalancerNodeRoleValue,
 		nil,
 		// publish selected port for the control plane
 		"--expose", fmt.Sprintf("%d", port),
-		"-p", fmt.Sprintf("%s:%d:%d", listenAddress, port, loadbalancer.ControlPlanePort),
+		"-p", portMapping,
 	)
 	if err != nil {
 		return node, err
