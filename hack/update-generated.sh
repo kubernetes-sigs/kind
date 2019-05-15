@@ -39,6 +39,7 @@ cd "${REPO_ROOT}"
 # turn off module mode before running the generators
 # https://github.com/kubernetes/code-generator/issues/69
 # we also need to populate vendor
+go mod tidy
 go mod vendor
 export GO111MODULE="off"
 
@@ -65,7 +66,7 @@ cd "${FAKE_REPOPATH}"
 "${BINDIR}/conversion-gen" -i ./pkg/cluster/config/v1alpha3 -O zz_generated.conversion --go-header-file hack/boilerplate.go.txt
 
 export GO111MODULE="on"
-cd $REPO_ROOT
+cd "${REPO_ROOT}"
 
 # gofmt the tree
 find . -name "*.go" -type f -print0 | xargs -0 gofmt -s -w
