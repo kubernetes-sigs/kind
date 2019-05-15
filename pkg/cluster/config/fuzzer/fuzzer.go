@@ -28,6 +28,7 @@ import (
 func Funcs(codecs runtimeserializer.CodecFactory) []interface{} {
 	return []interface{}{
 		fuzzConfig,
+		fuzzNode,
 	}
 }
 
