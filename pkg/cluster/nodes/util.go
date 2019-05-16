@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"regexp"
+	"runtime"
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer"
@@ -50,6 +51,12 @@ func GetControlPlaneEndpoint(allNodes []Node) (string, error) {
 // to avoid the DNS crash we need copy host's /etc/resolv.conf to node
 // ref: https://github.com/kubernetes-sigs/kind/pull/484#issuecomment-489469044
 func addResolve(node *Node) error {
+	// TODO(Jintao Zhang): I can't accurately judge the behavior of windows, so I skipped it for now.
+	// https://github.com/kubernetes-sigs/kind/pull/484#discussion_r284064671
+	if runtime.GOOS == "windows" {
+		return nil
+	}
+
 	resolv, err := ioutil.ReadFile("/etc/resolv.conf")
 	if err != nil {
 		return errors.Wrap(err, "failed to read /etc/resolv.conf")
