@@ -43,22 +43,27 @@ all: build
 
 # creates the cache volume
 make-cache:
+	@echo + Ensuring build cache volume exists
 	docker volume create $(CACHE_VOLUME)
 
 # cleans the cache volume
 clean-cache:
+	@echo + Removing build cache volume
 	docker volume rm $(CACHE_VOLUME)
 
 # creates the output directory
 out-dir:
+	@echo + Ensuring build output directory exists
 	mkdir -p $(OUT_DIR)
 
 # cleans the output directory
 clean-output:
+	@echo + Removing build output directory
 	rm -rf $(OUT_DIR)/
 
 # builds kind in a container, outputs to $(OUT_DIR)
 kind: make-cache out-dir
+	@echo + Building kind binary
 	docker run \
 		--rm \
 		-v $(CACHE_VOLUME):/go \
@@ -74,12 +79,14 @@ kind: make-cache out-dir
 		--user $(UID):$(GID) \
 		$(GO_IMAGE) \
 		go build -v -o /out/kind .
+	@echo + Built kind binary to $(OUT_DIR)/kind
 
 # alias for building kind
 build: kind
 
 # use: make install INSTALL_DIR=/usr/local/bin
 install: build
+	@echo + Copying kind binary to INSTALL_DIR
 	install $(OUT_DIR)/kind $(INSTALL_DIR)/kind
 
 # standard cleanup target
