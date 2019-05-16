@@ -23,7 +23,7 @@ This will put `kind` in `$(go env GOPATH)/bin`. You may need to add that directo
 shown [here](https://golang.org/doc/code.html#GOPATH) if you encounter the error
 `kind: command not found` after installation.
 
-Without installing go, kind can be built reproducibly with docker using `make install`.
+Without installing go, kind can be built reproducibly with docker using `make build`.
 
 Stable binaries are also available on the [releases] page. Stable releases are
 generally recommended for CI usage in particular.
