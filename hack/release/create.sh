@@ -16,7 +16,7 @@
 # creates a release and following pre-release commit for `kind`
 # builds binaries between the commits
 # Use like: create.sh <release-version> <next-prerelease-version>
-# EG: create.sh 0.0.1 0.1.0-alpha
+# EG: create.sh v0.3.0 v0.4.0-alpha
 set -o nounset
 set -o errexit
 set -o pipefail
