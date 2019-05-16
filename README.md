@@ -34,7 +34,7 @@ This will put `kind` in `$(go env GOPATH)/bin`. If you encounter the error
 shown [here](https://golang.org/doc/code.html#GOPATH) or do manual installation by cloning the repo and run 
 `make install` from the repository.
 
-Without installing go, kind can be built reproducibly with docker using `make install`.
+Without installing go, kind can be built reproducibly with docker using `make build`.
 
 Stable binaries are also available on the [releases] page. Stable releases are
 generally recommended for CI usage in particular.

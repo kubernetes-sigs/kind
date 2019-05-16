@@ -44,13 +44,9 @@ build() {
     GOARCH="${2}"
     export GOOS
     export GOARCH
-    # build without CGO for cross compiling and distributing
-    CGO_ENABLED=0
-    export CGO_ENABLED
-    local out_path
-    out_path="${OUT}/kind-${GOOS}-${GOARCH}"
-    echo "${out_path}"
-    go build -o "${out_path}" sigs.k8s.io/kind
+    KIND_BINARY_NAME="kind-${GOOS}-${GOARCH}"
+    export KIND_BINARY_NAME
+    make build
 }
 
 # TODO(bentheelder): support more platforms

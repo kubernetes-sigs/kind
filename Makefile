@@ -18,18 +18,20 @@
 # settings
 REPO_ROOT:=${CURDIR}
 # autodetect host GOOS and GOARCH by default, even if go is not installed
-GOOS=$(shell hack/util/goos.sh)
-GOARCH=$(shell hack/util/goarch.sh)
+GOOS?=$(shell hack/util/goos.sh)
+GOARCH?=$(shell hack/util/goarch.sh)
 # make install will place binaries here
 # the default path attempst to mimic go install
-INSTALL_DIR=$(shell hack/util/goinstalldir.sh)
+INSTALL_DIR?=$(shell hack/util/goinstalldir.sh)
+# the output binary name, overridden when cross compiling
+KIND_BINARY_NAME?=kind
 # use the official module proxy by default
-GOPROXY=https://proxy.golang.org
+GOPROXY?=https://proxy.golang.org
 # default build image
-GO_VERSION=1.12.5
-GO_IMAGE=golang:$(GO_VERSION)
+GO_VERSION?=1.12.5
+GO_IMAGE?=golang:$(GO_VERSION)
 # docker volume name, used as a go module / build cache
-CACHE_VOLUME=kind-build-cache
+CACHE_VOLUME?=kind-build-cache
 
 # variables for consistent logic, don't override these
 CONTAINER_REPO_DIR=/src/kind
@@ -43,22 +45,27 @@ all: build
 
 # creates the cache volume
 make-cache:
+	@echo + Ensuring build cache volume exists
 	docker volume create $(CACHE_VOLUME)
 
 # cleans the cache volume
 clean-cache:
+	@echo + Removing build cache volume
 	docker volume rm $(CACHE_VOLUME)
 
 # creates the output directory
 out-dir:
+	@echo + Ensuring build output directory exists
 	mkdir -p $(OUT_DIR)
 
 # cleans the output directory
 clean-output:
+	@echo + Removing build output directory
 	rm -rf $(OUT_DIR)/
 
 # builds kind in a container, outputs to $(OUT_DIR)
 kind: make-cache out-dir
+	@echo + Building kind binary
 	docker run \
 		--rm \
 		-v $(CACHE_VOLUME):/go \
@@ -73,14 +80,16 @@ kind: make-cache out-dir
 		-e GOARCH=$(GOARCH) \
 		--user $(UID):$(GID) \
 		$(GO_IMAGE) \
-		go build -v -o /out/kind .
+		go build -v -o /out/$(KIND_BINARY_NAME) .
+	@echo + Built kind binary to $(OUT_DIR)/$(KIND_BINARY_NAME)
 
 # alias for building kind
 build: kind
 
 # use: make install INSTALL_DIR=/usr/local/bin
 install: build
-	install $(OUT_DIR)/kind $(INSTALL_DIR)/kind
+	@echo + Copying kind binary to INSTALL_DIR
+	install $(OUT_DIR)/$(KIND_BINARY_NAME) $(INSTALL_DIR)/$(KIND_BINARY_NAME)
 
 # standard cleanup target
 clean: clean-cache clean-output
