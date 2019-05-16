@@ -15,7 +15,7 @@ This guide covers getting started with the `kind` command.
 ## Installation
 
 You can either install the latest bleeding edge kind code with `GO111MODULE="on" go get -u sigs.k8s.io/kind@master` or clone this repo 
-and run `make install` from the repository.
+and run `make build` from the repository.
 
 **NOTE**: please use the latest go to do this, ideally go 1.12.5 or greater.
 
