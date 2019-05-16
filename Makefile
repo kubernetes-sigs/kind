@@ -18,18 +18,20 @@
 # settings
 REPO_ROOT:=${CURDIR}
 # autodetect host GOOS and GOARCH by default, even if go is not installed
-GOOS=$(shell hack/util/goos.sh)
-GOARCH=$(shell hack/util/goarch.sh)
+GOOS?=$(shell hack/util/goos.sh)
+GOARCH?=$(shell hack/util/goarch.sh)
 # make install will place binaries here
 # the default path attempst to mimic go install
-INSTALL_DIR=$(shell hack/util/goinstalldir.sh)
+INSTALL_DIR?=$(shell hack/util/goinstalldir.sh)
+# the output binary name, overridden when cross compiling
+KIND_BINARY_NAME?=kind
 # use the official module proxy by default
-GOPROXY=https://proxy.golang.org
+GOPROXY?=https://proxy.golang.org
 # default build image
-GO_VERSION=1.12.5
-GO_IMAGE=golang:$(GO_VERSION)
+GO_VERSION?=1.12.5
+GO_IMAGE?=golang:$(GO_VERSION)
 # docker volume name, used as a go module / build cache
-CACHE_VOLUME=kind-build-cache
+CACHE_VOLUME?=kind-build-cache
 
 # variables for consistent logic, don't override these
 CONTAINER_REPO_DIR=/src/kind
@@ -78,8 +80,8 @@ kind: make-cache out-dir
 		-e GOARCH=$(GOARCH) \
 		--user $(UID):$(GID) \
 		$(GO_IMAGE) \
-		go build -v -o /out/kind .
-	@echo + Built kind binary to $(OUT_DIR)/kind
+		go build -v -o /out/$(KIND_BINARY_NAME) .
+	@echo + Built kind binary to $(OUT_DIR)/$(KIND_BINARY_NAME)
 
 # alias for building kind
 build: kind
@@ -87,7 +89,7 @@ build: kind
 # use: make install INSTALL_DIR=/usr/local/bin
 install: build
 	@echo + Copying kind binary to INSTALL_DIR
-	install $(OUT_DIR)/kind $(INSTALL_DIR)/kind
+	install $(OUT_DIR)/$(KIND_BINARY_NAME) $(INSTALL_DIR)/$(KIND_BINARY_NAME)
 
 # standard cleanup target
 clean: clean-cache clean-output
