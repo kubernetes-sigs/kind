@@ -42,9 +42,9 @@ To install, download the binary for your platform from "Assets" and place this
 into your `$PATH`. E.G. for macOS:
 
 ```console
-wget https://github.com/kubernetes-sigs/kind/releases/download/0.2.1/kind-darwin-amd64
-chmod +x kind-darwin-amd64
-mv kind-darwin-amd64 /some-dir-in-your-PATH/kind
+curl -Lo ./kind-darwin-amd64 https://github.com/kubernetes-sigs/kind/releases/download/0.2.1/kind-darwin-amd64
+chmod +x ./kind-darwin-amd64
+mv ./kind-darwin-amd64 /some-dir-in-your-PATH/kind
 ```
 
 To use kind, you will need to [install docker].  
