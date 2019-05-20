@@ -14,7 +14,7 @@ This guide covers getting started with the `kind` command.
 
 ## Installation
 
-You can either install kind with `GO111MODULE="on" go get -u sigs.k8s.io/kind@v0.3.0` or clone this repo 
+You can either install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.3.0` or clone this repo 
 and run `make build` from the repository.
 
 **NOTE**: please use the latest go to do this, ideally go 1.12.5 or greater.
