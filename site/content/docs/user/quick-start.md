@@ -31,7 +31,7 @@ To install, download the binary for your platform from "Assets" and place this
 into your `$PATH`. E.G. for macOS:
 
 ```
-curl -Lo ./kind-darwin-amd64 https://github.com/kubernetes-sigs/kind/releases/download/0.3.0/kind-darwin-amd64
+curl -Lo ./kind-darwin-amd64 https://github.com/kubernetes-sigs/kind/releases/download/v0.3.0/kind-darwin-amd64
 chmod +x ./kind-darwin-amd64
 mv ./kind-darwin-amd64 /some-dir-in-your-PATH/kind
 ```
