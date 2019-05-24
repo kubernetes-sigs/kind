@@ -82,7 +82,7 @@ may be helpful to review before contributing.
 ## 4. Reaching Out
 
 Issues are tracked on GitHub. Please check [the issue tracker][issues] to see
-if there is any existing dicussion or work related to your interests.
+if there is any existing discussion or work related to your interests.
 
 If you do not see anything, please [file a new issue][file an issue].
 
