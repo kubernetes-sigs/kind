@@ -66,8 +66,7 @@ func addResolve(node *Node) error {
 	re := regexp.MustCompile("(?m)[\r\n]+^.*((127.([0-9]{1,3}.){2}[0-9]{1,3})|(::1)).*$")
 	content := re.ReplaceAllString(string(resolv), "")
 
-	err = node.WriteFile("/kind/resolv.conf", content)
-	if err != nil {
+	if err := node.WriteFile("/kind/resolv.conf", content); err != nil {
 		return errors.Wrap(err, "failed to write /kind/resolv.conf to node")
 	}
 
