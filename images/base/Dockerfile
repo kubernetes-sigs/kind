@@ -121,6 +121,8 @@ COPY [ "entrypoint", "/usr/local/bin/" ]
 # NOTE: this is *only* for documentation, the entrypoint is overridden by the node image
 ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]
 
-# TODO(bentheelder): deal with systemd MAC address assignment
+# deal with systemd MAC address assignment
 # https://github.com/systemd/systemd/issues/3374#issuecomment-288882355
 # https://github.com/systemd/systemd/issues/3374#issuecomment-339258483
+RUN cp /usr/lib/systemd/network/99-default.link /etc/systemd/network/ \
+    && sed 's/^MACAddressPolicy=persistent/MACAddressPolicy=none/' -i /etc/systemd/network/99-default.link
