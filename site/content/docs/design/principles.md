@@ -20,7 +20,7 @@ packing them into the "[node image][node image]". If these images fail to
 load or are not present in the node image kind will fall back to letting the
 "node"s container runtime attempt to pull them.
 
-Similarly we must at least support all officially supported Kubernetes releases,
+Similarly, we must at least support all officially supported Kubernetes releases,
 which may mean gracefully degrading functionality for older releases.
 
 ## Target CRI Functionality
@@ -33,7 +33,7 @@ Kubernetes [CRI][CRI] (Container Runtime Interface).
 
 ## Leverage Existing Tooling
 
-Where possible we should _not_ reinvent the wheel.
+Where possible, we should _not_ reinvent the wheel.
 
 Examples include:
 
@@ -41,7 +41,7 @@ Examples include:
 - [kustomize] is used to handle merging user provided config patches with our
 generated kubeadm configs
 - [k8s.io/apimachinery] is used to build our own configuration functionality
-- In general we re-use k8s.io utility libraries and generators
+- In general, we re-use k8s.io utility libraries and generators
 
 Re-implementing some amount of functionality is expected, particularly
 between languages and for internal / insufficiently-generic components, but in general
@@ -53,9 +53,9 @@ Going forward kind will avoid breaking changes to the command line interface
 and configuration.
 
 Next we will extend this to a documented set of re-usable
-packages (To be determind, but likely IE [pkg/cluster]).
+packages (To be determined, but likely IE [pkg/cluster]).
 
-While we are alpha grade currently, we will move to beta and respect
+While we are at alpha grade currently, we will move to beta and respect
 the [Kubernetes Deprecation Policy].
 
 Externally facing features should consider long-term supportability and
@@ -94,7 +94,7 @@ In other words:
 
 State is offloaded into the "node" containers in the form of labels, files in
 the container filesystem, and processes in the container. The cluster itself
-stores all state. No external state stores are used and the only stateful
+stores all states. No external state stores are used and the only stateful
 process is the container runtime. kind does not itself store or manage state.
 
 This simplifes a lot of problems and eases portability, while forcing cluster

@@ -43,7 +43,7 @@ Creating a Kubernetes cluster is as simple as `kind create cluster`.
 This will bootstrap a Kubernetes cluster using a pre-built 
 [node image][node image] - you can find it on docker hub
 [`kindest/node`][kindest/node]. 
-If you desire to build the node image yourself see the 
+If you desire to build the node image by yourself, see the 
 [building image](#building-images) section.
 To specify another image use the `--image` flag.
 
@@ -251,7 +251,7 @@ You can configure kind to use a proxy using one or more of the following [enviro
 * HTTPS_PROXY or https_proxy
 * NO_PROXY or no_proxy
 
-**Note**: If you set a proxy it would be used for all the connections requests.
+**Note**: If you set a proxy it would be used for all the connection requests.
 It's important that you define what addresses doesn't need to be proxied with the NO_PROXY variable, typically you should avoid to proxy your docker network range `NO_PROXY=172.17.0.0/16`
 
 ### Exporting Cluster Logs

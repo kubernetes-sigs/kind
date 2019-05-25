@@ -8,7 +8,7 @@ menu:
 ---
 # Known Issues
 
-Having problems with kind? This guide is covers some known problems and solutions / workarounds.
+Having problems with kind? This guide covers some known problems and solutions / workarounds.
 
 It may additionally be helpful to:
 
@@ -60,7 +60,7 @@ while building a kind cluster:
 
 * Host machine is behind a proxy
 * Usage of Docker version 18.09
-* Building kind in Google Cloud Console
+* Building kind in the Google Cloud Console
 
 If you see something like the following error message:
 ```
@@ -98,7 +98,7 @@ equal to Docker 18.09.1.
 
 
 ## Failure to build node image
-The know case in which building kind's node image may fail is due to 
+The known case in which building kind's node image may fail is due to 
 Docker on Mac running out of memory, see [kind#229][kind#229].
 If you see something like this:
 ```
@@ -154,7 +154,7 @@ Go to the **Advanced** settings page, and change the settings there, see
 ## Failing to properly start cluster
 This issue is similar to a 
 [failure while building the node image](#failure-to-build-node-image).
-If the cluster creation process was successul but you are unable to see any
+If the cluster creation process was successful but you are unable to see any
 Kubernetes resources running, for example:
 
 ```

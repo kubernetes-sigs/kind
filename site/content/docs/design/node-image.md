@@ -21,7 +21,7 @@ and they can be built with `kind build base-image` and `kind build node-image` r
 ## Design
 
 Other than the requirement that this image inherits from the "base" image, which
-provides most of the tools statically needed for a kubernetes deployment
+provides most of the tools statically needed for a Kubernetes deployment
 (eg `systemd`), variants of this image have the following properties:
 
 - `/kind/images/` contains various `*.tar` files which are 

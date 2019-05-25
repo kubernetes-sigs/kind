@@ -12,7 +12,7 @@ Welcome! This guide covers how to get started contributing to kind.
 
 ## 1. Read the Kubernetes community guidelines
 
-Make sure to read you read the [Kubernetes community guidelines][community].
+Make sure to read the [Kubernetes community guidelines][community].
 In specific, read through the [Kubernetes contributor guidelines][contributor].
 
 Additionally, note that kind is developed on [GitHub][github] and will require
@@ -68,7 +68,7 @@ If you haven't already, [install Docker][install docker], following the
 If you have an existing installation, check your version and make sure you have
 the latest Docker.
 
-To check if `docker` is has been installed:
+To check if `docker` has been installed:
 ```
 docker --version
 ```
