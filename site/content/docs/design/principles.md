@@ -41,7 +41,7 @@ Examples include:
 - [kustomize] is used to handle merging user provided config patches with our
 generated kubeadm configs
 - [k8s.io/apimachinery] is used to build our own configuration functionality
-- In general we re-use k8s.io utility libraries and generators
+- In general we re-use k8s.io [utility libraries][k8s.io/utils] and [generators][k8s.io/code-generator]
 
 Re-implementing some amount of functionality is expected, particularly
 between languages and for internal / insufficiently-generic components, but in general
@@ -117,3 +117,5 @@ Automated usage should be considered for all features.
 [Kubernetes Deprecation Policy]: https://kubernetes.io/docs/reference/using-api/deprecation-policy/
 [API Conventions]: https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md
 [pkg/cluster]: https://github.com/kubernetes-sigs/kind/tree/master/pkg/cluster
+[k8s.io/utils]: https://github.com/kubernetes/utils
+[k8s.io/code-generator]: https://github.com/kubernetes/code-generator
