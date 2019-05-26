@@ -78,6 +78,9 @@ kind: make-cache out-dir
 		-e CGO_ENABLED=0 \
 		-e GOOS=$(GOOS) \
 		-e GOARCH=$(GOARCH) \
+		-e HTTP_PROXY=$(HTTP_PROXY) \
+		-e HTTPS_PROXY=$(HTTPS_PROXY) \
+		-e NO_PROXY=$(NO_PROXY) \
 		--user $(UID):$(GID) \
 		$(GO_IMAGE) \
 		go build -v -o /out/$(KIND_BINARY_NAME) .
