@@ -135,11 +135,16 @@ Events:                   <none>
 ```
 
 
-### Nginx ingress controller
+### Ingress
 
 > Ingress is actually NOT a type of service. Instead, it sits in front of multiple services and act as a “smart router” or entrypoint into your cluster.
 
-TODO
+You can install your ingress controller, i.e. the [NGINX Ingress Controller], and expose it using a NodePort or a Cluster IP. 
+
+### LoadBalancer
+
+> Exposes the service externally using a cloud provider’s or custom load balancer. 
+
 
 ## Accesing the application
 
@@ -172,7 +177,18 @@ https://sosedoff.com/2018/04/25/expose-docker-ports.html
 
 https://andrewwilkinson.wordpress.com/2017/11/22/exposing-docker-ports-after-the-fact/
 
+In our example we can connect to the exposed nodePort in one of the cluster nodes:
 
+```sh
+docker run --rm -d -p80:8080 --name=proxy alpine/socat TCP4-LISTEN:8080,fork,reuseaddr TCP4:172.17.0.4:30039
+```
+
+and access the service in our host:
+
+```sh
+$ curl localhost
+Hello Kubernetes!
+```
 
 
 ### Socks Proxy
@@ -186,7 +202,7 @@ SOCKS proxy can be used with any web browser, just have to configure your applic
 Create a container with a SOCKS proxy and forward the port
 
 ```sh
-docker run --rm -d --privileged --name socks5 -p 1080:1080 aojea/socks5
+docker run --rm -d --cap-add=NET_ADMIN --name socks5 -p 1080:1080 aojea/socks5
 ```
 
 Accessing the NodePort service, for that we need only the IP of one of the cluster nodes:
@@ -211,10 +227,11 @@ curl --socks5 localhost:1080  10.96.59.230:8080
 Hello Kubernetes!
 ```
 
+You can use other browser like Google Chrome or Mozilla Firefox too.
 
 ### tun2socks
 
-This is the most complex option but with a better UX, it consists in creating a tun interface in the host and route all traffic that belongs to the k8s cluster through it.
+This is the most complex option but with the best UX, it consists in creating a tun interface in the host and route all traffic that belongs to the k8s cluster through it.
 
 Internally it uses the SOCKS proxy server that we previously deployed in the docker network and forwarded to our host.
 
@@ -241,3 +258,4 @@ https://github.com/FlowerWrong/tun2socks
 [kubernetes exposing services]: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
 [Docker for Mac networking]: https://docs.docker.com/docker-for-mac/networking/
 [Docker for Windows networking]: https://docs.docker.com/docker-for-windows/networking/
+[NGINX Ingress Controller]: https://kubernetes.github.io/ingress-nginx/deploy/
