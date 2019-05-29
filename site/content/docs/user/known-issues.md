@@ -22,6 +22,7 @@ It may additionally be helpful to:
 * [Failing to apply overlay network](#failing-to-apply-overlay-network)
 * [Failure to build node image](#failure-to-build-node-image)
 * [Failure for cluster to properly start](#failure-for-cluster-to-properly-start)
+* [Failures involving mismatched kubectl versions](#failures-involving-mismatched-kubectl-version)
 
 ## Docker on Btrfs
 
@@ -217,3 +218,17 @@ This problem seems to be related to a [bug in Docker][moby#9939].
 [moby#9939]: https://github.com/moby/moby/issues/9939
 [Docker resource lims]: https://docs.docker.com/docker-for-mac/#advanced
 [snap]: https://snapcraft.io/
+
+## Failures involving mistmatched kubectl versions
+
+```bash
+kubectl edit deploy -n kube-system kubernetes-dashboard
+error: SchemaError(io.k8s.api.autoscaling.v2beta1.ExternalMetricStatus): invalid object doesn't have additional properties
+```
+You can check your kubectl version by running:
+```bash
+kubectl version
+```
+
+This problem is related to a bug in [docker on macOS][for-mac#3663].
+[for-mac#3663]: https://github.com/docker/for-mac/issues/3663
