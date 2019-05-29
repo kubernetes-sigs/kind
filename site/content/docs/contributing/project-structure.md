@@ -26,6 +26,7 @@ The CLI is built using [cobra][cobra] and you can see the app's entrypoint,
 ├── pkg
 │   ├── build      # Build and manage images
 │   ├── cluster    # Build and manage clusters
+│   ├── concurrent # Utilities for running functions concurrently
 │   ├── container  # Interact with the host's container runtime
 │   ├── exec       # Execute commands
 │   ├── fs         # Interact with the host file system
