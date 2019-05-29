@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -94,7 +95,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	kubeConfigPath := ctx.ClusterContext.KubeConfigPath()
-	if err := writeKubeConfig(node, kubeConfigPath, hostPort); err != nil {
+	if err := writeKubeConfig(node, kubeConfigPath, ctx.Config.Networking.APIServerAddress, hostPort); err != nil {
 		return errors.Wrap(err, "failed to get kubeconfig from node")
 	}
 
@@ -117,7 +118,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 // matches kubeconfig server entry like:
 //    server: https://172.17.0.2:6443
 // which we rewrite to:
-//    server: https://localhost:$PORT
+//    server: https://$ADDRESS:$PORT
 var serverAddressRE = regexp.MustCompile(`^(\s+server:) https://.*:\d+$`)
 
 // writeKubeConfig writes a fixed KUBECONFIG to dest
@@ -125,7 +126,7 @@ var serverAddressRE = regexp.MustCompile(`^(\s+server:) https://.*:\d+$`)
 // While copyng to the host machine the control plane address
 // is replaced with local host and the control plane port with
 // a randomly generated port reserved during node creation.
-func writeKubeConfig(n *nodes.Node, dest string, hostPort int32) error {
+func writeKubeConfig(n *nodes.Node, dest string, hostAddress string, hostPort int32) error {
 	cmd := n.Command("cat", "/etc/kubernetes/admin.conf")
 	lines, err := exec.CombinedOutputLines(cmd)
 	if err != nil {
@@ -137,7 +138,8 @@ func writeKubeConfig(n *nodes.Node, dest string, hostPort int32) error {
 	for _, line := range lines {
 		match := serverAddressRE.FindStringSubmatch(line)
 		if len(match) > 1 {
-			line = fmt.Sprintf("%s https://localhost:%d", match[1], hostPort)
+			addr := net.JoinHostPort(hostAddress, fmt.Sprintf("%d", hostPort))
+			line = fmt.Sprintf("%s https://%s", match[1], addr)
 		}
 		buff.WriteString(line)
 		buff.WriteString("\n")

@@ -78,6 +78,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 			KubernetesVersion:    kubeVersion,
 			ControlPlaneEndpoint: controlPlaneEndpoint,
 			APIBindPort:          kubeadm.APIServerPort,
+			APIServerAddress:     ctx.Config.Networking.APIServerAddress,
 			Token:                kubeadm.Token,
 			PodSubnet:            ctx.Config.Networking.PodSubnet,
 		},
