@@ -34,6 +34,8 @@ type ConfigData struct {
 	ControlPlaneEndpoint string
 	// The Local API Server port
 	APIBindPort int
+	// The API server external listen IP (which we will port forward)
+	APIServerAddress string
 	// The Token for TLS bootstrap
 	Token string
 	// The subnet used for pods
@@ -92,7 +94,7 @@ apiServerExtraVolumes:
 # on docker for mac we have to expose the api server via port forward,
 # so we need to ensure the cert is valid for localhost so we can talk
 # to the cluster after rewriting the kubeconfig to point to localhost
-apiServerCertSANs: [localhost]
+apiServerCertSANs: [localhost, {{.APIServerAddress}}]
 kubeletConfiguration:
   baseConfig:
     # disable disk resource management by default
@@ -141,7 +143,7 @@ apiServerExtraVolumes:
 # on docker for mac we have to expose the api server via port forward,
 # so we need to ensure the cert is valid for localhost so we can talk
 # to the cluster after rewriting the kubeconfig to point to localhost
-apiServerCertSANs: [localhost]
+apiServerCertSANs: [localhost, {{.APIServerAddress}}]
 controllerManagerExtraArgs:
   enable-hostpath-provisioner: "true"
 networking:
@@ -204,7 +206,7 @@ controlPlaneEndpoint: {{ .ControlPlaneEndpoint }}
 # so we need to ensure the cert is valid for localhost so we can talk
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServer:
-  certSANs: [localhost]
+  certSANs: [localhost, {{.APIServerAddress}}]
 controllerManager:
   extraArgs:
     enable-hostpath-provisioner: "true"
