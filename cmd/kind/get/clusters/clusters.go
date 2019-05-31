@@ -30,9 +30,10 @@ func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
-		Use:   "clusters",
-		Short: "lists existing kind clusters by their name",
-		Long:  "lists existing kind clusters by their name",
+		Use:     "clusters",
+		Aliases: []string{"cluster"},
+		Short:   "lists existing kind clusters by their name",
+		Long:    "lists existing kind clusters by their name",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(cmd, args)
 		},

@@ -35,10 +35,11 @@ type flagpole struct {
 func NewCommand() *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
-		Args:  cobra.NoArgs,
-		Use:   "nodes",
-		Short: "lists existing kind nodes by their name",
-		Long:  "lists existing kind nodes by their name",
+		Args:    cobra.NoArgs,
+		Use:     "nodes",
+		Aliases: []string{"node"},
+		Short:   "lists existing kind nodes by their name",
+		Long:    "lists existing kind nodes by their name",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(flags, cmd, args)
 		},
