@@ -37,8 +37,8 @@ func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "nodes",
-		Short: "lists existing kind nodes by their name",
-		Long:  "lists existing kind nodes by their name",
+		Short: "lists existing nodes for the kind cluster by --name",
+		Long:  "lists existing nodes for the kind cluster by --name",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(flags, cmd, args)
 		},
