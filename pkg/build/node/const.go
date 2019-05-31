@@ -303,7 +303,7 @@ data:
   config: |-
     nonMasqueradeCIDRs:
       - {{ .PodSubnet }}
-    masqLinkLocal: false
+    masqLinkLocal: true
     resyncInterval: 60s
 ---
 apiVersion: extensions/v1beta1
