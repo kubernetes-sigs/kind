@@ -25,6 +25,7 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/fs"
+	"sigs.k8s.io/kind/pkg/preflight/runtime"
 )
 
 type flagpole struct {
@@ -49,6 +50,11 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
+	// Run container runtime preflight checks, connectivity etc.
+	if err := runtime.Preflight(); err != nil {
+		return err
+	}
+
 	// Check if the cluster name exists
 	known, err := cluster.IsKnown(flags.Name)
 	if err != nil {

@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
+	"sigs.k8s.io/kind/pkg/preflight/runtime"
 )
 
 // NewCommand returns a new cobra.Command for getting the list of clusters
@@ -41,6 +42,11 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(cmd *cobra.Command, args []string) error {
+	// Run container runtime preflight checks, connectivity etc.
+	if err := runtime.Preflight(); err != nil {
+		return err
+	}
+
 	clusters, err := cluster.List()
 	if err != nil {
 		return err

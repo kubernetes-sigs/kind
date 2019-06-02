@@ -28,6 +28,7 @@ import (
 	clusternodes "sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/container/docker"
 	"sigs.k8s.io/kind/pkg/fs"
+	"sigs.k8s.io/kind/pkg/preflight/runtime"
 )
 
 type flagpole struct {
@@ -68,6 +69,11 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
+	// Run container runtime preflight checks, connectivity etc.
+	if err := runtime.Preflight(); err != nil {
+		return err
+	}
+
 	// List nodes by cluster context name
 	n, err := clusternodes.ListByCluster()
 	if err != nil {

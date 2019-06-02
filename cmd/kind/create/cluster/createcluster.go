@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/config/encoding"
 	"sigs.k8s.io/kind/pkg/cluster/create"
+	"sigs.k8s.io/kind/pkg/preflight/runtime"
 	"sigs.k8s.io/kind/pkg/util"
 )
 
@@ -75,6 +76,11 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 			log.Error(problem)
 		}
 		return errors.New("aborting due to invalid configuration")
+	}
+
+	// Run container runtime preflight checks, connectivity etc.
+	if err := runtime.Preflight(); err != nil {
+		return err
 	}
 
 	// Check if the cluster name already exists
