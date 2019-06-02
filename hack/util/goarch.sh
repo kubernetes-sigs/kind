@@ -16,13 +16,13 @@
 # this script attempts to print GOARCH for the host
 
 # if we have go, just ask go!
-if which go >/dev/null 2>&1; then
+if command -v go >/dev/null 2>&1; then
     go env GOARCH
     exit $?
 fi
 
 # fall back to uname
-if which uname >/dev/null 2>&1; then
+if command -v uname >/dev/null 2>&1; then
   case "$(uname -m)" in
     x86_64)
       echo "amd64"

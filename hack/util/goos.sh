@@ -16,7 +16,7 @@
 # this script attempts to print GOOS for the host
 
 # if we have go, just ask go!
-if which go >/dev/null 2>&1; then
+if command -v go >/dev/null 2>&1; then
     go env GOOS
     exit $?
 fi
@@ -36,7 +36,7 @@ if [ -n "${OSTYPE:-}" ]; then
 fi
 
 # fall back to uname
-if which uname >/dev/null 2>&1; then
+if command -v uname >/dev/null 2>&1; then
   case "$(uname -s)" in
     Darwin)
       echo "darwin"

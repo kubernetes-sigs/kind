@@ -36,7 +36,7 @@ ARCHES=(
 
 # darwin is great
 SED="sed"
-if which gsed &>/dev/null; then
+if command -v gsed &>/dev/null; then
   SED="gsed"
 fi
 if ! (${SED} --version 2>&1 | grep -q GNU); then
