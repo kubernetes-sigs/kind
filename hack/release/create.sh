@@ -23,7 +23,7 @@ set -o pipefail
 
 if [ "$#" -ne 2 ]; then
     echo "Usage: create.sh release-version next-prerelease-version"
-    exit -1
+    exit 1
 fi
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
