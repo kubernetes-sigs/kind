@@ -259,13 +259,13 @@ kubeadmConfigPatches:
     name: config
   apiServer:
     extraArgs:
-      "feture-gates": "FeatureGateName=true"
+      "feature-gates": "FeatureGateName=true"
   scheduler:
     extraArgs:
-      "feture-gates": "FeatureGateName=true"
+      "feature-gates": "FeatureGateName=true"
   controllerManager:
     extraArgs:
-      "feture-gates": "FeatureGateName=true"
+      "feature-gates": "FeatureGateName=true"
 - |
   apiVersion: kubeadm.k8s.io/v1beta1
   kind: InitConfiguration
@@ -273,7 +273,7 @@ kubeadmConfigPatches:
     name: config
   nodeRegistration:
     kubeletExtraArgs:
-      "feture-gates": "FeatureGateName=true"
+      "feature-gates": "FeatureGateName=true"
 # 1 control plane node and 3 workers
 nodes:
 # the control plane node config
