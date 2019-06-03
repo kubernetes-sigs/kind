@@ -26,6 +26,12 @@ res=0
 
 # run all verify scripts, optionally skipping any of them
 
+if [[ "${VERIFY_SHELLCHECK:-true}" == "true" ]]; then
+  echo "verifying shellcheck ..."
+  hack/verify-shellcheck.sh || res=1
+  cd "${REPO_ROOT}"
+fi
+
 if [[ "${VERIFY_SPELLING:-true}" == "true" ]]; then
   echo "verifying spelling ..."
   hack/verify-spelling.sh || res=1
