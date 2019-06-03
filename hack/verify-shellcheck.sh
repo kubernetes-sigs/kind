@@ -37,6 +37,8 @@ disabled=(
   # this lint disallows non-constant source, which we use extensively without
   # any known bugs
   # 1090
+  # disallows use builtin 'command -v' instead of which
+  2230
 )
 # comma separate for passing to shellcheck
 join_by() {
