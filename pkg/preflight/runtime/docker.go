@@ -14,7 +14,7 @@ func Preflight() error {
 
 	for _, check := range checks {
 		if err := check(); err != nil {
-			return errors.Wrap(err, "Preflight check failed")
+			return errors.Wrap(err, "preflight check failed")
 		}
 	}
 
@@ -25,7 +25,7 @@ func Preflight() error {
 func dockerIsRunning() error {
 	err := exec.Command("docker", "ps").Run()
 	if err != nil {
-		return errors.Wrap(err, "Could not connect to a docker daemon")
+		return errors.Wrap(err, "could not connect to a Docker daemon")
 	}
 	return nil
 }
