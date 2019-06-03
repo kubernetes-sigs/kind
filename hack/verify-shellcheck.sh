@@ -18,7 +18,6 @@
 set -o errexit
 set -o nounset
 set -o pipefail
-set -x
 
 # cd to the repo root
 REPO_ROOT=$(git rev-parse --show-toplevel)
@@ -31,13 +30,13 @@ SHELLCHECK_VERSION="0.6.0"
 SHELLCHECK_IMAGE="koalaman/shellcheck-alpine:v0.6.0@sha256:7d4d712a2686da99d37580b4e2f45eb658b74e4b01caf67c1099adc294b96b52"
 
 # fixed name for the shellcheck docker container so we can reliably clean it up
-SHELLCHECK_CONTAINER="k8s-shellcheck"
+SHELLCHECK_CONTAINER="kind-shellcheck"
 
 # disabled lints
 disabled=(
   # this lint disallows non-constant source, which we use extensively without
   # any known bugs
-  1090
+  # 1090
   # this lint prefers command -v to which, they are not the same
   2230
 )
