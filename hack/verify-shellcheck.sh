@@ -37,8 +37,6 @@ disabled=(
   # this lint disallows non-constant source, which we use extensively without
   # any known bugs
   # 1090
-  # this lint prefers command -v to which, they are not the same
-  2230
 )
 # comma separate for passing to shellcheck
 join_by() {
@@ -129,7 +127,7 @@ elif docker info &>/dev/null ; then
   fi
 elif [[ "$(uname -s)" == *"Linux"* ]]; then
     echo "Using shellcheck ${SHELLCHECK_VERSION} precompiled binary."
-    wget -qO- "https://storage.googleapis.com/shellcheck/shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.xz" | tar -xJv
+    wget -qO- "https://storage.googleapis.com/shellcheck/shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.xz" | tar -xJv &>/dev/null
     cp "shellcheck-v${SHELLCHECK_VERSION}/shellcheck" /usr/local/bin
     HAVE_SHELLCHECK=true
 else

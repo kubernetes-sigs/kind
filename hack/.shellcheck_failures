@@ -1,3 +1,2 @@
-hack/release/create.sh
-hack/util/goarch.sh
-hack/util/goos.sh
+./hack/util/goarch.sh
+./hack/util/goos.sh
