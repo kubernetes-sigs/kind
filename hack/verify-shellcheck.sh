@@ -113,7 +113,7 @@ fi
 # tell the user which we've selected and possibly set up the container
 if ${HAVE_SHELLCHECK}; then
   echo "Using host shellcheck ${SHELLCHECK_VERSION} binary."
-else
+elif docker info &>/dev/null ; then
   echo "Using shellcheck ${SHELLCHECK_VERSION} docker image."
   # remove any previous container, ensure we will attempt to cleanup on exit,
   # and create the container
@@ -127,6 +127,14 @@ else
       } >&2
       exit 1
   fi
+elif [[ "$(uname -s)" == *"Linux"* ]]; then
+    echo "Using shellcheck ${SHELLCHECK_VERSION} precompiled binary."
+    wget -qO- "https://storage.googleapis.com/shellcheck/shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.xz" | tar -xJv
+    cp "shellcheck-v${SHELLCHECK_VERSION}/shellcheck" /usr/local/bin
+    HAVE_SHELLCHECK=true
+else
+    echo "Shellcheck is not available in your system, please install it"
+    exit 1
 fi
 
 SHELLCHECK_COLORIZED_OUTPUT="auto"
