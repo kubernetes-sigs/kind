@@ -166,10 +166,6 @@ func (b *BazelBuildBits) findPaths(bazelGoosGoarch string) map[string]string {
 		filepath.Join(buildDir, "kube-proxy.tar"):              "images/kube-proxy.tar",
 		// version file
 		filepath.Join(b.kubeRoot, "_output", "git_version"): "version",
-		// borrow kubelet service files from bazel debians
-		// TODO(bentheelder): probably we should use our own config instead :-)
-		filepath.Join(b.kubeRoot, "build", "debs", "kubelet.service"): "systemd/kubelet.service",
-		filepath.Join(b.kubeRoot, "build", "debs", "10-kubeadm.conf"): "systemd/10-kubeadm.conf",
 	}
 
 	// binaries that may be in different locations
@@ -235,20 +231,5 @@ func (b *BazelBuildBits) Install(install InstallContext) error {
 		}
 	}
 
-	// enable the kubelet service
-	kubeletService := path.Join(install.BasePath(), "systemd/kubelet.service")
-	if err := install.Run("systemctl", "enable", kubeletService); err != nil {
-		return errors.Wrap(err, "failed to enable kubelet service")
-	}
-
-	// setup the kubelet dropin
-	kubeletDropinSource := path.Join(install.BasePath(), "systemd/10-kubeadm.conf")
-	kubeletDropin := "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
-	if err := install.Run("mkdir", "-p", path.Dir(kubeletDropin)); err != nil {
-		return errors.Wrap(err, "failed to configure kubelet service")
-	}
-	if err := install.Run("cp", kubeletDropinSource, kubeletDropin); err != nil {
-		return errors.Wrap(err, "failed to configure kubelet service")
-	}
 	return nil
 }
