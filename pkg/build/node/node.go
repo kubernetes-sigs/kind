@@ -173,6 +173,7 @@ func (c *BuildContext) populateBits(buildDir string) error {
 			return errors.Wrap(err, "failed to copy build artifact")
 		}
 	}
+
 	return nil
 }
 
@@ -247,6 +248,8 @@ func (c *BuildContext) buildImage(dir string) error {
 	// This also allows the KubeBit implementations to perform programmatic
 	// install in the image
 	containerID, err := c.createBuildContainer(dir)
+	cmder := docker.ContainerCmder(containerID)
+
 	// ensure we will delete it
 	if containerID != "" {
 		defer func() {
@@ -261,15 +264,8 @@ func (c *BuildContext) buildImage(dir string) error {
 	log.Info("Building in " + containerID)
 
 	// helper we will use to run "build steps"
-	execInBuild := func(command ...string) error {
-		cmd := exec.Command("docker",
-			append(
-				[]string{"exec", containerID},
-				command...,
-			)...,
-		)
-		exec.InheritOutput(cmd)
-		return cmd.Run()
+	execInBuild := func(command string, args ...string) error {
+		return exec.InheritOutput(cmder.Command(command, args...)).Run()
 	}
 
 	// make artifacts directory
@@ -292,6 +288,24 @@ func (c *BuildContext) buildImage(dir string) error {
 	if err = c.bits.Install(ic); err != nil {
 		log.Errorf("Image build Failed! Failed to install Kubernetes: %v", err)
 		return err
+	}
+
+	// setup kubelet systemd
+	// create the kubelet service
+	kubeletService := path.Join(ic.BasePath(), "systemd/kubelet.service")
+	if err := createFile(cmder, kubeletService, kubeletServiceContents); err != nil {
+		return errors.Wrap(err, "failed to create kubelet service file")
+	}
+
+	// enable the kubelet service
+	if err := cmder.Command("systemctl", "enable", kubeletService).Run(); err != nil {
+		return errors.Wrap(err, "failed to enable kubelet service")
+	}
+
+	// setup the kubelet dropin
+	kubeletDropin := "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
+	if err := createFile(cmder, kubeletDropin, kubeadm10conf); err != nil {
+		return errors.Wrap(err, "failed to configure kubelet service")
 	}
 
 	// ensure we don't fail if swap is enabled on the host
@@ -332,6 +346,22 @@ func (c *BuildContext) buildImage(dir string) error {
 
 	log.Info("Image build completed.")
 	return nil
+}
+
+func createFile(containerCmder exec.Cmder, filePath, contents string) error {
+	// ensure the directory first
+	// NOTE: the paths inside the container should use the path package
+	// and not filepath (!), we want posixy paths in the linux container, NOT
+	// whatever path format the host uses. For paths on the host we use filepath
+	if err := containerCmder.Command("mkdir", "-p", path.Dir(filePath)).Run(); err != nil {
+		return err
+	}
+
+	return containerCmder.Command(
+		"cp", "/dev/stdin", filePath,
+	).SetStdin(
+		strings.NewReader(contents),
+	).Run()
 }
 
 // must be run after kubernetes has been installed on the node
