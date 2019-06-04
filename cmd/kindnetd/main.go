@@ -100,6 +100,10 @@ func makeNodesReconciler(cniConfigWriter *CNIConfigWriter, hostIP string) func(*
 	reconcileNode := func(node corev1.Node) error {
 		// first get this node's IP
 		nodeIP := internalIP(node)
+		if nodeIP == "" {
+			fmt.Printf("Node %v has no Internal IP, ignoring\n", node.Name)
+			return nil
+		}
 
 		// don't do anything unless there is a PodCIDR
 		podCIDR := node.Spec.PodCIDR
