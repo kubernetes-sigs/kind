@@ -26,9 +26,8 @@ Documentation=http://kubernetes.io/docs/
 ExecStart=/usr/bin/kubelet
 Restart=always
 StartLimitInterval=0
-# NOTE: kind deviates from upstream here with a lower RestartSec
-# 100ms is actually the systemd default, we'll use that for now
-RestartSec=100ms
+# NOTE: kind deviates from upstream here with a lower RestartSecuse
+RestartSec=1s
 
 [Install]
 WantedBy=multi-user.target
