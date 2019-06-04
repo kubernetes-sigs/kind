@@ -46,7 +46,7 @@ func NewCommand() *cobra.Command {
 	}
 	cmd.Flags().StringVar(
 		&flags.BuildType, "type",
-		"docker", "build type, one of [bazel, docker, apt]",
+		"docker", "build type, one of [bazel, docker]",
 	)
 	cmd.Flags().StringVar(
 		&flags.Image, "image",
