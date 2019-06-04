@@ -100,7 +100,13 @@ func makeNodesReconciler(cniConfigWriter *CNIConfigWriter, hostIP string) func(*
 	reconcileNode := func(node corev1.Node) error {
 		// first get this node's IP
 		nodeIP := internalIP(node)
-		fmt.Printf("Handling node with IP: %s\n", nodeIP)
+
+		// don't do anything unless there is a PodCIDR
+		podCIDR := node.Spec.PodCIDR
+		if podCIDR == "" {
+			fmt.Printf("Node %v has no CIDR, ignoring\n", node.Name)
+			return nil
+		}
 
 		// This is our node. We don't need to add routes, but we might need to
 		// update the cni config.
@@ -116,13 +122,7 @@ func makeNodesReconciler(cniConfigWriter *CNIConfigWriter, hostIP string) func(*
 			return nil
 		}
 
-		// don't do anything unless there is a PodCIDR
-		podCIDR := node.Spec.PodCIDR
-		if podCIDR == "" {
-			fmt.Printf("Node %v has no CIDR, ignoring\n", node.Name)
-			return nil
-		}
-
+		fmt.Printf("Handling node with IP: %s\n", nodeIP)
 		// parse subnet
 		dst, err := netlink.ParseIPNet(podCIDR)
 		if err != nil {
