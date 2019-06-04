@@ -18,10 +18,13 @@ limitations under the License.
 package main
 
 import (
+	"bytes"
+	"flag"
 	"fmt"
 	"io"
 	"net"
 	"os"
+	"strings"
 	"text/template"
 	"time"
 
@@ -33,10 +36,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	utildbus "k8s.io/kubernetes/pkg/util/dbus"
+	utiliptables "k8s.io/kubernetes/pkg/util/iptables"
+	utilexec "k8s.io/utils/exec"
 )
 
 // kindnetd is a simple networking daemon to complete kind's CNI implementation
 // kindnetd will ensure routes to the other node's PodCIDR via their InternalIP
+// kindnetd will ensure pod to pod communication will not be masquerade
 // kindnetd will also write a templated cni config supplied with PodCIDR
 //
 // input envs:
@@ -45,6 +52,25 @@ import (
 // - CNI_CONFIG_TEMPLATE: the cni .conflist template, run with {{ .PodCIDR }}
 
 // TODO: improve logging & error handling
+
+// NewKindnet returns a Kindnet with default values
+func NewKindnet(cniConfigWriter *CNIConfigWriter, ipv6 bool, kindnetConfig *KindnetConfig) *Kindnet {
+	execer := utilexec.New()
+	dbus := utildbus.New()
+	protocol := utiliptables.ProtocolIpv4
+	if ipv6 {
+		protocol = utiliptables.ProtocolIpv6
+	}
+	masqChain = utiliptables.Chain(*masqChainFlag)
+	iptables := utiliptables.New(execer, dbus, protocol)
+	// used to create routes and iptables rules
+
+	return &Kindnet{
+		config:    kindnetConfig,
+		iptables:  iptables,
+		cniConfig: cniConfigWriter,
+	}
+}
 
 func main() {
 	// create a client
@@ -68,13 +94,25 @@ func main() {
 		))
 	}
 
+	// used to store the routes
+	kindnetConfig := &KindnetConfig{
+		PodCIDRs: make(map[string]string),
+	}
+
 	// used to track if the cni config inputs changed and write the config
 	cniConfigWriter := &CNIConfigWriter{
 		path:     CNIConfigPath,
 		template: os.Getenv("CNI_CONFIG_TEMPLATE"),
 	}
+	ipv6 := false
+	if strings.Contains(hostIP, ":") {
+		ipv6 = true
+	}
+	// used to create routes and iptables rules
+	kindnetd := NewKindnet(cniConfigWriter, ipv6, kindnetConfig)
+
 	// setup nodes reconcile function, closes over arguments
-	reconcileNodes := makeNodesReconciler(cniConfigWriter, hostIP)
+	reconcileNodes := makeNodesReconciler(kindnetd, hostIP)
 
 	// main control loop
 	for {
@@ -89,13 +127,22 @@ func main() {
 			panic(err.Error())
 		}
 
+		// resync routes
+		if err := kindnetd.syncRoutes(); err != nil {
+			panic(err.Error())
+		}
+		// resync rules
+		if err := kindnetd.syncMasqRules(); err != nil {
+			panic(err.Error())
+		}
+
 		// rate limit
 		time.Sleep(10 * time.Second)
 	}
 }
 
 // nodeNodesReconciler returns a reconciliation func for nodes
-func makeNodesReconciler(cniConfigWriter *CNIConfigWriter, hostIP string) func(*corev1.NodeList) error {
+func makeNodesReconciler(kindnetd *Kindnet, hostIP string) func(*corev1.NodeList) error {
 	// reconciles a node
 	reconcileNode := func(node corev1.Node) error {
 		// first get this node's IP
@@ -117,7 +164,7 @@ func makeNodesReconciler(cniConfigWriter *CNIConfigWriter, hostIP string) func(*
 		if nodeIP == hostIP {
 			fmt.Printf("handling current node\n")
 			// compute the current cni config inputs
-			if err := cniConfigWriter.Write(
+			if err := kindnetd.cniConfig.Write(
 				ComputeCNIConfigInputs(node),
 			); err != nil {
 				return err
@@ -127,28 +174,8 @@ func makeNodesReconciler(cniConfigWriter *CNIConfigWriter, hostIP string) func(*
 		}
 
 		fmt.Printf("Handling node with IP: %s\n", nodeIP)
-		// parse subnet
-		dst, err := netlink.ParseIPNet(podCIDR)
-		if err != nil {
-			return err
-		}
 		fmt.Printf("Node %v has CIDR %s \n", node.Name, podCIDR)
-
-		// Check if the route exists to the other node's PodCIDR
-		ip := net.ParseIP(nodeIP)
-		routeToDst := netlink.Route{Dst: dst, Gw: ip}
-		route, err := netlink.RouteListFiltered(nl.GetIPFamily(ip), &routeToDst, netlink.RT_FILTER_DST)
-		if err != nil {
-			return err
-		}
-
-		// Add route if not present
-		if len(route) == 0 {
-			if err := netlink.RouteAdd(&routeToDst); err != nil {
-				return err
-			}
-			fmt.Printf("Adding route %v \n", routeToDst)
-		}
+		kindnetd.config.PodCIDRs[podCIDR] = nodeIP
 
 		return nil
 	}
@@ -172,6 +199,125 @@ func internalIP(node corev1.Node) string {
 		}
 	}
 	return ""
+}
+
+// KindnetConfig contains a map that stores the node podCIDR as key and the host as Value
+type KindnetConfig struct {
+	PodCIDRs map[string]string
+}
+
+// Kindnet is the kindnet daemon objet
+type Kindnet struct {
+	config    *KindnetConfig
+	iptables  utiliptables.Interface
+	cniConfig *CNIConfigWriter
+}
+
+// syncRoutes will create the routes in the host
+func (k *Kindnet) syncRoutes() error {
+	// TODO(aojea): handle nodes ip changes
+	for podCIDR, nodeIP := range k.config.PodCIDRs {
+		// parse subnet
+		dst, err := netlink.ParseIPNet(podCIDR)
+		if err != nil {
+			return err
+		}
+
+		// Check if the route exists to the other node's PodCIDR
+		ip := net.ParseIP(nodeIP)
+		routeToDst := netlink.Route{Dst: dst, Gw: ip}
+		route, err := netlink.RouteListFiltered(nl.GetIPFamily(ip), &routeToDst, netlink.RT_FILTER_DST)
+		if err != nil {
+			return err
+		}
+
+		// Add route if not present
+		if len(route) == 0 {
+			if err := netlink.RouteAdd(&routeToDst); err != nil {
+				return err
+			}
+			fmt.Printf("Adding route %v \n", routeToDst)
+		}
+	}
+	return nil
+}
+
+var (
+	// name of nat chain for iptables masquerade rules
+	masqChain     utiliptables.Chain
+	masqChainFlag = flag.String("masq-chain", "KIND-MASQ-AGENT", `Name of nat chain for iptables masquerade rules.`)
+)
+
+func (k *Kindnet) syncMasqRules() error {
+	// TODO(aojea): don´t sync if there are no changes
+	// make sure our custom chain for non-masquerade exists
+	k.iptables.EnsureChain(utiliptables.TableNAT, masqChain)
+
+	// ensure that any non-local in POSTROUTING jumps to masqChain
+	if err := k.ensurePostroutingJump(); err != nil {
+		return err
+	}
+
+	// build up lines to pass to iptables-restore
+	lines := bytes.NewBuffer(nil)
+	writeLine(lines, "*nat")
+	writeLine(lines, utiliptables.MakeChainLine(masqChain)) // effectively flushes masqChain atomically with rule restore
+
+	// non-masquerade for user-provided CIDRs
+	for cidr := range k.config.PodCIDRs {
+		writeNonMasqRule(lines, cidr)
+	}
+
+	// masquerade all other traffic that is not bound for a --dst-type LOCAL destination
+	writeMasqRule(lines)
+
+	writeLine(lines, "COMMIT")
+	if err := k.iptables.RestoreAll(lines.Bytes(), utiliptables.NoFlushTables, utiliptables.NoRestoreCounters); err != nil {
+		return err
+	}
+	return nil
+}
+
+// NOTE(mtaufen): iptables requires names to be <= 28 characters, and somehow prepending "-m comment --comment " to this string makes it think this condition is violated
+// Feel free to dig around in iptables and see if you can figure out exactly why; I haven't had time to fully trace how it parses and handle subcommands.
+// If you want to investigate, get the source via `git clone git://git.netfilter.org/iptables.git`, `git checkout v1.4.21` (the version I've seen this issue on,
+// though it may also happen on others), and start with `git grep XT_EXTENSION_MAXNAMELEN`.
+func postroutingJumpComment() string {
+	return fmt.Sprintf("kind-masq-agent: ensure nat POSTROUTING directs all non-LOCAL destination traffic to our custom %s chain", masqChain)
+}
+
+func (k *Kindnet) ensurePostroutingJump() error {
+	if _, err := k.iptables.EnsureRule(utiliptables.Append, utiliptables.TableNAT, utiliptables.ChainPostrouting,
+		"-m", "comment", "--comment", postroutingJumpComment(),
+		"-m", "addrtype", "!", "--dst-type", "LOCAL", "-j", string(masqChain)); err != nil {
+		return fmt.Errorf("failed to ensure that %s chain %s jumps to MASQUERADE: %v", utiliptables.TableNAT, masqChain, err)
+	}
+	return nil
+}
+
+const nonMasqRuleComment = `-m comment --comment "kind-masq-agent: local traffic is not subject to MASQUERADE"`
+
+func writeNonMasqRule(lines *bytes.Buffer, cidr string) {
+	writeRule(lines, utiliptables.Append, masqChain, nonMasqRuleComment, "-d", cidr, "-j", "RETURN")
+}
+
+const masqRuleComment = `-m comment --comment "ip-masq-agent: outbound traffic is subject to MASQUERADE (must be last in chain)"`
+
+func writeMasqRule(lines *bytes.Buffer) {
+	writeRule(lines, utiliptables.Append, masqChain, masqRuleComment, "-j", "MASQUERADE")
+}
+
+// Similar syntax to utiliptables.Interface.EnsureRule, except you don't pass a table
+// (you must write these rules under the line with the table name)
+func writeRule(lines *bytes.Buffer, position utiliptables.RulePosition, chain utiliptables.Chain, args ...string) {
+	fullArgs := append([]string{string(position), string(chain)}, args...)
+	writeLine(lines, fullArgs...)
+}
+
+// Join all words with spaces, terminate with newline and write to buf.
+func writeLine(lines *bytes.Buffer, words ...string) {
+	lines.WriteString(strings.Join(words, " ") + "\n")
+	fmt.Printf("Handling iptables: %s\n", lines)
 }
 
 /* cni config management */

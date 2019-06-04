@@ -27,11 +27,10 @@ const (
 The default CNI manifest and images are our own tiny kindnet
 */
 
-var defaultCNIImages = []string{"kindest/kindnetd:0.1.0", "k8s.gcr.io/ip-masq-agent:v2.4.1"}
+var defaultCNIImages = []string{"kindest/kindnetd:0.2.0"}
 
 const defaultCNIManifest = `
 # kindnetd networking manifest
-# would you kindly template this file
 ---
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
@@ -63,7 +62,7 @@ spec:
   allowPrivilegeEscalation: false
   defaultAllowPrivilegeEscalation: false
   # Capabilities
-  allowedCapabilities: ['NET_ADMIN']
+  allowedCapabilities: ["NET_RAW", "NET_ADMIN"]
   defaultAddCapabilities: []
   requiredDropCapabilities: []
   # Host namespaces
@@ -133,7 +132,7 @@ data:
       "name": "kindnet",
       "plugins": [
         {
-          "type": "bridge",
+          "type": "ptp",
           "ipMasq": false,
           "isDefaultGateway": true,
           "hairpinMode": true,
@@ -147,7 +146,7 @@ data:
             "ranges": [
               [
                 {
-                  "subnet": "{{"{{ .PodCIDR }}"}}"
+                  "subnet": "{{ .PodCIDR }}"
                 }
               ]
             ]
@@ -186,7 +185,7 @@ spec:
       serviceAccountName: kindnet
       containers:
       - name: kindnet-cni
-        image: kindest/kindnetd:0.1.0
+        image: kindest/kindnetd:0.2.0
         env:
           - name: HOST_IP
             valueFrom:
@@ -214,135 +213,10 @@ spec:
         securityContext:
           privileged: false
           capabilities:
-            add: ["NET_ADMIN"]
+            add: ["NET_RAW", "NET_ADMIN"]
       volumes:
         - name: cni-cfg
           hostPath:
             path: /etc/cni/net.d
----
-apiVersion: policy/v1beta1
-kind: PodSecurityPolicy
-metadata:
-  name: ip-masq-agent
-  annotations:
-    seccomp.security.alpha.kubernetes.io/allowedProfileNames: docker/default
-    seccomp.security.alpha.kubernetes.io/defaultProfileName: docker/default
-    apparmor.security.beta.kubernetes.io/allowedProfileNames: runtime/default
-    apparmor.security.beta.kubernetes.io/defaultProfileName: runtime/default
-spec:
-  privileged: false
-  volumes:
-    - configMap
-  readOnlyRootFilesystem: false
-  # Users and groups
-  runAsUser:
-    rule: RunAsAny
-  supplementalGroups:
-    rule: RunAsAny
-  fsGroup:
-    rule: RunAsAny
-  # Privilege Escalation
-  allowPrivilegeEscalation: false
-  defaultAllowPrivilegeEscalation: false
-  # Capabilities
-  allowedCapabilities: ['NET_RAW', 'NET_ADMIN']
-  defaultAddCapabilities: []
-  requiredDropCapabilities: []
-  # Host namespaces
-  hostPID: false
-  hostIPC: false
-  hostNetwork: true
-  # SELinux
-  seLinux:
-    rule: 'RunAsAny'
----
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
-metadata:
-  name: ip-masq-agent
-rules:
-  - apiGroups:
-      - policy
-    resources:
-      - podsecuritypolicies
-    verbs:
-      - use
-    resourceNames:
-      - ip-masq-agent
----
-kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
-metadata:
-  name: ip-masq-agent
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: ip-masq-agent
-subjects:
-- kind: ServiceAccount
-  name: ip-masq-agent
-  namespace: kube-system
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: ip-masq-agent
-  namespace: kube-system
----
-# ipmasq agent
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: ip-masq-agent
-  namespace: kube-system
-  labels:
-    tier: node
-    app: ip-masq-agent
-    k8s-app: ip-masq-agent
-data:
-  config: |-
-    nonMasqueradeCIDRs:
-      - {{ .PodSubnet }}
-    masqLinkLocal: true
-    resyncInterval: 60s
----
-apiVersion: extensions/v1beta1
-kind: DaemonSet
-metadata:
-  name: ip-masq-agent
-  namespace: kube-system
-spec:
-  template:
-    metadata:
-      labels:
-        tier: node
-        app: ip-masq-agent
-        k8s-app: ip-masq-agent
-    spec:
-      hostNetwork: true
-      tolerations:
-      - operator: Exists
-        effect: NoSchedule
-      serviceAccountName: ip-masq-agent
-      containers:
-      - name: ip-masq-agent
-        image: k8s.gcr.io/ip-masq-agent:v2.4.1
-        securityContext:
-          privileged: false
-          capabilities:
-            add: ["NET_RAW", "NET_ADMIN"]
-        volumeMounts:
-          - name: config
-            mountPath: /etc/config
-      volumes:
-        - name: config
-          configMap:
-            # Note this ConfigMap must be created in the same namespace as the daemon pods - this spec uses kube-system
-            name: ip-masq-agent
-            optional: true
-            items:
-              # The daemon looks for its config in a YAML file at /etc/config/ip-masq-agent
-              - key: config
-                path: ip-masq-agent
 ---
 `
