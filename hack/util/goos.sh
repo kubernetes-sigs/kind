@@ -21,20 +21,6 @@ if which go >/dev/null 2>&1; then
     exit $?
 fi
 
-# bash will set OSTYPE
-if [ -n "${OSTYPE:-}" ]; then
-  case "${OSTYPE}" in
-    linux-gnu)
-      echo "linux"
-      exit 0
-    ;;
-    darwin)
-      echo "darwin"
-      exit 0
-    ;;
-  esac
-fi
-
 # fall back to uname
 if which uname >/dev/null 2>&1; then
   case "$(uname -s)" in
