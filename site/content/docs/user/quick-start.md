@@ -242,6 +242,49 @@ nodes:
 - role: worker
 ```
 
+### Enable Feature Gates in Your Cluster
+
+Feature gates are a set of key=value pairs that describe alpha or experimental features. In order to enable a gate you have to [customize your kubeadm configuration][customize control plane with kubeadm], and it will depend on what gate and component you want to enable. An example kind config can be:
+
+```
+# this config file contains all config fields with comments
+kind: Cluster
+apiVersion: kind.sigs.k8s.io/v1alpha3
+# patch the generated kubeadm config with some extra settings
+kubeadmConfigPatches:
+- |
+  apiVersion: kubeadm.k8s.io/v1beta1
+  kind: ClusterConfiguration
+  metadata:
+    name: config
+  apiServer:
+    extraArgs:
+      "feature-gates": "FeatureGateName=true"
+  scheduler:
+    extraArgs:
+      "feature-gates": "FeatureGateName=true"
+  controllerManager:
+    extraArgs:
+      "feature-gates": "FeatureGateName=true"
+- |
+  apiVersion: kubeadm.k8s.io/v1beta1
+  kind: InitConfiguration
+  metadata:
+    name: config
+  nodeRegistration:
+    kubeletExtraArgs:
+      "feature-gates": "FeatureGateName=true"
+# 1 control plane node and 3 workers
+nodes:
+# the control plane node config
+- role: control-plane
+# the three workers
+- role: worker
+- role: worker
+- role: worker
+```
+
+
 ### Configure kind to use a proxy
 If you are running kind in an environment that requires a proxy, you may need to configure kind to use it.
 
@@ -303,3 +346,4 @@ kind, the Kubernetes cluster itself, etc.
 [CGO]: https://golang.org/cmd/cgo/
 [Kubernetes imagePullPolicy]: https://kubernetes.io/docs/concepts/containers/images/#updating-images
 [Private Registries]: /docs/user/private-registries
+[customize control plane with kubeadm]: https://kubernetes.io/docs/setup/independent/control-plane-flags/
