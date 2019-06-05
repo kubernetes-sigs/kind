@@ -99,3 +99,24 @@ func (c *Context) ClusterLabel() string {
 func (c *Context) ListNodes() ([]nodes.Node, error) {
 	return nodes.List("label=" + c.ClusterLabel())
 }
+
+// ListInternalNodes returns the list of container IDs for the "nodes" in the cluster
+// that are not external
+func (c *Context) ListInternalNodes() ([]nodes.Node, error) {
+	clusterNodes, err := nodes.List("label=" + c.ClusterLabel())
+	if err != nil {
+		return nil, err
+	}
+	selectedNodes := []nodes.Node{}
+	for _, node := range clusterNodes {
+		// Don't load image on external nodes like the load balancer
+		nodeRole, err := node.Role()
+		if err != nil {
+			return nil, err
+		}
+		if nodeRole != constants.ExternalLoadBalancerNodeRoleValue {
+			selectedNodes = append(selectedNodes, node)
+		}
+	}
+	return selectedNodes, nil
+}

@@ -91,6 +91,12 @@ func (c *Context) ListNodes() ([]nodes.Node, error) {
 	return c.ic.ListNodes()
 }
 
+// ListInternalNodes returns the list of container IDs for the "nodes" in the cluster
+// that are not external
+func (c *Context) ListInternalNodes() ([]nodes.Node, error) {
+	return c.ic.ListInternalNodes()
+}
+
 // CollectLogs will populate dir with cluster logs and other debug files
 func (c *Context) CollectLogs(dir string) error {
 	nodes, err := c.ListNodes()
