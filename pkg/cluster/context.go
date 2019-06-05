@@ -99,7 +99,7 @@ func (c *Context) ListInternalNodes() ([]nodes.Node, error) {
 
 // CollectLogs will populate dir with cluster logs and other debug files
 func (c *Context) CollectLogs(dir string) error {
-	nodes, err := c.ListNodes()
+	nodes, err := c.ListInternalNodes()
 	if err != nil {
 		return err
 	}
