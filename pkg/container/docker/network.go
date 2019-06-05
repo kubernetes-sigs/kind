@@ -18,6 +18,7 @@ package docker
 
 import (
 	"fmt"
+	"strings"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/exec"
@@ -36,13 +37,17 @@ func CreateNetwork(networkName string) error {
 }
 
 // DeleteNetwork delete the special network
+// only when the network was created by kind
 func DeleteNetwork(networkName string) error {
-	cmd := exec.Command(
-		"docker", "network",
-		"rm",
-		networkName,
-	)
-	return cmd.Run()
+	if isNetworkCreatedByKind(networkName) {
+		cmd := exec.Command(
+			"docker", "network",
+			"rm",
+			networkName,
+		)
+		return cmd.Run()
+	}
+	return nil
 }
 
 // IsNetworkExist check if the network exist
@@ -57,4 +62,22 @@ func IsNetworkExist(networkName string) bool {
 	}
 
 	return true
+}
+
+// isNetworkCreatedByKind checks if it was created by kind
+func isNetworkCreatedByKind(networkName string) bool {
+	cmd := exec.Command(
+		"docker", "network",
+		"ls",
+		"--filter=label="+fmt.Sprintf("%s=%s", constants.ClusterLabelKey, networkName),
+		"--format='{{ .Name }}'",
+	)
+
+	lines, err := exec.CombinedOutputLines(cmd)
+
+	if err != nil {
+		return false
+	}
+
+	return strings.Contains(strings.Join(lines, ","), networkName)
 }
