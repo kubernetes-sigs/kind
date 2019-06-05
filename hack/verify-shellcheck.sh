@@ -34,9 +34,6 @@ SHELLCHECK_CONTAINER="kind-shellcheck"
 
 # disabled lints
 disabled=(
-  # this lint disallows non-constant source, which we use extensively without
-  # any known bugs
-  # 1090
   # disallows use builtin 'command -v' instead of which
   2230
 )
@@ -81,24 +78,6 @@ done < <(find . -name "*.sh" \
     -path ./vendor\* -o \
     \( -path ./third_party\* -a -not -path ./third_party/forked\* \) \
   \))
-
-# make sure known failures are sorted
-failure_file="${REPO_ROOT}/hack/.shellcheck_failures"
-if ! diff -u "${failure_file}" <(LC_ALL=C sort "${failure_file}"); then
-  {
-    echo
-    echo "${failure_file} is not in alphabetical order. Please sort it:"
-    echo
-    echo "  LC_ALL=C sort -o ${failure_file} ${failure_file}"
-    echo
-  } >&2
-  false
-fi
-# load known failure files
-failing_files=()
-while IFS=$'\n' read -r script;
-  do failing_files+=("$script");
-done < <(cat "${failure_file}")
 
 # detect if the host machine has the required shellcheck version installed
 # if so, we will use that instead.
@@ -150,22 +129,8 @@ SHELLCHECK_OPTIONS=(
   # set colorized output
   "--color=${SHELLCHECK_COLORIZED_OUTPUT}"
 )
-
-array_contains() {
-  local search="$1"
-  local element
-  shift
-  for element; do
-    if [[ "${element}" == "${search}" ]]; then
-      return 0
-     fi
-  done
-  return 1
-}
-
 # lint each script, tracking failures
 errors=()
-not_failing=()
 for f in "${all_shell_scripts[@]}"; do
   set +o errexit
   if ${HAVE_SHELLCHECK}; then
@@ -175,18 +140,14 @@ for f in "${all_shell_scripts[@]}"; do
                  shellcheck "${SHELLCHECK_OPTIONS[@]}" "${f}")
   fi
   set -o errexit
- array_contains "${f}" "${failing_files[@]}" && in_failing=$? || in_failing=$?
-  if [[ -n "${failedLint}" ]] && [[ "${in_failing}" -ne "0" ]]; then
+  if [[ -n "${failedLint}" ]]; then
     errors+=( "${failedLint}" )
-  fi
-  if [[ -z "${failedLint}" ]] && [[ "${in_failing}" -eq "0" ]]; then
-    not_failing+=( "${f}" )
   fi
 done
 
 # Check to be sure all the files that should pass lint are.
 if [ ${#errors[@]} -eq 0 ]; then
-  echo 'Congratulations! All shell files are passing lint (excluding those in hack/.shellcheck_failures).'
+  echo 'Congratulations! All shell files are passing lint.'
 else
   {
     echo "Errors from shellcheck:"
@@ -195,38 +156,6 @@ else
     done
     echo
     echo 'Please review the above warnings. You can test via "./hack/verify-shellcheck"'
-    echo 'If the above warnings do not make sense, you can exempt this package from shellcheck'
-    echo 'checking by adding it to hack/.shellcheck_failures (if your reviewer is okay with it).'
-    echo
-  } >&2
-  exit 1
-fi
-
-if [[ ${#not_failing[@]} -gt 0 ]]; then
-  {
-    echo "Some files in hack/.shellcheck_failures are passing shellcheck. Please remove them."
-    echo
-    for f in "${not_failing[@]}"; do
-      echo "  $f"
-    done
-    echo
-  } >&2
-  exit 1
-fi
-
-# Check that all failing_files actually still exist
-gone=()
-for f in "${failing_files[@]}"; do
-  array_contains "$f" "${all_shell_scripts[@]}" || gone+=( "$f" )
-done
-
-if [[ ${#gone[@]} -gt 0 ]]; then
-  {
-    echo "Some files in hack/.shellcheck_failures do not exist anymore. Please remove them."
-    echo
-    for f in "${gone[@]}"; do
-      echo "  $f"
-    done
     echo
   } >&2
   exit 1
