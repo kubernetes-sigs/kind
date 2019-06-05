@@ -65,14 +65,19 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
-	// List nodes by cluster context name
-	n, err := clusternodes.ListByCluster()
+	// Check if the cluster name exists
+	known, err := cluster.IsKnown(flags.Name)
 	if err != nil {
 		return err
 	}
-	nodes, known := n[flags.Name]
 	if !known {
 		return errors.Errorf("unknown cluster %q", flags.Name)
+	}
+
+	context := cluster.NewContext(flags.Name)
+	nodes, err := context.ListInternalNodes()
+	if err != nil {
+		return err
 	}
 
 	// map cluster nodes by their name
