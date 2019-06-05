@@ -29,7 +29,7 @@ if which uname >/dev/null 2>&1; then
       exit 0
     ;;
     arm*)
-      if [ "$(getconf LONG_BIT)" == "64" ]; then
+      if [ "$(getconf LONG_BIT)" = "64" ]; then
         echo "arm64"
         exit 0
       else
