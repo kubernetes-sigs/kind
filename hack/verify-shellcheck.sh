@@ -23,21 +23,8 @@ set -o pipefail
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
-# required version for this script, if not installed on the host we will
-# use the official docker image instead. keep this in sync with SHELLCHECK_IMAGE
-SHELLCHECK_VERSION="0.6.0"
 # upstream shellcheck latest stable image as of January 10th, 2019
 SHELLCHECK_IMAGE="koalaman/shellcheck-alpine:v0.6.0@sha256:7d4d712a2686da99d37580b4e2f45eb658b74e4b01caf67c1099adc294b96b52"
-
-# detect if the host machine has the required shellcheck version installed
-# if so, we will use that instead.
-HAVE_SHELLCHECK=false
-if which shellcheck &>/dev/null; then
-  detected_version="$(shellcheck --version | grep 'version: .*')"
-  if [[ "${detected_version}" = "version: ${SHELLCHECK_VERSION}" ]]; then
-    HAVE_SHELLCHECK=true
-  fi
-fi
 
 # Find all shell scripts excluding:
 # - Anything git-ignored - No need to lint untracked files.
@@ -70,11 +57,8 @@ SHELLCHECK_OPTIONS=(
   "--color=auto"
 )
 
-if ${HAVE_SHELLCHECK}; then
+# actually shellcheck
+docker run \
+  --rm -v "${REPO_ROOT}:${REPO_ROOT}" -w "${REPO_ROOT}" \
+  "${SHELLCHECK_IMAGE}" \
   shellcheck "${SHELLCHECK_OPTIONS[@]}" "${all_shell_scripts[@]}"
-else
-  docker run \
-    --rm -v "${REPO_ROOT}:${REPO_ROOT}" -w "${REPO_ROOT}" \
-    "${SHELLCHECK_IMAGE}" \
-    shellcheck "${SHELLCHECK_OPTIONS[@]}" "${all_shell_scripts[@]}"
-fi
