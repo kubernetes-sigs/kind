@@ -8,6 +8,7 @@ package tools
 
 import (
 	// linter(s)
+	_ "github.com/client9/misspell"
 	_ "golang.org/x/lint"
 	_ "honnef.co/go/tools/cmd/staticcheck"
 
