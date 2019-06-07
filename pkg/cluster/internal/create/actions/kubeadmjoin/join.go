@@ -23,6 +23,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -209,6 +210,16 @@ func runKubeadmJoinControlPlane(
 	log.Debug(strings.Join(lines, "\n"))
 	if err != nil {
 		return errors.Wrap(err, "failed to join a control plane node with kubeadm")
+	}
+
+	// Wait for the node to be Ready
+	// TODO: remove once https://github.com/kubernetes-sigs/kind/issues/588 is fixed
+	// kubeadm join should guarantee that the cluster is ready
+	startTime := time.Now()
+	// TODO: currently hardcoded to 10s
+	isReady := nodes.WaitForReady(node, startTime.Add(10*time.Second))
+	if !isReady {
+		return errors.Errorf("Timed out waiting for control plane node %s to be ready after join", node.String())
 	}
 
 	return nil
