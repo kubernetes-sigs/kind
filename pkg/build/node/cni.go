@@ -31,6 +31,7 @@ var defaultCNIImages = []string{"kindest/kindnetd:0.2.0"}
 
 const defaultCNIManifest = `
 # kindnetd networking manifest
+# would you kindly template this file
 ---
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
@@ -146,7 +147,7 @@ data:
             "ranges": [
               [
                 {
-                  "subnet": "{{ .PodCIDR }}"
+                  "subnet": "{{"{{ .PodCIDR }}"}}"
                 }
               ]
             ]
@@ -187,19 +188,21 @@ spec:
       - name: kindnet-cni
         image: kindest/kindnetd:0.2.0
         env:
-          - name: HOST_IP
-            valueFrom:
-              fieldRef:
-                fieldPath: status.hostIP
-          - name: POD_IP
-            valueFrom:
-              fieldRef:
-                fieldPath: status.podIP
-          - name: CNI_CONFIG_TEMPLATE
-            valueFrom:
-              configMapKeyRef:
-                name: kindnet-cfg
-                key: cni-conf-template.json
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: CNI_CONFIG_TEMPLATE
+          valueFrom:
+            configMapKeyRef:
+              name: kindnet-cfg
+              key: cni-conf-template.json
+        - name: POD_SUBNET
+          value: {{ .PodSubnet }}
         volumeMounts:
         - name: cni-cfg
           mountPath: /etc/cni/net.d
