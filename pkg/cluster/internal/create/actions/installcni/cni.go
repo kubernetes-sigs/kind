@@ -83,7 +83,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// install the manifest
-	// TODO(bentheelder): optionally skip this entire action
 	if err := node.Command(
 		"kubectl", "create", "--kubeconfig=/etc/kubernetes/admin.conf",
 		"-f", "-",
