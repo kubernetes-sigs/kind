@@ -57,7 +57,7 @@ main() {
 
   # run generated code update script
   cd "${TMP_REPO}"
-  REPO_ROOT="${TMP_REPO}" hack/update/update-generated.sh
+  REPO_ROOT="${TMP_REPO}" hack/update/generated.sh
 
   # make sure the temp repo has no changes relative to the real repo
   diff=$(diff -Nupr \
