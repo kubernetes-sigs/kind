@@ -57,7 +57,7 @@ main() {
 
   # run generated code update script
   cd "${TMP_REPO}"
-  REPO_ROOT="${TMP_REPO}" hack/update-generated.sh
+  REPO_ROOT="${TMP_REPO}" hack/update/generated.sh
 
   # make sure the temp repo has no changes relative to the real repo
   diff=$(diff -Nupr \
@@ -67,11 +67,11 @@ main() {
           -x "vendor" \
          "${REPO_ROOT}" "${TMP_REPO}" 2>/dev/null || true)
   if [[ -n "${diff}" ]]; then
-    echo "unexpectedly dirty working directory after hack/update-generated.sh" >&2
+    echo "unexpectedly dirty working directory after hack/update/generated.sh" >&2
     echo "" >&2
     echo "${diff}" >&2
     echo "" >&2
-    echo "please run hack/update-generated.sh" >&2
+    echo "please run hack/update/generated.sh" >&2
     exit 1
   fi
 }
