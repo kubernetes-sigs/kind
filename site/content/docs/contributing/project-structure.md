@@ -62,7 +62,7 @@ You can check the compliance of the entire project by running the `verify-all.sh
 
 ### Update
 In order to get the project’s source code into a compilable state, the script
-**[update-all.sh](https://sigs.k8s.io/kind/hack/update-all.sh)** performs the following tasks:
+**[update-all.sh](https://sigs.k8s.io/kind/hack/update/update-all.sh)** performs the following tasks:
 
 * runs update-deps.sh to obtain all of the project’s dependencies
 * runs update-generated.sh to generate code necessary to generate Kubernetes API code for kind, see https://kind.sigs.k8s.io/docs/user/quick-start/#configuring-your-kind-cluster
@@ -70,15 +70,15 @@ In order to get the project’s source code into a compilable state, the script
 
 Let’s go a little in depth on each of these files.
 
-**[update-deps.sh](https://sigs.k8s.io/kind/hack/update-deps.sh)** performs the following steps:
+**[update-deps.sh](https://sigs.k8s.io/kind/hack/update/update-deps.sh)** performs the following steps:
 
 * runs `go mod tidy` to remove any no-longer-needed dependencies from go.mod and add any dependencies needed for other combinations of OS, architecture, and build tags
 * runs `go mod vendor`, which re-populates the vendor directory, resets the main module's vendor directory to include all packages needed to build and test all of the module's packages based on the state of the go.mod files and Go source code.
 * finally, it prunes the vendor directory of any unnecessary files (keeps code source files, licenses, author files, etc).
 
-**[update-gofmt.sh](https://sigs.k8s.io/kind/hack/update-gofmt.sh)** runs gofmt on all nonvendored source code to format and simplify the code.
+**[update-gofmt.sh](https://sigs.k8s.io/kind/hack/update/update-gofmt.sh)** runs gofmt on all nonvendored source code to format and simplify the code.
 
-**[update-generated.sh](https://sigs.k8s.io/kind/hack/update-generated.sh)** in short, generates Go source code that is necessary to use a Kubernetes-style resource definition to define a schema that can be use to configure Kind.
+**[update-generated.sh](https://sigs.k8s.io/kind/hack/update/update-generated.sh)** in short, generates Go source code that is necessary to use a Kubernetes-style resource definition to define a schema that can be use to configure Kind.
 
 Going a bit more in depth, update-generated.sh does the following:
 
