@@ -20,6 +20,6 @@ set -o pipefail
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
 
-"${REPO_ROOT}"/hack/update/update-deps.sh
-"${REPO_ROOT}"/hack/update/update-generated.sh
-"${REPO_ROOT}"/hack/update/update-gofmt.sh
+"${REPO_ROOT}"/hack/update/deps.sh
+"${REPO_ROOT}"/hack/update/generated.sh
+"${REPO_ROOT}"/hack/update/gofmt.sh

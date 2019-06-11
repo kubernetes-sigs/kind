@@ -17,7 +17,7 @@
 # Runs go mod tidy, go mod vendor, and then prun vendor
 #
 # Usage:
-#   update-deps.sh
+#   deps.sh
 
 set -o nounset
 set -o errexit
