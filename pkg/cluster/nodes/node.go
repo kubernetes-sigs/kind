@@ -234,6 +234,14 @@ func (n *Node) WriteFile(dest, content string) error {
 	return n.Command("cp", "/dev/stdin", dest).SetStdin(strings.NewReader(content)).Run()
 }
 
+// ImageInspect return low-level information on containers images inside a node
+func (n *Node) ImageInspect(containerNameOrID string) ([]string, error) {
+	cmd := n.Command(
+		"crictl", "-r", "/var/run/containerd/containerd.sock", "inspecti", containerNameOrID,
+	)
+	return exec.CombinedOutputLines(cmd)
+}
+
 // LoadImageArchive will load the image contents in the image reader to the
 // k8s.io namespace on the node such that the image can be used from a
 // Kubernetes pod

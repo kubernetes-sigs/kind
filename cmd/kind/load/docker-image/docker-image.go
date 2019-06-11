@@ -116,9 +116,8 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	// pick only the nodes that don't have the image
 	selectedNodes := []clusternodes.Node{}
 	for _, node := range candidateNodes {
-		// TODO: move under pkg/
-		cmdNode := node.Command("crictl", "-r", "/var/run/containerd/containerd.sock", "inspecti", imageName)
-		if err := cmdNode.Run(); err != nil {
+		_, err := node.ImageInspect(imageName)
+		if err != nil {
 			selectedNodes = append(selectedNodes, node)
 			log.Debugf("Image: %q not present on node %q", imageName, node.String())
 		}
