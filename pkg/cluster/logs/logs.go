@@ -54,6 +54,22 @@ func Collect(nodes []nodes.Node, dir string) error {
 			return execToPath(cmd, path)
 		}
 	}
+	// helper to run a cmd and untar the output to a path
+	execUntarToPath := func(cmd exec.Cmd, path string) error {
+		return exec.RunWithStdoutReader(cmd, func(outReader io.Reader) error {
+			if err := untar(outReader, path); err != nil {
+				return errors.Wrapf(err, "Untarring %q: %v", path, err)
+			}
+			return nil
+		})
+
+	}
+	execUntarToPathFn := func(cmd exec.Cmd, path string) func() error {
+		return func() error {
+			return execUntarToPath(cmd, path)
+		}
+	}
+
 	// construct a slice of methods to collect logs
 	fns := []func() error{
 		// TODO(bentheelder): record the kind version here as well
@@ -67,16 +83,6 @@ func Collect(nodes []nodes.Node, dir string) error {
 	for _, n := range nodes {
 		node := n // https://golang.org/doc/faq#closures_and_goroutines
 		name := node.String()
-		// grab all logs under /var/log (pods and containers)
-		cmd := node.Command("tar", "--hard-dereference", "-C", "/var/log", "-chf", "-", ".")
-
-		exec.RunWithStdoutReader(cmd, func(outReader io.Reader) error {
-			if err := untar(outReader, filepath.Join(dir, name)); err != nil {
-				return errors.Wrapf(err, "Untarring %q: %v", name, err)
-			}
-			return nil
-		})
-
 		fns = append(fns, func() error {
 			return concurrent.Coalesce(
 				// record info about the node container
@@ -105,6 +111,10 @@ func Collect(nodes []nodes.Node, dir string) error {
 					node.Command("journalctl", "--no-pager", "-u", "containerd.service"),
 					filepath.Join(name, "containerd.log"),
 				),
+				execUntarToPathFn(
+					node.Command("tar", "--hard-dereference", "-C", "/var/log", "-chf", "-", "."),
+					prefixedPath(name),
+				),
 			)
 		})
 	}
@@ -130,6 +140,7 @@ func untar(r io.Reader, dir string) (err error) {
 
 		rel := filepath.FromSlash(f.Name)
 		abs := filepath.Join(dir, rel)
+		log.Debugf("Untarring file %v to %v", f.Name, dir)
 
 		switch f.Typeflag {
 		case tar.TypeReg:
