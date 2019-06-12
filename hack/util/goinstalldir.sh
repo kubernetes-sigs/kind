@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# this utility prints out the golang install dir even if go is not installed
+# this utility prints out the golang install dir, even if go is not installed
 
 # if we have go, just ask go!
 if which go >/dev/null 2>&1; then
