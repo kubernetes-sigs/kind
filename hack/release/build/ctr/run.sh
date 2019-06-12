@@ -35,7 +35,7 @@ BUCKET="${BUCKET:-bentheelder-kind-dev/containerd}"
 # https://github.com/containerd/containerd/commit/d71c7ada27959fe04fad5390367e4fab215334b3
 CONTAINERD_SOURCE="${CONTAINERD_SOURCE:-$(go env GOPATH)/src/github.com/containerd/containerd}"
 CONTAINERD_REF="${CONTAINERD_REF:-d71c7ada27959fe04fad5390367e4fab215334b3}"
-CTR_CLOUDBUILD="${REPO_ROOT}/hack/build/ctr/cloudbuild.yaml"
+CTR_CLOUDBUILD="${REPO_ROOT}/hack/release/build/ctr/cloudbuild.yaml"
 
 # make sure we submit the build to the right project
 gcloud config set core/project "${PROJECT}"
