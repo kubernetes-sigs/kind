@@ -18,10 +18,11 @@ limitations under the License.
 package kubeconfig
 
 import (
-	"fmt"
+	"io"
+	"os"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"io/ioutil"
 
 	"sigs.k8s.io/kind/pkg/cluster"
 	clusternodes "sigs.k8s.io/kind/pkg/cluster/nodes"
@@ -55,7 +56,7 @@ func NewCommand() *cobra.Command {
 		&flags.Internal,
 		"internal",
 		false,
-		"get internal kubeconfig",
+		"use internal address instead of external",
 	)
 	return cmd
 }
@@ -75,6 +76,7 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
 	if flags.Internal {
 		// grab kubeconfig version from one of the control plane nodes
 		cmdNode := node.Command("cat", "/etc/kubernetes/admin.conf")
@@ -82,13 +84,17 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 		if err := cmdNode.Run(); err != nil {
 			return errors.Wrap(err, "failed to get cluster internal kubeconfig")
 		}
-	} else {
-		ctx := cluster.NewContext(flags.Name)
-		out, err := ioutil.ReadFile(ctx.KubeConfigPath())
-		if err != nil {
-			return errors.Wrap(err, "failed to get cluster kubeconfig")
-		}
-		fmt.Print(string(out))
+		return nil
+	}
+
+	ctx := cluster.NewContext(flags.Name)
+	f, err := os.Open(ctx.KubeConfigPath())
+	if err != nil {
+		return errors.Wrap(err, "failed to get cluster kubeconfig")
+	}
+	defer f.Close()
+	if _, err := io.Copy(os.Stdout, f); err != nil {
+		return errors.Wrap(err, "failed to copy kubeconfig")
 	}
 
 	return nil
