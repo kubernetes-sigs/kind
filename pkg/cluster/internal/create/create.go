@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/config/encoding"
 	"sigs.k8s.io/kind/pkg/cluster/internal/context"
 	"sigs.k8s.io/kind/pkg/cluster/internal/delete"
-	logutil "sigs.k8s.io/kind/pkg/log"
+	"sigs.k8s.io/kind/pkg/log/status"
 
 	configaction "sigs.k8s.io/kind/pkg/cluster/internal/create/actions/config"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installcni"
@@ -62,7 +62,7 @@ func Cluster(ctx *context.Context, cfg *config.Cluster, opts *Options) error {
 		return err
 	}
 
-	status := logutil.NewStatus(os.Stdout)
+	status := status.New(os.Stdout)
 	status.MaybeWrapLogrus(log.StandardLogger())
 
 	// attempt to explicitly pull the required node images if they doesn't exist locally

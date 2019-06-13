@@ -19,8 +19,8 @@ package docker
 import (
 	"io"
 
+	"sigs.k8s.io/kind/pkg/env"
 	"sigs.k8s.io/kind/pkg/exec"
-	"sigs.k8s.io/kind/pkg/log"
 )
 
 // containerCmder implements exec.Cmder for docker containers
@@ -68,7 +68,7 @@ func (c *containerCmd) Run() error {
 		)
 	}
 	// if the command is hooked up to the processes's output we want a tty
-	if log.IsTerminal(c.stderr) || log.IsTerminal(c.stdout) {
+	if env.IsTerminal(c.stderr) || env.IsTerminal(c.stdout) {
 		args = append(args,
 			"-t",
 		)

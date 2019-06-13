@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"sigs.k8s.io/kind/pkg/util"
+	"sigs.k8s.io/kind/pkg/env"
 
 	"github.com/pkg/errors"
 
@@ -89,7 +89,7 @@ func (b *DockerBuildBits) Build() error {
 }
 
 func dockerBuildOsAndArch() string {
-	return "linux/" + util.GetArch()
+	return "linux/" + env.GetArch()
 }
 
 // binary and image build when we have `make quick-release-images` support
@@ -165,7 +165,7 @@ func (b *DockerBuildBits) buildBash() error {
 
 	// mimic `make quick-release` internals, clear previous images
 	if err := os.RemoveAll(filepath.Join(
-		".", "_output", "release-images", util.GetArch(),
+		".", "_output", "release-images", env.GetArch(),
 	)); err != nil {
 		return errors.Wrap(err, "failed to remove old release-images")
 	}
@@ -177,7 +177,7 @@ func (b *DockerBuildBits) buildBash() error {
 		"source build/lib/release.sh;",
 		"kube::version::get_version_vars;",
 		fmt.Sprintf(`kube::release::create_docker_images_for_server "${LOCAL_OUTPUT_ROOT}/dockerized/bin/%s" "%s"`,
-			dockerBuildOsAndArch(), util.GetArch()),
+			dockerBuildOsAndArch(), env.GetArch()),
 	}
 	cmd = exec.Command("bash", "-c", strings.Join(buildImages, " "))
 	cmd.SetEnv(
@@ -196,10 +196,10 @@ func (b *DockerBuildBits) buildBash() error {
 // Paths implements Bits.Paths
 func (b *DockerBuildBits) Paths() map[string]string {
 	binDir := filepath.Join(b.kubeRoot,
-		"_output", "dockerized", "bin", "linux", util.GetArch(),
+		"_output", "dockerized", "bin", "linux", env.GetArch(),
 	)
 	imageDir := filepath.Join(b.kubeRoot,
-		"_output", "release-images", util.GetArch(),
+		"_output", "release-images", env.GetArch(),
 	)
 	return map[string]string{
 		// binaries (hyperkube)

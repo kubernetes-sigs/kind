@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/kind/cmd/kind/get"
 	"sigs.k8s.io/kind/cmd/kind/load"
 	"sigs.k8s.io/kind/cmd/kind/version"
+	"sigs.k8s.io/kind/pkg/env"
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
 
@@ -104,7 +105,7 @@ func Main() {
 		// we force colors because this only forces over the isTerminal check
 		// and this will not be accurately checkable later on when we wrap
 		// the logger output with our logutil.StatusFriendlyWriter
-		ForceColors: logutil.IsTerminal(log.StandardLogger().Out),
+		ForceColors: env.IsTerminal(log.StandardLogger().Out),
 	})
 	if err := Run(); err != nil {
 		os.Exit(1)

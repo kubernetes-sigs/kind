@@ -24,19 +24,19 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
 	"sigs.k8s.io/kind/pkg/container/docker"
-	logutil "sigs.k8s.io/kind/pkg/log"
+	"sigs.k8s.io/kind/pkg/log/status"
 )
 
 // ensureNodeImages ensures that the node images used by the create
 // configuration are present
-func ensureNodeImages(status *logutil.Status, cfg *config.Cluster) {
+func ensureNodeImages(s *status.Status, cfg *config.Cluster) {
 	// pull each required image
 	for _, image := range requiredImages(cfg).List() {
 		// prints user friendly message
 		if strings.Contains(image, "@sha256:") {
 			image = strings.Split(image, "@sha256:")[0]
 		}
-		status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", image))
+		s.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", image))
 
 		// attempt to explicitly pull the image if it doesn't exist locally
 		// we don't care if this errors, we'll still try to run which also pulls

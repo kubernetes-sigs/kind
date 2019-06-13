@@ -34,9 +34,9 @@ import (
 
 	"sigs.k8s.io/kind/pkg/build/kube"
 	"sigs.k8s.io/kind/pkg/container/docker"
+	"sigs.k8s.io/kind/pkg/env"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
-	"sigs.k8s.io/kind/pkg/util"
 )
 
 // DefaultImage is the default name:tag for the built image
@@ -101,7 +101,7 @@ func NewBuildContext(options ...Option) (ctx *BuildContext, err error) {
 		mode:      DefaultMode,
 		image:     DefaultImage,
 		baseImage: DefaultBaseImage,
-		arch:      util.GetArch(),
+		arch:      env.GetArch(),
 	}
 	// apply user options
 	for _, option := range options {

@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/concurrent"
 	"sigs.k8s.io/kind/pkg/container/cri"
-	logutil "sigs.k8s.io/kind/pkg/log"
+	"sigs.k8s.io/kind/pkg/log/status"
 )
 
 // provisioning order for nodes by role
@@ -76,26 +76,26 @@ func copyConfigNodes(toCopy []config.Node) []config.Node {
 // provisionNodes takes care of creating all the containers
 // that will host `kind` nodes
 func provisionNodes(
-	status *logutil.Status, cfg *config.Cluster, clusterName, clusterLabel string,
+	s *status.Status, cfg *config.Cluster, clusterName, clusterLabel string,
 ) error {
-	defer status.End(false)
+	defer s.End(false)
 
-	if err := createNodeContainers(status, cfg, clusterName, clusterLabel); err != nil {
+	if err := createNodeContainers(s, cfg, clusterName, clusterLabel); err != nil {
 		return err
 	}
 
-	status.End(true)
+	s.End(true)
 	return nil
 }
 
 func createNodeContainers(
-	status *logutil.Status, cfg *config.Cluster, clusterName, clusterLabel string,
+	s *status.Status, cfg *config.Cluster, clusterName, clusterLabel string,
 ) error {
-	defer status.End(false)
+	defer s.End(false)
 
 	// compute the desired nodes, and inform the user that we are setting them up
 	desiredNodes := nodesToCreate(cfg, clusterName)
-	status.Start("Preparing nodes " + strings.Repeat("📦", len(desiredNodes)))
+	s.Start("Preparing nodes " + strings.Repeat("📦", len(desiredNodes)))
 
 	// create all of the node containers, concurrently
 	fns := []func() error{}
@@ -111,7 +111,7 @@ func createNodeContainers(
 		return err
 	}
 
-	status.End(true)
+	s.End(true)
 	return nil
 }
 

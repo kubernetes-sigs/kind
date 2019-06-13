@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,18 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package log contains logging related functionality
-package log
+// Package status contains functionality for showing CLI application status
+package status
 
 import (
 	"fmt"
 	"io"
-	"os"
 
+	"sigs.k8s.io/kind/pkg/env"
 	"sigs.k8s.io/kind/pkg/log/fidget"
 
 	"github.com/sirupsen/logrus"
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 // Status is used to track ongoing status in a CLI, with a nice loading spinner
@@ -36,8 +35,8 @@ type Status struct {
 	writer  io.Writer
 }
 
-// NewStatus creates a new default Status
-func NewStatus(w io.Writer) *Status {
+// New creates a new default Status
+func New(w io.Writer) *Status {
 	spin := fidget.NewSpinner(w)
 	s := &Status{
 		spinner: spin,
@@ -46,16 +45,16 @@ func NewStatus(w io.Writer) *Status {
 	return s
 }
 
-// StatusFriendlyWriter is used to wrap another Writer to make it toggle the
+// FriendlyWriter is used to wrap another Writer to make it toggle the
 // status spinner before and after writes so that they do not collide
-type StatusFriendlyWriter struct {
+type FriendlyWriter struct {
 	status *Status
 	inner  io.Writer
 }
 
-var _ io.Writer = &StatusFriendlyWriter{}
+var _ io.Writer = &FriendlyWriter{}
 
-func (ww *StatusFriendlyWriter) Write(p []byte) (n int, err error) {
+func (ww *FriendlyWriter) Write(p []byte) (n int, err error) {
 	ww.status.spinner.Stop()
 	ww.inner.Write([]byte("\r"))
 	n, err = ww.inner.Write(p)
@@ -63,15 +62,15 @@ func (ww *StatusFriendlyWriter) Write(p []byte) (n int, err error) {
 	return n, err
 }
 
-// WrapWriter returns a StatusFriendlyWriter for w
+// WrapWriter returns a FriendlyWriter for w
 func (s *Status) WrapWriter(w io.Writer) io.Writer {
-	return &StatusFriendlyWriter{
+	return &FriendlyWriter{
 		status: s,
 		inner:  w,
 	}
 }
 
-// WrapLogrus wraps a logrus logger's output with a StatusFriendlyWriter
+// WrapLogrus wraps a logrus logger's output with a FriendlyWriter
 func (s *Status) WrapLogrus(logger *logrus.Logger) {
 	logger.SetOutput(s.WrapWriter(logger.Out))
 }
@@ -79,7 +78,7 @@ func (s *Status) WrapLogrus(logger *logrus.Logger) {
 // MaybeWrapWriter returns a StatusFriendlyWriter for w IFF w and spinner's
 // output are a terminal, otherwise it returns w
 func (s *Status) MaybeWrapWriter(w io.Writer) io.Writer {
-	if IsTerminal(s.writer) && IsTerminal(w) {
+	if env.IsTerminal(s.writer) && env.IsTerminal(w) {
 		return s.WrapWriter(w)
 	}
 	return w
@@ -90,20 +89,12 @@ func (s *Status) MaybeWrapLogrus(logger *logrus.Logger) {
 	logger.SetOutput(s.MaybeWrapWriter(logger.Out))
 }
 
-// IsTerminal returns true if the writer w is a terminal
-func IsTerminal(w io.Writer) bool {
-	if v, ok := (w).(*os.File); ok {
-		return terminal.IsTerminal(int(v.Fd()))
-	}
-	return false
-}
-
 // Start starts a new phase of the status, if attached to a terminal
 // there will be a loading spinner with this status
 func (s *Status) Start(status string) {
 	s.End(true)
 	// set new status
-	isTerm := IsTerminal(s.writer)
+	isTerm := env.IsTerminal(s.writer)
 	s.status = status
 	if isTerm {
 		s.spinner.SetSuffix(fmt.Sprintf(" %s ", s.status))
@@ -120,7 +111,7 @@ func (s *Status) End(success bool) {
 		return
 	}
 
-	isTerm := IsTerminal(s.writer)
+	isTerm := env.IsTerminal(s.writer)
 	if isTerm {
 		s.spinner.Stop()
 		fmt.Fprint(s.writer, "\r")
