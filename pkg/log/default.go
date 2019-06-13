@@ -20,7 +20,7 @@ import (
 	"sync"
 )
 
-var std LeveledLogger
+var std LeveledLogger = NoopLeveledLogger{}
 var stdMu sync.Mutex
 
 // SetDefault sets the default logger
