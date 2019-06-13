@@ -17,10 +17,14 @@ limitations under the License.
 package concurrent
 
 import (
+	"errors"
 	"sync"
+	"time"
 
 	"sigs.k8s.io/kind/pkg/util"
 )
+
+const timeout = 60 * time.Second
 
 // UntilError runs all funcs in separate goroutines, returning the
 // first non-nil error returned from funcs, or nil if all funcs return nil
@@ -33,8 +37,13 @@ func UntilError(funcs []func() error) error {
 		}()
 	}
 	for i := 0; i < len(funcs); i++ {
-		if err := <-errCh; err != nil {
-			return err
+		select {
+		case err := <-errCh:
+			if err != nil {
+				return err
+			}
+		case <-time.After(timeout):
+			return errors.New("UntilError: Timeout waiting for concurrent function")
 		}
 	}
 	return nil
@@ -52,7 +61,9 @@ func Coalesce(fns ...func() error) error {
 			ch <- f()
 		}(fn)
 	}
-	wg.Wait()
+	if waitTimeout(&wg, timeout) {
+		return errors.New("Coalesce: Timeout waiting for wait group")
+	}
 	close(ch)
 	// collect up and return errors
 	errs := []error{}
@@ -67,4 +78,20 @@ func Coalesce(fns ...func() error) error {
 		return errs[0]
 	}
 	return nil
+}
+
+// waitTimeout waits for the waitgroup for the specified max timeout.
+// Returns true if waiting timed out.
+func waitTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
+	c := make(chan struct{})
+	go func() {
+		defer close(c)
+		wg.Wait()
+	}()
+	select {
+	case <-c:
+		return false // completed normally
+	case <-time.After(timeout):
+		return true // timed out
+	}
 }
