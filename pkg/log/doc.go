@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,25 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package log contains logging related functionality
 package log
-
-import (
-	"strings"
-
-	"github.com/sirupsen/logrus"
-)
-
-// LevelsString returns a string representing all log levels
-// this is useful for help text / flag info
-func LevelsString() string {
-	var b strings.Builder
-	b.WriteString("[")
-	for i, level := range logrus.AllLevels {
-		b.WriteString(level.String())
-		if i+1 != len(logrus.AllLevels) {
-			b.WriteString(", ")
-		}
-	}
-	b.WriteString("]")
-	return b.String()
-}

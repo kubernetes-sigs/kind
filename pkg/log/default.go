@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,22 +17,22 @@ limitations under the License.
 package log
 
 import (
-	"strings"
-
-	"github.com/sirupsen/logrus"
+	"sync"
 )
 
-// LevelsString returns a string representing all log levels
-// this is useful for help text / flag info
-func LevelsString() string {
-	var b strings.Builder
-	b.WriteString("[")
-	for i, level := range logrus.AllLevels {
-		b.WriteString(level.String())
-		if i+1 != len(logrus.AllLevels) {
-			b.WriteString(", ")
-		}
-	}
-	b.WriteString("]")
-	return b.String()
+var std LeveledLogger
+var stdMu sync.Mutex
+
+// SetDefault sets the default logger
+func SetDefault(logger LeveledLogger) {
+	stdMu.Lock()
+	defer stdMu.Unlock()
+	std = logger
+}
+
+// V is leveled logging implemented against the default logger
+func V(level Level) Logger {
+	stdMu.Lock()
+	defer stdMu.Unlock()
+	return std.V(level)
 }
