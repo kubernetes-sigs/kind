@@ -129,13 +129,6 @@ func runKubeadmJoinControlPlane(
 	allNodes []nodes.Node,
 	node *nodes.Node,
 ) error {
-	// get the join address
-	joinAddress, err := getJoinAddress(ctx, allNodes)
-	if err != nil {
-		// TODO(bentheelder): logging here
-		return err
-	}
-
 	// creates the folder tree for pre-loading necessary cluster certificates
 	// on the joining node
 	if err := node.Command("mkdir", "-p", "/etc/kubernetes/pki/etcd").Run(); err != nil {
@@ -187,31 +180,7 @@ func runKubeadmJoinControlPlane(
 		}
 	}
 
-	// run kubeadm join --control-plane
-	cmd := node.Command(
-		"kubeadm", "join",
-		// the join command uses the docker ip and a well know port that
-		// are accessible only inside the docker network
-		joinAddress,
-		// set the node to join as control-plane
-		"--experimental-control-plane",
-		// uses a well known token and skips ca certification for automating TLS bootstrap process
-		"--token", kubeadm.Token,
-		"--discovery-token-unsafe-skip-ca-verification",
-		// preflight errors are expected, in particular for swap being enabled
-		// TODO(bentheelder): limit the set of acceptable errors
-		"--ignore-preflight-errors=all",
-		// increase verbosity for debug
-		"--v=6",
-		"--cri-socket=/run/containerd/containerd.sock",
-	)
-	lines, err := exec.CombinedOutputLines(cmd)
-	log.Debug(strings.Join(lines, "\n"))
-	if err != nil {
-		return errors.Wrap(err, "failed to join a control plane node with kubeadm")
-	}
-
-	return nil
+	return runKubeadmJoin(ctx, allNodes, node)
 }
 
 // runKubeadmJoin executes kubadm join command
@@ -220,29 +189,17 @@ func runKubeadmJoin(
 	allNodes []nodes.Node,
 	node *nodes.Node,
 ) error {
-	// get the join address
-	joinAddress, err := getJoinAddress(ctx, allNodes)
-	if err != nil {
-		// TODO(bentheelder): logging here
-		return err
-	}
-
 	// run kubeadm join
 	// TODO(bentheelder): this should be using the config file
 	cmd := node.Command(
 		"kubeadm", "join",
-		// the join command uses the docker ip and a well know port that
-		// are accessible only inside the docker network
-		joinAddress,
-		// uses a well known token and skipping ca certification for automating TLS bootstrap process
-		"--token", kubeadm.Token,
-		"--discovery-token-unsafe-skip-ca-verification",
+		// the join command uses the config file generated in a well known location
+		"--config", "/kind/kubeadm.conf",
 		// preflight errors are expected, in particular for swap being enabled
 		// TODO(bentheelder): limit the set of acceptable errors
 		"--ignore-preflight-errors=all",
-		// increase verbosity for debugging
+		// increase verbosity for debug
 		"--v=6",
-		"--cri-socket=/run/containerd/containerd.sock",
 	)
 	lines, err := exec.CombinedOutputLines(cmd)
 	log.Debug(strings.Join(lines, "\n"))

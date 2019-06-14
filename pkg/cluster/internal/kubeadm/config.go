@@ -36,6 +36,10 @@ type ConfigData struct {
 	APIBindPort int
 	// The API server external listen IP (which we will port forward)
 	APIServerAddress string
+	// ControlPlane flag specifies the node belongs to the control plane
+	ControlPlane bool
+	// The main IP address of the node
+	NodeAddress string
 	// The Token for TLS bootstrap
 	Token string
 	// The subnet used for pods
@@ -129,9 +133,7 @@ metadata:
   name: config
 kubernetesVersion: {{.KubernetesVersion}}
 clusterName: "{{.ClusterName}}"
-{{ if .ControlPlaneEndpoint -}}
 controlPlaneEndpoint: {{ .ControlPlaneEndpoint }}
-{{- end }}
 # we need nsswitch.conf so we use /etc/hosts
 # https://github.com/kubernetes/kubernetes/issues/69195
 apiServerExtraVolumes:
@@ -162,14 +164,24 @@ apiEndpoint:
   bindPort: {{.APIBindPort}}
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
+  kubeletExtraArgs:
+    fail-swap-on: "false"
+    node-ip: "{{ .NodeAddress }}"
 ---
 # no-op entry that exists solely so it can be patched
 apiVersion: kubeadm.k8s.io/v1alpha3
 kind: JoinConfiguration
 metadata:
   name: config
+apiServerEndpoint: "{{ .ControlPlaneEndpoint }}"
+token: "{{ .Token }}"
+discoveryTokenUnsafeSkipCAVerification: true
+controlPlane: {{ .ControlPlane }}
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
+  kubeletExtraArgs:
+    fail-swap-on: "false"
+    node-ip: "{{ .NodeAddress }}"
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
@@ -199,9 +211,7 @@ metadata:
   name: config
 kubernetesVersion: {{.KubernetesVersion}}
 clusterName: "{{.ClusterName}}"
-{{ if .ControlPlaneEndpoint -}}
 controlPlaneEndpoint: {{ .ControlPlaneEndpoint }}
-{{- end }}
 # on docker for mac we have to expose the api server via port forward,
 # so we need to ensure the cert is valid for localhost so we can talk
 # to the cluster after rewriting the kubeconfig to point to localhost
@@ -226,14 +236,29 @@ localAPIEndpoint:
   bindPort: {{.APIBindPort}}
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
+  kubeletExtraArgs:
+    fail-swap-on: "false"
+    node-ip: "{{ .NodeAddress }}"
 ---
 # no-op entry that exists solely so it can be patched
 apiVersion: kubeadm.k8s.io/v1beta1
 kind: JoinConfiguration
 metadata:
   name: config
+{{ if .ControlPlane -}}	
+controlPlane:
+  localAPIEndpoint: "{{ .NodeAddress }}"
+{{- end }}
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
+  kubeletExtraArgs:
+    fail-swap-on: "false"
+    node-ip: "{{ .NodeAddress }}"
+discovery:
+  bootstrapToken:
+    apiServerEndpoint: "{{ .ControlPlaneEndpoint }}"
+    token: "{{ .Token }}"
+    unsafeSkipCAVerification: true
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
@@ -263,9 +288,7 @@ metadata:
   name: config
 kubernetesVersion: {{.KubernetesVersion}}
 clusterName: "{{.ClusterName}}"
-{{ if .ControlPlaneEndpoint -}}
 controlPlaneEndpoint: {{ .ControlPlaneEndpoint }}
-{{- end }}
 # on docker for mac we have to expose the api server via port forward,
 # so we need to ensure the cert is valid for localhost so we can talk
 # to the cluster after rewriting the kubeconfig to point to localhost
@@ -290,14 +313,29 @@ localAPIEndpoint:
   bindPort: {{.APIBindPort}}
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
+  kubeletExtraArgs:
+    fail-swap-on: "false"
+    node-ip: "{{ .NodeAddress }}"
 ---
 # no-op entry that exists solely so it can be patched
 apiVersion: kubeadm.k8s.io/v1beta2
 kind: JoinConfiguration
 metadata:
   name: config
+{{ if .ControlPlane -}}
+controlPlane:
+  localAPIEndpoint: "{{ .NodeAddress }}"
+{{- end }}
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
+  kubeletExtraArgs:
+    fail-swap-on: "false"
+    node-ip: "{{ .NodeAddress }}"
+discovery:
+  bootstrapToken:
+    apiServerEndpoint: "{{ .ControlPlaneEndpoint }}"
+    token: "{{ .Token }}"
+    unsafeSkipCAVerification: true
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
