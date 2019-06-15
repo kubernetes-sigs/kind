@@ -173,10 +173,11 @@ apiVersion: kubeadm.k8s.io/v1alpha3
 kind: JoinConfiguration
 metadata:
   name: config
-apiServerEndpoint: "{{ .ControlPlaneEndpoint }}"
+discoveryTokenAPIServers: "{{ .ControlPlaneEndpoint }}"
 token: "{{ .Token }}"
 discoveryTokenUnsafeSkipCAVerification: true
 controlPlane: {{ .ControlPlane }}
+apiEndpoint: "{{ .NodeAddress }}"
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
   kubeletExtraArgs:
