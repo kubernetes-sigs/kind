@@ -65,22 +65,11 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to get kubernetes version from node")
 	}
 
-	// get the control plane endpoint, in case the cluster has an external load balancer in
-	// front of the control-plane nodes
+	// get the control plane endpoint
 	controlPlaneEndpoint, err := nodes.GetControlPlaneEndpoint(allNodes)
 	if err != nil {
 		// TODO(bentheelder): logging here
 		return err
-	}
-
-	// if there is no load balancer the bootstrap node address is the control plane endpoint
-	if controlPlaneEndpoint == "" {
-		// get the bootstrap node ip address
-		nodeAddress, err := node.IP()
-		if err != nil {
-			return errors.Wrap(err, "failed to get IP for node")
-		}
-		controlPlaneEndpoint = nodeAddress
 	}
 
 	// create kubeadm init config
