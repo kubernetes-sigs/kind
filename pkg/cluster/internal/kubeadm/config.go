@@ -114,6 +114,9 @@ controllerManagerExtraArgs:
   enable-hostpath-provisioner: "true"
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
+  kubeletExtraArgs:
+    fail-swap-on: "false"
+    node-ip: "{{ .NodeAddress }}"
 networking:
   podSubnet: "{{ .PodSubnet }}"
 ---
@@ -121,8 +124,15 @@ apiVersion: kubeadm.k8s.io/v1alpha2
 kind: NodeConfiguration
 metadata:
   name: config
+clusterName: "{{.ClusterName}}"
+discoveryTokenAPIServers: ["{{ .ControlPlaneEndpoint }}"]
+token: "{{ .Token }}"
+discoveryTokenUnsafeSkipCAVerification: true
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
+  kubeletExtraArgs:
+    fail-swap-on: "false"
+    node-ip: "{{ .NodeAddress }}"
 `
 
 // ConfigTemplateAlphaV3 is the kubadm config template for API version v1alpha3
