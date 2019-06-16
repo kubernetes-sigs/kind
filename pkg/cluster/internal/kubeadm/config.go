@@ -81,12 +81,11 @@ clusterName: "{{.ClusterName}}"
 # we use a well know token for TLS bootstrap
 bootstrapTokens:
 - token: "{{ .Token }}"
-{{ if .ControlPlaneEndpoint -}}
 controlPlaneEndpoint: {{ .ControlPlaneEndpoint }}
-{{- end }}
 # we use a well know port for making the API server discoverable inside docker network. 
 # from the host machine such port will be accessible via a random local port instead.
 api:
+  advertiseAddress: "{{ .NodeAddress }}"
   bindPort: {{.APIBindPort}}
 # we need nsswitch.conf so we use /etc/hosts
 # https://github.com/kubernetes/kubernetes/issues/69195
@@ -175,7 +174,7 @@ apiVersion: kubeadm.k8s.io/v1alpha3
 kind: JoinConfiguration
 metadata:
   name: config
-discoveryTokenAPIServers: "{{ .ControlPlaneEndpoint }}"
+discoveryTokenAPIServers: ["{{ .ControlPlaneEndpoint }}"]
 token: "{{ .Token }}"
 discoveryTokenUnsafeSkipCAVerification: true
 controlPlane: {{ .ControlPlane }}
