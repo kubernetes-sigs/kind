@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/version"
 
 	"sigs.k8s.io/kind/pkg/build/kube"
+	"sigs.k8s.io/kind/pkg/concurrent"
 	"sigs.k8s.io/kind/pkg/container/docker"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
@@ -446,23 +447,36 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 		return errors.Wrap(err, "failed to make images dir")
 	}
 
-	pulled := []string{}
+	fns := []func() error{}
+	pulledImages := make(chan string, len(requiredImages))
 	for i, image := range requiredImages {
-		if !builtImages.Has(image) {
-			fmt.Printf("Pulling: %s\n", image)
-			err := docker.Pull(image, 2)
-			if err != nil {
-				return err
+		i, image := i, image // https://golang.org/doc/faq#closures_and_goroutines
+		fns = append(fns, func() error {
+			if !builtImages.Has(image) {
+				fmt.Printf("Pulling: %s\n", image)
+				err := docker.Pull(image, 2)
+				if err != nil {
+					return err
+				}
+				// TODO(bentheelder): generate a friendlier name
+				pullName := fmt.Sprintf("%d.tar", i)
+				pullTo := path.Join(imagesDir, pullName)
+				err = docker.Save(image, pullTo)
+				if err != nil {
+					return err
+				}
+				pulledImages <- fmt.Sprintf("/build/bits/images/%s", pullName)
 			}
-			// TODO(bentheelder): generate a friendlier name
-			pullName := fmt.Sprintf("%d.tar", i)
-			pullTo := path.Join(imagesDir, pullName)
-			err = docker.Save(image, pullTo)
-			if err != nil {
-				return err
-			}
-			pulled = append(pulled, fmt.Sprintf("/build/bits/images/%s", pullName))
-		}
+			return nil
+		})
+	}
+	if err := concurrent.Coalesce(fns...); err != nil {
+		return err
+	}
+	close(pulledImages)
+	pulled := []string{}
+	for image := range pulledImages {
+		pulled = append(pulled, image)
 	}
 
 	// Create the /kind/images directory inside the container.
