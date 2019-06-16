@@ -30,7 +30,8 @@ import (
 type ConfigData struct {
 	ClusterName       string
 	KubernetesVersion string
-	// The ControlPlaneEndpoint, that is the address of the external loadbalancer, if defined
+	// The ControlPlaneEndpoint, that is the address of the external loadbalancer
+	// if defined or the bootstrap node
 	ControlPlaneEndpoint string
 	// The Local API Server port
 	APIBindPort int
@@ -161,6 +162,7 @@ bootstrapTokens:
 # we use a well know port for making the API server discoverable inside docker network. 
 # from the host machine such port will be accessible via a random local port instead.
 apiEndpoint:
+  advertiseAddress: "{{ .NodeAddress }}"
   bindPort: {{.APIBindPort}}
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
@@ -177,7 +179,11 @@ discoveryTokenAPIServers: "{{ .ControlPlaneEndpoint }}"
 token: "{{ .Token }}"
 discoveryTokenUnsafeSkipCAVerification: true
 controlPlane: {{ .ControlPlane }}
-apiEndpoint: "{{ .NodeAddress }}"
+{{ if .ControlPlane -}}
+apiEndpoint:
+  advertiseAddress: "{{ .NodeAddress }}"
+  bindPort: {{.APIBindPort}}
+{{- end }}
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
   kubeletExtraArgs:
@@ -234,6 +240,7 @@ bootstrapTokens:
 # we use a well know port for making the API server discoverable inside docker network. 
 # from the host machine such port will be accessible via a random local port instead.
 localAPIEndpoint:
+  advertiseAddress: "{{ .NodeAddress }}"
   bindPort: {{.APIBindPort}}
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
@@ -248,7 +255,9 @@ metadata:
   name: config
 {{ if .ControlPlane -}}	
 controlPlane:
-  localAPIEndpoint: "{{ .NodeAddress }}"
+  localAPIEndpoint:
+    advertiseAddress: "{{ .NodeAddress }}"
+    bindPort: {{.APIBindPort}}
 {{- end }}
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
@@ -311,6 +320,7 @@ bootstrapTokens:
 # we use a well know port for making the API server discoverable inside docker network. 
 # from the host machine such port will be accessible via a random local port instead.
 localAPIEndpoint:
+  advertiseAddress: "{{ .NodeAddress }}"
   bindPort: {{.APIBindPort}}
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
@@ -325,7 +335,9 @@ metadata:
   name: config
 {{ if .ControlPlane -}}
 controlPlane:
-  localAPIEndpoint: "{{ .NodeAddress }}"
+  localAPIEndpoint:
+    advertiseAddress: "{{ .NodeAddress }}"
+    bindPort: {{.APIBindPort}}
 {{- end }}
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
