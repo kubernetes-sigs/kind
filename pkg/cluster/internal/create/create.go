@@ -41,6 +41,12 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/waitforready"
 )
 
+const (
+	// Typical host name max limit is 64 characters (https://linux.die.net/man/2/sethostname)
+	// We append -control-plane (14 characters) to the cluster name on the control plane container
+	clusterNameMax = 50
+)
+
 // Options holds cluster creation options
 // NOTE: this is only exported for usage by ./../create
 type Options struct {
@@ -56,6 +62,11 @@ func Cluster(ctx *context.Context, cfg *config.Cluster, opts *Options) error {
 	// default config fields (important for usage as a library, where the config
 	// may be constructed in memory rather than from disk)
 	encoding.Scheme.Default(cfg)
+
+	// warn if cluster name might typically be too long
+	if len(ctx.Name()) > clusterNameMax {
+		log.Warnf("cluster name %q is probably too long, this might not work properly on some systems", ctx.Name())
+	}
 
 	// then validate
 	if err := cfg.Validate(); err != nil {
