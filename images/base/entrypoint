@@ -37,6 +37,11 @@ fix_mount() {
   chown root:root /bin/mount
   chmod -s /bin/mount
 
+  # This is a workaround to an AUFS bug that might cause `Text file
+  # busy` on `mount` command below. See more details in
+  # https://github.com/moby/moby/issues/9547
+  sync
+
   # systemd-in-a-container should have read only /sys
   # https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
   # however, we need other things from `docker run --privileged` ...
