@@ -14,7 +14,7 @@
 
 ARG GOARCH="amd64"
 # STEP 1: Build kindnetd binary
-FROM golang:1.12.5 AS builder
+FROM golang:1.12.6 AS builder
 # golang envs
 ARG GOARCH
 ARG GOOS=linux

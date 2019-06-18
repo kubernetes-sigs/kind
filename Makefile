@@ -28,7 +28,7 @@ KIND_BINARY_NAME?=kind
 # use the official module proxy by default
 GOPROXY?=https://proxy.golang.org
 # default build image
-GO_VERSION?=1.12.5
+GO_VERSION?=1.12.6
 GO_IMAGE?=golang:$(GO_VERSION)
 # docker volume name, used as a go module / build cache
 CACHE_VOLUME?=kind-build-cache
