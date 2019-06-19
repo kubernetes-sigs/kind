@@ -1,1 +1,0 @@
-This directory contains small common development utilities.

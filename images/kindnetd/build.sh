@@ -21,12 +21,20 @@ set -o pipefail
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
+# build the binary
+export GOARCH="${GOARCH:-amd64}"
+export GOOS="linux"
+export SOURCE_DIR="${REPO_ROOT}/cmd/kindnetd"
+# NOTE: use a per-arch OUT_DIR so we send less in the docker build context
+export OUT_DIR="${REPO_ROOT}/bin/kindnetd/${GOARCH}"
+hack/build/go_container.sh go build -v -o /out/kindnetd
+
 # TODO: verisoning
+# build image
 IMAGE="${IMAGE:-kindest/kindnetd}"
 TAG="${TAG:-$(cat images/kindnetd/VERSION)}"
-GOARCH="${GOARCH:-amd64}"
 docker build \
   -t "${IMAGE}:${TAG}" \
-  --build-arg="GOARCH=${GOARCH}"\
+  --build-arg="GOARCH=${GOARCH}" \
   -f images/kindnetd/Dockerfile \
-  "${REPO_ROOT}/cmd/kindnetd"
+  "${OUT_DIR}"
