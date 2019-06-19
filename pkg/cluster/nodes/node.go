@@ -264,32 +264,42 @@ type proxyDetails struct {
 
 // getProxyDetails returns a struct with the host environment proxy settings
 // that should be passed to the nodes
-func getProxyDetails() proxyDetails {
+func getProxyDetails() (*proxyDetails, error) {
 	var proxyEnvs = []string{httpProxy, httpsProxy, noProxy}
 	var val string
 	var details proxyDetails
 	details.Envs = make(map[string]string)
 
+	proxySupport := false
+
 	for _, name := range proxyEnvs {
 		val = os.Getenv(name)
 		if val != "" {
+			proxySupport = true
 			details.Envs[name] = val
+			details.Envs[strings.ToLower(name)] = val
 		} else {
 			val = os.Getenv(strings.ToLower(name))
 			if val != "" {
+				proxySupport = true
 				details.Envs[name] = val
+				details.Envs[strings.ToLower(name)] = val
 			}
 		}
 	}
 
-	// Specifically add the docker network subnets to NO_PROXY
-	subnets, err := getSubnets(defaultNetwork)
-	if err == nil {
-		details.Envs[noProxy] = strings.Join(append(subnets, details.Envs[noProxy]), ",")
-		details.Envs[strings.ToLower(noProxy)] = strings.Join(append(subnets, details.Envs[strings.ToLower(noProxy)]), ",")
+	// Specifically add the docker network subnets to NO_PROXY if we are using proxies
+	if proxySupport {
+		subnets, err := getSubnets(defaultNetwork)
+		if err != nil {
+			return nil, err
+		}
+		noProxyList := strings.Join(append(subnets, details.Envs[noProxy]), ",")
+		details.Envs[noProxy] = noProxyList
+		details.Envs[strings.ToLower(noProxy)] = noProxyList
 	}
 
-	return details
+	return &details, nil
 }
 
 // getSubnets returns a slice of subnets for a specified network
