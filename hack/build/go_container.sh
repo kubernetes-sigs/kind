@@ -17,7 +17,6 @@
 # Only requires docker on the host
 set -o nounset
 set -o errexit
-set -o pipefail
 
 # get and go to the repo root
 REPO_ROOT="${REPO_ROOT:-$(git rev-parse --show-toplevel)}"
