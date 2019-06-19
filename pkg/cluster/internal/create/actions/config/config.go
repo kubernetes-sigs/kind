@@ -75,7 +75,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	// create kubeadm init config
 	fns := []func() error{}
 
-	kubeadmClusterConfig := kubeadm.ConfigData{
+	configData := kubeadm.ConfigData{
 		ClusterName:          ctx.ClusterContext.Name(),
 		KubernetesVersion:    kubeVersion,
 		ControlPlaneEndpoint: controlPlaneEndpoint,
@@ -87,7 +87,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	fns = append(fns, func() error {
-		return writeKubeadmConfig(ctx.Config, kubeadmClusterConfig, node)
+		return writeKubeadmConfig(ctx.Config, configData, node)
 	})
 
 	// create the kubeadm join configuration for secondary control plane nodes if any
@@ -96,12 +96,12 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 	if len(secondaryControlPlanes) > 0 {
-		kubeadmClusterConfig.ControlPlane = true
 		// create the workers concurrently
 		for _, node := range secondaryControlPlanes {
-			node := node // capture loop variable
+			node := node             // capture loop variable
+			configData := configData // copy config data
 			fns = append(fns, func() error {
-				return writeKubeadmConfig(ctx.Config, kubeadmClusterConfig, &node)
+				return writeKubeadmConfig(ctx.Config, configData, &node)
 			})
 		}
 	}
@@ -112,12 +112,13 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 	if len(workers) > 0 {
-		kubeadmClusterConfig.ControlPlane = false
 		// create the workers concurrently
 		for _, node := range workers {
-			node := node // capture loop variable
+			node := node             // capture loop variable
+			configData := configData // copy config data
+			configData.ControlPlane = false
 			fns = append(fns, func() error {
-				return writeKubeadmConfig(ctx.Config, kubeadmClusterConfig, &node)
+				return writeKubeadmConfig(ctx.Config, configData, &node)
 			})
 		}
 	}
