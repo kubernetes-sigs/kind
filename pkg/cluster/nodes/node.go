@@ -237,7 +237,7 @@ func (n *Node) WriteFile(dest, content string) error {
 // ImageInspect return low-level information on containers images inside a node
 func (n *Node) ImageInspect(containerNameOrID string) ([]string, error) {
 	cmd := n.Command(
-		"crictl", "-r", "/var/run/containerd/containerd.sock", "inspecti", containerNameOrID,
+		"crictl", "inspecti", containerNameOrID,
 	)
 	return exec.CombinedOutputLines(cmd)
 }
