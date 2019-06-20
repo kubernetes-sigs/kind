@@ -140,10 +140,6 @@ data:
           "ipam": {
             "type": "host-local",
             "dataDir": "/run/cni-ipam-state",
-            "routes": [
-              {"dst": "0.0.0.0/0"},
-              {"dst": "::/0"}
-            ],
             "ranges": [
               [
                 {
