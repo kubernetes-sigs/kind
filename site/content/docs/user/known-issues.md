@@ -17,11 +17,45 @@ It may additionally be helpful to:
 - reach out and ask for help in [#kind] on the [kubernetes slack]
 
 ## Contents
+* [Failures involving mismatched kubectl versions](#failures-involving-mismatched-kubectl-version)
 * [Docker on Btrfs](#docker-on-btrfs)
 * [Docker installed with Snap](#docker-installed-with-snap)
 * [Failing to apply overlay network](#failing-to-apply-overlay-network)
 * [Failure to build node image](#failure-to-build-node-image)
 * [Failure for cluster to properly start](#failure-for-cluster-to-properly-start)
+
+## Failures involving mistmatched kubectl versions
+
+`kind` will fail create a cluster, if the version of Kubernetes for the client and server differ.
+
+This is a issue that frequently occurs when running `kind` alongside Docker For Mac.
+
+This problem is related to a bug in [docker on macOS][for-mac#3663]
+
+If you see something like the following error message:
+```bash
+kubectl edit deploy -n kube-system kubernetes-dashboard
+error: SchemaError(io.k8s.api.autoscaling.v2beta1.ExternalMetricStatus): invalid object doesn't have additional properties
+```
+
+You can check your client and server versions by running:
+```bash
+kubectl version
+```
+
+If there is a mismatch between the server and client versions, you should install a newer client version. 
+
+If you are using Mac, you can install kubectl via homebrew by running:
+```bash
+brew install kubernetes-cli
+```
+
+And overwrite the symlinks created by Docker For Mac by running:
+```bash
+brew link --overwrite kubernetes-cli
+```
+
+[for-mac#3663]: https://github.com/docker/for-mac/issues/3663
 
 ## Docker on Btrfs
 
