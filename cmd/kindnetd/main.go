@@ -19,7 +19,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -64,17 +63,12 @@ func main() {
 
 	// used to track if the cni config inputs changed and write the config
 	cniConfigWriter := &CNIConfigWriter{
-		path:     CNIConfigPath,
-		template: os.Getenv("CNI_CONFIG_TEMPLATE"),
+		path: cniConfigPath,
 	}
 
 	// enforce ip masquerade rules
-	ipv6 := false
 	// TODO: dual stack...?
-	if strings.Contains(hostIP, ":") {
-		ipv6 = true
-	}
-	masqAgent, _ := NewIPMasqAgent(ipv6, []string{os.Getenv("POD_SUBNET")})
+	masqAgent, _ := NewIPMasqAgent(IsIPv6(hostIP), []string{os.Getenv("POD_SUBNET")})
 	go func() {
 		// TODO: use logging and continue retrying instead...
 		if err := masqAgent.SyncRulesForever(time.Second * 60); err != nil {
