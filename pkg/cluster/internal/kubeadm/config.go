@@ -19,9 +19,9 @@ package kubeadm
 import (
 	"bytes"
 	"strings"
-  "text/template"
-  log "github.com/sirupsen/logrus"
+	"text/template"
 
+	log "github.com/sirupsen/logrus"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/version"
@@ -93,7 +93,7 @@ clusterName: "{{.ClusterName}}"
 # we use a well know token for TLS bootstrap
 bootstrapTokens:
 - token: "{{ .Token }}"
-controlPlaneEndpoint: {{ .ControlPlaneEndpoint }}
+controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # we use a well know port for making the API server discoverable inside docker network. 
 # from the host machine such port will be accessible via a random local port instead.
 api:
@@ -161,7 +161,7 @@ metadata:
   name: config
 kubernetesVersion: {{.KubernetesVersion}}
 clusterName: "{{.ClusterName}}"
-controlPlaneEndpoint: {{ .ControlPlaneEndpoint }}
+controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 networking:
   podSubnet: "{{ .PodSubnet }}"
   serviceSubnet: "{{ .ServiceSubnet }}"
@@ -350,7 +350,7 @@ metadata:
   name: config
 kubernetesVersion: {{.KubernetesVersion}}
 clusterName: "{{.ClusterName}}"
-controlPlaneEndpoint: {{ .ControlPlaneEndpoint }}
+controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # on docker for mac we have to expose the api server via port forward,
 # so we need to ensure the cert is valid for localhost so we can talk
 # to the cluster after rewriting the kubeconfig to point to localhost
@@ -442,7 +442,7 @@ metadata:
 // Config returns a kubeadm config generated from config data, in particular
 // the kubernetes version
 func Config(data ConfigData) (config string, err error) {
-  log.Debugf("Configuration Input data: %v", data)
+	log.Debugf("Configuration Input data: %v", data)
 	ver, err := version.ParseGeneric(data.KubernetesVersion)
 	if err != nil {
 		return "", err
@@ -471,7 +471,7 @@ func Config(data ConfigData) (config string, err error) {
 	err = t.Execute(&buff, data)
 	if err != nil {
 		return "", errors.Wrap(err, "error executing config template")
-  }
-  log.Debugf("Configuration generated:\n %v", buff.String())
+	}
+	log.Debugf("Configuration generated:\n %v", buff.String())
 	return buff.String(), nil
 }
