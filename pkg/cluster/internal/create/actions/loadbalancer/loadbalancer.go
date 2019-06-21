@@ -57,6 +57,12 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return nil
 	}
 
+	// obtain IP family
+	ipv6 := false
+	if ctx.Config.Networking.IPFamily == "ipv6" {
+		ipv6 = true
+	}
+
 	// otherwise notify the user
 	ctx.Status.Start("Configuring the external load balancer ⚖️")
 	defer ctx.Status.End(false)
@@ -71,17 +77,23 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 	for _, n := range controlPlaneNodes {
-		controlPlaneIP, err := n.IP()
+		controlPlaneIPv4, controlPlaneIPv6, err := n.IP()
 		if err != nil {
 			return errors.Wrapf(err, "failed to get IP for node %s", n.Name())
 		}
-		backendServers[n.Name()] = fmt.Sprintf("%s:%d", controlPlaneIP, kubeadm.APIServerPort)
+		if controlPlaneIPv4 != "" && !ipv6 {
+			backendServers[n.Name()] = fmt.Sprintf("%s:%d", controlPlaneIPv4, kubeadm.APIServerPort)
+		}
+		if controlPlaneIPv6 != "" && ipv6 {
+			backendServers[n.Name()] = fmt.Sprintf("[%s]:%d", controlPlaneIPv6, kubeadm.APIServerPort)
+		}
 	}
 
 	// create loadbalancer config data
 	loadbalancerConfig, err := loadbalancer.Config(&loadbalancer.ConfigData{
 		ControlPlanePort: loadbalancer.ControlPlanePort,
 		BackendServers:   backendServers,
+		IPv6:             ipv6,
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to generate loadbalancer config data")

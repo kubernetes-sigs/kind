@@ -103,9 +103,16 @@ func createNodeContainers(
 		desiredNode := desiredNode // capture loop variable
 		fns = append(fns, func() error {
 			// create the node into a container (~= docker run -d)
-			_, err := desiredNode.Create(clusterLabel)
+			node, err := desiredNode.Create(clusterLabel)
+			if err != nil {
+				return err
+			}
+			if desiredNode.IPv6 {
+				err = node.EnableIPv6()
+			}
 			return err
 		})
+
 	}
 	if err := concurrent.UntilError(fns); err != nil {
 		return err
@@ -125,6 +132,7 @@ type nodeSpec struct {
 	// TODO(bentheelder): replace with a cri.PortMapping when we have that
 	APIServerPort    int32
 	APIServerAddress string
+	IPv6             bool
 }
 
 func nodesToCreate(cfg *config.Cluster, clusterName string) []nodeSpec {
@@ -154,6 +162,11 @@ func nodesToCreate(cfg *config.Cluster, clusterName string) []nodeSpec {
 		}
 	}
 	isHA := controlPlanes > 1
+	// obtain IP family
+	ipv6 := false
+	if cfg.Networking.IPFamily == "ipv6" {
+		ipv6 = true
+	}
 
 	// add all of the config nodes as desired nodes
 	for _, configNode := range configNodes {
@@ -173,6 +186,7 @@ func nodesToCreate(cfg *config.Cluster, clusterName string) []nodeSpec {
 			ExtraMounts:      configNode.ExtraMounts,
 			APIServerAddress: apiServerAddress,
 			APIServerPort:    apiServerPort,
+			IPv6:             ipv6,
 		})
 	}
 
@@ -186,6 +200,7 @@ func nodesToCreate(cfg *config.Cluster, clusterName string) []nodeSpec {
 			ExtraMounts:      []cri.Mount{},
 			APIServerAddress: cfg.Networking.APIServerAddress,
 			APIServerPort:    cfg.Networking.APIServerPort,
+			IPv6:             ipv6,
 		})
 	}
 

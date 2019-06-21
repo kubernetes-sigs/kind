@@ -21,6 +21,8 @@ import (
 	"strings"
 	"text/template"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/version"
 )
@@ -45,6 +47,10 @@ type ConfigData struct {
 	Token string
 	// The subnet used for pods
 	PodSubnet string
+	// The subnet used for services
+	ServiceSubnet string
+	// IPv4 values take precedence over IPv6 by default, if true set IPv6 default values
+	IPv6 bool
 	// DerivedConfigData is populated by Derive()
 	// These auto-generated fields are available to Config templates,
 	// but not meant to be set by hand
@@ -87,7 +93,7 @@ clusterName: "{{.ClusterName}}"
 # we use a well know token for TLS bootstrap
 bootstrapTokens:
 - token: "{{ .Token }}"
-controlPlaneEndpoint: {{ .ControlPlaneEndpoint }}
+controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # we use a well know port for making the API server discoverable inside docker network. 
 # from the host machine such port will be accessible via a random local port instead.
 api:
@@ -104,9 +110,14 @@ apiServerExtraVolumes:
 # on docker for mac we have to expose the api server via port forward,
 # so we need to ensure the cert is valid for localhost so we can talk
 # to the cluster after rewriting the kubeconfig to point to localhost
-apiServerCertSANs: [localhost, {{.APIServerAddress}}]
+apiServerCertSANs: [localhost, "{{.APIServerAddress}}"]
 kubeletConfiguration:
   baseConfig:
+    # configure ipv6 addresses in IPv6 mode
+    {{ if .IPv6 -}}
+    address: "::"
+    healthzBindAddress: "::"
+    {{- end }}
     # disable disk resource management by default
     # kubelet will see the host disk that the inner container runtime
     # is ultimately backed by and attempt to recover disk space.
@@ -150,7 +161,10 @@ metadata:
   name: config
 kubernetesVersion: {{.KubernetesVersion}}
 clusterName: "{{.ClusterName}}"
-controlPlaneEndpoint: {{ .ControlPlaneEndpoint }}
+controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
+networking:
+  podSubnet: "{{ .PodSubnet }}"
+  serviceSubnet: "{{ .ServiceSubnet }}"
 # we need nsswitch.conf so we use /etc/hosts
 # https://github.com/kubernetes/kubernetes/issues/69195
 apiServerExtraVolumes:
@@ -162,7 +176,7 @@ apiServerExtraVolumes:
 # on docker for mac we have to expose the api server via port forward,
 # so we need to ensure the cert is valid for localhost so we can talk
 # to the cluster after rewriting the kubeconfig to point to localhost
-apiServerCertSANs: [localhost, {{.APIServerAddress}}]
+apiServerCertSANs: [localhost, "{{.APIServerAddress}}"]
 controllerManagerExtraArgs:
   enable-hostpath-provisioner: "true"
 networking:
@@ -210,6 +224,11 @@ apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 metadata:
   name: config
+# configure ipv6 addresses in IPv6 mode
+{{ if .IPv6 -}}
+address: "::"
+healthzBindAddress: "::"
+{{- end }}
 # disable disk resource management by default
 # kubelet will see the host disk that the inner container runtime
 # is ultimately backed by and attempt to recover disk space. we don't want that.
@@ -239,12 +258,24 @@ controlPlaneEndpoint: {{ .ControlPlaneEndpoint }}
 # so we need to ensure the cert is valid for localhost so we can talk
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServer:
-  certSANs: [localhost, {{.APIServerAddress}}]
+  certSANs: [localhost, "{{.APIServerAddress}}"]
 controllerManager:
   extraArgs:
     enable-hostpath-provisioner: "true"
+    # configure ipv6 default addresses for IPv6 clusters
+    {{ if .IPv6 -}}
+    bind-address: "::"
+    {{- end }}
+scheduler:
+  extraArgs:
+    # configure ipv6 default addresses for IPv6 clusters
+    {{ if .IPv6 -}}
+    address: "::"
+    bind-address: "::1"
+    {{- end }}
 networking:
   podSubnet: "{{ .PodSubnet }}"
+  serviceSubnet: "{{ .ServiceSubnet }}"
 ---
 apiVersion: kubeadm.k8s.io/v1beta1
 kind: InitConfiguration
@@ -290,6 +321,11 @@ apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 metadata:
   name: config
+# configure ipv6 addresses in IPv6 mode
+{{ if .IPv6 -}}
+address: "::"
+healthzBindAddress: "::"
+{{- end }}
 # disable disk resource management by default
 # kubelet will see the host disk that the inner container runtime
 # is ultimately backed by and attempt to recover disk space. we don't want that.
@@ -314,17 +350,29 @@ metadata:
   name: config
 kubernetesVersion: {{.KubernetesVersion}}
 clusterName: "{{.ClusterName}}"
-controlPlaneEndpoint: {{ .ControlPlaneEndpoint }}
+controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # on docker for mac we have to expose the api server via port forward,
 # so we need to ensure the cert is valid for localhost so we can talk
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServer:
-  certSANs: [localhost, {{.APIServerAddress}}]
+  certSANs: [localhost, "{{.APIServerAddress}}"]
 controllerManager:
   extraArgs:
     enable-hostpath-provisioner: "true"
+    # configure ipv6 default addresses for IPv6 clusters
+    {{ if .IPv6 -}}
+    bind-address: "::"
+    {{- end }}
+scheduler:
+  extraArgs:
+    # configure ipv6 default addresses for IPv6 clusters
+    {{ if .IPv6 -}}
+    address: "::"
+    bind-address: "::1"
+    {{- end }}
 networking:
   podSubnet: "{{ .PodSubnet }}"
+  serviceSubnet: "{{ .ServiceSubnet }}"
 ---
 apiVersion: kubeadm.k8s.io/v1beta2
 kind: InitConfiguration
@@ -370,6 +418,11 @@ apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 metadata:
   name: config
+# configure ipv6 addresses in IPv6 mode
+{{ if .IPv6 -}}
+address: "::"
+healthzBindAddress: "::"
+{{- end }}
 # disable disk resource management by default
 # kubelet will see the host disk that the inner container runtime
 # is ultimately backed by and attempt to recover disk space. we don't want that.
@@ -389,6 +442,7 @@ metadata:
 // Config returns a kubeadm config generated from config data, in particular
 // the kubernetes version
 func Config(data ConfigData) (config string, err error) {
+	log.Debugf("Configuration Input data: %v", data)
 	ver, err := version.ParseGeneric(data.KubernetesVersion)
 	if err != nil {
 		return "", err
@@ -418,5 +472,6 @@ func Config(data ConfigData) (config string, err error) {
 	if err != nil {
 		return "", errors.Wrap(err, "error executing config template")
 	}
+	log.Debugf("Configuration generated:\n %v", buff.String())
 	return buff.String(), nil
 }

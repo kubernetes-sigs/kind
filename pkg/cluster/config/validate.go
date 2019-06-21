@@ -54,6 +54,10 @@ func (c *Cluster) Validate() error {
 	if _, _, err := net.ParseCIDR(c.Networking.PodSubnet); err != nil {
 		errs = append(errs, errors.Wrapf(err, "invalid podSubnet"))
 	}
+	// serviceSubnet should be a valid CIDR
+	if _, _, err := net.ParseCIDR(c.Networking.ServiceSubnet); err != nil {
+		errs = append(errs, errors.Wrapf(err, "invalid serviceSubnet"))
+	}
 
 	if len(errs) > 0 {
 		return util.NewErrors(errs)

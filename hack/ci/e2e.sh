@@ -102,12 +102,15 @@ create_cluster() {
 # necessary for conformance
 kind: Cluster
 apiVersion: kind.sigs.k8s.io/v1alpha3
+networking:
+  ipFamily: ${IP_FAMILY:-ipv4}
 nodes:
 # the control plane node
 - role: control-plane
 - role: worker
 - role: worker
 EOF
+
     # mark the cluster as up for cleanup
     # even if kind create fails, kind delete can clean up after it
     KIND_IS_UP=true
@@ -129,6 +132,34 @@ run_tests() {
     # export the KUBECONFIG
     KUBECONFIG="$(kind get kubeconfig-path)"
     export KUBECONFIG
+
+    if [[ "${IP_FAMILY:-ipv4}" == "ipv6" ]]; then
+        # Create the CoreDNS config for offline and IPv6 clusters
+        # https://github.com/coredns/coredns/issues/2494#issuecomment-457215452
+        cat <<EOF | kubectl apply -f -
+---
+apiVersion: v1
+data:
+  Corefile: |
+    .:53 {
+        errors
+        health
+        rewrite name google.com my-google.default.svc.cluster.local
+        kubernetes cluster.local in-addr.arpa ip6.arpa {
+           pods insecure
+        }
+        prometheus :9153
+        cache 30
+        reload
+        loadbalance
+    }
+kind: ConfigMap
+metadata:
+  name: coredns
+  namespace: kube-system
+---
+EOF
+    fi
 
     # base kubetest args
     KUBETEST_ARGS="--provider=skeleton --test --check-version-skew=false"
