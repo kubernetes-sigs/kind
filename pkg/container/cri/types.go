@@ -53,13 +53,14 @@ type Mount struct {
 // In yaml this looks like:
 //  containerPort: 80
 //  hostPort: 8000
-//  readOnly: true
+//  listenAddress: 127.0.0.1
 type PortMapping struct {
 	// Port within the container.
-	ContainerPort int32 `protobuf:"varint,1,opt,name=container_path,json=containerPort,proto3" json:"containerPort,omitempty"`
+	ContainerPort int32 `protobuf:"varint,1,opt,name=container_port,json=containerPort,proto3" json:"containerPort,omitempty"`
 	// Port on the host.
 	HostPort int32 `protobuf:"varint,2,opt,name=host_path,json=hostPort,proto3" json:"hostPort,omitempty"`
 	// TODO: add protocol (tcp/udp) and port-ranges
+	ListenAddress string `protobuf:"bytes,3,opt,name=listenAddress,json=hostPort,proto3" json:"listenAddress,omitempty"`
 }
 
 // MountPropagation represents an "enum" for mount propagation options,
