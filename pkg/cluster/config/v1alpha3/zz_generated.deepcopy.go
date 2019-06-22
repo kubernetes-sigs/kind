@@ -93,6 +93,11 @@ func (in *Node) DeepCopyInto(out *Node) {
 		*out = make([]cri.Mount, len(*in))
 		copy(*out, *in)
 	}
+	if in.ExtraPortMappings != nil {
+		in, out := &in.ExtraPortMappings, &out.ExtraPortMappings
+		*out = make([]cri.PortMapping, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

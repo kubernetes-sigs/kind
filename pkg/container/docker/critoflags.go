@@ -71,3 +71,13 @@ func generateMountBindings(mounts ...cri.Mount) []string {
 	}
 	return result
 }
+
+func generatePortMappings(portMappings ...cri.PortMapping) []string {
+	result := make([]string, 0, len(portMappings))
+	for _, pm := range portMappings {
+		publish := fmt.Sprintf("%d:%d", pm.HostPort, pm.ContainerPort)
+		publish = fmt.Sprintf("-p %s", publish)
+		result = append(result, publish)
+	}
+	return result
+}
