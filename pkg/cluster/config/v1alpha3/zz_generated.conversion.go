@@ -134,6 +134,7 @@ func autoConvert_v1alpha3_Node_To_config_Node(in *Node, out *config.Node, s conv
 	out.Role = config.NodeRole(in.Role)
 	out.Image = in.Image
 	out.ExtraMounts = *(*[]cri.Mount)(unsafe.Pointer(&in.ExtraMounts))
+	out.ExtraPortMappings = *(*[]cri.PortMapping)(unsafe.Pointer(&in.ExtraPortMappings))
 	return nil
 }
 
@@ -146,6 +147,7 @@ func autoConvert_config_Node_To_v1alpha3_Node(in *config.Node, out *Node, s conv
 	out.Role = NodeRole(in.Role)
 	out.Image = in.Image
 	out.ExtraMounts = *(*[]cri.Mount)(unsafe.Pointer(&in.ExtraMounts))
+	out.ExtraPortMappings = *(*[]cri.PortMapping)(unsafe.Pointer(&in.ExtraPortMappings))
 	return nil
 }
 

@@ -83,5 +83,6 @@ func autoConvert_config_Node_To_v1alpha2_Node(in *config.Node, out *Node, s conv
 	out.Role = NodeRole(in.Role)
 	out.Image = in.Image
 	out.ExtraMounts = *(*[]cri.Mount)(unsafe.Pointer(&in.ExtraMounts))
+	// WARNING: in.ExtraPortMappings requires manual conversion: does not exist in peer-type
 	return nil
 }

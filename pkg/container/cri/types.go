@@ -49,6 +49,19 @@ type Mount struct {
 	Propagation MountPropagation `protobuf:"varint,5,opt,name=propagation,proto3,enum=runtime.v1alpha2.MountPropagation" json:"propagation,omitempty"`
 }
 
+// PortMapping specifies a host port mapped into a container port.
+// In yaml this looks like:
+//  containerPort: 80
+//  hostPort: 8000
+//  readOnly: true
+type PortMapping struct {
+	// Port within the container.
+	ContainerPort int32 `protobuf:"varint,1,opt,name=container_path,json=containerPort,proto3" json:"containerPort,omitempty"`
+	// Port on the host.
+	HostPort int32 `protobuf:"varint,2,opt,name=host_path,json=hostPort,proto3" json:"hostPort,omitempty"`
+	// TODO: add protocol (tcp/udp) and port-ranges
+}
+
 // MountPropagation represents an "enum" for mount propagation options,
 // see also Mount.
 type MountPropagation int32
