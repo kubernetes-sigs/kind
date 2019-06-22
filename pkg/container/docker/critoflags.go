@@ -76,7 +76,10 @@ func generatePortMappings(portMappings ...cri.PortMapping) []string {
 	result := make([]string, 0, len(portMappings))
 	for _, pm := range portMappings {
 		publish := fmt.Sprintf("%d:%d", pm.HostPort, pm.ContainerPort)
-		publish = fmt.Sprintf("-p %s", publish)
+		if pm.ListenAddress != "" {
+			publish = fmt.Sprintf("%s:%s", pm.ListenAddress, publish)
+		}
+		publish = fmt.Sprintf("--publish=%s", publish)
 		result = append(result, publish)
 	}
 	return result
