@@ -162,7 +162,7 @@ data:
       ]
     }
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: kindnet
@@ -172,6 +172,9 @@ metadata:
     app: kindnet
     k8s-app: kindnet
 spec:
+  selector:
+    matchLabels:
+      app: kindnet
   template:
     metadata:
       labels:
