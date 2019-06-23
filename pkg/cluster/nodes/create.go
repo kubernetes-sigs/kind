@@ -84,7 +84,7 @@ func CreateControlPlaneNode(name, image, clusterLabel, listenAddress string, por
 
 // CreateExternalLoadBalancerNode creates an external loab balancer node
 // and gets ready for exposing the the API server and the load balancer admin console
-func CreateExternalLoadBalancerNode(name, image, clusterLabel, listenAddress string, port int32, portMappings []cri.PortMapping) (node *Node, err error) {
+func CreateExternalLoadBalancerNode(name, image, clusterLabel, listenAddress string, port int32) (node *Node, err error) {
 	// gets a random host port for control-plane load balancer
 	// gets a random host port for the API server
 	if port == 0 {
@@ -96,13 +96,13 @@ func CreateExternalLoadBalancerNode(name, image, clusterLabel, listenAddress str
 	}
 
 	// load balancer port mapping
-	portMappingsWithLoadBalancer := append(portMappings, cri.PortMapping{
+	portMappings := []cri.PortMapping{{
 		ListenAddress: listenAddress,
 		HostPort:      port,
 		ContainerPort: loadbalancer.ControlPlanePort,
-	})
+	}}
 	node, err = createNode(name, image, clusterLabel, constants.ExternalLoadBalancerNodeRoleValue,
-		nil, portMappingsWithLoadBalancer,
+		nil, portMappings,
 		// publish selected port for the control plane
 		"--expose", fmt.Sprintf("%d", port),
 	)
