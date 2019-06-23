@@ -244,6 +244,21 @@ nodes:
 - role: worker
 ```
 
+#### Mapping ports to the host machine
+You can map extra ports from the nodes to the host machine with `extraPortMappings`:
+```yaml
+kind: Cluster
+apiVersion: kind.sigs.k8s.io/v1alpha3
+nodes:
+- role: control-plane
+- role: worker
+  extraPortMappings:
+  - containerPort: 80
+    hostPort: 80
+    listenAddress: "127.0.0.1" # Optional, defaults to "0.0.0.0"
+```
+This can be useful if using `NodePort` services or daemonsets exposing host ports.
+
 ### Enable Feature Gates in Your Cluster
 
 Feature gates are a set of key=value pairs that describe alpha or experimental features. In order to enable a gate you have to [customize your kubeadm configuration][customize control plane with kubeadm], and it will depend on what gate and component you want to enable. An example kind config can be:
