@@ -215,7 +215,7 @@ func (d *nodeSpec) Create(clusterLabel string) (node *nodes.Node, err error) {
 	// TODO(bentheelder): decouple from config objects further
 	switch d.Role {
 	case constants.ExternalLoadBalancerNodeRoleValue:
-		node, err = nodes.CreateExternalLoadBalancerNode(d.Name, d.Image, clusterLabel, d.APIServerAddress, d.APIServerPort, d.ExtraPortMappings)
+		node, err = nodes.CreateExternalLoadBalancerNode(d.Name, d.Image, clusterLabel, d.APIServerAddress, d.APIServerPort)
 	case constants.ControlPlaneNodeRoleValue:
 		node, err = nodes.CreateControlPlaneNode(d.Name, d.Image, clusterLabel, d.APIServerAddress, d.APIServerPort, d.ExtraMounts, d.ExtraPortMappings)
 	case constants.WorkerNodeRoleValue:
