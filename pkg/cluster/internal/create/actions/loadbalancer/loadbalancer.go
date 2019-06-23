@@ -19,6 +19,8 @@ package loadbalancer
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 
 	"github.com/pkg/errors"
 
@@ -99,14 +101,30 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to generate loadbalancer config data")
 	}
 
-	// create loadbalancer config on the node
-	if err := loadBalancerNode.WriteFile(loadbalancer.ConfigPath, loadbalancerConfig); err != nil {
+	// create temporay file to store the load balancer config
+	tmpFile, err := ioutil.TempFile(os.TempDir(), "kind-")
+	if err != nil {
+		return errors.Wrap(err, "Cannot create temporary file")
+	}
+	defer os.Remove(tmpFile.Name())
+
+	// Write the loadbalancer config
+	if _, err = tmpFile.Write([]byte(loadbalancerConfig)); err != nil {
+		return errors.Wrap(err, "Failed to write loadbalancer config to temporary file")
+	}
+
+	// Close the file
+	if err := tmpFile.Close(); err != nil {
+		return err
+	}
+
+	if err := docker.CopyTo(tmpFile.Name(), loadBalancerNode.Name(), loadbalancer.ConfigPath); err != nil {
 		// TODO: logging here
 		return errors.Wrap(err, "failed to copy loadbalancer config to node")
 	}
 
-	// reload the config
-	if err := docker.Kill("SIGHUP", loadBalancerNode.Name()); err != nil {
+	// start the loadbalancer node
+	if err := docker.Start(loadBalancerNode.Name()); err != nil {
 		return errors.Wrap(err, "failed to reload loadbalancer")
 	}
 

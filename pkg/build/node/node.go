@@ -516,6 +516,7 @@ func (c *BuildContext) createBuildContainer(buildDir string) (id string, err err
 	id = "kind-build-" + uuid.New().String()
 	err = docker.Run(
 		c.baseImage,
+		false,
 		docker.WithRunArgs(
 			"-d", // make the client exit while the container continues to run
 			// label the container to make them easier to track

@@ -62,7 +62,7 @@ func WithMounts(mounts []cri.Mount) RunOpt {
 }
 
 // Run creates a container with "docker run", with some error handling
-func Run(image string, opts ...RunOpt) error {
+func Run(image string, createonly bool, opts ...RunOpt) error {
 	o := &runOpts{}
 	for _, opt := range opts {
 		o = opt(o)
@@ -73,7 +73,11 @@ func Run(image string, opts ...RunOpt) error {
 		runArgs = append(runArgs, generateMountBindings(mount)...)
 	}
 	// construct the actual docker run argv
-	args := []string{"run"}
+	action := "run"
+	if createonly {
+		action = "create"
+	}
+	args := []string{action}
 	args = append(args, runArgs...)
 	args = append(args, image)
 	args = append(args, o.ContainerArgs...)

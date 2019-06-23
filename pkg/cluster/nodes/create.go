@@ -92,12 +92,8 @@ func CreateExternalLoadBalancerNode(name, image, clusterLabel, listenAddress str
 	}
 
 	portMapping := net.JoinHostPort(listenAddress, fmt.Sprintf("%d", port)) + fmt.Sprintf(":%d", loadbalancer.ControlPlanePort)
-	node, err = createNode(name, image, clusterLabel, constants.ExternalLoadBalancerNodeRoleValue,
-		nil,
-		// publish selected port for the control plane
-		"--expose", fmt.Sprintf("%d", port),
-		"-p", portMapping,
-	)
+	node, err = createExternalNode(name, image, clusterLabel, constants.ExternalLoadBalancerNodeRoleValue,
+		fmt.Sprintf("%d", port), portMapping)
 	if err != nil {
 		return node, err
 	}
@@ -163,8 +159,48 @@ func createNode(name, image, clusterLabel, role string, mounts []cri.Mount, extr
 
 	err = docker.Run(
 		image,
+		false,
 		docker.WithRunArgs(runArgs...),
 		docker.WithMounts(mounts),
+	)
+
+	// we should return a handle so the caller can clean it up
+	handle = FromName(name)
+	if err != nil {
+		return handle, errors.Wrap(err, "docker run error")
+	}
+
+	return handle, nil
+}
+
+// createExternalNode `docker create`s the external node image, note that
+// external nodes don´t need the same requirements than the kind nodes
+// and that will not tart until with execute `docker start`
+func createExternalNode(name, image, clusterLabel, role string, port string, portMapping string) (handle *Node, err error) {
+	runArgs := []string{
+		"-t", // allocate a tty for entrypoint logs
+		// running containers in a container requires privileged
+		// NOTE: we could try to replicate this with --cap-add, and use less
+		// privileges, but this flag also changes some mounts that are necessary
+		// including some ones docker would otherwise do by default.
+		// for now this is what we want. in the future we may revisit this.
+		"--privileged",
+		"--security-opt", "seccomp=unconfined", // also ignore seccomp
+		"--hostname", name, // make hostname match container name
+		"--name", name, // ... and set the container name
+		// label the node with the cluster ID
+		"--label", clusterLabel,
+		// label the node with the role ID
+		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleKey, role),
+		// expose ports
+		"--expose", port,
+		"-p", portMapping,
+	}
+
+	err = docker.Run(
+		image,
+		true,
+		docker.WithRunArgs(runArgs...),
 	)
 
 	// we should return a handle so the caller can clean it up

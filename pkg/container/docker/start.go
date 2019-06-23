@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package loadbalancer
+package docker
 
-// ControlPlanePort defines the port where the control plane is listening on the load balancer node
-const ControlPlanePort = 6443
+import (
+	"sigs.k8s.io/kind/pkg/exec"
+)
 
-// Image defines the loadbalancer image:tag
-const Image = "haproxy:1.9.8-alpine"
-
-// ConfigPath defines the path to the config file in the image
-const ConfigPath = "/usr/local/etc/haproxy/haproxy.cfg"
+// Start image as in `docker start`
+func Start(image string) error {
+	return exec.Command("docker", "start", image).Run()
+}
