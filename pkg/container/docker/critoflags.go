@@ -18,6 +18,7 @@ package docker
 
 import (
 	"fmt"
+	"net"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -75,11 +76,13 @@ func generateMountBindings(mounts ...cri.Mount) []string {
 func generatePortMappings(portMappings ...cri.PortMapping) []string {
 	result := make([]string, 0, len(portMappings))
 	for _, pm := range portMappings {
-		publish := fmt.Sprintf("%d:%d", pm.HostPort, pm.ContainerPort)
+		var hostPortBinding string
 		if pm.ListenAddress != "" {
-			publish = fmt.Sprintf("%s:%s", pm.ListenAddress, publish)
+			hostPortBinding = net.JoinHostPort(pm.ListenAddress, fmt.Sprintf("%d", pm.HostPort))
+		} else {
+			hostPortBinding = fmt.Sprintf("%d", pm.HostPort)
 		}
-		publish = fmt.Sprintf("--publish=%s", publish)
+		publish := fmt.Sprintf("--publish=%s:%d", hostPortBinding, pm.ContainerPort)
 		result = append(result, publish)
 	}
 	return result
