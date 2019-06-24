@@ -24,6 +24,7 @@
 # get the repo root and output path, go_container.sh respects these
 REPO_ROOT:=${CURDIR}
 OUT_DIR=$(REPO_ROOT)/bin
+INSTALL?=install
 # make install will place binaries here
 # the default path attempts to mimic go install
 INSTALL_DIR?=$(shell hack/build/goinstalldir.sh)
@@ -42,7 +43,7 @@ build: kind
 
 # use: make install INSTALL_DIR=/usr/local/bin
 install: build
-	install $(OUT_DIR)/$(KIND_BINARY_NAME) $(INSTALL_DIR)/$(KIND_BINARY_NAME)
+	$(INSTALL) $(OUT_DIR)/$(KIND_BINARY_NAME) $(INSTALL_DIR)/$(KIND_BINARY_NAME)
 
 # cleans the cache volume
 clean-cache:
