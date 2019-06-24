@@ -20,7 +20,7 @@ package loadbalancer
 const ControlPlanePort = 6443
 
 // Image defines the loadbalancer image:tag
-const Image = "nginx:1.15.12-alpine"
+const Image = "kindest/haproxy:2.0.0-alpine"
 
 // ConfigPath defines the path to the config file in the image
-const ConfigPath = "/etc/nginx/nginx.conf"
+const ConfigPath = "/usr/local/etc/haproxy/haproxy.cfg"
