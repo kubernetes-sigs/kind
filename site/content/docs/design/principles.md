@@ -53,7 +53,7 @@ Going forward kind will avoid breaking changes to the command line interface
 and configuration.
 
 Next we will extend this to a documented set of re-usable
-packages (To be determind, but likely IE [pkg/cluster]).
+packages (To be determined, but likely IE [pkg/cluster]).
 
 While we are alpha grade currently, we will move to beta and respect
 the [Kubernetes Deprecation Policy].

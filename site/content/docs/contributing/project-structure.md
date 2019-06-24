@@ -53,7 +53,7 @@ We will proceed by describing all of the current tooling in [hack/][hack].
 You can check the compliance of the entire project by running the `verify-all.sh` script. This script will do the following:
 
 * check spelling using [client9/misspell](https://github.com/client9/misspell)
-* check that code is properly formatted using Go fmt
+* check that the code is properly formatted using Go fmt
 * check that all source code (except vendored and generated code) successfully passes Go lint’s style rules
 * verify that all code successfully passes Go vet’s tests
 * verify that any of the generated files is up to date
@@ -91,7 +91,7 @@ To understand this process better, we need to keep in mind that kind’s configu
 [kind/pkg/cluster/config](https://sigs.k8s.io/kind/pkg/cluster/config).
 In this directory, currently, you will see two subdirectories:
 [v1alpha2][v1alpha2] and [v1alpha3][v1alpha3].
-Each of these subdirectories correspond to a version of kind’s cluster configuration.
+Each of these subdirectories corresponds to a version of kind’s cluster configuration.
 
 One of the concerns with versioned configurations is enabling the project to be compatible with old schema versions.
 With this in mind, [kind/pkg/cluster/config](https://sigs.k8s.io/kind/pkg/cluster/config) contains the internal configuration fields

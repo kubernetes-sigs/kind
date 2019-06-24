@@ -31,7 +31,7 @@ You can install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.3.0`.
 
 This will put `kind` in `$(go env GOPATH)/bin`. If you encounter the error
 `kind: command not found` after installation then you may need to either add that directory to your `$PATH` as
-shown [here](https://golang.org/doc/code.html#GOPATH) or do manual installation by cloning the repo and run 
+shown [here](https://golang.org/doc/code.html#GOPATH) or do a manual installation by cloning the repo and run 
 `make build` from the repository.
 
 Without installing go, kind can be built reproducibly with docker using `make build`.
@@ -81,7 +81,7 @@ See also: our own [contributor guide] and the Kubernetes [community page].
 - kind supports multi-node (including HA) clusters
 - kind supports building Kubernetes release builds from source
   - support for make / bash / docker, bazel, or installing from apt, in addition to pre-published builds.
-- kind is written in go, and can be used as a library, has stable releases
+- kind is written in go, can be used as a library, has stable releases
 - kind supports Windows in addition to MacOS and Linux
 - kind is a [CNCF certified conformant Kubernetes installer](https://landscape.cncf.io/selected=kind)
 
