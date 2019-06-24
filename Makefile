@@ -43,6 +43,7 @@ build: kind
 
 # use: make install INSTALL_DIR=/usr/local/bin
 install: build
+	$(INSTALL) -d $(INSTALL_DIR)
 	$(INSTALL) $(OUT_DIR)/$(KIND_BINARY_NAME) $(INSTALL_DIR)/$(KIND_BINARY_NAME)
 
 # cleans the cache volume
