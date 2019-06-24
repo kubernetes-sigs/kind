@@ -20,6 +20,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"strings"
 	"text/template"
 
 	"github.com/pkg/errors"
@@ -29,16 +30,59 @@ import (
 
 /* cni config management */
 
+// CNIconfig is the CNI configuration template
+
+const CNIConfig := `
+{
+	"cniVersion": "0.3.1",
+	"name": "kindnet",
+	"plugins": [
+	{
+		"type": "ptp",
+		"ipMasq": false,
+		"ipam": {
+			"type": "host-local",
+			"dataDir": "/run/cni-ipam-state",
+			"routes": [
+				{
+					"dst": "{{ .DefaultRoute }}"
+				}
+			],
+			"ranges": [
+			[
+				{
+					"subnet": "{{ .PodCIDR }}"
+				}
+			]
+		]
+		}
+	},
+	{
+		"type": "portmap",
+		"capabilities": {
+			"portMappings": true
+		}
+	}
+	]
+}
+`
+
 // CNIConfigInputs is supplied to the CNI config template
 type CNIConfigInputs struct {
 	PodCIDR string
+	DefaultRoute string
 }
 
 // ComputeCNIConfigInputs computes the template inputs for CNIConfigWriter
 func ComputeCNIConfigInputs(node corev1.Node) CNIConfigInputs {
 	podCIDR := node.Spec.PodCIDR
+	defaultRoute := "0.0.0.0/0"
+	if strings.Contains(podCIDR, ":") {
+		defaultRoute = "::/0"
+	}
 	return CNIConfigInputs{
 		PodCIDR: podCIDR,
+		DefaultRoute: defaultRoute,
 	}
 }
 
