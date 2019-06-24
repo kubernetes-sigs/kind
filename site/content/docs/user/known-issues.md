@@ -94,7 +94,6 @@ while building a kind cluster:
 
 * Host machine is behind a proxy
 * Usage of Docker version 18.09
-* Building kind in Google Cloud Console
 
 If you see something like the following error message:
 ```
@@ -119,11 +118,6 @@ We are currently looking into ways of mitigating this issue by preloading CNI
 artifacts, see [kind#200][kind#200].
 Another possible solution is to enable kind nodes to use a proxy when
 downloading images, see [kind#270][kind#270].
-
-A similar issue has been observed when using 
-[kind in Google Cloud Console in kind#182][kind#182].
-More information is needed in this case but it is believed that the issue is
-due to Google Cloud Console being behind a proxy.
 
 The last known case for this issue comes from the host machine 
 [using Docker 18.09 in kind#136][kind#136-docker]. 
