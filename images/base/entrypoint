@@ -18,19 +18,6 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-configure_proxy() {
-  # Don't use proxy for the local network
-  LOCAL_NETWORK=$(ip route list dev eth0 proto kernel | awk '{ print $1 }')
-
-  mkdir -p /etc/systemd/system/containerd.service.d/
-  cat <<EOF >/etc/systemd/system/containerd.service.d/http-proxy.conf
-[Service]
-Environment="HTTP_PROXY=${HTTP_PROXY:-}"
-Environment="HTTPS_PROXY=${HTTPS_PROXY:-}"
-Environment="NO_PROXY=${NO_PROXY:-localhost},${LOCAL_NETWORK}"
-EOF
-}
-
 fix_mount() {
   # necessary only when userns-remap is enabled on the host, but harmless
   # The binary /bin/mount should be owned by root and have the setuid bit
@@ -76,7 +63,6 @@ fix_product_name() {
 fix_mount
 fix_machine_id
 fix_product_name
-configure_proxy
 
 # we want the command (expected to be systemd) to be PID1, so exec to it
 exec "$@"

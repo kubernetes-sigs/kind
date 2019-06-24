@@ -147,7 +147,10 @@ func createNode(name, image, clusterLabel, role string, mounts []cri.Mount, extr
 	}
 
 	// pass proxy environment variables to be used by node's docker deamon
-	proxyDetails := getProxyDetails()
+	proxyDetails, err := getProxyDetails()
+	if err != nil || proxyDetails == nil {
+		return nil, errors.Wrap(err, "proxy setup error")
+	}
 	for key, val := range proxyDetails.Envs {
 		runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", key, val))
 	}
