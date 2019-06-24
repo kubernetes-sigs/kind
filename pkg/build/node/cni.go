@@ -27,7 +27,7 @@ const (
 The default CNI manifest and images are our own tiny kindnet
 */
 
-var defaultCNIImages = []string{"kindest/kindnetd:0.3.0"}
+var defaultCNIImages = []string{"kindest/kindnetd:0.4.0"}
 
 const defaultCNIManifest = `
 # kindnetd networking manifest
@@ -117,51 +117,6 @@ metadata:
   name: kindnet
   namespace: kube-system
 ---
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: kindnet-cfg
-  namespace: kube-system
-  labels:
-    tier: node
-    app: kindnet
-    k8s-app: kindnet
-data:
-  cni-conf-template.json: |
-    {
-      "cniVersion": "0.3.1",
-      "name": "kindnet",
-      "plugins": [
-        {
-          "type": "ptp",
-          "ipMasq": false,
-          "isDefaultGateway": true,
-          "hairpinMode": true,
-          "ipam": {
-            "type": "host-local",
-            "dataDir": "/run/cni-ipam-state",
-            "routes": [
-              {"dst": "0.0.0.0/0"},
-              {"dst": "::/0"}
-            ],
-            "ranges": [
-              [
-                {
-                  "subnet": "{{"{{ .PodCIDR }}"}}"
-                }
-              ]
-            ]
-          }
-        },
-        {
-          "type": "portmap",
-          "capabilities": {
-            "portMappings": true
-          }
-        }
-      ]
-    }
----
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -189,7 +144,7 @@ spec:
       serviceAccountName: kindnet
       containers:
       - name: kindnet-cni
-        image: kindest/kindnetd:0.3.0
+        image: kindest/kindnetd:0.4.0
         env:
         - name: HOST_IP
           valueFrom:
@@ -199,11 +154,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        - name: CNI_CONFIG_TEMPLATE
-          valueFrom:
-            configMapKeyRef:
-              name: kindnet-cfg
-              key: cni-conf-template.json
         - name: POD_SUBNET
           value: {{ .PodSubnet }}
         volumeMounts:

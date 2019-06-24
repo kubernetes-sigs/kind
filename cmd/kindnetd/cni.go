@@ -31,25 +31,65 @@ import (
 
 // CNIConfigInputs is supplied to the CNI config template
 type CNIConfigInputs struct {
-	PodCIDR string
+	PodCIDR      string
+	DefaultRoute string
 }
 
 // ComputeCNIConfigInputs computes the template inputs for CNIConfigWriter
 func ComputeCNIConfigInputs(node corev1.Node) CNIConfigInputs {
 	podCIDR := node.Spec.PodCIDR
+	defaultRoute := "0.0.0.0/0"
+	if IsIPv6(podCIDR) {
+		defaultRoute = "::/0"
+	}
 	return CNIConfigInputs{
-		PodCIDR: podCIDR,
+		PodCIDR:      podCIDR,
+		DefaultRoute: defaultRoute,
 	}
 }
 
-// CNIConfigPath is where kindnetd will write the computed CNI config
-const CNIConfigPath = "/etc/cni/net.d/10-kindnet.conflist"
+// cniConfigPath is where kindnetd will write the computed CNI config
+const cniConfigPath = "/etc/cni/net.d/10-kindnet.conflist"
+
+const cniConfigTemplate = `
+{
+	"cniVersion": "0.3.1",
+	"name": "kindnet",
+	"plugins": [
+	{
+		"type": "ptp",
+		"ipMasq": false,
+		"ipam": {
+			"type": "host-local",
+			"dataDir": "/run/cni-ipam-state",
+			"routes": [
+				{
+					"dst": "{{ .DefaultRoute }}"
+				}
+			],
+			"ranges": [
+			[
+				{
+					"subnet": "{{ .PodCIDR }}"
+				}
+			]
+		]
+		}
+	},
+	{
+		"type": "portmap",
+		"capabilities": {
+			"portMappings": true
+		}
+	}
+	]
+}
+`
 
 // CNIConfigWriter no-ops re-writing config with the same inputs
 // NOTE: should only be called from a single goroutine
 type CNIConfigWriter struct {
 	path       string
-	template   string
 	lastInputs CNIConfigInputs
 }
 
@@ -68,7 +108,7 @@ func (c *CNIConfigWriter) Write(inputs CNIConfigInputs) error {
 	}
 
 	// actually write the config
-	if err := writeCNIConfig(f, c.template, inputs); err != nil {
+	if err := writeCNIConfig(f, cniConfigTemplate, inputs); err != nil {
 		f.Close()
 		os.Remove(f.Name())
 		return err
