@@ -66,7 +66,7 @@ Once your Windows Insider machine is ready, you need to do a few more steps to s
 1. Install Docker - here's links for [Debian](https://docs.docker.com/install/linux/docker-ce/debian/), [Fedora](https://docs.docker.com/install/linux/docker-ce/fedora/), and [Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
 1. Start the Docker daemon using init (not systemd) `sudo service docker start`. This needs to be done each time you start WSL2.
 
-Now, move on to the [Quick Start](quick-start.md) to set up your cluster with KIND.
+Now, move on to the [Quick Start](/docs/user/quick-start) to set up your cluster with KIND.
 
 ## Helpful Tips for WSL2
 
