@@ -27,7 +27,6 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	"sigs.k8s.io/kind/pkg/cluster/config"
-	"sigs.k8s.io/kind/pkg/cluster/config/v1alpha2"
 	"sigs.k8s.io/kind/pkg/cluster/config/v1alpha3"
 )
 
@@ -45,7 +44,6 @@ func init() {
 func AddToScheme(scheme *runtime.Scheme) {
 	utilruntime.Must(config.AddToScheme(scheme))
 	utilruntime.Must(v1alpha3.AddToScheme(scheme))
-	utilruntime.Must(v1alpha2.AddToScheme(scheme))
 	utilruntime.Must(scheme.SetVersionPriority(v1alpha3.SchemeGroupVersion))
 }
 

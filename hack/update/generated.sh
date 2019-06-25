@@ -57,10 +57,6 @@ cd "${FAKE_REPOPATH}"
 "${BINDIR}/deepcopy-gen" -i ./pkg/cluster/config/ -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
 "${BINDIR}/defaulter-gen" -i ./pkg/cluster/config/ -O zz_generated.default --go-header-file hack/boilerplate.go.txt
 
-"${BINDIR}/deepcopy-gen" -i ./pkg/cluster/config/v1alpha2 -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
-"${BINDIR}/defaulter-gen" -i ./pkg/cluster/config/v1alpha2 -O zz_generated.default --go-header-file hack/boilerplate.go.txt
-"${BINDIR}/conversion-gen" -i ./pkg/cluster/config/v1alpha2 -O zz_generated.conversion --go-header-file hack/boilerplate.go.txt
-
 "${BINDIR}/deepcopy-gen" -i ./pkg/cluster/config/v1alpha3 -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
 "${BINDIR}/defaulter-gen" -i ./pkg/cluster/config/v1alpha3 -O zz_generated.default --go-header-file hack/boilerplate.go.txt
 "${BINDIR}/conversion-gen" -i ./pkg/cluster/config/v1alpha3 -O zz_generated.conversion --go-header-file hack/boilerplate.go.txt

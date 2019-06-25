@@ -1,0 +1,3 @@
+# technically valid, minimal config file
+kind: Cluster
+apiVersion: kind.sigs.k8s.io/v1alpha3

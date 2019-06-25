@@ -22,34 +22,29 @@ import (
 
 func TestLoadCurrent(t *testing.T) {
 	cases := []struct {
-		TestName       string
-		Path           string
-		ExpectReplicas []string
-		ExpectError    bool
+		TestName    string
+		Path        string
+		ExpectError bool
 	}{
 		{
-			TestName:       "no config",
-			Path:           "",
-			ExpectReplicas: []string{"control-plane"}, // no config (empty config path) should return a single node cluster
-			ExpectError:    false,
+			TestName:    "no config",
+			Path:        "",
+			ExpectError: false,
 		},
 		{
-			TestName:       "v1alpha2 minimal",
-			Path:           "./testdata/v1alpha2/valid-minimal.yaml",
-			ExpectReplicas: []string{"control-plane"},
-			ExpectError:    false,
+			TestName:    "v1alpha3 minimal",
+			Path:        "./testdata/v1alpha3/valid-minimal.yaml",
+			ExpectError: false,
 		},
 		{
-			TestName:       "v1alpha2 config with 2 nodes",
-			Path:           "./testdata/v1alpha2/valid-minimal-two-nodes.yaml",
-			ExpectReplicas: []string{"control-plane", "worker"},
-			ExpectError:    false,
+			TestName:    "v1alpha3 config with 2 nodes",
+			Path:        "./testdata/v1alpha3/valid-minimal-two-nodes.yaml",
+			ExpectError: false,
 		},
 		{
-			TestName:       "v1alpha2 full HA",
-			Path:           "./testdata/v1alpha2/valid-full-ha.yaml",
-			ExpectReplicas: []string{"etcd", "lb", "control-plane1", "control-plane2", "control-plane3", "worker1", "worker2"},
-			ExpectError:    false,
+			TestName:    "v1alpha3 full HA",
+			Path:        "./testdata/v1alpha3/valid-full-ha.yaml",
+			ExpectError: false,
 		},
 		{
 			TestName:    "invalid path",
@@ -85,10 +80,8 @@ func TestLoadCurrent(t *testing.T) {
 				return
 			}
 			// - not nil, in which case we should expect errors or fail
-			if err == nil {
-				if c.ExpectError {
-					t.Fatalf("unexpected lack or error while Loading config")
-				}
+			if c.ExpectError {
+				t.Fatalf("unexpected lack or error while Loading config")
 			}
 		})
 	}
