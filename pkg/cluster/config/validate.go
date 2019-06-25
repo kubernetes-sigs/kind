@@ -44,6 +44,10 @@ func (c *Cluster) Validate() error {
 		}
 	}
 
+	if err := validatePort(c.Networking.APIServerPort); err != nil {
+		errs = append(errs, errors.Wrapf(err, "invalid apiServerPort"))
+	}
+
 	// there must be at least one control plane node
 	numControlPlane, anyControlPlane := numByRole[ControlPlaneRole]
 	if !anyControlPlane || numControlPlane < 1 {
@@ -83,9 +87,26 @@ func (n *Node) Validate() error {
 		errs = append(errs, errors.New("image is a required field"))
 	}
 
+	// validate extra port forwards
+	for _, mapping := range n.ExtraPortMappings {
+		if err := validatePort(mapping.HostPort); err != nil {
+			errs = append(errs, errors.Wrapf(err, "invalid hostPort"))
+		}
+		if err := validatePort(mapping.ContainerPort); err != nil {
+			errs = append(errs, errors.Wrapf(err, "invalid containerPort"))
+		}
+	}
+
 	if len(errs) > 0 {
 		return util.NewErrors(errs)
 	}
 
+	return nil
+}
+
+func validatePort(port int32) error {
+	if port < 0 || port > 65535 {
+		return errors.Errorf("invalid port number: %d", port)
+	}
 	return nil
 }
