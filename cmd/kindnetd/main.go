@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/utils/net"
 )
 
 // kindnetd is a simple networking daemon to complete kind's CNI implementation
@@ -68,7 +69,7 @@ func main() {
 
 	// enforce ip masquerade rules
 	// TODO: dual stack...?
-	masqAgent, _ := NewIPMasqAgent(IsIPv6(hostIP), []string{os.Getenv("POD_SUBNET")})
+	masqAgent, _ := NewIPMasqAgent(net.IsIPv6String(hostIP), []string{os.Getenv("POD_SUBNET")})
 	go func() {
 		// TODO: use logging and continue retrying instead...
 		if err := masqAgent.SyncRulesForever(time.Second * 60); err != nil {

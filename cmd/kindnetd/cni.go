@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/net"
 )
 
 /* cni config management */
@@ -39,7 +40,7 @@ type CNIConfigInputs struct {
 func ComputeCNIConfigInputs(node corev1.Node) CNIConfigInputs {
 	podCIDR := node.Spec.PodCIDR
 	defaultRoute := "0.0.0.0/0"
-	if IsIPv6(podCIDR) {
+	if net.IsIPv6CIDRString(podCIDR) {
 		defaultRoute = "::/0"
 	}
 	return CNIConfigInputs{
