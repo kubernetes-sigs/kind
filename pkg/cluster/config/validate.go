@@ -29,6 +29,25 @@ import (
 func (c *Cluster) Validate() error {
 	errs := []error{}
 
+	// the api server port only needs checking if we aren't picking a random one
+	// at runtime
+	if c.Networking.APIServerPort != 0 {
+		// validate api server listen port
+		if err := validatePort(c.Networking.APIServerPort); err != nil {
+			errs = append(errs, errors.Wrapf(err, "invalid apiServerPort"))
+		}
+	}
+
+	// podSubnet should be a valid CIDR
+	if _, _, err := net.ParseCIDR(c.Networking.PodSubnet); err != nil {
+		errs = append(errs, errors.Wrapf(err, "invalid podSubnet"))
+	}
+	// serviceSubnet should be a valid CIDR
+	if _, _, err := net.ParseCIDR(c.Networking.ServiceSubnet); err != nil {
+		errs = append(errs, errors.Wrapf(err, "invalid serviceSubnet"))
+	}
+
+	// validate nodes
 	numByRole := make(map[NodeRole]int32)
 	// All nodes in the config should be valid
 	for i, n := range c.Nodes {
@@ -48,15 +67,6 @@ func (c *Cluster) Validate() error {
 	numControlPlane, anyControlPlane := numByRole[ControlPlaneRole]
 	if !anyControlPlane || numControlPlane < 1 {
 		errs = append(errs, errors.Errorf("must have at least one %s node", string(ControlPlaneRole)))
-	}
-
-	// podSubnet should be a valid CIDR
-	if _, _, err := net.ParseCIDR(c.Networking.PodSubnet); err != nil {
-		errs = append(errs, errors.Wrapf(err, "invalid podSubnet"))
-	}
-	// serviceSubnet should be a valid CIDR
-	if _, _, err := net.ParseCIDR(c.Networking.ServiceSubnet); err != nil {
-		errs = append(errs, errors.Wrapf(err, "invalid serviceSubnet"))
 	}
 
 	if len(errs) > 0 {
@@ -83,9 +93,26 @@ func (n *Node) Validate() error {
 		errs = append(errs, errors.New("image is a required field"))
 	}
 
+	// validate extra port forwards
+	for _, mapping := range n.ExtraPortMappings {
+		if err := validatePort(mapping.HostPort); err != nil {
+			errs = append(errs, errors.Wrapf(err, "invalid hostPort"))
+		}
+		if err := validatePort(mapping.ContainerPort); err != nil {
+			errs = append(errs, errors.Wrapf(err, "invalid containerPort"))
+		}
+	}
+
 	if len(errs) > 0 {
 		return util.NewErrors(errs)
 	}
 
+	return nil
+}
+
+func validatePort(port int32) error {
+	if port < 0 || port > 65535 {
+		return errors.Errorf("invalid port number: %d", port)
+	}
 	return nil
 }

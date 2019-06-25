@@ -49,7 +49,7 @@ func getPort() (int32, error) {
 
 // CreateControlPlaneNode creates a contol-plane node
 // and gets ready for exposing the the API server
-func CreateControlPlaneNode(name, image, clusterLabel, listenAddress string, port int32, mounts []cri.Mount) (node *Node, err error) {
+func CreateControlPlaneNode(name, image, clusterLabel, listenAddress string, port int32, mounts []cri.Mount, portMappings []cri.PortMapping) (node *Node, err error) {
 	// gets a random host port for the API server
 	if port == 0 {
 		p, err := getPort()
@@ -59,12 +59,16 @@ func CreateControlPlaneNode(name, image, clusterLabel, listenAddress string, por
 		port = p
 	}
 
-	portMapping := net.JoinHostPort(listenAddress, fmt.Sprintf("%d", port)) + fmt.Sprintf(":%d", kubeadm.APIServerPort)
+	// add api server port mapping
+	portMappingsWithAPIServer := append(portMappings, cri.PortMapping{
+		ListenAddress: listenAddress,
+		HostPort:      port,
+		ContainerPort: kubeadm.APIServerPort,
+	})
 	node, err = createNode(
-		name, image, clusterLabel, constants.ControlPlaneNodeRoleValue, mounts,
+		name, image, clusterLabel, constants.ControlPlaneNodeRoleValue, mounts, portMappingsWithAPIServer,
 		// publish selected port for the API server
 		"--expose", fmt.Sprintf("%d", port),
-		"-p", portMapping,
 	)
 	if err != nil {
 		return node, err
@@ -91,12 +95,16 @@ func CreateExternalLoadBalancerNode(name, image, clusterLabel, listenAddress str
 		port = p
 	}
 
-	portMapping := net.JoinHostPort(listenAddress, fmt.Sprintf("%d", port)) + fmt.Sprintf(":%d", loadbalancer.ControlPlanePort)
+	// load balancer port mapping
+	portMappings := []cri.PortMapping{{
+		ListenAddress: listenAddress,
+		HostPort:      port,
+		ContainerPort: loadbalancer.ControlPlanePort,
+	}}
 	node, err = createNode(name, image, clusterLabel, constants.ExternalLoadBalancerNodeRoleValue,
-		nil,
+		nil, portMappings,
 		// publish selected port for the control plane
 		"--expose", fmt.Sprintf("%d", port),
-		"-p", portMapping,
 	)
 	if err != nil {
 		return node, err
@@ -111,8 +119,8 @@ func CreateExternalLoadBalancerNode(name, image, clusterLabel, listenAddress str
 }
 
 // CreateWorkerNode creates a worker node
-func CreateWorkerNode(name, image, clusterLabel string, mounts []cri.Mount) (node *Node, err error) {
-	node, err = createNode(name, image, clusterLabel, constants.WorkerNodeRoleValue, mounts)
+func CreateWorkerNode(name, image, clusterLabel string, mounts []cri.Mount, portMappings []cri.PortMapping) (node *Node, err error) {
+	node, err = createNode(name, image, clusterLabel, constants.WorkerNodeRoleValue, mounts, portMappings)
 	if err != nil {
 		return node, err
 	}
@@ -123,7 +131,7 @@ func CreateWorkerNode(name, image, clusterLabel string, mounts []cri.Mount) (nod
 // createNode `docker run`s the node image, note that due to
 // images/node/entrypoint being the entrypoint, this container will
 // effectively be paused until we call actuallyStartNode(...)
-func createNode(name, image, clusterLabel, role string, mounts []cri.Mount, extraArgs ...string) (handle *Node, err error) {
+func createNode(name, image, clusterLabel, role string, mounts []cri.Mount, portMappings []cri.PortMapping, extraArgs ...string) (handle *Node, err error) {
 	runArgs := []string{
 		"-d", // run the container detached
 		"-t", // allocate a tty for entrypoint logs
@@ -168,6 +176,7 @@ func createNode(name, image, clusterLabel, role string, mounts []cri.Mount, extr
 		image,
 		docker.WithRunArgs(runArgs...),
 		docker.WithMounts(mounts),
+		docker.WithPortMappings(portMappings),
 	)
 
 	// we should return a handle so the caller can clean it up

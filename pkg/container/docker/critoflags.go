@@ -18,6 +18,7 @@ package docker
 
 import (
 	"fmt"
+	"net"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -68,6 +69,21 @@ func generateMountBindings(mounts ...cri.Mount) []string {
 		// our specific modification is the following line: make this a docker flag
 		bind = fmt.Sprintf("--volume=%s", bind)
 		result = append(result, bind)
+	}
+	return result
+}
+
+func generatePortMappings(portMappings ...cri.PortMapping) []string {
+	result := make([]string, 0, len(portMappings))
+	for _, pm := range portMappings {
+		var hostPortBinding string
+		if pm.ListenAddress != "" {
+			hostPortBinding = net.JoinHostPort(pm.ListenAddress, fmt.Sprintf("%d", pm.HostPort))
+		} else {
+			hostPortBinding = fmt.Sprintf("%d", pm.HostPort)
+		}
+		publish := fmt.Sprintf("--publish=%s:%d", hostPortBinding, pm.ContainerPort)
+		result = append(result, publish)
 	}
 	return result
 }

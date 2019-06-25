@@ -125,10 +125,11 @@ func createNodeContainers(
 // nodeSpec describes a node to create purely from the container aspect
 // this does not inlude eg starting kubernetes (see actions for that)
 type nodeSpec struct {
-	Name        string
-	Role        string
-	Image       string
-	ExtraMounts []cri.Mount
+	Name              string
+	Role              string
+	Image             string
+	ExtraMounts       []cri.Mount
+	ExtraPortMappings []cri.PortMapping
 	// TODO(bentheelder): replace with a cri.PortMapping when we have that
 	APIServerPort    int32
 	APIServerAddress string
@@ -180,13 +181,14 @@ func nodesToCreate(cfg *config.Cluster, clusterName string) []nodeSpec {
 			apiServerAddress = "127.0.0.1" // only the LB needs to be non-local
 		}
 		desiredNodes = append(desiredNodes, nodeSpec{
-			Name:             nameNode(role),
-			Image:            configNode.Image,
-			Role:             role,
-			ExtraMounts:      configNode.ExtraMounts,
-			APIServerAddress: apiServerAddress,
-			APIServerPort:    apiServerPort,
-			IPv6:             ipv6,
+			Name:              nameNode(role),
+			Image:             configNode.Image,
+			Role:              role,
+			ExtraMounts:       configNode.ExtraMounts,
+			ExtraPortMappings: configNode.ExtraPortMappings,
+			APIServerAddress:  apiServerAddress,
+			APIServerPort:     apiServerPort,
+			IPv6:              ipv6,
 		})
 	}
 
@@ -215,9 +217,9 @@ func (d *nodeSpec) Create(clusterLabel string) (node *nodes.Node, err error) {
 	case constants.ExternalLoadBalancerNodeRoleValue:
 		node, err = nodes.CreateExternalLoadBalancerNode(d.Name, d.Image, clusterLabel, d.APIServerAddress, d.APIServerPort)
 	case constants.ControlPlaneNodeRoleValue:
-		node, err = nodes.CreateControlPlaneNode(d.Name, d.Image, clusterLabel, d.APIServerAddress, d.APIServerPort, d.ExtraMounts)
+		node, err = nodes.CreateControlPlaneNode(d.Name, d.Image, clusterLabel, d.APIServerAddress, d.APIServerPort, d.ExtraMounts, d.ExtraPortMappings)
 	case constants.WorkerNodeRoleValue:
-		node, err = nodes.CreateWorkerNode(d.Name, d.Image, clusterLabel, d.ExtraMounts)
+		node, err = nodes.CreateWorkerNode(d.Name, d.Image, clusterLabel, d.ExtraMounts, d.ExtraPortMappings)
 	default:
 		return nil, errors.Errorf("unknown node role: %s", d.Role)
 	}

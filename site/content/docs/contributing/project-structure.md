@@ -90,18 +90,18 @@ These programs are used to generate Kubernetes-like APIs. These programs are run
 To understand this process better, we need to keep in mind that kind’s configuration schema dictates how to bootstrap a Kubernetes cluster. The schema is defined in
 [kind/pkg/cluster/config](https://sigs.k8s.io/kind/pkg/cluster/config).
 In this directory, currently, you will see two subdirectories:
-[v1alpha2][v1alpha2] and [v1alpha3][v1alpha3].
+[v1alpha3][v1alpha3].
 Each of these subdirectories corresponds to a version of kind’s cluster configuration.
 
 One of the concerns with versioned configurations is enabling the project to be compatible with old schema versions.
 With this in mind, [kind/pkg/cluster/config](https://sigs.k8s.io/kind/pkg/cluster/config) contains the internal configuration fields
 which are used as the basis for conversion between the external types
-(i.e., [v1alpha2][v1alpha2] and [v1alpha3][v1alpha3]).
+(i.e. [v1alpha3][v1alpha3]).
 
 The way this is implemented is by running deepcopy-gen and defaulter-gen in
 [kind/pkg/cluster/config](https://sigs.k8s.io/kind/pkg/cluster/config),
 followed by running deepcopy-gen, defaulter-gen, and conversion-gen on all version subdirectories
-(i.e., [v1alpha2][v1alpha2] and [v1alpha3][v1alpha3]).
+(i.e. [v1alpha3][v1alpha3]).
 
 The [kubernetes/code-generator](https://github.com/kubernetes/code-generator) tools work by comment tags which are specified in the `doc.go` file for each directory. For example, all `doc.go` files within [kind/pkg/cluster/config](https://sigs.k8s.io/kind/pkg/cluster/config) have the following tags:
 ```
@@ -152,5 +152,4 @@ This last step builds on the deep copy generators and defaulters previously crea
 [hack]: https://sigs.k8s.io/kind/hack/
 [kind.go]: https://sigs.k8s.io/kind/cmd/kind/kind.go
 [pkg]: https://sigs.k8s.io/kind/pkg
-[v1alpha2]: https://sigs.k8s.io/kind/pkg/cluster/config/v1alpha2
 [v1alpha3]: https://sigs.k8s.io/kind/pkg/cluster/config/v1alpha3

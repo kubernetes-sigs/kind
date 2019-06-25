@@ -32,6 +32,7 @@ type runOpts struct {
 	RunArgs       []string
 	ContainerArgs []string
 	Mounts        []cri.Mount
+	PortMappings  []cri.PortMapping
 }
 
 // WithRunArgs sets the args for docker run
@@ -61,6 +62,14 @@ func WithMounts(mounts []cri.Mount) RunOpt {
 	}
 }
 
+// WithPortMappings sets the container port mappings to the host
+func WithPortMappings(portMappings []cri.PortMapping) RunOpt {
+	return func(r *runOpts) *runOpts {
+		r.PortMappings = portMappings
+		return r
+	}
+}
+
 // Run creates a container with "docker run", with some error handling
 func Run(image string, opts ...RunOpt) error {
 	o := &runOpts{}
@@ -71,6 +80,9 @@ func Run(image string, opts ...RunOpt) error {
 	runArgs := o.RunArgs
 	for _, mount := range o.Mounts {
 		runArgs = append(runArgs, generateMountBindings(mount)...)
+	}
+	for _, portMapping := range o.PortMappings {
+		runArgs = append(runArgs, generatePortMappings(portMapping)...)
 	}
 	// construct the actual docker run argv
 	args := []string{"run"}

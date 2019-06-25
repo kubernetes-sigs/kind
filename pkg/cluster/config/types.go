@@ -71,6 +71,10 @@ type Node struct {
 	// ExtraMounts describes additional mount points for the node container
 	// These may be used to bind a hostPath
 	ExtraMounts []cri.Mount
+
+	// ExtraPortMappings describes additional port mappings for the node container
+	// binded to a host Port
+	ExtraPortMappings []cri.PortMapping
 }
 
 // NodeRole defines possible role for nodes in a Kubernetes cluster managed by `kind`
