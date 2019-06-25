@@ -14,7 +14,7 @@ KIND can run using Windows Subsystem for Linux 2 (WSL2) on Windows 10 Insider bu
 
 Download latest ISO at https://www.microsoft.com/en-us/software-download/windowsinsiderpreviewadvanced . Choose "Windows 10 Insider Preview (FAST) - Build 18912". If there's a later build number, get that instead and then you can skip the work to upgrade to 18917.
 
-### VM Settings
+### Installing on a virtual machine
 
 > Note: this currently only works with Intel processors. The Hyper-V hypervisor used by WSL2 cannot run underneath another hypervisor on AMD processors.
 
