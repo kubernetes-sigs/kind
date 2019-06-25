@@ -8,7 +8,7 @@ menu:
 ---
 # Using WSL2
 
-KIND can run using Windows Subsystem for Linux 2 (WSL2) on Windows 10 Insider builds. All the tools needed to build or run KIND work in WSL2, but some extra steps are needed to switch to WSL2. This page covers these steps in brief but also links to the official documentation if you would like more details.
+Kind can run using Windows Subsystem for Linux 2 (WSL2) on Windows 10 Insider builds. All the tools needed to build or run kind work in WSL2, but some extra steps are needed to switch to WSL2. This page covers these steps in brief but also links to the official documentation if you would like more details.
 
 ## Getting Windows 10 Insider Preview
 
@@ -66,7 +66,7 @@ Once your Windows Insider machine is ready, you need to do a few more steps to s
 1. Install Docker - here's links for [Debian](https://docs.docker.com/install/linux/docker-ce/debian/), [Fedora](https://docs.docker.com/install/linux/docker-ce/fedora/), and [Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
 1. Start the Docker daemon using init (not systemd) `sudo service docker start`. This needs to be done each time you start WSL2.
 
-Now, move on to the [Quick Start](/docs/user/quick-start) to set up your cluster with KIND.
+Now, move on to the [Quick Start](/docs/user/quick-start) to set up your cluster with kind.
 
 ## Helpful Tips for WSL2
 
