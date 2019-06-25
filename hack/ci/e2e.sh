@@ -144,7 +144,6 @@ data:
     .:53 {
         errors
         health
-        rewrite name google.com my-google.default.svc.cluster.local
         kubernetes cluster.local in-addr.arpa ip6.arpa {
            pods insecure
         }
