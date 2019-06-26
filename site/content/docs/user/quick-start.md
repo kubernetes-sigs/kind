@@ -389,6 +389,30 @@ The structure of the logs will look more or less like this:
 The logs contain information about the Docker host, the containers running 
 kind, the Kubernetes cluster itself, etc.
 
+### Configuring kubelet Garbage Collection in Your Cluster
+
+Garbage collection is a helpful function of kubelet that will clean up unused images and unused containers. Kubelet will perform garbage collection for containers every minute and garbage collection for images every five minutes. In `kind` we turn off GC by default but you can re-enable GC by [configuring kubelet garbage collection][customize kubelet with kubeadm], and you can follow the [kubelet GC documentation][kubelet garbage collection documentation] to change to the value you need. An example kind config can be:
+
+```
+# this config file contains all config fields with comments
+kind: Cluster
+apiVersion: kind.sigs.k8s.io/v1alpha3
+# patch the generated kubeadm config with some extra settings
+kubeadmConfigPatches:
+- |
+  apiVersion: kubelet.config.k8s.io/v1beta1
+  kind: KubeletConfiguration
+  metadata:
+    name: config
+  imageGCHighThresholdPercent: 90
+# 1 control plane node and 1 worker
+nodes:
+# the control plane node config
+- role: control-plane
+# the worker
+- role: worker
+```
+
 [go-supported]: https://golang.org/doc/devel/release.html#policy
 [known issues]: /docs/user/known-issues
 [node image]: /docs/design/node-image
@@ -406,3 +430,5 @@ kind, the Kubernetes cluster itself, etc.
 [Private Registries]: /docs/user/private-registries
 [customize control plane with kubeadm]: https://kubernetes.io/docs/setup/independent/control-plane-flags/
 [docker enable ipv6]: https://docs.docker.com/v17.09/engine/userguide/networking/default_network/ipv6/
+[customize kubelet with kubeadm]: https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/kubelet-integration/
+[kubelet garbage collection documentation]: https://kubernetes.io/docs/concepts/cluster-administration/kubelet-garbage-collection/
