@@ -14,7 +14,7 @@ This guide covers getting started with the `kind` command.
 
 ## Installation
 
-You can either install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.3.0` or clone this repo 
+You can either install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.4.0` or clone this repo 
 and run `make build` from the repository.
 
 **NOTE**: please use the latest go to do this, ideally go 1.12.6 or greater.
@@ -31,7 +31,7 @@ To install, download the binary for your platform from "Assets" and place this
 into your `$PATH`. E.G. for macOS:
 
 ```
-curl -Lo ./kind-darwin-amd64 https://github.com/kubernetes-sigs/kind/releases/download/v0.3.0/kind-darwin-amd64
+curl -Lo ./kind-darwin-amd64 https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-darwin-amd64
 chmod +x ./kind-darwin-amd64
 mv ./kind-darwin-amd64 /some-dir-in-your-PATH/kind
 ```

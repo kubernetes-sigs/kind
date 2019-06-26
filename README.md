@@ -9,7 +9,7 @@
 kind is a tool for running local Kubernetes clusters using Docker container "nodes".  
 kind is primarily designed for testing Kubernetes 1.11+, initially targeting the [conformance tests].
 
-If you have [go] and [docker] installed `GO111MODULE="on" go get sigs.k8s.io/kind@v0.3.0 && kind create cluster` is all you need!
+If you have [go] and [docker] installed `GO111MODULE="on" go get sigs.k8s.io/kind@v0.4.0 && kind create cluster` is all you need!
 
 <img src="https://gist.githubusercontent.com/BenTheElder/621bc321fc6d9506fd936feb36d32dd0/raw/13fe81c219e64b4917575c8988e06719c072c7f1/kind-demo.gif" alt="2x speed `kind create cluster` demo" />
 
@@ -25,7 +25,7 @@ kind bootstraps each "node" with [kubeadm][kubeadm]. For more details see [the d
 
 ## Installation and usage
 
-You can install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.3.0`.
+You can install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.4.0`.
 
 **NOTE**: please use the latest go to do this, ideally go 1.12.6 or greater.
 
@@ -42,7 +42,7 @@ To install, download the binary for your platform from "Assets" and place this
 into your `$PATH`. E.G. for macOS:
 
 ```console
-curl -Lo ./kind-darwin-amd64 https://github.com/kubernetes-sigs/kind/releases/download/v0.3.0/kind-darwin-amd64
+curl -Lo ./kind-darwin-amd64 https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-darwin-amd64
 chmod +x ./kind-darwin-amd64
 mv ./kind-darwin-amd64 /some-dir-in-your-PATH/kind
 ```
