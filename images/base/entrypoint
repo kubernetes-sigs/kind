@@ -59,10 +59,22 @@ fix_product_name() {
   fi
 }
 
+link_kmsg() {
+  # In environments where /dev/kmsg is not available, the kubelet (1.15+) won't
+  # start because it cannot open /dev/kmsg when starting the kmsgparser in the
+  # OOM parser.
+  # To support those environments, we link /dev/kmsg to /dev/console.
+  # https://github.com/kubernetes-sigs/kind/issues/662
+  if [[ ! -e /dev/kmsg ]] && [[ -e /dev/console ]]; then
+    ln -s /dev/console /dev/kmsg
+  fi
+}
+
 # run pre-init fixups
 fix_mount
 fix_machine_id
 fix_product_name
+link_kmsg
 
 # we want the command (expected to be systemd) to be PID1, so exec to it
 exec "$@"
