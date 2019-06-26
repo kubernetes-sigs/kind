@@ -19,6 +19,7 @@ set -o nounset
 set -o pipefail
 
 fix_mount() {
+  echo 'INFO: ensuring we can execute /bin/mount even with userns-remap'
   # necessary only when userns-remap is enabled on the host, but harmless
   # The binary /bin/mount should be owned by root and have the setuid bit
   chown root:root /bin/mount
@@ -29,12 +30,14 @@ fix_mount() {
   # https://github.com/moby/moby/issues/9547
   sync
 
+  echo 'INFO: remounting /sys read-only'
   # systemd-in-a-container should have read only /sys
   # https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
   # however, we need other things from `docker run --privileged` ...
   # and this flag also happens to make /sys rw, amongst other things
   mount -o remount,ro /sys
 
+  echo 'INFO: making mounts shared for "/", "/run", "/var/lib/containerd"'
   # for mount propagation
   # TODO(bentheelder): determine which exact mounts we need to do this on
   mount --make-shared /
@@ -46,6 +49,7 @@ fix_machine_id() {
   # Deletes the machine-id embedded in the node image and generates a new one.
   # This is necessary because both kubelet and other components like weave net
   # use machine-id internally to distinguish nodes.
+  echo 'INFO: clearing and regenerating /etc/machine-id'
   rm -f /etc/machine-id
   systemd-machine-id-setup
 }
@@ -54,27 +58,33 @@ fix_product_name() {
   # this is a small fix to hide the underlying hardware and fix issue #426
   # https://github.com/kubernetes-sigs/kind/issues/426
   if [[ -f /sys/class/dmi/id/product_name ]]; then
-    echo "kind" > /kind/product_name
+    echo 'INFO: faking /sys/class/dmi/id/product_name to be "kind"'
+    echo 'kind' > /kind/product_name
     mount -o ro,bind /kind/product_name /sys/class/dmi/id/product_name
   fi
 }
 
-link_kmsg() {
+fix_kmsg() {
   # In environments where /dev/kmsg is not available, the kubelet (1.15+) won't
   # start because it cannot open /dev/kmsg when starting the kmsgparser in the
   # OOM parser.
   # To support those environments, we link /dev/kmsg to /dev/console.
   # https://github.com/kubernetes-sigs/kind/issues/662
-  if [[ ! -e /dev/kmsg ]] && [[ -e /dev/console ]]; then
-    ln -s /dev/console /dev/kmsg
+  if [[ ! -e /dev/kmsg ]]; then
+    if [[ -e /dev/console ]]; then
+      echo 'WARN: /dev/kmsg does not exist, symlinking /dev/console' >&2
+      ln -s /dev/console /dev/kmsg
+    else
+      echo 'WARN: /dev/kmsg does not exist, nor does /dev/console!' >&2
+    fi
   fi
 }
 
 # run pre-init fixups
+fix_kmsg
 fix_mount
 fix_machine_id
 fix_product_name
-link_kmsg
 
 # we want the command (expected to be systemd) to be PID1, so exec to it
 exec "$@"
