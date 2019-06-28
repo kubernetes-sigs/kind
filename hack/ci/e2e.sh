@@ -64,11 +64,20 @@ build() {
         /usr/local/bin/create_bazel_cache_rcs.sh || true
     fi
 
-    # build the node image w/ kubernetes
-    # TODO(bentheelder): remove the kube-root flag after we make kind try to
-    # find this in a go module compatible way
-    kind build node-image --type=bazel \
-        --kube-root="$(go env GOPATH)/src/k8s.io/kubernetes"
+    ARCH=$(dpkg --print-architecture)
+    
+    if [[ "${ARCH}" == "amd64" ]]; then
+        # build the node image w/ kubernetes
+        # TODO(bentheelder): remove the kube-root flag after we make kind try to
+        # find this in a go module compatible way
+        kind build node-image --type=bazel \
+            --kube-root="$(go env GOPATH)/src/k8s.io/kubernetes"
+    else
+        kind build base-image --image=kindest/base:latest \
+            --source="$(go env GOPATH)/sigs.k8s.io/kind/images/base"
+        kind build node-image --type=bazel --base-image=kindest/base:latest\
+            --kube-root="$(go env GOPATH)/src/k8s.io/kubernetes"
+    fi
 
     # make sure we have e2e requirements
     #make all WHAT="cmd/kubectl test/e2e/e2e.test vendor/github.com/onsi/ginkgo/ginkgo"
