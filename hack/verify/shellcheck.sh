@@ -36,13 +36,7 @@ SHELLCHECK_IMAGE="koalaman/shellcheck-alpine:v0.6.0@sha256:7d4d712a2686da99d3758
 all_shell_scripts=()
 while IFS=$'\n' read -r script;
   do git check-ignore -q "$script" || all_shell_scripts+=("$script");
-done < <(find . -name "*.sh" \
-  -not \( \
-    -path ./_\*      -o \
-    -path ./.git\*   -o \
-    -path ./vendor\* -o \
-    \( -path ./third_party\* -a -not -path ./third_party/forked\* \) \
-  \))
+done < <(grep -irl '#!.*sh' . --exclude-dir={bin\*,.git\*,vendor\*})
 
 # common arguments we'll pass to shellcheck
 SHELLCHECK_OPTIONS=(
