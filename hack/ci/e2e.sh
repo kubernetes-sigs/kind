@@ -64,7 +64,7 @@ build() {
         /usr/local/bin/create_bazel_cache_rcs.sh || true
     fi
 
-    ARCH=$(dpkg --print-architecture)
+    ARCH=$(go env GOARCH)
     
     if [[ "${ARCH}" == "amd64" ]]; then
         # build the node image w/ kubernetes
