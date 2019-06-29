@@ -107,7 +107,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [Kubernetes Code of Conduct]: code-of-conduct.md
 [Go Report Card Badge]: https://goreportcard.com/badge/sigs.k8s.io/kind
 [Go Report Card]: https://goreportcard.com/report/sigs.k8s.io/kind
-[conformance tests]: https://github.com/kubernetes/community/blob/master/contributors/devel/conformance-tests.md
+[conformance tests]: https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/conformance-tests.md
 [packages]: ./pkg
 [cluster package]: ./pkg/cluster
 [build package]: ./pkg/build
