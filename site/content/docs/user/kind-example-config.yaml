@@ -4,7 +4,7 @@ apiVersion: kind.sigs.k8s.io/v1alpha3
 # patch the generated kubeadm config with some extra settings
 kubeadmConfigPatches:
 - |
-  apiVersion: kubeadm.k8s.io/v1beta1
+  apiVersion: kubeadm.k8s.io/v1beta2
   kind: ClusterConfiguration
   metadata:
     name: config
@@ -13,7 +13,7 @@ kubeadmConfigPatches:
 # patch it further using a JSON 6902 patch
 kubeadmConfigPatchesJson6902:
 - group: kubeadm.k8s.io
-  version: v1beta1
+  version: v1beta2
   kind: ClusterConfiguration
   patch: |
     - op: add
