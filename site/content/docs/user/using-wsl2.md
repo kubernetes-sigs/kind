@@ -60,7 +60,7 @@ Once your Windows Insider machine is ready, you need to do a few more steps to s
     Enable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform, Microsoft-Windows-Subsystem-Linux
     ```
 1. Reboot when prompted. 
-1. After the reboot, set WSL to default to WSL2. Open an admin PowerShell window and run `wsl --set-default version 2`.
+1. After the reboot, set WSL to default to WSL2. Open an admin PowerShell window and run `wsl --set-default-version 2`.
 1. Now, you can install your Linux distro of choice by searching the Windows Store. If you don't want to use the Windows Store, then follow the steps in the WSL docs for [manual install](https://docs.microsoft.com/en-us/windows/wsl/install-manual).
 1. Start up your distro with the shortcut added to the start menu
 1. Install Docker - here's links for [Debian](https://docs.docker.com/install/linux/docker-ce/debian/), [Fedora](https://docs.docker.com/install/linux/docker-ce/fedora/), and [Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
