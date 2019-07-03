@@ -71,11 +71,15 @@ func NewCommand() *cobra.Command {
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	imageName := args[0]
-	// Check that the image exists locally, if not return error
-	_, err := docker.ImageInspect(imageName)
+	// Check that the image exists locally and gets its ID, if not return error
+	lines, err := docker.ImageInspect(imageName, "{{ .Id }}")
 	if err != nil {
 		return errors.Errorf("Image: %q not present locally", imageName)
 	}
+	if len(lines) != 1 {
+		return errors.Errorf("Docker image ID should only be one line, got %d lines", len(lines))
+	}
+	imageID := lines[0]
 	// Check if the cluster name exists
 	known, err := cluster.IsKnown(flags.Name)
 	if err != nil {
@@ -116,10 +120,10 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	// pick only the nodes that don't have the image
 	selectedNodes := []clusternodes.Node{}
 	for _, node := range candidateNodes {
-		_, err := node.ImageInspect(imageName)
+		_, err := node.ImageInspect(imageID)
 		if err != nil {
 			selectedNodes = append(selectedNodes, node)
-			log.Debugf("Image: %q not present on node %q", imageName, node.String())
+			log.Debugf("Image: %q with ID %q not present on node %q", imageName, imageID, node.String())
 		}
 	}
 

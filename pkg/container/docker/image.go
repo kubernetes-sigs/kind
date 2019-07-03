@@ -21,8 +21,9 @@ import (
 )
 
 // ImageInspect return low-level information on containers images
-func ImageInspect(containerNameOrID string) ([]string, error) {
+func ImageInspect(containerNameOrID, format string) ([]string, error) {
 	cmd := exec.Command("docker", "image", "inspect",
+		"-f", format,
 		containerNameOrID, // ... against the container
 	)
 
