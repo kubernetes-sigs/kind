@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"github.com/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
@@ -28,4 +29,16 @@ func ImageInspect(containerNameOrID, format string) ([]string, error) {
 	)
 
 	return exec.CombinedOutputLines(cmd)
+}
+
+// ImageID return the Id of the container image
+func ImageID(containerNameOrID string) (string, error) {
+	lines, err := ImageInspect(containerNameOrID, "{{ .Id }}")
+	if err != nil {
+		return "", err
+	}
+	if len(lines) != 1 {
+		return "", errors.Errorf("Docker image ID should only be one line, got %d lines", len(lines))
+	}
+	return lines[0], nil
 }

@@ -72,14 +72,10 @@ func NewCommand() *cobra.Command {
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	imageName := args[0]
 	// Check that the image exists locally and gets its ID, if not return error
-	lines, err := docker.ImageInspect(imageName, "{{ .Id }}")
+	imageID, err := docker.ImageID(imageName)
 	if err != nil {
 		return errors.Errorf("Image: %q not present locally", imageName)
 	}
-	if len(lines) != 1 {
-		return errors.Errorf("Docker image ID should only be one line, got %d lines", len(lines))
-	}
-	imageID := lines[0]
 	// Check if the cluster name exists
 	known, err := cluster.IsKnown(flags.Name)
 	if err != nil {
