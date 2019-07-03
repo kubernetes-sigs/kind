@@ -134,8 +134,25 @@ run_tests() {
     export KUBECONFIG
 
     if [[ "${IP_FAMILY:-ipv4}" == "ipv6" ]]; then
-        # Create the CoreDNS config for offline and IPv6 clusters
+        # IPv6 clusters need some CoreDNS changes in order to work in k8s CI:
+        # 1. k8s CI doesn´t offer IPv6 connectivity, so CoreDNS should be configured
+        # to work in an offline environment:
         # https://github.com/coredns/coredns/issues/2494#issuecomment-457215452
+        # 2. k8s CI adds following domains to resolv.conf search field :
+        # c.k8s-prow-builds.internal google.internal.
+        # CoreDNS should handle those domains and answer with NXDOMAIN instead of SERVFAIL
+        # otherwise pods stops trying to resolve the domain.
+        # The difference against the default CoreDNS config in k8s 1.15 is:
+        # <         kubernetes cluster.local in-addr.arpa ip6.arpa {
+        # ---
+        # >         kubernetes cluster.local internal in-addr.arpa ip6.arpa {
+        # 9,10d9
+        # <            upstream
+        # <            fallthrough in-addr.arpa ip6.arpa
+        # 13,15d11
+        # <         forward . /etc/resolv.conf
+        # <         loop
+        # 21c17,20
         cat <<EOF | kubectl apply -f -
 ---
 apiVersion: v1
@@ -144,7 +161,7 @@ data:
     .:53 {
         errors
         health
-        kubernetes cluster.local in-addr.arpa ip6.arpa {
+        kubernetes cluster.local internal in-addr.arpa ip6.arpa {
            pods insecure
         }
         prometheus :9153
