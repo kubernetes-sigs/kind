@@ -35,10 +35,10 @@ import (
 )
 
 // Action implements action for creating the kubeadm join
-// and deployng it on the bootrap control-plane node.
+// and deploying it on the bootrap control-plane node.
 type Action struct{}
 
-// NewAction returns a new action for creating the kubeadm jion
+// NewAction returns a new action for creating the kubeadm join
 func NewAction() actions.Action {
 	return &Action{}
 }
@@ -121,7 +121,7 @@ func joinWorkers(
 	return nil
 }
 
-// runKubeadmJoinControlPlane executes kubadm join --control-plane command
+// runKubeadmJoinControlPlane executes kubeadm join --control-plane command
 func runKubeadmJoinControlPlane(
 	allNodes []nodes.Node,
 	node *nodes.Node,
