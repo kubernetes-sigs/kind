@@ -55,21 +55,14 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	if err != nil {
 		return err
 	}
-	if len(secondaryControlPlanes) > 0 {
-		if err := joinSecondaryControlPlanes(
-			ctx, allNodes, secondaryControlPlanes,
-		); err != nil {
-			return err
-		}
-	}
 
 	// then join worker nodes if any
 	workers, err := nodes.SelectNodesByRole(allNodes, constants.WorkerNodeRoleValue)
 	if err != nil {
 		return err
 	}
-	if len(workers) > 0 {
-		if err := joinWorkers(ctx, workers); err != nil {
+	if len(secondaryControlPlanes) > 0 || len(workers) > 0 {
+		if err := joinNodes(ctx, allNodes, secondaryControlPlanes, workers); err != nil {
 			return err
 		}
 	}
@@ -77,36 +70,30 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	return nil
 }
 
-func joinSecondaryControlPlanes(
-	ctx *actions.ActionContext,
+func joinNodes(ctx *actions.ActionContext,
 	allNodes []nodes.Node,
 	secondaryControlPlanes []nodes.Node,
-) error {
-	ctx.Status.Start("Joining more control-plane nodes 🎮")
-	defer ctx.Status.End(false)
-
-	// TODO(bentheelder): it's too bad we can't do this concurrently
-	// (this is not safe currently)
-	for _, node := range secondaryControlPlanes {
-		node := node // capture loop variable
-		if err := runKubeadmJoinControlPlane(allNodes, &node); err != nil {
-			return err
-		}
-	}
-
-	ctx.Status.End(true)
-	return nil
-}
-
-func joinWorkers(
-	ctx *actions.ActionContext,
 	workers []nodes.Node,
 ) error {
-	ctx.Status.Start("Joining worker nodes 🚜")
+	startMsg := "Joining more "
+	if len(secondaryControlPlanes) > 0 && len(workers) > 0 {
+		startMsg += "control-plane and worker nodes 🎮🚜"
+	} else if len(secondaryControlPlanes) > 0 && len(workers) == 0 {
+		startMsg += "control-plane nodes 🎮"
+	} else {
+		startMsg += "worker nodes 🚜"
+	}
+	ctx.Status.Start(startMsg)
 	defer ctx.Status.End(false)
 
-	// create the workers concurrently
+	// create nodes concurrently
 	fns := []func() error{}
+	for _, node := range secondaryControlPlanes {
+		node := node // capture loop variable
+		fns = append(fns, func() error {
+			return runKubeadmJoinControlPlane(allNodes, &node)
+		})
+	}
 	for _, node := range workers {
 		node := node // capture loop variable
 		fns = append(fns, func() error {
