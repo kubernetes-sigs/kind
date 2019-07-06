@@ -94,6 +94,29 @@ func main() {
 			panic(err.Error())
 		}
 
+		// Gets the Services information from API
+		// TODO: use a proper controller instead
+		svc, err := clientset.CoreV1().Services("").List(metav1.ListOptions{})
+		if err != nil {
+			panic(err.Error())
+		}
+
+		// add the Cluster IP to the LoadBalancer
+		for _, svc := range svc.Items {
+			if svc.Spec.Type == "LoadBalancer" && len(svc.Status.LoadBalancer.Ingress) == 0 {
+				fmt.Printf("Service %q has no ingress for its loadbalancer\n", svc.Name)
+				patch := []byte(fmt.Sprintf(`[{"op": "add", "path": "/status/loadBalancer/ingress", "value":  [ { "ip": "%s" } ] }]`, svc.Spec.ClusterIP))
+				err := clientset.CoreV1().RESTClient().Patch(types.JSONPatchType).Resource("services").Namespace(svc.Namespace).Name(svc.Name).SubResource("status").Body(patch).Do().Error()
+				if err != nil {
+					panic(err.Error())
+				}
+			} else if svc.Spec.Type == "LoadBalancer" {
+				fmt.Printf("Service %q has IP %v for its loadbalancer\n", svc.Name, svc.Status.LoadBalancer.Ingress[0].IP) //need to check for hostnames and other types too.
+			} else {
+				fmt.Printf("Service %q is not type LoadBalancer\n", svc.Name)
+			}
+		}
+
 		// rate limit
 		time.Sleep(10 * time.Second)
 	}
