@@ -55,7 +55,7 @@ const (
 	IPv4Family IPFamily = "ipv4"
 	// IPv6Family sets IPFamily to ipv6
 	IPv6Family IPFamily = "ipv6"
-	// DualStackFamily sets ClusterIPFamily to dualstack
+	// DualStackFamily sets ClusterIPFamily to DualStack
 	DualStackFamily IPFamily = "DualStack"
 )
 

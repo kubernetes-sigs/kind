@@ -57,6 +57,9 @@ func SetDefaultsCluster(obj *Cluster) {
 		if obj.Networking.IPFamily == "ipv6" {
 			obj.Networking.PodSubnet = "fd00:10:244::/64"
 		}
+		if obj.Networking.IPFamily == "DualStack" {
+			obj.Networking.PodSubnet = "10.244.0.0/16,fd00:10:244::/64"
+		}
 	}
 	// default the service CIDR using the kubeadm default
 	// https://github.com/kubernetes/kubernetes/blob/746404f82a28e55e0b76ffa7e40306fb88eb3317/cmd/kubeadm/app/apis/kubeadm/v1beta2/defaults.go#L32
@@ -65,6 +68,9 @@ func SetDefaultsCluster(obj *Cluster) {
 		obj.Networking.ServiceSubnet = "10.96.0.0/12"
 		if obj.Networking.IPFamily == "ipv6" {
 			obj.Networking.ServiceSubnet = "fd00:10:96::/112"
+		}
+		if obj.Networking.IPFamily == "DualStack" {
+			obj.Networking.ServiceSubnet = "10.96.0.0/12,fd00:10:96::/112"
 		}
 	}
 }

@@ -17,8 +17,9 @@ limitations under the License.
 package config
 
 import (
-	"net"
+	"strings"
 
+	utilnet "k8s.io/utils/net"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
@@ -36,13 +37,15 @@ func (c *Cluster) Validate() error {
 		}
 	}
 
+	isDualStack := c.Networking.IPFamily == "DualStack"
 	// podSubnet should be a valid CIDR
-	if _, _, err := net.ParseCIDR(c.Networking.PodSubnet); err != nil {
-		errs = append(errs, errors.Wrapf(err, "invalid podSubnet"))
+	if err := validateSubnets(c.Networking.PodSubnet, isDualStack); err != nil {
+		errs = append(errs, errors.Errorf("invalid pod subnet %v", err))
 	}
+
 	// serviceSubnet should be a valid CIDR
-	if _, _, err := net.ParseCIDR(c.Networking.ServiceSubnet); err != nil {
-		errs = append(errs, errors.Wrapf(err, "invalid serviceSubnet"))
+	if err := validateSubnets(c.Networking.ServiceSubnet, isDualStack); err != nil {
+		errs = append(errs, errors.Errorf("invalid service subnet %v", err))
 	}
 
 	// validate nodes
@@ -111,6 +114,25 @@ func (n *Node) Validate() error {
 func validatePort(port int32) error {
 	if port < 0 || port > 65535 {
 		return errors.Errorf("invalid port number: %d", port)
+	}
+	return nil
+}
+
+func validateSubnets(subnetStr string, dualstack bool) error {
+
+	subnets, err := utilnet.ParseCIDRs(strings.Split(subnetStr, ","))
+	if err != nil {
+		return errors.Wrapf(err, "invalid subnet")
+	}
+	if dualstack {
+		areDualStackCIDRs, err := utilnet.IsDualStackCIDRs(subnets)
+		if err != nil {
+			return errors.Wrapf(err, "invalid DualStack subnets")
+		} else if !areDualStackCIDRs {
+			return errors.Errorf("expected at least one IP from each family (v4 or v6) for DualStack networking: %q", subnetStr)
+		}
+	} else if len(subnets) != 1 {
+		return errors.New("only one subnet allows")
 	}
 	return nil
 }

@@ -179,6 +179,8 @@ const (
 	IPv4Family ClusterIPFamily = "ipv4"
 	// IPv6Family sets ClusterIPFamily to ipv6
 	IPv6Family ClusterIPFamily = "ipv6"
+	// DualStackFamily sets ClusterIPFamily to DualStack
+	DualStackFamily ClusterIPFamily = "DualStack"
 )
 
 // PatchJSON6902 represents an inline kustomize json 6902 patch

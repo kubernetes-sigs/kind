@@ -40,7 +40,7 @@ type CNIConfigInputs struct {
 func ComputeCNIConfigInputs(node corev1.Node) CNIConfigInputs {
 
 	defaultRoutes := []string{"0.0.0.0/0", "::/0"}
-	// check if is a dualstack cluster
+	// check if is a DualStack cluster
 	if len(node.Spec.PodCIDRs) > 1 {
 		return CNIConfigInputs{
 			PodCIDRs:      node.Spec.PodCIDRs,
