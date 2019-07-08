@@ -323,7 +323,7 @@ func getSubnets(networkName string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return strings.Split(lines[0], " "), nil
+	return strings.Split(strings.TrimSpace(lines[0]), " "), nil
 }
 
 // EnableIPv6 enables IPv6 inside the node container and in the inner docker daemon
