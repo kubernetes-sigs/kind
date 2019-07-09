@@ -73,9 +73,9 @@ run_in_go_container() {
       -e GOOS="${GOOS}" \
       -e GOARCH="${GOARCH}" \
     `# pass through proxy settings from the host` \
-      -e HTTP_PROXY="${HTTP_PROXY:+}" \
-      -e HTTPS_PROXY="${HTTPS_PROX:+}" \
-      -e NO_PROXY="${NO_PROXY:+}" \
+      -e HTTP_PROXY \
+      -e HTTPS_PROXY \
+      -e NO_PROXY \
     `# run as if the host user for consistent file permissions` \
       --user "${_UID}:${_GID}" \
     `# use the golang image for the container` \
