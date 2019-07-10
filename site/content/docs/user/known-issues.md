@@ -126,9 +126,11 @@ equal to Docker 18.09.1.
 
 
 ## Failure to build node image
-The know case in which building kind's node image may fail is due to 
-Docker on Mac running out of memory, see [kind#229][kind#229].
+Building kind's node image may fail due to running out of memory on Docker for Mac or Docker for Windows.
+See [kind#229][kind#229].
+
 If you see something like this:
+
 ```
     cmd/kube-scheduler
     cmd/kube-proxy
@@ -165,7 +167,7 @@ Global Flags:
 error building node image: failed to build kubernetes: failed to build images: exit status 2
 ```
 
-Then you may try increasing the resource limits for the Docker engine on Mac.
+Then you may try increasing the resource limits for the Docker engine on Mac or Windows.
 
 It is recommended that you allocate at least 8GB of RAM to build Kubernetes.
 
@@ -176,8 +178,9 @@ Open the **Preferences** menu.
 Go to the **Advanced** settings page, and change the settings there, see 
 [changing Docker's resource limits][Docker resource lims].
 
-<img width="400px" src="/docs/user/images/docker-pref-build.png"/>
+<img width="400px" src="/docs/user/images/docker-pref-build.png" alt="Setting 8Gb of memory in Docker for Mac" />
 
+<img width="400px" src="/docs/user/images/docker-pref-build-win.png" alt="Setting 8Gb of memory in Docker for Windows" />
 
 ## Failing to properly start cluster
 This issue is similar to a 
