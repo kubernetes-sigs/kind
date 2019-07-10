@@ -28,13 +28,24 @@ Without installing go, kind can be built reproducibly with docker using `make bu
 Stable binaries are also available on the [releases] page. Stable releases are
 generally recommended for CI usage in particular.
 To install, download the binary for your platform from "Assets" and place this
-into your `$PATH`. E.G. for macOS:
+into your `$PATH`. 
 
-```
+E.G. for macOS:
+
+```bash
 curl -Lo ./kind-darwin-amd64 https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-darwin-amd64
 chmod +x ./kind-darwin-amd64
 mv ./kind-darwin-amd64 /some-dir-in-your-PATH/kind
 ```
+
+
+E.G. for Windows:
+
+```powershell
+curl.exe -Lo kind-windows-amd64.exe https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-windows-amd64
+Move-Item .\kind-windows-amd64.exe c:\some-dir-in-your-PATH\kind.exe
+```
+
 
 ## Creating a Cluster
 
@@ -168,16 +179,29 @@ If you previously changed the name and tag of the base image, you can use here
 the flag `--base-image` to specify the name and tag you used.
 
 **Note**: If you are running kind on MacOS or Windows then it is recommended
-that you have at least 4GB of RAM dedicated to the virtual machine (VM) running
+that you have at least 8GB of RAM dedicated to the virtual machine (VM) running
 the Docker engine otherwise Building Kubernetes may fail.
 
-To change the resource limits for the Docker engine on Mac, you'll need to open the
+To change the resource limits for the Docker on Mac, you'll need to open the
 **Preferences** menu.  
 <img src="/docs/user/images/docker-pref-1.png"/>
 
 Now, go to the **Advanced** settings page, and change the
 settings there, see [changing Docker's resource limits][Docker resource lims].  
-<img src="/docs/user/images/docker-pref-2.png"/>
+<img src="/docs/user/images/docker-pref-2.png" alt="Setting 8Gb of memory in Docker for Mac" />
+
+
+To change the resource limits for the Docker on Windows, you'll need to right-click the Moby
+icon on the taskbar, and choose "Settings". If you see "Switch to Linux Containers", then you'll need
+to do that first before opening "Settings"
+
+<img src="/docs/user/images/docker-pref-1-win.png"/>
+
+Now, go to the **Advanced** settings page, and change the
+settings there, see [changing Docker's resource limits][Docker resource lims].  
+
+<img src="/docs/user/images/docker-pref-build-win.png" alt="Setting 8Gb of memory in Docker for Windows" />
+
 
 You may also try removing any unused data left by the Docker engine - e.g.,
 `docker system prune`.
