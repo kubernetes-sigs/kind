@@ -188,8 +188,43 @@ EOF
     )"
 
     # ginkgo regexes
-    SKIP="${SKIP:-}"
-    FOCUS="${FOCUS:-"\\[Conformance\\]"}"
+    if [[ "${KUBERNETES_PRESUBMIT_JOB:-}" = true ]]; then
+        # k/k presubmit jobs regex
+        SKIP="${SKIP:-"\\[Slow\\]|\\[Disruptive\\]|\\[Flaky\\]|\\[Feature:.+\\]"}"
+        FOCUS="${FOCUS:-""}"
+        # skip tests that are not able to rung with kind
+        # [sig-node] RuntimeClass should run a Pod requesting a RuntimeClass with a configured handler [NodeFeature:RuntimeHandler]
+        # https://github.com/kubernetes/kubernetes/issues/80098
+        SKIP="RuntimeClass.should.run.a.Pod.requesting.a.RuntimeClass.with.a.configured.handler|${SKIP}"
+        # [sig-storage] In-tree Volumes [Driver: nfs]
+        # [sig-storage] PersistentVolumes NFS
+        # TODO: kind nodes can't mount nfs volumes: install apt install -y nfs-common in the base image, kernel version, ...??
+        SKIP="In-tree.Volumes.\\[Driver:.nfs\\]|PersistentVolumes.NFS|${SKIP}"
+        # [sig-auth] PodSecurityPolicy
+        # We are not enabling the security admission controler in kind
+        # However, if enabled, it breaks kindnet because it needs apparmor in the host
+        SKIP="PodSecurityPolicy|${SKIP}"
+        # [sig-network] Network should set TCP CLOSE_WAIT timeout
+        # [sig-node] Mount propagation should propagate mounts to the host
+        # Use ssh to login to the kind nodes TODO: change to docker exec commands, install ssh server, ...
+        SKIP="Network.should.set.TCP.CLOSE_WAIT.timeout|${SKIP}"
+        SKIP="Mount.propagation.should.propagate.mounts.to.the.host|${SKIP}"
+        # [sig-cli] Kubectl client [k8s.io] Simple pod should support exec through an HTTP proxy 
+        # Needs to use the internal API server address, it can be passed as a kubetest arg
+        SKIP="Simple.pod.should.support.exec.through.an.HTTP.proxy|${SKIP}"
+        # [sig-storage] In-tree Volumes [Driver: local][LocalVolumeType: block] [Testpattern: Pre-provisioned PV (default fs)]
+        # subPath should support existing directories when readOnly specified in the volumeSource
+        # requires mounting a loop device inside a container, ref: https://serverfault.com/q/701384
+        SKIP="subPath.should.support.existing.directories.when.readOnly.specified.in.the.volumeSource|${SKIP}"
+        # [sig-autoscaling] [HPA] Horizontal pod autoscaling (scale resource: CPU)
+        # [sig-autoscaling] ReplicationController light Should scale from 1 pod to 2 pods
+        # It reuires metrics addon, ref: https://github.com/kubernetes/kubernetes/pull/79954
+        SKIP="ReplicationController.light.Should.scale.from.1.pod.to.2.pods|${SKIP}"
+    else
+        SKIP="${SKIP:-}"
+        FOCUS="${FOCUS:-"\\[Conformance\\]"}"
+    fi
+
     # if we set PARALLEL=true, skip serial tests set --ginkgo-parallel
     PARALLEL="${PARALLEL:-false}"
     if [[ "${PARALLEL}" == "true" ]]; then
