@@ -14,6 +14,8 @@
 # limitations under the License.
 
 # this utility prints out the golang install dir, even if go is not installed
+# IE it prints the directory where `go install ...` would theoretically place
+# binaries
 
 # if we have go, just ask go!
 if which go >/dev/null 2>&1; then

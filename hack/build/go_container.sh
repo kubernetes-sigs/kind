@@ -22,15 +22,17 @@ set -o errexit
 REPO_ROOT="${REPO_ROOT:-$(git rev-parse --show-toplevel)}"
 
 # autodetect host GOOS and GOARCH if not set, even if go is not installed
+# TODO(bentheelder): maybe we should just inline this and remove REPO_ROOT
 GOOS="${GOOS:-$("${REPO_ROOT}/hack/build/goos.sh")}"
 GOARCH="${GOARCH:-$("${REPO_ROOT}/hack/build/goarch.sh")}"
 
 # use the official module proxy by default
+# this helps make our build more reproducible and reliable
 GOPROXY="${GOPROXY:-https://proxy.golang.org}"
 
 # default build image
-GO_VERSION="1.12.7"
-GO_IMAGE="golang:${GO_VERSION}"
+GOVERSION="${GOVERSION:-1.12.7}"
+GOIMAGE="golang:${GOVERSION}"
 
 # docker volume name, used as a go module / build cache
 CACHE_VOLUME="kind-build-cache"
@@ -79,7 +81,7 @@ run_in_go_container() {
     `# run as if the host user for consistent file permissions` \
       --user "${_UID}:${_GID}" \
     `# use the golang image for the container` \
-      "${GO_IMAGE}" \
+      "${GOIMAGE}" \
     `# and finally, pass through args` \
       "$@"
 }
