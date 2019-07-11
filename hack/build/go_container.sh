@@ -29,7 +29,7 @@ GOARCH="${GOARCH:-$("${REPO_ROOT}/hack/build/goarch.sh")}"
 GOPROXY="${GOPROXY:-https://proxy.golang.org}"
 
 # default build image
-GO_VERSION="1.12.6"
+GO_VERSION="1.12.7"
 GO_IMAGE="golang:${GO_VERSION}"
 
 # docker volume name, used as a go module / build cache
