@@ -18,43 +18,73 @@
 set -o nounset
 set -o errexit
 
-# get and go to the repo root
-REPO_ROOT="${REPO_ROOT:-$(git rev-parse --show-toplevel)}"
+# get the repo root for defaulting OUT_DIR and SOURCE_DIR
+# we assume the repo root is two levels up from this script
+REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
 
-# autodetect host GOOS and GOARCH if not set, even if go is not installed
-# TODO(bentheelder): maybe we should just inline this and remove REPO_ROOT
-GOOS="${GOOS:-$("${REPO_ROOT}/hack/build/goos.sh")}"
-GOARCH="${GOARCH:-$("${REPO_ROOT}/hack/build/goarch.sh")}"
-
-# use the official module proxy by default
+# ============================ SCRIPT SETTINGS =================================
+# output directory, will be mounted to /out, defaults to /bin in REPO_ROOT
+OUT_DIR="${OUT_DIR:-${REPO_ROOT}/bin}"
+# source directory, will be mounted to /src, defaults to REPO_ROOT
+SOURCE_DIR="${SOURCE_DIR:-${REPO_ROOT}}"
+# GOPROXY is respected by go, use the official module proxy by default
 # this helps make our build more reproducible and reliable
 GOPROXY="${GOPROXY:-https://proxy.golang.org}"
+# the container image, by default a recent official golang image
+GOIMAGE="${GOIMAGE:-golang:1.12.7}"
+# ========================== END SCRIPT SETTINGS ===============================
 
-# default build image
-GOVERSION="${GOVERSION:-1.12.7}"
-GOIMAGE="golang:${GOVERSION}"
+# autodetects and host GOOS and GOARCH and sets them if not set
+# works even if go is not installed on the host
+detect_and_set_goos_goarch() {
+  # if we have go, just ask go! NOTE: this respects explicitly set GOARCH / GOOS
+  if which go >/dev/null 2>&1; then
+    GOARCH=$(go env GOARCH)
+    GOOS=$(go env GOOS)
+    return
+  fi
 
-# docker volume name, used as a go module / build cache
-CACHE_VOLUME="kind-build-cache"
+  # detect GOOS equivalent if unset
+  if [ -z "${GOOS:-}" ]; then
+    case "$(uname -s)" in
+      Darwin) GOOS="darwin" ;;
+      Linux) GOOS="linux" ;;
+      *) echo "Unknown host OS! '$(uname -s)'" exit 2 ;;
+    esac
+  fi
 
-# output directory
-OUT_DIR="${OUT_DIR:-${REPO_ROOT}/bin}"
-# source directory
-SOURCE_DIR="${SOURCE_DIR:-${REPO_ROOT}}"
+  # detect GOARCH equivalent if unset
+  if [ -z "${GOARCH:-}" ]; then
+    case "$(uname -m)" in
+      x86_64) GOARCH="amd64" ;;
+      arm*)
+        GOARCH="arm"
+        if [ "$(getconf LONG_BIT)" = "64" ]; then
+          GOARCH="arm64"
+        fi
+      ;;
+      *) echo "Unknown host architecture! '$(uname -m)'" exit 2 ;;
+    esac
+  fi
+}
 
 # creates the output directory
 make_out_dir() {
   mkdir -p "${OUT_DIR}"
 }
 
+# docker volume name, used as a go module / build cache
+__CACHE_VOLUME__="kind-build-cache"
+
 # creates the cache volume
 make_cache_volume() {
-  docker volume create "${CACHE_VOLUME}" >/dev/null
+  docker volume create "${__CACHE_VOLUME__}" >/dev/null
 }
 
 # runs $@ in a go container with caching etc. and the repo mount to /src
 run_in_go_container() {
-  # get user id and group id so we can run the container
+  # get host user id and group id so we can run the container as them
+  # this ensures sane file ownership for build outputs
   _UID=$(id -u)
   _GID=$(id -g)
   # run in the container
@@ -62,7 +92,7 @@ run_in_go_container() {
     `# ensure the container is removed on exit` \
       --rm \
     `# use the cache volume for go` \
-      -v "${CACHE_VOLUME}:/go" \
+      -v "${__CACHE_VOLUME__}:/go" \
       -e GOCACHE=/go/cache \
     `# mount the output & repo dir, set working directory to the repo` \
       -v "${OUT_DIR}:/out" \
@@ -88,4 +118,5 @@ run_in_go_container() {
 
 make_out_dir
 make_cache_volume
+detect_and_set_goos_goarch
 run_in_go_container "$@"
