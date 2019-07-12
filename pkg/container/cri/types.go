@@ -54,13 +54,16 @@ type Mount struct {
 //  containerPort: 80
 //  hostPort: 8000
 //  listenAddress: 127.0.0.1
+//  protocol: TCP
 type PortMapping struct {
 	// Port within the container.
 	ContainerPort int32 `protobuf:"varint,1,opt,name=container_port,json=containerPort,proto3" json:"containerPort,omitempty"`
 	// Port on the host.
 	HostPort int32 `protobuf:"varint,2,opt,name=host_path,json=hostPort,proto3" json:"hostPort,omitempty"`
 	// TODO: add protocol (tcp/udp) and port-ranges
-	ListenAddress string `protobuf:"bytes,3,opt,name=listenAddress,json=hostPort,proto3" json:"listenAddress,omitempty"`
+	ListenAddress string `protobuf:"bytes,3,opt,name=listenAddress,json=listenAddress,proto3" json:"listenAddress,omitempty"`
+	// Protocol (TCP/UDP)
+	Protocol PortMappingProtocol `protobuf:"varint,4,opt,name=protocol,proto3,enum=runtime.v1alpha2.PortMappingProtocol" json:"protocol,omitempty"`
 }
 
 // MountPropagation represents an "enum" for mount propagation options,
@@ -94,4 +97,33 @@ var MountPropagationNameToValue = map[string]MountPropagation{
 	"None":            MountPropagationNone,
 	"HostToContainer": MountPropagationHostToContainer,
 	"Bidirectional":   MountPropagationBidirectional,
+}
+
+// PortMappingProtocol represents an "enum" for port mapping protocol options,
+// see also PortMapping.
+type PortMappingProtocol int32
+
+const (
+	// PortMappingProtocolTCP specifies TCP protocol
+	PortMappingProtocolTCP PortMappingProtocol = 0
+	// PortMappingProtocolUDP specifies UDP protocol
+	PortMappingProtocolUDP PortMappingProtocol = 1
+	// PortMappingProtocolSCTP specifies SCTP protocol
+	PortMappingProtocolSCTP PortMappingProtocol = 2
+)
+
+// PortMappingProtocolValueToName is a map of valid PortMappingProtocol values to
+// their string names
+var PortMappingProtocolValueToName = map[PortMappingProtocol]string{
+	PortMappingProtocolTCP:  "TCP",
+	PortMappingProtocolUDP:  "UDP",
+	PortMappingProtocolSCTP: "SCTP",
+}
+
+// PortMappingProtocolNameToValue is a map of valid PortMappingProtocol names to
+// their values
+var PortMappingProtocolNameToValue = map[string]PortMappingProtocol{
+	"TCP":  PortMappingProtocolTCP,
+	"UDP":  PortMappingProtocolUDP,
+	"SCTP": PortMappingProtocolSCTP,
 }

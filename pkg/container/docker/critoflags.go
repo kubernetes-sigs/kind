@@ -82,7 +82,18 @@ func generatePortMappings(portMappings ...cri.PortMapping) []string {
 		} else {
 			hostPortBinding = fmt.Sprintf("%d", pm.HostPort)
 		}
-		publish := fmt.Sprintf("--publish=%s:%d", hostPortBinding, pm.ContainerPort)
+		var protocol string
+		switch pm.Protocol {
+		case cri.PortMappingProtocolTCP:
+			protocol = "TCP"
+		case cri.PortMappingProtocolUDP:
+			protocol = "UDP"
+		case cri.PortMappingProtocolSCTP:
+			protocol = "SCTP"
+		default:
+			protocol = "TCP"
+		}
+		publish := fmt.Sprintf("--publish=%s:%d/%s", hostPortBinding, pm.ContainerPort, protocol)
 		result = append(result, publish)
 	}
 	return result

@@ -19,6 +19,7 @@ package cri
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 /*
@@ -62,6 +63,46 @@ func (m *Mount) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("unknown propagation value: %s", aux.Propagation)
 		}
 		m.Propagation = MountPropagation(val)
+	}
+	return nil
+}
+
+// MarshalJSON implements custom encoding for JSON and Yaml
+// https://golang.org/pkg/encoding/json/
+func (p *PortMapping) MarshalJSON() ([]byte, error) {
+	type Alias PortMapping
+	name, ok := PortMappingProtocolValueToName[p.Protocol]
+	if !ok {
+		return nil, fmt.Errorf("unknown protocol value: %v", p.Protocol)
+	}
+	return json.Marshal(&struct {
+		Protocol string `json:"protocol"`
+		*Alias
+	}{
+		Protocol: name,
+		Alias:    (*Alias)(p),
+	})
+}
+
+// UnmarshalJSON implements custom decoding for JSON and Yaml
+// https://golang.org/pkg/encoding/json/
+func (p *PortMapping) UnmarshalJSON(data []byte) error {
+	type Alias PortMapping
+	aux := &struct {
+		Protocol string `json:"protocol"`
+		*Alias
+	}{
+		Alias: (*Alias)(p),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	if aux.Protocol != "" {
+		val, ok := PortMappingProtocolNameToValue[strings.ToUpper(aux.Protocol)]
+		if !ok {
+			return fmt.Errorf("unknown protocol value: %s", aux.Protocol)
+		}
+		p.Protocol = PortMappingProtocol(val)
 	}
 	return nil
 }

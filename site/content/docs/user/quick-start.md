@@ -280,6 +280,7 @@ nodes:
   - containerPort: 80
     hostPort: 80
     listenAddress: "127.0.0.1" # Optional, defaults to "0.0.0.0"
+    protocol: udp # Optional, defaults to tcp
 ```
 This can be useful if using `NodePort` services or daemonsets exposing host ports.
 
