@@ -528,8 +528,6 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 			// we will rewrite / correct the tags as we load the image
 			if err := exec.RunWithStdinWriter(importer.LoadCommand().SetStdout(os.Stdout).SetStderr(os.Stdout), func(w io.Writer) error {
 				return docker.EditArchiveRepositories(f, w, fixRepository)
-				// _, err := io.Copy(w, f)
-				// return err
 			}); err != nil {
 				return err
 			}
