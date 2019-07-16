@@ -19,9 +19,9 @@ package node
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path"
-	"regexp"
 	"strings"
 	"time"
 
@@ -178,21 +178,15 @@ func (c *BuildContext) populateBits(buildDir string) error {
 	return nil
 }
 
-// matches image tarballs kind will sideload
-var imageRegex = regexp.MustCompile(`images/[^/]+\.tar`)
-
 // returns a set of image tags that will be sideloaded
 func (c *BuildContext) getBuiltImages() (sets.String, error) {
-	bitPaths := c.bits.Paths()
 	images := sets.NewString()
-	for src, dest := range bitPaths {
-		if imageRegex.MatchString(dest) {
-			tags, err := docker.GetArchiveTags(src)
-			if err != nil {
-				return nil, err
-			}
-			images.Insert(tags...)
+	for _, path := range c.bits.ImagePaths() {
+		tags, err := docker.GetArchiveTags(path)
+		if err != nil {
+			return nil, err
 		}
+		images.Insert(tags...)
 	}
 	return images, nil
 }
@@ -401,14 +395,24 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	if err != nil {
 		return err
 	}
-	if ver.LessThan(version.MustParseSemantic("v1.12.0")) {
-		archSuffix := fmt.Sprintf("-%s:", c.arch)
-		for _, image := range builtImages.List() {
-			if !strings.Contains(image, archSuffix) {
-				builtImages.Insert(strings.Replace(image, ":", archSuffix, 1))
-			}
+
+	// get image tag fixing function for this version
+	fixRepository := repositoryCorrectorForVersion(ver)
+
+	// correct set of built tags using the same logic we will use to rewrite
+	// the tags as we load the archives
+	fixedImages := sets.NewString()
+	for _, image := range builtImages.List() {
+		registry, tag, err := docker.SplitImage(image)
+		if err != nil {
+			return err
 		}
+		registry = fixRepository(registry)
+		fixedImages.Insert(registry + ":" + tag)
 	}
+	builtImages = fixedImages
+	println("built images")
+	println(strings.Join(builtImages.List(), ", "))
 
 	// write the default CNI manifest
 	// NOTE: the paths inside the container should use the path package
@@ -496,17 +500,83 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 		return err
 	}
 
-	// preload images into containerd
-	// TODO(bentheelder): we can skip the move and chown steps if we go directly to this
-	if err = inheritOutputAndRun(cmder.Command(
-		"bash", "-c",
-		`containerd & find /kind/images -name *.tar -print0 | xargs -0 -n 1 -P $(nproc) ctr --namespace=k8s.io images import --no-unpack && kill %1 && rm -rf /kind/images/*`,
-	)); err != nil {
-		log.Errorf("Image build Failed! Failed to load images into containerd %v", err)
+	// setup image importer
+	importer := newContainerdImporter(cmder)
+	if err := importer.Prepare(); err != nil {
+		log.Errorf("Image build Failed! Failed to prepare containerd to load images %v", err)
+		return err
+	}
+
+	// TODO: return this error?
+	defer func() {
+		if err := importer.End(); err != nil {
+			log.Errorf("Image build Failed! Failed to tear down containerd after loading images %v", err)
+		}
+	}()
+
+	// create a plan of image loading
+	loadFns := []func() error{}
+	for _, image := range c.bits.ImagePaths() {
+		image := image // capture loop var
+		loadFns = append(loadFns, func() error {
+			f, err := os.Open(image)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			//return importer.LoadCommand().SetStdout(os.Stdout).SetStderr(os.Stderr).SetStdin(f).Run()
+			// we will rewrite / correct the tags as we load the image
+			if err := exec.RunWithStdinWriter(importer.LoadCommand().SetStdout(os.Stdout).SetStderr(os.Stdout), func(w io.Writer) error {
+				return docker.EditArchiveRepositories(f, w, fixRepository)
+				// _, err := io.Copy(w, f)
+				// return err
+			}); err != nil {
+				return err
+			}
+			return nil
+		})
+	}
+
+	// run all image loading concurrently until one fails or all succeed
+	if err := concurrent.UntilError(loadFns); err != nil {
+		log.Errorf("Image build Failed! Failed to load images %v", err)
 		return err
 	}
 
 	return nil
+}
+
+func repositoryCorrectorForVersion(kubeVersion *version.Version) func(string) string {
+	// TODO(bentheelder): we assume the host arch, but cross compiling should
+	// be possible now
+	arch := util.GetArch()
+	archSuffix := "-" + arch
+
+	// For kubernetes v1.15+ (actually 1.16 alpha versions) we may need to
+	// drop the arch suffix from images to get the expected image
+	// for < v1.12 we need to do the opposite.
+	// We can accomplish this by just handling < 1.12 & >= 1.12 as we won't
+	// touch images that match the expectation in either case ...
+
+	if kubeVersion.LessThan(version.MustParseSemantic("v1.12.0")) {
+		return func(repository string) string {
+			if !strings.HasSuffix(repository, archSuffix) {
+				fixed := repository + archSuffix
+				fmt.Println("fixed: " + repository + " -> " + fixed)
+				repository = fixed
+			}
+			return repository
+		}
+	}
+
+	return func(repository string) string {
+		if strings.HasSuffix(repository, archSuffix) {
+			fixed := strings.TrimSuffix(repository, archSuffix)
+			fmt.Println("fixed: " + repository + " -> " + fixed)
+			repository = fixed
+		}
+		return repository
+	}
 }
 
 func (c *BuildContext) createBuildContainer(buildDir string) (id string, err error) {

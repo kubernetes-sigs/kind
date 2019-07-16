@@ -21,12 +21,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
-
-	"sigs.k8s.io/kind/pkg/container/docker"
 
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/util/version"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/util"
 )
@@ -35,7 +31,8 @@ import (
 type BazelBuildBits struct {
 	kubeRoot string
 	// computed at build time
-	paths map[string]string
+	paths      map[string]string
+	imagePaths []string
 }
 
 var _ Bits = &BazelBuildBits{}
@@ -87,69 +84,12 @@ func (b *BazelBuildBits) Build() error {
 	b.paths = b.findPaths(bazelGoosGoarch)
 
 	// capture version info
-	rawVersion, err := buildVersionFile(b.kubeRoot)
+	_, err = buildVersionFile(b.kubeRoot)
 	if err != nil {
 		return err
-	}
-
-	// additional special handling for old kubernetes versions + bazel
-	// before Kubernetes v1.12.0 kubeadm requires arch specific images, instead
-	// later releases use manifest list images
-	// we must re-tag them here
-	ver, err := version.ParseGeneric(rawVersion)
-	if err != nil {
-		return err
-	}
-	// only < 1.12.0 has this problem
-	if !ver.LessThan(version.MustParseSemantic("v1.12.0")) {
-		return nil
-	}
-
-	// fix all tar files
-	for path := range b.paths {
-		if !strings.HasSuffix(path, ".tar") {
-			continue
-		}
-		if err := fixOldImageTags(path, arch); err != nil {
-			return err
-		}
 	}
 
 	return nil
-}
-
-// fixes the missing -$arch suffix on old kubernetes image archives
-func fixOldImageTags(path, arch string) error {
-	// open input at path and create a fixed file at path+.fixed
-	in, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer in.Close()
-	out, err := os.Create(path + ".fixed")
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	// create a tarball with corrected tags
-	archSuffix := "-" + arch
-	repositoryFixer := func(repository string) string {
-		if !strings.HasSuffix(repository, archSuffix) {
-			fmt.Println("fixed: " + repository + " -> " + repository + archSuffix)
-			repository = repository + archSuffix
-		}
-		return repository
-	}
-	if err := docker.EditArchiveRepositories(in, out, repositoryFixer); err != nil {
-		return err
-	}
-
-	// replace the original file with the fixed file
-	in.Close()
-	out.Sync()
-	out.Close()
-	return os.Rename(out.Name(), in.Name())
 }
 
 func (b *BazelBuildBits) findPaths(bazelGoosGoarch string) map[string]string {
@@ -157,13 +97,16 @@ func (b *BazelBuildBits) findPaths(bazelGoosGoarch string) map[string]string {
 	binDir := filepath.Join(b.kubeRoot, "bazel-bin")
 	buildDir := filepath.Join(binDir, "build")
 
+	// docker images
+	b.imagePaths = []string{
+		filepath.Join(buildDir, "kube-apiserver.tar"),
+		filepath.Join(buildDir, "kube-controller-manager.tar"),
+		filepath.Join(buildDir, "kube-scheduler.tar"),
+		filepath.Join(buildDir, "kube-proxy.tar"),
+	}
+
 	// all well-known paths that have not changed
 	paths := map[string]string{
-		// docker images
-		filepath.Join(buildDir, "kube-apiserver.tar"):          "images/kube-apiserver.tar",
-		filepath.Join(buildDir, "kube-controller-manager.tar"): "images/kube-controller-manager.tar",
-		filepath.Join(buildDir, "kube-scheduler.tar"):          "images/kube-scheduler.tar",
-		filepath.Join(buildDir, "kube-proxy.tar"):              "images/kube-proxy.tar",
 		// version file
 		filepath.Join(b.kubeRoot, "_output", "git_version"): "version",
 	}
@@ -214,6 +157,11 @@ func (b *BazelBuildBits) findPaths(bazelGoosGoarch string) map[string]string {
 // Paths implements Bits.Paths
 func (b *BazelBuildBits) Paths() map[string]string {
 	return b.paths
+}
+
+// ImagePaths implements Bits.ImagePaths
+func (b *BazelBuildBits) ImagePaths() []string {
+	return b.imagePaths
 }
 
 // Install implements Bits.Install

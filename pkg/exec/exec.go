@@ -120,3 +120,30 @@ func RunWithStdoutReader(cmd Cmd, readerFunc func(io.Reader) error) error {
 	}
 	return nil
 }
+
+// RunWithStdinWriter runs cmd with writerFunc piped to stdin
+func RunWithStdinWriter(cmd Cmd, writerFunc func(io.Writer) error) error {
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		return err
+	}
+	defer pw.Close()
+	defer pr.Close()
+	cmd.SetStdin(pr)
+
+	errChan := make(chan error, 1)
+	go func() {
+		errChan <- writerFunc(pw)
+		pw.Close()
+	}()
+
+	err = cmd.Run()
+	if err != nil {
+		return err
+	}
+	err2 := <-errChan
+	if err2 != nil {
+		return err2
+	}
+	return nil
+}
