@@ -198,21 +198,26 @@ func (b *DockerBuildBits) Paths() map[string]string {
 	binDir := filepath.Join(b.kubeRoot,
 		"_output", "dockerized", "bin", "linux", util.GetArch(),
 	)
-	imageDir := filepath.Join(b.kubeRoot,
-		"_output", "release-images", util.GetArch(),
-	)
 	return map[string]string{
 		// binaries (hyperkube)
 		filepath.Join(binDir, "kubeadm"): "bin/kubeadm",
 		filepath.Join(binDir, "kubelet"): "bin/kubelet",
 		filepath.Join(binDir, "kubectl"): "bin/kubectl",
-		// docker images
-		filepath.Join(imageDir, "kube-apiserver.tar"):          "images/kube-apiserver.tar",
-		filepath.Join(imageDir, "kube-controller-manager.tar"): "images/kube-controller-manager.tar",
-		filepath.Join(imageDir, "kube-scheduler.tar"):          "images/kube-scheduler.tar",
-		filepath.Join(imageDir, "kube-proxy.tar"):              "images/kube-proxy.tar",
 		// version file
 		filepath.Join(b.kubeRoot, "_output", "git_version"): "version",
+	}
+}
+
+// ImagePaths implements Bits.ImagePaths
+func (b *DockerBuildBits) ImagePaths() []string {
+	imageDir := filepath.Join(b.kubeRoot,
+		"_output", "release-images", util.GetArch(),
+	)
+	return []string{
+		filepath.Join(imageDir, "kube-apiserver.tar"),
+		filepath.Join(imageDir, "kube-controller-manager.tar"),
+		filepath.Join(imageDir, "kube-scheduler.tar"),
+		filepath.Join(imageDir, "kube-proxy.tar"),
 	}
 }
 
