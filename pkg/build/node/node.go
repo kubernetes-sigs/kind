@@ -120,6 +120,13 @@ func NewBuildContext(options ...Option) (ctx *BuildContext, err error) {
 		}
 		ctx.kubeRoot = kubeRoot
 	}
+	log.Infof("Finished preparing Build Configuration")
+	log.Infof("  kube-root : %s", ctx.kubeRoot)
+	log.Infof("  arch      : %s", ctx.arch)
+	log.Infof("  mode      : %s", ctx.mode)
+	log.Infof("  image     : %s", ctx.image)
+	log.Infof("  base-image: %s", ctx.baseImage)
+
 	// initialize bits
 	bits, err := kube.NewNamedBits(ctx.mode, ctx.kubeRoot)
 	if err != nil {
