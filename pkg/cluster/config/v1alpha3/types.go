@@ -34,12 +34,12 @@ type Cluster struct {
 	// If unset this will default to a single control-plane node
 	// Note that if more than one control plane is specified, an external
 	// control plane load balancer will be provisioned implicitly
-	Nodes []Node `json:"nodes"`
+	Nodes []Node `json:"nodes,omitempty"`
 
 	/* Advanced fields */
 
 	// Networking contains cluster wide network settings
-	Networking Networking `json:"networking"`
+	Networking Networking `json:"networking,omitempty"`
 
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// strategic merge patches to `kustomize build` internally
