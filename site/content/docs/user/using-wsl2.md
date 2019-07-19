@@ -12,7 +12,7 @@ Kind can run using Windows Subsystem for Linux 2 (WSL2) on Windows 10 Insider bu
 
 ## Getting Windows 10 Insider Preview
 
-Download latest ISO at https://www.microsoft.com/en-us/software-download/windowsinsiderpreviewadvanced . Choose "Windows 10 Insider Preview (FAST) - Build 18912". If there's a later build number, get that instead and then you can skip the work to upgrade to 18917.
+Download latest ISO at https://www.microsoft.com/en-us/software-download/windowsinsiderpreviewadvanced . Choose "Windows 10 Insider Preview (FAST) - Build 18932". If there's a later build, that will work too.
 
 ### Installing on a virtual machine
 
@@ -37,18 +37,6 @@ If you're using a physical machine, you can mount the ISO, copy the files to a F
 - You can skip the product key page
 - On the "Sign in with Microsoft" screen, look for the "offline account" button.
 
-### Upgrading to 18922 or later
-
-As of June 2019, you still need to opt-in and do an update to get a newer build with WSL2 included.
-
-1. Click Start, and search for "update". Click "Check for Updates"
-1. In the left pane, scroll to the bottom and click "Windows Insider Program"
-1. Under "Windows Insider account", click "Link a Windows Insider account". Log in with the same account you used to download the ISO. On the "Use this account everywhere on your device" page - read closely. You might want to click "Microsoft apps only" instead of "Next".
-1. Now back on the page under "Pick your Insider Settings", click the big tile that says "Custom....". This will take you to the "Pick your insider settings" page. Turn "Custom Options" off if it's on, then click on "Fast".
-1. Click the back arrow in the upper left
-1. Now go to "Windows Update" in the left pane. Click "Check for Updates"
-1. Once its done checking, it should offer the new version. This will be a long download then reboot. Once that's done, move on to the next section.
-
 ## Setting up WSL2
 
 If you want the full details, see the [Installation Instructions for WSL2](https://docs.microsoft.com/en-us/windows/wsl/wsl2-install). This is the TL;DR version.
@@ -63,6 +51,62 @@ Once your Windows Insider machine is ready, you need to do a few more steps to s
 1. After the reboot, set WSL to default to WSL2. Open an admin PowerShell window and run `wsl --set-default-version 2`.
 1. Now, you can install your Linux distro of choice by searching the Windows Store. If you don't want to use the Windows Store, then follow the steps in the WSL docs for [manual install](https://docs.microsoft.com/en-us/windows/wsl/install-manual).
 1. Start up your distro with the shortcut added to the start menu
+
+### Updating Kernel
+
+As of Windows build 18936, WSL2 kernel is still missing a few features needed for kind to work correctly. A custom kernel is needed. Since WSL2 is installed and working, it's easy to build a new one with the right features included.
+
+For the latest status on this, see [issue #707](https://github.com/kubernetes-sigs/kind/issues/707) and [microsoft/wsl#4165](https://github.com/microsoft/WSL/issues/4165). 
+
+First, build a new kernel with the right options using a simple patch
+
+```bash
+# This assumes Ubuntu or Debian, a different step may be needed for RPM based distributions
+sudo apt install build-essential flex bison libssl-dev libelf-dev
+git clone --depth 1 https://github.com/microsoft/WSL2-Linux-Kernel.git
+cd WSL2-Linux-Kernel
+cat << EOF > nftmasq.patch
+diff --git a/Microsoft/config-wsl b/Microsoft/config-wsl
+index 646309095..f7e7a71cd 100644
+--- a/Microsoft/config-wsl
++++ b/Microsoft/config-wsl
+@@ -869,7 +869,7 @@ CONFIG_NF_TABLES_INET=y
+ # CONFIG_NFT_CONNLIMIT is not set
+ # CONFIG_NFT_LOG is not set
+ # CONFIG_NFT_LIMIT is not set
+-# CONFIG_NFT_MASQ is not set
++CONFIG_NFT_MASQ=y
+ # CONFIG_NFT_REDIR is not set
+ # CONFIG_NFT_NAT is not set
+ # CONFIG_NFT_TUNNEL is not set
+@@ -1033,6 +1033,8 @@ CONFIG_NF_REJECT_IPV4=y
+ CONFIG_NF_NAT_IPV4=y
+ CONFIG_NF_NAT_MASQUERADE_IPV4=y
+ # CONFIG_NFT_CHAIN_NAT_IPV4 is not set
++CONFIG_NFT_MASQ_IPV4=y
++CONFIG_NFT_MASQ_IPV6=y
+ CONFIG_NF_NAT_PROTO_GRE=y
+ CONFIG_NF_NAT_PPTP=y
+ CONFIG_NF_NAT_H323=y
+EOF
+cat nftmasq.patch | patch -p1
+make -j4 KCONFIG_CONFIG=Microsoft/config-wsl
+mkdir /mnt/c/linuxtemp
+cp arch/x86/boot/bzImage /mnt/c/linuxtemp/
+```
+
+Now, open an administrator PowerShell window and run these steps to apply the kernel:
+
+```powershell
+wsl.exe --shutdown
+cd C:\WINDOWS\system32\lxss\tools
+Move-Item kernel kernel.orig
+Copy-Item c:\linuxtemp\bzImage kernel
+```
+
+Now, start a new WSL2 prompt and continue on with the steps to set up Docker.
+
+## Setting up Docker in WSL2
 1. Install Docker - here's links for [Debian](https://docs.docker.com/install/linux/docker-ce/debian/), [Fedora](https://docs.docker.com/install/linux/docker-ce/fedora/), and [Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
 1. Start the Docker daemon using init (not systemd) `sudo service docker start`. This needs to be done each time you start WSL2.
 
