@@ -34,6 +34,7 @@ import (
 
 	configaction "sigs.k8s.io/kind/pkg/internal/cluster/create/actions/config"
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions/installcni"
+	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions/installpsp"
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions/installstorage"
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions/kubeadminit"
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions/kubeadmjoin"
@@ -93,6 +94,13 @@ func Cluster(ctx *context.Context, options ...create.ClusterOption) error {
 			kubeadminit.NewAction(), // run kubeadm init
 		)
 		// this step might be skipped, but is next after init
+		if opts.Config.EnablePodSecurityPolicy {
+			actionsToRun = append(actionsToRun,
+				installpsp.NewAction(), // install default policy
+			)
+		}
+
+		// this step might be skipped, but is next after init or PSP
 		if !opts.Config.Networking.DisableDefaultCNI {
 			actionsToRun = append(actionsToRun,
 				installcni.NewAction(), // install CNI

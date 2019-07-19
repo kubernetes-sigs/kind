@@ -49,6 +49,9 @@ type Cluster struct {
 	// KubeadmConfigPatchesJSON6902 are applied to the generated kubeadm config
 	// as patchesJson6902 to `kustomize build`
 	KubeadmConfigPatchesJSON6902 []PatchJSON6902
+
+	// EnablePodSecurityPolicy enable the admission controller
+	EnablePodSecurityPolicy bool
 }
 
 // Node contains settings for a node in the `kind` Cluster.

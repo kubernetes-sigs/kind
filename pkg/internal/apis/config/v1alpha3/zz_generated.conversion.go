@@ -87,6 +87,7 @@ func autoConvert_v1alpha3_Cluster_To_config_Cluster(in *v1alpha3.Cluster, out *c
 	}
 	out.KubeadmConfigPatches = *(*[]string)(unsafe.Pointer(&in.KubeadmConfigPatches))
 	out.KubeadmConfigPatchesJSON6902 = *(*[]config.PatchJSON6902)(unsafe.Pointer(&in.KubeadmConfigPatchesJSON6902))
+	out.EnablePodSecurityPolicy = in.EnablePodSecurityPolicy
 	return nil
 }
 
@@ -102,6 +103,7 @@ func autoConvert_config_Cluster_To_v1alpha3_Cluster(in *config.Cluster, out *v1a
 	}
 	out.KubeadmConfigPatches = *(*[]string)(unsafe.Pointer(&in.KubeadmConfigPatches))
 	out.KubeadmConfigPatchesJSON6902 = *(*[]v1alpha3.PatchJSON6902)(unsafe.Pointer(&in.KubeadmConfigPatchesJSON6902))
+	out.EnablePodSecurityPolicy = in.EnablePodSecurityPolicy
 	return nil
 }
 

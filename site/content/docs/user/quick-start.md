@@ -268,6 +268,21 @@ nodes:
 - role: worker
 ```
 
+#### Enabling Pod Security Policy
+You can also have a cluster with [Pod Security Policy][pod security policy] enabled.
+Kind install a permissive policy by default, equivalent to not using the pod security policy admission controller.
+
+```yaml
+# a cluster with 3 control-plane nodes and 3 workers
+kind: Cluster
+apiVersion: kind.sigs.k8s.io/v1alpha3
+enablePodSecurityPolicy: true
+nodes:
+- role: control-plane
+- role: worker
+- role: worker
+```
+
 #### Mapping ports to the host machine
 You can map extra ports from the nodes to the host machine with `extraPortMappings`:
 ```yaml
@@ -404,3 +419,4 @@ kind, the Kubernetes cluster itself, etc.
 [Private Registries]: /docs/user/private-registries
 [customize control plane with kubeadm]: https://kubernetes.io/docs/setup/independent/control-plane-flags/
 [docker enable ipv6]: https://docs.docker.com/config/daemon/ipv6/
+[pod security policy]: https://kubernetes.io/docs/concepts/policy/pod-security-policy/

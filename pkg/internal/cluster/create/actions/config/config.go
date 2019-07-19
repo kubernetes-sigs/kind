@@ -92,6 +92,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		ServiceSubnet:        ctx.Config.Networking.ServiceSubnet,
 		ControlPlane:         true,
 		IPv6:                 ctx.Config.Networking.IPFamily == "ipv6",
+		PodSecurityPolicy:    ctx.Config.EnablePodSecurityPolicy,
 	}
 
 	fns = append(fns, func() error {

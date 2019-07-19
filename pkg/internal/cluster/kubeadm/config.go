@@ -51,6 +51,8 @@ type ConfigData struct {
 	ServiceSubnet string
 	// IPv4 values take precedence over IPv6 by default, if true set IPv6 default values
 	IPv6 bool
+	// PodSecurityPolicy enables the admission controller
+	PodSecurityPolicy bool
 	// DerivedConfigData is populated by Derive()
 	// These auto-generated fields are available to Config templates,
 	// but not meant to be set by hand
@@ -99,6 +101,11 @@ controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 api:
   advertiseAddress: "{{ .NodeAddress }}"
   bindPort: {{.APIBindPort}}
+{{ if .PodSecurityPolicy -}}
+# enable PodSecurityPolicy admission controller
+apiServerExtraArgs:
+  enable-admission-plugins: PodSecurityPolicy
+{{- end }}
 # we need nsswitch.conf so we use /etc/hosts
 # https://github.com/kubernetes/kubernetes/issues/69195
 apiServerExtraVolumes:
@@ -165,6 +172,11 @@ controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 networking:
   podSubnet: "{{ .PodSubnet }}"
   serviceSubnet: "{{ .ServiceSubnet }}"
+{{ if .PodSecurityPolicy -}}
+# enable PodSecurityPolicy admission controller
+apiServerExtraArgs:
+  enable-admission-plugins: PodSecurityPolicy
+{{- end }}
 # we need nsswitch.conf so we use /etc/hosts
 # https://github.com/kubernetes/kubernetes/issues/69195
 apiServerExtraVolumes:
@@ -259,6 +271,10 @@ controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServer:
   certSANs: [localhost, "{{.APIServerAddress}}"]
+  {{ if .PodSecurityPolicy -}}
+  extraArgs:
+    enable-admission-plugins:  PodSecurityPolicy
+  {{- end }}
 controllerManager:
   extraArgs:
     enable-hostpath-provisioner: "true"
@@ -356,6 +372,10 @@ controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServer:
   certSANs: [localhost, "{{.APIServerAddress}}"]
+  {{ if .PodSecurityPolicy -}}
+  extraArgs:
+    enable-admission-plugins:  PodSecurityPolicy
+  {{- end }}
 controllerManager:
   extraArgs:
     enable-hostpath-provisioner: "true"
