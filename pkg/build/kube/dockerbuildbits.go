@@ -121,6 +121,7 @@ func (b *DockerBuildBits) build() error {
 		// we don't want to build these images as we don't use them...
 		"KUBE_BUILD_HYPERKUBE=n",
 		"KUBE_BUILD_CONFORMANCE=n",
+		"KUBE_BUILD_PLATFORMS="+dockerBuildOsAndArch(),
 	)
 	cmd.SetEnv(os.Environ()...)
 	exec.InheritOutput(cmd)

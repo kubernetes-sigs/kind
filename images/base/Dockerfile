@@ -70,7 +70,7 @@ RUN clean-install \
     && rm -f /lib/systemd/system/basic.target.wants/* \
     && echo "ReadKMsg=no" >> /etc/systemd/journald.conf \
     && systemctl enable containerd \
-    && export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') \
+    && export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
     && curl -fSL -o /usr/local/bin/ctr \
       "https://storage.googleapis.com/bentheelder-kind-dev/containerd/linux/${ARCH}/ctr" \
     && chmod +x /usr/local/bin/ctr \
@@ -90,7 +90,7 @@ RUN containerd --version \
 # TODO(bentheelder): doc why / what here
 ARG CNI_VERSION="0.7.5"
 ARG CNI_BASE_URL="https://storage.googleapis.com/kubernetes-release/network-plugins/"
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
     && export CNI_TARBALL="cni-plugins-${ARCH}-v${CNI_VERSION}.tgz" \
     && export CNI_URL="${CNI_BASE_URL}${CNI_TARBALL}" \
     && curl -sSL --retry 5 --output /tmp/cni.tgz "${CNI_URL}" \
@@ -101,7 +101,7 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') \
 
 # Install crictl to /usr/local/bin
 ARG CRICTL_VERSION="v1.14.0"
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
     && curl -fSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz" | tar xzC /usr/local/bin \
     && echo 'runtime-endpoint: unix:///var/run/containerd/containerd.sock' > /etc/crictl.yaml
 
