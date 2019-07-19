@@ -26,6 +26,8 @@ func GetArch() string {
 	switch runtime.GOARCH {
 	case "amd64":
 		return "amd64"
+	case "arm":
+		return "arm"
 	case "arm64":
 		return "arm64"
 	case "ppc64le":
