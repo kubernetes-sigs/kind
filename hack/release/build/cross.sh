@@ -52,6 +52,7 @@ build() {
 # TODO(bentheelder): support more platforms
 echo "Building in parallel for:"
 build "linux" "amd64" & \
+build "linux" "arm" & \
 build "linux" "arm64" & \
 build "linux" "ppc64le" & \
 build "darwin" "amd64" & \

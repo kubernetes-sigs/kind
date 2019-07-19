@@ -53,6 +53,7 @@ REVISION=$(git rev-parse HEAD)$(if ! git diff --no-ext-diff --quiet --exit-code;
 
 # submit a build for each arch
 GOARCHES=(
+  "arm"
   "arm64"
   "amd64"
   "ppc64le"
