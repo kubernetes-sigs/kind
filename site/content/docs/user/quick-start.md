@@ -128,7 +128,7 @@ This allows a workflow like:
 ```
 docker build -t my-custom-image:unique-tag ./my-image-dir
 kind load docker-image my-custom-image:unique-tag
-kubectl apply -f my-manifest-using-my-image:unique-tag
+kubectl apply -f my-manifest-using-docker.io/my-custom-image:unique-tag
 ```
 
 **Note**: The Kubernetes default pull policy is `IfNotPresent` unless
@@ -146,6 +146,15 @@ See [Kubernetes imagePullPolicy][Kubernetes imagePullPolicy] for more informatio
 
 
 See also: [Using kind with Private Registries][Private Registries].
+
+**Note**:
+if you get `Failed to pull image "my-custom-image:unique-tag"` you can easily verify and check if kind pulled your image into its cluster by calling`crictl images` command inside `kind-control-plane`. 
+
+```
+docker exec -it --privileged  kind-control-plane /bin/sh
+crictl images
+```
+
 
 ## Building Images
 
