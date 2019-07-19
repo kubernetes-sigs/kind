@@ -24,9 +24,13 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"sigs.k8s.io/kustomize/k8sdeps"
+	"sigs.k8s.io/kustomize/k8sdeps/kunstruct"
+	"sigs.k8s.io/kustomize/k8sdeps/transformer"
+	"sigs.k8s.io/kustomize/k8sdeps/validator"
 	"sigs.k8s.io/kustomize/pkg/commands/build"
 	"sigs.k8s.io/kustomize/pkg/fs"
+	"sigs.k8s.io/kustomize/pkg/resmap"
+	"sigs.k8s.io/kustomize/pkg/resource"
 )
 
 // PatchJSON6902 represents an inline kustomize json 6902 patch
@@ -105,9 +109,14 @@ func Build(resources, patches []string, patchesJSON6902 []PatchJSON6902) (string
 
 	// now we can build the kustomization
 	var out bytes.Buffer
-	f := k8sdeps.NewFactory()
-	cmd := build.NewCmdBuild(&out, memFS, f.ResmapF, f.TransformerF)
-	cmd.SetArgs([]string{fakeDir})
+
+	uf := kunstruct.NewKunstructuredFactoryImpl()
+	v := validator.NewKustValidator()
+
+	rf := resmap.NewFactory(resource.NewFactory(uf))
+
+	cmd := build.NewCmdBuild(&out, memFS, v, rf, transformer.NewFactoryImpl())
+	cmd.SetArgs([]string{"--", fakeDir})
 	// we want to silence usage, error output, and any future output from cobra
 	// we will get error output as a golang error from execute
 	cmd.SetOutput(ioutil.Discard)
