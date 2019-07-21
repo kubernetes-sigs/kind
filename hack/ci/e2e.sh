@@ -133,6 +133,9 @@ run_tests() {
     KUBECONFIG="$(kind get kubeconfig-path)"
     export KUBECONFIG
 
+    # base kubetest args
+    KUBETEST_ARGS="--provider=skeleton --test --check-version-skew=false"
+
     if [[ "${IP_FAMILY:-ipv4}" == "ipv6" ]]; then
         # IPv6 clusters need some CoreDNS changes in order to work in k8s CI:
         # 1. k8s CI doesn´t offer IPv6 connectivity, so CoreDNS should be configured
@@ -175,10 +178,10 @@ metadata:
   namespace: kube-system
 ---
 EOF
-    fi
+    # Add kubetest argument to use IPv6 on testing
+    KUBETEST_ARGS="${KUBETEST_ARGS} --ip-family=ipv6"
 
-    # base kubetest args
-    KUBETEST_ARGS="--provider=skeleton --test --check-version-skew=false"
+    fi
 
     # get the number of worker nodes
     # TODO(bentheelder): this is kinda gross
