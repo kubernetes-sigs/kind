@@ -341,6 +341,20 @@ nodes:
 - role: worker
 ```
 
+#### Mounting files from host 
+You can mount files from the host system to the nodes with `extraMounts`:
+
+```yaml
+kind: Cluster
+apiVersion: kind.sigs.k8s.io/v1alpha3
+# mount a path from the host to the control-plane node
+nodes:
+- role: control-plane
+  extraMounts:
+  - containerPath: /foo/path/on-the/node
+     hostPath: /path/on-the/host
+```
+
 ### Configure kind to use a proxy
 If you are running kind in an environment that requires a proxy, you may need to configure kind to use it.
 
