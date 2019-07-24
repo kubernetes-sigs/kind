@@ -187,6 +187,7 @@ EOF
         | grep -cv "node-role.kubernetes.io/master" \
     )"
 
+    KUBERNETES_PRESUBMIT_JOB=true
     # ginkgo regexes
     if [[ "${KUBERNETES_PRESUBMIT_JOB:-}" = true ]]; then
         # k/k presubmit jobs regex
