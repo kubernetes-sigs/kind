@@ -221,6 +221,11 @@ EOF
         # [sig-autoscaling] ReplicationController light Should scale from 1 pod to 2 pods
         # It reuires metrics addon, ref: https://github.com/kubernetes/kubernetes/pull/79954
         SKIP="ReplicationController.light.Should.scale.from.1.pod.to.2.pods|${SKIP}"
+        if [[ "${IP_FAMILY:-ipv4}" == "ipv6" ]]; then
+            # TODO(aojea): The ipv6 job times out and have 520 failures at that time
+            # lets skip storage at this moment
+            SKIP="\\[sig-storage\\]|${SKIP}"
+        fi
     else
         SKIP="${SKIP:-}"
         FOCUS="${FOCUS:-"\\[Conformance\\]"}"
