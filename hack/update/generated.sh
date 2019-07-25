@@ -54,12 +54,12 @@ export GOPATH="${FAKE_GOPATH}"
 cd "${FAKE_REPOPATH}"
 
 # run the generators
-"${BINDIR}/deepcopy-gen" -i ./pkg/cluster/config/ -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
-"${BINDIR}/defaulter-gen" -i ./pkg/cluster/config/ -O zz_generated.default --go-header-file hack/boilerplate.go.txt
+"${BINDIR}/deepcopy-gen" -i ./pkg/internal/apis/config/ -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
+"${BINDIR}/defaulter-gen" -i ./pkg/internal/apis/config/ -O zz_generated.default --go-header-file hack/boilerplate.go.txt
 
-"${BINDIR}/deepcopy-gen" -i ./pkg/cluster/config/v1alpha3 -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
-"${BINDIR}/defaulter-gen" -i ./pkg/cluster/config/v1alpha3 -O zz_generated.default --go-header-file hack/boilerplate.go.txt
-"${BINDIR}/conversion-gen" -i ./pkg/cluster/config/v1alpha3 -O zz_generated.conversion --go-header-file hack/boilerplate.go.txt
+"${BINDIR}/deepcopy-gen" -i ./pkg/apis/config/v1alpha3 -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
+"${BINDIR}/defaulter-gen" -i ./pkg/apis/config/v1alpha3 -O zz_generated.default --go-header-file hack/boilerplate.go.txt
+"${BINDIR}/conversion-gen" -i ./pkg/internal/apis/config/v1alpha3 -O zz_generated.conversion --go-header-file hack/boilerplate.go.txt
 
 export GO111MODULE="on"
 cd "${REPO_ROOT}"

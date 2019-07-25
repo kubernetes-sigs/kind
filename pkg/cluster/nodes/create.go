@@ -22,10 +22,10 @@ import (
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/kind/pkg/cluster/constants"
-	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
-	"sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer"
 	"sigs.k8s.io/kind/pkg/container/cri"
 	"sigs.k8s.io/kind/pkg/container/docker"
+	"sigs.k8s.io/kind/pkg/internal/cluster/kubeadm"
+	"sigs.k8s.io/kind/pkg/internal/cluster/loadbalancer"
 )
 
 // FromName creates a node handle from the node' Name

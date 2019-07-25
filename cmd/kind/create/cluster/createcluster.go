@@ -26,7 +26,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
-	"sigs.k8s.io/kind/pkg/cluster/config/encoding"
 	"sigs.k8s.io/kind/pkg/cluster/create"
 	"sigs.k8s.io/kind/pkg/util"
 )
@@ -60,23 +59,6 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
-	// load the config
-	cfg, err := encoding.Load(flags.Config)
-	if err != nil {
-		return errors.Wrap(err, "error loading config")
-	}
-
-	// validate the config
-	err = cfg.Validate()
-	if err != nil {
-		log.Error("Invalid configuration!")
-		configErrors := err.(util.Errors)
-		for _, problem := range configErrors.Errors() {
-			log.Error(problem)
-		}
-		return errors.New("aborting due to invalid configuration")
-	}
-
 	// Check if the cluster name already exists
 	known, err := cluster.IsKnown(flags.Name)
 	if err != nil {
@@ -88,25 +70,19 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 
 	// create a cluster context and create the cluster
 	ctx := cluster.NewContext(flags.Name)
-	if flags.ImageName != "" {
-		// Apply image override to all the Nodes defined in Config
-		// TODO(fabrizio pandini): this should be reconsidered when implementing
-		//     https://github.com/kubernetes-sigs/kind/issues/133
-		for i := range cfg.Nodes {
-			cfg.Nodes[i].Image = flags.ImageName
-		}
-
-		err := cfg.Validate()
-		if err != nil {
-			log.Errorf("Invalid flags, configuration failed validation: %v", err)
-			return errors.New("aborting due to invalid configuration")
-		}
-	}
 	fmt.Printf("Creating cluster %q ...\n", flags.Name)
-	if err = ctx.Create(cfg,
+	if err = ctx.Create(
+		create.WithConfigFile(flags.Config),
+		create.WithNodeImage(flags.ImageName),
 		create.Retain(flags.Retain),
 		create.WaitForReady(flags.Wait),
 	); err != nil {
+		if utilErrors, ok := err.(util.Errors); ok {
+			for _, problem := range utilErrors.Errors() {
+				log.Error(problem)
+			}
+			return errors.New("aborting due to invalid configuration")
+		}
 		return errors.Wrap(err, "failed to create cluster")
 	}
 
