@@ -16,6 +16,9 @@ limitations under the License.
 
 package util
 
+// TODO(bentheelder): eliminate this package in favor of one of the similar
+// packages used in other projects?
+
 import "bytes"
 
 // Errors implements error and contains all config errors

@@ -37,7 +37,7 @@ import (
 	"sigs.k8s.io/kind/pkg/container/docker"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
-	"sigs.k8s.io/kind/pkg/util"
+	"sigs.k8s.io/kind/pkg/internal/util/env"
 )
 
 // DefaultImage is the default name:tag for the built image
@@ -102,7 +102,7 @@ func NewBuildContext(options ...Option) (ctx *BuildContext, err error) {
 		mode:      DefaultMode,
 		image:     DefaultImage,
 		baseImage: DefaultBaseImage,
-		arch:      util.GetArch(),
+		arch:      env.GetArch(),
 	}
 	// apply user options
 	for _, option := range options {
@@ -540,7 +540,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 func repositoryCorrectorForVersion(kubeVersion *version.Version) func(string) string {
 	// TODO(bentheelder): we assume the host arch, but cross compiling should
 	// be possible now
-	arch := util.GetArch()
+	arch := env.GetArch()
 	archSuffix := "-" + arch
 
 	// For kubernetes v1.15+ (actually 1.16 alpha versions) we may need to
