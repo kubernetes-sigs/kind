@@ -19,10 +19,10 @@ package nodes
 import (
 	"fmt"
 
-	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
+	"sigs.k8s.io/kind/pkg/internal/cluster/kubeadm"
 
 	"github.com/pkg/errors"
-	"sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer"
+	"sigs.k8s.io/kind/pkg/internal/cluster/loadbalancer"
 )
 
 // GetControlPlaneEndpoint returns the control plane endpoints for IPv4 and IPv6
