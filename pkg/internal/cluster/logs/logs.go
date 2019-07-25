@@ -26,8 +26,8 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/concurrent"
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/util/concurrent"
 )
 
 // Collect collects logs related to / from the cluster nodes and the host

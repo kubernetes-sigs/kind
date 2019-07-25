@@ -32,12 +32,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/version"
 
-	"sigs.k8s.io/kind/pkg/concurrent"
 	"sigs.k8s.io/kind/pkg/container/docker"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
 	"sigs.k8s.io/kind/pkg/internal/build/kube"
 	"sigs.k8s.io/kind/pkg/internal/util/env"
+	"sigs.k8s.io/kind/pkg/util/concurrent"
 )
 
 // DefaultImage is the default name:tag for the built image
