@@ -122,7 +122,7 @@ func writeNonMasqRule(masqChain utiliptables.Chain, lines *bytes.Buffer, cidr st
 	writeRule(lines, utiliptables.Append, masqChain, nonMasqRuleComment, "-d", cidr, "-j", "RETURN")
 }
 
-const masqRuleComment = `-m comment --comment "ip-masq-agent: outbound traffic is subject to MASQUERADE (must be last in chain)"`
+const masqRuleComment = `-m comment --comment "kind-masq-agent: outbound traffic is subject to MASQUERADE (must be last in chain)"`
 
 func writeMasqRule(masqChain utiliptables.Chain, lines *bytes.Buffer) {
 	writeRule(lines, utiliptables.Append, masqChain, masqRuleComment, "-j", "MASQUERADE")
