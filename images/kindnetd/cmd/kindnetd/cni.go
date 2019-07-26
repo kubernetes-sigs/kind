@@ -32,20 +32,32 @@ import (
 
 // CNIConfigInputs is supplied to the CNI config template
 type CNIConfigInputs struct {
-	PodCIDR      string
-	DefaultRoute string
+	PodCIDRs      []string
+	DefaultRoutes []string
 }
 
 // ComputeCNIConfigInputs computes the template inputs for CNIConfigWriter
 func ComputeCNIConfigInputs(node corev1.Node) CNIConfigInputs {
-	podCIDR := node.Spec.PodCIDR
-	defaultRoute := "0.0.0.0/0"
-	if net.IsIPv6CIDRString(podCIDR) {
-		defaultRoute = "::/0"
+
+	defaultRoutes := []string{"0.0.0.0/0", "::/0"}
+	// check if is a dualstack cluster
+	if len(node.Spec.PodCIDRs) > 1 {
+		return CNIConfigInputs{
+			PodCIDRs:      node.Spec.PodCIDRs,
+			DefaultRoutes: defaultRoutes,
+		}
+	}
+	// the cluster is single stack
+	// we use the legacy node.Spec.PodCIDR for backwards compatibility
+	podCIDRs := []string{node.Spec.PodCIDR}
+	// This is a single stack cluster
+	defaultRoute := defaultRoutes[:1]
+	if net.IsIPv6CIDRString(podCIDRs[0]) {
+		defaultRoute = defaultRoutes[1:]
 	}
 	return CNIConfigInputs{
-		PodCIDR:      podCIDR,
-		DefaultRoute: defaultRoute,
+		PodCIDRs:      podCIDRs,
+		DefaultRoutes: defaultRoute,
 	}
 }
 
@@ -64,17 +76,19 @@ const cniConfigTemplate = `
 			"type": "host-local",
 			"dataDir": "/run/cni-ipam-state",
 			"routes": [
-				{
-					"dst": "{{ .DefaultRoute }}"
-				}
+				{{$first := true}}
+				{{- range $route := .DefaultRoutes}}
+				{{if $first}}{{$first = false}}{{else}},{{end}}
+				{ "dst": "{{ $route }}" }
+				{{- end}}
 			],
 			"ranges": [
-			[
-				{
-					"subnet": "{{ .PodCIDR }}"
-				}
+				{{$first := true}}
+				{{- range $cidr := .PodCIDRs}}
+				{{if $first}}{{$first = false}}{{else}},{{end}}
+				[ { "subnet": "{{ $cidr }}" } ]
+				{{- end}}
 			]
-		]
 		}
 	},
 	{

@@ -20,7 +20,7 @@ package node
 The default CNI manifest and images are our own tiny kindnet
 */
 
-var defaultCNIImages = []string{"kindest/kindnetd:0.5.4"}
+var defaultCNIImages = []string{"kindest/kindnetd:0.6.0"}
 
 const defaultCNIManifest = `
 # kindnetd networking manifest
@@ -46,6 +46,13 @@ rules:
     verbs:
       - list
       - watch
+      - update
+  - apiGroups:
+     - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -93,7 +100,7 @@ spec:
       serviceAccountName: kindnet
       containers:
       - name: kindnet-cni
-        image: kindest/kindnetd:0.5.4
+        image: kindest/kindnetd:0.6.0
         env:
         - name: HOST_IP
           valueFrom:
@@ -103,8 +110,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        - name: POD_SUBNET
-          value: {{ .PodSubnet }}
         volumeMounts:
         - name: cni-cfg
           mountPath: /etc/cni/net.d
