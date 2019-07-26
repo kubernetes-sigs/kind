@@ -20,7 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"sigs.k8s.io/kind/pkg/container/cri"
-	"sigs.k8s.io/kind/pkg/kustomize"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -49,7 +48,7 @@ type Cluster struct {
 
 	// KubeadmConfigPatchesJSON6902 are applied to the generated kubeadm config
 	// as patchesJson6902 to `kustomize build`
-	KubeadmConfigPatchesJSON6902 []kustomize.PatchJSON6902 `json:"kubeadmConfigPatchesJson6902,omitempty"`
+	KubeadmConfigPatchesJSON6902 []PatchJSON6902 `json:"kubeadmConfigPatchesJson6902,omitempty"`
 }
 
 // Node contains settings for a node in the `kind` Cluster.
@@ -122,3 +121,19 @@ const (
 	// IPv6Family sets ClusterIPFamily to ipv6
 	IPv6Family ClusterIPFamily = "ipv6"
 )
+
+// PatchJSON6902 represents an inline kustomize json 6902 patch
+// https://tools.ietf.org/html/rfc6902
+type PatchJSON6902 struct {
+	// these fields specify the patch target resource
+	Group   string `json:"group"`
+	Version string `json:"version"`
+	Kind    string `json:"kind"`
+	// Name and Namespace are optional
+	// NOTE: technically name is required now, but we default it elsewhere
+	// Third party users of this type / library would need to set it.
+	Name      string `json:"name,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
+	// Patch should contain the contents of the json patch as a string
+	Patch string `json:"patch"`
+}
