@@ -460,7 +460,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 				fmt.Printf("Pulling: %s\n", image)
 				err := docker.Pull(image, 2)
 				if err != nil {
-					return err
+					log.Warnf("Failed to pull %s with error: %v", image, err)
 				}
 				// TODO(bentheelder): generate a friendlier name
 				pullName := fmt.Sprintf("%d.tar", i)
@@ -469,7 +469,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 				if err != nil {
 					return err
 				}
-				pulledImages <- fmt.Sprintf("/build/bits/images/%s", pullName)
+				pulledImages <- pullTo
 			}
 			return nil
 		})
@@ -481,23 +481,6 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	pulled := []string{}
 	for image := range pulledImages {
 		pulled = append(pulled, image)
-	}
-
-	// Create the /kind/images directory inside the container.
-	if err = inheritOutputAndRun(cmder.Command("mkdir", "-p", DockerImageArchives)); err != nil {
-		log.Errorf("Image build Failed! Failed create images dir: %v", err)
-		return err
-	}
-	pulled = append(pulled, DockerImageArchives)
-	if err := inheritOutputAndRun(cmder.Command("mv", pulled...)); err != nil {
-		return err
-	}
-
-	// make sure we own the tarballs
-	// TODO(bentheelder): someday we might need a different user ...
-	if err = inheritOutputAndRun(cmder.Command("chown", "-R", "root:root", DockerImageArchives)); err != nil {
-		log.Errorf("Image build Failed! Failed chown images dir %v", err)
-		return err
 	}
 
 	// setup image importer
@@ -516,6 +499,16 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 
 	// create a plan of image loading
 	loadFns := []func() error{}
+	for _, image := range pulled {
+		loadFns = append(loadFns, func() error {
+			f, err := os.Open(image)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			return importer.LoadCommand().SetStdout(os.Stdout).SetStderr(os.Stdout).SetStdin(f).Run()
+		})
+	}
 	for _, image := range c.bits.ImagePaths() {
 		image := image // capture loop var
 		loadFns = append(loadFns, func() error {
