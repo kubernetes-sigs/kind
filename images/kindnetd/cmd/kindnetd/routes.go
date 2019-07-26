@@ -24,28 +24,30 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func syncRoute(nodeIP, podCIDR string) error {
-	// parse subnet
-	dst, err := netlink.ParseIPNet(podCIDR)
-	if err != nil {
-		return err
-	}
-
-	// Check if the route exists to the other node's PodCIDR
+func syncRoute(nodeIP string, podCIDRs []string) error {
 	ip := net.ParseIP(nodeIP)
-	routeToDst := netlink.Route{Dst: dst, Gw: ip}
-	route, err := netlink.RouteListFiltered(nl.GetIPFamily(ip), &routeToDst, netlink.RT_FILTER_DST)
-	if err != nil {
-		return err
-	}
 
-	// Add route if not present
-	if len(route) == 0 {
-		if err := netlink.RouteAdd(&routeToDst); err != nil {
+	for _, podCIDR := range podCIDRs {
+		// parse subnet
+		dst, err := netlink.ParseIPNet(podCIDR)
+		if err != nil {
 			return err
 		}
-		klog.Infof("Adding route %v \n", routeToDst)
-	}
 
+		// Check if the route exists to the other node's PodCIDR
+		routeToDst := netlink.Route{Dst: dst, Gw: ip}
+		route, err := netlink.RouteListFiltered(nl.GetIPFamily(ip), &routeToDst, netlink.RT_FILTER_DST)
+		if err != nil {
+			return err
+		}
+
+		// Add route if not present
+		if len(route) == 0 {
+			klog.Infof("Adding route %v \n", routeToDst)
+			if err := netlink.RouteAdd(&routeToDst); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
