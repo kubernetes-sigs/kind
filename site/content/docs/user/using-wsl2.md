@@ -10,6 +10,11 @@ menu:
 
 Kind can run using Windows Subsystem for Linux 2 (WSL2) on Windows 10 Insider builds. All the tools needed to build or run kind work in WSL2, but some extra steps are needed to switch to WSL2. This page covers these steps in brief but also links to the official documentation if you would like more details.
 
+## Known Issues
+
+- The default kernel shipped with WSL2 is missing a few options needed for Kubernetes to work correctly. Instructions for building an updated kernel are included below.
+
+
 ## Getting Windows 10 Insider Preview
 
 Download latest ISO at https://www.microsoft.com/en-us/software-download/windowsinsiderpreviewadvanced . Choose "Windows 10 Insider Preview (FAST) - Build 18932". If there's a later build, that will work too.
@@ -54,42 +59,17 @@ Once your Windows Insider machine is ready, you need to do a few more steps to s
 
 ### Updating Kernel
 
-As of Windows build 18936, WSL2 kernel is still missing a few features needed for kind to work correctly. A custom kernel is needed. Since WSL2 is installed and working, it's easy to build a new one with the right features included.
+In Windows 10 Insider build 18941 and earlier, the WSL2 kernel is still missing a few features needed for kind to work correctly. A custom kernel is needed. Since WSL2 is installed and working, it's easy to build a new one with the right features included.
 
 For the latest status on this, see [issue #707](https://github.com/kubernetes-sigs/kind/issues/707) and [microsoft/wsl#4165](https://github.com/microsoft/WSL/issues/4165). 
 
-First, build a new kernel with the right options using a simple patch
+First, clone the latest WSL2-Linux-Kernel source and build it.
 
 ```bash
 # This assumes Ubuntu or Debian, a different step may be needed for RPM based distributions
 sudo apt install build-essential flex bison libssl-dev libelf-dev
 git clone --depth 1 https://github.com/microsoft/WSL2-Linux-Kernel.git
 cd WSL2-Linux-Kernel
-cat << EOF > nftmasq.patch
-diff --git a/Microsoft/config-wsl b/Microsoft/config-wsl
-index 646309095..f7e7a71cd 100644
---- a/Microsoft/config-wsl
-+++ b/Microsoft/config-wsl
-@@ -869,7 +869,7 @@ CONFIG_NF_TABLES_INET=y
- # CONFIG_NFT_CONNLIMIT is not set
- # CONFIG_NFT_LOG is not set
- # CONFIG_NFT_LIMIT is not set
--# CONFIG_NFT_MASQ is not set
-+CONFIG_NFT_MASQ=y
- # CONFIG_NFT_REDIR is not set
- # CONFIG_NFT_NAT is not set
- # CONFIG_NFT_TUNNEL is not set
-@@ -1033,6 +1033,8 @@ CONFIG_NF_REJECT_IPV4=y
- CONFIG_NF_NAT_IPV4=y
- CONFIG_NF_NAT_MASQUERADE_IPV4=y
- # CONFIG_NFT_CHAIN_NAT_IPV4 is not set
-+CONFIG_NFT_MASQ_IPV4=y
-+CONFIG_NFT_MASQ_IPV6=y
- CONFIG_NF_NAT_PROTO_GRE=y
- CONFIG_NF_NAT_PPTP=y
- CONFIG_NF_NAT_H323=y
-EOF
-cat nftmasq.patch | patch -p1
 make -j4 KCONFIG_CONFIG=Microsoft/config-wsl
 mkdir /mnt/c/linuxtemp
 cp arch/x86/boot/bzImage /mnt/c/linuxtemp/
@@ -100,6 +80,9 @@ Now, open an administrator PowerShell window and run these steps to apply the ke
 ```powershell
 wsl.exe --shutdown
 cd C:\WINDOWS\system32\lxss\tools
+$acl = Get-Acl .\kernel
+$acl.AddAccessRule( ( New-Object System.Security.AccessControl.FileSystemAccessRule(".\Administrators","FullControl","Allow") ) )
+$acl | Set-Acl .\kernel
 Move-Item kernel kernel.orig
 Copy-Item c:\linuxtemp\bzImage kernel
 ```
