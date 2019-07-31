@@ -27,29 +27,15 @@ import (
 	"sigs.k8s.io/kustomize/k8sdeps"
 	"sigs.k8s.io/kustomize/pkg/commands/build"
 	"sigs.k8s.io/kustomize/pkg/fs"
-)
 
-// PatchJSON6902 represents an inline kustomize json 6902 patch
-// https://tools.ietf.org/html/rfc6902
-type PatchJSON6902 struct {
-	// these fields specify the patch target resource
-	Group   string `json:"group"`
-	Version string `json:"version"`
-	Kind    string `json:"kind"`
-	// Name and Namespace are optional
-	// NOTE: technically name is required now, but we default it elsewhere
-	// Third party users of this type / library would need to set it.
-	Name      string `json:"name,omitempty"`
-	Namespace string `json:"namespace,omitempty"`
-	// Patch should contain the contents of the json patch as a string
-	Patch string `json:"patch"`
-}
+	"sigs.k8s.io/kind/pkg/internal/apis/config"
+)
 
 // Build takes a set of resource blobs (yaml), patches (strategic merge patch)
 // https://github.com/kubernetes/community/blob/master/contributors/devel/strategic-merge-patch.md
 // and returns the `kustomize build` result as a yaml blob
 // It does this in-memory using the build cobra command
-func Build(resources, patches []string, patchesJSON6902 []PatchJSON6902) (string, error) {
+func Build(resources, patches []string, patchesJSON6902 []config.PatchJSON6902) (string, error) {
 	// write the resources and patches to an in memory fs with a generated
 	// kustomization.yaml
 	memFS := fs.MakeFakeFS()

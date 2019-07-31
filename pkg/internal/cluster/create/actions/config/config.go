@@ -26,11 +26,11 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/concurrent"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
 	"sigs.k8s.io/kind/pkg/internal/cluster/kubeadm"
-	"sigs.k8s.io/kind/pkg/kustomize"
+	"sigs.k8s.io/kind/pkg/internal/util/kustomize"
+	"sigs.k8s.io/kind/pkg/util/concurrent"
 )
 
 // Action implements action for creating the kubeadm config
@@ -176,16 +176,16 @@ func removeMetadata(kustomized string) string {
 	)
 }
 
-func allPatchesFromConfig(cfg *config.Cluster) (patches []string, jsonPatches []kustomize.PatchJSON6902) {
+func allPatchesFromConfig(cfg *config.Cluster) (patches []string, jsonPatches []config.PatchJSON6902) {
 	return cfg.KubeadmConfigPatches, cfg.KubeadmConfigPatchesJSON6902
 }
 
 // setPatchNames sets the targeted object name on every patch to be the fixed
 // name we use when generating config objects (we have one of each type, all of
 // which have the same fixed name)
-func setPatchNames(patches []string, jsonPatches []kustomize.PatchJSON6902) ([]string, []kustomize.PatchJSON6902) {
+func setPatchNames(patches []string, jsonPatches []config.PatchJSON6902) ([]string, []config.PatchJSON6902) {
 	fixedPatches := make([]string, len(patches))
-	fixedJSONPatches := make([]kustomize.PatchJSON6902, len(jsonPatches))
+	fixedJSONPatches := make([]config.PatchJSON6902, len(jsonPatches))
 	for i, patch := range patches {
 		// insert the generated name metadata
 		fixedPatches[i] = fmt.Sprintf("metadata:\nname: %s\n%s", kubeadm.ObjectName, patch)

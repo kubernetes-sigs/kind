@@ -25,11 +25,11 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/concurrent"
 	"sigs.k8s.io/kind/pkg/container/cri"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/cluster/loadbalancer"
 	logutil "sigs.k8s.io/kind/pkg/log"
+	"sigs.k8s.io/kind/pkg/util/concurrent"
 )
 
 // provisioning order for nodes by role
