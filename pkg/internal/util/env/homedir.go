@@ -14,7 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package homedir
+package env
+
+// NOTE this is from client-go. Rather than pull in client-go for this one
+// standalone method, we have an (unmodified) fork here.
+// https://github.com/kubernetes/client-go/blob/6d7018244d72350e2e8c4a19ccdbe4c8083a9143/util/homedir/homedir.go
 
 import (
 	"os"
