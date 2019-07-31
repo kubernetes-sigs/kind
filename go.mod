@@ -19,7 +19,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	k8s.io/api v0.0.0-20190409021203-6e4e0e4f393b // indirect
 	k8s.io/apimachinery v0.0.0-20190404173353-6a84e37a896d
-	k8s.io/client-go v11.0.0+incompatible
+	k8s.io/client-go v11.0.0+incompatible // indirect
 	k8s.io/klog v0.3.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20190510232812-a01b7d5d6c22 // indirect
 	sigs.k8s.io/kustomize v2.0.3+incompatible
