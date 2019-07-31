@@ -352,7 +352,8 @@ nodes:
 - role: control-plane
   extraMounts:
   - containerPath: /foo/path/on-the/node
-     hostPath: /path/on-the/host
+    hostPath: /path/on-the/host
+    readOnly: true
 ```
 
 ### Configure kind to use a proxy
