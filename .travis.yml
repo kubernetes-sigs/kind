@@ -1,0 +1,13 @@
+language: sh
+
+services:
+- docker
+
+env:
+  matrix:
+   - BUILD_IMG=ubuntu:16.04
+   - BUILD_IMG=ubuntu:18.04
+   - BUILD_IMG=ubuntu:19.04
+   - BUILD_IMG=ubuntu:19.10
+
+script: docker run --rm=true -v $HOME:$HOME:rw $BUILD_IMG /bin/sh -c "apt-get update && apt-get install --yes ca-certificates golang-go git && cd $PWD && env GO111MODULE="on" go get sigs.k8s.io/kind@v0.4.0"
