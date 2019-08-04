@@ -63,18 +63,23 @@ An example bash snippet for doing this with with [gcr.io][GCR]:
 # login to GCR on all your kind nodes
 # KUBECONFIG should point to your kind cluster
 export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
+
+# https://cloud.google.com/container-registry/docs/advanced-authentication#access_token
+gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://gcr.io
+
 # setup credentials on each node
 for node in $(kubectl get nodes -oname); do
     # the -oname format is kind/name (so node/name) we just want name
     node_name=${node#node/}
-    # https://cloud.google.com/container-registry/docs/advanced-authentication#access_token
-    gcloud auth print-access-token | docker exec -i ${node_name} docker login -u oauth2accesstoken --password-stdin https://gcr.io
     # copy the config to where kubelet will look
-    docker exec ${node_name} cp /root/.docker/config.json /var/lib/kubelet/config.json
+    docker cp $HOME/.docker/config.json ${node_name}:/var/lib/kubelet/config.json
     # restart kubelet to pick up the config
     docker exec ${node_name} systemctl restart kubelet.service
 done
 ```
+
+Move preexisting configs or clean up the new config on the hostmachine as needed.
+
 
 [imagePullSecrets]: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
 [loading an image]: /docs/user/quick-start/#loading-an-image-into-your-cluster
