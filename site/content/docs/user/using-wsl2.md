@@ -4,7 +4,7 @@ menu:
   main:
     parent: "user"
     identifier: "using-wsl2"
-    weight: 1
+    weight: 3
 ---
 # Using WSL2
 
