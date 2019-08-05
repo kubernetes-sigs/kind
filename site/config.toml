@@ -53,3 +53,9 @@ baseName = "_redirects"
 
 [outputs]
 home = ["HTML", "REDIRECTS"]
+
+# privacy settings
+[privacy]
+  [privacy.youtube]
+    # enable the cookie-less youtube in built-in hugo shortcode
+    privacyEnhanced = true
