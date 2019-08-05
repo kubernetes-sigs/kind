@@ -78,7 +78,7 @@ for node in $(kubectl get nodes -oname); do
 done
 ```
 
-Move preexisting configs or clean up the new config on the hostmachine as needed.
+Move preexisting configs or clean up the new config on the host machine as needed.
 
 
 [imagePullSecrets]: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
