@@ -18,13 +18,13 @@ The authors have given the following talks relating to kind:
 
 At KubeCon EU 2019 we spoke about [kind and testing your Kubernetes Applications][testing-k8s-apps-with-kind].
 
-<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/8KtmevMFfxA" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+{{< youtube id="8KtmevMFfxA" class="video-wrapper" >}}
 
 ### Deep Dive: Testing SIG - Benjamin Elder & James Munnelly
 
 At KubeCon EU 2019 we spoke about kind and how we use it to test Kubernetes for the [SIG Testing Deep Dive][sig-testing-deep-dive-kind].
 
-<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/6m9frvTxK0o" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+{{< youtube id="6m9frvTxK0o" class="video-wrapper" >}}
 
 ### Behind Your PR: How Kubernetes Uses Kubernetes to Run Kubernetes CI - Sen Lu & Benjamin Elder
 
@@ -32,7 +32,7 @@ At KubeCon NA 2018 we spoke with [Sen Lu][@krzyzacy] about The Kubernetes Projec
 testing tools and infrastructure, including a brief discussion of kind and running
 it on Kubernetes's Kubernetes-based CI infrastructure.
 
-<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/pz0lpl6h-Gc" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+{{< youtube id="pz0lpl6h-Gc" class="video-wrapper" >}}
 
 ## Using Kind in CI
 
