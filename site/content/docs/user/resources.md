@@ -1,0 +1,66 @@
+---
+title: "Resources"
+menu:
+  main:
+    parent: "user"
+    identifier: "resources"
+    weight: 4
+---
+# Additional Resources
+
+Here are some additional resources for learning about kind and how to use it.
+
+## KubeCon Talks
+
+The authors have given the following talks relating to kind:
+
+### Testing your K8s apps with KIND - Benjamin Elder & James Munnelly
+
+At KubeCon EU 2019 we spoke about [kind and testing your Kubernetes Applications][testing-k8s-apps-with-kind].
+
+<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/8KtmevMFfxA" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+### Deep Dive: Testing SIG - Benjamin Elder & James Munnelly
+
+At KubeCon EU 2019 we spoke about kind and how we use it to test Kubernetes for the [SIG Testing Deep Dive][sig-testing-deep-dive-kind].
+
+<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/6m9frvTxK0o" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+### Behind Your PR: How Kubernetes Uses Kubernetes to Run Kubernetes CI - Sen Lu & Benjamin Elder
+
+At KubeCon NA 2018 we spoke with [Sen Lu][@krzyzacy] about The Kubernetes Project's
+testing tools and infrastructure, including a brief discussion of kind and running
+it on Kubernetes's Kubernetes-based CI infrastructure.
+
+<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/pz0lpl6h-Gc" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+## Using Kind in CI
+
+The [kind-ci/examples] project is a work-in-progress project to give working
+examples of using kind in various continuous integration environments / platforms.
+
+## Tutorials and Guides
+
+Here are a useful external guides / tutorials covering things not yet covered in our docs:
+
+<!--please do not insert every single guide on the internet here-->
+<!--ideally many of these guides will eventually have upstream equivalents on this site-->
+<!--in the meantime, content that is not covered upstream in particular can be very helpful here-->
+
+### How to use KIND with MetallLB
+
+https://mauilion.dev/posts/kind-metallb/
+
+### How to Test a Kubernetes PR with KIND
+
+https://mauilion.dev/posts/kind-k8s-testing/
+
+### Using Contour Ingress with KIND
+
+https://projectcontour.io/kindly-running-contour/
+
+
+[@krzyzacy]: https://github.com/krzyzacy
+[kind-ci/examples]: https://github.com/kind-ci/examples
+[testing-k8s-apps-with-kind]: https://kccnceu19.sched.com/event/MPYy/testing-your-k8s-apps-with-kind-benjamin-elder-google-james-munnelly-jetstackio
+[sig-testing-deep-dive-kind]: https://kccnceu19.sched.com/event/MPkC/deep-dive-testing-sig-benjamin-elder-google-james-munnelly-jetstack
