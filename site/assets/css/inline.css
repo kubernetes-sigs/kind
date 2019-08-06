@@ -109,6 +109,7 @@ body {
   width: 240px;
   border-right: 1px solid rgba(0, 0, 0, 0.1);
   background-color: #fafafa;
+  z-index: 99999;
 }
 .sidebar-collapsed #sidebar {
   display: none;
