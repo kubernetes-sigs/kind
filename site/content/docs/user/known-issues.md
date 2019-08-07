@@ -23,6 +23,7 @@ It may additionally be helpful to:
 * [Failing to apply overlay network](#failing-to-apply-overlay-network)
 * [Failure to build node image](#failure-to-build-node-image)
 * [Failure for cluster to properly start](#failure-for-cluster-to-properly-start)
+* [Docker permission denied](#docker-permission-denied)
 
 ## Failures involving mistmatched kubectl versions
 
@@ -234,6 +235,19 @@ an 03 17:42:41 kind-1-control-plane kubelet[3804]: F0103 17:42:41.470269 3804 ku
 
 This problem seems to be related to a [bug in Docker][moby#9939].
 
+## Docker permission denied
+
+When using `kind`, we assume that the user you are executing kind as has permission to use docker.
+If you initially ran Docker CLI commands using `sudo`, you may see the following error, which indicates that your `~/.docker/` directory was created with incorrect permissions due to the `sudo` commands.
+
+```
+WARNING: Error loading config file: /home/user/.docker/config.json
+open /home/user/.docker/config.json: permission denied
+```
+
+To fix this problem, either follow the docker's docs [manage docker as a non root user][manage docker as a non root user],
+or try to use `sudo` before your commands (if you get `command not found` please check [this comment about sudo with kind][sudo with kind]).
+
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new
 [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
@@ -248,3 +262,5 @@ This problem seems to be related to a [bug in Docker][moby#9939].
 [moby#9939]: https://github.com/moby/moby/issues/9939
 [Docker resource lims]: https://docs.docker.com/docker-for-mac/#advanced
 [snap]: https://snapcraft.io/
+[manage docker as a non root user]: https://docs.docker.com/install/linux/linux-postinstall/#manage-docker-as-a-non-root-user
+[sudo with kind]: https://github.com/kubernetes-sigs/kind/issues/713#issuecomment-512665315
