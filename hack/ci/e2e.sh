@@ -191,8 +191,8 @@ EOF
     # ginkgo regexes
     if [[ "${KUBERNETES_PRESUBMIT_JOB:-}" = true ]]; then
         # k/k presubmit jobs regex
-        SKIP="${SKIP:-"\\[Slow\\]|\\[Disruptive\\]|\\[Flaky\\]|\\[Feature:.+\\]"}"
-        FOCUS="${FOCUS:-""}"
+        SKIP="${SKIP:-"\\[Disruptive\\]|\\[Flaky\\]|\\[Feature:.+\\]"}"
+        FOCUS="${FOCUS:-"\\[Slow\\]"}"
         # skip tests that are not able to rung with kind
         # [sig-node] RuntimeClass should run a Pod requesting a RuntimeClass with a configured handler [NodeFeature:RuntimeHandler]
         # https://github.com/kubernetes/kubernetes/issues/80098
