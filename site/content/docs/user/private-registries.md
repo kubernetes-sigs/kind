@@ -20,6 +20,8 @@ images. If possible, this is the preferable and most portable route.
 See [the upstream kubernetes docs for this][imagePullSecrets],
 kind does not require any special handling to use this.
 
+If you already have the config file local but would still like to use secrets,
+read through kubernetes' docs for [creating a secret from a file][imagePullFileSecrets].
 
 ## Pull to the Host and Side-Load
 
@@ -57,12 +59,16 @@ A credential can be programmatically added to the nodes at runtime.
 
 If you do this then kubelet must be restarted on each node to pick up the new credentials.
 
-An example bash snippet for doing this with with [gcr.io][GCR]:
+An example bash snippet for generating a [gcr.io][GCR] cred file on your host machine:
 
 ```bash
 # login to GCR on all your kind nodes
+
 # KUBECONFIG should point to your kind cluster
 export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
+
+# move the host config out of the way if it exists
+[ -f $HOME/.docker/config.json ] && mv $HOME/.docker/config.json $HOME/.docker/config.json.host
 
 # https://cloud.google.com/container-registry/docs/advanced-authentication#access_token
 gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://gcr.io
@@ -76,12 +82,16 @@ for node in $(kubectl get nodes -oname); do
     # restart kubelet to pick up the config
     docker exec ${node_name} systemctl restart kubelet.service
 done
+
+# delete the temporary config
+rm $HOME/.docker/config.json
+
+# move the original, host config back if it exists
+[-f $HOME/.docker/config.json.host] && mv $HOME/.docker/config.json.host $HOME/.docker/config.json
 ```
 
-Move preexisting configs or clean up the new config on the host machine as needed.
-
-
 [imagePullSecrets]: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+[imagePullFileSecrets]: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#registry-secret-existing-credentials
 [loading an image]: /docs/user/quick-start/#loading-an-image-into-your-cluster
 [using a private registry]: https://kubernetes.io/docs/concepts/containers/images/#using-a-private-registry
 [GCR]: https://cloud.google.com/container-registry/
