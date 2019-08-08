@@ -76,8 +76,8 @@ RUN clean-install \
     && chmod +x /usr/local/bin/ctr \
     && echo "done installing packages"
 
-# add restart override to containerd
-COPY 10-restart.conf /etc/systemd/system/containerd.service.d/
+# add overrides to containerd
+COPY 10-limits.conf 10-restart.conf /etc/systemd/system/containerd.service.d/
 
 # debug containerd version and create default config
 # additionally, disable some plugins we don't use / support
