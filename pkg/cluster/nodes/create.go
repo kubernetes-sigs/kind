@@ -47,7 +47,7 @@ func getPort() (int32, error) {
 	return int32(port), nil
 }
 
-// CreateControlPlaneNode creates a contol-plane node
+// CreateControlPlaneNode creates a control-plane node
 // and gets ready for exposing the the API server
 func CreateControlPlaneNode(name, image, clusterLabel, listenAddress string, port int32, mounts []cri.Mount, portMappings []cri.PortMapping) (node *Node, err error) {
 	// gets a random host port for the API server
@@ -82,7 +82,7 @@ func CreateControlPlaneNode(name, image, clusterLabel, listenAddress string, por
 	return node, nil
 }
 
-// CreateExternalLoadBalancerNode creates an external loab balancer node
+// CreateExternalLoadBalancerNode creates an external load balancer node
 // and gets ready for exposing the the API server and the load balancer admin console
 func CreateExternalLoadBalancerNode(name, image, clusterLabel, listenAddress string, port int32) (node *Node, err error) {
 	// gets a random host port for control-plane load balancer
@@ -154,7 +154,7 @@ func createNode(name, image, clusterLabel, role string, mounts []cri.Mount, port
 		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleKey, role),
 	}
 
-	// pass proxy environment variables to be used by node's docker deamon
+	// pass proxy environment variables to be used by node's docker daemon
 	proxyDetails, err := getProxyDetails()
 	if err != nil || proxyDetails == nil {
 		return nil, errors.Wrap(err, "proxy setup error")
