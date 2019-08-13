@@ -500,6 +500,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	// create a plan of image loading
 	loadFns := []func() error{}
 	for _, image := range pulled {
+		image := image // capture loop var
 		loadFns = append(loadFns, func() error {
 			f, err := os.Open(image)
 			if err != nil {
