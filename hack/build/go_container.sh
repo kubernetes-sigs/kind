@@ -31,7 +31,7 @@ SOURCE_DIR="${SOURCE_DIR:-${REPO_ROOT}}"
 # this helps make our build more reproducible and reliable
 GOPROXY="${GOPROXY:-https://proxy.golang.org}"
 # the container image, by default a recent official golang image
-GOIMAGE="${GOIMAGE:-golang:1.12.7}"
+GOIMAGE="${GOIMAGE:-golang:1.12.8}"
 # ========================== END SCRIPT SETTINGS ===============================
 
 # autodetects and host GOOS and GOARCH and sets them if not set
