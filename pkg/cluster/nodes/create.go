@@ -146,6 +146,10 @@ func createNode(name, image, clusterLabel, role string, mounts []cri.Mount, port
 		"--tmpfs", "/run", // systemd wants a writable /run
 		// some k8s things want /lib/modules
 		"-v", "/lib/modules:/lib/modules:ro",
+		// ensure pods etc. are not on container filesystem
+		// TODO: we could do this in the image instead
+		// However this would leave old images with this issue
+		"-v", "/var/lib/kubelet",
 		"--hostname", name, // make hostname match container name
 		"--name", name, // ... and set the container name
 		// label the node with the cluster ID
