@@ -27,7 +27,7 @@ kind bootstraps each "node" with [kubeadm][kubeadm]. For more details see [the d
 
 You can install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.4.0`.
 
-**NOTE**: please use the latest go to do this, ideally go 1.12.8 or greater.
+**NOTE**: please use the latest go to do this, ideally go 1.12.9 or greater.
 
 This will put `kind` in `$(go env GOPATH)/bin`. If you encounter the error
 `kind: command not found` after installation then you may need to either add that directory to your `$PATH` as
