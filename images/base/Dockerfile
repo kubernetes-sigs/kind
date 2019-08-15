@@ -88,7 +88,7 @@ RUN containerd --version \
 
 # Install CNI binaries to /opt/cni/bin
 # TODO(bentheelder): doc why / what here
-ARG CNI_VERSION="v0.8.1"
+ARG CNI_VERSION="v0.8.2"
 ARG CNI_BASE_URL="https://github.com/containernetworking/plugins/releases/download/"
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
     && export CNI_TARBALL="cni-plugins-linux-${ARCH}-${CNI_VERSION}.tgz" \
