@@ -51,7 +51,7 @@ You can check if Go is in your system with the following command:
 go version
 ```
 
-Preferably Go `1.12.8` or greater should be installed. 
+Preferably Go `1.12.9` or greater should be installed. 
 
 Correct automatic formatting of the source with `gofmt` requires at least
 `1.11.0`.
