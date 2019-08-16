@@ -159,8 +159,8 @@ container.
 
 See [building the base image](#building-the-base-image) for more advanced information.
 
-Currently, kind supports three different ways to build a `node-image`: via
-`apt`, or if you have the [Kubernetes][kubernetes] source in your host machine
+Currently, kind supports two different ways to build a `node-image`
+if you have the [Kubernetes][kubernetes] source in your host machine
 (`$GOPATH/src/k8s.io/kubernetes`), by using `docker` or `bazel`.
 To specify the build type use the flag `--type`.
 Note however that using `--type=bazel` on Windows or MacOS will not work
@@ -170,7 +170,7 @@ A workaround may be enabled in the future.
 kind will default to using the build type `docker` if none is specified.
 
 ```
-kind build node-image --type apt
+kind build node-image --type bazel
 ```
 
 Similarly as for the base-image command, you can specify the name and tag of
