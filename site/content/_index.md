@@ -61,7 +61,7 @@ See also: our own [contributor guide] and the Kubernetes [community page].
 
 - kind supports multi-node (including HA) clusters
 - kind supports building Kubernetes release builds from source
-  - support for make / bash / docker, bazel, or installing from apt, in addition to pre-published builds.
+  - support for make / bash / docker, or bazel, in addition to pre-published builds.
 - kind is written in go, and can be used as a library, has stable releases
 - kind supports Windows in addition to MacOS and Linux
 - kind is a [CNCF certified conformant Kubernetes installer](https://landscape.cncf.io/selected=kind)
