@@ -116,8 +116,8 @@ func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
 	// pick only the nodes that don't have the image
 	selectedNodes := []clusternodes.Node{}
 	for _, node := range candidateNodes {
-		_, err := node.ImageInspect(imageID)
-		if err != nil {
+		id, err := node.ImageID(imageName)
+		if err != nil || id != imageID {
 			selectedNodes = append(selectedNodes, node)
 			log.Debugf("Image: %q with ID %q not present on node %q", imageName, imageID, node.String())
 		}

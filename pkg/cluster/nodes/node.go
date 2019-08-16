@@ -17,6 +17,8 @@ limitations under the License.
 package nodes
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -248,12 +250,24 @@ func (n *Node) WriteFile(dest, content string) error {
 	return n.Command("cp", "/dev/stdin", dest).SetStdin(strings.NewReader(content)).Run()
 }
 
-// ImageInspect return low-level information on containers images inside a node
-func (n *Node) ImageInspect(containerNameOrID string) ([]string, error) {
-	cmd := n.Command(
-		"crictl", "inspecti", containerNameOrID,
-	)
-	return exec.CombinedOutputLines(cmd)
+// ImageID returns the ID for a given image if it is present on the node
+func (n *Node) ImageID(image string) (string, error) {
+	var out bytes.Buffer
+	if err := n.Command("crictl", "inspecti", image).SetStdout(&out).Run(); err != nil {
+		return "", err
+	}
+
+	// we only care about the image ID
+	crictlOut := struct {
+		Status struct {
+			ID string `json:"id"`
+		} `json:"status"`
+	}{}
+	if err := json.Unmarshal(out.Bytes(), &crictlOut); err != nil {
+		return "", err
+	}
+
+	return crictlOut.Status.ID, nil
 }
 
 // LoadImageArchive will load the image contents in the image reader to the
