@@ -20,7 +20,7 @@ images. If possible, this is the preferable and most portable route.
 See [the upstream kubernetes docs for this][imagePullSecrets],
 kind does not require any special handling to use this.
 
-If you already have the config file local but would still like to use secrets,
+If you already have the config file locally but would still like to use secrets,
 read through kubernetes' docs for [creating a secret from a file][imagePullFileSecrets].
 
 ## Pull to the Host and Side-Load
@@ -59,7 +59,8 @@ A credential can be programmatically added to the nodes at runtime.
 
 If you do this then kubelet must be restarted on each node to pick up the new credentials.
 
-An example bash snippet for generating a [gcr.io][GCR] cred file on your host machine:
+An example bash snippet for generating a [gcr.io][GCR] cred file on your host machine
+using Access Tokens:
 
 ```bash
 # login to GCR on all your kind nodes
@@ -90,6 +91,24 @@ rm $HOME/.docker/config.json
 [-f $HOME/.docker/config.json.host] && mv $HOME/.docker/config.json.host $HOME/.docker/config.json
 ```
 
+### ... with Service Accounts
+
+Access tokens are short lived though, so you may prefer to use a Service Account and keyfile.
+First, either download the key from the console or generate one with gcloud:
+
+```
+gcloud iam service-accounts keys create <output.json> --iam-account <account email>
+```
+
+Then, replace the `gcloud auth...` line from the previous snippet with:
+
+```
+cat <output.json> | docker login -u _json_key --password-stdin https://gcr.io
+```
+
+See Google's [upstream docs][keyFileAuthentication] on key file authentication for more details.
+
+[keyFileAuthentication]: https://cloud.google.com/container-registry/docs/advanced-authentication#json_key_file
 [imagePullSecrets]: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
 [imagePullFileSecrets]: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#registry-secret-existing-credentials
 [loading an image]: /docs/user/quick-start/#loading-an-image-into-your-cluster
