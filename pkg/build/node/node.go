@@ -320,15 +320,6 @@ func (c *BuildContext) buildImage(dir string) error {
 	// Save the image changes to a new image
 	cmd := exec.Command(
 		"docker", "commit",
-		/*
-			The snapshot storage must be a volume to avoid overlay on overlay
-
-			NOTE: we do this last because changing a volume with a docker image
-			must occur before defining it.
-
-			See: https://docs.docker.com/engine/reference/builder/#volume
-		*/
-		"--change", `VOLUME [ "/var/lib/containerd" ]`,
 		// we need to put this back after changing it when running the image
 		"--change", `ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]`,
 		containerID, c.image,
