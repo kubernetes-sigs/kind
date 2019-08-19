@@ -67,6 +67,13 @@ func WithBaseImage(image string) Option {
 	}
 }
 
+// WithAdditionalImages configures additional images to load into the node image
+func WithAdditionalImages(images string) Option {
+	return func(b *BuildContext) {
+		b.additionalImages = strings.Split(images, ",")
+	}
+}
+
 // WithMode sets the kubernetes build mode for the build context
 func WithMode(mode string) Option {
 	return func(b *BuildContext) {
@@ -85,9 +92,10 @@ func WithKuberoot(root string) Option {
 // build configuration
 type BuildContext struct {
 	// option fields
-	mode      string
-	image     string
-	baseImage string
+	mode             string
+	image            string
+	baseImage        string
+	additionalImages []string
 	// non-option fields
 	arch     string // TODO(bentheelder): this should be an option
 	kubeRoot string
@@ -443,6 +451,9 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 
 	// all builds should isntall the default CNI images currently
 	requiredImages = append(requiredImages, defaultCNIImages...)
+
+	// add additional images
+	requiredImages = append(requiredImages, c.additionalImages...)
 
 	// Create "images" subdir.
 	imagesDir := path.Join(dir, "bits", "images")
