@@ -34,6 +34,7 @@ type ClusterOptions struct {
 	NodeImage    string
 	Retain       bool
 	WaitForReady time.Duration
+	SetContext   bool
 	//TODO: Refactor this. It is a temporary solution for a phased breakdown of different
 	//      operations, specifically create. see https://github.com/kubernetes-sigs/kind/issues/324
 	SetupKubernetes bool // if kind should setup kubernetes after creating nodes

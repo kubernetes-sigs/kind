@@ -25,8 +25,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
-	clusternodes "sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/exec"
 )
 
 type flagpole struct {
@@ -62,32 +60,24 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
-	// List nodes by cluster context name
-	n, err := clusternodes.ListByCluster()
+	// Check if the cluster name exists
+	known, err := cluster.IsKnown(flags.Name)
 	if err != nil {
 		return err
 	}
-	nodes, known := n[flags.Name]
 	if !known {
 		return errors.Errorf("unknown cluster %q", flags.Name)
 	}
-	// get the bootstrap node to get the kubeconfig
-	node, err := clusternodes.BootstrapControlPlaneNode(nodes)
-	if err != nil {
-		return err
-	}
-
+	ctx := cluster.NewContext(flags.Name)
 	if flags.Internal {
-		// grab kubeconfig version from one of the control plane nodes
-		cmdNode := node.Command("cat", "/etc/kubernetes/admin.conf")
-		exec.InheritOutput(cmdNode)
-		if err := cmdNode.Run(); err != nil {
+		bytes, err := ctx.KubeConfig()
+		if err != nil {
 			return errors.Wrap(err, "failed to get cluster internal kubeconfig")
 		}
+		_, _ = os.Stdout.Write(bytes)
 		return nil
 	}
 
-	ctx := cluster.NewContext(flags.Name)
 	f, err := os.Open(ctx.KubeConfigPath())
 	if err != nil {
 		return errors.Wrap(err, "failed to get cluster kubeconfig")

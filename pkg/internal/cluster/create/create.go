@@ -90,7 +90,7 @@ func Cluster(ctx *context.Context, options ...create.ClusterOption) error {
 	}
 	if opts.SetupKubernetes {
 		actionsToRun = append(actionsToRun,
-			kubeadminit.NewAction(), // run kubeadm init
+			kubeadminit.NewAction(opts.SetContext), // run kubeadm init
 		)
 		// this step might be skipped, but is next after init
 		if !opts.Config.Networking.DisableDefaultCNI {
@@ -124,7 +124,9 @@ func Cluster(ctx *context.Context, options ...create.ClusterOption) error {
 	}
 
 	// print how to set KUBECONFIG to point to the cluster etc.
-	printUsage(ctx.Name())
+	if !opts.SetContext {
+		printUsage(ctx.Name())
+	}
 
 	return nil
 }

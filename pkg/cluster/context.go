@@ -68,6 +68,11 @@ func (c *Context) KubeConfigPath() string {
 	return c.ic.KubeConfigPath()
 }
 
+// KubeConfig returns the content of Kubeconfig on the node
+func (c *Context) KubeConfig() ([]byte, error) {
+	return c.ic.ReadKubeConfigFromNode()
+}
+
 // Create provisions and starts a kubernetes-in-docker cluster
 func (c *Context) Create(options ...create.ClusterOption) error {
 	return internalcreate.Cluster(c.ic, options...)

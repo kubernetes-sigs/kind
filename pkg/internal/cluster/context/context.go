@@ -20,14 +20,12 @@ package context
 
 import (
 	"fmt"
-	"path/filepath"
 	"regexp"
 
 	"github.com/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/internal/util/env"
 )
 
 // Context is the private shared context underlying pkg/cluster.Context
@@ -76,17 +74,6 @@ func (c *Context) Validate() error {
 		)
 	}
 	return nil
-}
-
-// KubeConfigPath returns the path to where the Kubeconfig would be placed
-// by kind based on the configuration.
-func (c *Context) KubeConfigPath() string {
-	// configDir matches the standard directory expected by kubectl etc
-	configDir := filepath.Join(env.HomeDir(), ".kube")
-	// note that the file name however does not, we do not want to overwrite
-	// the standard config, though in the future we may (?) merge them
-	fileName := fmt.Sprintf("kind-config-%s", c.Name())
-	return filepath.Join(configDir, fileName)
 }
 
 // ClusterLabel returns the docker object label that will be applied

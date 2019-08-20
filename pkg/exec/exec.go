@@ -107,10 +107,14 @@ func RunWithStdoutReader(cmd Cmd, readerFunc func(io.Reader) error) error {
 	errChan := make(chan error, 1)
 	go func() {
 		errChan <- readerFunc(pr)
-		pr.Close()
 	}()
 
 	err = cmd.Run()
+	if err != nil {
+		return err
+	}
+	// Close the write file to let the reader knows that we are done
+	err = pw.Close()
 	if err != nil {
 		return err
 	}

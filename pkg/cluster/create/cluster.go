@@ -78,3 +78,11 @@ func SetupKubernetes(setupKubernetes bool) ClusterOption {
 		return o, nil
 	}
 }
+
+// SetContext configures the cluster created to be active cluster after its creation
+func SetContext(setContext bool) ClusterOption {
+	return func(o *internaltypes.ClusterOptions) (*internaltypes.ClusterOptions, error) {
+		o.SetContext = setContext
+		return o, nil
+	}
+}
