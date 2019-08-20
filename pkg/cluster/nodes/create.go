@@ -133,8 +133,8 @@ func CreateWorkerNode(name, image, clusterLabel string, mounts []cri.Mount, port
 // effectively be paused until we call actuallyStartNode(...)
 func createNode(name, image, clusterLabel, role string, mounts []cri.Mount, portMappings []cri.PortMapping, extraArgs ...string) (handle *Node, err error) {
 	runArgs := []string{
-		"-d", // run the container detached
-		"-t", // allocate a tty for entrypoint logs
+		"--detach", // run the container detached
+		"--tty",    // allocate a tty for entrypoint logs
 		// running containers in a container requires privileged
 		// NOTE: we could try to replicate this with --cap-add, and use less
 		// privileges, but this flag also changes some mounts that are necessary
@@ -142,14 +142,17 @@ func createNode(name, image, clusterLabel, role string, mounts []cri.Mount, port
 		// for now this is what we want. in the future we may revisit this.
 		"--privileged",
 		"--security-opt", "seccomp=unconfined", // also ignore seccomp
+		// runtime temporary storage
 		"--tmpfs", "/tmp", // various things depend on working /tmp
 		"--tmpfs", "/run", // systemd wants a writable /run
-		// some k8s things want /lib/modules
-		"-v", "/lib/modules:/lib/modules:ro",
-		// ensure pods etc. are not on container filesystem
-		// TODO: we could do this in the image instead
-		// However this would leave old images with this issue
-		"-v", "/var/lib/kubelet",
+		// runtime persistent storage
+		// this ensures that E.G. pods, logs etc. are not on the container
+		// filesystem, which is not only better for performance, but allows
+		// running kind in kind for "party tricks"
+		// (please don't depend on doing this though!)
+		"--volume", "/var",
+		// some k8s things want to read /lib/modules
+		"--volume", "/lib/modules:/lib/modules:ro",
 		"--hostname", name, // make hostname match container name
 		"--name", name, // ... and set the container name
 		// label the node with the cluster ID

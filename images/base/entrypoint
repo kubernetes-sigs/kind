@@ -37,12 +37,9 @@ fix_mount() {
   # and this flag also happens to make /sys rw, amongst other things
   mount -o remount,ro /sys
 
-  echo 'INFO: making mounts shared for "/", "/run", "/var/lib/containerd"'
+  echo 'INFO: making mounts shared'
   # for mount propagation
-  # TODO(bentheelder): determine which exact mounts we need to do this on
-  mount --make-shared /
-  mount --make-shared /run
-  mount --make-shared /var/lib/containerd
+  mount --make-rshared /
 }
 
 fix_machine_id() {
