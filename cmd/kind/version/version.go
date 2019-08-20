@@ -24,7 +24,7 @@ import (
 )
 
 // Version is the kind CLI version
-const Version = "v0.5.0-alpha"
+const Version = "v0.6.0-alpha"
 
 // NewCommand returns a new cobra.Command for version
 func NewCommand() *cobra.Command {
