@@ -44,7 +44,7 @@ import (
 const DefaultImage = "kindest/node:latest"
 
 // DefaultBaseImage is the default base image used
-const DefaultBaseImage = "kindest/base:v20190708-022110d@sha256:8acfd3b9b8a3a42385a761f8c6aa3bdad4241cac220c12d3309f1b7a6d70af24"
+const DefaultBaseImage = "kindest/base:v20190819-26e1eb5@sha256:e609eaa7853289ef603db647ae9568b32093b2347f839a2117d98a08bfc7ab17"
 
 // DefaultMode is the default kubernetes build mode for the built image
 // see pkg/build/kube.Bits
@@ -320,15 +320,6 @@ func (c *BuildContext) buildImage(dir string) error {
 	// Save the image changes to a new image
 	cmd := exec.Command(
 		"docker", "commit",
-		/*
-			The snapshot storage must be a volume to avoid overlay on overlay
-
-			NOTE: we do this last because changing a volume with a docker image
-			must occur before defining it.
-
-			See: https://docs.docker.com/engine/reference/builder/#volume
-		*/
-		"--change", `VOLUME [ "/var/lib/containerd" ]`,
 		// we need to put this back after changing it when running the image
 		"--change", `ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]`,
 		containerID, c.image,

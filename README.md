@@ -39,12 +39,12 @@ Without installing go, kind can be built reproducibly with docker using `make bu
 Stable binaries are also available on the [releases] page. Stable releases are
 generally recommended for CI usage in particular.
 To install, download the binary for your platform from "Assets" and place this
-into your `$PATH`. E.G. for macOS:
+into your `$PATH`:
 
 ```console
-curl -Lo ./kind-darwin-amd64 https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-darwin-amd64
-chmod +x ./kind-darwin-amd64
-mv ./kind-darwin-amd64 /some-dir-in-your-PATH/kind
+curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-$(uname)-amd64
+chmod +x ./kind
+mv ./kind /some-dir-in-your-PATH/kind
 ```
 
 To use kind, you will need to [install docker].  
