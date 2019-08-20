@@ -178,7 +178,7 @@ EOF
     fi
 
     # base kubetest args
-    KUBETEST_ARGS="--provider=skeleton --test --check-version-skew=false"
+    TEST_ARGS=( '--provider=skeleton' )
 
     # get the number of worker nodes
     # TODO(bentheelder): this is kinda gross
@@ -198,17 +198,21 @@ EOF
         else
             SKIP="\\[Serial\\]|${SKIP}"
         fi
-        KUBETEST_ARGS="${KUBETEST_ARGS} --ginkgo-parallel"
+        GINKGO_PARALLEL=y
     fi
 
     # add ginkgo args
-    KUBETEST_ARGS="${KUBETEST_ARGS} --test_args=\"--ginkgo.focus=${FOCUS} --ginkgo.skip=${SKIP} --report-dir=${ARTIFACTS} --disable-log-dump=true --num-nodes=${NUM_NODES}\""
+    TEST_ARGS+=("--ginkgo.focus=${FOCUS}")
+    TEST_ARGS+=("--ginkgo.skip=${SKIP}")
+    TEST_ARGS+=("--report-dir=${ARTIFACTS}")
+    TEST_ARGS+=("--disable-log-dump=true")
+    TEST_ARGS+=("--num-nodes=${NUM_NODES}")
 
     # setting this env prevents ginkg e2e from trying to run provider setup
     export KUBERNETES_CONFORMANCE_TEST="y"
 
     # run kubetest, if it fails clean up and exit failure
-    eval "kubetest ${KUBETEST_ARGS}"
+    ./hack/ginkgo-e2e.sh "${TEST_ARGS[@]}"
 }
 
 # setup kind, build kubernetes, create a cluster, run the e2es
