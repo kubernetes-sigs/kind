@@ -1,4 +1,4 @@
 {{- $apiVersions := site.Data.apiVersions -}}
 {{- range $apiVersions }}
-/{{ . }}     https://godoc.org/sigs.k8s.io/kind/pkg/cluster/config/{{ . }}
+/{{ . }}     https://godoc.org/sigs.k8s.io/kind/pkg/apis/config/{{ . }}
 {{- end }}
