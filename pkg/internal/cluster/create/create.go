@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions/kubeadmjoin"
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions/loadbalancer"
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions/waitforready"
+	"sigs.k8s.io/kind/pkg/internal/util/env"
 )
 
 const (
@@ -170,8 +171,8 @@ func collectOptions(options ...create.ClusterOption) (*createtypes.ClusterOption
 }
 
 func printUsage(name string) {
-	// TODO: consider shell detection.
 	if runtime.GOOS == "windows" {
+		// TODO: consider shell detection.
 		fmt.Printf(
 			"Cluster creation complete. To setup KUBECONFIG:\n\n"+
 
@@ -190,18 +191,20 @@ func printUsage(name string) {
 			name,
 		)
 	} else {
+		// Detect shell and usage build prompt appropriately.
+		setKubeConfigPrompt := ""
+		switch shell := env.GetLinuxShell(); shell {
+		case "fish":
+			setKubeConfigPrompt = "set -x KUBECONFIG (kind get kubeconfig-path --name=%q)"
+		default:
+			setKubeConfigPrompt = "export KUBECONFIG=\"$(kind get kubeconfig-path --name=%q)"
+		}
+		setKubeConfigPrompt = fmt.Sprintf(setKubeConfigPrompt, name)
 		fmt.Printf(
-			"Cluster creation complete. To setup KUBECONFIG:\n\n"+
-
-				"for bash/zsh:\n"+
-				"export KUBECONFIG=\"$(kind get kubeconfig-path --name=%q)\"\n"+
-
-				"for fish:\n"+
-				"set -x KUBECONFIG (kind get kubeconfig-path --name=%q)\n\n"+
-
-				"You can now use the cluster with:\n"
+			"Cluster creation complete. You can now use the cluster with:\n\n"+
+				"%s\n"+
 				"kubectl cluster-info\n",
-			name,
+			setKubeConfigPrompt,
 		)
 	}
 }
