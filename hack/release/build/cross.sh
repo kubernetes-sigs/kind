@@ -22,7 +22,7 @@ REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
 # controls the number of concurrent builds
-PRALLELISM=${PRALLELISM:-6}
+PARALLELISM=${PARALLELISM:-6}
 
 echo "Building in parallel for:"
 # What we do here:
@@ -30,15 +30,16 @@ echo "Building in parallel for:"
 # - use cat to supply the individual args to xargs (one line each)
 # - use env -S to split the line into environment variables and execute
 # - ... the build
-# NOTE: the binary name needs to in single quotes so we delay evaluating
+# NOTE: the binary name needs to be in single quotes so we delay evaluating
 # GOOS / GOARCH
-if xargs -n1 -P "${PRALLELISM}" -I{} \
-    env -S {} make build 'KIND_BINARY_NAME=kind-${GOOS}-${GOARCH}'; then
+# NOTE: disable SC2016 because we _intend_ for these to evaluate later
+# shellcheck disable=SC2016
+if xargs -0 -n1 -P "${PARALLELISM}" bash -c 'eval $0; make build KIND_BINARY_NAME=kind-${GOOS}-${GOARCH}'; then
     echo "Cross build passed!" 1>&2
 else
     echo "Cross build failed!" 1>&2
     exit 1
-fi < <(cat <<EOF
+fi < <(cat <<EOF | tr '\n' '\0'
 GOOS=windows GOARCH=amd64
 GOOS=darwin GOARCH=amd64
 GOOS=linux GOARCH=amd64
