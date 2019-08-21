@@ -65,6 +65,7 @@ set_version "${1}"
 make_commit "${1}"
 add_tag "${1}"
 echo "Building ..."
+make clean
 ./hack/release/build/cross.sh --clean
 
 # update to the second version
