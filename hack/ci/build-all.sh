@@ -29,8 +29,8 @@ export GO111MODULE="on"
 GOPROXY="${GOPROXY:-https://proxy.golang.org}"
 export GOPROXY
 
-# build and kind
-go install -v .
+# build and test kind
+hack/release/build/cross.sh
 go test -v ./...
 
 # build and test kindnetd
