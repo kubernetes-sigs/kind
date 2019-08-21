@@ -191,9 +191,15 @@ func printUsage(name string) {
 		)
 	} else {
 		fmt.Printf(
-			"Cluster creation complete. You can now use the cluster with:\n\n"+
+			"Cluster creation complete. To setup KUBECONFIG:\n\n"+
 
+				"for bash/zsh:\n"+
 				"export KUBECONFIG=\"$(kind get kubeconfig-path --name=%q)\"\n"+
+
+				"for fish:\n"+
+				"set -x KUBECONFIG (kind get kubeconfig-path --name=%q)\n\n"+
+
+				"You can now use the cluster with:\n"
 				"kubectl cluster-info\n",
 			name,
 		)
