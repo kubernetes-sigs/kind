@@ -168,6 +168,7 @@ data:
         cache 30
         reload
         loadbalance
+        ready
     }
 kind: ConfigMap
 metadata:
