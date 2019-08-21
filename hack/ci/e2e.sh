@@ -128,6 +128,7 @@ apiVersion: v1
 data:
   Corefile: |
     .:53 {
+        ready
         errors
         health
         kubernetes cluster.local internal in-addr.arpa ip6.arpa {
