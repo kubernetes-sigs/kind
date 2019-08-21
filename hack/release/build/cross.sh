@@ -49,7 +49,6 @@ build() {
     make build
 }
 
-# TODO(bentheelder): support more platforms
 echo "Building in parallel for:"
 build "linux" "amd64" & \
 build "linux" "arm" & \
@@ -57,4 +56,6 @@ build "linux" "arm64" & \
 build "linux" "ppc64le" & \
 build "darwin" "amd64" & \
 build "windows" "amd64" & \
-wait
+# we want each pid to be an argument
+# shellcheck disable=SC2046
+wait $(jobs -p)
