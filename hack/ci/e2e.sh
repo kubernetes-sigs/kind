@@ -102,48 +102,36 @@ run_tests() {
   KUBECONFIG="$(kind get kubeconfig-path)"
   export KUBECONFIG
 
+  # IPv6 clusters need some CoreDNS changes in order to work in k8s CI:
+  # 1. k8s CI doesn´t offer IPv6 connectivity, so CoreDNS should be configured
+  # to work in an offline environment:
+  # https://github.com/coredns/coredns/issues/2494#issuecomment-457215452
+  # 2. k8s CI adds following domains to resolv.conf search field:
+  # c.k8s-prow-builds.internal google.internal.
+  # CoreDNS should handle those domains and answer with NXDOMAIN instead of SERVFAIL
+  # otherwise pods stops trying to resolve the domain.
   if [[ "${IP_FAMILY:-ipv4}" == "ipv6" ]]; then
-    # IPv6 clusters need some CoreDNS changes in order to work in k8s CI:
-    # 1. k8s CI doesn´t offer IPv6 connectivity, so CoreDNS should be configured
-    # to work in an offline environment:
-    # https://github.com/coredns/coredns/issues/2494#issuecomment-457215452
-    # 2. k8s CI adds following domains to resolv.conf search field :
-    # c.k8s-prow-builds.internal google.internal.
-    # CoreDNS should handle those domains and answer with NXDOMAIN instead of SERVFAIL
-    # otherwise pods stops trying to resolve the domain.
-    # The difference against the default CoreDNS config in k8s 1.15 is:
-    # <         kubernetes cluster.local in-addr.arpa ip6.arpa {
-    # ---
-    # >         kubernetes cluster.local internal in-addr.arpa ip6.arpa {
-    # 9,10d9
-    # <            upstream
-    # <            fallthrough in-addr.arpa ip6.arpa
-    # 13,15d11
-    # <         forward . /etc/resolv.conf
-    # <         loop
-    # 21c17,20
-    cat <<EOF | kubectl apply -f -
----
-apiVersion: v1
-data:
-  Corefile: |
-    .:53 {
-        errors
-        health
-        kubernetes cluster.local internal in-addr.arpa ip6.arpa {
-           pods insecure
-        }
-        prometheus :9153
-        cache 30
-        reload
-        loadbalance
-    }
-kind: ConfigMap
-metadata:
-  name: coredns
-  namespace: kube-system
----
-EOF
+    # Get the current config
+    local original_coredns
+    original_coredns=$(kubectl get -oyaml -n=kube-system configmap/coredns)
+    echo "Original CoreDNS config:"
+    echo "${original_coredns}"
+    # Patch it
+    local fixed_coredns
+    fixed_coredns=$(
+      sed \
+        -e 's/^(\s)+.*cluster\.local.*$/\0kubernetes cluster.local internal in-addr.arpa ip6.arpa/' \
+        -e '/^.*upstream$/d' \
+        -e '/^.*fallthrough.*$/d' \
+        -e '/^.*forward . \/etc\/resolv.conf$/d' \
+        -e '/^.*loop$/d' \
+      <<< "${original_coredns}"
+    )
+    echo "Patched CoreDNS config:"
+    echo "${fixed_coredns}"
+    kubectl apply -f - <<< "${fixed_coredns}"
+    # restart the pods
+    kubectl -n kube-system delete pods -l k8s-app=kube-dns
   fi
 
   # ginkgo regexes
