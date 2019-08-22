@@ -31,12 +31,12 @@ image(s) and then load them to the nodes you can avoid needing to authenticate
 on the nodes.
 
 
-## Add Credentials to the Nodes
+# Add Credentials to the Nodes
 
 Generally the upstream docs for [using a private registry] apply, with kind
 there are two options for this.
 
-### Mount a Config File to Each Node
+## Mount a Config File to Each Node
 
 If you pre-create a docker config.json containing credential(s) on the host
 you can mount it to each kind node.
@@ -53,7 +53,7 @@ nodes:
     hostPath: /path/to/my/secret.json
 ```
 
-### Add Credentials Programmatically
+### Use an Access Token
 
 A credential can be programmatically added to the nodes at runtime.
 
@@ -91,16 +91,16 @@ rm $HOME/.docker/config.json
 [-f $HOME/.docker/config.json.host] && mv $HOME/.docker/config.json.host $HOME/.docker/config.json
 ```
 
-### ... with Service Accounts
+### Use a Service Account
 
-Access tokens are short lived though, so you may prefer to use a Service Account and keyfile.
+Access tokens are short lived, so you may prefer to use a Service Account and keyfile instead.
 First, either download the key from the console or generate one with gcloud:
 
 ```
 gcloud iam service-accounts keys create <output.json> --iam-account <account email>
 ```
 
-Then, replace the `gcloud auth...` line from the previous snippet with:
+Then, replace the `gcloud auth print-access-token | ...` line from the [access token snippet](#use-an-access-token) with:
 
 ```
 cat <output.json> | docker login -u _json_key --password-stdin https://gcr.io
