@@ -326,8 +326,8 @@ nodes:
 ```
 
 #### IPv6 clusters
-You can run ipv6 only clusters using `kind`, but first you need to
-[enable ipv6 in your docker daemon][docker enable ipv6].
+You can run ipv6 only clusters using `kind`, but first you need to enable ipv6 in your docker daemon by editing `/etc/docker/daemon.json` [as described here][docker enable ipv6].
+Ensure you `systemctl restart docker` to pick up the changes.
 
 ```yaml
 # an ipv6 cluster
@@ -405,4 +405,4 @@ kind, the Kubernetes cluster itself, etc.
 [Kubernetes imagePullPolicy]: https://kubernetes.io/docs/concepts/containers/images/#updating-images
 [Private Registries]: /docs/user/private-registries
 [customize control plane with kubeadm]: https://kubernetes.io/docs/setup/independent/control-plane-flags/
-[docker enable ipv6]: https://docs.docker.com/config/daemon/ipv6/
+[docker enable ipv6]: https://docs.docker.com/v17.09/engine/userguide/networking/default_network/ipv6/
