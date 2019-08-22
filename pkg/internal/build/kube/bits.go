@@ -28,7 +28,7 @@ import (
 type Bits interface {
 	// Build returns any errors encountered while building it Kubernetes.
 	// Some implementations (upstream binaries) may use this step to obtain
-	// an existing build isntead
+	// an existing build instead
 	Build() error
 	// Paths returns a map of path on host machine to desired path in the image
 	// These paths will be populated in the image relative to some base path,
