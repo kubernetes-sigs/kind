@@ -145,6 +145,7 @@ metadata:
   namespace: kube-system
 ---
 EOF
+    kubectl -n kube-system delete pods -l k8s-app=kube-dns
   fi
 
   # ginkgo regexes
