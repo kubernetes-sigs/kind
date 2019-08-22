@@ -65,7 +65,7 @@ func (b *DockerBuildBits) Build() error {
 	// the PR that added `make quick-release-images` added this script,
 	// we can use it's presence to detect if that target exists
 	// TODO(bentheelder): drop support for building without this once we've
-	// dropped older releases or gotten support for `make quick-release-iamges`
+	// dropped older releases or gotten support for `make quick-release-images`
 	// back ported to them ...
 	releaseImagesSH := filepath.Join(
 		b.kubeRoot, "build", "release-images.sh",

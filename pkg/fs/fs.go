@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package fs contains utilites for interacting with the host filesystem
+// Package fs contains utilities for interacting with the host filesystem
 // in a docker friendly way
 package fs
 
