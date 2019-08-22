@@ -15,8 +15,10 @@
 # limitations under the License.
 
 # script to run gofmt over our code (not vendor)
-set -o errexit
-set -o nounset
-set -o pipefail
+set -o errexit -o nounset -o pipefail
+
+# cd to the repo root
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
+cd "${REPO_ROOT}"
 
 find . -name "*.go" -type f -print0 | xargs -0 gofmt -s -w

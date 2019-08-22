@@ -14,12 +14,10 @@
 # limitations under the License.
 
 # CI script to run go vet over our code
-set -o errexit
-set -o nounset
-set -o pipefail
+set -o errexit -o nounset -o pipefail
 
 # cd to the repo root
-REPO_ROOT=$(git rev-parse --show-toplevel)
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 cd "${REPO_ROOT}"
 
 # enable modules and the proxy cache

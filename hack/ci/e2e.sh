@@ -19,6 +19,8 @@
 
 set -o errexit -o nounset -o pipefail -o xtrace
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
+
 # our exit handler (trap)
 cleanup() {
   # always attempt to dump logs
@@ -39,7 +41,7 @@ cleanup() {
 # install kind to a tempdir GOPATH from this script's kind checkout
 install_kind() {
   mkdir -p "${TMP_DIR}/bin"
-  make -C "$(dirname "${BASH_SOURCE[0]}")/../.." install INSTALL_PATH="${TMP_DIR}/bin"
+  make -C "${REPO_ROOT}" install INSTALL_PATH="${TMP_DIR}/bin"
   export PATH="${TMP_DIR}/bin:${PATH}"
 }
 

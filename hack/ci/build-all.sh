@@ -16,9 +16,7 @@
 # simple CI script to verify kind's own sources
 # TODO(bentheelder): rename / refactor. consider building kindnetd
 
-set -o errexit
-set -o nounset
-set -o pipefail
+set -o errexit -o nounset -o pipefail
 
 # cd to the repo root
 REPO_ROOT=$(git rev-parse --show-toplevel)

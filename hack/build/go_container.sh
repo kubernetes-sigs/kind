@@ -15,8 +15,7 @@
 
 # Simple posix sh reproducible build container script with (go) caching
 # Only requires docker on the host
-set -o nounset
-set -o errexit
+set -o nounset -o errexit
 
 # get the repo root for defaulting OUT_DIR and SOURCE_DIR
 # we assume the repo root is two levels up from this script

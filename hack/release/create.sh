@@ -17,17 +17,17 @@
 # builds binaries between the commits
 # Use like: create.sh <release-version> <next-prerelease-version>
 # EG: create.sh v0.3.0 v0.4.0-alpha
-set -o nounset
-set -o errexit
-set -o pipefail
+set -o errexit -o nounset -o pipefail
 
+# cd to the repo root
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
+cd "${REPO_ROOT}"
+
+# check for arguments
 if [ "$#" -ne 2 ]; then
     echo "Usage: create.sh release-version next-prerelease-version"
     exit 1
 fi
-
-REPO_ROOT=$(git rev-parse --show-toplevel)
-cd "${REPO_ROOT}"
 
 # darwin is great
 SED="sed"
@@ -65,8 +65,7 @@ set_version "${1}"
 make_commit "${1}"
 add_tag "${1}"
 echo "Building ..."
-make clean
-./hack/release/build/cross.sh
+make clean && ./hack/release/build/cross.sh
 
 # update to the second version
 set_version "${2}"

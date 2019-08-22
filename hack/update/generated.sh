@@ -14,11 +14,10 @@
 # limitations under the License.
 
 # 'go generate's kind, using tools from vendor (go-bindata)
-set -o nounset
-set -o errexit
-set -o pipefail
+set -o errexit -o nounset -o pipefail
 
-REPO_ROOT="${REPO_ROOT:-$(git rev-parse --show-toplevel)}"
+# cd to the repo root
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 cd "${REPO_ROOT}"
 
 # enable modules and the proxy cache
@@ -54,12 +53,12 @@ export GOPATH="${FAKE_GOPATH}"
 cd "${FAKE_REPOPATH}"
 
 # run the generators
-"${BINDIR}/deepcopy-gen" -i ./pkg/internal/apis/config/ -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
-"${BINDIR}/defaulter-gen" -i ./pkg/internal/apis/config/ -O zz_generated.default --go-header-file hack/boilerplate.go.txt
+"${BINDIR}/deepcopy-gen" -i ./pkg/internal/apis/config/ -O zz_generated.deepcopy --go-header-file hack/tools/boilerplate.go.txt
+"${BINDIR}/defaulter-gen" -i ./pkg/internal/apis/config/ -O zz_generated.default --go-header-file hack/tools/boilerplate.go.txt
 
-"${BINDIR}/deepcopy-gen" -i ./pkg/apis/config/v1alpha3 -O zz_generated.deepcopy --go-header-file hack/boilerplate.go.txt
-"${BINDIR}/defaulter-gen" -i ./pkg/apis/config/v1alpha3 -O zz_generated.default --go-header-file hack/boilerplate.go.txt
-"${BINDIR}/conversion-gen" -i ./pkg/internal/apis/config/v1alpha3 -O zz_generated.conversion --go-header-file hack/boilerplate.go.txt
+"${BINDIR}/deepcopy-gen" -i ./pkg/apis/config/v1alpha3 -O zz_generated.deepcopy --go-header-file hack/tools/boilerplate.go.txt
+"${BINDIR}/defaulter-gen" -i ./pkg/apis/config/v1alpha3 -O zz_generated.default --go-header-file hack/tools/boilerplate.go.txt
+"${BINDIR}/conversion-gen" -i ./pkg/internal/apis/config/v1alpha3 -O zz_generated.conversion --go-header-file hack/tools/boilerplate.go.txt
 
 export GO111MODULE="on"
 cd "${REPO_ROOT}"
