@@ -165,7 +165,7 @@ func (n *Node) IP() (ipv4 string, ipv6 string, err error) {
 	if cachedIPv4 != "" && cachedIPv6 != "" {
 		return cachedIPv4, cachedIPv6, nil
 	}
-	// retrive the IP address of the node using docker inspect
+	// retrieve the IP address of the node using docker inspect
 	lines, err := docker.Inspect(n.name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
 	if err != nil {
 		return "", "", errors.Wrap(err, "failed to get container details")
@@ -193,7 +193,7 @@ func (n *Node) Ports(containerPort int32) (hostPort int32, err error) {
 	if isCached {
 		return hostPort, nil
 	}
-	// retrive the specific port mapping using docker inspect
+	// retrieve the specific port mapping using docker inspect
 	lines, err := docker.Inspect(n.name, fmt.Sprintf("{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}", containerPort))
 	if err != nil {
 		return -1, errors.Wrap(err, "failed to get file")
@@ -223,7 +223,7 @@ func (n *Node) Role() (role string, err error) {
 	if role != "" {
 		return role, nil
 	}
-	// retrive the role the node using docker inspect
+	// retrieve the role the node using docker inspect
 	lines, err := docker.Inspect(n.name, fmt.Sprintf("{{index .Config.Labels %q}}", constants.NodeRoleKey))
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get %q label", constants.NodeRoleKey)
