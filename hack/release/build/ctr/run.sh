@@ -17,13 +17,10 @@
 # NOTE: this is temporary, we only need to build ctr until our (tiny!)
 # --no-unpack patch is available in the standard package
 
-set -o errexit
-set -o nounset
-set -o pipefail
-set -o xtrace
+set -o errexit -o nounset -o pipefail
 
 # cd to the repo root
-REPO_ROOT=$(git rev-parse --show-toplevel)
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd -P)"
 cd "${REPO_ROOT}"
 
 # options

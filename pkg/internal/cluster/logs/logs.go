@@ -39,7 +39,9 @@ func Collect(nodes []nodes.Node, dir string) error {
 	// helper to run a cmd and write the output to path
 	execToPath := func(cmd exec.Cmd, path string) error {
 		realPath := prefixedPath(path)
-		os.MkdirAll(filepath.Dir(realPath), os.ModePerm)
+		if err := os.MkdirAll(filepath.Dir(realPath), os.ModePerm); err != nil {
+			return err
+		}
 		f, err := os.Create(realPath)
 		if err != nil {
 			return err
@@ -70,12 +72,14 @@ func Collect(nodes []nodes.Node, dir string) error {
 		// grab all logs under /var/log (pods and containers)
 		cmd := node.Command("tar", "--hard-dereference", "-C", "/var/log", "-chf", "-", ".")
 
-		exec.RunWithStdoutReader(cmd, func(outReader io.Reader) error {
+		if err := exec.RunWithStdoutReader(cmd, func(outReader io.Reader) error {
 			if err := untar(outReader, filepath.Join(dir, name)); err != nil {
 				return errors.Wrapf(err, "Untarring %q: %v", name, err)
 			}
 			return nil
-		})
+		}); err != nil {
+			return err
+		}
 
 		fns = append(fns, func() error {
 			return concurrent.Coalesce(

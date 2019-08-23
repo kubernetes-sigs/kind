@@ -8,9 +8,7 @@ package tools
 
 import (
 	// linter(s)
-	_ "github.com/client9/misspell"
-	_ "golang.org/x/lint"
-	_ "honnef.co/go/tools/cmd/staticcheck"
+	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 
 	// kubernetes code generators
 	_ "k8s.io/code-generator/cmd/conversion-gen"

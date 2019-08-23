@@ -14,11 +14,10 @@
 # limitations under the License.
 
 # simple script to build binaries for release
-
 set -o errexit -o nounset -o pipefail
 
 # cd to the repo root
-REPO_ROOT=$(git rev-parse --show-toplevel)
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
 cd "${REPO_ROOT}"
 
 # controls the number of concurrent builds

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright 2018 The Kubernetes Authors.
+# Copyright 2019 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,26 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# CI script to run go lint over our code
-set -o errexit
-set -o nounset
-set -o pipefail
+# script to run linters
+set -o errexit -o nounset -o pipefail
 
 # cd to the repo root
-REPO_ROOT=$(git rev-parse --show-toplevel)
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 cd "${REPO_ROOT}"
 
-# enable modules and the proxy cache
-export GO111MODULE="on"
-GOPROXY="${GOPROXY:-https://proxy.golang.org}"
-export GOPROXY
+# build golangci-lint
+SOURCE_DIR="${REPO_ROOT}/hack/tools" hack/go_container.sh \
+  go build -o /out/golangci-lint github.com/golangci/golangci-lint/cmd/golangci-lint
 
-# build golint
-BINDIR="${REPO_ROOT}/bin"
-# use the tools module
-cd "hack/tools"
-go build -o "${BINDIR}/golint" golang.org/x/lint/golint
-# go back to the root
-cd "${REPO_ROOT}"
-
-"${BINDIR}/golint" -set_exit_status ./pkg/... ./cmd/... .
+# run golangci-lint
+GO111MODULE=on bin/golangci-lint \
+  --enable=golint --enable=vet --enable=gofmt \
+  --enable=misspell \
+  run ./pkg/... ./cmd/... .

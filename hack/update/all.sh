@@ -14,11 +14,11 @@
 # limitations under the License.
 
 # script to run all update scripts (except deps)
-set -o errexit
-set -o nounset
-set -o pipefail
+set -o errexit -o nounset -o pipefail
 
-REPO_ROOT=$(git rev-parse --show-toplevel)
+# cd to the repo root
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
+cd "${REPO_ROOT}"
 
 "${REPO_ROOT}"/hack/update/deps.sh
 "${REPO_ROOT}"/hack/update/generated.sh

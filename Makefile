@@ -36,7 +36,7 @@ all: build
 
 # builds kind in a container, outputs to $(OUT_DIR)
 kind:
-	hack/build/go_container.sh go build -v -o /out/$(KIND_BINARY_NAME)
+	hack/go_container.sh go build -v -o /out/$(KIND_BINARY_NAME)
 
 # alias for building kind
 build: kind

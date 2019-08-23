@@ -52,14 +52,10 @@ func AddToScheme(scheme *runtime.Scheme) {
 }
 
 // V1Alpha3ToInternal converts to the internal API version
-func V1Alpha3ToInternal(cluster *v1alpha3.Cluster) *config.Cluster {
-	// apply defaults
+func V1Alpha3ToInternal(cluster *v1alpha3.Cluster) (*config.Cluster, error) {
 	Scheme.Default(cluster)
-	// the convert
 	out := &config.Cluster{}
-	// TODO: error handling??
-	Scheme.Convert(cluster, out, nil)
-	return out
+	return out, Scheme.Convert(cluster, out, nil)
 }
 
 // Load reads the file at path and attempts to convert into a `kind` Config; the file
@@ -93,7 +89,9 @@ func Load(path string) (*config.Cluster, error) {
 		}
 
 		// converts back to the latest API version to apply defaults
-		Scheme.Convert(cfg, latestPublicConfig, nil)
+		if err := Scheme.Convert(cfg, latestPublicConfig, nil); err != nil {
+			return nil, err
+		}
 	}
 
 	// apply defaults
@@ -101,7 +99,9 @@ func Load(path string) (*config.Cluster, error) {
 
 	// converts to internal config
 	var cfg = &config.Cluster{}
-	Scheme.Convert(latestPublicConfig, cfg, nil)
+	if err := Scheme.Convert(latestPublicConfig, cfg, nil); err != nil {
+		return nil, err
+	}
 
 	// unmarshal the file content into a `kind` Config
 	return cfg, nil

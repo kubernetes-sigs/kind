@@ -57,9 +57,14 @@ func (b *BazelBuildBits) Build() error {
 	if err != nil {
 		return err
 	}
-	os.Chdir(b.kubeRoot)
 	// make sure we cd back when done
-	defer os.Chdir(cwd)
+	defer func() {
+		// TODO(bentheelder): set return error?
+		_ = os.Chdir(cwd)
+	}()
+	if err := os.Chdir(b.kubeRoot); err != nil {
+		return err
+	}
 
 	// TODO(bentheelder): we assume the host arch, but cross compiling should
 	// be possible now

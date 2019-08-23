@@ -78,7 +78,7 @@ func Cluster(ctx *context.Context, options ...create.ClusterOption) error {
 		// In case of errors nodes are deleted (except if retain is explicitly set)
 		log.Error(err)
 		if !opts.Retain {
-			delete.Cluster(ctx)
+			_ = delete.Cluster(ctx)
 		}
 		return err
 	}
@@ -111,7 +111,7 @@ func Cluster(ctx *context.Context, options ...create.ClusterOption) error {
 	for _, action := range actionsToRun {
 		if err := action.Execute(actionsContext); err != nil {
 			if !opts.Retain {
-				delete.Cluster(ctx)
+				_ = delete.Cluster(ctx)
 			}
 			return err
 		}

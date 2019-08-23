@@ -13,12 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o errexit
-set -o nounset
-set -o pipefail
+set -o errexit -o nounset -o pipefail
 
-# cd to repo root
-REPO_ROOT=$(git rev-parse --show-toplevel)
+# cd to the repo root
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 cd "${REPO_ROOT}"
 
 # exit code, if a script fails we'll set this to 1
@@ -26,39 +24,9 @@ res=0
 
 # run all verify scripts, optionally skipping any of them
 
-if [[ "${VERIFY_SHELLCHECK:-true}" == "true" ]]; then
-  echo "verifying shellcheck ..."
-  hack/verify/shellcheck.sh || res=1
-  cd "${REPO_ROOT}"
-fi
-
-if [[ "${VERIFY_SPELLING:-true}" == "true" ]]; then
-  echo "verifying spelling ..."
-  hack/verify/spelling.sh || res=1
-  cd "${REPO_ROOT}"
-fi
-
-if [[ "${VERIFY_GOFMT:-true}" == "true" ]]; then
-  echo "verifying gofmt ..."
-  hack/verify/gofmt.sh || res=1
-  cd "${REPO_ROOT}"
-fi
-
-if [[ "${VERIFY_GOLINT:-true}" == "true" ]]; then
-  echo "verifying golint ..."
-  hack/verify/golint.sh || res=1
-  cd "${REPO_ROOT}"
-fi
-
-if [[ "${VERIFY_GOVET:-true}" == "true" ]]; then
-  echo "verifying govet ..."
-  hack/verify/govet.sh || res=1
-  cd "${REPO_ROOT}"
-fi
-
-if [[ "${VERIFY_STATICCHECK:-true}" == "true" ]]; then
-  echo "verifying staticcheck ..."
-  hack/verify/staticcheck.sh || res=1
+if [[ "${VERIFY_LINT:-true}" == "true" ]]; then
+  echo "verifying lints ..."
+  hack/verify/lint.sh || res=1
   cd "${REPO_ROOT}"
 fi
 
