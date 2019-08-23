@@ -53,11 +53,8 @@ func AddToScheme(scheme *runtime.Scheme) {
 
 // V1Alpha3ToInternal converts to the internal API version
 func V1Alpha3ToInternal(cluster *v1alpha3.Cluster) (*config.Cluster, error) {
-	// apply defaults
 	Scheme.Default(cluster)
-	// the convert
 	out := &config.Cluster{}
-	// TODO: error handling??
 	return out, Scheme.Convert(cluster, out, nil)
 }
 
