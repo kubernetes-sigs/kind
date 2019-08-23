@@ -24,39 +24,9 @@ res=0
 
 # run all verify scripts, optionally skipping any of them
 
-if [[ "${VERIFY_SHELLCHECK:-true}" == "true" ]]; then
-  echo "verifying shellcheck ..."
-  hack/verify/shellcheck.sh || res=1
-  cd "${REPO_ROOT}"
-fi
-
-if [[ "${VERIFY_SPELLING:-true}" == "true" ]]; then
-  echo "verifying spelling ..."
-  hack/verify/spelling.sh || res=1
-  cd "${REPO_ROOT}"
-fi
-
-if [[ "${VERIFY_GOFMT:-true}" == "true" ]]; then
-  echo "verifying gofmt ..."
-  hack/verify/gofmt.sh || res=1
-  cd "${REPO_ROOT}"
-fi
-
-if [[ "${VERIFY_GOLINT:-true}" == "true" ]]; then
-  echo "verifying golint ..."
-  hack/verify/golint.sh || res=1
-  cd "${REPO_ROOT}"
-fi
-
-if [[ "${VERIFY_GOVET:-true}" == "true" ]]; then
-  echo "verifying govet ..."
-  hack/verify/govet.sh || res=1
-  cd "${REPO_ROOT}"
-fi
-
-if [[ "${VERIFY_STATICCHECK:-true}" == "true" ]]; then
-  echo "verifying staticcheck ..."
-  hack/verify/staticcheck.sh || res=1
+if [[ "${VERIFY_LINT:-true}" == "true" ]]; then
+  echo "verifying lints ..."
+  hack/verify/lint.sh || res=1
   cd "${REPO_ROOT}"
 fi
 
