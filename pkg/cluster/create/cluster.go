@@ -39,8 +39,9 @@ func WithConfigFile(path string) ClusterOption {
 // WithV1Alpha3 configures creating the cluster with a v1alpha3 config
 func WithV1Alpha3(cluster *v1alpha3.Cluster) ClusterOption {
 	return func(o *internaltypes.ClusterOptions) (*internaltypes.ClusterOptions, error) {
-		o.Config = internalencoding.V1Alpha3ToInternal(cluster)
-		return o, nil
+		cfg, err := internalencoding.V1Alpha3ToInternal(cluster)
+		o.Config = cfg
+		return o, err
 	}
 }
 

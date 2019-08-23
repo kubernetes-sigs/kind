@@ -37,9 +37,14 @@ func buildVersionFile(kubeRoot string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	os.Chdir(kubeRoot)
 	// make sure we cd back when done
-	defer os.Chdir(cwd)
+	defer func() {
+		// TODO(bentheelder): set return error?
+		_ = os.Chdir(cwd)
+	}()
+	if err := os.Chdir(kubeRoot); err != nil {
+		return "", err
+	}
 
 	// get the version output
 	cmd := exec.Command("hack/print-workspace-status.sh")

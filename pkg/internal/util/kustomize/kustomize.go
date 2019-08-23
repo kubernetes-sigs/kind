@@ -91,7 +91,11 @@ func Build(resources, patches []string, patchesJSON6902 []config.PatchJSON6902) 
 		}
 	}
 
-	memFS.WriteFile(filepath.Join(fakeDir, "kustomization.yaml"), kustomization.Bytes())
+	if err := memFS.WriteFile(
+		filepath.Join(fakeDir, "kustomization.yaml"), kustomization.Bytes(),
+	); err != nil {
+		return "", err
+	}
 
 	// now we can build the kustomization
 	var out bytes.Buffer
