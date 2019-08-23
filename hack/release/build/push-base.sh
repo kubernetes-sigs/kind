@@ -21,15 +21,13 @@ cd "${REPO_ROOT}"
 
 # ensure we have up to date kind
 make build
-KIND="${REPO_ROOT}/bin/kind"
 
 # generate tag
-DATE="$(date +v%Y%m%d)"
-TAG="${DATE}-$(git describe --always --dirty)"
+TAG="$(date +v%Y%m%d)-$(git describe --always --dirty)"
 IMAGE="kindest/base:${TAG}"
 
 # build
-(set -x; "${KIND}" build base-image --image="${IMAGE}" --source="${REPO_ROOT}/images/base/")
+(set -x; "${REPO_ROOT}/bin/kind" build base-image --image="${IMAGE}" --source="${REPO_ROOT}/images/base/")
 
 # push
 docker push "${IMAGE}"

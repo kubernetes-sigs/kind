@@ -21,7 +21,6 @@ cd "${REPO_ROOT}"
 
 # ensure we have up to date kind
 make build
-KIND="${REPO_ROOT}/bin/kind"
 
 # generate tag
 DATE="$(date +v%Y%m%d)"
@@ -30,7 +29,7 @@ TAG="${DATE}-$(git describe --always --dirty)"
 # build
 KUBEROOT="${KUBEROOT:-${GOPATH}/src/k8s.io/kubernetes}"
 set -x
-"${KIND}" build node-image --image="kindest/node:${TAG}" --kube-root="${KUBEROOT}"
+"${REPO_ROOT}/bin/kind" build node-image --image="kindest/node:${TAG}" --kube-root="${KUBEROOT}"
 
 # re-tag with kubernetes version
 IMG="kindest/node:${TAG}"

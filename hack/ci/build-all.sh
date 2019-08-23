@@ -22,16 +22,11 @@ set -o errexit -o nounset -o pipefail
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
-# enable modules and the proxy cache
-export GO111MODULE="on"
-GOPROXY="${GOPROXY:-https://proxy.golang.org}"
-export GOPROXY
-
 # build and test kind
 hack/release/build/cross.sh
-go test -v ./...
+hack/go_container.sh go test -v ./...
 
 # build and test kindnetd
 cd ./cmd/kindnetd
-go install -v .
-go test -v ./...
+"${REPO_ROOT}/hack/go_container.sh" go build -v -o /out/kindnetd .
+"${REPO_ROOT}/hack/go_container.sh" go test -v ./...
