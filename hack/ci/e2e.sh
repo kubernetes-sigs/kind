@@ -130,8 +130,6 @@ run_tests() {
     echo "Patched CoreDNS config:"
     echo "${fixed_coredns}"
     kubectl apply -f - <<< "${fixed_coredns}"
-    # restart the pods
-    kubectl -n kube-system delete pods -l k8s-app=kube-dns
   fi
 
   # ginkgo regexes
