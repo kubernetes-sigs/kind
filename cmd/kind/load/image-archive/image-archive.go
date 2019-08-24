@@ -47,7 +47,7 @@ func NewCommand() *cobra.Command {
 		Short: "loads docker image from archive into nodes",
 		Long:  "loads docker image from archive into all or specified nodes by name",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(flags, cmd, args)
+			return runE(flags, args)
 		},
 	}
 	cmd.Flags().StringVar(
@@ -65,7 +65,7 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
+func runE(flags *flagpole, args []string) error {
 	imageTarPath := args[0]
 	// Check if file exists
 	if _, err := os.Stat(imageTarPath); err != nil {

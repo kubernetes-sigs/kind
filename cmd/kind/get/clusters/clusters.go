@@ -34,13 +34,13 @@ func NewCommand() *cobra.Command {
 		Short: "lists existing kind clusters by their name",
 		Long:  "lists existing kind clusters by their name",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(cmd, args)
+			return runE()
 		},
 	}
 	return cmd
 }
 
-func runE(cmd *cobra.Command, args []string) error {
+func runE() error {
 	clusters, err := cluster.List()
 	if err != nil {
 		return err

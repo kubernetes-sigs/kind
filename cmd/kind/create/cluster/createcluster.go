@@ -47,7 +47,7 @@ func NewCommand() *cobra.Command {
 		Short: "Creates a local Kubernetes cluster",
 		Long:  "Creates a local Kubernetes cluster using Docker container 'nodes'",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(flags, cmd, args)
+			return runE(flags)
 		},
 	}
 	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "cluster context name")
@@ -58,7 +58,7 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
+func runE(flags *flagpole) error {
 	// Check if the cluster name already exists
 	known, err := cluster.IsKnown(flags.Name)
 	if err != nil {

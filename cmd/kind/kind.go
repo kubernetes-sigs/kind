@@ -52,7 +52,7 @@ func NewCommand() *cobra.Command {
 		Short: "kind is a tool for managing local Kubernetes clusters",
 		Long:  "kind creates and manages local Kubernetes clusters using Docker container 'nodes'",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return runE(flags, cmd, args)
+			return runE(flags)
 		},
 		SilenceUsage: true,
 		Version:      version.Version,
@@ -75,7 +75,7 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func runE(flags *Flags, cmd *cobra.Command, args []string) error {
+func runE(flags *Flags) error {
 	level := defaultLevel
 	parsed, err := log.ParseLevel(flags.LogLevel)
 	if err != nil {

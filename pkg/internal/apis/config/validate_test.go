@@ -121,6 +121,11 @@ func TestNodeValidate(t *testing.T) {
 			ExpectErrors: 0,
 		},
 		{
+			TestName:     "Canonical node 2",
+			Node:         newDefaultedNode(WorkerRole),
+			ExpectErrors: 0,
+		},
+		{
 			TestName: "Empty image field",
 			Node: func() Node {
 				cfg := newDefaultedNode(ControlPlaneRole)

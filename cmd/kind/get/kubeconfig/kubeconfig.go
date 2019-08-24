@@ -43,7 +43,7 @@ func NewCommand() *cobra.Command {
 		Short: "prints cluster kubeconfig",
 		Long:  "prints cluster kubeconfig",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(flags, cmd, args)
+			return runE(flags)
 		},
 	}
 	cmd.Flags().StringVar(
@@ -61,7 +61,7 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
+func runE(flags *flagpole) error {
 	// List nodes by cluster context name
 	n, err := clusternodes.ListByCluster()
 	if err != nil {
