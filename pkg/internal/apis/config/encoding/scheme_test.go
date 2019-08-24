@@ -68,6 +68,7 @@ func TestLoadCurrent(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
+		c := c // capture loop variable
 		t.Run(c.TestName, func(t *testing.T) {
 			_, err := Load(c.Path)
 

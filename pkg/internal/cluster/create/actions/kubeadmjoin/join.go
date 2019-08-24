@@ -88,6 +88,7 @@ func joinSecondaryControlPlanes(
 	// TODO(bentheelder): it's too bad we can't do this concurrently
 	// (this is not safe currently)
 	for _, node := range secondaryControlPlanes {
+		node := node // capture loop variable
 		if err := runKubeadmJoinControlPlane(allNodes, &node); err != nil {
 			return err
 		}
