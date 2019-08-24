@@ -41,14 +41,14 @@ func NewCommand() *cobra.Command {
 		Short: "Deletes a cluster",
 		Long:  "Deletes a resource",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(flags, cmd, args)
+			return runE(flags)
 		},
 	}
 	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "the cluster name")
 	return cmd
 }
 
-func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
+func runE(flags *flagpole) error {
 	// Check if the cluster name exists
 	known, err := cluster.IsKnown(flags.Name)
 	if err != nil {

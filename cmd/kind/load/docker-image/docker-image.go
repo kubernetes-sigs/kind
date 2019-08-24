@@ -51,7 +51,7 @@ func NewCommand() *cobra.Command {
 		Short: "loads docker image from host into nodes",
 		Long:  "loads docker image from host into all or specified nodes by name",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(flags, cmd, args)
+			return runE(flags, args)
 		},
 	}
 	cmd.Flags().StringVar(
@@ -69,7 +69,7 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
+func runE(flags *flagpole, args []string) error {
 	imageName := args[0]
 	// Check that the image exists locally and gets its ID, if not return error
 	imageID, err := docker.ImageID(imageName)

@@ -38,11 +38,6 @@ type DockerBuildBits struct {
 
 var _ Bits = &DockerBuildBits{}
 
-func init() {
-	RegisterNamedBits("docker", NewDockerBuildBits)
-	RegisterNamedBits("make", NewDockerBuildBits)
-}
-
 // NewDockerBuildBits returns a new Bits backed by the docker-ized build,
 // given kubeRoot, the path to the kubernetes source directory
 func NewDockerBuildBits(kubeRoot string) (bits Bits, err error) {

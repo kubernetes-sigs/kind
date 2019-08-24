@@ -37,10 +37,6 @@ type BazelBuildBits struct {
 
 var _ Bits = &BazelBuildBits{}
 
-func init() {
-	RegisterNamedBits("bazel", NewBazelBuildBits)
-}
-
 // NewBazelBuildBits returns a new Bits backed by bazel build,
 // given kubeRoot, the path to the kubernetes source directory
 func NewBazelBuildBits(kubeRoot string) (bits Bits, err error) {

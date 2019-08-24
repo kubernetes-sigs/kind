@@ -69,7 +69,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 	if len(workers) > 0 {
-		if err := joinWorkers(ctx, allNodes, workers); err != nil {
+		if err := joinWorkers(ctx, workers); err != nil {
 			return err
 		}
 	}
@@ -88,7 +88,8 @@ func joinSecondaryControlPlanes(
 	// TODO(bentheelder): it's too bad we can't do this concurrently
 	// (this is not safe currently)
 	for _, node := range secondaryControlPlanes {
-		if err := runKubeadmJoinControlPlane(ctx, allNodes, &node); err != nil {
+		node := node // capture loop variable
+		if err := runKubeadmJoinControlPlane(allNodes, &node); err != nil {
 			return err
 		}
 	}
@@ -99,7 +100,6 @@ func joinSecondaryControlPlanes(
 
 func joinWorkers(
 	ctx *actions.ActionContext,
-	allNodes []nodes.Node,
 	workers []nodes.Node,
 ) error {
 	ctx.Status.Start("Joining worker nodes 🚜")
@@ -110,7 +110,7 @@ func joinWorkers(
 	for _, node := range workers {
 		node := node // capture loop variable
 		fns = append(fns, func() error {
-			return runKubeadmJoin(ctx, allNodes, &node)
+			return runKubeadmJoin(&node)
 		})
 	}
 	if err := concurrent.UntilError(fns); err != nil {
@@ -123,7 +123,6 @@ func joinWorkers(
 
 // runKubeadmJoinControlPlane executes kubadm join --control-plane command
 func runKubeadmJoinControlPlane(
-	ctx *actions.ActionContext,
 	allNodes []nodes.Node,
 	node *nodes.Node,
 ) error {
@@ -178,15 +177,11 @@ func runKubeadmJoinControlPlane(
 		}
 	}
 
-	return runKubeadmJoin(ctx, allNodes, node)
+	return runKubeadmJoin(node)
 }
 
 // runKubeadmJoin executes kubadm join command
-func runKubeadmJoin(
-	ctx *actions.ActionContext,
-	allNodes []nodes.Node,
-	node *nodes.Node,
-) error {
+func runKubeadmJoin(node *nodes.Node) error {
 	// run kubeadm join
 	// TODO(bentheelder): this should be using the config file
 	cmd := node.Command(

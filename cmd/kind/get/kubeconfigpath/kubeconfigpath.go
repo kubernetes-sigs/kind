@@ -39,7 +39,7 @@ func NewCommand() *cobra.Command {
 		Short: "prints the default kubeconfig path for the kind cluster by --name",
 		Long:  "prints the default kubeconfig path for the kind cluster by --name",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(flags, cmd, args)
+			return runE(flags)
 		},
 	}
 	cmd.Flags().StringVar(
@@ -51,7 +51,7 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
+func runE(flags *flagpole) error {
 	// Obtain the kubeconfig path for this cluster
 	ctx := cluster.NewContext(flags.Name)
 	fmt.Println(ctx.KubeConfigPath())

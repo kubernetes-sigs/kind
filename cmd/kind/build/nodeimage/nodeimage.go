@@ -41,7 +41,7 @@ func NewCommand() *cobra.Command {
 		Short: "build the node image",
 		Long:  "build the node image which contains kubernetes build artifacts and other kind requirements",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(flags, cmd, args)
+			return runE(flags)
 		},
 	}
 	cmd.Flags().StringVar(
@@ -66,7 +66,7 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
+func runE(flags *flagpole) error {
 	// TODO(bentheelder): make this more configurable
 	ctx, err := node.NewBuildContext(
 		node.WithMode(flags.BuildType),

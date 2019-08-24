@@ -25,7 +25,12 @@ SOURCE_DIR="${REPO_ROOT}/hack/tools" hack/go_container.sh \
   go build -o /out/golangci-lint github.com/golangci/golangci-lint/cmd/golangci-lint
 
 # run golangci-lint
-GO111MODULE=on bin/golangci-lint \
-  --enable=golint --enable=vet --enable=gofmt \
-  --enable=misspell \
-  run ./pkg/... ./cmd/... .
+LINTS=(
+  # default golangci-lint lints
+  deadcode errcheck gosimple govet ineffassign staticcheck \
+  structcheck typecheck unused varcheck \
+  # additional lints
+  golint gofmt misspell gochecknoinits unparam scopelint
+)
+ENABLE=$(sed 's/ /,/g' <<< "${LINTS[@]}")
+GO111MODULE=on bin/golangci-lint --disable-all --enable="${ENABLE}" run ./pkg/... ./cmd/... .

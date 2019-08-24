@@ -38,7 +38,7 @@ func NewCommand() *cobra.Command {
 		Short: "build the base node image",
 		Long:  `build the base node image for running nested containers, systemd, and kubernetes components.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(flags, cmd, args)
+			return runE(flags)
 		},
 	}
 	cmd.Flags().StringVar(
@@ -54,7 +54,7 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func runE(flags *flagpole, cmd *cobra.Command, args []string) error {
+func runE(flags *flagpole) error {
 	// TODO(bentheelder): make this more configurable
 	ctx := base.NewBuildContext(
 		base.WithImage(flags.Image),
