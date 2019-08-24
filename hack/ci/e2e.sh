@@ -122,7 +122,7 @@ run_tests() {
     local fixed_coredns
     fixed_coredns=$(
       sed \
-        -e 's/^.*kubernetes cluster\.local/\& internal/'
+        -e 's/^.*kubernetes cluster\.local/\& internal/' \
         -e '/^.*upstream$/d' \
         -e '/^.*fallthrough.*$/d' \
         -e '/^.*forward . \/etc\/resolv.conf$/d' \
