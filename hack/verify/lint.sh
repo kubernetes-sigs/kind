@@ -23,6 +23,8 @@ cd "${REPO_ROOT}"
 # build golangci-lint
 SOURCE_DIR="${REPO_ROOT}/hack/tools" hack/go_container.sh \
   go build -o /out/golangci-lint github.com/golangci/golangci-lint/cmd/golangci-lint
+SOURCE_DIR="${REPO_ROOT}/hack/tools" GOOS="linux" hack/go_container.sh \
+  go build -o /out/golangci-lint-linux github.com/golangci/golangci-lint/cmd/golangci-lint
 
 # run golangci-lint
 LINTS=(
@@ -33,4 +35,8 @@ LINTS=(
   golint gofmt misspell gochecknoinits unparam scopelint
 )
 ENABLE=$(sed 's/ /,/g' <<< "${LINTS[@]}")
+# first for the repo in general
 GO111MODULE=on bin/golangci-lint --disable-all --enable="${ENABLE}" run ./pkg/... ./cmd/... .
+# ... and then for kindnetd, which is only on linux
+SOURCE_DIR="${REPO_ROOT}/cmd/kindnetd" GOOS="linux" "${REPO_ROOT}/hack/go_container.sh" \
+  /out/golangci-lint-linux --disable-all --enable="${ENABLE}" run ./...
