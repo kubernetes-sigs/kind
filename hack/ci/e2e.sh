@@ -122,7 +122,7 @@ run_tests() {
     local fixed_coredns
     fixed_coredns=$(
       sed \
-        -e 's/^(\s)+.*cluster\.local.*$/\0kubernetes cluster.local internal in-addr.arpa ip6.arpa/' \
+        -e 's/^.*kubernetes cluster\.local/& internal/' \
         -e '/^.*upstream$/d' \
         -e '/^.*fallthrough.*$/d' \
         -e '/^.*forward . \/etc\/resolv.conf$/d' \
