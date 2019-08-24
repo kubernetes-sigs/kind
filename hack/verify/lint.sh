@@ -26,6 +26,6 @@ SOURCE_DIR="${REPO_ROOT}/hack/tools" hack/go_container.sh \
 
 # run golangci-lint
 GO111MODULE=on bin/golangci-lint \
-  --enable=golint --enable=vet --enable=gofmt \
-  --enable=misspell --enable=gochecknoinits --enable=unparam \
+  --enable=golint --enable=vet --enable=gofmt --enable=misspell \
+  --enable=gochecknoinits --enable=unparam --enable=scopelint \
   run ./pkg/... ./cmd/... .
