@@ -20,26 +20,19 @@ set -o errexit -o nounset -o pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 cd "${REPO_ROOT}"
 
-# enable modules and the proxy cache
-export GO111MODULE="on"
-GOPROXY="${GOPROXY:-https://proxy.golang.org}"
-export GOPROXY
-
-# build the generators
-BINDIR="${REPO_ROOT}/bin"
-# use the tools module
+# build the generators using the tools module
 cd "hack/tools"
-go build -o "${BINDIR}/defaulter-gen" k8s.io/code-generator/cmd/defaulter-gen
-go build -o "${BINDIR}/deepcopy-gen" k8s.io/code-generator/cmd/deepcopy-gen
-go build -o "${BINDIR}/conversion-gen" k8s.io/code-generator/cmd/conversion-gen
+"${REPO_ROOT}/hack/go_container.sh" go build -o /out/defaulter-gen k8s.io/code-generator/cmd/defaulter-gen
+"${REPO_ROOT}/hack/go_container.sh" go build -o /out/deepcopy-gen k8s.io/code-generator/cmd/deepcopy-gen
+"${REPO_ROOT}/hack/go_container.sh" go build -o /out/conversion-gen k8s.io/code-generator/cmd/conversion-gen
 # go back to the root
 cd "${REPO_ROOT}"
 
 # turn off module mode before running the generators
 # https://github.com/kubernetes/code-generator/issues/69
 # we also need to populate vendor
-go mod tidy
-go mod vendor
+hack/go_container.sh go mod tidy
+hack/go_container.sh go mod vendor
 export GO111MODULE="off"
 
 # fake being in a gopath
@@ -53,15 +46,14 @@ export GOPATH="${FAKE_GOPATH}"
 cd "${FAKE_REPOPATH}"
 
 # run the generators
-"${BINDIR}/deepcopy-gen" -i ./pkg/internal/apis/config/ -O zz_generated.deepcopy --go-header-file hack/tools/boilerplate.go.txt
-"${BINDIR}/defaulter-gen" -i ./pkg/internal/apis/config/ -O zz_generated.default --go-header-file hack/tools/boilerplate.go.txt
+bin/deepcopy-gen -i ./pkg/internal/apis/config/ -O zz_generated.deepcopy --go-header-file hack/tools/boilerplate.go.txt
+bin/defaulter-gen -i ./pkg/internal/apis/config/ -O zz_generated.default --go-header-file hack/tools/boilerplate.go.txt
 
-"${BINDIR}/deepcopy-gen" -i ./pkg/apis/config/v1alpha3 -O zz_generated.deepcopy --go-header-file hack/tools/boilerplate.go.txt
-"${BINDIR}/defaulter-gen" -i ./pkg/apis/config/v1alpha3 -O zz_generated.default --go-header-file hack/tools/boilerplate.go.txt
-"${BINDIR}/conversion-gen" -i ./pkg/internal/apis/config/v1alpha3 -O zz_generated.conversion --go-header-file hack/tools/boilerplate.go.txt
+bin/deepcopy-gen -i ./pkg/apis/config/v1alpha3 -O zz_generated.deepcopy --go-header-file hack/tools/boilerplate.go.txt
+bin/defaulter-gen -i ./pkg/apis/config/v1alpha3 -O zz_generated.default --go-header-file hack/tools/boilerplate.go.txt
+bin/conversion-gen -i ./pkg/internal/apis/config/v1alpha3 -O zz_generated.conversion --go-header-file hack/tools/boilerplate.go.txt
 
+# set module mode back, return to repo root and gofmt to ensure we format generated code
 export GO111MODULE="on"
 cd "${REPO_ROOT}"
-
-# gofmt the tree
-find . -name "*.go" -type f -print0 | xargs -0 gofmt -s -w
+hack/update/gofmt.sh
