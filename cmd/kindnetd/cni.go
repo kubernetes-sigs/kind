@@ -114,8 +114,8 @@ func (c *CNIConfigWriter) Write(inputs CNIConfigInputs) error {
 		os.Remove(f.Name())
 		return err
 	}
-	f.Sync()
-	f.Close()
+	_ = f.Sync()
+	_ = f.Close()
 
 	// then we can rename to the target config path
 	if err := os.Rename(f.Name(), c.path); err != nil {

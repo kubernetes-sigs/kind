@@ -69,7 +69,7 @@ func main() {
 
 	// enforce ip masquerade rules
 	// TODO: dual stack...?
-	masqAgent, _ := NewIPMasqAgent(net.IsIPv6String(hostIP), []string{os.Getenv("POD_SUBNET")})
+	masqAgent := NewIPMasqAgent(net.IsIPv6String(hostIP), []string{os.Getenv("POD_SUBNET")})
 	go func() {
 		// TODO: use logging and continue retrying instead...
 		if err := masqAgent.SyncRulesForever(time.Second * 60); err != nil {
