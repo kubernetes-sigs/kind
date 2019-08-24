@@ -36,6 +36,9 @@ var (
 	AddToScheme = localSchemeBuilder.AddToScheme
 )
 
+// TODO(bentheelder): we should maybe actually remove this init in favor
+// of explicitly adding everything to a scheme via some method
+// nolint:gochecknoinits
 func init() {
 	// We only register manually written functions here. The registration of the
 	// generated functions takes place in the generated files. The separation

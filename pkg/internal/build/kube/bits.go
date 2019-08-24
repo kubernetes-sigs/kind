@@ -17,8 +17,6 @@ limitations under the License.
 package kube
 
 import (
-	"sync"
-
 	"github.com/pkg/errors"
 )
 
@@ -61,37 +59,28 @@ type InstallContext interface {
 // "bazel" -> NewBazelBuildBits(kubeRoot)
 // "docker" or "make" -> NewDockerBuildBits(kubeRoot)
 func NewNamedBits(name string, kubeRoot string) (bits Bits, err error) {
-	bitsImpls.Lock()
-	fn, ok := bitsImpls.impls[name]
-	bitsImpls.Unlock()
-	if !ok {
-		return nil, errors.Errorf("no Bits implementation with name: %s", name)
+	fn, err := nameToImpl(name)
+	if err != nil {
+		return nil, err
 	}
 	return fn(kubeRoot)
 }
 
-// RegisterNamedBits registers a new named Bits implementation for use from
-// NewNamedBits
-func RegisterNamedBits(name string, fn func(string) (Bits, error)) {
-	bitsImpls.Lock()
-	bitsImpls.impls[name] = fn
-	bitsImpls.Unlock()
+func nameToImpl(name string) (func(string) (Bits, error), error) {
+	switch name {
+	case "bazel":
+		return NewBazelBuildBits, nil
+	case "docker":
+	case "make":
+		return NewDockerBuildBits, nil
+	default:
+	}
+	return nil, errors.Errorf("no Bits implementation with name: %s", name)
 }
 
 // NamedBitsRegistered returns true if name is in the registry backing
 // NewNamedBits
 func NamedBitsRegistered(name string) bool {
-	var ok bool
-	bitsImpls.Lock()
-	_, ok = bitsImpls.impls[name]
-	bitsImpls.Unlock()
-	return ok
-}
-
-// internal registry of named bits implementations
-var bitsImpls = struct {
-	impls map[string]func(string) (Bits, error)
-	sync.Mutex
-}{
-	impls: map[string]func(string) (Bits, error){},
+	_, err := nameToImpl(name)
+	return err == nil
 }
