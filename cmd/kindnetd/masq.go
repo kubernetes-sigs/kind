@@ -28,7 +28,7 @@ import (
 )
 
 // NewIPMasqAgent returns a new IPMasqAgent
-func NewIPMasqAgent(ipv6 bool, noMasqueradeCIDRs []string) (*IPMasqAgent, error) {
+func NewIPMasqAgent(ipv6 bool, noMasqueradeCIDRs []string) *IPMasqAgent {
 	execer := utilexec.New()
 	dbus := utildbus.New()
 	protocol := utiliptables.ProtocolIpv4
@@ -43,7 +43,7 @@ func NewIPMasqAgent(ipv6 bool, noMasqueradeCIDRs []string) (*IPMasqAgent, error)
 		iptables:          iptables,
 		masqChain:         masqChain,
 		noMasqueradeCIDRs: noMasqueradeCIDRs,
-	}, nil
+	}
 }
 
 // IPMasqAgent is based on https://github.com/kubernetes-incubator/ip-masq-agent
@@ -72,7 +72,9 @@ const masqChainName = "KIND-MASQ-AGENT"
 func (ma *IPMasqAgent) SyncRules() error {
 	// TODO(aojea): don´t sync if there are no changes
 	// make sure our custom chain for non-masquerade exists
-	ma.iptables.EnsureChain(utiliptables.TableNAT, ma.masqChain)
+	if _, err := ma.iptables.EnsureChain(utiliptables.TableNAT, ma.masqChain); err != nil {
+		return err
+	}
 
 	// ensure that any non-local in POSTROUTING jumps to masqChain
 	if err := ensurePostroutingJump(ma.iptables, ma.masqChain); err != nil {
