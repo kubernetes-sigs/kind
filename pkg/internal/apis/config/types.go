@@ -74,6 +74,9 @@ type Node struct {
 	// ExtraPortMappings describes additional port mappings for the node container
 	// binded to a host Port
 	ExtraPortMappings []cri.PortMapping
+
+	// ExtraArgs describes additional flags for the node container
+	ExtraArgs []string
 }
 
 // NodeRole defines possible role for nodes in a Kubernetes cluster managed by `kind`
