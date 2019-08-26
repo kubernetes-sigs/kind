@@ -48,7 +48,7 @@ func getPort() (int32, error) {
 }
 
 // CreateControlPlaneNode creates a control-plane node
-// and gets ready for exposing the the API server
+// and gets ready for exposing the API server
 func CreateControlPlaneNode(name, image, clusterLabel, listenAddress string, port int32, mounts []cri.Mount, portMappings []cri.PortMapping) (node *Node, err error) {
 	// gets a random host port for the API server
 	if port == 0 {
@@ -83,7 +83,7 @@ func CreateControlPlaneNode(name, image, clusterLabel, listenAddress string, por
 }
 
 // CreateExternalLoadBalancerNode creates an external load balancer node
-// and gets ready for exposing the the API server and the load balancer admin console
+// and gets ready for exposing the API server and the load balancer admin console
 func CreateExternalLoadBalancerNode(name, image, clusterLabel, listenAddress string, port int32) (node *Node, err error) {
 	// gets a random host port for control-plane load balancer
 	// gets a random host port for the API server
