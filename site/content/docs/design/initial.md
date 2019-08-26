@@ -8,7 +8,7 @@ menu:
 ---
 # Design
 
-This document covers some of the the initial design for `kind`.
+This document covers some of the initial design for `kind`.
 
 **NOTE**: Some of this is out of date relative to what is currently implemented.
 This mostly exists for historical purposes, the [the original proposal][original proposal]

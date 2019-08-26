@@ -71,7 +71,7 @@ func (c *containerCmd) Run() error {
 		args = append(args, "-e", env)
 	}
 	// specify the container and command, after this everything will be
-	// args the the command in the container rather than to docker
+	// args the command in the container rather than to docker
 	args = append(
 		args,
 		c.nameOrID, // ... against the container
