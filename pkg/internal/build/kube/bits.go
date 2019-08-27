@@ -71,6 +71,7 @@ func nameToImpl(name string) (func(string) (Bits, error), error) {
 	case "bazel":
 		return NewBazelBuildBits, nil
 	case "docker":
+		return NewDockerBuildBits, nil
 	case "make":
 		return NewDockerBuildBits, nil
 	default:
