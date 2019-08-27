@@ -67,6 +67,7 @@ func (b *DockerBuildBits) Build() error {
 	// TODO(bentheelder): drop support for building without this once we've
 	// dropped older releases or gotten support for `make quick-release-images`
 	// back ported to them ...
+	// https://github.com/kubernetes/kubernetes/commit/037fabd842df48d0b45904b219643ca46a4ae607
 	releaseImagesSH := filepath.Join(
 		b.kubeRoot, "build", "release-images.sh",
 	)
@@ -93,6 +94,23 @@ func dockerBuildOsAndArch() string {
 
 // binary and image build when we have `make quick-release-images` support
 func (b *DockerBuildBits) build() error {
+	// we will pass through the environment variables, prepending defaults
+	// NOTE: if env are specified multiple times the last one wins
+	env := append(
+		[]string{
+			// ensure the build isn't especially noisy..
+			"KUBE_VERBOSE=0",
+			// we don't want to build these images as we don't use them ...
+			"KUBE_BUILD_HYPERKUBE=n",
+			"KUBE_BUILD_CONFORMANCE=n",
+			// build for the host platform
+			"KUBE_BUILD_PLATFORMS=" + dockerBuildOsAndArch(),
+			// leverage in-tree-cloud-provider-free builds by default
+			// https://github.com/kubernetes/kubernetes/pull/80353
+			"GOFLAGS=-tags=providerless",
+		},
+		os.Environ()...,
+	)
 	// build binaries
 	what := []string{
 		// binaries we use directly
@@ -102,27 +120,15 @@ func (b *DockerBuildBits) build() error {
 	}
 	cmd := exec.Command(
 		"build/run.sh",
-		"make", "all",
-		"WHAT="+strings.Join(what, " "),
-		"KUBE_BUILD_PLATFORMS="+dockerBuildOsAndArch(),
-		// ensure the build isn't especially noisy..
-		"KUBE_VERBOSE=0",
-	)
-	cmd.SetEnv(os.Environ()...)
+		"make", "all", "WHAT="+strings.Join(what, " "),
+	).SetEnv(env...)
 	exec.InheritOutput(cmd)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrap(err, "failed to build binaries")
 	}
 
 	// build images
-	cmd = exec.Command(
-		"make", "quick-release-images",
-		// we don't want to build these images as we don't use them...
-		"KUBE_BUILD_HYPERKUBE=n",
-		"KUBE_BUILD_CONFORMANCE=n",
-		"KUBE_BUILD_PLATFORMS="+dockerBuildOsAndArch(),
-	)
-	cmd.SetEnv(os.Environ()...)
+	cmd = exec.Command("make", "quick-release-images").SetEnv(env...)
 	exec.InheritOutput(cmd)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrap(err, "failed to build images")
@@ -190,6 +196,7 @@ func (b *DockerBuildBits) buildBash() error {
 	if err := cmd.Run(); err != nil {
 		return errors.Wrap(err, "failed to build images")
 	}
+
 	return nil
 }
 
