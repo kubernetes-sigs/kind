@@ -425,7 +425,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	}
 
 	// gets the list of images required by kubeadm
-	requiredImages, err := exec.CombinedOutputLines(cmder.Command(
+	requiredImages, err := exec.OutputLines(cmder.Command(
 		"kubeadm", "config", "images", "list", "--kubernetes-version", rawVersion[0],
 	))
 	if err != nil {
