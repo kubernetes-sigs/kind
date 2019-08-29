@@ -24,12 +24,12 @@ import (
 
 	"sigs.k8s.io/kind/pkg/container/docker"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
-	logutil "sigs.k8s.io/kind/pkg/log"
+	"sigs.k8s.io/kind/pkg/internal/util/cli"
 )
 
 // ensureNodeImages ensures that the node images used by the create
 // configuration are present
-func ensureNodeImages(status *logutil.Status, cfg *config.Cluster) {
+func ensureNodeImages(status *cli.Status, cfg *config.Cluster) {
 	// pull each required image
 	for _, image := range requiredImages(cfg).List() {
 		// prints user friendly message
