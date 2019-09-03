@@ -1,6 +1,6 @@
 module sigs.k8s.io/kind/cmd/kindnetd
 
-go 1.12
+go 1.13
 
 require (
 	github.com/godbus/dbus v4.1.0+incompatible // indirect

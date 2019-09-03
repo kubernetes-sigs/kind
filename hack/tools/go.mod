@@ -1,6 +1,6 @@
 module sigs.k8s.io/kind/hack/tools
 
-go 1.12
+go 1.13
 
 require (
 	github.com/golangci/golangci-lint v1.17.2-0.20190714145355-d2b1eea2c617
