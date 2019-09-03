@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/kind/pkg/internal/cluster/context"
 	createtypes "sigs.k8s.io/kind/pkg/internal/cluster/create/types"
 	"sigs.k8s.io/kind/pkg/internal/cluster/delete"
-	logutil "sigs.k8s.io/kind/pkg/log"
+	"sigs.k8s.io/kind/pkg/internal/util/cli"
 
 	configaction "sigs.k8s.io/kind/pkg/internal/cluster/create/actions/config"
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions/installcni"
@@ -66,7 +66,7 @@ func Cluster(ctx *context.Context, options ...create.ClusterOption) error {
 	}
 
 	// setup a status object to show progress to the user
-	status := logutil.NewStatus(os.Stdout)
+	status := cli.NewStatus(os.Stdout)
 	status.MaybeWrapLogrus(log.StandardLogger())
 
 	// attempt to explicitly pull the required node images if they doesn't exist locally

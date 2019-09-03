@@ -94,17 +94,14 @@ func Run() error {
 
 // Main wraps Run and sets the log formatter
 func Main() {
-	// let's explicitly set stdout
-	log.SetOutput(os.Stdout)
+	// TODO(bentheelder): replace this with a shimmable logger
+	// let's explicitly set stderr
+	log.SetOutput(os.Stderr)
 	// this formatter is the default, but the timestamps output aren't
 	// particularly useful, they're relative to the command start
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:   true,
 		TimestampFormat: "15:04:05",
-		// we force colors because this only forces over the isTerminal check
-		// and this will not be accurately checkable later on when we wrap
-		// the logger output with our logutil.StatusFriendlyWriter
-		ForceColors: logutil.IsTerminal(log.StandardLogger().Out),
 	})
 	if err := Run(); err != nil {
 		os.Exit(1)

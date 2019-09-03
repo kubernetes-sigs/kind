@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/kind/pkg/container/cri"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/cluster/loadbalancer"
-	logutil "sigs.k8s.io/kind/pkg/log"
+	"sigs.k8s.io/kind/pkg/internal/util/cli"
 	"sigs.k8s.io/kind/pkg/util/concurrent"
 )
 
@@ -76,7 +76,7 @@ func copyConfigNodes(toCopy []config.Node) []config.Node {
 // provisionNodes takes care of creating all the containers
 // that will host `kind` nodes
 func provisionNodes(
-	status *logutil.Status, cfg *config.Cluster, clusterName, clusterLabel string,
+	status *cli.Status, cfg *config.Cluster, clusterName, clusterLabel string,
 ) error {
 	defer status.End(false)
 
@@ -89,7 +89,7 @@ func provisionNodes(
 }
 
 func createNodeContainers(
-	status *logutil.Status, cfg *config.Cluster, clusterName, clusterLabel string,
+	status *cli.Status, cfg *config.Cluster, clusterName, clusterLabel string,
 ) error {
 	defer status.End(false)
 

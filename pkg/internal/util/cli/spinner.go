@@ -14,8 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package fidget implements CLI functionality for bored users waiting for results
-package fidget
+package cli
 
 import (
 	"fmt"
@@ -43,10 +42,10 @@ var spinnerFrames = []string{
 	"⠊⠁",
 }
 
-// Spinner is a simple and efficient CLI loading spinner used by kind
+// spinner is a simple and efficient CLI loading spinner used by kind
 // It is simplistic and assumes that the line length will not change.
 // It is best used indirectly via log.Status (see parent package)
-type Spinner struct {
+type spinner struct {
 	frames []string
 	stop   chan struct{}
 	ticker *time.Ticker
@@ -57,9 +56,9 @@ type Spinner struct {
 	suffix string
 }
 
-// NewSpinner initializes and returns a new Spinner that will write to
-func NewSpinner(w io.Writer) *Spinner {
-	return &Spinner{
+// Newspinner initializes and returns a new spinner that will write to
+func newSpinner(w io.Writer) *spinner {
+	return &spinner{
 		frames: spinnerFrames,
 		stop:   make(chan struct{}, 1),
 		ticker: time.NewTicker(time.Millisecond * 100),
@@ -69,21 +68,21 @@ func NewSpinner(w io.Writer) *Spinner {
 }
 
 // SetPrefix sets the prefix to print before the spinner
-func (s *Spinner) SetPrefix(prefix string) {
+func (s *spinner) SetPrefix(prefix string) {
 	s.mu.Lock()
 	s.prefix = prefix
 	s.mu.Unlock()
 }
 
 // SetSuffix sets the suffix to print after the spinner
-func (s *Spinner) SetSuffix(suffix string) {
+func (s *spinner) SetSuffix(suffix string) {
 	s.mu.Lock()
 	s.suffix = suffix
 	s.mu.Unlock()
 }
 
 // Start starts the spinner running
-func (s *Spinner) Start() {
+func (s *spinner) Start() {
 	go func() {
 		for {
 			for _, frame := range s.frames {
@@ -103,6 +102,6 @@ func (s *Spinner) Start() {
 }
 
 // Stop signals the spinner to stop
-func (s *Spinner) Stop() {
+func (s *spinner) Stop() {
 	s.stop <- struct{}{}
 }
