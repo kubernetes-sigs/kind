@@ -17,7 +17,7 @@ This guide covers getting started with the `kind` command.
 You can either install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.5.1` or clone this repo 
 and run `make build` from the repository.
 
-**NOTE**: please use the latest Go to do this, ideally go 1.12.9 or greater.
+**NOTE**: please use the latest Go to do this, ideally go 1.13 or greater.
 A version of Go officially [supported upstream][go-supported] by the Go project must be used.
 
 This will put `kind` in `$(go env GOPATH)/bin`. You may need to add that directory to your `$PATH` as
