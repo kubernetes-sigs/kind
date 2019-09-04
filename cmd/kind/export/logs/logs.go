@@ -38,8 +38,8 @@ func NewCommand() *cobra.Command {
 		Args: cobra.MaximumNArgs(1),
 		// TODO(bentheelder): more detailed usage
 		Use:   "logs [output-dir]",
-		Short: "exports logs to to a tempdir or [output-dir] if specified",
-		Long:  "exports logs to to a tempdir or [output-dir] if specified",
+		Short: "exports logs to a tempdir or [output-dir] if specified",
+		Long:  "exports logs to a tempdir or [output-dir] if specified",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(flags, args)
 		},
