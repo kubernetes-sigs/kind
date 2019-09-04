@@ -23,19 +23,14 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 
 # our exit handler (trap)
 cleanup() {
-  # always attempt to dump logs
   kind "export" logs "${ARTIFACTS}/logs" || true
   # KIND_IS_UP is true once we: kind create
   if [[ "${KIND_IS_UP:-}" = true ]]; then
     kind delete cluster || true
   fi
-  # clean up e2e.test symlink
   rm -f _output/bin/e2e.test || true
-  # remove our tempdir
-  # NOTE: this needs to be last, or it will prevent kind delete
-  if [[ -n "${TMP_DIR:-}" ]]; then
-    rm -rf "${TMP_DIR}"
-  fi
+  # remove our tempdir, this needs to be last, or it will prevent kind delete
+  [[ -n "${TMP_DIR:-}" ]] && rm -rf "${TMP_DIR:?}"
 }
 
 # install kind to a tempdir GOPATH from this script's kind checkout
@@ -45,8 +40,8 @@ install_kind() {
   export PATH="${TMP_DIR}/bin:${PATH}"
 }
 
-# build kubernetes / node image, e2e binaries
-build() {
+# build kubernetes / node image, e2e binaries, with bazel
+build_with_bazel() {
   # possibly enable bazel build caching before building kubernetes
   if [[ "${BAZEL_REMOTE_CACHE_ENABLED:-false}" == "true" ]]; then
     create_bazel_cache_rcs.sh || true
@@ -54,40 +49,40 @@ build() {
 
   # build the node image w/ kubernetes
   kind build node-image --type=bazel --kube-root="$(go env GOPATH)/src/k8s.io/kubernetes"
-
   # make sure we have e2e requirements
-  #make all WHAT="cmd/kubectl test/e2e/e2e.test vendor/github.com/onsi/ginkgo/ginkgo"
   bazel build //cmd/kubectl //test/e2e:e2e.test //vendor/github.com/onsi/ginkgo/ginkgo
 
   # ensure the e2e script will find our binaries ...
   # https://github.com/kubernetes/kubernetes/issues/68306
+  # TODO: remove this, it was fixed in 1.13+
   mkdir -p '_output/bin/'
-  cp "bazel-bin/test/e2e/e2e.test" "_output/bin/"
+  cp 'bazel-bin/test/e2e/e2e.test' '_output/bin/'
   PATH="$(dirname "$(find "${PWD}/bazel-bin/" -name kubectl -type f)"):${PATH}"
   export PATH
+}
 
-  # attempt to release some memory after building
-  sync || true
-  echo 1 > /proc/sys/vm/drop_caches || true
+# build kubernetes / node image, e2e binaries
+build() {
+  # build the node image w/ kubernetes
+  kind build node-image --kube-root="$(go env GOPATH)/src/k8s.io/kubernetes"
+  # make sure we have e2e requirements
+  make all WHAT='cmd/kubectl test/e2e/e2e.test vendor/github.com/onsi/ginkgo/ginkgo'
 }
 
 # up a cluster with kind
 create_cluster() {
   # create the config file
   cat <<EOF > "${ARTIFACTS}/kind-config.yaml"
-# config for 1 control plane node and 2 workers
-# necessary for conformance
+# config for 1 control plane node and 2 workers (necessary for conformance)
 kind: Cluster
 apiVersion: kind.sigs.k8s.io/v1alpha3
 networking:
   ipFamily: ${IP_FAMILY:-ipv4}
 nodes:
-# the control plane node
 - role: control-plane
 - role: worker
 - role: worker
 EOF
-
   # actually create the cluster
   # TODO(BenTheElder): settle on verbosity for this script
   KIND_IS_UP=true
@@ -154,29 +149,33 @@ run_tests() {
     -o=jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.taints}{"\n"}{end}' \
     | grep -cv "node-role.kubernetes.io/master" )"
 
-  # setting this env prevents ginkg e2e from trying to run provider setup
+  # setting this env prevents ginkgo e2e from trying to run provider setup
   export KUBERNETES_CONFORMANCE_TEST="y"
-  # run the tests
   ./hack/ginkgo-e2e.sh \
     '--provider=skeleton' "--num-nodes=${NUM_NODES}" \
     "--ginkgo.focus=${FOCUS}" "--ginkgo.skip=${SKIP}" \
     "--report-dir=${ARTIFACTS}" '--disable-log-dump=true'
 }
 
-# setup kind, build kubernetes, create a cluster, run the e2es
-main() {
-  # create temp dir and setup cleanup
-  TMP_DIR=$(mktemp -d)
-  trap cleanup EXIT
-  # ensure artifacts exists when not in CI
-  ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
-  export ARTIFACTS
-  mkdir -p "${ARTIFACTS}"
-  # now build and run the cluster and tests
-  install_kind
-  build
-  create_cluster
-  run_tests
-}
+# create temp dir and setup cleanup
+TMP_DIR=$(mktemp -d)
+trap cleanup EXIT
 
-main
+# ensure artifacts (results) directory exists when not in CI
+export ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
+mkdir -p "${ARTIFACTS}"
+
+# now build and run the cluster and tests
+install_kind
+if [[ "${BUILD_TYPE:-}" == "bazel" ]]; then
+  build_with_bazel
+else
+  build
+fi
+
+# attempt to release some memory after building
+sync || true
+echo 1 > /proc/sys/vm/drop_caches || true
+
+# create the cluster and run tests
+create_cluster && run_tests
