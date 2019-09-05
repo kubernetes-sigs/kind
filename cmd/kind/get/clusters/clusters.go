@@ -19,10 +19,15 @@ package clusters
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 
-	"sigs.k8s.io/kind/pkg/cluster"
+	"sigs.k8s.io/kind/pkg/cluster/nodes"
+
+	"k8s.io/kubernetes/pkg/printers"
 )
 
 // NewCommand returns a new cobra.Command for getting the list of clusters
@@ -41,12 +46,29 @@ func NewCommand() *cobra.Command {
 }
 
 func runE() error {
-	clusters, err := cluster.List()
+	clusters, err := nodes.ListByCluster()
 	if err != nil {
 		return err
 	}
-	for _, cluster := range clusters {
-		fmt.Println(cluster.Name())
+	printer := printers.GetNewTabWriter(os.Stdout)
+	fmt.Fprintln(printer, strings.Join([]string{"NAME", "RUNNING", "VERSION"}, "\t"))
+	for cluster, nodeList := range clusters {
+		size := strconv.Itoa(len(nodeList))
+		running := 0
+		version := ""
+		for _, n := range nodeList {
+			status, _ := n.IsRunning()
+			if status {
+				running++
+			}
+			v, err := n.KubeVersion()
+			if err == nil {
+				version = v
+			}
+		}
+		runState := strconv.Itoa(running) + "/" + size
+		fmt.Fprintln(printer, strings.Join([]string{cluster, runState, version}, "\t"))
 	}
+	printer.Flush()
 	return nil
 }

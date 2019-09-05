@@ -238,6 +238,23 @@ func (n *Node) Role() (role string, err error) {
 	return role, nil
 }
 
+// IsRunning returns the status of the node
+func (n *Node) IsRunning() (status bool, err error) {
+	// retrive the IP address of the node using docker inspect
+	lines, err := docker.Inspect(n.name, "{{index .State.Running}}")
+	if err != nil {
+		return false, errors.Wrap(err, "failed to get container details")
+	}
+	if len(lines) != 1 {
+		return false, errors.Errorf("file should only be one line, got %d lines", len(lines))
+	}
+	status, err = strconv.ParseBool(lines[0])
+	if err != nil {
+		return false, errors.Wrap(err, "status is neither true nor false")
+	}
+	return status, nil
+}
+
 // WriteFile writes content to dest on the node
 func (n *Node) WriteFile(dest, content string) error {
 	// create destination directory
