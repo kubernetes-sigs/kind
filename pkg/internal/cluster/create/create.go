@@ -18,12 +18,9 @@ package create
 
 import (
 	"fmt"
-	"os"
 	"runtime"
 
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
-
-	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/cluster/create"
 	"sigs.k8s.io/kind/pkg/globals"
@@ -67,8 +64,7 @@ func Cluster(ctx *context.Context, options ...create.ClusterOption) error {
 	}
 
 	// setup a status object to show progress to the user
-	status := cli.NewStatus(os.Stdout)
-	status.MaybeWrapLogrus(log.StandardLogger())
+	status := cli.NewStatus(globals.GetLogger())
 
 	// attempt to explicitly pull the required node images if they doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
