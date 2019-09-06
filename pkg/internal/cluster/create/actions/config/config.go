@@ -22,10 +22,10 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/globals"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
 	"sigs.k8s.io/kind/pkg/internal/cluster/kubeadm"
@@ -219,7 +219,7 @@ func writeKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node *node
 		return errors.Wrap(err, "failed to generate kubeadm config content")
 	}
 
-	log.Debug("Using kubeadm config:\n" + kubeadmConfig)
+	globals.GetLogger().V(1).Info("Using kubeadm config:\n" + kubeadmConfig)
 
 	// copy the config to the node
 	if err := node.WriteFile("/kind/kubeadm.conf", kubeadmConfig); err != nil {

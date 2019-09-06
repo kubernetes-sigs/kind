@@ -20,7 +20,7 @@ import (
 	"io"
 	osexec "os/exec"
 
-	log "github.com/sirupsen/logrus"
+	"sigs.k8s.io/kind/pkg/globals"
 )
 
 // LocalCmd wraps os/exec.Cmd, implementing the kind/pkg/exec.Cmd interface
@@ -68,6 +68,7 @@ func (cmd *LocalCmd) SetStderr(w io.Writer) Cmd {
 
 // Run runs
 func (cmd *LocalCmd) Run() error {
-	log.Debugf("Running: %v %v", cmd.Path, cmd.Args)
+	// TODO: should be in the caller or logger should be injected somehow ...
+	globals.GetLogger().V(3).Infof("Running: %v %v", cmd.Path, cmd.Args)
 	return cmd.Cmd.Run()
 }

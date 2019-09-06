@@ -20,9 +20,6 @@ package kind
 import (
 	"os"
 
-	"github.com/sirupsen/logrus"
-
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/cmd/kind/build"
@@ -33,14 +30,17 @@ import (
 	"sigs.k8s.io/kind/cmd/kind/get"
 	"sigs.k8s.io/kind/cmd/kind/load"
 	"sigs.k8s.io/kind/cmd/kind/version"
-	logutil "sigs.k8s.io/kind/pkg/log"
+	"sigs.k8s.io/kind/pkg/globals"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
-const defaultLevel = logrus.WarnLevel
+const defaultLevel = "warning"
 
 // Flags for the kind command
 type Flags struct {
-	LogLevel string
+	LogLevel  string
+	Verbosity int32
+	Quiet     bool
 }
 
 // NewCommand returns a new cobra.Command implementing the root command for kind
@@ -60,8 +60,22 @@ func NewCommand() *cobra.Command {
 	cmd.PersistentFlags().StringVar(
 		&flags.LogLevel,
 		"loglevel",
-		defaultLevel.String(),
-		"logrus log level "+logutil.LevelsString(),
+		defaultLevel,
+		"DEPRECATED: see -v instead",
+	)
+	cmd.PersistentFlags().Int32VarP(
+		&flags.Verbosity,
+		"verbosity",
+		"v",
+		0,
+		"info log verbosity",
+	)
+	cmd.PersistentFlags().BoolVarP(
+		&flags.Quiet,
+		"quiet",
+		"q",
+		false,
+		"silence all stderr output",
 	)
 	// add all top level subcommands
 	cmd.AddCommand(build.NewCommand())
@@ -76,14 +90,13 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *Flags) error {
-	level := defaultLevel
-	parsed, err := log.ParseLevel(flags.LogLevel)
-	if err != nil {
-		log.Warnf("Invalid log level '%s', defaulting to '%s'", flags.LogLevel, level)
+	// TODO: handle --loglevel which previously supported:
+	// panic, fatal, error, warning, info, debug, trace
+	if flags.Quiet {
+		globals.SetLogger(log.NoopLogger{})
 	} else {
-		level = parsed
+		globals.UseDefaultLogger(log.Level(flags.Verbosity))
 	}
-	log.SetLevel(level)
 	return nil
 }
 
@@ -94,15 +107,7 @@ func Run() error {
 
 // Main wraps Run and sets the log formatter
 func Main() {
-	// TODO(bentheelder): replace this with a shimmable logger
-	// let's explicitly set stderr
-	log.SetOutput(os.Stderr)
-	// this formatter is the default, but the timestamps output aren't
-	// particularly useful, they're relative to the command start
-	log.SetFormatter(&log.TextFormatter{
-		FullTimestamp:   true,
-		TimestampFormat: "15:04:05",
-	})
+	// TODO: use default logger
 	if err := Run(); err != nil {
 		os.Exit(1)
 	}

@@ -17,10 +17,9 @@ limitations under the License.
 package docker
 
 import (
-	log "github.com/sirupsen/logrus"
-
 	"sigs.k8s.io/kind/pkg/container/cri"
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/globals"
 )
 
 // RunOpt is an option for Run
@@ -93,8 +92,9 @@ func Run(image string, opts ...RunOpt) error {
 	output, err := exec.CombinedOutputLines(cmd)
 	if err != nil {
 		// log error output if there was any
+		// TODO: this should be in the caller instead
 		for _, line := range output {
-			log.Error(line)
+			globals.GetLogger().Error(line)
 		}
 		return err
 	}

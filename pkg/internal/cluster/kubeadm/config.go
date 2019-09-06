@@ -21,10 +21,10 @@ import (
 	"strings"
 	"text/template"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/version"
+
+	"sigs.k8s.io/kind/pkg/globals"
 )
 
 // ConfigData is supplied to the kubeadm config template, with values populated
@@ -442,7 +442,7 @@ metadata:
 // Config returns a kubeadm config generated from config data, in particular
 // the kubernetes version
 func Config(data ConfigData) (config string, err error) {
-	log.Debugf("Configuration Input data: %v", data)
+	globals.GetLogger().V(2).Infof("Configuration Input data: %v", data)
 	ver, err := version.ParseGeneric(data.KubernetesVersion)
 	if err != nil {
 		return "", err
@@ -472,6 +472,6 @@ func Config(data ConfigData) (config string, err error) {
 	if err != nil {
 		return "", errors.Wrap(err, "error executing config template")
 	}
-	log.Debugf("Configuration generated:\n %v", buff.String())
+	globals.GetLogger().V(1).Infof("Configuration generated:\n %v", buff.String())
 	return buff.String(), nil
 }

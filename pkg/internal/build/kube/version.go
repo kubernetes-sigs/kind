@@ -23,9 +23,9 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/globals"
 )
 
 // buildVersionFile creates a file for the kubernetes git version in
@@ -66,7 +66,7 @@ func buildVersionFile(kubeRoot string) (string, error) {
 	for _, line := range output {
 		parts := strings.SplitN(line, " ", 2)
 		if len(parts) != 2 {
-			log.Errorf("Could not parse kubernetes version, output: %s", strings.Join(output, "\n"))
+			globals.GetLogger().Error("Could not parse kubernetes version, output: " + strings.Join(output, "\n"))
 			return "", errors.New("could not parse kubernetes version")
 		}
 		if parts[0] == "gitVersion" {
@@ -81,7 +81,7 @@ func buildVersionFile(kubeRoot string) (string, error) {
 		}
 	}
 	if version == "" {
-		log.Errorf("Could not obtain kubernetes version, output: %s", strings.Join(output, "\n"))
+		globals.GetLogger().Error("Could not obtain kubernetes version, output: " + strings.Join(output, "\n"))
 		return "", errors.New("could not obtain kubernetes version")
 	}
 	return version, nil

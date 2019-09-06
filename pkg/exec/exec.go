@@ -25,7 +25,7 @@ import (
 	"io"
 	"os"
 
-	log "github.com/sirupsen/logrus"
+	"sigs.k8s.io/kind/pkg/globals"
 )
 
 // Cmd abstracts over running a command somewhere, this is useful for testing
@@ -93,16 +93,17 @@ func InheritOutput(cmd Cmd) Cmd {
 }
 
 // RunLoggingOutputOnFail runs the cmd, logging error output if Run returns an error
+// TODO: we should just make exec capture output on error and move this to the caller
 func RunLoggingOutputOnFail(cmd Cmd) error {
 	var buff bytes.Buffer
 	cmd.SetStdout(&buff)
 	cmd.SetStderr(&buff)
 	err := cmd.Run()
 	if err != nil {
-		log.Error("failed with:")
+		globals.GetLogger().Error("failed with:")
 		scanner := bufio.NewScanner(&buff)
 		for scanner.Scan() {
-			log.Error(scanner.Text())
+			globals.GetLogger().Error(scanner.Text())
 		}
 	}
 	return err

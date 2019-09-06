@@ -23,10 +23,10 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
+	"sigs.k8s.io/kind/pkg/globals"
 )
 
 // DefaultImage is the default name:tag of the built base image
@@ -92,11 +92,11 @@ func (c *BuildContext) Build() (err error) {
 
 	err = fs.Copy(c.sourceDir, buildDir)
 	if err != nil {
-		log.Errorf("failed to copy sources to build dir %v", err)
+		globals.GetLogger().Errorf("failed to copy sources to build dir %v", err)
 		return err
 	}
 
-	log.Infof("Building base image in: %s", buildDir)
+	globals.GetLogger().V(0).Infof("Building base image in: %s", buildDir)
 
 	// then the actual docker image
 	return c.buildImage(buildDir)
@@ -105,13 +105,13 @@ func (c *BuildContext) Build() (err error) {
 func (c *BuildContext) buildImage(dir string) error {
 	// build the image, tagged as tagImageAs, using the our tempdir as the context
 	cmd := exec.Command("docker", "build", "-t", c.image, dir)
-	log.Info("Starting Docker build ...")
+	globals.GetLogger().V(0).Info("Starting Docker build ...")
 	exec.InheritOutput(cmd)
 	err := cmd.Run()
 	if err != nil {
-		log.Errorf("Docker build Failed! %v", err)
+		globals.GetLogger().Errorf("Docker build Failed! %v", err)
 		return err
 	}
-	log.Info("Docker build completed.")
+	globals.GetLogger().V(0).Info("Docker build completed.")
 	return nil
 }
