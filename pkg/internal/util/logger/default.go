@@ -65,7 +65,9 @@ func (d *Default) print(message string) {
 	if buf.Bytes()[buf.Len()-1] != '\n' {
 		buf.WriteByte('\n')
 	}
-	d.Write(buf.Bytes())
+	// TODO: should we handle this somehow??
+	// Who logs for the logger? 🤔
+	_, _ = d.Write(buf.Bytes())
 }
 
 func (d *Default) printf(format string, args ...interface{}) {
@@ -74,7 +76,9 @@ func (d *Default) printf(format string, args ...interface{}) {
 	if buf.Bytes()[buf.Len()-1] != '\n' {
 		buf.WriteByte('\n')
 	}
-	d.Write(buf.Bytes())
+	// TODO: should we handle this somehow??
+	// Who logs for the logger? 🤔
+	_, _ = d.Write(buf.Bytes())
 }
 
 // Warn is part of the log.Logger interface
