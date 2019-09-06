@@ -55,7 +55,7 @@ func runE(flags *flagpole) error {
 		return err
 	}
 	if !known {
-		return errors.Errorf("unknown cluster %q", flags.Name)
+		return fmt.Errorf("unknown cluster %q", flags.Name)
 	}
 	// Delete the cluster
 	fmt.Printf("Deleting cluster %q ...\n", flags.Name)

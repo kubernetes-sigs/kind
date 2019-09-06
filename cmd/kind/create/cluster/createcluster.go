@@ -65,7 +65,7 @@ func runE(flags *flagpole) error {
 		return err
 	}
 	if known {
-		return errors.Errorf("a cluster with the name %q already exists", flags.Name)
+		return fmt.Errorf("a cluster with the name %q already exists", flags.Name)
 	}
 
 	// create a cluster context and create the cluster
