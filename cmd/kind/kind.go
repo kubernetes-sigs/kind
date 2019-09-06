@@ -52,7 +52,7 @@ func NewCommand() *cobra.Command {
 		Short: "kind is a tool for managing local Kubernetes clusters",
 		Long:  "kind creates and manages local Kubernetes clusters using Docker container 'nodes'",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return runE(flags)
+			return runE(flags, cmd)
 		},
 		SilenceUsage: true,
 		Version:      version.Version,
@@ -89,13 +89,27 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func runE(flags *Flags) error {
-	// TODO: handle --loglevel which previously supported:
-	// panic, fatal, error, warning, info, debug, trace
+func runE(flags *Flags, cmd *cobra.Command) error {
+	// handle limited migration for --loglevel
+	setLogLevel := cmd.Flag("loglevel").Changed
+	setVerbosity := cmd.Flag("verbosity").Changed
+	if setLogLevel && !setVerbosity {
+		switch flags.LogLevel {
+		case "debug":
+			flags.Verbosity = 3
+		case "trace":
+			flags.Verbosity = 2147483647
+		}
+	}
+	// normal logger setup
 	if flags.Quiet {
 		globals.SetLogger(log.NoopLogger{})
 	} else {
 		globals.UseDefaultLogger(log.Level(flags.Verbosity))
+	}
+	// warn about deprecated flag if used
+	if setLogLevel {
+		globals.GetLogger().Warn("--loglevel is deprecated, please switch to -v and -q!")
 	}
 	return nil
 }
