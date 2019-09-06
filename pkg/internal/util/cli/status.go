@@ -34,7 +34,7 @@ type Status struct {
 	logger  log.Logger
 }
 
-// StatusForLogger returns a status object for the logger l,
+// StatusForLogger returns a new status object for the logger l,
 // if l is the kind default logger it will inject a wrapped writer into it
 // and if we've already attached one it will return the previous status
 func StatusForLogger(l log.Logger) *Status {
@@ -42,16 +42,20 @@ func StatusForLogger(l log.Logger) *Status {
 		logger: l,
 	}
 	if v, ok := l.(*logger.Default); ok {
-		// Be re-entrant and only attach one status to a logger
-		// TODO(BenTheElder): maybe just combine status / spinner onto
-		// the logger ...
-		// If we already wrapped the logger's writer, return that status
+		// Be re-entrant and only attach one spinner
+		// TODO: how do we handle concurrent spinner instances !?
+		// IE: library usage + the default logger ...
 		if v2, ok := v.Writer.(*FriendlyWriter); ok {
 			return v2.status
 		}
 		// otherwise wrap the logger's writer for the first time
-		s.spinner = newSpinner(v.Writer)
-		v.Writer = s.maybeWrapWriter(v.Writer)
+		if env.IsTerminal(v.Writer) {
+			s.spinner = newSpinner(v.Writer)
+			v.Writer = &FriendlyWriter{
+				status: s,
+				inner:  v.Writer,
+			}
+		}
 	}
 	return s
 }
@@ -73,17 +77,6 @@ func (ww *FriendlyWriter) Write(p []byte) (n int, err error) {
 	n, err = ww.inner.Write(p)
 	ww.status.spinner.Start()
 	return n, err
-}
-
-// maybeWrapWriter returns a FriendlyWriter for w IFF w is a terminal, otherwise it returns w
-func (s *Status) maybeWrapWriter(w io.Writer) io.Writer {
-	if env.IsTerminal(w) {
-		return &FriendlyWriter{
-			status: s,
-			inner:  w,
-		}
-	}
-	return w
 }
 
 // Start starts a new phase of the status, if attached to a terminal
