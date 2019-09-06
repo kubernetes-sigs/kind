@@ -26,8 +26,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
-
-	"k8s.io/kubernetes/pkg/printers"
+	"sigs.k8s.io/kind/pkg/util"
 )
 
 // NewCommand returns a new cobra.Command for getting the list of clusters
@@ -50,7 +49,7 @@ func runE() error {
 	if err != nil {
 		return err
 	}
-	printer := printers.GetNewTabWriter(os.Stdout)
+	printer := util.GetNewTabWriter(os.Stdout)
 	fmt.Fprintln(printer, strings.Join([]string{"NAME", "RUNNING", "VERSION"}, "\t"))
 	for cluster, nodeList := range clusters {
 		size := strconv.Itoa(len(nodeList))
