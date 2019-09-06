@@ -32,7 +32,7 @@ func PullIfNotPresent(image string, retries int) (pulled bool, err error) {
 	// if this did not return an error, then the image exists locally
 	cmd := exec.Command("docker", "inspect", "--type=image", image)
 	if err := cmd.Run(); err == nil {
-		globals.GetLogger().V(0).Infof("Image: %s present locally", image)
+		globals.GetLogger().V(1).Infof("Image: %s present locally", image)
 		return false, nil
 	}
 	// otherwise try to pull it
@@ -41,13 +41,13 @@ func PullIfNotPresent(image string, retries int) (pulled bool, err error) {
 
 // Pull pulls an image, retrying up to retries times
 func Pull(image string, retries int) error {
-	globals.GetLogger().V(0).Infof("Pulling image: %s ...", image)
+	globals.GetLogger().V(1).Infof("Pulling image: %s ...", image)
 	err := exec.Command("docker", "pull", image).Run()
 	// retry pulling up to retries times if necessary
 	if err != nil {
 		for i := 0; i < retries; i++ {
 			time.Sleep(time.Second * time.Duration(i+1))
-			globals.GetLogger().V(0).Infof("Trying again to pull image: %q ... %v", image, err)
+			globals.GetLogger().V(1).Infof("Trying again to pull image: %q ... %v", image, err)
 			// TODO(bentheelder): add some backoff / sleep?
 			err = exec.Command("docker", "pull", image).Run()
 			if err == nil {
@@ -56,7 +56,7 @@ func Pull(image string, retries int) error {
 		}
 	}
 	if err != nil {
-		globals.GetLogger().V(0).Infof("Failed to pull image: %q %v", image, err)
+		globals.GetLogger().V(1).Infof("Failed to pull image: %q %v", image, err)
 	}
 	return err
 }
