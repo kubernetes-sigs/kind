@@ -19,7 +19,6 @@ limitations under the License.
 package globals
 
 import (
-	"os"
 	"sync"
 
 	"sigs.k8s.io/kind/pkg/log"
@@ -46,10 +45,7 @@ func SetLogger(l log.Logger) {
 //
 // Not to be confused with the default if not set of log.NoopLogger
 func UseDefaultLogger(verbosity log.Level) {
-	SetLogger(&logger.Default{
-		Verbosity: verbosity,
-		Writer:    os.Stderr,
-	})
+	SetLogger(logger.NewDefault(verbosity))
 }
 
 // GetLogger returns the standard logger used by this package

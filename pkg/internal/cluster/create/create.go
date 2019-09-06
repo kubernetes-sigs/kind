@@ -64,7 +64,7 @@ func Cluster(ctx *context.Context, options ...create.ClusterOption) error {
 	}
 
 	// setup a status object to show progress to the user
-	status := cli.NewStatus(globals.GetLogger())
+	status := cli.StatusForLogger(globals.GetLogger())
 
 	// attempt to explicitly pull the required node images if they doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls

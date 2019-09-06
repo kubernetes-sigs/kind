@@ -34,12 +34,22 @@ type Status struct {
 	logger  log.Logger
 }
 
-// NewStatus creates a new default Status
-func NewStatus(l log.Logger) *Status {
+// StatusForLogger returns a status object for the logger l,
+// if l is the kind default logger it will inject a wrapped writer into it
+// and if we've already attached one it will return the previous status
+func StatusForLogger(l log.Logger) *Status {
 	s := &Status{
 		logger: l,
 	}
 	if v, ok := l.(*logger.Default); ok {
+		// Be re-entrant and only attach one status to a logger
+		// TODO(BenTheElder): maybe just combine status / spinner onto
+		// the logger ...
+		// If we already wrapped the logger's writer, return that status
+		if v2, ok := v.Writer.(*FriendlyWriter); ok {
+			return v2.status
+		}
+		// otherwise wrap the logger's writer for the first time
 		s.spinner = newSpinner(v.Writer)
 		v.Writer = s.maybeWrapWriter(v.Writer)
 	}

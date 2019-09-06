@@ -20,15 +20,33 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"sync"
 
 	"sigs.k8s.io/kind/pkg/log"
+
+	"sigs.k8s.io/kind/pkg/internal/util/env"
 )
 
+// Default is the default log.Logger implementation
 type Default struct {
 	Verbosity log.Level
 	io.Writer
 	writeMu sync.Mutex
+	// for later use in adding colored output etc...
+	// we collect this in NewDefault before any writer wrapping may occur
+	isTerm bool
+}
+
+var _ log.Logger = &Default{}
+
+// NewDefault returns a new Default logger with the given verbosity
+func NewDefault(verbosity log.Level) *Default {
+	return &Default{
+		Verbosity: verbosity,
+		Writer:    os.Stderr,
+		isTerm:    env.IsTerminal(os.Stderr),
+	}
 }
 
 func (d *Default) Write(p []byte) (n int, err error) {
@@ -39,8 +57,6 @@ func (d *Default) Write(p []byte) (n int, err error) {
 	defer d.writeMu.Unlock()
 	return d.Writer.Write(p)
 }
-
-var _ log.Logger = &Default{}
 
 // TODO: prefix log lines with metadata (log level? timestamp?)
 
@@ -61,21 +77,27 @@ func (d *Default) printf(format string, args ...interface{}) {
 	d.Write(buf.Bytes())
 }
 
+// Warn is part of the log.Logger interface
 func (d *Default) Warn(message string) {
 	d.print(message)
 }
 
+// Warnf is part of the log.Logger interface
 func (d *Default) Warnf(format string, args ...interface{}) {
 	d.printf(format, args...)
 }
+
+// Error is part of the log.Logger interface
 func (d *Default) Error(message string) {
 	d.print(message)
 }
 
+// Errorf is part of the log.Logger interface
 func (d *Default) Errorf(format string, args ...interface{}) {
 	d.printf(format, args...)
 }
 
+// V is part of the log.Logger interface
 func (d *Default) V(level log.Level) log.InfoLogger {
 	return defaultInfo{
 		logger:  d,
