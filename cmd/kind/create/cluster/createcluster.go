@@ -22,11 +22,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/create"
+	"sigs.k8s.io/kind/pkg/globals"
 	"sigs.k8s.io/kind/pkg/util"
 )
 
@@ -79,7 +79,7 @@ func runE(flags *flagpole) error {
 	); err != nil {
 		if utilErrors, ok := err.(util.Errors); ok {
 			for _, problem := range utilErrors.Errors() {
-				log.Error(problem)
+				globals.GetLogger().Errorf("%v", problem)
 			}
 			return errors.New("aborting due to invalid configuration")
 		}

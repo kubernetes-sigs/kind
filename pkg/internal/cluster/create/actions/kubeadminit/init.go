@@ -27,12 +27,11 @@ import (
 	"regexp"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/globals"
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
 	"sigs.k8s.io/kind/pkg/internal/cluster/kubeadm"
 	"sigs.k8s.io/kind/pkg/internal/cluster/loadbalancer"
@@ -78,7 +77,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		"--v=6",
 	)
 	lines, err := exec.CombinedOutputLines(cmd)
-	log.Debug(strings.Join(lines, "\n"))
+	globals.GetLogger().V(3).Info(strings.Join(lines, "\n"))
 	if err != nil {
 		return errors.Wrap(err, "failed to init node with kubeadm")
 	}

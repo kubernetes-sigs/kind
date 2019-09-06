@@ -21,9 +21,8 @@ import (
 	"net"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
 	"sigs.k8s.io/kind/pkg/container/cri"
+	"sigs.k8s.io/kind/pkg/globals"
 )
 
 /*
@@ -59,7 +58,7 @@ func generateMountBindings(mounts ...cri.Mount) []string {
 		case cri.MountPropagationHostToContainer:
 			attrs = append(attrs, "rslave")
 		default:
-			log.Warningf("unknown propagation mode for hostPath %q", m.HostPath)
+			globals.GetLogger().Warnf("unknown propagation mode for hostPath %q", m.HostPath)
 			// Falls back to "private"
 		}
 

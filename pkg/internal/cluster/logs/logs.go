@@ -23,10 +23,10 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/globals"
 	"sigs.k8s.io/kind/pkg/util/concurrent"
 )
 
@@ -158,7 +158,7 @@ func untar(r io.Reader, dir string) (err error) {
 				}
 			}
 		default:
-			log.Warningf("tar file entry %s contained unsupported file type %v", f.Name, f.Typeflag)
+			globals.GetLogger().Warnf("tar file entry %s contained unsupported file type %v", f.Name, f.Typeflag)
 		}
 	}
 }

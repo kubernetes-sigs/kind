@@ -22,13 +22,13 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
 	clusternodes "sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/container/docker"
 	"sigs.k8s.io/kind/pkg/fs"
+	"sigs.k8s.io/kind/pkg/globals"
 	"sigs.k8s.io/kind/pkg/util/concurrent"
 )
 
@@ -119,7 +119,7 @@ func runE(flags *flagpole, args []string) error {
 		id, err := node.ImageID(imageName)
 		if err != nil || id != imageID {
 			selectedNodes = append(selectedNodes, node)
-			log.Debugf("Image: %q with ID %q not present on node %q", imageName, imageID, node.String())
+			globals.GetLogger().V(0).Infof("Image: %q with ID %q not present on node %q", imageName, imageID, node.String())
 		}
 	}
 

@@ -24,12 +24,12 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
+	"sigs.k8s.io/kind/pkg/globals"
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
 	"sigs.k8s.io/kind/pkg/util/concurrent"
 )
@@ -195,7 +195,7 @@ func runKubeadmJoin(node *nodes.Node) error {
 		"--v=6",
 	)
 	lines, err := exec.CombinedOutputLines(cmd)
-	log.Debug(strings.Join(lines, "\n"))
+	globals.GetLogger().V(3).Info(strings.Join(lines, "\n"))
 	if err != nil {
 		return errors.Wrap(err, "failed to join node with kubeadm")
 	}

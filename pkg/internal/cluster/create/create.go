@@ -18,14 +18,12 @@ package create
 
 import (
 	"fmt"
-	"os"
 	"runtime"
 
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
 
-	log "github.com/sirupsen/logrus"
-
 	"sigs.k8s.io/kind/pkg/cluster/create"
+	"sigs.k8s.io/kind/pkg/globals"
 	"sigs.k8s.io/kind/pkg/internal/apis/config/encoding"
 	"sigs.k8s.io/kind/pkg/internal/cluster/context"
 	createtypes "sigs.k8s.io/kind/pkg/internal/cluster/create/types"
@@ -57,7 +55,7 @@ func Cluster(ctx *context.Context, options ...create.ClusterOption) error {
 
 	// warn if cluster name might typically be too long
 	if len(ctx.Name()) > clusterNameMax {
-		log.Warnf("cluster name %q is probably too long, this might not work properly on some systems", ctx.Name())
+		globals.GetLogger().Warnf("cluster name %q is probably too long, this might not work properly on some systems", ctx.Name())
 	}
 
 	// then validate
@@ -66,8 +64,7 @@ func Cluster(ctx *context.Context, options ...create.ClusterOption) error {
 	}
 
 	// setup a status object to show progress to the user
-	status := cli.NewStatus(os.Stdout)
-	status.MaybeWrapLogrus(log.StandardLogger())
+	status := cli.StatusForLogger(globals.GetLogger())
 
 	// attempt to explicitly pull the required node images if they doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
@@ -76,7 +73,7 @@ func Cluster(ctx *context.Context, options ...create.ClusterOption) error {
 	// Create node containers implementing defined config Nodes
 	if err := provisionNodes(status, opts.Config, ctx.Name(), ctx.ClusterLabel()); err != nil {
 		// In case of errors nodes are deleted (except if retain is explicitly set)
-		log.Error(err)
+		globals.GetLogger().Errorf("%v", err)
 		if !opts.Retain {
 			_ = delete.Cluster(ctx)
 		}

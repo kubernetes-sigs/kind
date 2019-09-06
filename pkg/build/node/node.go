@@ -27,7 +27,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/version"
@@ -35,6 +34,7 @@ import (
 	"sigs.k8s.io/kind/pkg/container/docker"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
+	"sigs.k8s.io/kind/pkg/globals"
 	"sigs.k8s.io/kind/pkg/internal/build/kube"
 	"sigs.k8s.io/kind/pkg/internal/util/env"
 	"sigs.k8s.io/kind/pkg/util/concurrent"
@@ -133,12 +133,12 @@ func NewBuildContext(options ...Option) (ctx *BuildContext, err error) {
 // the BuildContext
 func (c *BuildContext) Build() (err error) {
 	// ensure kubernetes build is up to date first
-	log.Infof("Starting to build Kubernetes")
+	globals.GetLogger().V(0).Info("Starting to build Kubernetes")
 	if err = c.bits.Build(); err != nil {
-		log.Errorf("Failed to build Kubernetes: %v", err)
+		globals.GetLogger().Errorf("Failed to build Kubernetes: %v", err)
 		return errors.Wrap(err, "failed to build kubernetes")
 	}
-	log.Infof("Finished building Kubernetes")
+	globals.GetLogger().V(0).Info("Finished building Kubernetes")
 
 	// create tempdir to build the image in
 	buildDir, err := fs.TempDir("", "kind-node-image")
@@ -147,7 +147,7 @@ func (c *BuildContext) Build() (err error) {
 	}
 	defer os.RemoveAll(buildDir)
 
-	log.Infof("Building node image in: %s", buildDir)
+	globals.GetLogger().V(0).Infof("Building node image in: %s", buildDir)
 
 	// populate the kubernetes artifacts first
 	if err := c.populateBits(buildDir); err != nil {
@@ -235,7 +235,7 @@ func (ic *installContext) CombinedOutputLines(command string, args ...string) ([
 
 func (c *BuildContext) buildImage(dir string) error {
 	// build the image, tagged as tagImageAs, using the our tempdir as the context
-	log.Info("Starting image build ...")
+	globals.GetLogger().V(0).Info("Starting image build ...")
 	// create build container
 	// NOTE: we are using docker run + docker commit so we can install
 	// debians without permanently copying them into the image.
@@ -252,11 +252,11 @@ func (c *BuildContext) buildImage(dir string) error {
 		}()
 	}
 	if err != nil {
-		log.Errorf("Image build Failed! Failed to create build container: %v", err)
+		globals.GetLogger().Errorf("Image build Failed! Failed to create build container: %v", err)
 		return err
 	}
 
-	log.Info("Building in " + containerID)
+	globals.GetLogger().V(0).Info("Building in " + containerID)
 
 	// helper we will use to run "build steps"
 	execInBuild := func(command string, args ...string) error {
@@ -265,13 +265,13 @@ func (c *BuildContext) buildImage(dir string) error {
 
 	// make artifacts directory
 	if err = execInBuild("mkdir", "/kind/"); err != nil {
-		log.Errorf("Image build Failed! Failed to make directory %v", err)
+		globals.GetLogger().Errorf("Image build Failed! Failed to make directory %v", err)
 		return err
 	}
 
 	// copy artifacts in
 	if err = execInBuild("rsync", "-r", "/build/bits/", "/kind/"); err != nil {
-		log.Errorf("Image build Failed! Failed to sync bits: %v", err)
+		globals.GetLogger().Errorf("Image build Failed! Failed to sync bits: %v", err)
 		return err
 	}
 
@@ -281,7 +281,7 @@ func (c *BuildContext) buildImage(dir string) error {
 		containerID: containerID,
 	}
 	if err = c.bits.Install(ic); err != nil {
-		log.Errorf("Image build Failed! Failed to install Kubernetes: %v", err)
+		globals.GetLogger().Errorf("Image build Failed! Failed to install Kubernetes: %v", err)
 		return err
 	}
 
@@ -307,13 +307,13 @@ func (c *BuildContext) buildImage(dir string) error {
 	if err = execInBuild("/bin/sh", "-c",
 		`echo "KUBELET_EXTRA_ARGS=--fail-swap-on=false" >> /etc/default/kubelet`,
 	); err != nil {
-		log.Errorf("Image build Failed! Failed to add kubelet extra args: %v", err)
+		globals.GetLogger().Errorf("Image build Failed! Failed to add kubelet extra args: %v", err)
 		return err
 	}
 
 	// pre-pull images that were not part of the build
 	if err = c.prePullImages(dir, containerID); err != nil {
-		log.Errorf("Image build Failed! Failed to pull Images: %v", err)
+		globals.GetLogger().Errorf("Image build Failed! Failed to pull Images: %v", err)
 		return err
 	}
 
@@ -326,11 +326,11 @@ func (c *BuildContext) buildImage(dir string) error {
 	)
 	exec.InheritOutput(cmd)
 	if err = cmd.Run(); err != nil {
-		log.Errorf("Image build Failed! Failed to save image: %v", err)
+		globals.GetLogger().Errorf("Image build Failed! Failed to save image: %v", err)
 		return err
 	}
 
-	log.Info("Image build completed.")
+	globals.GetLogger().V(0).Info("Image build completed.")
 	return nil
 }
 
@@ -355,7 +355,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	// first get the images we actually built
 	builtImages, err := c.getBuiltImages()
 	if err != nil {
-		log.Errorf("Image build Failed! Failed to get built images: %v", err)
+		globals.GetLogger().Errorf("Image build Failed! Failed to get built images: %v", err)
 		return err
 	}
 
@@ -370,11 +370,11 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	// we need this to ask kubeadm what images we need
 	rawVersion, err := exec.CombinedOutputLines(cmder.Command("cat", kubernetesVersionLocation))
 	if err != nil {
-		log.Errorf("Image build Failed! Failed to get Kubernetes version: %v", err)
+		globals.GetLogger().Errorf("Image build Failed! Failed to get Kubernetes version: %v", err)
 		return err
 	}
 	if len(rawVersion) != 1 {
-		log.Errorf("Image build Failed! Failed to get Kubernetes version: %v", err)
+		globals.GetLogger().Errorf("Image build Failed! Failed to get Kubernetes version: %v", err)
 		return errors.New("invalid kubernetes version file")
 	}
 
@@ -412,7 +412,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	if err := inheritOutputAndRun(cmder.Command(
 		"mkdir", "-p", path.Dir(defaultCNIManifestLocation),
 	)); err != nil {
-		log.Errorf("Image build Failed! Failed write default CNI Manifest: %v", err)
+		globals.GetLogger().Errorf("Image build Failed! Failed write default CNI Manifest: %v", err)
 		return err
 	}
 	if err := cmder.Command(
@@ -420,7 +420,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	).SetStdin(
 		strings.NewReader(defaultCNIManifest),
 	).Run(); err != nil {
-		log.Errorf("Image build Failed! Failed write default CNI Manifest: %v", err)
+		globals.GetLogger().Errorf("Image build Failed! Failed write default CNI Manifest: %v", err)
 		return err
 	}
 
@@ -438,7 +438,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	// Create "images" subdir.
 	imagesDir := path.Join(dir, "bits", "images")
 	if err := os.MkdirAll(imagesDir, 0777); err != nil {
-		log.Errorf("Image build Failed! Failed create local images dir: %v", err)
+		globals.GetLogger().Errorf("Image build Failed! Failed create local images dir: %v", err)
 		return errors.Wrap(err, "failed to make images dir")
 	}
 
@@ -451,7 +451,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 				fmt.Printf("Pulling: %s\n", image)
 				err := docker.Pull(image, 2)
 				if err != nil {
-					log.Warnf("Failed to pull %s with error: %v", image, err)
+					globals.GetLogger().Warnf("Failed to pull %s with error: %v", image, err)
 				}
 				// TODO(bentheelder): generate a friendlier name
 				pullName := fmt.Sprintf("%d.tar", i)
@@ -477,14 +477,14 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	// setup image importer
 	importer := newContainerdImporter(cmder)
 	if err := importer.Prepare(); err != nil {
-		log.Errorf("Image build Failed! Failed to prepare containerd to load images %v", err)
+		globals.GetLogger().Errorf("Image build Failed! Failed to prepare containerd to load images %v", err)
 		return err
 	}
 
 	// TODO: return this error?
 	defer func() {
 		if err := importer.End(); err != nil {
-			log.Errorf("Image build Failed! Failed to tear down containerd after loading images %v", err)
+			globals.GetLogger().Errorf("Image build Failed! Failed to tear down containerd after loading images %v", err)
 		}
 	}()
 
@@ -522,7 +522,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 
 	// run all image loading concurrently until one fails or all succeed
 	if err := concurrent.UntilError(loadFns); err != nil {
-		log.Errorf("Image build Failed! Failed to load images %v", err)
+		globals.GetLogger().Errorf("Image build Failed! Failed to load images %v", err)
 		return err
 	}
 

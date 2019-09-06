@@ -20,9 +20,10 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/sirupsen/logrus"
+	"sigs.k8s.io/kind/pkg/log"
 
 	"sigs.k8s.io/kind/pkg/internal/util/env"
+	"sigs.k8s.io/kind/pkg/internal/util/logger"
 )
 
 // Status is used to track ongoing status in a CLI, with a nice loading spinner
@@ -30,15 +31,31 @@ import (
 type Status struct {
 	spinner *spinner
 	status  string
-	writer  io.Writer
+	logger  log.Logger
 }
 
-// NewStatus creates a new default Status
-func NewStatus(w io.Writer) *Status {
-	spin := newSpinner(w)
+// StatusForLogger returns a new status object for the logger l,
+// if l is the kind default logger it will inject a wrapped writer into it
+// and if we've already attached one it will return the previous status
+func StatusForLogger(l log.Logger) *Status {
 	s := &Status{
-		spinner: spin,
-		writer:  w,
+		logger: l,
+	}
+	if v, ok := l.(*logger.Default); ok {
+		// Be re-entrant and only attach one spinner
+		// TODO: how do we handle concurrent spinner instances !?
+		// IE: library usage + the default logger ...
+		if v2, ok := v.Writer.(*FriendlyWriter); ok {
+			return v2.status
+		}
+		// otherwise wrap the logger's writer for the first time
+		if env.IsTerminal(v.Writer) {
+			s.spinner = newSpinner(v.Writer)
+			v.Writer = &FriendlyWriter{
+				status: s,
+				inner:  v.Writer,
+			}
+		}
 	}
 	return s
 }
@@ -62,45 +79,17 @@ func (ww *FriendlyWriter) Write(p []byte) (n int, err error) {
 	return n, err
 }
 
-// WrapWriter returns a FriendlyWriter for w
-func (s *Status) WrapWriter(w io.Writer) io.Writer {
-	return &FriendlyWriter{
-		status: s,
-		inner:  w,
-	}
-}
-
-// WrapLogrus wraps a logrus logger's output with a FriendlyWriter
-func (s *Status) WrapLogrus(logger *logrus.Logger) {
-	logger.SetOutput(s.WrapWriter(logger.Out))
-}
-
-// MaybeWrapWriter returns a FriendlyWriter for w IFF w and spinner's
-// output are a terminal, otherwise it returns w
-func (s *Status) MaybeWrapWriter(w io.Writer) io.Writer {
-	if env.IsTerminal(s.writer) && env.IsTerminal(w) {
-		return s.WrapWriter(w)
-	}
-	return w
-}
-
-// MaybeWrapLogrus behaves like MaybeWrapWriter for a logrus logger
-func (s *Status) MaybeWrapLogrus(logger *logrus.Logger) {
-	logger.SetOutput(s.MaybeWrapWriter(logger.Out))
-}
-
 // Start starts a new phase of the status, if attached to a terminal
 // there will be a loading spinner with this status
 func (s *Status) Start(status string) {
 	s.End(true)
 	// set new status
-	isTerm := env.IsTerminal(s.writer)
 	s.status = status
-	if isTerm {
+	if s.spinner != nil {
 		s.spinner.SetSuffix(fmt.Sprintf(" %s ", s.status))
 		s.spinner.Start()
 	} else {
-		fmt.Fprintf(s.writer, " • %s  ...\n", s.status)
+		s.logger.V(0).Infof(" • %s  ...\n", s.status)
 	}
 }
 
@@ -111,16 +100,15 @@ func (s *Status) End(success bool) {
 		return
 	}
 
-	isTerm := env.IsTerminal(s.writer)
-	if isTerm {
+	if s.spinner != nil {
 		s.spinner.Stop()
-		fmt.Fprint(s.writer, "\r")
+		fmt.Fprint(s.spinner.writer, "\r")
 	}
 
 	if success {
-		fmt.Fprintf(s.writer, " ✓ %s\n", s.status)
+		s.logger.V(0).Infof(" ✓ %s\n", s.status)
 	} else {
-		fmt.Fprintf(s.writer, " ✗ %s\n", s.status)
+		s.logger.V(0).Infof("✗ %s\n", s.status)
 	}
 
 	s.status = ""
