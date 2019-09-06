@@ -402,8 +402,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 		fixedImages.Insert(registry + ":" + tag)
 	}
 	builtImages = fixedImages
-	println("built images")
-	println(strings.Join(builtImages.List(), ", "))
+	globals.GetLogger().V(0).Info("Detected built images: " + strings.Join(builtImages.List(), ", "))
 
 	// write the default CNI manifest
 	// NOTE: the paths inside the container should use the path package
