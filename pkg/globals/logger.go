@@ -14,16 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// package globals will be deleted in a future commit
+// Package globals will be deleted in a future commit
 // this package contains globals that we've not yet re-worked to not be globals
 package globals
 
 import (
+	"io"
 	"sync"
 
 	"sigs.k8s.io/kind/pkg/log"
 
-	"sigs.k8s.io/kind/pkg/internal/util/logger"
+	"sigs.k8s.io/kind/pkg/internal/util/cli"
+	"sigs.k8s.io/kind/pkg/internal/util/env"
 )
 
 // TODO: consider threading through a logger instead of using a global logger
@@ -40,12 +42,15 @@ func SetLogger(l log.Logger) {
 	globalLogger = l
 }
 
-// UseDefaultLogger sets the global logger to kind's default logger
-// with SetLogger
+// UseCLILogger sets the global logger to the kind CLI's default stderr logger
+// if writer is a tty, the CLI spinner will be enabled
 //
 // Not to be confused with the default if not set of log.NoopLogger
-func UseDefaultLogger(verbosity log.Level) {
-	SetLogger(logger.NewDefault(verbosity))
+func UseCLILogger(writer io.Writer, verbosity log.Level) {
+	if env.IsTerminal(writer) {
+		writer = cli.NewSpinner(writer)
+	}
+	SetLogger(cli.NewLogger(writer, verbosity))
 }
 
 // GetLogger returns the standard logger used by this package

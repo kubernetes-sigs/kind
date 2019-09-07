@@ -18,65 +18,33 @@ package cli
 
 import (
 	"fmt"
-	"io"
 
 	"sigs.k8s.io/kind/pkg/log"
-
-	"sigs.k8s.io/kind/pkg/internal/util/env"
-	"sigs.k8s.io/kind/pkg/internal/util/logger"
 )
 
 // Status is used to track ongoing status in a CLI, with a nice loading spinner
 // when attached to a terminal
 type Status struct {
-	spinner *spinner
+	spinner *Spinner
 	status  string
 	logger  log.Logger
 }
 
 // StatusForLogger returns a new status object for the logger l,
-// if l is the kind default logger it will inject a wrapped writer into it
-// and if we've already attached one it will return the previous status
+// if l is the kind cli logger and the writer is a Spinner, that spinner
+// will be used for the status
 func StatusForLogger(l log.Logger) *Status {
 	s := &Status{
 		logger: l,
 	}
-	if v, ok := l.(*logger.Default); ok {
-		// Be re-entrant and only attach one spinner
-		// TODO: how do we handle concurrent spinner instances !?
-		// IE: library usage + the default logger ...
-		if v2, ok := v.Writer.(*FriendlyWriter); ok {
-			return v2.status
-		}
-		// otherwise wrap the logger's writer for the first time
-		if env.IsTerminal(v.Writer) {
-			s.spinner = newSpinner(v.Writer)
-			v.Writer = &FriendlyWriter{
-				status: s,
-				inner:  v.Writer,
-			}
+	// if we're using the CLI logger, check for if it has a spinner setup
+	// and wire the status to that
+	if v, ok := l.(*Logger); ok {
+		if v2, ok := v.Writer.(*Spinner); ok {
+			s.spinner = v2
 		}
 	}
 	return s
-}
-
-// FriendlyWriter is used to wrap another Writer to make it toggle the
-// status spinner before and after writes so that they do not collide
-type FriendlyWriter struct {
-	status *Status
-	inner  io.Writer
-}
-
-var _ io.Writer = &FriendlyWriter{}
-
-func (ww *FriendlyWriter) Write(p []byte) (n int, err error) {
-	ww.status.spinner.Stop()
-	if _, err := ww.inner.Write([]byte("\r")); err != nil {
-		return 0, err
-	}
-	n, err = ww.inner.Write(p)
-	ww.status.spinner.Start()
-	return n, err
 }
 
 // Start starts a new phase of the status, if attached to a terminal
