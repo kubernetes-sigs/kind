@@ -145,6 +145,7 @@ func createNode(name, image, clusterLabel, role string, mounts []cri.Mount, port
 		// runtime temporary storage
 		"--tmpfs", "/tmp", // various things depend on working /tmp
 		"--tmpfs", "/run", // systemd wants a writable /run
+		"--tmpfs", "/var/lib/etcd", // etcd needs fast storage
 		// runtime persistent storage
 		// this ensures that E.G. pods, logs etc. are not on the container
 		// filesystem, which is not only better for performance, but allows
