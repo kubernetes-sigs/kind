@@ -28,8 +28,8 @@ import (
 // Logger is the kind cli's log.Logger implementation
 type Logger struct {
 	Verbosity log.Level
-	io.Writer
-	writeMu sync.Mutex
+	Writer    io.Writer
+	writeMu   sync.Mutex
 }
 
 var _ log.Logger = &Logger{}
@@ -42,7 +42,7 @@ func NewLogger(writer io.Writer, verbosity log.Level) *Logger {
 	}
 }
 
-func (l *Logger) Write(p []byte) (n int, err error) {
+func (l *Logger) write(p []byte) (n int, err error) {
 	// TODO: line oriented instead?
 	// For now we make a single per-message write call from the rest of the logger
 	// intentionally to effectively do this one level up
@@ -60,7 +60,7 @@ func (l *Logger) print(message string) {
 	}
 	// TODO: should we handle this somehow??
 	// Who logs for the logger? 🤔
-	_, _ = l.Write(buf.Bytes())
+	_, _ = l.write(buf.Bytes())
 }
 
 func (l *Logger) printf(format string, args ...interface{}) {
@@ -71,7 +71,7 @@ func (l *Logger) printf(format string, args ...interface{}) {
 	}
 	// TODO: should we handle this somehow??
 	// Who logs for the logger? 🤔
-	_, _ = l.Write(buf.Bytes())
+	_, _ = l.write(buf.Bytes())
 }
 
 // Warn is part of the log.Logger interface
