@@ -240,7 +240,7 @@ func (n *Node) Role() (role string, err error) {
 
 // IsRunning returns the status of the node
 func (n *Node) IsRunning() (status bool, err error) {
-	// retrive the status of the node using docker inspect
+	// retrieve the status of the node using docker inspect
 	lines, err := docker.Inspect(n.name, "{{index .State.Running}}")
 	if err != nil {
 		return false, errors.Wrap(err, "failed to get container details")
