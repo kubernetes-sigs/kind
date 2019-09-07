@@ -54,8 +54,9 @@ func NewCommand() *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return runE(flags, cmd)
 		},
-		SilenceUsage: true,
-		Version:      version.Version,
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		Version:       version.Version,
 	}
 	cmd.PersistentFlags().StringVar(
 		&flags.LogLevel,
@@ -121,8 +122,8 @@ func Run() error {
 
 // Main wraps Run and sets the log formatter
 func Main() {
-	// TODO: use default logger
 	if err := Run(); err != nil {
+		globals.GetLogger().Errorf("Failed with error: %+v", err)
 		os.Exit(1)
 	}
 }

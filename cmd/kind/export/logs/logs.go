@@ -20,7 +20,6 @@ package logs
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
@@ -55,7 +54,7 @@ func runE(flags *flagpole, args []string) error {
 		return err
 	}
 	if !known {
-		return errors.Errorf("unknown cluster %q", flags.Name)
+		return fmt.Errorf("unknown cluster %q", flags.Name)
 	}
 	// get the optional directory argument, or create a tempdir
 	var dir string

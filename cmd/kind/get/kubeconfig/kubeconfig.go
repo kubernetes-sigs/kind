@@ -18,6 +18,7 @@ limitations under the License.
 package kubeconfig
 
 import (
+	"fmt"
 	"io"
 	"os"
 
@@ -69,7 +70,7 @@ func runE(flags *flagpole) error {
 	}
 	nodes, known := n[flags.Name]
 	if !known {
-		return errors.Errorf("unknown cluster %q", flags.Name)
+		return fmt.Errorf("unknown cluster %q", flags.Name)
 	}
 	// get the bootstrap node to get the kubeconfig
 	node, err := clusternodes.BootstrapControlPlaneNode(nodes)

@@ -20,7 +20,6 @@ package nodes
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
@@ -60,7 +59,7 @@ func runE(flags *flagpole) error {
 	}
 	nodes, known := n[flags.Name]
 	if !known {
-		return errors.Errorf("unknown cluster %q", flags.Name)
+		return fmt.Errorf("unknown cluster %q", flags.Name)
 	}
 	for _, node := range nodes {
 		fmt.Println(node.String())

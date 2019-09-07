@@ -18,6 +18,7 @@ limitations under the License.
 package load
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -74,7 +75,7 @@ func runE(flags *flagpole, args []string) error {
 	// Check that the image exists locally and gets its ID, if not return error
 	imageID, err := docker.ImageID(imageName)
 	if err != nil {
-		return errors.Errorf("Image: %q not present locally", imageName)
+		return fmt.Errorf("Image: %q not present locally", imageName)
 	}
 	// Check if the cluster name exists
 	known, err := cluster.IsKnown(flags.Name)
@@ -82,7 +83,7 @@ func runE(flags *flagpole, args []string) error {
 		return err
 	}
 	if !known {
-		return errors.Errorf("unknown cluster %q", flags.Name)
+		return fmt.Errorf("unknown cluster %q", flags.Name)
 	}
 
 	context := cluster.NewContext(flags.Name)
@@ -107,7 +108,7 @@ func runE(flags *flagpole, args []string) error {
 		for _, name := range flags.Nodes {
 			node, ok := nodesByName[name]
 			if !ok {
-				return errors.Errorf("unknown node: %q", name)
+				return fmt.Errorf("unknown node: %q", name)
 			}
 			candidateNodes = append(candidateNodes, node)
 		}

@@ -18,6 +18,7 @@ limitations under the License.
 package load
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/pkg/errors"
@@ -39,7 +40,7 @@ func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
-				return errors.New("name of image archive is required")
+				return fmt.Errorf("name of image archive is required")
 			}
 			return nil
 		},
@@ -77,7 +78,7 @@ func runE(flags *flagpole, args []string) error {
 		return err
 	}
 	if !known {
-		return errors.Errorf("unknown cluster %q", flags.Name)
+		return fmt.Errorf("unknown cluster %q", flags.Name)
 	}
 
 	context := cluster.NewContext(flags.Name)
@@ -102,7 +103,7 @@ func runE(flags *flagpole, args []string) error {
 		for _, name := range flags.Nodes {
 			node, ok := nodesByName[name]
 			if !ok {
-				return errors.Errorf("unknown node: %s", name)
+				return fmt.Errorf("unknown node: %s", name)
 			}
 			selectedNodes = append(selectedNodes, node)
 		}
