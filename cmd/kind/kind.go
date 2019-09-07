@@ -104,7 +104,7 @@ func runE(flags *Flags, cmd *cobra.Command) error {
 	if flags.Quiet {
 		globals.SetLogger(log.NoopLogger{})
 	} else {
-		globals.UseDefaultLogger(log.Level(flags.Verbosity))
+		globals.UseCLILogger(os.Stderr, log.Level(flags.Verbosity))
 	}
 	// warn about deprecated flag if used
 	if setLogLevel {

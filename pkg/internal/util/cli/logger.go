@@ -14,63 +14,56 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package logger
+package cli
 
 import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"sync"
 
 	"sigs.k8s.io/kind/pkg/log"
-
-	"sigs.k8s.io/kind/pkg/internal/util/env"
 )
 
-// Default is the default log.Logger implementation
-type Default struct {
+// Logger is the kind cli's log.Logger implementation
+type Logger struct {
 	Verbosity log.Level
 	io.Writer
 	writeMu sync.Mutex
-	// for later use in adding colored output etc...
-	// we collect this in NewDefault before any writer wrapping may occur
-	isTerm bool
 }
 
-var _ log.Logger = &Default{}
+var _ log.Logger = &Logger{}
 
-// NewDefault returns a new Default logger with the given verbosity
-func NewDefault(verbosity log.Level) *Default {
-	return &Default{
+// NewLogger returns a new Logger with the given verbosity
+func NewLogger(writer io.Writer, verbosity log.Level) *Logger {
+	return &Logger{
 		Verbosity: verbosity,
-		Writer:    os.Stderr,
-		isTerm:    env.IsTerminal(os.Stderr),
+		Writer:    writer,
 	}
 }
 
-func (d *Default) Write(p []byte) (n int, err error) {
+func (l *Logger) Write(p []byte) (n int, err error) {
 	// TODO: line oriented instead?
 	// For now we make a single per-message write call from the rest of the logger
 	// intentionally to effectively do this one level up
-	d.writeMu.Lock()
-	defer d.writeMu.Unlock()
-	return d.Writer.Write(p)
+	l.writeMu.Lock()
+	defer l.writeMu.Unlock()
+	return l.Writer.Write(p)
 }
 
 // TODO: prefix log lines with metadata (log level? timestamp?)
 
-func (d *Default) print(message string) {
+func (l *Logger) print(message string) {
 	buf := bytes.NewBufferString(message)
 	if buf.Bytes()[buf.Len()-1] != '\n' {
 		buf.WriteByte('\n')
 	}
 	// TODO: should we handle this somehow??
 	// Who logs for the logger? 🤔
-	_, _ = d.Write(buf.Bytes())
+	_, _ = l.Write(buf.Bytes())
 }
 
-func (d *Default) printf(format string, args ...interface{}) {
+func (l *Logger) printf(format string, args ...interface{}) {
 	var buf bytes.Buffer
 	fmt.Fprintf(&buf, format, args...)
 	if buf.Bytes()[buf.Len()-1] != '\n' {
@@ -78,56 +71,56 @@ func (d *Default) printf(format string, args ...interface{}) {
 	}
 	// TODO: should we handle this somehow??
 	// Who logs for the logger? 🤔
-	_, _ = d.Write(buf.Bytes())
+	_, _ = l.Write(buf.Bytes())
 }
 
 // Warn is part of the log.Logger interface
-func (d *Default) Warn(message string) {
-	d.print(message)
+func (l *Logger) Warn(message string) {
+	l.print(message)
 }
 
 // Warnf is part of the log.Logger interface
-func (d *Default) Warnf(format string, args ...interface{}) {
-	d.printf(format, args...)
+func (l *Logger) Warnf(format string, args ...interface{}) {
+	l.printf(format, args...)
 }
 
 // Error is part of the log.Logger interface
-func (d *Default) Error(message string) {
-	d.print(message)
+func (l *Logger) Error(message string) {
+	l.print(message)
 }
 
 // Errorf is part of the log.Logger interface
-func (d *Default) Errorf(format string, args ...interface{}) {
-	d.printf(format, args...)
+func (l *Logger) Errorf(format string, args ...interface{}) {
+	l.printf(format, args...)
 }
 
 // V is part of the log.Logger interface
-func (d *Default) V(level log.Level) log.InfoLogger {
-	return defaultInfo{
-		logger:  d,
-		enabled: level <= d.Verbosity,
+func (l *Logger) V(level log.Level) log.InfoLogger {
+	return infoLogger{
+		logger:  l,
+		enabled: level <= l.Verbosity,
 	}
 }
 
-type defaultInfo struct {
-	logger  *Default
+type infoLogger struct {
+	logger  *Logger
 	enabled bool
 }
 
-func (d defaultInfo) Enabled() bool {
-	return d.enabled
+func (i infoLogger) Enabled() bool {
+	return i.enabled
 }
 
-func (d defaultInfo) Info(message string) {
-	if !d.enabled {
+func (i infoLogger) Info(message string) {
+	if !i.enabled {
 		return
 	}
-	d.logger.print(message)
+	i.logger.print(message)
 }
 
-func (d defaultInfo) Infof(format string, args ...interface{}) {
-	if !d.enabled {
+func (i infoLogger) Infof(format string, args ...interface{}) {
+	if !i.enabled {
 		return
 	}
-	d.logger.printf(format, args...)
+	i.logger.printf(format, args...)
 }

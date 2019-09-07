@@ -42,11 +42,9 @@ var spinnerFrames = []string{
 	"⠊⠁",
 }
 
-// spinner is a simple and efficient CLI loading spinner used by kind
+// Spinner is a simple and efficient CLI loading spinner used by kind
 // It is simplistic and assumes that the line length will not change.
-// It is best used indirectly via log.Status (see parent package)
-type spinner struct {
-	frames []string
+type Spinner struct {
 	stop   chan struct{}
 	ticker *time.Ticker
 	writer io.Writer
@@ -56,10 +54,12 @@ type spinner struct {
 	suffix string
 }
 
-// Newspinner initializes and returns a new spinner that will write to
-func newSpinner(w io.Writer) *spinner {
-	return &spinner{
-		frames: spinnerFrames,
+// spinner implements writer
+var _ io.Writer = &Spinner{}
+
+// NewSpinner initializes and returns a new Spinner that will write to w
+func NewSpinner(w io.Writer) *Spinner {
+	return &Spinner{
 		stop:   make(chan struct{}, 1),
 		ticker: time.NewTicker(time.Millisecond * 100),
 		mu:     &sync.Mutex{},
@@ -68,24 +68,24 @@ func newSpinner(w io.Writer) *spinner {
 }
 
 // SetPrefix sets the prefix to print before the spinner
-func (s *spinner) SetPrefix(prefix string) {
+func (s *Spinner) SetPrefix(prefix string) {
 	s.mu.Lock()
 	s.prefix = prefix
 	s.mu.Unlock()
 }
 
 // SetSuffix sets the suffix to print after the spinner
-func (s *spinner) SetSuffix(suffix string) {
+func (s *Spinner) SetSuffix(suffix string) {
 	s.mu.Lock()
 	s.suffix = suffix
 	s.mu.Unlock()
 }
 
 // Start starts the spinner running
-func (s *spinner) Start() {
+func (s *Spinner) Start() {
 	go func() {
 		for {
-			for _, frame := range s.frames {
+			for _, frame := range spinnerFrames {
 				select {
 				case <-s.stop:
 					return
@@ -102,6 +102,18 @@ func (s *spinner) Start() {
 }
 
 // Stop signals the spinner to stop
-func (s *spinner) Stop() {
+func (s *Spinner) Stop() {
 	s.stop <- struct{}{}
+}
+
+// Write implements io.Writer, interrupting the spinner and writing to
+// the inner writer
+func (s *Spinner) Write(p []byte) (n int, err error) {
+	s.Stop()
+	if _, err := s.writer.Write([]byte("\r")); err != nil {
+		return 0, err
+	}
+	n, err = s.writer.Write(p)
+	s.Start()
+	return n, err
 }
