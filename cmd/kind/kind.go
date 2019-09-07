@@ -34,8 +34,6 @@ import (
 	"sigs.k8s.io/kind/pkg/log"
 )
 
-const defaultLevel = "warning"
-
 // Flags for the kind command
 type Flags struct {
 	LogLevel  string
@@ -61,7 +59,7 @@ func NewCommand() *cobra.Command {
 	cmd.PersistentFlags().StringVar(
 		&flags.LogLevel,
 		"loglevel",
-		defaultLevel,
+		"",
 		"DEPRECATED: see -v instead",
 	)
 	cmd.PersistentFlags().Int32VarP(
