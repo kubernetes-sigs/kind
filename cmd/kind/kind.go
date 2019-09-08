@@ -109,7 +109,7 @@ func runE(flags *Flags, cmd *cobra.Command) error {
 	}
 	// warn about deprecated flag if used
 	if setLogLevel {
-		globals.GetLogger().Warn("--loglevel is deprecated, please switch to -v and -q!")
+		globals.GetLogger().Warn("WARNING: --loglevel is deprecated, please switch to -v and -q!")
 	}
 	return nil
 }

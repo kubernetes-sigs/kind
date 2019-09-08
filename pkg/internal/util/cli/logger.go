@@ -94,8 +94,8 @@ func addDebugHeader(buf *bytes.Buffer) {
 			}
 		}
 	}
-	buf.Grow(len(file) + 10) // we know at least this many bytes are needed
-	buf.WriteString("DEBUG ")
+	buf.Grow(len(file) + 11) // we know at least this many bytes are needed
+	buf.WriteString("DEBUG: ")
 	buf.WriteString(file)
 	buf.WriteByte(':')
 	fmt.Fprintf(buf, "%d", line)
