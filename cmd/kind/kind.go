@@ -119,22 +119,49 @@ func Run() error {
 	return NewCommand().Execute()
 }
 
-// logError logs the error and the root stacktrace if there is one
-func logError(err error) {
-	globals.GetLogger().Errorf("ERROR: %v", err)
-	// display stack trace if the error has one
-	type stackTracer interface {
-		StackTrace() errors.StackTrace
-	}
-	if tracer, ok := errors.Cause(err).(stackTracer); ok {
-		globals.GetLogger().Errorf("%+v", tracer)
-	}
-}
-
 // Main wraps Run and sets the log formatter
 func Main() {
 	if err := Run(); err != nil {
 		logError(err)
 		os.Exit(1)
 	}
+}
+
+// logError logs the error and the root stacktrace if there is one
+func logError(err error) {
+	globals.GetLogger().Errorf("ERROR: %v", err)
+	// display the stack trace if any
+	if trace := stackTrace(err); trace != nil {
+		globals.GetLogger().Errorf("%+v", trace)
+	}
+}
+
+// stackTrace returns the deepest StackTrace is a Cause chain
+// https://github.com/pkg/errors/issues/173
+func stackTrace(err error) errors.StackTrace {
+	// github.com/pkg/errors errors type interfaces
+	type causer interface {
+		Cause() error
+	}
+	type stackTracer interface {
+		StackTrace() errors.StackTrace
+	}
+
+	// walk all causes, keeping the last one with a StackTrace
+	var stackErr error
+	for {
+		if _, ok := err.(stackTracer); ok {
+			stackErr = err
+		}
+		if causerErr, ok := err.(causer); ok {
+			err = causerErr.Cause()
+		} else {
+			break
+		}
+	}
+
+	if stackErr != nil {
+		return stackErr.(stackTracer).StackTrace()
+	}
+	return nil
 }
