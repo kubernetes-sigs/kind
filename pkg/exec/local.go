@@ -20,6 +20,8 @@ import (
 	"io"
 	osexec "os/exec"
 
+	"github.com/pkg/errors"
+
 	"sigs.k8s.io/kind/pkg/globals"
 )
 
@@ -70,5 +72,5 @@ func (cmd *LocalCmd) SetStderr(w io.Writer) Cmd {
 func (cmd *LocalCmd) Run() error {
 	// TODO: should be in the caller or logger should be injected somehow ...
 	globals.GetLogger().V(3).Infof("Running: %v %v", cmd.Path, cmd.Args)
-	return cmd.Cmd.Run()
+	return errors.WithStack(cmd.Cmd.Run())
 }
