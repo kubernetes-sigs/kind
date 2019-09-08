@@ -19,6 +19,7 @@ package completion
 
 import (
 	"github.com/spf13/cobra"
+
 	"sigs.k8s.io/kind/cmd/kind/completion/bash"
 	"sigs.k8s.io/kind/cmd/kind/completion/zsh"
 )
@@ -46,6 +47,8 @@ This depends on the bash-completion binary.  Example installation instructions:
 # for zsh users
 	% kind completion zsh > /usr/local/share/zsh/site-functions/_kind
 	% autoload -U compinit && compinit
+# or if zsh-completion is installed via homebrew
+    % kind completion zsh > "${fpath[1]}/_kind"
 
 Additionally, you may want to output the completion to a file and source in your .bashrc
 Note for zsh users: [1] zsh completions are only supported in versions of zsh >= 5.2
