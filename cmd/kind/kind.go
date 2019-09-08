@@ -20,6 +20,7 @@ package kind
 import (
 	"os"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/cmd/kind/build"
@@ -118,10 +119,22 @@ func Run() error {
 	return NewCommand().Execute()
 }
 
+// logError logs the error and the root stacktrace if there is one
+func logError(err error) {
+	globals.GetLogger().Errorf("ERROR: %v", err)
+	// display stack trace if the error has one
+	type stackTracer interface {
+		StackTrace() errors.StackTrace
+	}
+	if tracer, ok := errors.Cause(err).(stackTracer); ok {
+		globals.GetLogger().Errorf("%+v", tracer)
+	}
+}
+
 // Main wraps Run and sets the log formatter
 func Main() {
 	if err := Run(); err != nil {
-		globals.GetLogger().Errorf("Failed with error: %+v", err)
+		logError(err)
 		os.Exit(1)
 	}
 }
