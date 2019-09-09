@@ -130,9 +130,11 @@ func Main() {
 // logError logs the error and the root stacktrace if there is one
 func logError(err error) {
 	globals.GetLogger().Errorf("ERROR: %v", err)
-	// display the stack trace if any
-	if trace := stackTrace(err); trace != nil {
-		globals.GetLogger().Errorf("%+v", trace)
+	// if debugging is enabled (non-zero verbosity), display stack trace if any
+	if globals.GetLogger().V(1).Enabled() {
+		if trace := stackTrace(err); trace != nil {
+			globals.GetLogger().Errorf("%+v", trace)
+		}
 	}
 }
 
