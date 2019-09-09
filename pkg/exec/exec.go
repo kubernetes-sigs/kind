@@ -24,8 +24,6 @@ import (
 	"bytes"
 	"io"
 	"os"
-
-	"sigs.k8s.io/kind/pkg/globals"
 )
 
 // Cmd abstracts over running a command somewhere, this is useful for testing
@@ -90,23 +88,6 @@ func InheritOutput(cmd Cmd) Cmd {
 	cmd.SetStderr(os.Stderr)
 	cmd.SetStdout(os.Stdout)
 	return cmd
-}
-
-// RunLoggingOutputOnFail runs the cmd, logging error output if Run returns an error
-// TODO: we should just make exec capture output on error and move this to the caller
-func RunLoggingOutputOnFail(cmd Cmd) error {
-	var buff bytes.Buffer
-	cmd.SetStdout(&buff)
-	cmd.SetStderr(&buff)
-	err := cmd.Run()
-	if err != nil {
-		globals.GetLogger().Error("failed with:")
-		scanner := bufio.NewScanner(&buff)
-		for scanner.Scan() {
-			globals.GetLogger().Error(scanner.Text())
-		}
-	}
-	return err
 }
 
 // RunWithStdoutReader runs cmd with stdout piped to readerFunc
