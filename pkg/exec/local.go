@@ -17,9 +17,13 @@ limitations under the License.
 package exec
 
 import (
+	"bytes"
+	"fmt"
 	"io"
 	osexec "os/exec"
+	"strings"
 
+	"github.com/alessio/shellescape"
 	"github.com/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/globals"
@@ -68,9 +72,59 @@ func (cmd *LocalCmd) SetStderr(w io.Writer) Cmd {
 	return cmd
 }
 
-// Run runs
+// Run runs the command
 func (cmd *LocalCmd) Run() error {
+	err := &localCmdError{
+		CmdArgs: cmd.Args,
+	}
+	// TODO(BenTheElder): adding bytes.Buffer to both multiwriters might need
+	// to be wrapped with a mutex
+	if cmd.Stdout != nil {
+		cmd.Stdout = io.MultiWriter(cmd.Stdout, &err.CmdOut)
+	} else {
+		cmd.Stdout = &err.CmdOut
+	}
+	if cmd.Stderr != nil {
+		cmd.Stderr = io.MultiWriter(cmd.Stderr, &err.CmdOut)
+	} else {
+		cmd.Stderr = &err.CmdOut
+	}
 	// TODO: should be in the caller or logger should be injected somehow ...
-	globals.GetLogger().V(3).Infof("Running: %v %v", cmd.Path, cmd.Args)
-	return errors.WithStack(cmd.Cmd.Run())
+	globals.GetLogger().V(3).Infof("Running: \"%s\"", err.prettyCommand())
+	if e := cmd.Cmd.Run(); e != nil {
+		err.Inner = e
+		return errors.WithStack(err)
+	}
+	return nil
+}
+
+type localCmdError struct {
+	CmdArgs []string
+	CmdOut  bytes.Buffer
+	Inner   error
+}
+
+// TODO(BenTheElder): implement formatter instead, and only show
+// output for %+v ?
+func (e *localCmdError) Error() string {
+	return fmt.Sprintf(
+		"command \"%s\" failed with error: %v and output:\n%s",
+		e.prettyCommand(), e.Inner, e.CmdOut.Bytes(),
+	)
+}
+
+func (e *localCmdError) prettyCommand() string {
+	var out strings.Builder
+	for i, arg := range e.CmdArgs {
+		out.WriteString(shellescape.Quote(arg))
+		if i+1 != len(e.CmdArgs) {
+			out.WriteByte(' ')
+		}
+	}
+	return out.String()
+}
+
+// Cause mimics github.com/pkg/errors's Cause pattern for errors
+func (e *localCmdError) Cause() error {
+	return e.Inner
 }

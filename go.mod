@@ -3,6 +3,7 @@ module sigs.k8s.io/kind
 go 1.13
 
 require (
+	github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053
 	github.com/google/gofuzz v1.0.0
 	github.com/google/uuid v1.1.1
 	github.com/pkg/errors v0.8.1
