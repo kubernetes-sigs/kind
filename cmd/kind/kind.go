@@ -20,7 +20,6 @@ package kind
 import (
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/cmd/kind/build"
@@ -130,40 +129,15 @@ func Main() {
 // logError logs the error and the root stacktrace if there is one
 func logError(err error) {
 	globals.GetLogger().Errorf("ERROR: %v", err)
-	// if debugging is enabled (non-zero verbosity), display stack trace if any
+	// If debugging is enabled (non-zero verbosity), display more info
 	if globals.GetLogger().V(1).Enabled() {
+		// Display Output if the error was running a command ...
+		if err := runError(err); err != nil {
+			globals.GetLogger().Errorf("\nOutput:\n%s", err.Output)
+		}
+		// Then display stack trace if any (there should be one...)
 		if trace := stackTrace(err); trace != nil {
-			globals.GetLogger().Errorf("%+v", trace)
+			globals.GetLogger().Errorf("\nStack Trace: %+v", trace)
 		}
 	}
-}
-
-// stackTrace returns the deepest StackTrace is a Cause chain
-// https://github.com/pkg/errors/issues/173
-func stackTrace(err error) errors.StackTrace {
-	// github.com/pkg/errors errors type interfaces
-	type causer interface {
-		Cause() error
-	}
-	type stackTracer interface {
-		StackTrace() errors.StackTrace
-	}
-
-	// walk all causes, keeping the last one with a StackTrace
-	var stackErr error
-	for {
-		if _, ok := err.(stackTracer); ok {
-			stackErr = err
-		}
-		if causerErr, ok := err.(causer); ok {
-			err = causerErr.Cause()
-		} else {
-			break
-		}
-	}
-
-	if stackErr != nil {
-		return stackErr.(stackTracer).StackTrace()
-	}
-	return nil
 }
