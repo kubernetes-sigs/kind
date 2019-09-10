@@ -18,12 +18,9 @@ package exec
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	osexec "os/exec"
-	"strings"
 
-	"github.com/alessio/shellescape"
 	"github.com/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/globals"
@@ -73,58 +70,29 @@ func (cmd *LocalCmd) SetStderr(w io.Writer) Cmd {
 }
 
 // Run runs the command
+// If the returned error is non-nil, it should be of type *RunError
 func (cmd *LocalCmd) Run() error {
-	err := &localCmdError{
-		CmdArgs: cmd.Args,
-	}
+	var out bytes.Buffer
 	// TODO(BenTheElder): adding bytes.Buffer to both multiwriters might need
 	// to be wrapped with a mutex
 	if cmd.Stdout != nil {
-		cmd.Stdout = io.MultiWriter(cmd.Stdout, &err.CmdOut)
+		cmd.Stdout = io.MultiWriter(cmd.Stdout, &out)
 	} else {
-		cmd.Stdout = &err.CmdOut
+		cmd.Stdout = &out
 	}
 	if cmd.Stderr != nil {
-		cmd.Stderr = io.MultiWriter(cmd.Stderr, &err.CmdOut)
+		cmd.Stderr = io.MultiWriter(cmd.Stderr, &out)
 	} else {
-		cmd.Stderr = &err.CmdOut
+		cmd.Stderr = &out
 	}
 	// TODO: should be in the caller or logger should be injected somehow ...
-	globals.GetLogger().V(3).Infof("Running: \"%s\"", err.prettyCommand())
-	if e := cmd.Cmd.Run(); e != nil {
-		err.Inner = e
-		return errors.WithStack(err)
+	globals.GetLogger().V(3).Infof("Running: \"%s\"", PrettyCommand(cmd.Args[0], cmd.Args[1:]...))
+	if err := cmd.Cmd.Run(); err != nil {
+		return errors.WithStack(&RunError{
+			Command: cmd.Args,
+			Output:  out.Bytes(),
+			Inner:   err,
+		})
 	}
 	return nil
-}
-
-type localCmdError struct {
-	CmdArgs []string
-	CmdOut  bytes.Buffer
-	Inner   error
-}
-
-// TODO(BenTheElder): implement formatter instead, and only show
-// output for %+v ?
-func (e *localCmdError) Error() string {
-	return fmt.Sprintf(
-		"command \"%s\" failed with error: %v and output:\n%s",
-		e.prettyCommand(), e.Inner, e.CmdOut.Bytes(),
-	)
-}
-
-func (e *localCmdError) prettyCommand() string {
-	var out strings.Builder
-	for i, arg := range e.CmdArgs {
-		out.WriteString(shellescape.Quote(arg))
-		if i+1 != len(e.CmdArgs) {
-			out.WriteByte(' ')
-		}
-	}
-	return out.String()
-}
-
-// Cause mimics github.com/pkg/errors's Cause pattern for errors
-func (e *localCmdError) Cause() error {
-	return e.Inner
 }
