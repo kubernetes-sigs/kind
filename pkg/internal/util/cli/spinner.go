@@ -63,7 +63,7 @@ var _ io.Writer = &Spinner{}
 func NewSpinner(w io.Writer) *Spinner {
 	return &Spinner{
 		stop:    make(chan struct{}, 1),
-		stopped: make(chan struct{}, 1),
+		stopped: make(chan struct{}),
 		mu:      &sync.Mutex{},
 		writer:  w,
 	}
@@ -87,10 +87,11 @@ func (s *Spinner) SetSuffix(suffix string) {
 func (s *Spinner) Start() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	// don't start if we've already started, also flag that we've started
+	// don't start if we've already started
 	if s.running {
 		return
 	}
+	// flag that we've started
 	s.running = true
 	// start / create a frame ticker
 	s.ticker = time.NewTicker(time.Millisecond * 100)
@@ -102,8 +103,14 @@ func (s *Spinner) Start() {
 				select {
 				// prefer stopping, select this signal first
 				case <-s.stop:
-					s.stopped <- struct{}{} // signal that we stopped
-					return                  // ... and stop
+					func() {
+						s.mu.Lock()
+						defer s.mu.Unlock()
+						s.ticker.Stop()         // free up the ticker
+						s.running = false       // mark as stopped (it's fine to start now)
+						s.stopped <- struct{}{} // tell Stop() that we're done
+					}()
+					return // ... and stop
 				// otherwise continue and write one frame
 				case <-s.ticker.C:
 					func() {
@@ -120,18 +127,14 @@ func (s *Spinner) Start() {
 // Stop signals the spinner to stop
 func (s *Spinner) Stop() {
 	s.mu.Lock()
-	// if there's nothing to stop, return early
 	if !s.running {
 		s.mu.Unlock()
 		return
 	}
-	// otherwise: mark not running, send the stop signal and release the ticker
+	// try to stop, do nothing if channel is full (IE already busy stopping)
 	s.stop <- struct{}{}
-	s.ticker.Stop()
-	s.running = false
-	// unlock after sending the signal to avoid deadlock
 	s.mu.Unlock()
-	// and wait for the reply
+	// wait for stop to be finished
 	<-s.stopped
 }
 
