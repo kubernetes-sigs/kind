@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"runtime"
+	"strings"
 	"sync"
 
 	"sigs.k8s.io/kind/pkg/log"
@@ -27,9 +29,10 @@ import (
 
 // Logger is the kind cli's log.Logger implementation
 type Logger struct {
-	Verbosity log.Level
-	io.Writer
-	writeMu sync.Mutex
+	writer     io.Writer
+	writerMu   sync.Mutex
+	verbosity  log.Level
+	bufferPool *bufferPool
 }
 
 var _ log.Logger = &Logger{}
@@ -37,41 +40,85 @@ var _ log.Logger = &Logger{}
 // NewLogger returns a new Logger with the given verbosity
 func NewLogger(writer io.Writer, verbosity log.Level) *Logger {
 	return &Logger{
-		Verbosity: verbosity,
-		Writer:    writer,
+		verbosity:  verbosity,
+		writer:     writer,
+		bufferPool: newBufferPool(),
 	}
 }
 
-func (l *Logger) Write(p []byte) (n int, err error) {
-	// TODO: line oriented instead?
-	// For now we make a single per-message write call from the rest of the logger
-	// intentionally to effectively do this one level up
-	l.writeMu.Lock()
-	defer l.writeMu.Unlock()
-	return l.Writer.Write(p)
+// synchronized write to the inner writer
+func (l *Logger) write(p []byte) (n int, err error) {
+	l.writerMu.Lock()
+	defer l.writerMu.Unlock()
+	return l.writer.Write(p)
 }
 
-// TODO: prefix log lines with metadata (log level? timestamp?)
+// writeBuffer writes buf with write, ensuring there is a trailing newline
+func (l *Logger) writeBuffer(buf *bytes.Buffer) {
+	// ensure trailing newline
+	if buf.Bytes()[buf.Len()-1] != '\n' {
+		buf.WriteByte('\n')
+	}
+	// TODO: should we handle this somehow??
+	// Who logs for the logger? 🤔
+	_, _ = l.write(buf.Bytes())
+}
 
+// print writes a simple string to the log writer
 func (l *Logger) print(message string) {
 	buf := bytes.NewBufferString(message)
-	if buf.Bytes()[buf.Len()-1] != '\n' {
-		buf.WriteByte('\n')
-	}
-	// TODO: should we handle this somehow??
-	// Who logs for the logger? 🤔
-	_, _ = l.Write(buf.Bytes())
+	l.writeBuffer(buf)
 }
 
+// printf is roughly fmt.Fprintf against the log writer
 func (l *Logger) printf(format string, args ...interface{}) {
-	var buf bytes.Buffer
-	fmt.Fprintf(&buf, format, args...)
-	if buf.Bytes()[buf.Len()-1] != '\n' {
-		buf.WriteByte('\n')
+	buf := l.bufferPool.Get()
+	fmt.Fprintf(buf, format, args...)
+	l.writeBuffer(buf)
+	l.bufferPool.Put(buf)
+}
+
+// addDebugHeader inserts the debug line header to buf
+func addDebugHeader(buf *bytes.Buffer) {
+	_, file, line, ok := runtime.Caller(3)
+	// lifted from klog
+	if !ok {
+		file = "???"
+		line = 1
+	} else {
+		if slash := strings.LastIndex(file, "/"); slash >= 0 {
+			path := file
+			file = path[slash+1:]
+			if dirsep := strings.LastIndex(path[:slash], "/"); dirsep >= 0 {
+				file = path[dirsep+1:]
+			}
+		}
 	}
-	// TODO: should we handle this somehow??
-	// Who logs for the logger? 🤔
-	_, _ = l.Write(buf.Bytes())
+	buf.Grow(len(file) + 11) // we know at least this many bytes are needed
+	buf.WriteString("DEBUG: ")
+	buf.WriteString(file)
+	buf.WriteByte(':')
+	fmt.Fprintf(buf, "%d", line)
+	buf.WriteByte(']')
+	buf.WriteByte(' ')
+}
+
+// debug is like print but with a debug log header
+func (l *Logger) debug(message string) {
+	buf := l.bufferPool.Get()
+	addDebugHeader(buf)
+	buf.WriteString(message)
+	l.writeBuffer(buf)
+	l.bufferPool.Put(buf)
+}
+
+// debugf is like printf but with a debug log header
+func (l *Logger) debugf(format string, args ...interface{}) {
+	buf := l.bufferPool.Get()
+	addDebugHeader(buf)
+	fmt.Fprintf(buf, format, args...)
+	l.writeBuffer(buf)
+	l.bufferPool.Put(buf)
 }
 
 // Warn is part of the log.Logger interface
@@ -98,29 +145,80 @@ func (l *Logger) Errorf(format string, args ...interface{}) {
 func (l *Logger) V(level log.Level) log.InfoLogger {
 	return infoLogger{
 		logger:  l,
-		enabled: level <= l.Verbosity,
+		level:   level,
+		enabled: level <= l.verbosity,
 	}
 }
 
+// infoLogger implements log.InfoLogger for Logger
 type infoLogger struct {
 	logger  *Logger
+	level   log.Level
 	enabled bool
 }
 
+// Enabled is part of the log.InfoLogger interface
 func (i infoLogger) Enabled() bool {
 	return i.enabled
 }
 
+// Info is part of the log.InfoLogger interface
 func (i infoLogger) Info(message string) {
 	if !i.enabled {
 		return
 	}
-	i.logger.print(message)
+	// for > 0, we are writing debug messages, include extra info
+	if i.level > 0 {
+		i.logger.debug(message)
+	} else {
+		i.logger.print(message)
+	}
 }
 
+// Infof is part of the log.InfoLogger interface
 func (i infoLogger) Infof(format string, args ...interface{}) {
 	if !i.enabled {
 		return
 	}
-	i.logger.printf(format, args...)
+	// for > 0, we are writing debug messages, include extra info
+	if i.level > 0 {
+		i.logger.debugf(format, args...)
+	} else {
+		i.logger.printf(format, args...)
+	}
+}
+
+// bufferPool is a type safe sync.Pool of *byte.Buffer, guaranteed to be Reset
+type bufferPool struct {
+	sync.Pool
+}
+
+// newBufferPool returns a new bufferPool
+func newBufferPool() *bufferPool {
+	return &bufferPool{
+		sync.Pool{
+			New: func() interface{} {
+				// The Pool's New function should generally only return pointer
+				// types, since a pointer can be put into the return interface
+				// value without an allocation:
+				return new(bytes.Buffer)
+			},
+		},
+	}
+}
+
+// Get obtains a buffer from the pool
+func (b *bufferPool) Get() *bytes.Buffer {
+	return b.Pool.Get().(*bytes.Buffer)
+}
+
+// Put returns a buffer to the pool, reseting it first
+func (b *bufferPool) Put(x *bytes.Buffer) {
+	// only store small buffers to avoid pointless allocation
+	// avoid keeping arbitrarily large buffers
+	if x.Len() > 256 {
+		return
+	}
+	x.Reset()
+	b.Pool.Put(x)
 }

@@ -17,8 +17,11 @@ limitations under the License.
 package exec
 
 import (
+	"bytes"
 	"io"
 	osexec "os/exec"
+
+	"github.com/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/globals"
 )
@@ -66,9 +69,30 @@ func (cmd *LocalCmd) SetStderr(w io.Writer) Cmd {
 	return cmd
 }
 
-// Run runs
+// Run runs the command
+// If the returned error is non-nil, it should be of type *RunError
 func (cmd *LocalCmd) Run() error {
+	var out bytes.Buffer
+	// TODO(BenTheElder): adding bytes.Buffer to both multiwriters might need
+	// to be wrapped with a mutex
+	if cmd.Stdout != nil {
+		cmd.Stdout = io.MultiWriter(cmd.Stdout, &out)
+	} else {
+		cmd.Stdout = &out
+	}
+	if cmd.Stderr != nil {
+		cmd.Stderr = io.MultiWriter(cmd.Stderr, &out)
+	} else {
+		cmd.Stderr = &out
+	}
 	// TODO: should be in the caller or logger should be injected somehow ...
-	globals.GetLogger().V(3).Infof("Running: %v %v", cmd.Path, cmd.Args)
-	return cmd.Cmd.Run()
+	globals.GetLogger().V(3).Infof("Running: \"%s\"", PrettyCommand(cmd.Args[0], cmd.Args[1:]...))
+	if err := cmd.Cmd.Run(); err != nil {
+		return errors.WithStack(&RunError{
+			Command: cmd.Args,
+			Output:  out.Bytes(),
+			Inner:   err,
+		})
+	}
+	return nil
 }

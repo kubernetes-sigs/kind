@@ -40,7 +40,7 @@ func StatusForLogger(l log.Logger) *Status {
 	// if we're using the CLI logger, check for if it has a spinner setup
 	// and wire the status to that
 	if v, ok := l.(*Logger); ok {
-		if v2, ok := v.Writer.(*Spinner); ok {
+		if v2, ok := v.writer.(*Spinner); ok {
 			s.spinner = v2
 		}
 	}
@@ -76,7 +76,7 @@ func (s *Status) End(success bool) {
 	if success {
 		s.logger.V(0).Infof(" ✓ %s\n", s.status)
 	} else {
-		s.logger.V(0).Infof("✗ %s\n", s.status)
+		s.logger.V(0).Infof(" ✗ %s\n", s.status)
 	}
 
 	s.status = ""

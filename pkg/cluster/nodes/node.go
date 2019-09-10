@@ -241,8 +241,7 @@ func (n *Node) Role() (role string, err error) {
 // WriteFile writes content to dest on the node
 func (n *Node) WriteFile(dest, content string) error {
 	// create destination directory
-	cmd := n.Command("mkdir", "-p", filepath.Dir(dest))
-	err := exec.RunLoggingOutputOnFail(cmd)
+	err := n.Command("mkdir", "-p", filepath.Dir(dest)).Run()
 	if err != nil {
 		return errors.Wrapf(err, "failed to create directory %s", dest)
 	}
@@ -343,14 +342,12 @@ func getSubnets(networkName string) ([]string, error) {
 // EnableIPv6 enables IPv6 inside the node container and in the inner docker daemon
 func (n *Node) EnableIPv6() error {
 	// enable ipv6
-	cmd := n.Command("sysctl", "net.ipv6.conf.all.disable_ipv6=0")
-	err := exec.RunLoggingOutputOnFail(cmd)
+	err := n.Command("sysctl", "net.ipv6.conf.all.disable_ipv6=0").Run()
 	if err != nil {
 		return errors.Wrap(err, "failed to enable ipv6")
 	}
 	// enable ipv6 forwarding
-	cmd = n.Command("sysctl", "net.ipv6.conf.all.forwarding=1")
-	err = exec.RunLoggingOutputOnFail(cmd)
+	err = n.Command("sysctl", "net.ipv6.conf.all.forwarding=1").Run()
 	if err != nil {
 		return errors.Wrap(err, "failed to enable ipv6 forwarding")
 	}

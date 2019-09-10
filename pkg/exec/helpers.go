@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,9 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package exec contains an interface for executing commands, along with helpers
-// TODO(bentheelder): add standardized timeout functionality & a default timeout
-// so that commands cannot hang indefinitely (!)
 package exec
 
 import (
@@ -24,36 +21,21 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"strings"
 
-	"sigs.k8s.io/kind/pkg/globals"
+	"github.com/alessio/shellescape"
 )
 
-// Cmd abstracts over running a command somewhere, this is useful for testing
-type Cmd interface {
-	Run() error
-	// Each entry should be of the form "key=value"
-	SetEnv(...string) Cmd
-	SetStdin(io.Reader) Cmd
-	SetStdout(io.Writer) Cmd
-	SetStderr(io.Writer) Cmd
-}
-
-// Cmder abstracts over creating commands
-type Cmder interface {
-	// command, args..., just like os/exec.Cmd
-	Command(string, ...string) Cmd
-}
-
-// DefaultCmder is a LocalCmder instance used for convienience, packages
-// originally using os/exec.Command can instead use pkg/kind/exec.Command
-// which forwards to this instance
-// TODO(bentheelder): swap this for testing
-// TODO(bentheelder): consider not using a global for this :^)
-var DefaultCmder = &LocalCmder{}
-
-// Command is a convience wrapper over DefaultCmder.Command
-func Command(command string, args ...string) Cmd {
-	return DefaultCmder.Command(command, args...)
+// PrettyCommand takes arguments identical to Cmder.Command,
+// it returns a pretty printed command that could be pasted into a shell
+func PrettyCommand(name string, args ...string) string {
+	var out strings.Builder
+	out.WriteString(shellescape.Quote(name))
+	for _, arg := range args {
+		out.WriteByte(' ')
+		out.WriteString(shellescape.Quote(arg))
+	}
+	return out.String()
 }
 
 // CombinedOutputLines is like os/exec's cmd.CombinedOutput(),
@@ -90,23 +72,6 @@ func InheritOutput(cmd Cmd) Cmd {
 	cmd.SetStderr(os.Stderr)
 	cmd.SetStdout(os.Stdout)
 	return cmd
-}
-
-// RunLoggingOutputOnFail runs the cmd, logging error output if Run returns an error
-// TODO: we should just make exec capture output on error and move this to the caller
-func RunLoggingOutputOnFail(cmd Cmd) error {
-	var buff bytes.Buffer
-	cmd.SetStdout(&buff)
-	cmd.SetStderr(&buff)
-	err := cmd.Run()
-	if err != nil {
-		globals.GetLogger().Error("failed with:")
-		scanner := bufio.NewScanner(&buff)
-		for scanner.Scan() {
-			globals.GetLogger().Error(scanner.Text())
-		}
-	}
-	return err
 }
 
 // RunWithStdoutReader runs cmd with stdout piped to readerFunc

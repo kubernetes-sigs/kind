@@ -108,7 +108,7 @@ func runE(flags *Flags, cmd *cobra.Command) error {
 	}
 	// warn about deprecated flag if used
 	if setLogLevel {
-		globals.GetLogger().Warn("--loglevel is deprecated, please switch to -v and -q!")
+		globals.GetLogger().Warn("WARNING: --loglevel is deprecated, please switch to -v and -q!")
 	}
 	return nil
 }
@@ -121,7 +121,23 @@ func Run() error {
 // Main wraps Run and sets the log formatter
 func Main() {
 	if err := Run(); err != nil {
-		globals.GetLogger().Errorf("Failed with error: %+v", err)
+		logError(err)
 		os.Exit(1)
+	}
+}
+
+// logError logs the error and the root stacktrace if there is one
+func logError(err error) {
+	globals.GetLogger().Errorf("ERROR: %v", err)
+	// If debugging is enabled (non-zero verbosity), display more info
+	if globals.GetLogger().V(1).Enabled() {
+		// Display Output if the error was running a command ...
+		if err := runError(err); err != nil {
+			globals.GetLogger().Errorf("\nOutput:\n%s", err.Output)
+		}
+		// Then display stack trace if any (there should be one...)
+		if trace := stackTrace(err); trace != nil {
+			globals.GetLogger().Errorf("\nStack Trace: %+v", trace)
+		}
 	}
 }
