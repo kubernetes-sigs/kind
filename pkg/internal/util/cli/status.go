@@ -76,7 +76,7 @@ func (s *Status) End(success bool) {
 	if success {
 		s.logger.V(0).Infof(" ✓ %s\n", s.status)
 	} else {
-		s.logger.V(0).Infof("✗ %s\n", s.status)
+		s.logger.V(0).Infof(" ✗ %s\n", s.status)
 	}
 
 	s.status = ""
