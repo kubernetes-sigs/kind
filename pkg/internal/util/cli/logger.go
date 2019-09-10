@@ -214,6 +214,11 @@ func (b *bufferPool) Get() *bytes.Buffer {
 
 // Put returns a buffer to the pool, reseting it first
 func (b *bufferPool) Put(x *bytes.Buffer) {
+	// only store small buffers to avoid pointless allocation
+	// avoid keeping arbitrarily large buffers
+	if x.Len() > 256 {
+		return
+	}
 	x.Reset()
 	b.Pool.Put(x)
 }
