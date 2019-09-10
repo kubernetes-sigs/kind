@@ -89,12 +89,13 @@ nodes:
 EOF
 
   # actually create the cluster
+  # TODO(BenTheElder): settle on verbosity for this script
   KIND_IS_UP=true
   kind create cluster \
     --image=kindest/node:latest \
     --retain \
     --wait=1m \
-    --loglevel=debug \
+    -v=3 \
     "--config=${ARTIFACTS}/kind-config.yaml"
 }
 
