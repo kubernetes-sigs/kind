@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/kind/cmd/kind/load"
 	"sigs.k8s.io/kind/cmd/kind/version"
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/globals"
 	"sigs.k8s.io/kind/pkg/log"
 )
@@ -133,7 +134,7 @@ func logError(err error) {
 	// If debugging is enabled (non-zero verbosity), display more info
 	if globals.GetLogger().V(1).Enabled() {
 		// Display Output if the error was running a command ...
-		if err := errors.RunError(err); err != nil {
+		if err := exec.RunErrorForError(err); err != nil {
 			globals.GetLogger().Errorf("\nOutput:\n%s", err.Output)
 		}
 		// Then display stack trace if any (there should be one...)

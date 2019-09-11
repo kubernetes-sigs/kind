@@ -18,9 +18,38 @@ package errors
 
 import (
 	pkgerrors "github.com/pkg/errors"
-
-	"sigs.k8s.io/kind/pkg/exec"
 )
+
+// New returns an error with the supplied message.
+// New also records the stack trace at the point it was called.
+func New(message string) error {
+	return pkgerrors.New(message)
+}
+
+// Errorf formats according to a format specifier and returns the string as a
+// value that satisfies error. Errorf also records the stack trace at the
+// point it was called.
+func Errorf(format string, args ...interface{}) error {
+	return pkgerrors.Errorf(format, args...)
+}
+
+// Wrap returns an error annotating err with a stack trace at the point Wrap
+// is called, and the supplied message. If err is nil, Wrap returns nil.
+func Wrap(err error, message string) error {
+	return pkgerrors.Wrap(err, message)
+}
+
+// Wrapf returns an error annotating err with a stack trace at the point Wrapf
+// is called, and the format specifier. If err is nil, Wrapf returns nil.
+func Wrapf(err error, format string, args ...interface{}) error {
+	return pkgerrors.Wrapf(err, format, args...)
+}
+
+// WithStack annotates err with a stack trace at the point WithStack was called.
+// If err is nil, WithStack returns nil.
+func WithStack(err error) error {
+	return pkgerrors.WithStack(err)
+}
 
 // Causer is an interface to github.com/pkg/errors error's Cause() wrapping
 type Causer interface {
@@ -31,27 +60,12 @@ type Causer interface {
 // StackTracer is an interface to github.com/pkg/errors error's StackTrace()
 type StackTracer interface {
 	// StackTrace returns the StackTrace ...
+	// TODO: return our own type instead?
+	// https://github.com/pkg/errors#roadmap
 	StackTrace() pkgerrors.StackTrace
 }
 
-// RunError returns an exec.RunError if the error chain
-// contains an exec.RunError
-func RunError(err error) *exec.RunError {
-	var runError *exec.RunError
-	for {
-		if rErr, ok := err.(*exec.RunError); ok {
-			runError = rErr
-		}
-		if causerErr, ok := err.(Causer); ok {
-			err = causerErr.Cause()
-		} else {
-			break
-		}
-	}
-	return runError
-}
-
-// StackTrace returns the deepest StackTrace is a Cause chain
+// StackTrace returns the deepest StackTrace in a Cause chain
 // https://github.com/pkg/errors/issues/173
 func StackTrace(err error) pkgerrors.StackTrace {
 	var stackErr error

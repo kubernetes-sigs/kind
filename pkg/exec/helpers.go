@@ -24,6 +24,8 @@ import (
 	"strings"
 
 	"github.com/alessio/shellescape"
+
+	"sigs.k8s.io/kind/pkg/errors"
 )
 
 // PrettyCommand takes arguments identical to Cmder.Command,
@@ -36,6 +38,23 @@ func PrettyCommand(name string, args ...string) string {
 		out.WriteString(shellescape.Quote(arg))
 	}
 	return out.String()
+}
+
+// RunErrorForError returns a RunError if the error contains a RunError.
+// Otherwise it returns nil
+func RunErrorForError(err error) *RunError {
+	var runError *RunError
+	for {
+		if rErr, ok := err.(*RunError); ok {
+			runError = rErr
+		}
+		if causerErr, ok := err.(errors.Causer); ok {
+			err = causerErr.Cause()
+		} else {
+			break
+		}
+	}
+	return runError
 }
 
 // CombinedOutputLines is like os/exec's cmd.CombinedOutput(),
