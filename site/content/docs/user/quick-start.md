@@ -26,8 +26,8 @@ shown [here](https://golang.org/doc/code.html#GOPATH) if you encounter the error
 
 Without installing go, kind can be built reproducibly with docker using `make build`.
 
-Stable binaries are also available on the [releases] page. Stable releases are
-generally recommended for CI usage in particular.
+Stable binaries are also available on the [releases](https://github.com/kubernetes-sigs/kind/releases) page.
+Stable releases are generally recommended for CI usage in particular.
 To install, download the binary for your platform from "Assets" and place this
 into your `$PATH`. 
 
