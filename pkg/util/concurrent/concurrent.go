@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package concurrent provides utilities for concurrent execution
+// TODO(bentheelder): this should be internal
 package concurrent
 
 import (
