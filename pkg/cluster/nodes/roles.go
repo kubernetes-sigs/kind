@@ -20,9 +20,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"sigs.k8s.io/kind/pkg/cluster/constants"
+	"sigs.k8s.io/kind/pkg/errors"
 )
 
 // SelectNodesByRole returns a list of nodes with the matching role

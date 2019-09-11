@@ -21,7 +21,7 @@ package concurrent
 import (
 	"sync"
 
-	"sigs.k8s.io/kind/pkg/util"
+	"sigs.k8s.io/kind/pkg/errors"
 )
 
 // UntilError runs all funcs in separate goroutines, returning the
@@ -64,7 +64,7 @@ func Coalesce(fns ...func() error) error {
 		}
 	}
 	if len(errs) > 1 {
-		return util.Flatten(errs)
+		return errors.NewAggregate(errs)
 	} else if len(errs) == 1 {
 		return errs[0]
 	}

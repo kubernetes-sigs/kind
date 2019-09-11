@@ -27,11 +27,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/pkg/errors"
-
 	"sigs.k8s.io/kind/pkg/cluster/constants"
-
 	"sigs.k8s.io/kind/pkg/container/docker"
+	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 )
 

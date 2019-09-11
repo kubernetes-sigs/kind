@@ -17,9 +17,8 @@ limitations under the License.
 package cluster
 
 import (
-	"github.com/pkg/errors"
-
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/errors"
 )
 
 // List returns a list of clusters for which node containers exist

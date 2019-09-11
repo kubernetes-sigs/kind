@@ -19,9 +19,9 @@ package nodes
 import (
 	"fmt"
 
-	"sigs.k8s.io/kind/pkg/internal/cluster/kubeadm"
+	"sigs.k8s.io/kind/pkg/errors"
 
-	"github.com/pkg/errors"
+	"sigs.k8s.io/kind/pkg/internal/cluster/kubeadm"
 	"sigs.k8s.io/kind/pkg/internal/cluster/loadbalancer"
 )
 

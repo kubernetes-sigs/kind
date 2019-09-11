@@ -26,7 +26,6 @@ func NewAggregate(errlist []error) error {
 	return WithStack(k8serrors.NewAggregate(errlist))
 }
 
-
 // Errors returns the deepest Aggregate.Errors() in a Cause chain
 // https://github.com/pkg/errors/issues/173
 func Errors(err error) []error {

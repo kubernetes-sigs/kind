@@ -22,9 +22,9 @@ import (
 	"html/template"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/errors"
+
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
 )
 

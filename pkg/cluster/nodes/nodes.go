@@ -21,9 +21,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"sigs.k8s.io/kind/pkg/cluster/constants"
-
+	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 )
 

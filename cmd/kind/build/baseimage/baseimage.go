@@ -17,10 +17,10 @@ limitations under the License.
 package baseimage
 
 import (
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/build/base"
+	"sigs.k8s.io/kind/pkg/errors"
 )
 
 type flagpole struct {

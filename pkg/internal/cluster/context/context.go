@@ -23,10 +23,9 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/pkg/errors"
-
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/internal/util/env"
 )
 

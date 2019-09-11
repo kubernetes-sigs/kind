@@ -20,13 +20,13 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/pkg/errors"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha3"
+	"sigs.k8s.io/kind/pkg/errors"
+
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 
 	// import conversions

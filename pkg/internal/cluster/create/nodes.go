@@ -21,15 +21,15 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/container/cri"
+	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/util/concurrent"
+
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/cluster/loadbalancer"
 	"sigs.k8s.io/kind/pkg/internal/util/cli"
-	"sigs.k8s.io/kind/pkg/util/concurrent"
 )
 
 // provisioning order for nodes by role

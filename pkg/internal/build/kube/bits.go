@@ -17,7 +17,7 @@ limitations under the License.
 package kube
 
 import (
-	"github.com/pkg/errors"
+	"sigs.k8s.io/kind/pkg/errors"
 )
 
 // Bits provides the locations of Kubernetes Binaries / Images

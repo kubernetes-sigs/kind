@@ -21,8 +21,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/version"
+	"sigs.k8s.io/kind/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/globals"
 )

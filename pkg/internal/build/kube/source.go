@@ -19,7 +19,7 @@ package kube
 import (
 	"go/build"
 
-	"github.com/pkg/errors"
+	"sigs.k8s.io/kind/pkg/errors"
 )
 
 // ImportPath is the canonical import path for the kubernetes root package

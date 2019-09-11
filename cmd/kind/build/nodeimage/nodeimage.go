@@ -17,10 +17,10 @@ limitations under the License.
 package nodeimage
 
 import (
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/build/node"
+	"sigs.k8s.io/kind/pkg/errors"
 )
 
 type flagpole struct {
