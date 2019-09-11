@@ -24,10 +24,10 @@ cd "${REPO_ROOT}"
 # build the binary
 export GOARCH="${GOARCH:-amd64}"
 export GOOS="linux"
-export SOURCE_DIR="${REPO_ROOT}/cmd/kindnetd"
+export SOURCE_DIR="${REPO_ROOT}/images/kindnetd"
 # NOTE: use a per-arch OUT_DIR so we send less in the docker build context
 export OUT_DIR="${REPO_ROOT}/bin/kindnetd/${GOARCH}"
-hack/go_container.sh go build -v -o /out/kindnetd
+hack/go_container.sh go build -v -o /out/kindnetd ./cmd/kindnetd
 
 # TODO: verisoning
 # build image

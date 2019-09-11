@@ -27,6 +27,6 @@ hack/release/build/cross.sh
 hack/go_container.sh go test -v ./...
 
 # build and test kindnetd
-cd ./cmd/kindnetd
-"${REPO_ROOT}/hack/go_container.sh" go build -v -o /out/kindnetd .
+cd "${REPO_ROOT}/images/kindnetd"
+"${REPO_ROOT}/hack/go_container.sh" go build -v -o /out/kindnetd ./cmd/kindnetd
 "${REPO_ROOT}/hack/go_container.sh" go test -v ./...

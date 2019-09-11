@@ -1,4 +1,4 @@
-module sigs.k8s.io/kind/cmd/kindnetd
+module sigs.k8s.io/kind/images/kindnetd
 
 go 1.13
 
