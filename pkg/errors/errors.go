@@ -14,31 +14,35 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kind
+package errors
 
 import (
-	"github.com/pkg/errors"
+	pkgerrors "github.com/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
-// github.com/pkg/errors errors type interfaces
-type causer interface {
+// Causer is an interface to github.com/pkg/errors error's Cause() wrapping
+type Causer interface {
+	// Cause returns the underlying error
 	Cause() error
 }
-type stackTracer interface {
-	StackTrace() errors.StackTrace
+
+// StackTracer is an interface to github.com/pkg/errors error's StackTrace()
+type StackTracer interface {
+	// StackTrace returns the StackTrace ...
+	StackTrace() pkgerrors.StackTrace
 }
 
-// runError returns an exec.RunError if the error chain
+// RunError returns an exec.RunError if the error chain
 // contains an exec.RunError
-func runError(err error) *exec.RunError {
+func RunError(err error) *exec.RunError {
 	var runError *exec.RunError
 	for {
 		if rErr, ok := err.(*exec.RunError); ok {
 			runError = rErr
 		}
-		if causerErr, ok := err.(causer); ok {
+		if causerErr, ok := err.(Causer); ok {
 			err = causerErr.Cause()
 		} else {
 			break
@@ -47,22 +51,22 @@ func runError(err error) *exec.RunError {
 	return runError
 }
 
-// stackTrace returns the deepest StackTrace is a Cause chain
+// StackTrace returns the deepest StackTrace is a Cause chain
 // https://github.com/pkg/errors/issues/173
-func stackTrace(err error) errors.StackTrace {
+func StackTrace(err error) pkgerrors.StackTrace {
 	var stackErr error
 	for {
-		if _, ok := err.(stackTracer); ok {
+		if _, ok := err.(StackTracer); ok {
 			stackErr = err
 		}
-		if causerErr, ok := err.(causer); ok {
+		if causerErr, ok := err.(Causer); ok {
 			err = causerErr.Cause()
 		} else {
 			break
 		}
 	}
 	if stackErr != nil {
-		return stackErr.(stackTracer).StackTrace()
+		return stackErr.(StackTracer).StackTrace()
 	}
 	return nil
 }
