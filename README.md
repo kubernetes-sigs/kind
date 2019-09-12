@@ -51,6 +51,23 @@ To use kind, you will need to [install docker].
 Once you have docker running you can create a cluster with `kind create cluster`  
 To delete your cluster use `kind delete cluster`
 
+### Auto completions
+
+To enable Bash completion for Kind commands, you can use the bash-completions project:
+
+```console
+sudo apt | dnf | pacman install bash-completion
+kind completion bash | sudo tee /etc/bash_completion.d/kind
+```
+
+Then reload your .bashrc:
+
+```console
+source ~/.bashrc
+```
+
+You should now be able to <tab> complete for kind options!
+
 <!--TODO(bentheelder): improve this part of the guide-->
 To create a cluster from Kubernetes source:
 - ensure that Kubernetes is cloned in `$(go env GOPATH)/src/k8s.io/kubernetes`
