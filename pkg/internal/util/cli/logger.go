@@ -59,7 +59,7 @@ func (l *Logger) writeBuffer(buf *bytes.Buffer) {
 	if buf.Bytes()[buf.Len()-1] != '\n' {
 		buf.WriteByte('\n')
 	}
-	// TODO: should we handle this somehow??
+	// TODO: should we handle this somehow?
 	// Who logs for the logger? 🤔
 	_, _ = l.write(buf.Bytes())
 }
