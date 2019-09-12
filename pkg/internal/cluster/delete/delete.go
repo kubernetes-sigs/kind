@@ -21,10 +21,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/globals"
+
 	"sigs.k8s.io/kind/pkg/internal/cluster/context"
 )
 

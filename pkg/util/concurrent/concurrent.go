@@ -14,12 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package concurrent provides utilities for concurrent execution
+// TODO(bentheelder): this should be internal
 package concurrent
 
 import (
 	"sync"
 
-	"sigs.k8s.io/kind/pkg/util"
+	"sigs.k8s.io/kind/pkg/errors"
 )
 
 // UntilError runs all funcs in separate goroutines, returning the
@@ -62,7 +64,7 @@ func Coalesce(fns ...func() error) error {
 		}
 	}
 	if len(errs) > 1 {
-		return util.Flatten(errs)
+		return errors.NewAggregate(errs)
 	} else if len(errs) == 1 {
 		return errs[0]
 	}

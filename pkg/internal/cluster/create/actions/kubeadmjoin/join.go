@@ -23,15 +23,15 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
 	"sigs.k8s.io/kind/pkg/globals"
-	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
 	"sigs.k8s.io/kind/pkg/util/concurrent"
+
+	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
 )
 
 // Action implements action for creating the kubeadm join

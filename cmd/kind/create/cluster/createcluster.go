@@ -21,13 +21,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/create"
+	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/globals"
-	"sigs.k8s.io/kind/pkg/util"
 )
 
 type flagpole struct {
@@ -77,8 +76,8 @@ func runE(flags *flagpole) error {
 		create.Retain(flags.Retain),
 		create.WaitForReady(flags.Wait),
 	); err != nil {
-		if utilErrors, ok := err.(util.Errors); ok {
-			for _, problem := range utilErrors.Errors() {
+		if errs := errors.Errors(err); errs != nil {
+			for _, problem := range errs {
 				globals.GetLogger().Errorf("%v", problem)
 			}
 			return errors.New("aborting due to invalid configuration")

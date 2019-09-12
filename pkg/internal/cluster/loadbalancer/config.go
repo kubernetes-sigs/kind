@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"text/template"
 
-	"github.com/pkg/errors"
+	"sigs.k8s.io/kind/pkg/errors"
 )
 
 // ConfigData is supplied to the loadbalancer config template

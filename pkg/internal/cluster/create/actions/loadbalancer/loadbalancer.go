@@ -20,11 +20,11 @@ package loadbalancer
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/container/docker"
+	"sigs.k8s.io/kind/pkg/errors"
+
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
 	"sigs.k8s.io/kind/pkg/internal/cluster/kubeadm"
 	"sigs.k8s.io/kind/pkg/internal/cluster/loadbalancer"

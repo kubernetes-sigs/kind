@@ -19,9 +19,7 @@ package config
 import (
 	"net"
 
-	"github.com/pkg/errors"
-
-	"sigs.k8s.io/kind/pkg/util"
+	"sigs.k8s.io/kind/pkg/errors"
 )
 
 // Validate returns a ConfigErrors with an entry for each problem
@@ -70,7 +68,7 @@ func (c *Cluster) Validate() error {
 	}
 
 	if len(errs) > 0 {
-		return util.NewErrors(errs)
+		return errors.NewAggregate(errs)
 	}
 	return nil
 }
@@ -104,7 +102,7 @@ func (n *Node) Validate() error {
 	}
 
 	if len(errs) > 0 {
-		return util.NewErrors(errs)
+		return errors.NewAggregate(errs)
 	}
 
 	return nil

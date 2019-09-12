@@ -19,7 +19,7 @@ package config
 import (
 	"testing"
 
-	"sigs.k8s.io/kind/pkg/util"
+	"sigs.k8s.io/kind/pkg/errors"
 )
 
 func TestClusterValidate(t *testing.T) {
@@ -85,16 +85,15 @@ func TestClusterValidate(t *testing.T) {
 				}
 				return
 			}
-			// - not castable to *Errors, in which case we have the wrong error type ...
-			configErrors, ok := err.(util.Errors)
-			if !ok {
+			// - doesn't container errors, in which case we have the wrong error type ...
+			errs := errors.Errors(err)
+			if errs == nil {
 				t.Errorf("config.Validate should only return nil or ConfigErrors{...}, got: %v", err)
 				return
 			}
-			// - ConfigErrors, in which case expect a certain number of errors
-			errors := configErrors.Errors()
-			if len(errors) != tc.ExpectErrors {
-				t.Errorf("expected %d errors but got len(%v) = %d", tc.ExpectErrors, errors, len(errors))
+			// - errors, in which case expect a certain number of errors
+			if len(errs) != tc.ExpectErrors {
+				t.Errorf("expected %d errors but got len(%v) = %d", tc.ExpectErrors, errs, len(errs))
 			}
 		})
 	}
@@ -167,16 +166,15 @@ func TestNodeValidate(t *testing.T) {
 				}
 				return
 			}
-			// - not castable to *Errors, in which case we have the wrong error type ...
-			configErrors, ok := err.(util.Errors)
-			if !ok {
+			// - doesn't container errors, in which case we have the wrong error type ...
+			errs := errors.Errors(err)
+			if errs == nil {
 				t.Errorf("config.Validate should only return nil or ConfigErrors{...}, got: %v", err)
 				return
 			}
-			// - ConfigErrors, in which case expect a certain number of errors
-			errors := configErrors.Errors()
-			if len(errors) != tc.ExpectErrors {
-				t.Errorf("expected %d errors but got len(%v) = %d", tc.ExpectErrors, errors, len(errors))
+			// - errors, in which case expect a certain number of errors
+			if len(errs) != tc.ExpectErrors {
+				t.Errorf("expected %d errors but got len(%v) = %d", tc.ExpectErrors, errs, len(errs))
 			}
 		})
 	}
