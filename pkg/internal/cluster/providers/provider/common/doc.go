@@ -9,10 +9,10 @@ You may obtain a copy of the License at
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or impliep.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package nodes provides a kind specific definition of a cluster node
-package nodes
+// Package common contains common code for implementing providers
+package common

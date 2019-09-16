@@ -21,11 +21,12 @@ package context
 import (
 	"fmt"
 	"path/filepath"
-	"regexp"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/errors"
+
+	"sigs.k8s.io/kind/pkg/internal/cluster/providers/docker"
+	"sigs.k8s.io/kind/pkg/internal/cluster/providers/provider"
 	"sigs.k8s.io/kind/pkg/internal/util/env"
 )
 
@@ -37,6 +38,8 @@ import (
 // consume this
 type Context struct {
 	name string
+	// cluster backend (docker, ...)
+	provider provider.Provider
 }
 
 // NewContext returns a new internal cluster management context
@@ -46,7 +49,8 @@ func NewContext(name string) *Context {
 		name = constants.DefaultClusterName
 	}
 	return &Context{
-		name: name,
+		name:     name,
+		provider: docker.NewProvider(),
 	}
 }
 
@@ -55,26 +59,12 @@ func (c *Context) Name() string {
 	return c.name
 }
 
-// similar to valid docker container names, but since we will prefix
-// and suffix this name, we can relax it a little
-// see NewContext() for usage
-// https://godoc.org/github.com/docker/docker/daemon/names#pkg-constants
-var validNameRE = regexp.MustCompile(`^[a-zA-Z0-9_.-]+$`)
+func (c *Context) Provider() provider.Provider {
+	return c.provider
+}
 
-// Validate will be called before creating new resources using the context
-// It will not be called before deleting or listing resources, so as to allow
-// contexts based around previously valid values to be used in newer versions
-// You can call this early yourself to check validation before creation calls,
-// though it will be called internally.
-func (c *Context) Validate() error {
-	// validate the name
-	if !validNameRE.MatchString(c.Name()) {
-		return errors.Errorf(
-			"'%s' is not a valid cluster name, cluster names must match `%s`",
-			c.Name(), validNameRE.String(),
-		)
-	}
-	return nil
+func (c *Context) GetAPIServerEndpoint() (string, error) {
+	return c.provider.GetAPIServerEndpoint(c.Name())
 }
 
 // KubeConfigPath returns the path to where the Kubeconfig would be placed
@@ -96,13 +86,13 @@ func (c *Context) ClusterLabel() string {
 
 // ListNodes returns the list of container IDs for the "nodes" in the cluster
 func (c *Context) ListNodes() ([]nodes.Node, error) {
-	return nodes.List("label=" + c.ClusterLabel())
+	return c.provider.ListNodes(c.name)
 }
 
 // ListInternalNodes returns the list of container IDs for the "nodes" in the cluster
 // that are not external
 func (c *Context) ListInternalNodes() ([]nodes.Node, error) {
-	clusterNodes, err := nodes.List("label=" + c.ClusterLabel())
+	clusterNodes, err := c.ListNodes()
 	if err != nil {
 		return nil, err
 	}

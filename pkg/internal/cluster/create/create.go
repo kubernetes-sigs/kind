@@ -18,11 +18,13 @@ package create
 
 import (
 	"fmt"
+	"regexp"
 	"runtime"
 
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
 
 	"sigs.k8s.io/kind/pkg/cluster/create"
+	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/globals"
 	"sigs.k8s.io/kind/pkg/internal/apis/config/encoding"
 	"sigs.k8s.io/kind/pkg/internal/cluster/context"
@@ -45,6 +47,12 @@ const (
 	clusterNameMax = 50
 )
 
+// similar to valid docker container names, but since we will prefix
+// and suffix this name, we can relax it a little
+// see NewContext() for usage
+// https://godoc.org/github.com/docker/docker/daemon/names#pkg-constants
+var validNameRE = regexp.MustCompile(`^[a-zA-Z0-9_.-]+$`)
+
 // Cluster creates a cluster
 func Cluster(ctx *context.Context, options ...create.ClusterOption) error {
 	// apply options, do defaulting etc.
@@ -53,6 +61,13 @@ func Cluster(ctx *context.Context, options ...create.ClusterOption) error {
 		return err
 	}
 
+	// validate the name
+	if !validNameRE.MatchString(ctx.Name()) {
+		return errors.Errorf(
+			"'%s' is not a valid cluster name, cluster names must match `%s`",
+			ctx.Name(), validNameRE.String(),
+		)
+	}
 	// warn if cluster name might typically be too long
 	if len(ctx.Name()) > clusterNameMax {
 		globals.GetLogger().Warnf("cluster name %q is probably too long, this might not work properly on some systems", ctx.Name())
@@ -66,12 +81,8 @@ func Cluster(ctx *context.Context, options ...create.ClusterOption) error {
 	// setup a status object to show progress to the user
 	status := cli.StatusForLogger(globals.GetLogger())
 
-	// attempt to explicitly pull the required node images if they doesn't exist locally
-	// we don't care if this errors, we'll still try to run which also pulls
-	ensureNodeImages(status, opts.Config)
-
 	// Create node containers implementing defined config Nodes
-	if err := provisionNodes(status, opts.Config, ctx.Name(), ctx.ClusterLabel()); err != nil {
+	if err := ctx.Provider().Provision(status, ctx.Name(), opts.Config); err != nil {
 		// In case of errors nodes are deleted (except if retain is explicitly set)
 		globals.GetLogger().Errorf("%v", err)
 		if !opts.Retain {

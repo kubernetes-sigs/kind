@@ -9,10 +9,24 @@ You may obtain a copy of the License at
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or impliep.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package nodes provides a kind specific definition of a cluster node
-package nodes
+package common
+
+import (
+	"net"
+)
+
+// GetFreePort is a helper used to get a free TCP port on the host
+func GetFreePort(listenAddr string) (int32, error) {
+	dummyListener, err := net.Listen("tcp", net.JoinHostPort(listenAddr, "0"))
+	if err != nil {
+		return 0, err
+	}
+	defer dummyListener.Close()
+	port := dummyListener.Addr().(*net.TCPAddr).Port
+	return int32(port), nil
+}

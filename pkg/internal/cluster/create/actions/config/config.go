@@ -25,11 +25,14 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/globals"
+	"sigs.k8s.io/kind/pkg/util/concurrent"
+
+	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
 	"sigs.k8s.io/kind/pkg/internal/cluster/kubeadm"
+	"sigs.k8s.io/kind/pkg/internal/cluster/providers/provider/common"
 	"sigs.k8s.io/kind/pkg/internal/util/kustomize"
-	"sigs.k8s.io/kind/pkg/util/concurrent"
 )
 
 // Action implements action for creating the kubeadm config
@@ -51,22 +54,9 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
-	// create the kubeadm init configuration
-	node, err := nodes.BootstrapControlPlaneNode(allNodes)
-	if err != nil {
-		return err
-	}
-
-	// get installed kubernetes version from the node image
-	kubeVersion, err := node.KubeVersion()
-	if err != nil {
-		// TODO(bentheelder): logging here
-		return errors.Wrap(err, "failed to get kubernetes version from node")
-	}
-
 	// get the control plane endpoint, in case the cluster has an external load balancer in
 	// front of the control-plane nodes
-	controlPlaneEndpoint, controlPlaneEndpointIPv6, err := nodes.GetControlPlaneEndpoint(allNodes)
+	controlPlaneEndpoint, controlPlaneEndpointIPv6, err := nodeutils.GetControlPlaneEndpoint(allNodes)
 	if err != nil {
 		// TODO(bentheelder): logging here
 		return err
@@ -82,9 +72,8 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 
 	configData := kubeadm.ConfigData{
 		ClusterName:          ctx.ClusterContext.Name(),
-		KubernetesVersion:    kubeVersion,
 		ControlPlaneEndpoint: controlPlaneEndpoint,
-		APIBindPort:          kubeadm.APIServerPort,
+		APIBindPort:          common.APIServerInternalPort,
 		APIServerAddress:     ctx.Config.Networking.APIServerAddress,
 		Token:                kubeadm.Token,
 		PodSubnet:            ctx.Config.Networking.PodSubnet,
@@ -93,28 +82,21 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		IPv6:                 ctx.Config.Networking.IPFamily == "ipv6",
 	}
 
-	fns = append(fns, func() error {
-		return writeKubeadmConfig(ctx.Config, configData, node)
-	})
-
-	// create the kubeadm join configuration for secondary control plane nodes if any
-	secondaryControlPlanes, err := nodes.SecondaryControlPlaneNodes(allNodes)
+	// create the kubeadm join configuration for control plane nodes
+	controlPlanes, err := nodeutils.ControlPlaneNodes(allNodes)
 	if err != nil {
 		return err
 	}
-	if len(secondaryControlPlanes) > 0 {
-		// create the workers concurrently
-		for _, node := range secondaryControlPlanes {
-			node := node             // capture loop variable
-			configData := configData // copy config data
-			fns = append(fns, func() error {
-				return writeKubeadmConfig(ctx.Config, configData, &node)
-			})
-		}
+	for _, node := range controlPlanes {
+		node := node             // capture loop variable
+		configData := configData // copy config data
+		fns = append(fns, func() error {
+			return writeKubeadmConfig(ctx.Config, configData, node)
+		})
 	}
 
 	// then create the kubeadm join config for the worker nodes if any
-	workers, err := nodes.SelectNodesByRole(allNodes, constants.WorkerNodeRoleValue)
+	workers, err := nodeutils.SelectNodesByRole(allNodes, constants.WorkerNodeRoleValue)
 	if err != nil {
 		return err
 	}
@@ -125,7 +107,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 			configData := configData // copy config data
 			configData.ControlPlane = false
 			fns = append(fns, func() error {
-				return writeKubeadmConfig(ctx.Config, configData, &node)
+				return writeKubeadmConfig(ctx.Config, configData, node)
 			})
 		}
 	}
@@ -198,7 +180,14 @@ func setPatchNames(patches []string, jsonPatches []config.PatchJSON6902) ([]stri
 }
 
 // writeKubeadmConfig writes the kubeadm configuration in the specified node
-func writeKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node *nodes.Node) error {
+func writeKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.Node) error {
+	kubeVersion, err := nodeutils.KubeVersion(node)
+	if err != nil {
+		// TODO(bentheelder): logging here
+		return errors.Wrap(err, "failed to get kubernetes version from node")
+	}
+	data.KubernetesVersion = kubeVersion
+
 	// get the node ip address
 	nodeAddress, nodeAddressIPv6, err := node.IP()
 	if err != nil {
@@ -221,7 +210,7 @@ func writeKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node *node
 	globals.GetLogger().V(1).Info("Using kubeadm config:\n" + kubeadmConfig)
 
 	// copy the config to the node
-	if err := node.WriteFile("/kind/kubeadm.conf", kubeadmConfig); err != nil {
+	if err := nodeutils.WriteFile(node, "/kind/kubeadm.conf", kubeadmConfig); err != nil {
 		// TODO(bentheelder): logging here
 		return errors.Wrap(err, "failed to copy kubeadm config to node")
 	}

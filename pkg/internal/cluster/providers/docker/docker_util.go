@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,15 +17,22 @@ limitations under the License.
 package docker
 
 import (
+	"strings"
+
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
-// Inspect return low-level information on containers
-func Inspect(containerNameOrID, format string) ([]string, error) {
-	cmd := exec.Command("docker", "inspect",
-		"-f", format,
-		containerNameOrID, // ... against the "node" container
-	)
-
-	return exec.CombinedOutputLines(cmd)
+// usernsRemap checks if userns-remap is enabled in dockerd
+func usernsRemap() bool {
+	cmd := exec.Command("docker", "info", "--format", "'{{json .SecurityOptions}}'")
+	lines, err := exec.CombinedOutputLines(cmd)
+	if err != nil {
+		return false
+	}
+	if len(lines) > 0 {
+		if strings.Contains(lines[0], "name=userns") {
+			return true
+		}
+	}
+	return false
 }

@@ -46,7 +46,7 @@ func runE() error {
 		return err
 	}
 	for _, cluster := range clusters {
-		fmt.Println(cluster.Name())
+		fmt.Println(cluster)
 	}
 	return nil
 }

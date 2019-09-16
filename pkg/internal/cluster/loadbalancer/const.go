@@ -16,9 +16,6 @@ limitations under the License.
 
 package loadbalancer
 
-// ControlPlanePort defines the port where the control plane is listening on the load balancer node
-const ControlPlanePort = 6443
-
 // Image defines the loadbalancer image:tag
 const Image = "kindest/haproxy:2.0.0-alpine"
 

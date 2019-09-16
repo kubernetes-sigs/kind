@@ -26,7 +26,8 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/cluster"
-	clusternodes "sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/container/docker"
 	"sigs.k8s.io/kind/pkg/fs"
 	"sigs.k8s.io/kind/pkg/globals"
@@ -87,14 +88,14 @@ func runE(flags *flagpole, args []string) error {
 	}
 
 	context := cluster.NewContext(flags.Name)
-	nodes, err := context.ListInternalNodes()
+	nodeList, err := context.ListInternalNodes()
 	if err != nil {
 		return err
 	}
 
 	// map cluster nodes by their name
-	nodesByName := map[string]clusternodes.Node{}
-	for _, node := range nodes {
+	nodesByName := map[string]nodes.Node{}
+	for _, node := range nodeList {
 		// TODO(bentheelder): this depends on the fact that ListByCluster()
 		// will have name for nameOrId.
 		nodesByName[node.String()] = node
@@ -102,9 +103,9 @@ func runE(flags *flagpole, args []string) error {
 
 	// pick only the user selected nodes and ensure they exist
 	// the default is all nodes unless flags.Nodes is set
-	candidateNodes := nodes
+	candidateNodes := nodeList
 	if len(flags.Nodes) > 0 {
-		candidateNodes = []clusternodes.Node{}
+		candidateNodes = []nodes.Node{}
 		for _, name := range flags.Nodes {
 			node, ok := nodesByName[name]
 			if !ok {
@@ -115,9 +116,9 @@ func runE(flags *flagpole, args []string) error {
 	}
 
 	// pick only the nodes that don't have the image
-	selectedNodes := []clusternodes.Node{}
+	selectedNodes := []nodes.Node{}
 	for _, node := range candidateNodes {
-		id, err := node.ImageID(imageName)
+		id, err := nodeutils.ImageID(node, imageName)
 		if err != nil || id != imageID {
 			selectedNodes = append(selectedNodes, node)
 			globals.GetLogger().V(0).Infof("Image: %q with ID %q not present on node %q", imageName, imageID, node.String())
@@ -146,18 +147,18 @@ func runE(flags *flagpole, args []string) error {
 	for _, selectedNode := range selectedNodes {
 		selectedNode := selectedNode // capture loop variable
 		fns = append(fns, func() error {
-			return loadImage(imageTarPath, &selectedNode)
+			return loadImage(imageTarPath, selectedNode)
 		})
 	}
 	return concurrent.UntilError(fns)
 }
 
 // loads an image tarball onto a node
-func loadImage(imageTarName string, node *clusternodes.Node) error {
+func loadImage(imageTarName string, node nodes.Node) error {
 	f, err := os.Open(imageTarName)
 	if err != nil {
 		return errors.Wrap(err, "failed to open image")
 	}
 	defer f.Close()
-	return node.LoadImageArchive(f)
+	return nodeutils.LoadImageArchive(node, f)
 }

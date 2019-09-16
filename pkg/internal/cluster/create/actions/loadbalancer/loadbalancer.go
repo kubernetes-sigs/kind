@@ -21,13 +21,12 @@ import (
 	"fmt"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
-	"sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/container/docker"
 	"sigs.k8s.io/kind/pkg/errors"
 
+	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
-	"sigs.k8s.io/kind/pkg/internal/cluster/kubeadm"
 	"sigs.k8s.io/kind/pkg/internal/cluster/loadbalancer"
+	"sigs.k8s.io/kind/pkg/internal/cluster/providers/provider/common"
 )
 
 // Action implements and action for configuring and starting the
@@ -47,7 +46,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// identify external load balancer node
-	loadBalancerNode, err := nodes.ExternalLoadBalancerNode(allNodes)
+	loadBalancerNode, err := nodeutils.ExternalLoadBalancerNode(allNodes)
 	if err != nil {
 		return err
 	}
@@ -69,7 +68,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 
 	// collect info about the existing controlplane nodes
 	var backendServers = map[string]string{}
-	controlPlaneNodes, err := nodes.SelectNodesByRole(
+	controlPlaneNodes, err := nodeutils.SelectNodesByRole(
 		allNodes,
 		constants.ControlPlaneNodeRoleValue,
 	)
@@ -79,19 +78,19 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	for _, n := range controlPlaneNodes {
 		controlPlaneIPv4, controlPlaneIPv6, err := n.IP()
 		if err != nil {
-			return errors.Wrapf(err, "failed to get IP for node %s", n.Name())
+			return errors.Wrapf(err, "failed to get IP for node %s", n.String())
 		}
 		if controlPlaneIPv4 != "" && !ipv6 {
-			backendServers[n.Name()] = fmt.Sprintf("%s:%d", controlPlaneIPv4, kubeadm.APIServerPort)
+			backendServers[n.String()] = fmt.Sprintf("%s:%d", controlPlaneIPv4, common.APIServerInternalPort)
 		}
 		if controlPlaneIPv6 != "" && ipv6 {
-			backendServers[n.Name()] = fmt.Sprintf("[%s]:%d", controlPlaneIPv6, kubeadm.APIServerPort)
+			backendServers[n.String()] = fmt.Sprintf("[%s]:%d", controlPlaneIPv6, common.APIServerInternalPort)
 		}
 	}
 
 	// create loadbalancer config data
 	loadbalancerConfig, err := loadbalancer.Config(&loadbalancer.ConfigData{
-		ControlPlanePort: loadbalancer.ControlPlanePort,
+		ControlPlanePort: common.APIServerInternalPort,
 		BackendServers:   backendServers,
 		IPv6:             ipv6,
 	})
@@ -100,13 +99,13 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// create loadbalancer config on the node
-	if err := loadBalancerNode.WriteFile(loadbalancer.ConfigPath, loadbalancerConfig); err != nil {
+	if err := nodeutils.WriteFile(loadBalancerNode, loadbalancer.ConfigPath, loadbalancerConfig); err != nil {
 		// TODO: logging here
 		return errors.Wrap(err, "failed to copy loadbalancer config to node")
 	}
 
-	// reload the config
-	if err := docker.Kill("SIGHUP", loadBalancerNode.Name()); err != nil {
+	// reload the config. haproxy will reload on SIGHUP
+	if err := loadBalancerNode.Command("kill", "-s", "HUP", "1").Run(); err != nil {
 		return errors.Wrap(err, "failed to reload loadbalancer")
 	}
 

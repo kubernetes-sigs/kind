@@ -49,14 +49,6 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole) error {
-	// Check if the cluster name exists
-	known, err := cluster.IsKnown(flags.Name)
-	if err != nil {
-		return err
-	}
-	if !known {
-		return fmt.Errorf("unknown cluster %q", flags.Name)
-	}
 	// Delete the cluster
 	fmt.Printf("Deleting cluster %q ...\n", flags.Name)
 	ctx := cluster.NewContext(flags.Name)

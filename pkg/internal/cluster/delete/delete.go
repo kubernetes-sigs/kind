@@ -21,7 +21,6 @@ import (
 	"os"
 	"strings"
 
-	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/globals"
 
@@ -46,5 +45,5 @@ func Cluster(c *context.Context) error {
 		fmt.Printf("$KUBECONFIG is still set to use %s even though that file has been deleted, remember to unset it\n", c.KubeConfigPath())
 	}
 
-	return nodes.Delete(n...)
+	return c.Provider().DeleteNodes(n)
 }

@@ -24,6 +24,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 
+	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
 )
 
@@ -45,10 +46,11 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// get the target node for this task
-	node, err := nodes.BootstrapControlPlaneNode(allNodes)
+	controlPlanes, err := nodeutils.ControlPlaneNodes(allNodes)
 	if err != nil {
 		return err
 	}
+	node := controlPlanes[0] // kind expects at least one always
 
 	// add the default storage class
 	if err := addDefaultStorageClass(node); err != nil {
@@ -74,7 +76,7 @@ metadata:
     addonmanager.kubernetes.io/mode: EnsureExists
 provisioner: kubernetes.io/host-path`
 
-func addDefaultStorageClass(controlPlane *nodes.Node) error {
+func addDefaultStorageClass(controlPlane nodes.Node) error {
 	in := strings.NewReader(defaultStorageClassManifest)
 	cmd := controlPlane.Command(
 		"kubectl",

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,18 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package docker
+package common
 
-import (
-	"sigs.k8s.io/kind/pkg/exec"
-)
-
-// Kill sends the named signal to the container
-func Kill(signal, containerNameOrID string) error {
-	cmd := exec.Command(
-		"docker", "kill",
-		"-s", signal,
-		containerNameOrID,
-	)
-	return cmd.Run()
-}
+// APIServerInternalPort defines the port where the control plane is listening
+// _inside_ the node network
+const APIServerInternalPort = 6443

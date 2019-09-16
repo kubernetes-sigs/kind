@@ -22,9 +22,9 @@ import (
 	"html/template"
 	"strings"
 
-	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 
+	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
 )
 
@@ -46,10 +46,11 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// get the target node for this task
-	node, err := nodes.BootstrapControlPlaneNode(allNodes)
+	controlPlanes, err := nodeutils.ControlPlaneNodes(allNodes)
 	if err != nil {
 		return err
 	}
+	node := controlPlanes[0] // kind expects at least one always
 
 	// read the manifest from the node
 	var raw bytes.Buffer
