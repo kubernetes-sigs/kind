@@ -24,6 +24,7 @@ It may additionally be helpful to:
 * [Failure to build node image](#failure-to-build-node-image)
 * [Failure for cluster to properly start](#failure-for-cluster-to-properly-start)
 * [Docker permission denied](#docker-permission-denied)
+* [Docker on Windows](#docker-on-windows)
 
 ## Failures involving mistmatched kubectl versions
 
@@ -248,6 +249,13 @@ open /home/user/.docker/config.json: permission denied
 To fix this problem, either follow the docker's docs [manage docker as a non root user][manage docker as a non root user],
 or try to use `sudo` before your commands (if you get `command not found` please check [this comment about sudo with kind][sudo with kind]).
 
+## Docker on Windows
+
+[Docker Desktop for Windows][docker desktop for windows] supports running both Linux (the default) and Windows Docker containers.
+
+`kind` for Windows requires Linux containers. To switch between Linux and Windows containers see [this page][switch between windows and linux containers].
+
+
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new
 [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
@@ -264,3 +272,5 @@ or try to use `sudo` before your commands (if you get `command not found` please
 [snap]: https://snapcraft.io/
 [manage docker as a non root user]: https://docs.docker.com/install/linux/linux-postinstall/#manage-docker-as-a-non-root-user
 [sudo with kind]: https://github.com/kubernetes-sigs/kind/issues/713#issuecomment-512665315
+[docker desktop for windows]: https://hub.docker.com/editions/community/docker-ce-desktop-windows
+[switch between windows and linux containers]: https://docs.docker.com/docker-for-windows/#switch-between-windows-and-linux-containers
