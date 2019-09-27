@@ -19,7 +19,7 @@
 # https://developers.redhat.com/blog/2014/05/05/running-systemd-within-docker-container/
 # https://developers.redhat.com/blog/2016/09/13/running-systemd-in-a-non-privileged-container/
 
-ARG BASE_IMAGE="ubuntu:19.04"
+ARG BASE_IMAGE="ubuntu:19.10"
 FROM ${BASE_IMAGE}
 
 # setting DEBIAN_FRONTEND=noninteractive stops some apt warnings, this is not 
@@ -88,10 +88,10 @@ RUN containerd --version \
 
 # Install CNI binaries to /opt/cni/bin
 # TODO(bentheelder): doc why / what here
-ARG CNI_VERSION="0.7.5"
-ARG CNI_BASE_URL="https://storage.googleapis.com/kubernetes-release/network-plugins/"
+ARG CNI_VERSION="v0.8.2"
+ARG CNI_BASE_URL="https://github.com/containernetworking/plugins/releases/download/"
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
-    && export CNI_TARBALL="cni-plugins-${ARCH}-v${CNI_VERSION}.tgz" \
+    && export CNI_TARBALL="${CNI_VERSION}/cni-plugins-linux-${ARCH}-${CNI_VERSION}.tgz" \
     && export CNI_URL="${CNI_BASE_URL}${CNI_TARBALL}" \
     && curl -sSL --retry 5 --output /tmp/cni.tgz "${CNI_URL}" \
     && sha256sum /tmp/cni.tgz \
@@ -100,7 +100,7 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     && rm -rf /tmp/cni.tgz
 
 # Install crictl to /usr/local/bin
-ARG CRICTL_VERSION="v1.14.0"
+ARG CRICTL_VERSION="v1.16.1"
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
     && curl -fSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz" | tar xzC /usr/local/bin \
     && echo 'runtime-endpoint: unix:///var/run/containerd/containerd.sock' > /etc/crictl.yaml
