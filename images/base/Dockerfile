@@ -39,22 +39,6 @@ RUN chmod +x /usr/local/bin/clean-install
 # Then we cleanup (removing unwanted systemd services)
 # Then we disable kmsg in journald (these log entries would be confusing)
 #
-# ********************************<TEMPORARY>***********************************
-#
-# We then download a ctr binary with a tiny additional feature
-# we use that is not yet merged / packaged.
-#
-# See: https://github.com/containerd/containerd/pull/3259
-#
-# This binary is built with hack/build/ctr/run.sh
-# Sources: https://github.com/BenTheElder/containerd/tree/kind
-# Additional commit:
-# https://github.com/BenTheElder/containerd/commit/cb7c780af2394ab08d5d8a3932ca7437074ae179
-#
-# TODO(bentheelder): remove this once --no-unpack is packaged upstream.
-#
-# *******************************</TEMPORARY>***********************************
-#
 # https://developers.redhat.com/blog/2014/05/05/running-systemd-within-docker-container/
 RUN clean-install \
       systemd systemd-sysv libsystemd0 \
@@ -70,10 +54,6 @@ RUN clean-install \
     && rm -f /lib/systemd/system/basic.target.wants/* \
     && echo "ReadKMsg=no" >> /etc/systemd/journald.conf \
     && systemctl enable containerd \
-    && export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
-    && curl -fSL -o /usr/local/bin/ctr \
-      "https://storage.googleapis.com/bentheelder-kind-dev/containerd/linux/${ARCH}/ctr" \
-    && chmod +x /usr/local/bin/ctr \
     && echo "done installing packages"
 
 # add overrides to containerd
