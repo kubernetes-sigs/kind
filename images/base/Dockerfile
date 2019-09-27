@@ -100,7 +100,7 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     && rm -rf /tmp/cni.tgz
 
 # Install crictl to /usr/local/bin
-ARG CRICTL_VERSION="v1.14.0"
+ARG CRICTL_VERSION="v1.16.1"
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
     && curl -fSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz" | tar xzC /usr/local/bin \
     && echo 'runtime-endpoint: unix:///var/run/containerd/containerd.sock' > /etc/crictl.yaml
