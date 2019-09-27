@@ -19,7 +19,7 @@
 # https://developers.redhat.com/blog/2014/05/05/running-systemd-within-docker-container/
 # https://developers.redhat.com/blog/2016/09/13/running-systemd-in-a-non-privileged-container/
 
-ARG BASE_IMAGE="ubuntu:19.04"
+ARG BASE_IMAGE="ubuntu:19.10"
 FROM ${BASE_IMAGE}
 
 # setting DEBIAN_FRONTEND=noninteractive stops some apt warnings, this is not 
