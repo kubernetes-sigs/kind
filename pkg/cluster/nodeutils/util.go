@@ -51,21 +51,6 @@ func GetControlPlaneEndpoint(allNodes []nodes.Node) (string, string, error) {
 	return fmt.Sprintf("%s:%d", controlPlaneIPv4, common.APIServerInternalPort), fmt.Sprintf("[%s]:%d", controlPlaneIPv6, common.APIServerInternalPort), nil
 }
 
-// EnableIPv6 enables IPv6 inside the node and in the inner container runtime
-func EnableIPv6(n nodes.Node) error {
-	// enable ipv6
-	err := n.Command("sysctl", "net.ipv6.conf.all.disable_ipv6=0").Run()
-	if err != nil {
-		return errors.Wrap(err, "failed to enable ipv6")
-	}
-	// enable ipv6 forwarding
-	err = n.Command("sysctl", "net.ipv6.conf.all.forwarding=1").Run()
-	if err != nil {
-		return errors.Wrap(err, "failed to enable ipv6 forwarding")
-	}
-	return nil
-}
-
 // KubeVersion returns the Kubernetes version installed on the node
 func KubeVersion(n nodes.Node) (version string, err error) {
 	// grab kubernetes version from the node image

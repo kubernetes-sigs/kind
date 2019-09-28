@@ -48,6 +48,7 @@ func provision(cluster string, cfg *config.Cluster) error {
 		}
 	}
 	isHA := controlPlanes > 1
+	isIPv6 := cfg.Networking.IPFamily == "ipv6"
 
 	// only the external LB should reflect the port if we have
 	// multiple control planes
@@ -56,6 +57,10 @@ func provision(cluster string, cfg *config.Cluster) error {
 	if isHA {
 		apiServerPort = 0              // replaced with a random port
 		apiServerAddress = "127.0.0.1" // only the LB needs to be non-local
+		if isIPv6 {
+			apiServerAddress = "::1" // only the LB needs to be non-local
+		}
+
 	}
 
 	// plan node creation
@@ -67,11 +72,11 @@ func provision(cluster string, cfg *config.Cluster) error {
 		switch role {
 		case constants.ControlPlaneNodeRoleValue:
 			createNodeFuncs = append(createNodeFuncs, func() error {
-				return createControlPlaneNode(nodeName, clusterLabel, apiServerAddress, apiServerPort, &configNode)
+				return createControlPlaneNode(nodeName, clusterLabel, apiServerAddress, apiServerPort, &configNode, isIPv6)
 			})
 		case constants.WorkerNodeRoleValue:
 			createNodeFuncs = append(createNodeFuncs, func() error {
-				return createWorkerNode(nodeName, clusterLabel, &configNode)
+				return createWorkerNode(nodeName, clusterLabel, &configNode, isIPv6)
 			})
 		default:
 			return errors.Errorf("unknown node role: %q", role)
@@ -80,7 +85,7 @@ func provision(cluster string, cfg *config.Cluster) error {
 	if isHA {
 		name := nodeNamer(constants.ExternalLoadBalancerNodeRoleValue)
 		createNodeFuncs = append(createNodeFuncs, func() error {
-			return createExternalLoadBalancerNode(name, clusterLabel, cfg.Networking.APIServerAddress, cfg.Networking.APIServerPort)
+			return createExternalLoadBalancerNode(name, clusterLabel, cfg.Networking.APIServerAddress, cfg.Networking.APIServerPort, isIPv6)
 		})
 	}
 
@@ -90,7 +95,7 @@ func provision(cluster string, cfg *config.Cluster) error {
 
 // createControlPlaneNode creates a control-plane node
 // and gets ready for exposing the API server
-func createControlPlaneNode(name, clusterLabel, listenAddress string, port int32, node *config.Node) error {
+func createControlPlaneNode(name, clusterLabel, listenAddress string, port int32, node *config.Node, isIPv6 bool) error {
 	// gets a random host port for the API server
 	if port == 0 {
 		p, err := common.GetFreePort(listenAddress)
@@ -107,20 +112,20 @@ func createControlPlaneNode(name, clusterLabel, listenAddress string, port int32
 		ContainerPort: common.APIServerInternalPort,
 	})
 	return createNodeHelper(
-		name, node.Image, clusterLabel, constants.ControlPlaneNodeRoleValue, node.ExtraMounts, portMappingsWithAPIServer,
+		name, node.Image, clusterLabel, constants.ControlPlaneNodeRoleValue, node.ExtraMounts, portMappingsWithAPIServer, isIPv6,
 		// publish selected port for the API server
 		"--expose", fmt.Sprintf("%d", port),
 	)
 }
 
 // createWorkerNode creates a worker node
-func createWorkerNode(name, clusterLabel string, node *config.Node) error {
-	return createNodeHelper(name, node.Image, clusterLabel, constants.WorkerNodeRoleValue, node.ExtraMounts, node.ExtraPortMappings)
+func createWorkerNode(name, clusterLabel string, node *config.Node, isIPv6 bool) error {
+	return createNodeHelper(name, node.Image, clusterLabel, constants.WorkerNodeRoleValue, node.ExtraMounts, node.ExtraPortMappings, isIPv6)
 }
 
 // createExternalLoadBalancerNode creates an external load balancer node
 // and gets ready for exposing the API server and the load balancer admin console
-func createExternalLoadBalancerNode(name, clusterLabel, listenAddress string, port int32) error {
+func createExternalLoadBalancerNode(name, clusterLabel, listenAddress string, port int32, isIPv6 bool) error {
 	// gets a random host port for control-plane load balancer
 	// gets a random host port for the API server
 	if port == 0 {
@@ -140,7 +145,7 @@ func createExternalLoadBalancerNode(name, clusterLabel, listenAddress string, po
 
 	// TODO: should not use the same create node code
 	return createNodeHelper(name, loadbalancer.Image, clusterLabel, constants.ExternalLoadBalancerNodeRoleValue,
-		nil, portMappings,
+		nil, portMappings, isIPv6,
 		// publish selected port for the control plane
 		"--expose", fmt.Sprintf("%d", port),
 	)
@@ -150,7 +155,7 @@ func createExternalLoadBalancerNode(name, clusterLabel, listenAddress string, po
 // createNodeHelper `docker run`s the node image, note that due to
 // images/node/entrypoint being the entrypoint, this container will
 // effectively be paused until we call actuallyStartNode(...)
-func createNodeHelper(name, image, clusterLabel, role string, mounts []cri.Mount, portMappings []cri.PortMapping, extraArgs ...string) error {
+func createNodeHelper(name, image, clusterLabel, role string, mounts []cri.Mount, portMappings []cri.PortMapping, isIPv6 bool, extraArgs ...string) error {
 	args := []string{
 		"run",
 		"--detach", // run the container detached
@@ -188,6 +193,10 @@ func createNodeHelper(name, image, clusterLabel, role string, mounts []cri.Mount
 	}
 	for key, val := range proxyDetails.Envs {
 		args = append(args, "-e", fmt.Sprintf("%s=%s", key, val))
+	}
+
+	if isIPv6 {
+		args = append(args, "--sysctl", "net.ipv6.conf.all.disable_ipv6=0", "--sysctl", "net.ipv6.conf.all.forwarding=1")
 	}
 
 	// adds node specific args
