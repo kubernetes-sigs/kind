@@ -32,7 +32,7 @@ LINTS=(
   deadcode errcheck gosimple govet ineffassign staticcheck \
   structcheck typecheck unused varcheck \
   # additional lints
-  golint gofmt misspell gochecknoinits unparam scopelint
+  golint gofmt misspell gochecknoinits unparam scopelint gosec
 )
 ENABLE=$(sed 's/ /,/g' <<< "${LINTS[@]}")
 # first for the repo in general

@@ -25,11 +25,14 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/container/docker"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
 	"sigs.k8s.io/kind/pkg/globals"
 	"sigs.k8s.io/kind/pkg/util/concurrent"
+
+	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
 )
@@ -51,7 +54,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// join secondary control plane nodes if any
-	secondaryControlPlanes, err := nodes.SecondaryControlPlaneNodes(allNodes)
+	secondaryControlPlanes, err := nodeutils.SecondaryControlPlaneNodes(allNodes)
 	if err != nil {
 		return err
 	}
@@ -64,7 +67,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// then join worker nodes if any
-	workers, err := nodes.SelectNodesByRole(allNodes, constants.WorkerNodeRoleValue)
+	workers, err := nodeutils.SelectNodesByRole(allNodes, constants.WorkerNodeRoleValue)
 	if err != nil {
 		return err
 	}
@@ -89,7 +92,7 @@ func joinSecondaryControlPlanes(
 	// (this is not safe currently)
 	for _, node := range secondaryControlPlanes {
 		node := node // capture loop variable
-		if err := runKubeadmJoinControlPlane(allNodes, &node); err != nil {
+		if err := runKubeadmJoinControlPlane(allNodes, node); err != nil {
 			return err
 		}
 	}
@@ -110,7 +113,7 @@ func joinWorkers(
 	for _, node := range workers {
 		node := node // capture loop variable
 		fns = append(fns, func() error {
-			return runKubeadmJoin(&node)
+			return runKubeadmJoin(node)
 		})
 	}
 	if err := concurrent.UntilError(fns); err != nil {
@@ -124,7 +127,7 @@ func joinWorkers(
 // runKubeadmJoinControlPlane executes kubadm join --control-plane command
 func runKubeadmJoinControlPlane(
 	allNodes []nodes.Node,
-	node *nodes.Node,
+	node nodes.Node,
 ) error {
 	// creates the folder tree for pre-loading necessary cluster certificates
 	// on the joining node
@@ -156,7 +159,7 @@ func runKubeadmJoinControlPlane(
 	}
 
 	// get the handle for the bootstrap control plane node (the source for necessary cluster certificates)
-	controlPlaneHandle, err := nodes.BootstrapControlPlaneNode(allNodes)
+	controlPlaneHandle, err := nodeutils.BootstrapControlPlaneNode(allNodes)
 	if err != nil {
 		return err
 	}
@@ -167,12 +170,13 @@ func runKubeadmJoinControlPlane(
 		containerPath := path.Join("/etc/kubernetes/pki", fileName)
 		// set the path of the certificate into the tmp area on the host
 		tmpPath := filepath.Join(tmpDir, fileName)
+		// TODO(bentheelder): refactor to copy between nodes instead
 		// copies from bootstrap control plane node to tmp area
-		if err := controlPlaneHandle.CopyFrom(containerPath, tmpPath); err != nil {
+		if err := docker.CopyFrom(controlPlaneHandle.String(), containerPath, tmpPath); err != nil {
 			return errors.Wrapf(err, "failed to copy certificate %s", fileName)
 		}
 		// copies from tmp area to joining node
-		if err := node.CopyTo(tmpPath, containerPath); err != nil {
+		if err := docker.CopyTo(tmpPath, node.String(), containerPath); err != nil {
 			return errors.Wrapf(err, "failed to copy certificate %s", fileName)
 		}
 	}
@@ -181,7 +185,7 @@ func runKubeadmJoinControlPlane(
 }
 
 // runKubeadmJoin executes kubadm join command
-func runKubeadmJoin(node *nodes.Node) error {
+func runKubeadmJoin(node nodes.Node) error {
 	// run kubeadm join
 	// TODO(bentheelder): this should be using the config file
 	cmd := node.Command(

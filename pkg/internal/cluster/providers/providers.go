@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,25 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package docker
+package providers
 
 import (
-	"strings"
+	"sigs.k8s.io/kind/pkg/errors"
 
-	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/internal/cluster/providers/docker"
+	"sigs.k8s.io/kind/pkg/internal/cluster/providers/provider"
 )
 
-// UsernsRemap checks if userns-remap is enabled in dockerd
-func UsernsRemap() bool {
-	cmd := exec.Command("docker", "info", "--format", "'{{json .SecurityOptions}}'")
-	lines, err := exec.CombinedOutputLines(cmd)
-	if err != nil {
-		return false
+const Docker string = "docker"
+
+// New creates a new instance of the named provider
+func New(name string) (provider.Provider, error) {
+	switch name {
+	case Docker:
+		return docker.NewProvider(), nil
+	default:
+		return nil, errors.Errorf("unknown provider: %q", name)
 	}
-	if len(lines) > 0 {
-		if strings.Contains(lines[0], "name=userns") {
-			return true
-		}
-	}
-	return false
 }

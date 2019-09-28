@@ -23,7 +23,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
-	clusternodes "sigs.k8s.io/kind/pkg/cluster/nodes"
 )
 
 type flagpole struct {
@@ -53,15 +52,11 @@ func NewCommand() *cobra.Command {
 
 func runE(flags *flagpole) error {
 	// List nodes by cluster context name
-	n, err := clusternodes.ListByCluster()
+	n, err := cluster.NewContext(flags.Name).ListNodes()
 	if err != nil {
 		return err
 	}
-	nodes, known := n[flags.Name]
-	if !known {
-		return fmt.Errorf("unknown cluster %q", flags.Name)
-	}
-	for _, node := range nodes {
+	for _, node := range n {
 		fmt.Println(node.String())
 	}
 	return nil

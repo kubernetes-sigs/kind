@@ -17,16 +17,21 @@ limitations under the License.
 package cluster
 
 import (
+	"bytes"
+	"io/ioutil"
+	"os"
+
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/create"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/errors"
+
+	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	internalcontext "sigs.k8s.io/kind/pkg/internal/cluster/context"
 	internalcreate "sigs.k8s.io/kind/pkg/internal/cluster/create"
 	internaldelete "sigs.k8s.io/kind/pkg/internal/cluster/delete"
 	internallogs "sigs.k8s.io/kind/pkg/internal/cluster/logs"
 )
-
-// TODO(bentheelder): reimplement GetControlPlaneMeta for Context
 
 // DefaultName is the default cluster name
 const DefaultName = constants.DefaultClusterName
@@ -41,6 +46,7 @@ type Context struct {
 
 // NewContext returns a new cluster management context
 // if name is "" the default name will be used (constants.DefaultClusterName)
+// TODO(bentheelder): this should take options
 func NewContext(name string) *Context {
 	// wrap a new internal context
 	return &Context{
@@ -48,24 +54,49 @@ func NewContext(name string) *Context {
 	}
 }
 
-// Validate will be called before creating new resources using the context
-// It will not be called before deleting or listing resources, so as to allow
-// contexts based around previously valid values to be used in newer versions
-// You can call this early yourself to check validation before creation calls,
-// though it will be called internally.
-func (c *Context) Validate() error {
-	return c.ic.Validate()
-}
-
-// Name returns context name / cluster name
-func (c *Context) Name() string {
-	return c.ic.Name()
-}
-
 // KubeConfigPath returns the path to where the Kubeconfig would be placed
 // by kind based on the configuration.
 func (c *Context) KubeConfigPath() string {
 	return c.ic.KubeConfigPath()
+}
+
+// KubeConfig returns the KUBECONFIG for the cluster
+// If internal is true, this will contain the internal IP etc.
+// If internal is fale, this will contain the host IP etc.
+func (c *Context) KubeConfig(internal bool) (string, error) {
+	// TODO(bentheelder): move implementation to node provider
+	n, err := c.ic.ListNodes()
+	if err != nil {
+		return "", err
+	}
+	if internal {
+		var buff bytes.Buffer
+		nodes, err := nodeutils.ControlPlaneNodes(n)
+		if err != nil {
+			return "", err
+		}
+		if len(nodes) < 1 {
+			return "", errors.New("could not locate any control plane nodes")
+		}
+		node := nodes[0]
+		// grab kubeconfig version from one of the control plane nodes
+		if err := node.Command("cat", "/etc/kubernetes/admin.conf").SetStdout(&buff).Run(); err != nil {
+			return "", errors.Wrap(err, "failed to get cluster internal kubeconfig")
+		}
+		return buff.String(), nil
+	}
+
+	// TODO(bentheelder): should not depend on host kubeconfig file!
+	f, err := os.Open(c.KubeConfigPath())
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get cluster kubeconfig")
+	}
+	defer f.Close()
+	out, err := ioutil.ReadAll(f)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to read kubeconfig")
+	}
+	return string(out), nil
 }
 
 // Create provisions and starts a kubernetes-in-docker cluster
@@ -79,21 +110,25 @@ func (c *Context) Delete() error {
 }
 
 // ListNodes returns the list of container IDs for the "nodes" in the cluster
+// TODO: move to public nodes type
 func (c *Context) ListNodes() ([]nodes.Node, error) {
 	return c.ic.ListNodes()
 }
 
 // ListInternalNodes returns the list of container IDs for the "nodes" in the cluster
 // that are not external
+// TODO: move to public nodes type
 func (c *Context) ListInternalNodes() ([]nodes.Node, error) {
 	return c.ic.ListInternalNodes()
 }
 
 // CollectLogs will populate dir with cluster logs and other debug files
 func (c *Context) CollectLogs(dir string) error {
-	nodes, err := c.ListInternalNodes()
+	// TODO: should use ListNodes and Collect should handle nodes differently
+	// based on role ...
+	n, err := c.ListInternalNodes()
 	if err != nil {
 		return err
 	}
-	return internallogs.Collect(nodes, dir)
+	return internallogs.Collect(n, dir)
 }

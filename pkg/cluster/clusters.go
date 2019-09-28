@@ -17,21 +17,13 @@ limitations under the License.
 package cluster
 
 import (
-	"sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/internal/cluster/providers/docker"
 )
 
 // List returns a list of clusters for which node containers exist
-func List() ([]Context, error) {
-	n, err := nodes.ListByCluster()
-	if err != nil {
-		return nil, errors.Wrap(err, "could not list clusters")
-	}
-	clusters := []Context{}
-	for name := range n {
-		clusters = append(clusters, *NewContext(name))
-	}
-	return clusters, nil
+// TODO: refactor this to not assume a particular provider
+func List() ([]string, error) {
+	return docker.NewProvider().ListClusters()
 }
 
 // IsKnown return true if a cluster exists with the given name.
@@ -42,7 +34,7 @@ func IsKnown(name string) (bool, error) {
 		return false, err
 	}
 	for _, cluster := range list {
-		if cluster.Name() == name {
+		if cluster == name {
 			return true, nil
 		}
 	}

@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -32,9 +31,9 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/globals"
 
+	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
+
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
-	"sigs.k8s.io/kind/pkg/internal/cluster/kubeadm"
-	"sigs.k8s.io/kind/pkg/internal/cluster/loadbalancer"
 )
 
 // kubeadmInitAction implements action for executing the kubadm init
@@ -58,7 +57,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// get the target node for this task
-	node, err := nodes.BootstrapControlPlaneNode(allNodes)
+	node, err := nodeutils.BootstrapControlPlaneNode(allNodes)
 	if err != nil {
 		return err
 	}
@@ -82,19 +81,29 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to init node with kubeadm")
 	}
 
+	// copy the kubeconfig to all control plane nodes so we don't have to
+	// determine which ran init later to access this
+	otherControlPlanes, err := nodeutils.SecondaryControlPlaneNodes(allNodes)
+	if err != nil {
+		return err
+	}
+	for _, otherNode := range otherControlPlanes {
+		if err := nodeutils.CopyNodeToNode(node, otherNode, "/etc/kubernetes/admin.conf"); err != nil {
+			return errors.Wrap(err, "failed to copy admin kubeconfig")
+		}
+	}
+
 	// copies the kubeconfig files locally in order to make the cluster
 	// usable with kubectl.
 	// the kubeconfig file created by kubeadm internally to the node
 	// must be modified in order to use the random host port reserved
 	// for the API server and exposed by the node
-
-	hostPort, err := getAPIServerPort(allNodes)
+	endpoint, err := ctx.ClusterContext.GetAPIServerEndpoint()
 	if err != nil {
-		return errors.Wrap(err, "failed to get kubeconfig from node")
+		return errors.Wrap(err, "failed to get api server endpoint from node")
 	}
-
 	kubeConfigPath := ctx.ClusterContext.KubeConfigPath()
-	if err := writeKubeConfig(node, kubeConfigPath, ctx.Config.Networking.APIServerAddress, hostPort); err != nil {
+	if err := writeKubeConfig(node, kubeConfigPath, endpoint); err != nil {
 		return errors.Wrap(err, "failed to get kubeconfig from node")
 	}
 
@@ -125,7 +134,7 @@ var serverAddressRE = regexp.MustCompile(`^(\s+server:) https://.*:\d+$`)
 // While copyng to the host machine the control plane address
 // is replaced with local host and the control plane port with
 // a randomly generated port reserved during node creation.
-func writeKubeConfig(n *nodes.Node, dest string, hostAddress string, hostPort int32) error {
+func writeKubeConfig(n nodes.Node, dest string, endpoint string) error {
 	cmd := n.Command("cat", "/etc/kubernetes/admin.conf")
 	lines, err := exec.CombinedOutputLines(cmd)
 	if err != nil {
@@ -137,8 +146,7 @@ func writeKubeConfig(n *nodes.Node, dest string, hostAddress string, hostPort in
 	for _, line := range lines {
 		match := serverAddressRE.FindStringSubmatch(line)
 		if len(match) > 1 {
-			addr := net.JoinHostPort(hostAddress, fmt.Sprintf("%d", hostPort))
-			line = fmt.Sprintf("%s https://%s", match[1], addr)
+			line = fmt.Sprintf("%s https://%s", match[1], endpoint)
 		}
 		buff.WriteString(line)
 		buff.WriteString("\n")
@@ -152,26 +160,4 @@ func writeKubeConfig(n *nodes.Node, dest string, hostAddress string, hostPort in
 	}
 
 	return ioutil.WriteFile(dest, buff.Bytes(), 0600)
-}
-
-// getAPIServerPort returns the port on the host on which the APIServer
-// is exposed
-func getAPIServerPort(allNodes []nodes.Node) (int32, error) {
-	// select the external loadbalancer first
-	node, err := nodes.ExternalLoadBalancerNode(allNodes)
-	if err != nil {
-		return 0, err
-	}
-	// node will be nil if there is no load balancer
-	if node != nil {
-		return node.Ports(loadbalancer.ControlPlanePort)
-	}
-
-	// fallback to the bootstrap control plane
-	node, err = nodes.BootstrapControlPlaneNode(allNodes)
-	if err != nil {
-		return 0, err
-	}
-
-	return node.Ports(kubeadm.APIServerPort)
 }

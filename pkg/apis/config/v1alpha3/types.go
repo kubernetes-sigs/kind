@@ -67,6 +67,7 @@ type Node struct {
 
 	/* Advanced fields */
 
+	// TODO: cri-like types should be inline instead
 	// ExtraMounts describes additional mount points for the node container
 	// These may be used to bind a hostPath
 	ExtraMounts []cri.Mount `json:"extraMounts,omitempty"`
