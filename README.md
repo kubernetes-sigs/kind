@@ -23,7 +23,7 @@ kind bootstraps each "node" with [kubeadm][kubeadm]. For more details see [the d
 
 **NOTE**: kind is still a work in progress, see the [1.0 roadmap].
 
-## Installation and usage
+## Installation
 
 You can install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.5.1`.
 
@@ -47,7 +47,10 @@ chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
 ```
 
-To use kind, you will need to [install docker].  
+To use kind, you will need to [install docker].
+
+## Usage
+
 Once you have docker running you can create a cluster with `kind create cluster`  
 To delete your cluster use `kind delete cluster`
 
@@ -58,6 +61,12 @@ To create a cluster from Kubernetes source:
 
 Multi-node clusters and other advanced features may be configured with a config
 file, for more usage see [the docs][user guide] or run `kind [command] --help`
+
+To make `kubectl` use your local kind cluster, use:
+
+```console
+export KUBECONFIG="$(kind get kubeconfig-path)"
+```
 
 ## Community, discussion, contribution, and support
 
