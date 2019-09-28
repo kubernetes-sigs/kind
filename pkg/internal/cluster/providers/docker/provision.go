@@ -48,6 +48,7 @@ func provision(cluster string, cfg *config.Cluster) error {
 		}
 	}
 	isHA := controlPlanes > 1
+	isIPv6 := cfg.Networking.IPFamily == "ipv6"
 
 	// only the external LB should reflect the port if we have
 	// multiple control planes
@@ -56,9 +57,11 @@ func provision(cluster string, cfg *config.Cluster) error {
 	if isHA {
 		apiServerPort = 0              // replaced with a random port
 		apiServerAddress = "127.0.0.1" // only the LB needs to be non-local
-	}
+		if isIPv6 {
+			apiServerAddress = "::1" // only the LB needs to be non-local
+		}
 
-	isIPv6 := cfg.Networking.IPFamily == "ipv6"
+	}
 
 	// plan node creation
 	createNodeFuncs := []func() error{}
