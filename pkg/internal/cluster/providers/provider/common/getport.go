@@ -20,6 +20,15 @@ import (
 	"net"
 )
 
+// PortOrGetFreePort is a helper that either returns the provided port
+// if valid or returns a new free port on listenAddr
+func PortOrGetFreePort(port int32, listenAddr string) (int32, error) {
+	if port > 0 {
+		return port, nil
+	}
+	return GetFreePort(listenAddr)
+}
+
 // GetFreePort is a helper used to get a free TCP port on the host
 func GetFreePort(listenAddr string) (int32, error) {
 	dummyListener, err := net.Listen("tcp", net.JoinHostPort(listenAddr, "0"))
