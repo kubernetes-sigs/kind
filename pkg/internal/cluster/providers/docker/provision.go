@@ -19,27 +19,90 @@ package docker
 import (
 	"fmt"
 	"net"
-	"os"
 	"strings"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/container/cri"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
-	"sigs.k8s.io/kind/pkg/util/concurrent"
 
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/cluster/loadbalancer"
 	"sigs.k8s.io/kind/pkg/internal/cluster/providers/provider/common"
 )
 
-// provision creates the docker node containers
-func provision(cluster string, cfg *config.Cluster) error {
-	// these are used by all node creation
+// planCreation creates a slice of funcs that will create the containers
+func planCreation(cluster string, cfg *config.Cluster) (createContainerFuncs []func() error, err error) {
+	// these apply to all container creation
 	nodeNamer := common.MakeNodeNamer(cluster)
-	clusterLabel := fmt.Sprintf("%s=%s", constants.ClusterLabelKey, cluster)
+	genericArgs, err := commonArgs(cluster, cfg)
+	if err != nil {
+		return nil, err
+	}
 
-	// determine if we are HA, and what the LB will need to know for that
+	// only the external LB should reflect the port if we have multiple control planes
+	apiServerPort := cfg.Networking.APIServerPort
+	apiServerAddress := cfg.Networking.APIServerAddress
+	if clusterHasImplicitLoadBalancer(cfg) {
+		apiServerPort = 0              // replaced with random ports
+		apiServerAddress = "127.0.0.1" // only the LB needs to be non-local
+		if clusterIsIPv6(cfg) {
+			apiServerAddress = "::1" // only the LB needs to be non-local
+		}
+		// plan loadbalancer node
+		name := nodeNamer(constants.ExternalLoadBalancerNodeRoleValue)
+		createContainerFuncs = append(createContainerFuncs, func() error {
+			args, err := runArgsForLoadBalancer(cfg, name, genericArgs)
+			if err != nil {
+				return err
+			}
+			return createContainer(args)
+		})
+	}
+
+	// plan normal nodes
+	for _, node := range cfg.Nodes {
+		node := node.DeepCopy()              // copy so we can modify
+		name := nodeNamer(string(node.Role)) // name the node
+		switch node.Role {
+		case config.ControlPlaneRole:
+			createContainerFuncs = append(createContainerFuncs, func() error {
+				port, err := common.PortOrGetFreePort(apiServerPort, apiServerAddress)
+				if err != nil {
+					return errors.Wrap(err, "failed to get port for API server")
+				}
+				node.ExtraPortMappings = append(node.ExtraPortMappings,
+					cri.PortMapping{
+						ListenAddress: apiServerAddress,
+						HostPort:      port,
+						ContainerPort: common.APIServerInternalPort,
+					},
+				)
+				return createContainer(runArgsForNode(node, name, genericArgs))
+			})
+		case config.WorkerRole:
+			createContainerFuncs = append(createContainerFuncs, func() error {
+				return createContainer(runArgsForNode(node, name, genericArgs))
+			})
+		default:
+			return nil, errors.Errorf("unknown node role: %q", node.Role)
+		}
+	}
+	return createContainerFuncs, nil
+}
+
+func createContainer(args []string) error {
+	if err := exec.Command("docker", args...).Run(); err != nil {
+		return errors.Wrap(err, "docker run error")
+	}
+	return nil
+}
+
+func clusterIsIPv6(cfg *config.Cluster) bool {
+	return cfg.Networking.IPFamily == "ipv6"
+}
+
+func clusterHasImplicitLoadBalancer(cfg *config.Cluster) bool {
 	controlPlanes := 0
 	for _, configNode := range cfg.Nodes {
 		role := string(configNode.Role)
@@ -47,119 +110,47 @@ func provision(cluster string, cfg *config.Cluster) error {
 			controlPlanes++
 		}
 	}
-	isHA := controlPlanes > 1
-	isIPv6 := cfg.Networking.IPFamily == "ipv6"
-
-	// only the external LB should reflect the port if we have
-	// multiple control planes
-	apiServerPort := cfg.Networking.APIServerPort
-	apiServerAddress := cfg.Networking.APIServerAddress
-	if isHA {
-		apiServerPort = 0              // replaced with a random port
-		apiServerAddress = "127.0.0.1" // only the LB needs to be non-local
-		if isIPv6 {
-			apiServerAddress = "::1" // only the LB needs to be non-local
-		}
-
-	}
-
-	// plan node creation
-	createNodeFuncs := []func() error{}
-	for _, configNode := range cfg.Nodes {
-		configNode := configNode // capture loop variable
-		role := string(configNode.Role)
-		nodeName := nodeNamer(role)
-		switch role {
-		case constants.ControlPlaneNodeRoleValue:
-			createNodeFuncs = append(createNodeFuncs, func() error {
-				return createControlPlaneNode(nodeName, clusterLabel, apiServerAddress, apiServerPort, &configNode, isIPv6)
-			})
-		case constants.WorkerNodeRoleValue:
-			createNodeFuncs = append(createNodeFuncs, func() error {
-				return createWorkerNode(nodeName, clusterLabel, &configNode, isIPv6)
-			})
-		default:
-			return errors.Errorf("unknown node role: %q", role)
-		}
-	}
-	if isHA {
-		name := nodeNamer(constants.ExternalLoadBalancerNodeRoleValue)
-		createNodeFuncs = append(createNodeFuncs, func() error {
-			return createExternalLoadBalancerNode(name, clusterLabel, cfg.Networking.APIServerAddress, cfg.Networking.APIServerPort, isIPv6)
-		})
-	}
-
-	// create nodes
-	return concurrent.UntilError(createNodeFuncs)
+	return controlPlanes > 1
 }
 
-// createControlPlaneNode creates a control-plane node
-// and gets ready for exposing the API server
-func createControlPlaneNode(name, clusterLabel, listenAddress string, port int32, node *config.Node, isIPv6 bool) error {
-	// gets a random host port for the API server
-	if port == 0 {
-		p, err := common.GetFreePort(listenAddress)
-		if err != nil {
-			return errors.Wrap(err, "failed to get port for API server")
-		}
-		port = p
-	}
-
-	// add api server port mapping
-	portMappingsWithAPIServer := append(node.ExtraPortMappings, cri.PortMapping{
-		ListenAddress: listenAddress,
-		HostPort:      port,
-		ContainerPort: common.APIServerInternalPort,
-	})
-	return createNodeHelper(
-		name, node.Image, clusterLabel, constants.ControlPlaneNodeRoleValue, node.ExtraMounts, portMappingsWithAPIServer, isIPv6,
-		// publish selected port for the API server
-		"--expose", fmt.Sprintf("%d", port),
-	)
-}
-
-// createWorkerNode creates a worker node
-func createWorkerNode(name, clusterLabel string, node *config.Node, isIPv6 bool) error {
-	return createNodeHelper(name, node.Image, clusterLabel, constants.WorkerNodeRoleValue, node.ExtraMounts, node.ExtraPortMappings, isIPv6)
-}
-
-// createExternalLoadBalancerNode creates an external load balancer node
-// and gets ready for exposing the API server and the load balancer admin console
-func createExternalLoadBalancerNode(name, clusterLabel, listenAddress string, port int32, isIPv6 bool) error {
-	// gets a random host port for control-plane load balancer
-	// gets a random host port for the API server
-	if port == 0 {
-		p, err := common.GetFreePort(listenAddress)
-		if err != nil {
-			return errors.Wrap(err, "failed to get port for API server")
-		}
-		port = p
-	}
-
-	// load balancer port mapping
-	portMappings := []cri.PortMapping{{
-		ListenAddress: listenAddress,
-		HostPort:      port,
-		ContainerPort: common.APIServerInternalPort,
-	}}
-
-	// TODO: should not use the same create node code
-	return createNodeHelper(name, loadbalancer.Image, clusterLabel, constants.ExternalLoadBalancerNodeRoleValue,
-		nil, portMappings, isIPv6,
-		// publish selected port for the control plane
-		"--expose", fmt.Sprintf("%d", port),
-	)
-}
-
-// TODO(bentheelder): refactor this to not have extraArgs
-// createNodeHelper `docker run`s the node image, note that due to
-// images/node/entrypoint being the entrypoint, this container will
-// effectively be paused until we call actuallyStartNode(...)
-func createNodeHelper(name, image, clusterLabel, role string, mounts []cri.Mount, portMappings []cri.PortMapping, isIPv6 bool, extraArgs ...string) error {
+// commonArgs computes static arguments that apply to all containers
+func commonArgs(cluster string, cfg *config.Cluster) ([]string, error) {
+	// standard arguments all nodes containers need, computed once
 	args := []string{
-		"run",
 		"--detach", // run the container detached
 		"--tty",    // allocate a tty for entrypoint logs
+		// label the node with the cluster ID
+		"--label", fmt.Sprintf("%s=%s", constants.ClusterLabelKey, cluster),
+	}
+
+	// enable IPv6 if necessary
+	if clusterIsIPv6(cfg) {
+		args = append(args, "--sysctl=net.ipv6.conf.all.disable_ipv6=0", "--sysctl=net.ipv6.conf.all.forwarding=1")
+	}
+
+	// pass proxy environment variables
+	proxyEnv, err := getProxyEnv(cfg)
+	if err != nil {
+		return nil, errors.Wrap(err, "proxy setup error")
+	}
+	for key, val := range proxyEnv {
+		args = append(args, "-e", fmt.Sprintf("%s=%s", key, val))
+	}
+
+	// handle hosts that have user namespace remapping enabled
+	if usernsRemap() {
+		args = append(args, "--userns=host")
+	}
+	return args, nil
+}
+
+func runArgsForNode(node *config.Node, name string, args []string) []string {
+	args = append([]string{
+		"run",
+		"--hostname", name, // make hostname match container name
+		"--name", name, // ... and set the container name
+		// label the node with the role ID
+		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleKey, node.Role),
 		// running containers in a container requires privileged
 		// NOTE: we could try to replicate this with --cap-add, and use less
 		// privileges, but this flag also changes some mounts that are necessary
@@ -178,119 +169,64 @@ func createNodeHelper(name, image, clusterLabel, role string, mounts []cri.Mount
 		"--volume", "/var",
 		// some k8s things want to read /lib/modules
 		"--volume", "/lib/modules:/lib/modules:ro",
-		"--hostname", name, // make hostname match container name
-		"--name", name, // ... and set the container name
-		// label the node with the cluster ID
-		"--label", clusterLabel,
-		// label the node with the role ID
-		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleKey, role),
-	}
+	},
+		args...,
+	)
 
-	// pass proxy environment variables to be used by node's docker daemon
-	proxyDetails, err := getProxyDetails()
-	if err != nil || proxyDetails == nil {
-		return errors.Wrap(err, "proxy setup error")
-	}
-	for key, val := range proxyDetails.Envs {
-		args = append(args, "-e", fmt.Sprintf("%s=%s", key, val))
-	}
-
-	if isIPv6 {
-		args = append(args, "--sysctl", "net.ipv6.conf.all.disable_ipv6=0", "--sysctl", "net.ipv6.conf.all.forwarding=1")
-	}
-
-	// adds node specific args
-	args = append(args, extraArgs...)
-
-	if usernsRemap() {
-		// We need this argument in order to make this command work
-		// in systems that have userns-remap enabled on the docker daemon
-		args = append(args, "--userns=host")
-	}
-
-	// convert mounts to container run args
-	for _, mount := range mounts {
-		bindings, err := generateMountBindings(mount)
-		if err != nil {
-			return err
-		}
-		args = append(args, bindings...)
-	}
-	for _, portMapping := range portMappings {
-		args = append(args, generatePortMappings(portMapping)...)
-	}
+	// convert mounts and port mappings to container run args
+	args = append(args, generateMountBindings(node.ExtraMounts...)...)
+	args = append(args, generatePortMappings(node.ExtraPortMappings...)...)
 
 	// finally, specify the image to run
-	args = append(args, image)
-
-	// construct the actual docker run argv
-	if err := exec.Command("docker", args...).Run(); err != nil {
-		return errors.Wrap(err, "docker run error")
-	}
-
-	return nil
+	return append(args, node.Image)
 }
 
-const (
-	// Docker default bridge network is named "bridge" (https://docs.docker.com/network/bridge/#use-the-default-bridge-network)
-	defaultNetwork = "bridge"
-	httpProxy      = "HTTP_PROXY"
-	httpsProxy     = "HTTPS_PROXY"
-	noProxy        = "NO_PROXY"
-)
+func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) ([]string, error) {
+	args = append([]string{
+		"run",
+		"--hostname", name, // make hostname match container name
+		"--name", name, // ... and set the container name
+		// label the node with the role ID
+		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleKey, constants.ExternalLoadBalancerNodeRoleValue),
+	},
+		args...,
+	)
 
-// proxyDetails contains proxy settings discovered on the host
-type proxyDetails struct {
-	Envs map[string]string
-	// future proxy details here
+	// load balancer port mapping
+	listenAddress := cfg.Networking.APIServerAddress
+	port, err := common.PortOrGetFreePort(cfg.Networking.APIServerPort, listenAddress)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get port for api server load balancer")
+	}
+	args = append(args, generatePortMappings(cri.PortMapping{
+		ListenAddress: listenAddress,
+		HostPort:      port,
+		ContainerPort: common.APIServerInternalPort,
+	})...)
+
+	// finally, specify the image to run
+	return append(args, loadbalancer.Image), nil
 }
 
-// getProxyDetails returns a struct with the host environment proxy settings
-// that should be passed to the nodes
-func getProxyDetails() (*proxyDetails, error) {
-	var proxyEnvs = []string{httpProxy, httpsProxy, noProxy}
-	var val string
-	var details proxyDetails
-	details.Envs = make(map[string]string)
-
-	proxySupport := false
-
-	for _, name := range proxyEnvs {
-		val = os.Getenv(name)
-		if val != "" {
-			proxySupport = true
-			details.Envs[name] = val
-			details.Envs[strings.ToLower(name)] = val
-		} else {
-			val = os.Getenv(strings.ToLower(name))
-			if val != "" {
-				proxySupport = true
-				details.Envs[name] = val
-				details.Envs[strings.ToLower(name)] = val
-			}
-		}
-	}
-
-	// Specifically add the docker network subnets to NO_PROXY if we are using proxies
-	if proxySupport {
-		subnets, err := getSubnets(defaultNetwork)
+func getProxyEnv(cfg *config.Cluster) (map[string]string, error) {
+	envs := common.GetProxyEnvs(cfg)
+	// Specifically add the docker network subnets to NO_PROXY if we are using a proxy
+	if len(envs) > 0 {
+		// Docker default bridge network is named "bridge" (https://docs.docker.com/network/bridge/#use-the-default-bridge-network)
+		subnets, err := getSubnets("bridge")
 		if err != nil {
 			return nil, err
 		}
-		noProxyList := strings.Join(append(subnets, details.Envs[noProxy]), ",")
-		details.Envs[noProxy] = noProxyList
-		details.Envs[strings.ToLower(noProxy)] = noProxyList
+		noProxyList := strings.Join(append(subnets, envs[common.NOProxy]), ",")
+		envs[common.NOProxy] = noProxyList
+		envs[strings.ToLower(common.NOProxy)] = noProxyList
 	}
-
-	return &details, nil
+	return envs, nil
 }
 
-// getSubnets returns a slice of subnets for a specified network
 func getSubnets(networkName string) ([]string, error) {
 	format := `{{range (index (index . "IPAM") "Config")}}{{index . "Subnet"}} {{end}}`
-	cmd := exec.Command("docker", "network", "inspect",
-		"-f", format, networkName,
-	)
+	cmd := exec.Command("docker", "network", "inspect", "-f", format, networkName)
 	lines, err := exec.CombinedOutputLines(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get subnets")
@@ -298,18 +234,13 @@ func getSubnets(networkName string) ([]string, error) {
 	return strings.Split(strings.TrimSpace(lines[0]), " "), nil
 }
 
-/*
-This is adapated from:
-https://github.com/kubernetes/kubernetes/blob/07a5488b2a8f67add543da72e8819407d8314204/pkg/kubelet/dockershim/helpers.go#L115-L155
-*/
-// generateMountBindings converts the mount list to a list of strings that
-// can be understood by docker.
+// generateMountBindings converts the mount list to a list of args for docker
 // '<HostPath>:<ContainerPath>[:options]', where 'options'
 // is a comma-separated list of the following strings:
 // 'ro', if the path is read only
 // 'Z', if the volume requires SELinux relabeling
-func generateMountBindings(mounts ...cri.Mount) ([]string, error) {
-	result := make([]string, 0, len(mounts))
+func generateMountBindings(mounts ...cri.Mount) []string {
+	args := make([]string, 0, len(mounts))
 	for _, m := range mounts {
 		bind := fmt.Sprintf("%s:%s", m.HostPath, m.ContainerPath)
 		var attrs []string
@@ -330,23 +261,19 @@ func generateMountBindings(mounts ...cri.Mount) ([]string, error) {
 			attrs = append(attrs, "rshared")
 		case cri.MountPropagationHostToContainer:
 			attrs = append(attrs, "rslave")
-		default:
-			return nil, errors.Errorf("unknown propagation mode for hostPath %q", m.HostPath)
-			// Falls back to "private"
+		default: // Falls back to "private"
 		}
-
 		if len(attrs) > 0 {
 			bind = fmt.Sprintf("%s:%s", bind, strings.Join(attrs, ","))
 		}
-		// our specific modification is the following line: make this a docker flag
-		bind = fmt.Sprintf("--volume=%s", bind)
-		result = append(result, bind)
+		args = append(args, fmt.Sprintf("--volume=%s", bind))
 	}
-	return result, nil
+	return args
 }
 
+// generatePortMappings converts the portMappings list to a list of args for docker
 func generatePortMappings(portMappings ...cri.PortMapping) []string {
-	result := make([]string, 0, len(portMappings))
+	args := make([]string, 0, len(portMappings))
 	for _, pm := range portMappings {
 		var hostPortBinding string
 		if pm.ListenAddress != "" {
@@ -354,19 +281,15 @@ func generatePortMappings(portMappings ...cri.PortMapping) []string {
 		} else {
 			hostPortBinding = fmt.Sprintf("%d", pm.HostPort)
 		}
-		var protocol string
+		protocol := "TCP" // TCP is the default
 		switch pm.Protocol {
-		case cri.PortMappingProtocolTCP:
-			protocol = "TCP"
 		case cri.PortMappingProtocolUDP:
 			protocol = "UDP"
 		case cri.PortMappingProtocolSCTP:
 			protocol = "SCTP"
-		default:
-			protocol = "TCP"
+		default: // also covers cri.PortMappingProtocolTCP
 		}
-		publish := fmt.Sprintf("--publish=%s:%d/%s", hostPortBinding, pm.ContainerPort, protocol)
-		result = append(result, publish)
+		args = append(args, fmt.Sprintf("--publish=%s:%d/%s", hostPortBinding, pm.ContainerPort, protocol))
 	}
-	return result
+	return args
 }
