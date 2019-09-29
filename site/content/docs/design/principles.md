@@ -68,7 +68,7 @@ Kubernetes style configuration files.
 
 While doing this we should respect the Kubernetes [API Conventions].
 
-Addtionally we should minimize the number of flags used and avoid structured
+Additionally we should minimize the number of flags used and avoid structured
 values in flags as these cannot be versioned. 
 
 ## Minimize Assumptions

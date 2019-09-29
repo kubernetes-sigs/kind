@@ -34,7 +34,7 @@ import (
 // kindnetd will also write a templated cni config supplied with PodCIDR
 //
 // input envs:
-// - HOST_IP: hould be populated by downward API
+// - HOST_IP: should be populated by downward API
 // - POD_IP: should be populated by downward API
 // - CNI_CONFIG_TEMPLATE: the cni .conflist template, run with {{ .PodCIDR }}
 
