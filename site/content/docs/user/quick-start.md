@@ -323,6 +323,8 @@ nodes:
 - role: control-plane
 # the three workers
 - role: worker
+- role: worker
+- role: worker
 ```
 
 #### IPv6 clusters
