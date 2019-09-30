@@ -57,4 +57,8 @@ clean-output:
 # standard cleanup target
 clean: clean-output clean-cache
 
-.PHONY: all kind build install clean-cache clean-output clean
+# unit tests (hermetic)
+test:
+	GOOS=linux hack/go_container.sh go test ./...
+
+.PHONY: all kind build install clean-cache clean-output clean test
