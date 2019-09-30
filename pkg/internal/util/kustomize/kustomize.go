@@ -29,12 +29,15 @@ import (
 	"sigs.k8s.io/kustomize/v3/k8sdeps/validator"
 	"sigs.k8s.io/kustomize/v3/pkg/commands/build"
 	"sigs.k8s.io/kustomize/v3/pkg/fs"
+	"sigs.k8s.io/kustomize/v3/pkg/gvk"
 	"sigs.k8s.io/kustomize/v3/pkg/resmap"
 	"sigs.k8s.io/kustomize/v3/pkg/resource"
 	"sigs.k8s.io/kustomize/v3/pkg/types"
+	"sigs.k8s.io/yaml"
+
+	"sigs.k8s.io/kind/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
-	"sigs.k8s.io/yaml"
 )
 
 // Build takes a set of resource blobs (yaml), patches (strategic merge patch)
@@ -59,18 +62,11 @@ func Build(resources, patches []string, patchesJSON6902 []config.PatchJSON6902) 
 			APIVersion: types.KustomizationVersion,
 			Kind:       types.KustomizationKind,
 		},
-		Bases:                 make([]string, 0),
-		CommonLabels:          make(map[string]string),
-		CommonAnnotations:     make(map[string]string),
-		PatchesStrategicMerge: make([]types.PatchStrategicMerge, 0),
-		PatchesJson6902:       make([]types.PatchJson6902, 0),
-		Vars:                  make([]types.Var, 0),
-		Crds:                  make([]string, 0),
-		Resources:             make([]string, 0),
-		ConfigMapGenerator:    make([]types.ConfigMapArgs, 0),
-		SecretGenerator:       make([]types.SecretArgs, 0),
-		Configurations:        make([]string, 0),
+		PatchesStrategicMerge: make([]types.PatchStrategicMerge, 0, len(patches)),
+		PatchesJson6902:       make([]types.PatchJson6902, 0, len(patchesJSON6902)),
+		Resources:             make([]string, 0, len(resources)),
 	}
+
 	for i, resource := range resources {
 		// this cannot error per docs
 		name := fmt.Sprintf("resource-%d.yaml", i)
@@ -89,28 +85,26 @@ func Build(resources, patches []string, patchesJSON6902 []config.PatchJSON6902) 
 		// this cannot error per docs
 		name := fmt.Sprintf("patch-json6902-%d.yaml", i)
 		_ = memFS.WriteFile(filepath.Join(fakeDir, name), []byte(patch.Patch))
-
-		jsonPatch := new(types.PatchJson6902)
-		jsonPatch.Path = name
-		jsonPatch.Target = new(types.PatchTarget)
-		jsonPatch.Target.Group = patch.Group
-		jsonPatch.Target.Version = patch.Version
-		jsonPatch.Target.Kind = patch.Kind
-		if patch.Name != "" {
-			jsonPatch.Target.Name = patch.Name
-		}
-		if patch.Namespace != "" {
-			jsonPatch.Target.Namespace = patch.Namespace
-		}
-		kustomization.PatchesJson6902 = append(kustomization.PatchesJson6902, *jsonPatch)
+		kustomization.PatchesJson6902 = append(kustomization.PatchesJson6902, types.PatchJson6902{
+			Path: name,
+			Target: &types.PatchTarget{
+				Gvk: gvk.Gvk{
+					Group:   patch.Group,
+					Version: patch.Version,
+				},
+				Name:      patch.Name,
+				Namespace: patch.Namespace,
+			},
+		})
 	}
 
-	buf, bufErr := yaml.Marshal(kustomization)
-	if bufErr != nil {
-		return "", bufErr
+	// Write out kustomization.yaml
+	buf, err := yaml.Marshal(kustomization)
+	if err != nil {
+		return "", errors.Wrap(err, "error marshaling kustomization.yaml")
 	}
 	if err := memFS.WriteFile(filepath.Join(fakeDir, "kustomization.yaml"), buf); err != nil {
-		return "", err
+		return "", errors.Wrap(err, "error writing kustomization.yaml to memFS")
 	}
 
 	// now we can build the kustomization
@@ -124,9 +118,8 @@ func Build(resources, patches []string, patchesJSON6902 []config.PatchJSON6902) 
 	// we want to silence usage, error output, and any future output from cobra
 	// we will get error output as a golang error from execute
 	cmd.SetOutput(ioutil.Discard)
-	_, err := cmd.ExecuteC()
-	if err != nil {
-		return "", err
+	if _, err := cmd.ExecuteC(); err != nil {
+		return "", errors.Wrap(err, "error executing kustomize build")
 	}
 	return out.String(), nil
 }
