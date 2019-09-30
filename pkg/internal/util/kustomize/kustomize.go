@@ -31,8 +31,10 @@ import (
 	"sigs.k8s.io/kustomize/v3/pkg/fs"
 	"sigs.k8s.io/kustomize/v3/pkg/resmap"
 	"sigs.k8s.io/kustomize/v3/pkg/resource"
+	"sigs.k8s.io/kustomize/v3/pkg/types"
 
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
+	"sigs.k8s.io/yaml"
 )
 
 // Build takes a set of resource blobs (yaml), patches (strategic merge patch)
@@ -43,7 +45,6 @@ func Build(resources, patches []string, patchesJSON6902 []config.PatchJSON6902) 
 	// write the resources and patches to an in memory fs with a generated
 	// kustomization.yaml
 	memFS := fs.MakeFakeFS()
-	var kustomization bytes.Buffer
 	fakeDir := "/"
 	// for Windows we need this to be a drive because kustomize uses filepath.Abs()
 	// which will add a drive letter if there is none. which drive letter is
@@ -53,47 +54,62 @@ func Build(resources, patches []string, patchesJSON6902 []config.PatchJSON6902) 
 	}
 
 	// NOTE: we always write this header as you cannot build without any resources
-	kustomization.WriteString("resources:\n")
+	kustomization := &types.Kustomization{
+		TypeMeta: types.TypeMeta{
+			APIVersion: types.KustomizationVersion,
+			Kind:       types.KustomizationKind,
+		},
+		Bases:                 make([]string, 0),
+		CommonLabels:          make(map[string]string),
+		CommonAnnotations:     make(map[string]string),
+		PatchesStrategicMerge: make([]types.PatchStrategicMerge, 0),
+		PatchesJson6902:       make([]types.PatchJson6902, 0),
+		Vars:                  make([]types.Var, 0),
+		Crds:                  make([]string, 0),
+		Resources:             make([]string, 0),
+		ConfigMapGenerator:    make([]types.ConfigMapArgs, 0),
+		SecretGenerator:       make([]types.SecretArgs, 0),
+		Configurations:        make([]string, 0),
+	}
 	for i, resource := range resources {
 		// this cannot error per docs
 		name := fmt.Sprintf("resource-%d.yaml", i)
 		_ = memFS.WriteFile(filepath.Join(fakeDir, name), []byte(resource))
-		fmt.Fprintf(&kustomization, " - %s\n", name)
+		kustomization.Resources = append(kustomization.Resources, name)
 	}
 
-	if len(patches) > 0 {
-		kustomization.WriteString("patches:\n")
-	}
 	for i, patch := range patches {
 		// this cannot error per docs
 		name := fmt.Sprintf("patch-%d.yaml", i)
 		_ = memFS.WriteFile(filepath.Join(fakeDir, name), []byte(patch))
-		fmt.Fprintf(&kustomization, " - %s\n", name)
+		kustomization.PatchesStrategicMerge = append(kustomization.PatchesStrategicMerge, types.PatchStrategicMerge(name))
 	}
 
-	if len(patchesJSON6902) > 0 {
-		kustomization.WriteString("patchesJson6902:\n")
-	}
 	for i, patch := range patchesJSON6902 {
 		// this cannot error per docs
 		name := fmt.Sprintf("patch-json6902-%d.yaml", i)
 		_ = memFS.WriteFile(filepath.Join(fakeDir, name), []byte(patch.Patch))
-		fmt.Fprintf(&kustomization, " - path: %s\n", name)
-		fmt.Fprintf(&kustomization, "   target:\n")
-		fmt.Fprintf(&kustomization, "     group: %s\n", patch.Group)
-		fmt.Fprintf(&kustomization, "     version: %s\n", patch.Version)
-		fmt.Fprintf(&kustomization, "     kind: %s\n", patch.Kind)
+
+		jsonPatch := new(types.PatchJson6902)
+		jsonPatch.Path = name
+		jsonPatch.Target = new(types.PatchTarget)
+		jsonPatch.Target.Group = patch.Group
+		jsonPatch.Target.Version = patch.Version
+		jsonPatch.Target.Kind = patch.Kind
 		if patch.Name != "" {
-			fmt.Fprintf(&kustomization, "     name: %s\n", patch.Name)
+			jsonPatch.Target.Name = patch.Name
 		}
 		if patch.Namespace != "" {
-			fmt.Fprintf(&kustomization, "     namespace: %s\n", patch.Namespace)
+			jsonPatch.Target.Namespace = patch.Namespace
 		}
+		kustomization.PatchesJson6902 = append(kustomization.PatchesJson6902, *jsonPatch)
 	}
 
-	if err := memFS.WriteFile(
-		filepath.Join(fakeDir, "kustomization.yaml"), kustomization.Bytes(),
-	); err != nil {
+	buf, bufErr := yaml.Marshal(kustomization)
+	if bufErr != nil {
+		return "", bufErr
+	}
+	if err := memFS.WriteFile(filepath.Join(fakeDir, "kustomization.yaml"), buf); err != nil {
 		return "", err
 	}
 
