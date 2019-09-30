@@ -26,7 +26,7 @@ import (
 )
 
 /*
-This is adapated from:
+This is adapted from:
 https://github.com/kubernetes/kubernetes/blob/07a5488b2a8f67add543da72e8819407d8314204/pkg/kubelet/dockershim/helpers.go#L115-L155
 */
 // generateMountBindings converts the mount list to a list of strings that

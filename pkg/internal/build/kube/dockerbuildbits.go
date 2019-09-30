@@ -156,7 +156,7 @@ func (b *DockerBuildBits) buildBash() error {
 		"build/run.sh", "make", "all",
 		"WHAT="+strings.Join(what, " "), "KUBE_BUILD_PLATFORMS="+dockerBuildOsAndArch(),
 	)
-	// ensure the build isn't especially noisy..., inheret existing env
+	// ensure the build isn't especially noisy..., inherit existing env
 	cmd.SetEnv(
 		append(
 			[]string{"KUBE_VERBOSE=0"},

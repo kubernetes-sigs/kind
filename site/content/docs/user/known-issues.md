@@ -187,7 +187,7 @@ Go to the **Advanced** settings page, and change the settings there, see
 ## Failing to properly start cluster
 This issue is similar to a 
 [failure while building the node image](#failure-to-build-node-image).
-If the cluster creation process was successul but you are unable to see any
+If the cluster creation process was successful but you are unable to see any
 Kubernetes resources running, for example:
 
 ```

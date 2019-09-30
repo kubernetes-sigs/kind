@@ -103,7 +103,7 @@ func waitForReady(node nodes.Node, until time.Time) bool {
 		// then the status will have the following format: `True True True'.
 		status := strings.Fields(lines[0])
 		for _, s := range status {
-			// Check node status. If node is ready then this wil be 'True',
+			// Check node status. If node is ready then this will be 'True',
 			// 'False' or 'Unkown' otherwise.
 			if !strings.Contains(s, "True") {
 				return false
@@ -114,7 +114,7 @@ func waitForReady(node nodes.Node, until time.Time) bool {
 }
 
 // helper that calls `try()`` in a loop until the deadline `until`
-// has passed or `try()`returns true, returns wether try ever returned true
+// has passed or `try()`returns true, returns whether try ever returned true
 func tryUntil(until time.Time, try func() bool) bool {
 	for until.After(time.Now()) {
 		if try() {

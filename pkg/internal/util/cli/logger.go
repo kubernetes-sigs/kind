@@ -212,7 +212,7 @@ func (b *bufferPool) Get() *bytes.Buffer {
 	return b.Pool.Get().(*bytes.Buffer)
 }
 
-// Put returns a buffer to the pool, reseting it first
+// Put returns a buffer to the pool, resetting it first
 func (b *bufferPool) Put(x *bytes.Buffer) {
 	// only store small buffers to avoid pointless allocation
 	// avoid keeping arbitrarily large buffers
