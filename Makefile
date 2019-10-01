@@ -58,7 +58,10 @@ clean-output:
 clean: clean-output clean-cache
 
 # unit tests (hermetic)
-test:
-	GOOS=linux hack/go_container.sh go test ./... -coverprofile=/out/coverage.out
+unit:
+	hack/ci/unit.sh
 
-.PHONY: all kind build install clean-cache clean-output clean test
+# unit test alias
+test: unit
+
+.PHONY: all kind build install clean-cache clean-output clean unit test

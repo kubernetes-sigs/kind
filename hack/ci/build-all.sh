@@ -22,11 +22,10 @@ set -o errexit -o nounset -o pipefail
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
-# build and test kind
+# build kind (testing is done in another job)
 hack/release/build/cross.sh
-hack/go_container.sh go test -v ./...
 
-# build and test kindnetd
+# build and test kindnetd (currently we don't unit test elsewhere yet...)
 cd "${REPO_ROOT}/images/kindnetd"
 "${REPO_ROOT}/hack/go_container.sh" go build -v -o /out/kindnetd ./cmd/kindnetd
 "${REPO_ROOT}/hack/go_container.sh" go test -v ./...
