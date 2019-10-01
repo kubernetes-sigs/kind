@@ -27,8 +27,8 @@ for f in bin/kind-*; do
   # NOTE: this bucket is temporary until prow is migrated to the CNCF
   # this is just a google-hosted bucket used specifically for kind
   # periodic UNTRUSTED CI builds used to speed up kubernetes CI
-  gsutil cp "$f" "gs://bentheelder-kind-ci-builds/latest/$(basename "$f")"
+  gsutil cp -P "$f" "gs://bentheelder-kind-ci-builds/latest/$(basename "$f")"
 done
 
 # upload the e2e script so kubernetes CI can consume it
-gsutil cp hack/ci/e2e-k8s.sh gs://bentheelder-kind-ci-builds/latest/e2e-k8s.sh
+gsutil cp -P hack/ci/e2e-k8s.sh gs://bentheelder-kind-ci-builds/latest/e2e-k8s.sh
