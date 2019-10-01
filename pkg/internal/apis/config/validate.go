@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
 	"net"
 
 	"sigs.k8s.io/kind/pkg/errors"
@@ -49,6 +50,7 @@ func (c *Cluster) Validate() error {
 	numByRole := make(map[NodeRole]int32)
 	// All nodes in the config should be valid
 	for i, n := range c.Nodes {
+		fmt.Printf("Node %d: %v\n", i, n)
 		// validate the node
 		if err := n.Validate(); err != nil {
 			errs = append(errs, errors.Errorf("invalid configuration for node %d: %v", i, err))

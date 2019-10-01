@@ -75,6 +75,9 @@ type Node struct {
 	// ExtraPortMappings describes additional port mappings for the node container
 	// binded to a host Port
 	ExtraPortMappings []cri.PortMapping `json:"extraPortMappings,omitempty"`
+
+	// Docker networks to attach to.  Defaults to the Docker default ("bridge").
+	Networks []string `json:"networks,omitempty"`
 }
 
 // NodeRole defines possible role for nodes in a Kubernetes cluster managed by `kind`

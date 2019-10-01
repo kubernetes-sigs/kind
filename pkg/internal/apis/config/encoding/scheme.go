@@ -17,6 +17,7 @@ limitations under the License.
 package encoding
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -82,6 +83,7 @@ func Load(path string) (*config.Cluster, error) {
 		if err != nil {
 			return nil, err
 		}
+		fmt.Printf("cfg: \n%v\n", string(contents))
 
 		// decode data into a internal api Config object because
 		// to leverage on conversion functions for all the api versions
@@ -92,6 +94,7 @@ func Load(path string) (*config.Cluster, error) {
 		}
 
 		// converts back to the latest API version to apply defaults
+		fmt.Printf("cfg: %v\n", *cfg)
 		if err := Scheme.Convert(cfg, latestPublicConfig, nil); err != nil {
 			return nil, err
 		}

@@ -177,6 +177,10 @@ func runArgsForNode(node *config.Node, name string, args []string) []string {
 	args = append(args, generateMountBindings(node.ExtraMounts...)...)
 	args = append(args, generatePortMappings(node.ExtraPortMappings...)...)
 
+	if len(node.Networks) > 0 {
+		args = append(args, "--network", node.Networks[0])
+	}
+
 	// finally, specify the image to run
 	return append(args, node.Image)
 }
