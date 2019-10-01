@@ -76,9 +76,11 @@ RUN clean-install \
     && chmod +x /usr/local/bin/ctr \
     && echo "done installing packages"
 
+# override the rp_filter settings to enable calico cni to "just work"
+COPY 10-network-security.conf /etc/sysctl.d/
+
 # add overrides to containerd
 COPY 10-limits.conf 10-restart.conf /etc/systemd/system/containerd.service.d/
-
 # debug containerd version and create default config
 # additionally:
 # - disable some plugins we don't use / support
