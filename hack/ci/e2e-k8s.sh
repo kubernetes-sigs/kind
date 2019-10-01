@@ -80,6 +80,8 @@ nodes:
 - role: worker
 - role: worker
 EOF
+  # NOTE: must match the number of workers above
+  NUM_NODES=2
   # actually create the cluster
   # TODO(BenTheElder): settle on verbosity for this script
   KIND_IS_UP=true
@@ -136,12 +138,6 @@ run_tests() {
       SKIP="\\[Serial\\]|${SKIP}"
     fi
   fi
-
-  # get the number of worker nodes
-  # TODO(bentheelder): this is kinda gross
-  NUM_NODES="$(kubectl get nodes \
-    -o=jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.taints}{"\n"}{end}' \
-    | grep -cv "node-role.kubernetes.io/master" )"
 
   # setting this env prevents ginkgo e2e from trying to run provider setup
   export KUBERNETES_CONFORMANCE_TEST="y"
