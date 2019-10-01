@@ -17,7 +17,7 @@
 # must be run with a kubernetes checkout in $PWD (IE from the checkout)
 # Usage: SKIP="ginkgo skip regex" FOCUS="ginkgo focus regex" kind-e2e.sh
 
-set -o errexit -o nounset -o pipefail -o xtrace
+set -o errexit -o nounset -o xtrace
 
 # Settings:
 # SKIP: ginkgo skip regex
