@@ -85,14 +85,13 @@ COPY 10-limits.conf 10-restart.conf /etc/systemd/system/containerd.service.d/
 # - setup the "test-handler" used by kubernetes runtime class testing
 RUN containerd --version \
     && mkdir -p /etc/containerd \
-    && ( \
-        echo "# disable plugins we don't / can't support" \
-        echo 'disabled_plugins = ["aufs", "btrfs", "zfs"]' \
-        echo '' \
-        echo '# Runtime handler used for runtime class test.' \
-        echo '[plugins.cri.containerd.runtimes.test-handler]' \
-        echo '  runtime_type = "io.containerd.runtime.v1.linux"' \
-    ) > /etc/containerd/config.toml \
+    && echo "# disable plugins we don't / can't support" > /etc/containerd/config.toml \
+    && echo 'disabled_plugins = ["aufs", "btrfs", "zfs"]' >> /etc/containerd/config.toml \
+    && echo '' >> /etc/containerd/config.toml \
+    && echo '# Runtime handler used for runtime class test.' >> /etc/containerd/config.toml \
+    && echo '[plugins.cri.containerd.runtimes.test-handler]' >> /etc/containerd/config.toml \
+    && echo '  runtime_type = "io.containerd.runtime.v1.linux"' >> /etc/containerd/config.toml \
+    && echo '' >> /etc/containerd/config.toml \
     && containerd config default >> /etc/containerd/config.toml
 
 # Install CNI binaries to /opt/cni/bin
