@@ -28,9 +28,13 @@ SOURCE_DIR="${REPO_ROOT}/hack/tools" GOOS=linux hack/go_container.sh \
 GOOS=linux hack/go_container.sh \
   /out/gotestsum --junitfile=/out/junit.xml -- -coverprofile=/out/unit.cov ./...
 
-# if we are in CI, copy the results to the upload location
+# filter out generated files
+sed '/zz_generated/d' bin/unit.cov > bin/filtered.cov
+
+# generate cover html
+hack/go_container.sh go tool cover -html=/out/filtered.cov -o /out/filtered.html
+
+# if we are in CI, copy to the artifact upload location
 if [[ -n "${ARTIFACTS:-}" ]]; then
-  cp bin/junit.xml "${ARTIFACTS:?}/junit.xml"
-  # ignore generated files
-  grep -v 'zz_generated.*' bin/unit.cov > "${ARTIFACTS:?}/filtered.cov"
+  cp bin/junit.xml bin/filtered.cov bin/filtered.html "${ARTIFACTS:?}/"
 fi
