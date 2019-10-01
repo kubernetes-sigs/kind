@@ -168,7 +168,7 @@ main() {
   fi
 
   # in CI attempt to release some memory after building
-  if [ -n "${ARTIFACTS:-}" ]; then
+  if [ -n "${KUBETEST_IN_DOCKER:-}" ]; then
     sync || true
     echo 1 > /proc/sys/vm/drop_caches || true
   fi
