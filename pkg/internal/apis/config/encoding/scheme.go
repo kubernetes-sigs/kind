@@ -37,7 +37,7 @@ import (
 var Scheme = runtime.NewScheme()
 
 // Codecs provides access to encoding and decoding for the scheme.
-var Codecs = serializer.NewCodecFactory(Scheme)
+var Codecs = serializer.NewCodecFactory(Scheme, serializer.EnableStrict)
 
 // TODO(bentheelder): we should maybe actually remove this init in favor
 // of explicitly adding everything to a scheme via some method
