@@ -1,3 +1,5 @@
+// +build !coverage
+
 /*
 Copyright 2018 The Kubernetes Authors.
 
