@@ -280,10 +280,13 @@ nodes:
   extraPortMappings:
   - containerPort: 80
     hostPort: 80
-    listenAddress: "127.0.0.1" # Optional, defaults to "0.0.0.0"
+    listenAddress: "0.0.0.0" # Optional, defaults to "0.0.0.0"
     protocol: udp # Optional, defaults to tcp
 ```
 This can be useful if using `NodePort` services or daemonsets exposing host ports.
+
+Note: binding the `listenAddress` to `127.0.0.1` may affect your ability to access the service.
+
 
 ### Enable Feature Gates in Your Cluster
 
