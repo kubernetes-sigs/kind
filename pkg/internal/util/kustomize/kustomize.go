@@ -115,7 +115,9 @@ func Build(resources, patches []string, patchesJSON6902 []config.PatchJSON6902) 
 	if err != nil {
 		return "", errors.Wrap(err, "error executing kustomize build")
 	}
-	defer ldr.Cleanup()
+	defer func() {
+		_ = ldr.Cleanup()
+	}()
 	rf := resmap.NewFactory(resource.NewFactory(kunstruct.NewKunstructuredFactoryImpl()), transformer.NewFactoryImpl())
 	pc := plugins.DefaultPluginConfig()
 	kt, err := target.NewKustTarget(ldr, rf, transformer.NewFactoryImpl(), plugins.NewLoader(pc, rf))
@@ -134,5 +136,5 @@ func Build(resources, patches []string, patchesJSON6902 []config.PatchJSON6902) 
 	if err != nil {
 		return "", errors.Wrap(err, "error executing kustomize build")
 	}
-	return string(yamlResources[:]), nil
+	return string(yamlResources), nil
 }
