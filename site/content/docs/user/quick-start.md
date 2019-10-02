@@ -287,6 +287,44 @@ This can be useful if using `NodePort` services or daemonsets exposing host port
 
 Note: binding the `listenAddress` to `127.0.0.1` may affect your ability to access the service.
 
+#### Mapping extra files or volumes into a node
+You can map extraMounts into a node. This is useful for propogating config files for features like the apiserver audit policy.
+```yaml
+kind: Cluster
+apiVersion: kind.sigs.k8s.io/v1alpha3
+nodes:
+- role: control-plane
+  extraMounts:
+  - containerPath: /etc/kubernetes/policies/adv-audit.yaml
+    hostPath: adv-audit.yaml
+    readOnly: true
+    type: File
+- role: worker
+kubeadmConfigPatches:
+- |
+  apiVersion: kubeadm.k8s.io/v1beta2
+  kind: ClusterConfiguration
+  metadata:
+    name: config
+  apiServer:
+    extraArgs:
+      audit-policy-file: "/etc/kubernetes/policies/adv-audit.yaml"
+      audit-log-path: "/var/log/kubernetes/kube-apiserver-audit.log"
+      audit-log-format: "json"
+    extraVolumes:
+    - name: "audit-policies"
+      hostPath: "/etc/kubernetes/policies"
+      mountPath: "/etc/kubernetes/policies"
+      readOnly: true
+      pathType: DirectoryOrCreate
+    - name: "audit-logs"
+      hostPath: "/var/log/kubernetes"
+      mountPath: "/var/log/kubernetes"
+      readOnly: false
+      pathType: DirectoryOrCreate
+```
+
+In the above example `adv-audit.yaml` is expected to be in the current working directory when you run `kind`
 
 ### Enable Feature Gates in Your Cluster
 
