@@ -84,7 +84,7 @@ func runE(flags *flagpole, args []string) error {
 		return err
 	}
 	if !known {
-		return fmt.Errorf("unknown cluster %q", flags.Name)
+		return fmt.Errorf("unknown cluster with name %q", flags.Name)
 	}
 
 	context := cluster.NewContext(flags.Name)

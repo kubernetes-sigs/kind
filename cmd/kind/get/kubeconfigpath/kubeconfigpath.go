@@ -52,6 +52,15 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole) error {
+	// Check if the cluster name exists
+	known, err := cluster.IsKnown(flags.Name)
+	if err != nil {
+		return err
+	}
+	if !known {
+		return fmt.Errorf("unknown cluster with name %q", flags.Name)
+	}
+
 	// Obtain the kubeconfig path for this cluster
 	fmt.Println(cluster.NewContext(flags.Name).KubeConfigPath())
 	return nil
