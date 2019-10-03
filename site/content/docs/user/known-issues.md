@@ -23,6 +23,7 @@ It may additionally be helpful to:
 * [Failing to apply overlay network](#failing-to-apply-overlay-network)
 * [Failure to build node image](#failure-to-build-node-image)
 * [Failure for cluster to properly start](#failure-for-cluster-to-properly-start)
+* [Pod errors due to "too many open files"](#pod-errors-due-to-too-many-open-files)
 * [Docker permission denied](#docker-permission-denied)
 * [Docker on Windows](#docker-on-windows)
 
@@ -235,6 +236,22 @@ an 03 17:42:41 kind-1-control-plane kubelet[3804]: F0103 17:42:41.470269 3804 ku
 ```
 
 This problem seems to be related to a [bug in Docker][moby#9939].
+
+## Pod errors due to "too many open files"
+
+This may be caused by running out of [inotify](https://linux.die.net/man/7/inotify) resources. Resource limits are defined by `fs.inotify.max_user_watches` and `fs.inotify.max_user_instances` system variables. For example, in Ubuntu these default to 8192 and 128 respectively, which is not enough to create a cluster with many nodes.
+
+To increase these limits temporarily run the following commands on the host:
+```
+$ sudo sysctl fs.inotify.max_user_watches=524288
+$ sudo sysctl fs.inotify.max_user_instances=512
+```
+
+To make the changes persistent, edit the file `/etc/sysctl.conf` and add these lines:
+```
+fs.inotify.max_user_watches = 524288
+fs.inotify.max_user_instances = 512
+```
 
 ## Docker permission denied
 
