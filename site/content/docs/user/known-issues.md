@@ -23,6 +23,7 @@ It may additionally be helpful to:
 * [Failing to apply overlay network](#failing-to-apply-overlay-network)
 * [Failure to build node image](#failure-to-build-node-image)
 * [Failure for cluster to properly start](#failure-for-cluster-to-properly-start)
+* [Pod errors due to "too many open files"](#pod-errors-due-to-too-many-open-files)
 * [Docker permission denied](#docker-permission-denied)
 * [Docker on Windows](#docker-on-windows)
 
