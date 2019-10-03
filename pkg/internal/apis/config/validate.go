@@ -18,6 +18,8 @@ package config
 
 import (
 	"net"
+	"os"
+	"path/filepath"
 
 	"sigs.k8s.io/kind/pkg/errors"
 )
@@ -101,10 +103,18 @@ func (n *Node) Validate() error {
 		}
 	}
 
+	// validate HostPath
+	for i, mapping := range n.ExtraMounts {
+		absHostPath, err := validateHostPath(mapping.HostPath)
+		if err != nil {
+			errs = append(errs, errors.Wrap(err, "Invalid hostPath"))
+		}
+		n.ExtraMounts[i].HostPath = absHostPath
+	}
+
 	if len(errs) > 0 {
 		return errors.NewAggregate(errs)
 	}
-
 	return nil
 }
 
@@ -113,4 +123,15 @@ func validatePort(port int32) error {
 		return errors.Errorf("invalid port number: %d", port)
 	}
 	return nil
+}
+
+func validateHostPath(HostPath string) (string, error) {
+	absHostPath, err := filepath.Abs(HostPath)
+	if err != nil {
+		return "", errors.Errorf("unable to determine AbsolutePath for hostPath:", HostPath)
+	}
+	if _, err := os.Stat(absHostPath); os.IsNotExist(err) {
+		return "", errors.Errorf("hostPath doesn't exist!: %s", (absHostPath))
+	}
+	return absHostPath, nil
 }
