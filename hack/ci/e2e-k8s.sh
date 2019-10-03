@@ -141,6 +141,10 @@ run_tests() {
 
   # setting this env prevents ginkgo e2e from trying to run provider setup
   export KUBERNETES_CONFORMANCE_TEST="y"
+  # setting these is required to make RuntimeClass tests work ...
+  export KUBE_CONTAINER_RUNTIME=remote
+  export KUBE_CONTAINER_RUNTIME_ENDPOINT=unix:///run/containerd/containerd.sock
+  export KUBE_CONTAINER_RUNTIME_NAME=containerd
   ./hack/ginkgo-e2e.sh \
     '--provider=skeleton' "--num-nodes=${NUM_NODES}" \
     "--ginkgo.focus=${FOCUS}" "--ginkgo.skip=${SKIP}" \
