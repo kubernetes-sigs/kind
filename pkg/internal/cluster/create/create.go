@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/create"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/globals"
+	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/apis/config/encoding"
 	"sigs.k8s.io/kind/pkg/internal/cluster/context"
 	createtypes "sigs.k8s.io/kind/pkg/internal/cluster/create/types"
@@ -172,7 +173,7 @@ func collectOptions(options ...create.ClusterOption) (*createtypes.ClusterOption
 
 	// default config fields (important for usage as a library, where the config
 	// may be constructed in memory rather than from disk)
-	encoding.Scheme.Default(opts.Config)
+	config.SetDefaultsCluster(opts.Config)
 
 	return opts, nil
 }

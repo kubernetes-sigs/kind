@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,15 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package fuzzer
+package encoding
 
 import (
-	"testing"
+	"sigs.k8s.io/kind/pkg/apis/config/v1alpha3"
 
-	"k8s.io/apimachinery/pkg/api/apitesting/roundtrip"
-	"sigs.k8s.io/kind/pkg/internal/apis/config/encoding"
+	"sigs.k8s.io/kind/pkg/internal/apis/config"
 )
 
-func TestRoundTripTypes(t *testing.T) {
-	roundtrip.RoundTripTestForAPIGroup(t, encoding.AddToScheme, Funcs)
+// V1Alpha3ToInternal converts to the internal API version
+func V1Alpha3ToInternal(cluster *v1alpha3.Cluster) *config.Cluster {
+	v1alpha3.SetDefaultsCluster(cluster)
+	return config.Convertv1alpha3(cluster)
 }

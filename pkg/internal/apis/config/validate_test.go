@@ -32,7 +32,7 @@ func TestClusterValidate(t *testing.T) {
 			Name: "Defaulted",
 			Cluster: func() Cluster {
 				c := Cluster{}
-				SetDefaults_Cluster(&c)
+				SetDefaultsCluster(&c)
 				return c
 			}(),
 		},
@@ -40,7 +40,7 @@ func TestClusterValidate(t *testing.T) {
 			Name: "bogus podSubnet",
 			Cluster: func() Cluster {
 				c := Cluster{}
-				SetDefaults_Cluster(&c)
+				SetDefaultsCluster(&c)
 				c.Networking.PodSubnet = "aa"
 				return c
 			}(),
@@ -50,7 +50,7 @@ func TestClusterValidate(t *testing.T) {
 			Name: "missing control-plane",
 			Cluster: func() Cluster {
 				c := Cluster{}
-				SetDefaults_Cluster(&c)
+				SetDefaultsCluster(&c)
 				c.Nodes = []Node{}
 				return c
 			}(),
@@ -60,12 +60,10 @@ func TestClusterValidate(t *testing.T) {
 			Name: "bogus node",
 			Cluster: func() Cluster {
 				c := Cluster{}
-				SetDefaults_Cluster(&c)
 				n, n2 := Node{}, Node{}
-				SetDefaults_Node(&n)
-				SetDefaults_Node(&n2)
 				n.Role = "bogus"
 				c.Nodes = []Node{n, n2}
+				SetDefaultsCluster(&c)
 				return c
 			}(),
 			ExpectErrors: 1,

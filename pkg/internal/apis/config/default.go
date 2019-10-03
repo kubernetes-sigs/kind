@@ -21,17 +21,11 @@ limitations under the License.
 package config
 
 import (
-	"k8s.io/apimachinery/pkg/runtime"
-
 	"sigs.k8s.io/kind/pkg/apis/config/defaults"
 )
 
-func addDefaultingFuncs(scheme *runtime.Scheme) error {
-	return RegisterDefaults(scheme)
-}
-
-// SetDefaults_Cluster sets uninitialized fields to their default value.
-func SetDefaults_Cluster(obj *Cluster) {
+// SetDefaultsCluster sets uninitialized fields to their default value.
+func SetDefaultsCluster(obj *Cluster) {
 	// default to a one node cluster
 	if len(obj.Nodes) == 0 {
 		obj.Nodes = []Node{
@@ -40,6 +34,11 @@ func SetDefaults_Cluster(obj *Cluster) {
 				Role:  ControlPlaneRole,
 			},
 		}
+	}
+	// default nodes
+	for i := range obj.Nodes {
+		a := &obj.Nodes[i]
+		SetDefaultsNode(a)
 	}
 	if obj.Networking.IPFamily == "" {
 		obj.Networking.IPFamily = "ipv4"
@@ -70,8 +69,8 @@ func SetDefaults_Cluster(obj *Cluster) {
 	}
 }
 
-// SetDefaults_Node sets uninitialized fields to their default value.
-func SetDefaults_Node(obj *Node) {
+// SetDefaultsNode sets uninitialized fields to their default value.
+func SetDefaultsNode(obj *Node) {
 	if obj.Image == "" {
 		obj.Image = defaults.Image
 	}
