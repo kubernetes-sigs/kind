@@ -92,9 +92,7 @@ RUN containerd --version \
     && echo '' >> /etc/containerd/config.toml \
     && echo '# Runtime handler used for runtime class test.' >> /etc/containerd/config.toml \
     && echo '[plugins.cri.containerd.runtimes.test-handler]' >> /etc/containerd/config.toml \
-    && echo '  runtime_type = "io.containerd.runtime.v1.linux"' >> /etc/containerd/config.toml \
-    && echo '' >> /etc/containerd/config.toml \
-    && containerd config default >> /etc/containerd/config.toml
+    && echo '  runtime_type = "io.containerd.runtime.v1.linux"' >> /etc/containerd/config.toml
 
 # Install CNI binaries to /opt/cni/bin
 # TODO(bentheelder): doc why / what here
