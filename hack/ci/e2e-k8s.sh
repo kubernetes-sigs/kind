@@ -27,9 +27,9 @@ set -o errexit -o nounset -o xtrace
 
 # our exit handler (trap)
 cleanup() {
-  kind "export" logs "${ARTIFACTS}/logs" || true
-  # KIND_IS_UP is true once we: kind create
-  if [ "${KIND_IS_UP:-}" = true ]; then
+  # KIND_CREATE_ATTEMPTED is true once we: kind create
+  if [ "${KIND_CREATE_ATTEMPTED:-}" = true ]; then
+    kind "export" logs "${ARTIFACTS}/logs" || true
     kind delete cluster || true
   fi
   rm -f _output/bin/e2e.test || true
@@ -84,7 +84,7 @@ EOF
   NUM_NODES=2
   # actually create the cluster
   # TODO(BenTheElder): settle on verbosity for this script
-  KIND_IS_UP=true
+  KIND_CREATE_ATTEMPTED=true
   kind create cluster \
     --image=kindest/node:latest \
     --retain \
