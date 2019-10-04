@@ -43,9 +43,9 @@ func TestMakeNodeNamer(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			var names []string
-			tt := tt
 			nodeNamer := MakeNodeNamer(tt.clusterName)
 			for _, nodeRole := range tt.nodes {
 				names = append(names, nodeNamer(nodeRole))
