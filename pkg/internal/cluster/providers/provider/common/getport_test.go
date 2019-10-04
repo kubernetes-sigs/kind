@@ -34,8 +34,8 @@ func TestPortOrGetFreePort(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			tt := tt
 			got, err := PortOrGetFreePort(tt.port, "localhost")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("PortOrGetFreePort() error = %v, wantErr %v", err, tt.wantErr)
@@ -83,6 +83,7 @@ func TestGetFreePort(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := GetFreePort(tt.listenAddr)
 			if (err != nil) != tt.wantErr {
