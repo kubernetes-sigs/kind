@@ -58,7 +58,6 @@ RUN chmod +x /usr/local/bin/clean-install
 # https://developers.redhat.com/blog/2014/05/05/running-systemd-within-docker-container/
 RUN clean-install \
       systemd systemd-sysv libsystemd0 \
-      containerd \
       conntrack iptables iproute2 ethtool socat util-linux mount ebtables udev kmod \
       bash ca-certificates curl rsync \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
@@ -69,18 +68,29 @@ RUN clean-install \
     && rm -f /lib/systemd/system/sockets.target.wants/*initctl* \
     && rm -f /lib/systemd/system/basic.target.wants/* \
     && echo "ReadKMsg=no" >> /etc/systemd/journald.conf \
-    && systemctl enable containerd \
-    && export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
-    && curl -fSL -o /usr/local/bin/ctr \
-      "https://storage.googleapis.com/bentheelder-kind-dev/containerd/linux/${ARCH}/ctr" \
-    && chmod +x /usr/local/bin/ctr \
     && echo "done installing packages"
 
 # override the rp_filter settings to enable calico cni to "just work"
 COPY 10-network-security.conf /etc/sysctl.d/
 
-# add overrides to containerd
-COPY 10-limits.conf 10-restart.conf /etc/systemd/system/containerd.service.d/
+# Install containerd and runc binaries from kind-ci/containerd-nightlies repository
+# The repository contains latest stable releases and nightlies using golang's pseudo-version
+# CONTAINERD_VERSION=0.0.0-yyyymmddhhmmss-commitid
+ARG CONTAINERD_VERSION="1.3.0"
+ARG CONTAINERD_BASE_URL="https://github.com/kind-ci/containerd-nightlies/releases/download/"
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
+    && export CONTAINERD_TARBALL="v${CONTAINERD_VERSION}/containerd-${CONTAINERD_VERSION}.linux-${ARCH}.tar.gz" \
+    && export CONTAINERD_URL="${CONTAINERD_BASE_URL}${CONTAINERD_TARBALL}" \
+    && curl -sSL --retry 5 --output /tmp/containerd.tgz "${CONTAINERD_URL}" \
+    && tar -C /usr/local -xzf /tmp/containerd.tgz \
+    && rm -rf /tmp/containerd.tgz \
+    && export RUNC_URL="${CONTAINERD_BASE_URL}v${CONTAINERD_VERSION}/runc.${ARCH}" \
+    && curl -sSL --retry 5 --output /usr/local/sbin/runc "${RUNC_URL}" \
+    && chmod 755 /usr/local/sbin/runc
+
+# Install containerd systemd unit file
+COPY containerd.service /etc/systemd/system
+RUN systemctl enable containerd
 # debug containerd version and create default config
 # additionally:
 # - disable some plugins we don't use / support
@@ -102,7 +112,6 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     && export CNI_TARBALL="${CNI_VERSION}/cni-plugins-linux-${ARCH}-${CNI_VERSION}.tgz" \
     && export CNI_URL="${CNI_BASE_URL}${CNI_TARBALL}" \
     && curl -sSL --retry 5 --output /tmp/cni.tgz "${CNI_URL}" \
-    && sha256sum /tmp/cni.tgz \
     && mkdir -p /opt/cni/bin \
     && tar -C /opt/cni/bin -xzf /tmp/cni.tgz \
     && rm -rf /tmp/cni.tgz
