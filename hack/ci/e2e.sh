@@ -35,6 +35,8 @@ install_kind() {
 }
 
 main() {
+  printenv
+
   # create temp dir and setup cleanup
   TMP_DIR=$(mktemp -d)
   trap cleanup EXIT
