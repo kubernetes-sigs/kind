@@ -98,12 +98,11 @@ func (c *Context) ListInternalNodes() ([]nodes.Node, error) {
 	}
 	selectedNodes := []nodes.Node{}
 	for _, node := range clusterNodes {
-		// Don't load image on external nodes like the load balancer
 		nodeRole, err := node.Role()
 		if err != nil {
 			return nil, err
 		}
-		if nodeRole != constants.ExternalLoadBalancerNodeRoleValue {
+		if nodeRole == constants.WorkerNodeRoleValue || nodeRole == constants.ControlPlaneNodeRoleValue {
 			selectedNodes = append(selectedNodes, node)
 		}
 	}
