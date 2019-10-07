@@ -76,7 +76,7 @@ COPY 10-network-security.conf /etc/sysctl.d/
 # Install containerd and runc binaries from kind-ci/containerd-nightlies repository
 # The repository contains latest stable releases and nightlies using golang's pseudo-version
 # CONTAINERD_VERSION=0.0.0-yyyymmddhhmmss-commitid
-ARG CONTAINERD_VERSION="1.3.0"
+ARG CONTAINERD_VERSION="0.0.0-20191007143651-efd38f48"
 ARG CONTAINERD_BASE_URL="https://github.com/kind-ci/containerd-nightlies/releases/download/"
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
     && export CONTAINERD_TARBALL="v${CONTAINERD_VERSION}/containerd-${CONTAINERD_VERSION}.linux-${ARCH}.tar.gz" \
