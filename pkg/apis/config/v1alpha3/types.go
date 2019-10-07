@@ -78,6 +78,9 @@ type Node struct {
 
 	// Docker networks to attach to.  Defaults to the Docker default ("bridge").
 	Networks []string `json:"networks,omitempty"`
+
+	// Loopback IP.
+	Loopback string `json:"loopback,omitempty"`
 }
 
 // NodeRole defines possible role for nodes in a Kubernetes cluster managed by `kind`

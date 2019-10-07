@@ -50,6 +50,21 @@ func (n *node) Role() (string, error) {
 	return lines[0], nil
 }
 
+func (n *node) Loopback() (string, error) {
+	cmd := exec.Command("docker", "inspect",
+		"--format", fmt.Sprintf(`{{ index .Config.Labels "%s"}}`, constants.NodeLoopbackKey),
+		n.name,
+	)
+	lines, err := exec.OutputLines(cmd)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get role for node")
+	}
+	if len(lines) != 1 {
+		return "", errors.Errorf("failed to get role for node: output lines %d != 1", len(lines))
+	}
+	return lines[0], nil
+}
+
 func (n *node) IP() (ipv4 string, ipv6 string, err error) {
 	// retrieve the IP address of the node using docker inspect
 	cmd := exec.Command("docker", "inspect",
@@ -67,6 +82,12 @@ func (n *node) IP() (ipv4 string, ipv6 string, err error) {
 	if len(ips) != 2 {
 		//return "", "", errors.Errorf("container addresses should have 2 values, got %d values", len(ips))
 		fmt.Printf("%v: %#v\n", n.name, ips)
+		// If the node has a loopback address, that overrides the IPv4 one.
+		loopAddr, err := n.Loopback()
+		if err == nil && loopAddr != "" {
+			fmt.Printf("%v: use IPv4 loopback address %v\n", n.name, loopAddr)
+			return loopAddr, ips[1], nil
+		}
 		return ips[0], "", nil
 	}
 	return ips[0], ips[1], nil

@@ -26,6 +26,7 @@ const ClusterLabelKey = "io.k8s.sigs.kind.cluster"
 // NodeRoleKey is applied to each "node" docker container for categorization
 // of nodes by role
 const NodeRoleKey = "io.k8s.sigs.kind.role"
+const NodeLoopbackKey = "io.k8s.sigs.kind.loopback"
 
 /* node role value constants */
 const (

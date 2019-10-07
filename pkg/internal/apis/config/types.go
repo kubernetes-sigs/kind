@@ -77,6 +77,9 @@ type Node struct {
 
 	// Docker networks to attach to.  Defaults to the Docker default ("bridge").
 	Networks []string
+
+	// Loopback IP.
+	Loopback string
 }
 
 // NodeRole defines possible role for nodes in a Kubernetes cluster managed by `kind`
