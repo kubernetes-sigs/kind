@@ -65,7 +65,9 @@ func (n *node) IP() (ipv4 string, ipv6 string, err error) {
 	}
 	ips := strings.Split(lines[0], ",")
 	if len(ips) != 2 {
-		return "", "", errors.Errorf("container addresses should have 2 values, got %d values", len(ips))
+		//return "", "", errors.Errorf("container addresses should have 2 values, got %d values", len(ips))
+		fmt.Printf("%v: %#v\n", n.name, ips)
+		return ips[0], "", nil
 	}
 	return ips[0], ips[1], nil
 }
