@@ -86,23 +86,15 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     && rm -rf /tmp/containerd.tgz \
     && export RUNC_URL="${CONTAINERD_BASE_URL}v${CONTAINERD_VERSION}/runc.${ARCH}" \
     && curl -sSL --retry 5 --output /usr/local/sbin/runc "${RUNC_URL}" \
-    && chmod 755 /usr/local/sbin/runc
+    && chmod 755 /usr/local/sbin/runc \
+    && containerd --version
 
 # Install containerd systemd unit file
 COPY containerd.service /etc/systemd/system
 RUN systemctl enable containerd
-# debug containerd version and create default config
-# additionally:
-# - disable some plugins we don't use / support
-# - setup the "test-handler" used by kubernetes runtime class testing
-RUN containerd --version \
-    && mkdir -p /etc/containerd \
-    && echo "# disable plugins we don't / can't support" > /etc/containerd/config.toml \
-    && echo 'disabled_plugins = ["aufs", "btrfs", "zfs"]' >> /etc/containerd/config.toml \
-    && echo '' >> /etc/containerd/config.toml \
-    && echo '# Runtime handler used for runtime class test.' >> /etc/containerd/config.toml \
-    && echo '[plugins.cri.containerd.runtimes.test-handler]' >> /etc/containerd/config.toml \
-    && echo '  runtime_type = "io.containerd.runtime.v1.linux"' >> /etc/containerd/config.toml
+
+# configure containerd with some custom options
+COPY containerd-config.toml /etc/containerd/config.toml
 
 # Install CNI binaries to /opt/cni/bin
 # TODO(bentheelder): doc why / what here
