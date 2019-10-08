@@ -74,7 +74,6 @@ Some other open source projects with slightly different but overlapping use case
 - https://github.com/ubuntu/microk8s
 - https://github.com/kinvolk/kube-spawn
 - https://github.com/kubernetes/minikube
-- https://github.com/danderson/virtuakube
 - https://github.com/kubernetes-sigs/kubeadm-dind-cluster
 
 ### Code of conduct
