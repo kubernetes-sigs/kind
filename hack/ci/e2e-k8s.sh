@@ -72,14 +72,30 @@ create_cluster() {
   cat <<EOF > "${ARTIFACTS}/kind-config.yaml"
 # config for 1 control plane node and 2 workers (necessary for conformance)
 kind: Cluster
-apiVersion: kind.sigs.k8s.io/v1alpha3
+apiVersion: kind.x-k8s.io/v1alpha4
 networking:
-  ipFamily: ${IP_FAMILY:-ipv4}
+  ipFamily: ${IP_FAMILY}
 nodes:
 - role: control-plane
 - role: worker
 - role: worker
 EOF
+
+  if [ "${IP_FAMILY}" = "DualStack" ]; then
+    # enable DualStack on all componentes using the feature gates
+    cat <<EOF >> "${ARTIFACTS}/kind-config.yaml"
+kubeadmConfigPatches:
+- |
+  apiVersion: kubeadm.k8s.io/v1beta2
+  kind: ClusterConfiguration
+  metadata:
+    name: config
+  featureGates:
+    IPv6DualStack: true
+EOF
+
+  fi
+
   # NOTE: must match the number of workers above
   NUM_NODES=2
   # actually create the cluster
@@ -103,7 +119,7 @@ run_tests() {
   # c.k8s-prow-builds.internal google.internal.
   # CoreDNS should handle those domains and answer with NXDOMAIN instead of SERVFAIL
   # otherwise pods stops trying to resolve the domain.
-  if [ "${IP_FAMILY:-ipv4}" = "ipv6" ]; then
+  if [ "${IP_FAMILY}" = "ipv6" ] || [ "${IP_FAMILY}" = "DualStack" ]; then
     # Get the current config
     original_coredns=$(kubectl get -oyaml -n=kube-system configmap/coredns)
     echo "Original CoreDNS config:"
@@ -180,6 +196,9 @@ main() {
     sync || true
     echo 1 > /proc/sys/vm/drop_caches || true
   fi
+
+  # default IP Family of the cluster to IPv4
+  IP_FAMILY="${IP_FAMILY:-ipv4}"
 
   # create the cluster and run tests
   create_cluster && run_tests
