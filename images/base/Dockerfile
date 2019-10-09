@@ -74,18 +74,15 @@ RUN clean-install \
 COPY 10-network-security.conf /etc/sysctl.d/
 
 # Install containerd and runc binaries from kind-ci/containerd-nightlies repository
-# The repository contains latest stable releases and nightlies using golang's pseudo-version
-# CONTAINERD_VERSION=0.0.0-yyyymmddhhmmss-commitid
-ARG CONTAINERD_VERSION="0.0.0-20191007143651-efd38f48"
-ARG CONTAINERD_BASE_URL="https://github.com/kind-ci/containerd-nightlies/releases/download/"
+# The repository contains latest stable releases and nightlies built for multiple architectures
+ARG CONTAINERD_VERSION="v1.3.0-7-g0b43a311"
+ARG CONTAINERD_BASE_URL="https://github.com/kind-ci/containerd-nightlies/releases/download"
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
-    && export CONTAINERD_TARBALL="v${CONTAINERD_VERSION}/containerd-${CONTAINERD_VERSION}.linux-${ARCH}.tar.gz" \
-    && export CONTAINERD_URL="${CONTAINERD_BASE_URL}${CONTAINERD_TARBALL}" \
-    && curl -sSL --retry 5 --output /tmp/containerd.tgz "${CONTAINERD_URL}" \
+    && export RELEASE_BASE_URL="${CONTAINERD_BASE_URL}/containerd-${CONTAINERD_VERSION#v}" \
+    && curl -sSL --retry 5 --output /tmp/containerd.tgz "${RELEASE_BASE_URL}/containerd-${CONTAINERD_VERSION#v}.linux-${ARCH}.tar.gz" \
     && tar -C /usr/local -xzf /tmp/containerd.tgz \
     && rm -rf /tmp/containerd.tgz \
-    && export RUNC_URL="${CONTAINERD_BASE_URL}v${CONTAINERD_VERSION}/runc.${ARCH}" \
-    && curl -sSL --retry 5 --output /usr/local/sbin/runc "${RUNC_URL}" \
+    && curl -sSL --retry 5 --output /usr/local/sbin/runc "${RELEASE_BASE_URL}/runc.${ARCH}" \
     && chmod 755 /usr/local/sbin/runc \
     && containerd --version
 
