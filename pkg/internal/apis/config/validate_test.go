@@ -143,7 +143,7 @@ func TestNodeValidate(t *testing.T) {
 			ExpectErrors: 1,
 		},
 		{
-			TestName: "Unknows role field",
+			TestName: "Unknown role field",
 			Node: func() Node {
 				cfg := newDefaultedNode(ControlPlaneRole)
 				cfg.Role = "ssss"

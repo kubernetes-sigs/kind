@@ -76,7 +76,7 @@ func runE(flags *flagpole, args []string) error {
 	// Check that the image exists locally and gets its ID, if not return error
 	imageID, err := docker.ImageID(imageName)
 	if err != nil {
-		return fmt.Errorf("Image: %q not present locally", imageName)
+		return fmt.Errorf("image: %q not present locally", imageName)
 	}
 	// Check if the cluster name exists
 	known, err := cluster.IsKnown(flags.Name)
