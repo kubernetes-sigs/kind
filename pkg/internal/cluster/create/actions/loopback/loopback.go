@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
+	"strings"
 )
 
 // kubeadmInitAction implements action for executing the kubadm init
@@ -52,7 +53,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				"ip",
 				"a",
 				"a",
-				loopAddress + "/32",
+				loopAddress+"/32",
 				"dev",
 				"lo",
 			)
@@ -61,6 +62,23 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				return errors.Wrap(err, "failed to set loopback address")
 			}
 		}
+
+		routes, err := node.Routes()
+		if err != nil {
+			fmt.Printf("Loopback action error: %v\n", err)
+			continue
+		}
+		for _, route := range strings.Split(routes, ",") {
+			fmt.Printf("Install route: %v\n", route)
+			args := []string{"r", "a"}
+			args = append(args, strings.Split(route, " ")...)
+			cmd := node.Command("ip", args...)
+			err := cmd.Run()
+			if err != nil {
+				return errors.Wrap(err, "failed to install route")
+			}
+		}
+
 	}
 	return nil
 }

@@ -27,6 +27,7 @@ const ClusterLabelKey = "io.k8s.sigs.kind.cluster"
 // of nodes by role
 const NodeRoleKey = "io.k8s.sigs.kind.role"
 const NodeLoopbackKey = "io.k8s.sigs.kind.loopback"
+const NodeRoutesKey = "io.k8s.sigs.kind.routes"
 
 /* node role value constants */
 const (

@@ -147,6 +147,7 @@ func autoConvert_v1alpha3_Node_To_config_Node(in *v1alpha3.Node, out *config.Nod
 	out.ExtraPortMappings = *(*[]cri.PortMapping)(unsafe.Pointer(&in.ExtraPortMappings))
 	out.Networks = *(*[]string)(unsafe.Pointer(&in.Networks))
 	out.Loopback = in.Loopback
+	out.Routes = *(*[]string)(unsafe.Pointer(&in.Routes))
 	return nil
 }
 
@@ -162,6 +163,7 @@ func autoConvert_config_Node_To_v1alpha3_Node(in *config.Node, out *v1alpha3.Nod
 	out.ExtraPortMappings = *(*[]cri.PortMapping)(unsafe.Pointer(&in.ExtraPortMappings))
 	out.Networks = *(*[]string)(unsafe.Pointer(&in.Networks))
 	out.Loopback = in.Loopback
+	out.Routes = *(*[]string)(unsafe.Pointer(&in.Routes))
 	return nil
 }
 

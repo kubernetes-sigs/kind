@@ -28,8 +28,9 @@ type Node interface {
 	// String should return the node name
 	String() string // see also: fmt.Stringer
 	// Role should return the node's role
-	Role() (string, error) // see also: pkg/cluster/constants
+	Role() (string, error)     // see also: pkg/cluster/constants
 	Loopback() (string, error) // see also: pkg/cluster/constants
+	Routes() (string, error)   // see also: pkg/cluster/constants
 	// TODO(bentheelder): should return node addresses more generally
 	// Possibly remove this method in favor of obtaining this detail with
 	// exec or from the provider

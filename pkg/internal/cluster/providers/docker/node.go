@@ -57,10 +57,25 @@ func (n *node) Loopback() (string, error) {
 	)
 	lines, err := exec.OutputLines(cmd)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get role for node")
+		return "", errors.Wrap(err, "failed to get loopback for node")
 	}
 	if len(lines) != 1 {
-		return "", errors.Errorf("failed to get role for node: output lines %d != 1", len(lines))
+		return "", errors.Errorf("failed to get loopback for node: output lines %d != 1", len(lines))
+	}
+	return lines[0], nil
+}
+
+func (n *node) Routes() (string, error) {
+	cmd := exec.Command("docker", "inspect",
+		"--format", fmt.Sprintf(`{{ index .Config.Labels "%s"}}`, constants.NodeRoutesKey),
+		n.name,
+	)
+	lines, err := exec.OutputLines(cmd)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get routes for node")
+	}
+	if len(lines) != 1 {
+		return "", errors.Errorf("failed to get routes for node: output lines %d != 1", len(lines))
 	}
 	return lines[0], nil
 }

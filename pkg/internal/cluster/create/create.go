@@ -95,7 +95,7 @@ func Cluster(ctx *context.Context, options ...create.ClusterOption) error {
 	// TODO(bentheelder): make this controllable from the command line?
 	actionsToRun := []actions.Action{
 		loadbalancer.NewAction(), // setup external loadbalancer
-		loopback.NewAction(),	  // add loopback addresses
+		loopback.NewAction(),     // add loopback addresses
 		configaction.NewAction(), // setup kubeadm config
 	}
 	if opts.SetupKubernetes {

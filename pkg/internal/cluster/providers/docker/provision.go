@@ -173,6 +173,7 @@ func runArgsForNode(node *config.Node, name string, args []string) []string {
 		// label the node with the role ID and loopback
 		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleKey, node.Role),
 		"--label", fmt.Sprintf("%s=%s", constants.NodeLoopbackKey, node.Loopback),
+		"--label", fmt.Sprintf("%s=%s", constants.NodeRoutesKey, strings.Join(node.Routes, ",")),
 		// running containers in a container requires privileged
 		// NOTE: we could try to replicate this with --cap-add, and use less
 		// privileges, but this flag also changes some mounts that are necessary

@@ -102,6 +102,11 @@ func (in *Node) DeepCopyInto(out *Node) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.Routes != nil {
+		in, out := &in.Routes, &out.Routes
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

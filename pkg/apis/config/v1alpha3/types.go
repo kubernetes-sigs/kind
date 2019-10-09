@@ -81,6 +81,8 @@ type Node struct {
 
 	// Loopback IP.
 	Loopback string `json:"loopback,omitempty"`
+
+	Routes []string `json:"routes,omitempty"`
 }
 
 // NodeRole defines possible role for nodes in a Kubernetes cluster managed by `kind`
