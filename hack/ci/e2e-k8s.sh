@@ -79,9 +79,10 @@ nodes:
 - role: control-plane
 - role: worker
 - role: worker
+- role: worker
 EOF
   # NOTE: must match the number of workers above
-  NUM_NODES=2
+  NUM_NODES=3
   # actually create the cluster
   # TODO(BenTheElder): settle on verbosity for this script
   KIND_CREATE_ATTEMPTED=true
