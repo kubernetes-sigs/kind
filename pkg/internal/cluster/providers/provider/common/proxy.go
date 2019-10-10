@@ -17,7 +17,6 @@ limitations under the License.
 package common
 
 import (
-	"os"
 	"strings"
 
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
@@ -34,12 +33,12 @@ const (
 
 // GetProxyEnvs returns a map of proxy environment variables to their values
 // If proxy settings are set, NO_PROXY is modified to include the cluster subnets
-func GetProxyEnvs(cfg *config.Cluster) map[string]string {
+func GetProxyEnvs(cfg *config.Cluster, env Getenver) map[string]string {
 	envs := make(map[string]string)
 	for _, name := range []string{HTTPProxy, HTTPSProxy, NOProxy} {
-		val := os.Getenv(name)
+		val := env.Getenv(name)
 		if val == "" {
-			val = os.Getenv(strings.ToLower(name))
+			val = env.Getenv(strings.ToLower(name))
 		}
 		if val != "" {
 			envs[name] = val
