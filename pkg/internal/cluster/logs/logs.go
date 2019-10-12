@@ -64,7 +64,9 @@ func Collect(nodes []nodes.Node, dir string) error {
 			"docker-info.txt",
 		),
 	}
-	// add a log collection method for each node
+
+	// collect /var/log for each node and plan collecting more logs
+	errs := []error{}
 	for _, n := range nodes {
 		node := n // https://golang.org/doc/faq#closures_and_goroutines
 		name := node.String()
@@ -85,7 +87,7 @@ func Collect(nodes []nodes.Node, dir string) error {
 			}
 			return nil
 		}); err != nil {
-			return err
+			errs = append(errs, err)
 		}
 
 		fns = append(fns, func() error {
@@ -121,7 +123,8 @@ func Collect(nodes []nodes.Node, dir string) error {
 	}
 
 	// run and collect up all errors
-	return concurrent.Coalesce(fns...)
+	errs = append(errs, concurrent.Coalesce(fns...))
+	return errors.NewAggregate(errs)
 }
 
 // untar reads the tar file from r and writes it into dir.
