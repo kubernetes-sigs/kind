@@ -85,13 +85,12 @@ func TestClusterValidate(t *testing.T) {
 				}
 				return
 			}
-			// - doesn't container errors, in which case we have the wrong error type ...
+			// get the list of errors
 			errs := errors.Errors(err)
 			if errs == nil {
-				t.Errorf("config.Validate should only return nil or ConfigErrors{...}, got: %v", err)
-				return
+				errs = []error{err}
 			}
-			// - errors, in which case expect a certain number of errors
+			// we expect a certain number of errors
 			if len(errs) != tc.ExpectErrors {
 				t.Errorf("expected %d errors but got len(%v) = %d", tc.ExpectErrors, errs, len(errs))
 			}
@@ -166,13 +165,12 @@ func TestNodeValidate(t *testing.T) {
 				}
 				return
 			}
-			// - doesn't container errors, in which case we have the wrong error type ...
+			// get the list of errors
 			errs := errors.Errors(err)
 			if errs == nil {
-				t.Errorf("config.Validate should only return nil or ConfigErrors{...}, got: %v", err)
-				return
+				errs = []error{err}
 			}
-			// - errors, in which case expect a certain number of errors
+			// we expect a certain number of errors
 			if len(errs) != tc.ExpectErrors {
 				t.Errorf("expected %d errors but got len(%v) = %d", tc.ExpectErrors, errs, len(errs))
 			}

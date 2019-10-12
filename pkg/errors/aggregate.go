@@ -33,8 +33,7 @@ func NewAggregate(errlist []error) error {
 	)
 }
 
-// Errors returns the deepest Aggregate.Errors() in a Cause chain
-// https://github.com/pkg/errors/issues/173
+// Errors returns the deepest Aggregate in a Cause chain
 func Errors(err error) []error {
 	var errors k8serrors.Aggregate
 	for {
