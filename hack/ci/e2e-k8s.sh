@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Copyright 2018 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -187,7 +187,7 @@ main() {
   time create_cluster
 
   # run e2e tests
-  echo "IFO: Running e2e tests"
+  echo "INFO: Running e2e tests"
   time run_tests
 }
 
