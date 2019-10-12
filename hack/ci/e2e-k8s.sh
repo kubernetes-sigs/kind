@@ -169,10 +169,11 @@ main() {
   BUILD_TYPE="${BUILD_TYPE:-bazel}"
 
   # build kubernetes
+  echo "INFO: Building kubernetes"
   if [ "${BUILD_TYPE:-}" = "bazel" ]; then
-    build_with_bazel
+    time build_with_bazel
   else
-    build
+    time build
   fi
 
   # in CI attempt to release some memory after building
@@ -181,8 +182,13 @@ main() {
     echo 1 > /proc/sys/vm/drop_caches || true
   fi
 
-  # create the cluster and run tests
-  create_cluster && run_tests
+  # create the cluster
+  echo "INFO: Creating the cluster"
+  time create_cluster
+
+  # run e2e tests
+  echo "IFO: Running e2e tests"
+  time run_tests
 }
 
 main
