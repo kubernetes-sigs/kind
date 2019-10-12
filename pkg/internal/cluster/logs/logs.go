@@ -65,19 +65,23 @@ func Collect(nodes []nodes.Node, dir string) error {
 		),
 	}
 	// add a log collection method for each node
+	// collect up and return errors
+	errs := []error{}
 	for _, n := range nodes {
 		node := n // https://golang.org/doc/faq#closures_and_goroutines
 		name := node.String()
 		// grab all logs under /var/log (pods and containers)
+		// TODO: don't fail if exit status is 1. It only means that some files were changed while being archived
+		// http://man7.org/linux/man-pages/man1/tar.1.html
 		cmd := node.Command("tar", "--hard-dereference", "-C", "/var/log", "-chf", "-", ".")
 
 		if err := exec.RunWithStdoutReader(cmd, func(outReader io.Reader) error {
 			if err := untar(outReader, filepath.Join(dir, name)); err != nil {
-				return errors.Wrapf(err, "Untarring %q: %v", name, err)
+				errs = append(errs, errors.Wrapf(err, "Untarring %q: %v", name, err))
 			}
 			return nil
 		}); err != nil {
-			return err
+			errs = append(errs, err)
 		}
 
 		fns = append(fns, func() error {
@@ -113,7 +117,15 @@ func Collect(nodes []nodes.Node, dir string) error {
 	}
 
 	// run and collect up all errors
-	return concurrent.Coalesce(fns...)
+	if err := concurrent.Coalesce(fns...); err != nil {
+		errs = append(errs, err)
+	}
+	if len(errs) > 1 {
+		return errors.NewAggregate(errs)
+	} else if len(errs) == 1 {
+		return errs[0]
+	}
+	return nil
 }
 
 // untar reads the tar file from r and writes it into dir.
