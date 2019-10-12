@@ -69,7 +69,15 @@ func Collect(nodes []nodes.Node, dir string) error {
 		node := n // https://golang.org/doc/faq#closures_and_goroutines
 		name := node.String()
 		// grab all logs under /var/log (pods and containers)
-		cmd := node.Command("tar", "--hard-dereference", "-C", "/var/log", "-chf", "-", ".")
+		cmd := node.Command(
+			"sh", "-c",
+			// Tar will exit 1 if a file changed during the archival.
+			// We don't care about this, so we're invoking it in a shell
+			// And masking out 1 as a return value.
+			// Fatal errors will return exit code 2.
+			// http://man7.org/linux/man-pages/man1/tar.1.html#RETURN_VALUE
+			`tar --hard-dereference -C /var/log -chf - . || (r=$?; [ $r -eq 1 ] || exit $r)`,
+		)
 
 		if err := exec.RunWithStdoutReader(cmd, func(outReader io.Reader) error {
 			if err := untar(outReader, filepath.Join(dir, name)); err != nil {
