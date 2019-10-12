@@ -56,10 +56,10 @@ type IPMasqAgent struct {
 }
 
 // SyncRulesForever syncs ip masquerade rules forever
-func (ma *IPMasqAgent) SyncRulesForever(interval time.Duration) error {
+func (ma *IPMasqAgent) SyncRulesForever(interval time.Duration) {
 	for {
 		if err := ma.SyncRules(); err != nil {
-			return err
+			fmt.Printf("kind-masq-agent: error syncing rules %v , retrying ... \n", err)
 		}
 		time.Sleep(interval)
 	}

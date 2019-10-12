@@ -70,11 +70,9 @@ func main() {
 	// enforce ip masquerade rules
 	// TODO: dual stack...?
 	masqAgent := NewIPMasqAgent(net.IsIPv6String(hostIP), []string{os.Getenv("POD_SUBNET")})
+	// TODO: handle the errors and logging here, temporally the agent will run forever
 	go func() {
-		// TODO: use logging and continue retrying instead...
-		if err := masqAgent.SyncRulesForever(time.Second * 60); err != nil {
-			panic(err)
-		}
+		masqAgent.SyncRulesForever(time.Second * 60)
 	}()
 
 	// setup nodes reconcile function, closes over arguments
