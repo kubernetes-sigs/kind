@@ -3,7 +3,7 @@ module sigs.k8s.io/kind/images/kindnetd
 go 1.13
 
 require (
-	github.com/godbus/dbus v4.1.0+incompatible // indirect
+	github.com/coreos/go-iptables v0.4.3
 	github.com/gogo/protobuf v1.2.1 // indirect
 	github.com/golang/protobuf v1.3.1 // indirect
 	github.com/google/gofuzz v1.0.0 // indirect
@@ -23,7 +23,6 @@ require (
 	k8s.io/api v0.0.0-20190409021203-6e4e0e4f393b
 	k8s.io/apimachinery v0.0.0-20190404173353-6a84e37a896d
 	k8s.io/client-go v11.0.0+incompatible
-	k8s.io/kubernetes v1.14.2
 	k8s.io/utils v0.0.0-20190506122338-8fab8cb257d5
 	sigs.k8s.io/yaml v1.1.0 // indirect
 )
