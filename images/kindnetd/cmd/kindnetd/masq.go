@@ -24,24 +24,27 @@ import (
 )
 
 // NewIPMasqAgent returns a new IPMasqAgent
-func NewIPMasqAgent(ipv6 bool, noMasqueradeCIDRs []string) *IPMasqAgent {
+func NewIPMasqAgent(ipv6 bool, noMasqueradeCIDRs []string) (*IPMasqAgent, error) {
 	protocol := iptables.ProtocolIPv4
 	if ipv6 {
 		protocol = iptables.ProtocolIPv6
 	}
-	ipt, _ := iptables.NewWithProtocol(protocol)
+	ipt, err := iptables.NewWithProtocol(protocol)
+	if err != nil {
+		return nil, err
+	}
 
 	// TODO: validate cidrs
 	return &IPMasqAgent{
 		iptables:          ipt,
 		masqChain:         masqChainName,
 		noMasqueradeCIDRs: noMasqueradeCIDRs,
-	}
+	}, nil
 }
 
 // IPMasqAgent is based on https://github.com/kubernetes-incubator/ip-masq-agent
-// but collapsed into kindnetd and made ipv6 aware in an opionated and simplified
-// fashion using "github.com/coreos/go-iptables" instead of k8s/pkg/util/iptables
+// but collapsed into kindnetd and made ipv6 aware in an opinionated and simplified
+// fashion using "github.com/coreos/go-iptables"
 type IPMasqAgent struct {
 	iptables          *iptables.IPTables
 	masqChain         string
@@ -49,10 +52,19 @@ type IPMasqAgent struct {
 }
 
 // SyncRulesForever syncs ip masquerade rules forever
-func (ma *IPMasqAgent) SyncRulesForever(interval time.Duration) {
+// these rules only needs to be installed once, but we run it periodically to check that are
+// not deleted by an external program. It fails if can't sync the rules during 3 iterations
+// TODO: aggregate errors
+func (ma *IPMasqAgent) SyncRulesForever(interval time.Duration) error {
+	errs := 0
 	for {
 		if err := ma.SyncRules(); err != nil {
-			fmt.Printf("Error syncing iptables non-masq rules %v, retrying ... \n", err)
+			errs++
+			if errs > 3 {
+				return fmt.Errorf("Can't synchronize rules after 3 attempts: %v", err)
+			}
+		} else {
+			errs = 0
 		}
 		time.Sleep(interval)
 	}
