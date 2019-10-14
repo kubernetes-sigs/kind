@@ -93,19 +93,27 @@ func (n *node) IP() (ipv4 string, ipv6 string, err error) {
 	if len(lines) != 1 {
 		return "", "", errors.Errorf("file should only be one line, got %d lines", len(lines))
 	}
-	ips := strings.Split(lines[0], ",")
-	if len(ips) != 2 {
-		//return "", "", errors.Errorf("container addresses should have 2 values, got %d values", len(ips))
-		fmt.Printf("%v: %#v\n", n.name, ips)
-		// If the node has a loopback address, that overrides the IPv4 one.
-		loopAddr, err := n.Loopback()
-		if err == nil && loopAddr != "" {
-			fmt.Printf("%v: use IPv4 loopback address %v\n", n.name, loopAddr)
-			return loopAddr, ips[1], nil
-		}
-		return ips[0], "", nil
+	// If the node has a loopback address, that provides the IPv4.
+	loopAddr, err := n.Loopback()
+	if err == nil && loopAddr != "" {
+		fmt.Printf("%v: use IPv4 loopback address %v\n", n.name, loopAddr)
+		ipv4 = loopAddr
 	}
-	return ips[0], ips[1], nil
+	ips := strings.Split(lines[0], ",")
+	for _, ip := range ips {
+		if strings.Contains(ip, ":") {
+			// IPv6.
+			if ipv6 == "" {
+				ipv6 = ip
+			}
+		} else {
+			// IPv4
+			if ipv4 == "" {
+				ipv4 = ip
+			}
+		}
+	}
+	return
 }
 
 func (n *node) Command(command string, args ...string) exec.Cmd {
