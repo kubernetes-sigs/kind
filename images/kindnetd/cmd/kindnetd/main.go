@@ -69,11 +69,14 @@ func main() {
 
 	// enforce ip masquerade rules
 	// TODO: dual stack...?
-	masqAgent := NewIPMasqAgent(net.IsIPv6String(hostIP), []string{os.Getenv("POD_SUBNET")})
+	masqAgent, err := NewIPMasqAgent(net.IsIPv6String(hostIP), []string{os.Getenv("POD_SUBNET")})
+	if err != nil {
+		panic(err.Error())
+	}
+	// run the masqAgent and panic if is not able to install the rules to no masquerade the pod to pod traffic
 	go func() {
-		// TODO: use logging and continue retrying instead...
 		if err := masqAgent.SyncRulesForever(time.Second * 60); err != nil {
-			panic(err)
+			panic(err.Error())
 		}
 	}()
 

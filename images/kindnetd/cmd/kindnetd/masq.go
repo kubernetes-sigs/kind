@@ -17,49 +17,54 @@ limitations under the License.
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"strings"
 	"time"
 
-	utildbus "k8s.io/kubernetes/pkg/util/dbus"
-	utiliptables "k8s.io/kubernetes/pkg/util/iptables"
-	utilexec "k8s.io/utils/exec"
+	"github.com/coreos/go-iptables/iptables"
 )
 
 // NewIPMasqAgent returns a new IPMasqAgent
-func NewIPMasqAgent(ipv6 bool, noMasqueradeCIDRs []string) *IPMasqAgent {
-	execer := utilexec.New()
-	dbus := utildbus.New()
-	protocol := utiliptables.ProtocolIpv4
+func NewIPMasqAgent(ipv6 bool, noMasqueradeCIDRs []string) (*IPMasqAgent, error) {
+	protocol := iptables.ProtocolIPv4
 	if ipv6 {
-		protocol = utiliptables.ProtocolIpv6
+		protocol = iptables.ProtocolIPv6
 	}
-	masqChain := utiliptables.Chain(masqChainName)
-	iptables := utiliptables.New(execer, dbus, protocol)
+	ipt, err := iptables.NewWithProtocol(protocol)
+	if err != nil {
+		return nil, err
+	}
 
 	// TODO: validate cidrs
 	return &IPMasqAgent{
-		iptables:          iptables,
-		masqChain:         masqChain,
+		iptables:          ipt,
+		masqChain:         masqChainName,
 		noMasqueradeCIDRs: noMasqueradeCIDRs,
-	}
+	}, nil
 }
 
 // IPMasqAgent is based on https://github.com/kubernetes-incubator/ip-masq-agent
-// but collapsed into kindnetd and made ipv6 aware in an opionated and simplified
-// fashion
+// but collapsed into kindnetd and made ipv6 aware in an opinionated and simplified
+// fashion using "github.com/coreos/go-iptables"
 type IPMasqAgent struct {
-	iptables          utiliptables.Interface
-	masqChain         utiliptables.Chain
+	iptables          *iptables.IPTables
+	masqChain         string
 	noMasqueradeCIDRs []string
 }
 
 // SyncRulesForever syncs ip masquerade rules forever
+// these rules only needs to be installed once, but we run it periodically to check that are
+// not deleted by an external program. It fails if can't sync the rules during 3 iterations
+// TODO: aggregate errors
 func (ma *IPMasqAgent) SyncRulesForever(interval time.Duration) error {
+	errs := 0
 	for {
 		if err := ma.SyncRules(); err != nil {
-			return err
+			errs++
+			if errs > 3 {
+				return fmt.Errorf("Can't synchronize rules after 3 attempts: %v", err)
+			}
+		} else {
+			errs = 0
 		}
 		time.Sleep(interval)
 	}
@@ -70,75 +75,36 @@ const masqChainName = "KIND-MASQ-AGENT"
 
 // SyncRules syncs ip masquerade rules
 func (ma *IPMasqAgent) SyncRules() error {
-	// TODO(aojea): don´t sync if there are no changes
 	// make sure our custom chain for non-masquerade exists
-	if _, err := ma.iptables.EnsureChain(utiliptables.TableNAT, ma.masqChain); err != nil {
-		return err
+	exists := false
+	chains, err := ma.iptables.ListChains("nat")
+	if err != nil {
+		return fmt.Errorf("failed to list chains: %v", err)
+	}
+	for _, ch := range chains {
+		if ch == ma.masqChain {
+			exists = true
+			break
+		}
+	}
+	if !exists {
+		if err = ma.iptables.NewChain("nat", ma.masqChain); err != nil {
+			return err
+		}
 	}
 
-	// ensure that any non-local in POSTROUTING jumps to masqChain
-	if err := ensurePostroutingJump(ma.iptables, ma.masqChain); err != nil {
-		return err
-	}
-
-	// build up lines to pass to iptables-restore
-	lines := bytes.NewBuffer(nil)
-	writeLine(lines, "*nat")
-	writeLine(lines, utiliptables.MakeChainLine(ma.masqChain)) // effectively flushes masqChain atomically with rule restore
-
-	// non-masquerade for user-provided CIDRs
+	// Packets to this network should not be masquerade, pods should be able to talk to other pods
 	for _, cidr := range ma.noMasqueradeCIDRs {
-		writeNonMasqRule(ma.masqChain, lines, cidr)
+		if err := ma.iptables.AppendUnique("nat", ma.masqChain, "-d", cidr, "-j", "RETURN", "-m", "comment", "--comment", "kind-masq-agent: local traffic is not subject to MASQUERADE"); err != nil {
+			return err
+		}
 	}
 
-	// masquerade all other traffic that is not bound for a --dst-type LOCAL destination
-	writeMasqRule(ma.masqChain, lines)
-
-	writeLine(lines, "COMMIT")
-	if err := ma.iptables.RestoreAll(lines.Bytes(), utiliptables.NoFlushTables, utiliptables.NoRestoreCounters); err != nil {
+	// Masquerade all the other traffic
+	if err := ma.iptables.AppendUnique("nat", ma.masqChain, "-j", "MASQUERADE", "-m", "comment", "--comment", "kind-masq-agent: outbound traffic is subject to MASQUERADE (must be last in chain)"); err != nil {
 		return err
 	}
-	return nil
-}
 
-// NOTE(mtaufen): iptables requires names to be <= 28 characters, and somehow prepending "-m comment --comment " to this string makes it think this condition is violated
-// Feel free to dig around in iptables and see if you can figure out exactly why; I haven't had time to fully trace how it parses and handle subcommands.
-// If you want to investigate, get the source via `git clone git://git.netfilter.org/iptables.git`, `git checkout v1.4.21` (the version I've seen this issue on,
-// though it may also happen on others), and start with `git grep XT_EXTENSION_MAXNAMELEN`.
-func postroutingJumpComment(masqChain utiliptables.Chain) string {
-	return fmt.Sprintf("kind-masq-agent: ensure nat POSTROUTING directs all non-LOCAL destination traffic to our custom %s chain", masqChain)
-}
-
-func ensurePostroutingJump(iptables utiliptables.Interface, masqChain utiliptables.Chain) error {
-	if _, err := iptables.EnsureRule(utiliptables.Append, utiliptables.TableNAT, utiliptables.ChainPostrouting,
-		"-m", "comment", "--comment", postroutingJumpComment(masqChain),
-		"-m", "addrtype", "!", "--dst-type", "LOCAL", "-j", string(masqChain)); err != nil {
-		return fmt.Errorf("failed to ensure that %s chain %s jumps to MASQUERADE: %v", utiliptables.TableNAT, masqChain, err)
-	}
-	return nil
-}
-
-const nonMasqRuleComment = `-m comment --comment "kind-masq-agent: local traffic is not subject to MASQUERADE"`
-
-func writeNonMasqRule(masqChain utiliptables.Chain, lines *bytes.Buffer, cidr string) {
-	writeRule(lines, utiliptables.Append, masqChain, nonMasqRuleComment, "-d", cidr, "-j", "RETURN")
-}
-
-const masqRuleComment = `-m comment --comment "ip-masq-agent: outbound traffic is subject to MASQUERADE (must be last in chain)"`
-
-func writeMasqRule(masqChain utiliptables.Chain, lines *bytes.Buffer) {
-	writeRule(lines, utiliptables.Append, masqChain, masqRuleComment, "-j", "MASQUERADE")
-}
-
-// Similar syntax to utiliptables.Interface.EnsureRule, except you don't pass a table
-// (you must write these rules under the line with the table name)
-func writeRule(lines *bytes.Buffer, position utiliptables.RulePosition, chain utiliptables.Chain, args ...string) {
-	fullArgs := append([]string{string(position), string(chain)}, args...)
-	writeLine(lines, fullArgs...)
-}
-
-// Join all words with spaces, terminate with newline and write to buf.
-func writeLine(lines *bytes.Buffer, words ...string) {
-	lines.WriteString(strings.Join(words, " ") + "\n")
-	fmt.Printf("Handling iptables: %s\n", lines)
+	// Send all non-LOCAL destination traffic to our custom KIND-MASQ-AGENT chain
+	return ma.iptables.AppendUnique("nat", "POSTROUTING", "-m", "addrtype", "!", "--dst-type", "LOCAL", "-j", ma.masqChain, "-m", "comment", "--comment", "kind-masq-agent: ensure nat POSTROUTING directs all non-LOCAL destination traffic to our custom KIND-MASQ-AGENT chain")
 }
