@@ -45,8 +45,7 @@ build_with_bazel() {
   fi
 
   # build the node image w/ kubernetes
-  # TODO(bentheelder): remove this emergency workaround (bypassing docker hub outage)
-  kind build node-image --type=bazel --kube-root="$(go env GOPATH)/src/k8s.io/kubernetes" --base-image=gcr.io/bentheelder-kind-dev/kindest/base:v20191009-d5ae74fc
+  kind build node-image --type=bazel --kube-root="$(go env GOPATH)/src/k8s.io/kubernetes"
   # make sure we have e2e requirements
   bazel build //cmd/kubectl //test/e2e:e2e.test //vendor/github.com/onsi/ginkgo/ginkgo
 
@@ -62,8 +61,7 @@ build_with_bazel() {
 # build kubernetes / node image, e2e binaries
 build() {
   # build the node image w/ kubernetes
-  # TODO(bentheelder): remove this emergency workaround (bypassing docker hub outage)
-  kind build node-image --kube-root="$(go env GOPATH)/src/k8s.io/kubernetes" --base-image=gcr.io/bentheelder-kind-dev/kindest/base:v20191009-d5ae74fc
+  kind build node-image --kube-root="$(go env GOPATH)/src/k8s.io/kubernetes"
   # make sure we have e2e requirements
   make all WHAT='cmd/kubectl test/e2e/e2e.test vendor/github.com/onsi/ginkgo/ginkgo'
 }
