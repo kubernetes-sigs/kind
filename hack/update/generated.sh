@@ -22,9 +22,7 @@ cd "${REPO_ROOT}"
 
 # build the generators using the tools module
 cd "hack/tools"
-"${REPO_ROOT}/hack/go_container.sh" go build -o /out/defaulter-gen k8s.io/code-generator/cmd/defaulter-gen
 "${REPO_ROOT}/hack/go_container.sh" go build -o /out/deepcopy-gen k8s.io/code-generator/cmd/deepcopy-gen
-"${REPO_ROOT}/hack/go_container.sh" go build -o /out/conversion-gen k8s.io/code-generator/cmd/conversion-gen
 # go back to the root
 cd "${REPO_ROOT}"
 
@@ -47,11 +45,7 @@ cd "${FAKE_REPOPATH}"
 
 # run the generators
 bin/deepcopy-gen -i ./pkg/internal/apis/config/ -O zz_generated.deepcopy --go-header-file hack/tools/boilerplate.go.txt
-bin/defaulter-gen -i ./pkg/internal/apis/config/ -O zz_generated.default --go-header-file hack/tools/boilerplate.go.txt
-
 bin/deepcopy-gen -i ./pkg/apis/config/v1alpha3 -O zz_generated.deepcopy --go-header-file hack/tools/boilerplate.go.txt
-bin/defaulter-gen -i ./pkg/apis/config/v1alpha3 -O zz_generated.default --go-header-file hack/tools/boilerplate.go.txt
-bin/conversion-gen -i ./pkg/internal/apis/config/v1alpha3 -O zz_generated.conversion --go-header-file hack/tools/boilerplate.go.txt
 
 # set module mode back, return to repo root and gofmt to ensure we format generated code
 export GO111MODULE="on"

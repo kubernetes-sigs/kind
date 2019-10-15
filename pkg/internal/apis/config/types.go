@@ -17,18 +17,11 @@ limitations under the License.
 package config
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"sigs.k8s.io/kind/pkg/container/cri"
 )
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
 // Cluster contains kind cluster configuration
 type Cluster struct {
-	// TypeMeta representing the type of the object and its API schema version.
-	metav1.TypeMeta
-
 	// Nodes contains the list of nodes defined in the `kind` Cluster
 	// If unset this will default to a single control-plane node
 	// Note that if more than one control plane is specified, an external

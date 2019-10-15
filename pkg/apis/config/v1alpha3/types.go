@@ -17,38 +17,40 @@ limitations under the License.
 package v1alpha3
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"sigs.k8s.io/kind/pkg/container/cri"
 )
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
 // Cluster contains kind cluster configuration
 type Cluster struct {
-	// TypeMeta representing the type of the object and its API schema version.
-	metav1.TypeMeta `json:",inline"`
+	TypeMeta `yaml:",inline" json:",inline"`
 
 	// Nodes contains the list of nodes defined in the `kind` Cluster
 	// If unset this will default to a single control-plane node
 	// Note that if more than one control plane is specified, an external
 	// control plane load balancer will be provisioned implicitly
-	Nodes []Node `json:"nodes,omitempty"`
+	Nodes []Node `yaml:"nodes,omitempty" json:"nodes,omitempty"`
 
 	/* Advanced fields */
 
 	// Networking contains cluster wide network settings
-	Networking Networking `json:"networking,omitempty"`
+	Networking Networking `yaml:"networking,omitempty" json:"networking,omitempty"`
 
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// strategic merge patches to `kustomize build` internally
 	// https://github.com/kubernetes/community/blob/master/contributors/devel/strategic-merge-patch.md
 	// This should be an inline yaml blob-string
-	KubeadmConfigPatches []string `json:"kubeadmConfigPatches,omitempty"`
+	KubeadmConfigPatches []string `yaml:"kubeadmConfigPatches,omitempty" json:"kubeadmConfigPatches,omitempty"`
 
 	// KubeadmConfigPatchesJSON6902 are applied to the generated kubeadm config
 	// as patchesJson6902 to `kustomize build`
-	KubeadmConfigPatchesJSON6902 []PatchJSON6902 `json:"kubeadmConfigPatchesJson6902,omitempty"`
+	KubeadmConfigPatchesJSON6902 []PatchJSON6902 `yaml:"kubeadmConfigPatchesJson6902,omitempty" json:"kubeadmConfigPatchesJson6902,omitempty"`
+}
+
+// TypeMeta partially copies apimachinery/pkg/apis/meta/v1.TypeMeta
+// No need for a direct dependence; the fields are stable.
+type TypeMeta struct {
+	Kind       string `json:"kind,omitempty" yaml:"kind,omitempty"`
+	APIVersion string `json:"apiVersion,omitempty" yaml:"apiVersion,omitempty"`
 }
 
 // Node contains settings for a node in the `kind` Cluster.
@@ -59,22 +61,22 @@ type Node struct {
 	// created by kind
 	//
 	// Defaults to "control-plane"
-	Role NodeRole `json:"role,omitempty"`
+	Role NodeRole `yaml:"role,omitempty" json:"role,omitempty"`
 
 	// Image is the node image to use when creating this node
 	// If unset a default image will be used, see defaults.Image
-	Image string `json:"image,omitempty"`
+	Image string `yaml:"image,omitempty" json:"image,omitempty"`
 
 	/* Advanced fields */
 
 	// TODO: cri-like types should be inline instead
 	// ExtraMounts describes additional mount points for the node container
 	// These may be used to bind a hostPath
-	ExtraMounts []cri.Mount `json:"extraMounts,omitempty"`
+	ExtraMounts []cri.Mount `yaml:"extraMounts,omitempty" json:"extraMounts,omitempty"`
 
 	// ExtraPortMappings describes additional port mappings for the node container
 	// binded to a host Port
-	ExtraPortMappings []cri.PortMapping `json:"extraPortMappings,omitempty"`
+	ExtraPortMappings []cri.PortMapping `yaml:"extraPortMappings,omitempty" json:"extraPortMappings,omitempty"`
 }
 
 // NodeRole defines possible role for nodes in a Kubernetes cluster managed by `kind`
@@ -93,24 +95,24 @@ const (
 // Networking contains cluster wide network settings
 type Networking struct {
 	// IPFamily is the network cluster model, currently it can be ipv4 or ipv6
-	IPFamily ClusterIPFamily `json:"ipFamily,omitempty"`
+	IPFamily ClusterIPFamily `yaml:"ipFamily,omitempty" json:"ipFamily,omitempty"`
 	// APIServerPort is the listen port on the host for the Kubernetes API Server
 	// Defaults to a random port on the host
-	APIServerPort int32 `json:"apiServerPort,omitempty"`
+	APIServerPort int32 `yaml:"apiServerPort,omitempty" json:"apiServerPort,omitempty"`
 	// APIServerAddress is the listen address on the host for the Kubernetes
 	// API Server. This should be an IP address.
 	//
 	// Defaults to 127.0.0.1
-	APIServerAddress string `json:"apiServerAddress,omitempty"`
+	APIServerAddress string `yaml:"apiServerAddress,omitempty" json:"apiServerAddress,omitempty"`
 	// PodSubnet is the CIDR used for pod IPs
 	// kind will select a default if unspecified
-	PodSubnet string `json:"podSubnet,omitempty"`
+	PodSubnet string `yaml:"podSubnet,omitempty" json:"podSubnet,omitempty"`
 	// ServiceSubnet is the CIDR used for services VIPs
 	// kind will select a default if unspecified for IPv6
-	ServiceSubnet string `json:"serviceSubnet,omitempty"`
+	ServiceSubnet string `yaml:"serviceSubnet,omitempty" json:"serviceSubnet,omitempty"`
 	// If DisableDefaultCNI is true, kind will not install the default CNI setup.
 	// Instead the user should install their own CNI after creating the cluster.
-	DisableDefaultCNI bool `json:"disableDefaultCNI,omitempty"`
+	DisableDefaultCNI bool `yaml:"disableDefaultCNI,omitempty" json:"disableDefaultCNI,omitempty"`
 }
 
 // ClusterIPFamily defines cluster network IP family
@@ -127,14 +129,14 @@ const (
 // https://tools.ietf.org/html/rfc6902
 type PatchJSON6902 struct {
 	// these fields specify the patch target resource
-	Group   string `json:"group"`
-	Version string `json:"version"`
-	Kind    string `json:"kind"`
+	Group   string `yaml:"group" json:"group"`
+	Version string `yaml:"version" json:"version"`
+	Kind    string `yaml:"kind" json:"kind"`
 	// Name and Namespace are optional
 	// NOTE: technically name is required now, but we default it elsewhere
 	// Third party users of this type / library would need to set it.
-	Name      string `json:"name,omitempty"`
-	Namespace string `json:"namespace,omitempty"`
+	Name      string `yaml:"name,omitempty" json:"name,omitempty"`
+	Namespace string `yaml:"name,omitempty" json:"namespace,omitempty"`
 	// Patch should contain the contents of the json patch as a string
-	Patch string `json:"patch"`
+	Patch string `yaml:"patch" json:"patch"`
 }
