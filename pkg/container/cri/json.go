@@ -23,10 +23,11 @@ import (
 )
 
 /*
-Custom JSON / yaml (by way of json) serialization for these types
+Custom JSON (de)serialization for these types
+TODO: just use yaml ...
 */
 
-// MarshalJSON implements custom encoding for JSON and Yaml
+// MarshalJSON implements custom encoding for JSON
 // https://golang.org/pkg/encoding/json/
 func (m *Mount) MarshalJSON() ([]byte, error) {
 	type Alias Mount
@@ -67,7 +68,7 @@ func (m *Mount) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON implements custom encoding for JSON and Yaml
+// MarshalJSON implements custom encoding for JSON
 // https://golang.org/pkg/encoding/json/
 func (p *PortMapping) MarshalJSON() ([]byte, error) {
 	type Alias PortMapping
@@ -84,7 +85,7 @@ func (p *PortMapping) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// UnmarshalJSON implements custom decoding for JSON and Yaml
+// UnmarshalJSON implements custom decoding for JSON
 // https://golang.org/pkg/encoding/json/
 func (p *PortMapping) UnmarshalJSON(data []byte) error {
 	type Alias PortMapping
