@@ -17,18 +17,11 @@ limitations under the License.
 package config
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-
 	v1alpha3 "sigs.k8s.io/kind/pkg/apis/config/v1alpha3"
 )
 
 func Convertv1alpha3(in *v1alpha3.Cluster) *Cluster {
 	out := &Cluster{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Cluster",
-			APIVersion: runtime.APIVersionInternal,
-		},
 		Nodes:                        make([]Node, len(in.Nodes)),
 		KubeadmConfigPatches:         in.KubeadmConfigPatches,
 		KubeadmConfigPatchesJSON6902: make([]PatchJSON6902, len(in.KubeadmConfigPatchesJSON6902)),

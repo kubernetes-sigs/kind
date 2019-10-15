@@ -17,12 +17,11 @@ limitations under the License.
 package encoding
 
 import (
+	"bytes"
 	"io/ioutil"
 	"os"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"sigs.k8s.io/yaml"
+	yaml "gopkg.in/yaml.v3"
 
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha3"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -50,7 +49,7 @@ func Load(path string) (*config.Cluster, error) {
 	}
 
 	// get kind & apiVersion
-	tm := metav1.TypeMeta{}
+	tm := typeMeta{}
 	if err := yaml.Unmarshal(raw, &tm); err != nil {
 		return nil, errors.Wrap(err, "could not determine kind / apiVersion for config")
 	}
@@ -63,7 +62,8 @@ func Load(path string) (*config.Cluster, error) {
 		}
 		// load version
 		cfg := &v1alpha3.Cluster{}
-		if err := yaml.UnmarshalStrict(raw, cfg); err != nil {
+		//if err := yaml.UnmarshalStrict(raw, cfg); err != nil {
+		if err := yamlUnmarshalStrict(raw, cfg); err != nil {
 			return nil, errors.Wrap(err, "unable to decode config")
 		}
 		// apply defaults for version and convert
@@ -72,6 +72,18 @@ func Load(path string) (*config.Cluster, error) {
 	}
 	// unknown apiVersion if we haven't already returned ...
 	return nil, errors.Errorf("unknown apiVersion: %s", tm.APIVersion)
+}
+
+// basically metav1.TypeMeta, but with yaml tags
+type typeMeta struct {
+	Kind       string `yaml:"kind,omitempty"`
+	APIVersion string `yaml:"apiVersion,omitempty"`
+}
+
+func yamlUnmarshalStrict(raw []byte, v interface{}) error {
+	d := yaml.NewDecoder(bytes.NewReader(raw))
+	d.KnownFields(true)
+	return d.Decode(v)
 }
 
 func readAll(path string) ([]byte, error) {
