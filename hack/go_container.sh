@@ -30,7 +30,8 @@ SOURCE_DIR="${SOURCE_DIR:-$(pwd -P)}"
 # default to disabling CGO for easier reproducible builds and cross compilation
 export CGO_ENABLED="${CGO_ENABLED:-0}"
 # the container image, by default a recent official golang image
-GOIMAGE="${GOIMAGE:-golang:1.13.1}"
+# TODO: remove temporary work around for docker hub outage in favor of long term plan
+GOIMAGE="${GOIMAGE:-gcr.io/bentheelder-kind-dev/golang:1.13.1}"
 # docker volume name, used as a go module / build cache
 CACHE_VOLUME="${CACHE_VOLUME:-kind-build-cache}"
 # ========================== END SCRIPT SETTINGS ===============================
