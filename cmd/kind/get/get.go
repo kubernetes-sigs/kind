@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/cmd/kind/get/clusters"
+	"sigs.k8s.io/kind/cmd/kind/get/images"
 	"sigs.k8s.io/kind/cmd/kind/get/kubeconfig"
 	"sigs.k8s.io/kind/cmd/kind/get/kubeconfigpath"
 	"sigs.k8s.io/kind/cmd/kind/get/nodes"
@@ -37,8 +38,9 @@ func NewCommand() *cobra.Command {
 	}
 	// add subcommands
 	cmd.AddCommand(clusters.NewCommand())
-	cmd.AddCommand(nodes.NewCommand())
+	cmd.AddCommand(images.NewCommand())
 	cmd.AddCommand(kubeconfig.NewCommand())
 	cmd.AddCommand(kubeconfigpath.NewCommand())
+	cmd.AddCommand(nodes.NewCommand())
 	return cmd
 }
