@@ -84,7 +84,8 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     && rm -rf /tmp/containerd.tgz \
     && curl -sSL --retry 5 --output /usr/local/sbin/runc "${RELEASE_BASE_URL}/runc.${ARCH}" \
     && chmod 755 /usr/local/sbin/runc \
-    && containerd --version
+    && containerd --version \
+    && mkdir -p /etc/containerd/user
 
 # Install containerd systemd unit file
 COPY containerd.service /etc/systemd/system

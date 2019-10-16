@@ -1,6 +1,10 @@
 # disable plugins we don't / can't support
 disabled_plugins = ["aufs", "btrfs", "zfs"]
 
+# import any additional config files written by kind, and any user written
+# config files (/etc/containerd/user-config/*.toml)
+imports = ["/kind/containerd/*.toml", "/etc/containerd/user/*.toml"]
+
 # set default runtime handler to v2, which has a per-pod shim
 [plugins."io.containerd.grpc.v1.cri".containerd]
   default_runtime_name="runc"
@@ -10,3 +14,4 @@ disabled_plugins = ["aufs", "btrfs", "zfs"]
 # Setup a runtime with the magic name ("test-handler") for runtime class tests
 [plugins.cri.containerd.runtimes.test-handler]
   runtime_type = "io.containerd.runc.v2"
+
