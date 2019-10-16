@@ -47,6 +47,21 @@ func TestLoadCurrent(t *testing.T) {
 			ExpectError: false,
 		},
 		{
+			TestName:    "v1alpha3 many fields set",
+			Path:        "./testdata/v1alpha3/valid-many-fields.yaml",
+			ExpectError: false,
+		},
+		{
+			TestName:    "v1alpha3 non-existent field",
+			Path:        "./testdata/v1alpha3/invalid-bogus-field.yaml",
+			ExpectError: true,
+		},
+		{
+			TestName:    "v1alpha3 bad indentation",
+			Path:        "./testdata/v1alpha3/invalid-bad-indent.yaml",
+			ExpectError: true,
+		},
+		{
 			TestName:    "invalid path",
 			Path:        "./testdata/not-a-file.bogus",
 			ExpectError: true,
@@ -70,8 +85,8 @@ func TestLoadCurrent(t *testing.T) {
 	for _, c := range cases {
 		c := c // capture loop variable
 		t.Run(c.TestName, func(t *testing.T) {
+			t.Parallel()
 			_, err := Load(c.Path)
-
 			// the error can be:
 			// - nil, in which case we should expect no errors or fail
 			if err != nil {

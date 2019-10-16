@@ -28,17 +28,24 @@ Custom YAML (de)serialization for these types
 // UnmarshalYAML implements custom decoding YAML
 // https://godoc.org/gopkg.in/yaml.v3
 func (m *Mount) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	type Alias Mount
-	aux := &struct {
-		Propagation string `yaml:"propagation"`
-		*Alias
-	}{
-		Alias: (*Alias)(m),
+	// this is basically Mount, except Propagation is a string for further parsing
+	type MountYaml struct {
+		ContainerPath  string `yaml:"containerPath,omitempty"`
+		HostPath       string `yaml:"hostPath,omitempty"`
+		Readonly       bool   `yaml:"readOnly,omitempty"`
+		SelinuxRelabel bool   `yaml:"selinuxRelabel,omitempty"`
+		Propagation    string `yaml:"propagation,omitempty"`
 	}
+	aux := MountYaml{}
 	if err := unmarshal(&aux); err != nil {
 		return err
 	}
-	// if unset, will fallback to the default (0)
+	// copy over normal fields
+	m.ContainerPath = aux.ContainerPath
+	m.HostPath = aux.HostPath
+	m.Readonly = aux.Readonly
+	m.SelinuxRelabel = aux.SelinuxRelabel
+	// handle special field
 	if aux.Propagation != "" {
 		val, ok := MountPropagationNameToValue[aux.Propagation]
 		if !ok {
@@ -52,16 +59,22 @@ func (m *Mount) UnmarshalYAML(unmarshal func(interface{}) error) error {
 // UnmarshalYAML implements custom decoding YAML
 // https://godoc.org/gopkg.in/yaml.v3
 func (p *PortMapping) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	type Alias PortMapping
-	aux := &struct {
-		Protocol string `json:"protocol"`
-		*Alias
-	}{
-		Alias: (*Alias)(p),
+	// this is basically PortMappingYaml, except Protocol is a string for further parsing
+	type PortMappingYaml struct {
+		ContainerPort int32  `yaml:"containerPort,omitempty"`
+		HostPort      int32  `yaml:"hostPort,omitempty"`
+		ListenAddress string `yaml:"listenAddress,omitempty"`
+		Protocol      string `yaml:"protocol"`
 	}
+	aux := PortMappingYaml{}
 	if err := unmarshal(&aux); err != nil {
 		return err
 	}
+	// copy normal fields
+	p.ContainerPort = aux.ContainerPort
+	p.HostPort = aux.HostPort
+	p.ListenAddress = aux.ListenAddress
+	// handle special field
 	if aux.Protocol != "" {
 		val, ok := PortMappingProtocolNameToValue[strings.ToUpper(aux.Protocol)]
 		if !ok {
