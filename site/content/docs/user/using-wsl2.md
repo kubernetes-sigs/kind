@@ -49,9 +49,11 @@ If you want the full details, see the [Installation Instructions for WSL2](https
 Once your Windows Insider machine is ready, you need to do a few more steps to set up WSL2
 
 1. Open a PowerShell window as an admin, then run
+
     ```powershell
     Enable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform, Microsoft-Windows-Subsystem-Linux
     ```
+
 1. Reboot when prompted. 
 1. After the reboot, set WSL to default to WSL2. Open an admin PowerShell window and run `wsl --set-default-version 2`.
 1. Now, you can install your Linux distro of choice by searching the Windows Store. If you don't want to use the Windows Store, then follow the steps in the WSL docs for [manual install](https://docs.microsoft.com/en-us/windows/wsl/install-manual).
