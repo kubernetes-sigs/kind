@@ -49,17 +49,32 @@ If you want the full details, see the [Installation Instructions for WSL2](https
 Once your Windows Insider machine is ready, you need to do a few more steps to set up WSL2
 
 1. Open a PowerShell window as an admin, then run
-    ```PowerShell
+
+    ```powershell
     Enable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform, Microsoft-Windows-Subsystem-Linux
     ```
+
 1. Reboot when prompted. 
 1. After the reboot, set WSL to default to WSL2. Open an admin PowerShell window and run `wsl --set-default-version 2`.
 1. Now, you can install your Linux distro of choice by searching the Windows Store. If you don't want to use the Windows Store, then follow the steps in the WSL docs for [manual install](https://docs.microsoft.com/en-us/windows/wsl/install-manual).
 1. Start up your distro with the shortcut added to the start menu
+1. If you're on build 18941 (July 19, 2019) or earlier, then you'll need to build and update the kernel. See [Updating Kernel](#updating-kernel). Otherwise, move on to the next section.
 
-### Updating Kernel
+## Setting up Docker in WSL2
+1. Install Docker - here's links for [Debian](https://docs.docker.com/install/linux/docker-ce/debian/), [Fedora](https://docs.docker.com/install/linux/docker-ce/fedora/), and [Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
+1. Start the Docker daemon using init (not systemd) `sudo service docker start`. This needs to be done each time you start WSL2.
 
-In Windows 10 Insider build 18941 and earlier, the WSL2 kernel is still missing a few features needed for kind to work correctly. A custom kernel is needed. Since WSL2 is installed and working, it's easy to build a new one with the right features included.
+Now, move on to the [Quick Start](/docs/user/quick-start) to set up your cluster with kind.
+
+## Helpful Tips for WSL2
+
+- If you want to shutdown the WSL2 instance to save memory or "reboot", open an admin PowerShell prompt and run `wsl <distro> --shutdown`. Closing a WSL2 window doesn't shut it down automatically.
+- You can check the status of all installed distros with `wsl --list --verbose`.
+- If you had a distro installed with WSL1, you can convert it to WSL2 with `wsl --set-version <distro> 2`
+
+## Updating Kernel
+
+In Windows 10 Insider build **18941 and earlier**, the WSL2 kernel is still missing a few features needed for kind to work correctly. A custom kernel is needed. Since WSL2 is installed and working, it's easy to build a new one with the right features included. Builds after that don't need any kernel changes.
 
 For the latest status on this, see [issue #707](https://github.com/kubernetes-sigs/kind/issues/707) and [microsoft/wsl#4165](https://github.com/microsoft/WSL/issues/4165). 
 
@@ -86,17 +101,3 @@ $acl | Set-Acl .\kernel
 Move-Item kernel kernel.orig
 Copy-Item c:\linuxtemp\bzImage kernel
 ```
-
-Now, start a new WSL2 prompt and continue on with the steps to set up Docker.
-
-## Setting up Docker in WSL2
-1. Install Docker - here's links for [Debian](https://docs.docker.com/install/linux/docker-ce/debian/), [Fedora](https://docs.docker.com/install/linux/docker-ce/fedora/), and [Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
-1. Start the Docker daemon using init (not systemd) `sudo service docker start`. This needs to be done each time you start WSL2.
-
-Now, move on to the [Quick Start](/docs/user/quick-start) to set up your cluster with kind.
-
-## Helpful Tips for WSL2
-
-- If you want to shutdown the WSL2 instance to save memory or "reboot", open an admin PowerShell prompt and run `wsl <distro> --shutdown`. Closing a WSL2 window doesn't shut it down automatically.
-- You can check the status of all installed distros with `wsl --list --verbose`.
-- If you had a distro installed with WSL1, you can convert it to WSL2 with `wsl --set-version <distro> 2`
