@@ -57,8 +57,16 @@ Move-Item .\kind-windows-amd64.exe c:\some-dir-in-your-PATH\kind.exe
 ```
 
 To use kind, you will need to [install docker].  
-Once you have docker running you can create a cluster with `kind create cluster`  
-To delete your cluster use `kind delete cluster`
+Once you have docker running you can create a cluster with
+```
+kind create cluster
+```
+
+To delete your cluster use 
+
+```
+kind delete cluster
+```
 
 <!--TODO(bentheelder): improve this part of the guide-->
 To create a cluster from Kubernetes source:
