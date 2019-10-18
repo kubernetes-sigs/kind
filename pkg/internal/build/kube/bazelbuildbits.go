@@ -70,7 +70,6 @@ func (b *BazelBuildBits) Build() error {
 	// build artifacts
 	cmd := exec.Command(
 		"bazel", "build",
-		fmt.Sprintf("--platforms=@io_bazel_rules_go//go/toolchain:%s", bazelGoosGoarch),
 		// node installed binaries
 		"//cmd/kubeadm:kubeadm", "//cmd/kubectl:kubectl", "//cmd/kubelet:kubelet",
 		// and the docker images
