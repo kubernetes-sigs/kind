@@ -207,7 +207,7 @@ func writeKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes
 		return errors.Wrap(err, "failed to generate kubeadm config content")
 	}
 
-	globals.GetLogger().V(1).Info("Using kubeadm config:\n" + kubeadmConfig)
+	globals.GetLogger().V(2).Info("Using kubeadm config:\n" + kubeadmConfig)
 
 	// copy the config to the node
 	if err := nodeutils.WriteFile(node, "/kind/kubeadm.conf", kubeadmConfig); err != nil {
