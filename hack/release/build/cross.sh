@@ -39,11 +39,11 @@ else
     echo "Cross build failed!" 1>&2
     exit 1
 fi < <(cat <<EOF | tr '\n' '\0'
-GOOS=windows GOARCH=amd64
-GOOS=darwin GOARCH=amd64
-GOOS=linux GOARCH=amd64
-GOOS=linux GOARCH=arm
-GOOS=linux GOARCH=arm64
-GOOS=linux GOARCH=ppc64le
+export GOOS=windows GOARCH=amd64
+export GOOS=darwin GOARCH=amd64
+export GOOS=linux GOARCH=amd64
+export GOOS=linux GOARCH=arm
+export GOOS=linux GOARCH=arm64
+export GOOS=linux GOARCH=ppc64le
 EOF
 )
