@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
 	"sigs.k8s.io/kind/pkg/internal/cluster/kubeadm"
 	"sigs.k8s.io/kind/pkg/internal/cluster/providers/provider/common"
-	"sigs.k8s.io/kind/pkg/internal/util/kustomize"
+	"sigs.k8s.io/kind/pkg/internal/util/patch"
 )
 
 // Action implements action for creating the kubeadm config
@@ -137,7 +137,7 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData) (path string
 	// apply patches
 	// TODO(bentheelder): this does not respect per node patches at all
 	// either make patches cluster wide, or change this
-	patched, err := kustomize.Build([]string{config}, patches, jsonPatches)
+	patched, err := patch.Patch(config, patches, jsonPatches)
 	if err != nil {
 		return "", err
 	}

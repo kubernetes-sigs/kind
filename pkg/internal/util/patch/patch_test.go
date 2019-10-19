@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kustomize
+package patch
 
 import (
 	"testing"
@@ -23,10 +23,10 @@ import (
 	"sigs.k8s.io/kind/pkg/internal/util/assert"
 )
 
-func TestBuild(t *testing.T) {
+func TestPatch(t *testing.T) {
 	type testCase struct {
 		Name            string
-		Resources       []string
+		ToPatch         string
 		Patches         []string
 		PatchesJSON6902 []config.PatchJSON6902
 		ExpectError     bool
@@ -35,26 +35,26 @@ func TestBuild(t *testing.T) {
 	cases := []testCase{
 		{
 			Name:         "kubeadm config no patches",
-			Resources:    []string{normalKubeadmConfig},
+			ToPatch:      normalKubeadmConfig,
 			ExpectError:  false,
 			ExpectOutput: normalKubeadmConfigKustomized,
 		},
 		{
 			Name:        "kubeadm config bogus patches",
-			Resources:   []string{normalKubeadmConfig},
+			ToPatch:     normalKubeadmConfig,
 			Patches:     []string{"b o g u s"},
 			ExpectError: true,
 		},
 		{
 			Name:         "kubeadm config one merge-patch",
-			Resources:    []string{normalKubeadmConfig},
+			ToPatch:      normalKubeadmConfig,
 			Patches:      []string{trivialPatch},
 			ExpectError:  false,
 			ExpectOutput: normalKubeadmConfigTrivialPatched,
 		},
 		{
 			Name:            "kubeadm config one merg-patch, one 6902 patch",
-			Resources:       []string{normalKubeadmConfig},
+			ToPatch:         normalKubeadmConfig,
 			Patches:         []string{trivialPatch},
 			PatchesJSON6902: []config.PatchJSON6902{trivialPatch6902},
 			ExpectError:     false,
@@ -65,7 +65,7 @@ func TestBuild(t *testing.T) {
 		tc := tc // capture test case
 		t.Run(tc.Name, func(t *testing.T) {
 			t.Parallel()
-			out, err := Build(tc.Resources, tc.Patches, tc.PatchesJSON6902)
+			out, err := Patch(tc.ToPatch, tc.Patches, tc.PatchesJSON6902)
 			assert.ExpectError(t, tc.ExpectError, err)
 			if err == nil {
 				assert.StringEqual(t, tc.ExpectOutput, out)
