@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kustomize
+package patch
 
 import (
 	"testing"
@@ -23,10 +23,10 @@ import (
 	"sigs.k8s.io/kind/pkg/internal/util/assert"
 )
 
-func TestBuild(t *testing.T) {
+func TestPatch(t *testing.T) {
 	type testCase struct {
 		Name            string
-		Resources       []string
+		ToPatch         string
 		Patches         []string
 		PatchesJSON6902 []config.PatchJSON6902
 		ExpectError     bool
@@ -35,22 +35,37 @@ func TestBuild(t *testing.T) {
 	cases := []testCase{
 		{
 			Name:         "kubeadm config no patches",
-			Resources:    []string{normalKubeadmConfig},
+			ToPatch:      normalKubeadmConfig,
 			ExpectError:  false,
 			ExpectOutput: normalKubeadmConfigKustomized,
 		},
 		{
 			Name:        "kubeadm config bogus patches",
-			Resources:   []string{normalKubeadmConfig},
+			ToPatch:     normalKubeadmConfig,
 			Patches:     []string{"b o g u s"},
 			ExpectError: true,
+		},
+		{
+			Name:         "kubeadm config one merge-patch",
+			ToPatch:      normalKubeadmConfig,
+			Patches:      []string{trivialPatch},
+			ExpectError:  false,
+			ExpectOutput: normalKubeadmConfigTrivialPatched,
+		},
+		{
+			Name:            "kubeadm config one merg-patch, one 6902 patch",
+			ToPatch:         normalKubeadmConfig,
+			Patches:         []string{trivialPatch},
+			PatchesJSON6902: []config.PatchJSON6902{trivialPatch6902},
+			ExpectError:     false,
+			ExpectOutput:    normalKubeadmConfigTrivialPatchedAnd6902Patched,
 		},
 	}
 	for _, tc := range cases {
 		tc := tc // capture test case
 		t.Run(tc.Name, func(t *testing.T) {
 			t.Parallel()
-			out, err := Build(tc.Resources, tc.Patches, tc.PatchesJSON6902)
+			out, err := Patch(tc.ToPatch, tc.Patches, tc.PatchesJSON6902)
 			assert.ExpectError(t, tc.ExpectError, err)
 			if err == nil {
 				assert.StringEqual(t, tc.ExpectOutput, out)
@@ -164,6 +179,168 @@ networking:
   serviceSubnet: 10.96.0.0/12
 scheduler:
   extraArgs: null
+---
+apiVersion: kubeadm.k8s.io/v1beta2
+bootstrapTokens:
+- token: abcdef.0123456789abcdef
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: 192.168.9.6
+  bindPort: 6443
+metadata:
+  name: config
+nodeRegistration:
+  criSocket: /run/containerd/containerd.sock
+  kubeletExtraArgs:
+    fail-swap-on: "false"
+    node-ip: 192.168.9.6
+---
+apiVersion: kubeadm.k8s.io/v1beta2
+controlPlane:
+  localAPIEndpoint:
+    advertiseAddress: 192.168.9.6
+    bindPort: 6443
+discovery:
+  bootstrapToken:
+    apiServerEndpoint: 192.168.9.3:6443
+    token: abcdef.0123456789abcdef
+    unsafeSkipCAVerification: true
+kind: JoinConfiguration
+metadata:
+  name: config
+nodeRegistration:
+  criSocket: /run/containerd/containerd.sock
+  kubeletExtraArgs:
+    fail-swap-on: "false"
+    node-ip: 192.168.9.6
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+evictionHard:
+  imagefs.available: 0%
+  nodefs.available: 0%
+  nodefs.inodesFree: 0%
+imageGCHighThresholdPercent: 100
+kind: KubeletConfiguration
+metadata:
+  name: config
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+metadata:
+  name: config
+`
+
+const trivialPatch = `
+kind: ClusterConfiguration
+apiVersion: kubeadm.k8s.io/v1beta2
+
+scheduler:
+  extraArgs:
+   some-extra-arg: the-arg
+`
+
+const normalKubeadmConfigTrivialPatched = `apiServer:
+  certSANs:
+  - localhost
+  - 127.0.0.1
+apiVersion: kubeadm.k8s.io/v1beta2
+clusterName: kind
+controlPlaneEndpoint: 192.168.9.3:6443
+controllerManager:
+  extraArgs:
+    enable-hostpath-provisioner: "true"
+kind: ClusterConfiguration
+kubernetesVersion: v1.15.3
+metadata:
+  name: config
+networking:
+  podSubnet: 10.244.0.0/16
+  serviceSubnet: 10.96.0.0/12
+scheduler:
+  extraArgs:
+    some-extra-arg: the-arg
+---
+apiVersion: kubeadm.k8s.io/v1beta2
+bootstrapTokens:
+- token: abcdef.0123456789abcdef
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: 192.168.9.6
+  bindPort: 6443
+metadata:
+  name: config
+nodeRegistration:
+  criSocket: /run/containerd/containerd.sock
+  kubeletExtraArgs:
+    fail-swap-on: "false"
+    node-ip: 192.168.9.6
+---
+apiVersion: kubeadm.k8s.io/v1beta2
+controlPlane:
+  localAPIEndpoint:
+    advertiseAddress: 192.168.9.6
+    bindPort: 6443
+discovery:
+  bootstrapToken:
+    apiServerEndpoint: 192.168.9.3:6443
+    token: abcdef.0123456789abcdef
+    unsafeSkipCAVerification: true
+kind: JoinConfiguration
+metadata:
+  name: config
+nodeRegistration:
+  criSocket: /run/containerd/containerd.sock
+  kubeletExtraArgs:
+    fail-swap-on: "false"
+    node-ip: 192.168.9.6
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+evictionHard:
+  imagefs.available: 0%
+  nodefs.available: 0%
+  nodefs.inodesFree: 0%
+imageGCHighThresholdPercent: 100
+kind: KubeletConfiguration
+metadata:
+  name: config
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+metadata:
+  name: config
+`
+
+var trivialPatch6902 = config.PatchJSON6902{
+	Group:   "kubeadm.k8s.io",
+	Version: "v1beta2",
+	Kind:    "ClusterConfiguration",
+	Patch: `
+- op: add
+  path: /apiServer/certSANs/-
+  value: my-hostname`,
+}
+
+const normalKubeadmConfigTrivialPatchedAnd6902Patched = `apiServer:
+  certSANs:
+  - localhost
+  - 127.0.0.1
+  - my-hostname
+apiVersion: kubeadm.k8s.io/v1beta2
+clusterName: kind
+controlPlaneEndpoint: 192.168.9.3:6443
+controllerManager:
+  extraArgs:
+    enable-hostpath-provisioner: "true"
+kind: ClusterConfiguration
+kubernetesVersion: v1.15.3
+metadata:
+  name: config
+networking:
+  podSubnet: 10.244.0.0/16
+  serviceSubnet: 10.96.0.0/12
+scheduler:
+  extraArgs:
+    some-extra-arg: the-arg
 ---
 apiVersion: kubeadm.k8s.io/v1beta2
 bootstrapTokens:

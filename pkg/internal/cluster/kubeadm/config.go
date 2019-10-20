@@ -442,7 +442,7 @@ metadata:
 // Config returns a kubeadm config generated from config data, in particular
 // the kubernetes version
 func Config(data ConfigData) (config string, err error) {
-	globals.GetLogger().V(2).Infof("Configuration Input data: %v", data)
+	globals.GetLogger().V(3).Infof("Configuration Input data: %v", data)
 	ver, err := version.ParseGeneric(data.KubernetesVersion)
 	if err != nil {
 		return "", err
@@ -472,6 +472,5 @@ func Config(data ConfigData) (config string, err error) {
 	if err != nil {
 		return "", errors.Wrap(err, "error executing config template")
 	}
-	globals.GetLogger().V(1).Infof("Configuration generated:\n %v", buff.String())
 	return buff.String(), nil
 }
