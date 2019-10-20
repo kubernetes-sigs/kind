@@ -27,7 +27,7 @@ SOURCE_DIR="${REPO_ROOT}/hack/tools" GOOS=linux hack/go_container.sh \
 # run unit tests with coverage enabled and junit output
 GOOS=linux hack/go_container.sh \
   /out/gotestsum --junitfile=/out/junit.xml -- \
-    -coverprofile=/out/unit.cov -covermode count -coverpkg sigs.k8s.io/... ./...
+    -coverprofile=/out/unit.cov -covermode count -coverpkg sigs.k8s.io/kind/... ./...
 
 # filter out generated files
 sed '/zz_generated/d' bin/unit.cov > bin/filtered.cov
