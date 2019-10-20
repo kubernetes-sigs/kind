@@ -22,7 +22,6 @@ import (
 )
 
 func TestMakeNodeNamer(t *testing.T) {
-
 	tests := []struct {
 		name        string
 		clusterName string
@@ -45,6 +44,7 @@ func TestMakeNodeNamer(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			var names []string
 			nodeNamer := MakeNodeNamer(tt.clusterName)
 			for _, nodeRole := range tt.nodes {

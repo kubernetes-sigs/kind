@@ -24,11 +24,10 @@ import (
 )
 
 func TestGetProxyEnvs(t *testing.T) {
-
 	tests := []struct {
 		name    string
 		cluster *config.Cluster
-		env     Getenver // contains the environment variables to be set for the test
+		env     map[string]string
 		want    map[string]string
 	}{
 		{
@@ -39,9 +38,6 @@ func TestGetProxyEnvs(t *testing.T) {
 				c.Networking.PodSubnet = "12.0.0.0/24"
 				return &c
 			}(),
-			env: &explicitEnv{
-				vals: map[string]string{},
-			},
 			want: map[string]string{},
 		},
 		{
@@ -52,10 +48,8 @@ func TestGetProxyEnvs(t *testing.T) {
 				c.Networking.PodSubnet = "12.0.0.0/24"
 				return &c
 			}(),
-			env: &explicitEnv{
-				vals: map[string]string{
-					"HTTP_PROXY": "5.5.5.5",
-				},
+			env: map[string]string{
+				"HTTP_PROXY": "5.5.5.5",
 			},
 			want: map[string]string{"HTTP_PROXY": "5.5.5.5", "http_proxy": "5.5.5.5", "NO_PROXY": ",10.0.0.0/24,12.0.0.0/24", "no_proxy": ",10.0.0.0/24,12.0.0.0/24"},
 		}, {
@@ -66,10 +60,8 @@ func TestGetProxyEnvs(t *testing.T) {
 				c.Networking.PodSubnet = "12.0.0.0/24"
 				return &c
 			}(),
-			env: &explicitEnv{
-				vals: map[string]string{
-					"HTTPS_PROXY": "5.5.5.5",
-				},
+			env: map[string]string{
+				"HTTPS_PROXY": "5.5.5.5",
 			},
 			want: map[string]string{"HTTPS_PROXY": "5.5.5.5", "https_proxy": "5.5.5.5", "NO_PROXY": ",10.0.0.0/24,12.0.0.0/24", "no_proxy": ",10.0.0.0/24,12.0.0.0/24"},
 		},
@@ -77,7 +69,13 @@ func TestGetProxyEnvs(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GetProxyEnvs(tt.cluster, tt.env); !reflect.DeepEqual(got, tt.want) {
+			t.Parallel()
+			if got := getProxyEnvs(tt.cluster, func(e string) string {
+				if tt.env == nil {
+					return ""
+				}
+				return tt.env[e]
+			}); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetProxyEnvs() = %v, want %v", got, tt.want)
 			}
 		})
