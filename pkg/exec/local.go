@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"io"
 	osexec "os/exec"
+	"sync"
 
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/globals"
@@ -71,27 +72,80 @@ func (cmd *LocalCmd) SetStderr(w io.Writer) Cmd {
 // Run runs the command
 // If the returned error is non-nil, it should be of type *RunError
 func (cmd *LocalCmd) Run() error {
-	var out bytes.Buffer
-	// TODO(BenTheElder): adding bytes.Buffer to both multiwriters might need
-	// to be wrapped with a mutex
-	if cmd.Stdout != nil {
-		cmd.Stdout = io.MultiWriter(cmd.Stdout, &out)
+	// Background:
+	// Go's stdlib will setup and use a shared fd when cmd.Stderr == cmd.Stdout
+	// In any other case, it will use different fds, which will involve
+	// two different io.Copy goroutines writing to cmd.Stderr and cmd.Stdout
+	//
+	// Given this, we must synchronize capturing the output to a buffer
+	// IFF ! interfaceEqual(cmd.Sterr, cmd.Stdout)
+	var combinedOutput bytes.Buffer
+	var combinedOutputWriter io.Writer = &combinedOutput
+	if cmd.Stdout == nil && cmd.Stderr == nil {
+		// Case 1: If stdout and stderr are nil, we can just use the buffer
+		// The buffer will be == and Go will use one fd / goroutine
+		cmd.Stdout = combinedOutputWriter
+		cmd.Stderr = combinedOutputWriter
+	} else if interfaceEqual(cmd.Stdout, cmd.Stderr) {
+		// Case 2: If cmd.Stdout == cmd.Stderr go will still share the fd,
+		// but we need to wrap with a MultiWriter to respect the other writer
+		// and our buffer.
+		// The MultiWriter will be == and Go will use one fd / goroutine
+		cmd.Stdout = io.MultiWriter(cmd.Stdout, combinedOutputWriter)
+		cmd.Stderr = cmd.Stdout
 	} else {
-		cmd.Stdout = &out
-	}
-	if cmd.Stderr != nil {
-		cmd.Stderr = io.MultiWriter(cmd.Stderr, &out)
-	} else {
-		cmd.Stderr = &out
+		// Case 3: If cmd.Stdout != cmd.Stderr, we need to synchronize the
+		// combined output writer.
+		// Go will use different fds / write routines for stdout and stderr
+		combinedOutputWriter = &mutexWriter{
+			writer: &combinedOutput,
+		}
+		// wrap writers if non-nil
+		if cmd.Stdout != nil {
+			cmd.Stdout = io.MultiWriter(cmd.Stdout, combinedOutputWriter)
+		} else {
+			cmd.Stdout = combinedOutputWriter
+		}
+		if cmd.Stderr != nil {
+			cmd.Stderr = io.MultiWriter(cmd.Stderr, combinedOutputWriter)
+		} else {
+			cmd.Stderr = combinedOutputWriter
+		}
 	}
 	// TODO: should be in the caller or logger should be injected somehow ...
 	globals.GetLogger().V(3).Infof("Running: \"%s\"", PrettyCommand(cmd.Args[0], cmd.Args[1:]...))
 	if err := cmd.Cmd.Run(); err != nil {
 		return errors.WithStack(&RunError{
 			Command: cmd.Args,
-			Output:  out.Bytes(),
+			Output:  combinedOutput.Bytes(),
 			Inner:   err,
 		})
 	}
 	return nil
+}
+
+// interfaceEqual protects against panics from doing equality tests on
+// two interfaces with non-comparable underlying types.
+// This trivial is borrowed from the go stdlib in os/exec
+// Note that the recover will only happen if a is not comparable to b,
+// in which case we'll return false
+// We've lightly modified this to pass errcheck (explicitly ignoring recover)
+func interfaceEqual(a, b interface{}) bool {
+	defer func() {
+		_ = recover()
+	}()
+	return a == b
+}
+
+// mutexWriter is a simple synchronized wrapper around an io.Writer
+type mutexWriter struct {
+	writer io.Writer
+	mu     sync.Mutex
+}
+
+func (m *mutexWriter) Write(b []byte) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	n, err := m.writer.Write(b)
+	return n, err
 }
