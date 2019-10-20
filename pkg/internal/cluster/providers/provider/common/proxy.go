@@ -35,11 +35,15 @@ const (
 // GetProxyEnvs returns a map of proxy environment variables to their values
 // If proxy settings are set, NO_PROXY is modified to include the cluster subnets
 func GetProxyEnvs(cfg *config.Cluster) map[string]string {
+	return getProxyEnvs(cfg, os.Getenv)
+}
+
+func getProxyEnvs(cfg *config.Cluster, getEnv func(string) string) map[string]string {
 	envs := make(map[string]string)
 	for _, name := range []string{HTTPProxy, HTTPSProxy, NOProxy} {
-		val := os.Getenv(name)
+		val := getEnv(name)
 		if val == "" {
-			val = os.Getenv(strings.ToLower(name))
+			val = getEnv(strings.ToLower(name))
 		}
 		if val != "" {
 			envs[name] = val
@@ -48,7 +52,11 @@ func GetProxyEnvs(cfg *config.Cluster) map[string]string {
 	}
 	// Specifically add the cluster subnets to NO_PROXY if we are using a proxy
 	if len(envs) > 0 {
-		noProxy := strings.Join([]string{envs[NOProxy], cfg.Networking.ServiceSubnet, cfg.Networking.PodSubnet}, ",")
+		noProxy := envs[NOProxy]
+		if noProxy != "" {
+			noProxy += ","
+		}
+		noProxy += cfg.Networking.ServiceSubnet + "," + cfg.Networking.PodSubnet
 		envs[NOProxy] = noProxy
 		envs[strings.ToLower(NOProxy)] = noProxy
 	}
