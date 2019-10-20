@@ -40,6 +40,12 @@ func TestMakeNodeNamer(t *testing.T) {
 			nodes:       []string{"control-plane", "worker", "worker"},
 			want:        []string{"kind-test-control-plane", "kind-test-worker", "kind-test-worker2"},
 		},
+		{
+			name:        "Cluster with many nodes",
+			clusterName: "ab1",
+			nodes:       []string{"control-plane", "control-plane", "control-plane", "external-load-balancer", "worker", "worker", "worker"},
+			want:        []string{"ab1-control-plane", "ab1-control-plane2", "ab1-control-plane3", "ab1-external-load-balancer", "ab1-worker", "ab1-worker2", "ab1-worker3"},
+		},
 	}
 	for _, tt := range tests {
 		tt := tt

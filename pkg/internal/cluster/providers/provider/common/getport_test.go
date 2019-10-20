@@ -31,6 +31,10 @@ func TestPortOrGetFreePort(t *testing.T) {
 			want:    80,
 			wantErr: false,
 		},
+		{
+			name:    "No port",
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -40,7 +44,7 @@ func TestPortOrGetFreePort(t *testing.T) {
 				t.Errorf("PortOrGetFreePort() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
+			if tt.want != 0 && got != tt.want {
 				t.Errorf("PortOrGetFreePort() = %v, want %v", got, tt.want)
 			}
 		})
