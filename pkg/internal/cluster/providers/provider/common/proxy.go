@@ -52,7 +52,11 @@ func getProxyEnvs(cfg *config.Cluster, getEnv func(string) string) map[string]st
 	}
 	// Specifically add the cluster subnets to NO_PROXY if we are using a proxy
 	if len(envs) > 0 {
-		noProxy := strings.Join([]string{envs[NOProxy], cfg.Networking.ServiceSubnet, cfg.Networking.PodSubnet}, ",")
+		noProxy := envs[NOProxy]
+		if noProxy != "" {
+			noProxy += ","
+		}
+		noProxy += cfg.Networking.ServiceSubnet + "," + cfg.Networking.PodSubnet
 		envs[NOProxy] = noProxy
 		envs[strings.ToLower(NOProxy)] = noProxy
 	}
