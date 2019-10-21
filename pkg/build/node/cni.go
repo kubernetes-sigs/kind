@@ -51,6 +51,8 @@ spec:
     - hostPath
   allowedHostPaths:
     - pathPrefix: "/etc/cni/net.d"
+    - pathPrefix: "/run"
+    - pathPrefix: "/lib"
   readOnlyRootFilesystem: false
   # Users and groups
   runAsUser:
@@ -159,6 +161,12 @@ spec:
         volumeMounts:
         - name: cni-cfg
           mountPath: /etc/cni/net.d
+        - name: xtables-lock
+          mountPath: /run/xtables.lock
+          readOnly: false
+        - name: lib-modules
+          mountPath: /lib/modules
+          readOnly: true
         resources:
           requests:
             cpu: "100m"
@@ -171,8 +179,15 @@ spec:
           capabilities:
             add: ["NET_RAW", "NET_ADMIN"]
       volumes:
-        - name: cni-cfg
-          hostPath:
-            path: /etc/cni/net.d
+      - name: cni-cfg
+        hostPath:
+          path: /etc/cni/net.d
+      - name: xtables-lock
+        hostPath:
+          path: /run/xtables.lock
+          type: FileOrCreate
+      - name: lib-modules
+        hostPath:
+          path: /lib/modules
 ---
 `
