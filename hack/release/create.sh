@@ -16,7 +16,7 @@
 # creates a release and following pre-release commit for `kind`
 # builds binaries between the commits
 # Use like: create.sh <release-version> <next-prerelease-version>
-# EG: create.sh v0.3.0 v0.4.0-alpha
+# EG: create.sh v0.3.0 v0.4.0
 set -o errexit -o nounset -o pipefail
 
 # cd to the repo root
@@ -41,34 +41,35 @@ fi
 
 VERSION_FILE="./cmd/kind/version/version.go"
 
-# update version in go code to $1
+# update core version in go code to $1 and pre-release version to $2
 set_version() {
-    ${SED} -i "s/Version = .*/Version = \"${1}\"/" "${VERSION_FILE}"
-    echo "Updated ${VERSION_FILE} for ${1}"
+  ${SED} -i "s/VersionCore = .*/VersionCore = \"${1}\"/" "${VERSION_FILE}"
+  ${SED} -i "s/VersionPreRelease = .*/VersionPreRelease = \"${2}\"/" "${VERSION_FILE}"
+  echo "Updated ${VERSION_FILE} for ${1}"
 }
 
 # make a commit denoting the version ($1)
 make_commit() {
-    git add "${VERSION_FILE}"
-    git commit -m "version ${1}"
-    echo "Created commit for ${1}"
+  git add "${VERSION_FILE}"
+  git commit -m "version ${1}"
+  echo "Created commit for ${1}"
 }
 
 # add a git tag with $1
 add_tag() {
-    git tag "${1}"
-    echo "Tagged ${1}"
+  git tag "${1}"
+  echo "Tagged ${1}"
 }
 
 # create the first version, tag and build it
-set_version "${1}"
+set_version "${1}" ""
 make_commit "${1}"
 add_tag "${1}"
 echo "Building ..."
 make clean && ./hack/release/build/cross.sh
 
 # update to the second version
-set_version "${2}"
+set_version "${2}" "alpha"
 make_commit "${2}"
 
 # print follow-up instructions

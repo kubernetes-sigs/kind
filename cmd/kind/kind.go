@@ -56,7 +56,7 @@ func NewCommand() *cobra.Command {
 		},
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		Version:       version.Version,
+		Version:       version.Version(),
 	}
 	cmd.PersistentFlags().StringVar(
 		&flags.LogLevel,

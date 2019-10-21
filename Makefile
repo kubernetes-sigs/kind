@@ -28,6 +28,9 @@ INSTALL?=install
 # make install will place binaries here
 # the default path attempts to mimic go install
 INSTALL_DIR?=$(shell hack/build/goinstalldir.sh)
+# record the source commit in the binary
+COMMIT?=$(shell git rev-parse HEAD 2>/dev/null)
+LD_FLAGS:=-X sigs.k8s.io/kind/cmd/kind/version.GitCommit=$(COMMIT)
 # the output binary name, overridden when cross compiling
 KIND_BINARY_NAME?=kind
 
@@ -36,7 +39,7 @@ all: build
 
 # builds kind in a container, outputs to $(OUT_DIR)
 kind:
-	hack/go_container.sh go build -v -o /out/$(KIND_BINARY_NAME)
+	hack/go_container.sh go build -v -o /out/$(KIND_BINARY_NAME) -ldflags "$(LD_FLAGS)"
 
 # alias for building kind
 build: kind
