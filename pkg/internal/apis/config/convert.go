@@ -24,6 +24,7 @@ func Convertv1alpha3(in *v1alpha3.Cluster) *Cluster {
 	in = in.DeepCopy() // deep copy first to avoid touching the original
 	out := &Cluster{
 		Nodes:                        make([]Node, len(in.Nodes)),
+		Network:                      in.Network,
 		KubeadmConfigPatches:         in.KubeadmConfigPatches,
 		KubeadmConfigPatchesJSON6902: make([]PatchJSON6902, len(in.KubeadmConfigPatchesJSON6902)),
 	}

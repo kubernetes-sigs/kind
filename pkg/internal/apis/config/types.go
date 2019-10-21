@@ -30,6 +30,9 @@ type Cluster struct {
 
 	/* Advanced fields */
 
+	// Network contains docker network to use in all containers
+	Network string
+
 	// Networking contains cluster wide network settings
 	Networking Networking
 

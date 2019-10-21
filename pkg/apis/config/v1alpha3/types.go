@@ -32,6 +32,9 @@ type Cluster struct {
 
 	/* Advanced fields */
 
+	// Network contains docker network to use in all containers
+	Network string `yaml:"network,omitempty" json:"network,omitempty"`
+
 	// Networking contains cluster wide network settings
 	Networking Networking `yaml:"networking,omitempty" json:"networking,omitempty"`
 

@@ -116,11 +116,17 @@ func clusterHasImplicitLoadBalancer(cfg *config.Cluster) bool {
 // commonArgs computes static arguments that apply to all containers
 func commonArgs(cluster string, cfg *config.Cluster) ([]string, error) {
 	// standard arguments all nodes containers need, computed once
+	network := cfg.Network
+	if network == "" {
+		network = "bridge"
+	}
+
 	args := []string{
 		"--detach", // run the container detached
 		"--tty",    // allocate a tty for entrypoint logs
 		// label the node with the cluster ID
 		"--label", fmt.Sprintf("%s=%s", constants.ClusterLabelKey, cluster),
+		"--network", network,
 	}
 
 	// enable IPv6 if necessary
