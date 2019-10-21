@@ -164,6 +164,9 @@ main() {
   export ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
   mkdir -p "${ARTIFACTS}"
 
+  # debug kind version
+  kind version
+
   # default to bazel
   # TODO(bentheelder): remove this line once we've updated CI to explicitly choose
   BUILD_TYPE="${BUILD_TYPE:-bazel}"
