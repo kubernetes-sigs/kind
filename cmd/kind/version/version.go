@@ -23,19 +23,41 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Version is the kind CLI version
-const Version = "v0.6.0-alpha"
+// Version returns the kind CLI Semantic Version
+func Version() string {
+	v := VersionCore
+	// add pre-release version info if we have it
+	if VersionPreRelease != "" {
+		v += "-" + VersionPreRelease
+		// if commit was set, add the + <build>
+		// we only do this for pre-release versions
+		if GitCommit != "" {
+			v += "+" + GitCommit
+		}
+	}
+	return v
+}
+
+// VersionCore is the core portion of the kind CLI version per Semantic Versioning 2.0.0
+const VersionCore = "v0.6.0"
+
+// VersionPreRelease is the pre-release portion of the kind CLI version per
+// Semantic Versioning 2.0.0
+const VersionPreRelease = "alpha"
+
+// GitCommit is the commit used to build the kind binary, if available.
+// It is injected at build time.
+var GitCommit = ""
 
 // NewCommand returns a new cobra.Command for version
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Args: cobra.NoArgs,
-		// TODO(bentheelder): more detailed usage
+		Args:  cobra.NoArgs,
 		Use:   "version",
 		Short: "prints the kind CLI version",
 		Long:  "prints the kind CLI version",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println(Version)
+			fmt.Println(Version())
 			return nil
 		},
 	}
