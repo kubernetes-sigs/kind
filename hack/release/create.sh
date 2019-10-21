@@ -16,7 +16,7 @@
 # creates a release and following pre-release commit for `kind`
 # builds binaries between the commits
 # Use like: create.sh <release-version> <next-prerelease-version>
-# EG: create.sh v0.3.0 v0.4.0
+# EG: create.sh 0.3.0 0.4.0
 set -o errexit -o nounset -o pipefail
 
 # cd to the repo root
@@ -63,14 +63,14 @@ add_tag() {
 
 # create the first version, tag and build it
 set_version "${1}" ""
-make_commit "${1}"
-add_tag "${1}"
+make_commit "v${1}"
+add_tag "v${1}"
 echo "Building ..."
 make clean && ./hack/release/build/cross.sh
 
 # update to the second version
 set_version "${2}" "alpha"
-make_commit "${2}"
+make_commit "v${2}-alpha"
 
 # print follow-up instructions
 echo ""

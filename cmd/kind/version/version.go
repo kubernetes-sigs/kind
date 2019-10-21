@@ -19,8 +19,11 @@ package version
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/spf13/cobra"
+
+	"sigs.k8s.io/kind/pkg/globals"
 )
 
 // Version returns the kind CLI Semantic Version
@@ -38,8 +41,14 @@ func Version() string {
 	return v
 }
 
+// DisplayVersion is Version() display formatted, this is what the version
+// subcommand prints
+func DisplayVersion() string {
+	return "kind v" + Version() + " " + runtime.Version() + " " + runtime.GOOS + "/" + runtime.GOARCH
+}
+
 // VersionCore is the core portion of the kind CLI version per Semantic Versioning 2.0.0
-const VersionCore = "v0.6.0"
+const VersionCore = "0.6.0"
 
 // VersionPreRelease is the pre-release portion of the kind CLI version per
 // Semantic Versioning 2.0.0
@@ -57,7 +66,13 @@ func NewCommand() *cobra.Command {
 		Short: "prints the kind CLI version",
 		Long:  "prints the kind CLI version",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println(Version())
+			// if not -q / --quiet, show lots of info
+			if globals.GetLogger().V(0).Enabled() {
+				fmt.Println(DisplayVersion())
+
+			} else { // otherwise only show semver
+				fmt.Println(Version())
+			}
 			return nil
 		},
 	}
