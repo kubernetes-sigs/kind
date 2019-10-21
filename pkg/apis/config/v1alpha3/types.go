@@ -136,7 +136,7 @@ type PatchJSON6902 struct {
 	// NOTE: technically name is required now, but we default it elsewhere
 	// Third party users of this type / library would need to set it.
 	Name      string `yaml:"name,omitempty" json:"name,omitempty"`
-	Namespace string `yaml:"name,omitempty" json:"namespace,omitempty"`
+	Namespace string `yaml:"namespace,omitempty" json:"namespace,omitempty"`
 	// Patch should contain the contents of the json patch as a string
 	Patch string `yaml:"patch" json:"patch"`
 }
