@@ -66,6 +66,48 @@ Once your Windows Insider machine is ready, you need to do a few more steps to s
 
 Now, move on to the [Quick Start](/docs/user/quick-start) to set up your cluster with kind.
 
+## Troubleshooting
+
+### Failures with `kind cluster create`
+
+#### Cannot find cgroup mount destination: unknown
+
+If you close the WSL window and reopen it, the WSL cgroups can get into a bad state like this:
+
+```bash
+$ kind create cluster
+Creating cluster "kind" ...
+ ✓ Ensuring node image (kindest/node:v1.15.3) 🖼
+ERRO[11:23:00] 4e74382817ac26772d90c3d78fc79b0102d5a6466640afb87482acf689394bac
+ERRO[11:23:00] docker: Error response from daemon: cgroups: cannot find cgroup mount destination: unknown.
+ ✗ Preparing nodes 📦
+ERRO[11:23:00] docker run error: exit status 125
+Error: failed to create cluster: docker run error: exit status 125
+```
+
+The workaround for this it to:
+
+1. Close all WSL windows
+1. In an admin PowerShell window run `wsl.exe --shutdown`
+1. Open a new WSL window, and run `sudo service docker start`
+
+Now kind will be able to create clusters again normally.
+
+This bug is tracked in [WSL#4189](https://github.com/microsoft/WSL/issues/4189).
+
+#### Failed to list nodes: exit status 1
+
+`kind create cluster` will fail right after starting WSL since systemd, and therefore the dockerd unit, is not automatically started.
+
+```bash
+$ kind create cluster
+Error: could not list clusters: failed to list nodes: exit status 1
+```
+
+To fix this, run `sudo service docker start`, then try again.
+
+This bug is tracked in [WSL#994](https://github.com/microsoft/WSL/issues/994).
+
 ## Helpful Tips for WSL2
 
 - If you want to shutdown the WSL2 instance to save memory or "reboot", open an admin PowerShell prompt and run `wsl <distro> --shutdown`. Closing a WSL2 window doesn't shut it down automatically.
