@@ -1,8 +1,5 @@
 <p align="center"><img alt="kind" src="./logo/logo.png" width="300x" /></p>
 <p align="center"><a href="https://prow.k8s.io/?job=ci-kind-build">
-<!-- prow build badge, godoc, and go report card-->
-<img alt="Build Status" src="https://prow.k8s.io/badge.svg?jobs=ci-kind-build">
-</a> <a href="https://godoc.org/sigs.k8s.io/kind"><img src="https://godoc.org/sigs.k8s.io/kind?status.svg"></a> <a href="https://goreportcard.com/report/sigs.k8s.io/kind"><img alt="Go Report Card" src="https://goreportcard.com/badge/sigs.k8s.io/kind" /></a></p>
 
 # Please see [Our Documentation](https://kind.sigs.k8s.io/docs/user/quick-start/) for more in-depth installation etc.
 
@@ -89,8 +86,7 @@ See also: our own [contributor guide] and the Kubernetes [community page].
 
 - kind supports multi-node (including HA) clusters
 - kind supports building Kubernetes release builds from source
-  - support for make / bash / docker or bazel, in addition to pre-published builds.
-- kind is written in go, can be used as a library, has stable releases
+  - support for make / bash / docker or bazel, in addition to pre-published builds
 - kind supports Windows in addition to MacOS and Linux
 - kind is a [CNCF certified conformant Kubernetes installer](https://landscape.cncf.io/selected=kind)
 
