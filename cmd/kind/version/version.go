@@ -35,7 +35,8 @@ func Version() string {
 		// if commit was set, add the + <build>
 		// we only do this for pre-release versions
 		if GitCommit != "" {
-			v += "+" + GitCommit
+			// NOTE: use 14 character short hash, like Kubernetes
+			v += "+" + truncate(GitCommit, 14)
 		}
 	}
 	return v
@@ -77,4 +78,11 @@ func NewCommand() *cobra.Command {
 		},
 	}
 	return cmd
+}
+
+func truncate(s string, maxLen int) string {
+	if len(s) < maxLen {
+		return s
+	}
+	return s[:maxLen]
 }
