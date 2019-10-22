@@ -80,7 +80,6 @@ func Collect(nodes []nodes.Node, dir string) error {
 			// http://man7.org/linux/man-pages/man1/tar.1.html#RETURN_VALUE
 			`tar --hard-dereference -C /var/log -chf - . || (r=$?; [ $r -eq 1 ] || exit $r)`,
 		)
-
 		if err := exec.RunWithStdoutReader(cmd, func(outReader io.Reader) error {
 			if err := untar(outReader, filepath.Join(dir, name)); err != nil {
 				return errors.Wrapf(err, "Untarring %q: %v", name, err)
@@ -130,6 +129,11 @@ func Collect(nodes []nodes.Node, dir string) error {
 // untar reads the tar file from r and writes it into dir.
 func untar(r io.Reader, dir string) (err error) {
 	tr := tar.NewReader(r)
+	defer func() {
+		if err != nil {
+			globals.GetLogger().Errorf("untarring encountered: %v", err)
+		}
+	}()
 	for {
 		f, err := tr.Next()
 
