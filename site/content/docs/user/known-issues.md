@@ -18,6 +18,7 @@ It may additionally be helpful to:
 
 ## Contents
 * [Failures involving mismatched kubectl versions](#failures-involving-mismatched-kubectl-version)
+* [Older Docker Installations](#older-docker-installations)
 * [Docker on Btrfs](#docker-on-btrfs)
 * [Docker installed with Snap](#docker-installed-with-snap)
 * [Failing to apply overlay network](#failing-to-apply-overlay-network)
@@ -59,6 +60,19 @@ brew link --overwrite kubernetes-cli
 ```
 
 [for-mac#3663]: https://github.com/docker/for-mac/issues/3663
+
+## Older Docker Installations
+
+`kind` is known to have issues with Kubernetes 1.13 or lower when using Docker versions:
+
+- `1.13.1` (released January 2017)
+- `17.05.0-ce` (released May 2017)
+
+And possibly other old versions of Docker.
+
+With these versions you must use Kubernetes >= 1.14, or more ideally upgrade Docker instead.
+
+kind is tested with a recent stable docker-ce release.
 
 ## Docker on Btrfs
 
