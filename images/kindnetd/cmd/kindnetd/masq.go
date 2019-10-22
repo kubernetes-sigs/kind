@@ -21,10 +21,12 @@ import (
 	"time"
 
 	"github.com/coreos/go-iptables/iptables"
+
+	"k8s.io/client-go/kubernetes"
 )
 
 // NewIPMasqAgent returns a new IPMasqAgent
-func NewIPMasqAgent(ipv6 bool, noMasqueradeCIDRs []string) (*IPMasqAgent, error) {
+func NewIPMasqAgent(ipv6 bool, clientset *kubernetes.Clientset) (*IPMasqAgent, error) {
 	protocol := iptables.ProtocolIPv4
 	if ipv6 {
 		protocol = iptables.ProtocolIPv6
@@ -36,9 +38,9 @@ func NewIPMasqAgent(ipv6 bool, noMasqueradeCIDRs []string) (*IPMasqAgent, error)
 
 	// TODO: validate cidrs
 	return &IPMasqAgent{
-		iptables:          ipt,
-		masqChain:         masqChainName,
-		noMasqueradeCIDRs: noMasqueradeCIDRs,
+		iptables:  ipt,
+		masqChain: masqChainName,
+		clientset: clientset,
 	}, nil
 }
 
@@ -46,9 +48,9 @@ func NewIPMasqAgent(ipv6 bool, noMasqueradeCIDRs []string) (*IPMasqAgent, error)
 // but collapsed into kindnetd and made ipv6 aware in an opinionated and simplified
 // fashion using "github.com/coreos/go-iptables"
 type IPMasqAgent struct {
-	iptables          *iptables.IPTables
-	masqChain         string
-	noMasqueradeCIDRs []string
+	iptables  *iptables.IPTables
+	masqChain string
+	clientset *kubernetes.Clientset
 }
 
 // SyncRulesForever syncs ip masquerade rules forever
@@ -58,7 +60,9 @@ type IPMasqAgent struct {
 func (ma *IPMasqAgent) SyncRulesForever(interval time.Duration) error {
 	errs := 0
 	for {
-		if err := ma.SyncRules(); err != nil {
+		// get subnets each time (so we eventually reconcile)
+		noMasqueradeCIDRs := getNoMasqueradeSubnets(ma.clientset)
+		if err := ma.SyncRules(noMasqueradeCIDRs); err != nil {
 			errs++
 			if errs > 3 {
 				return fmt.Errorf("Can't synchronize rules after 3 attempts: %v", err)
@@ -74,7 +78,9 @@ func (ma *IPMasqAgent) SyncRulesForever(interval time.Duration) error {
 const masqChainName = "KIND-MASQ-AGENT"
 
 // SyncRules syncs ip masquerade rules
-func (ma *IPMasqAgent) SyncRules() error {
+func (ma *IPMasqAgent) SyncRules(noMasqueradeCIDRs []string) error {
+	fmt.Printf("Syncing Masquerade rules with noMasqueradeCIDRs: %v\n", noMasqueradeCIDRs)
+
 	// make sure our custom chain for non-masquerade exists
 	exists := false
 	chains, err := ma.iptables.ListChains("nat")
@@ -94,7 +100,7 @@ func (ma *IPMasqAgent) SyncRules() error {
 	}
 
 	// Packets to this network should not be masquerade, pods should be able to talk to other pods
-	for _, cidr := range ma.noMasqueradeCIDRs {
+	for _, cidr := range noMasqueradeCIDRs {
 		if err := ma.iptables.AppendUnique("nat", ma.masqChain, "-d", cidr, "-j", "RETURN", "-m", "comment", "--comment", "kind-masq-agent: local traffic is not subject to MASQUERADE"); err != nil {
 			return err
 		}

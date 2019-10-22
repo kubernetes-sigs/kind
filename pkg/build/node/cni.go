@@ -27,11 +27,10 @@ const (
 The default CNI manifest and images are our own tiny kindnet
 */
 
-var defaultCNIImages = []string{"kindest/kindnetd:0.5.1"}
+var defaultCNIImages = []string{"kindest/kindnetd:0.6.0"}
 
 const defaultCNIManifest = `
 # kindnetd networking manifest
-# would you kindly template this file
 ---
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
@@ -99,6 +98,12 @@ rules:
     verbs:
       - list
       - watch
+  - apiGroups:
+      - ""
+    resources:
+     - configmaps
+    verbs:
+     - get
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -146,7 +151,7 @@ spec:
       serviceAccountName: kindnet
       containers:
       - name: kindnet-cni
-        image: kindest/kindnetd:0.5.1
+        image: kindest/kindnetd:0.6.0
         env:
         - name: HOST_IP
           valueFrom:
@@ -156,8 +161,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        - name: POD_SUBNET
-          value: {{ .PodSubnet }}
         volumeMounts:
         - name: cni-cfg
           mountPath: /etc/cni/net.d

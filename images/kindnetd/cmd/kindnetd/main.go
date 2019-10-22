@@ -69,7 +69,7 @@ func main() {
 
 	// enforce ip masquerade rules
 	// TODO: dual stack...?
-	masqAgent, err := NewIPMasqAgent(net.IsIPv6String(hostIP), []string{os.Getenv("POD_SUBNET")})
+	masqAgent, err := NewIPMasqAgent(net.IsIPv6String(hostIP), clientset)
 	if err != nil {
 		panic(err.Error())
 	}
