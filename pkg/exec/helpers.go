@@ -26,6 +26,7 @@ import (
 	"github.com/alessio/shellescape"
 
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/globals"
 )
 
 // PrettyCommand takes arguments identical to Cmder.Command,
@@ -105,7 +106,11 @@ func RunWithStdoutReader(cmd Cmd, readerFunc func(io.Reader) error) error {
 
 	errChan := make(chan error, 1)
 	go func() {
-		errChan <- readerFunc(pr)
+		rerr := readerFunc(pr)
+		if rerr != nil {
+			globals.GetLogger().V(1).Infof("readerFunc encountered: %v", rerr)
+		}
+		errChan <- rerr
 		pr.Close()
 	}()
 
