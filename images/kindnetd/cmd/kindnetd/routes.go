@@ -17,11 +17,11 @@ limitations under the License.
 package main
 
 import (
-	"fmt"
 	"net"
 
 	"github.com/vishvananda/netlink"
 	"github.com/vishvananda/netlink/nl"
+	"k8s.io/klog"
 )
 
 func syncRoute(nodeIP, podCIDR string) error {
@@ -44,7 +44,7 @@ func syncRoute(nodeIP, podCIDR string) error {
 		if err := netlink.RouteAdd(&routeToDst); err != nil {
 			return err
 		}
-		fmt.Printf("Adding route %v \n", routeToDst)
+		klog.Infof("Adding route %v \n", routeToDst)
 	}
 
 	return nil

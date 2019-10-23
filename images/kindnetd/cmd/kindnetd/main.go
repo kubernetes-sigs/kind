@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog"
 	"k8s.io/utils/net"
 )
 
@@ -54,7 +55,7 @@ func main() {
 	// obtain the host and pod ip addresses
 	// if both ips are different we are not using the host network
 	hostIP, podIP := os.Getenv("HOST_IP"), os.Getenv("POD_IP")
-	fmt.Printf("hostIP = %s\npodIP = %s\n", hostIP, podIP)
+	klog.Infof("hostIP = %s\npodIP = %s\n", hostIP, podIP)
 	if hostIP != podIP {
 		panic(fmt.Sprintf(
 			"hostIP(= %q) != podIP(= %q) but must be running with host network: ",
@@ -109,21 +110,21 @@ func makeNodesReconciler(cniConfig *CNIConfigWriter, hostIP string) func(*corev1
 		// first get this node's IP
 		nodeIP := internalIP(node)
 		if nodeIP == "" {
-			fmt.Printf("Node %v has no Internal IP, ignoring\n", node.Name)
+			klog.Infof("Node %v has no Internal IP, ignoring\n", node.Name)
 			return nil
 		}
 
 		// don't do anything unless there is a PodCIDR
 		podCIDR := node.Spec.PodCIDR
 		if podCIDR == "" {
-			fmt.Printf("Node %v has no CIDR, ignoring\n", node.Name)
+			klog.Infof("Node %v has no CIDR, ignoring\n", node.Name)
 			return nil
 		}
 
 		// This is our node. We don't need to add routes, but we might need to
 		// update the cni config.
 		if nodeIP == hostIP {
-			fmt.Printf("handling current node\n")
+			klog.Infof("handling current node\n")
 			// compute the current cni config inputs
 			if err := cniConfig.Write(
 				ComputeCNIConfigInputs(node),
@@ -134,8 +135,8 @@ func makeNodesReconciler(cniConfig *CNIConfigWriter, hostIP string) func(*corev1
 			return nil
 		}
 
-		fmt.Printf("Handling node with IP: %s\n", nodeIP)
-		fmt.Printf("Node %v has CIDR %s \n", node.Name, podCIDR)
+		klog.Infof("Handling node with IP: %s\n", nodeIP)
+		klog.Infof("Node %v has CIDR %s \n", node.Name, podCIDR)
 		if err := syncRoute(nodeIP, podCIDR); err != nil {
 			return err
 		}
