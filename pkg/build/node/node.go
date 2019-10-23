@@ -44,7 +44,7 @@ import (
 const DefaultImage = "kindest/node:latest"
 
 // DefaultBaseImage is the default base image used
-const DefaultBaseImage = "kindest/base:v20191009-d5ae74fc@sha256:0248d03663ae29d47b2bb64fee816a0602fd461f7b93879d5451021cad529593"
+const DefaultBaseImage = "kindest/base:v20191023-809ba3f@sha256:ae095293629e6d433831f8631048256f87696e3ca56de701ce490014cde36902"
 
 // DefaultMode is the default kubernetes build mode for the built image
 // see pkg/build/kube.Bits

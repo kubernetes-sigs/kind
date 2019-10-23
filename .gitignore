@@ -1,10 +1,10 @@
 # build and test outputs
-bin/
-_output/
-_artifacts/
+/bin/
+/_output/
+/_artifacts/
 
 # used for the code generators only
-vendor/
+/vendor/
 
 # macOS
 .DS_Store
