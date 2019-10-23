@@ -88,14 +88,31 @@ func main() {
 	for {
 		// Gets the Nodes information from the API
 		// TODO: use a proper controller instead
-		nodes, err := clientset.CoreV1().Nodes().List(metav1.ListOptions{})
+		var nodes *corev1.NodeList
+		var err error
+		for i := 0; i < 5; i++ {
+			nodes, err = clientset.CoreV1().Nodes().List(metav1.ListOptions{})
+			if err == nil {
+				break
+			}
+			klog.Infof("Failed to get nodes, retrying after error: %v", err)
+			time.Sleep(time.Second * time.Duration(i))
+		}
 		if err != nil {
-			panic(err.Error())
+			panic("Reached maximum retries obtaining node list: " + err.Error())
 		}
 
-		// reconcile the nodes
-		if err := reconcileNodes(nodes); err != nil {
-			panic(err.Error())
+		// reconcile the nodes with retries
+		for i := 0; i < 5; i++ {
+			err = reconcileNodes(nodes)
+			if err == nil {
+				break
+			}
+			klog.Infof("Failed to reconcile routes, retrying after error: %v", err)
+			time.Sleep(time.Second * time.Duration(i))
+		}
+		if err != nil {
+			panic("Maximum retries reconciling node routes: " + err.Error())
 		}
 
 		// rate limit
