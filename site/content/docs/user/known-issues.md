@@ -27,7 +27,7 @@ It may additionally be helpful to:
 * [Docker permission denied](#docker-permission-denied)
 * [Docker on Windows](#docker-on-windows)
 
-## Failures involving mistmatched kubectl versions
+## Failures involving mismatched kubectl versions
 
 `kind` will fail create a cluster, if the version of Kubernetes for the client and server differ.
 
