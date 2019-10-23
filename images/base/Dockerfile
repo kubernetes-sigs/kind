@@ -43,7 +43,7 @@ COPY files/ /
 # - packages needed for kubernetes components
 # - misc packages kind uses itself
 # After installing packages we cleanup by:
-# - removing unwanted systemd services)
+# - removing unwanted systemd services
 # - disabling kmsg in journald (these log entries would be confusing)
 #
 # Then we install containerd from our nightly build infrastructure, as this
