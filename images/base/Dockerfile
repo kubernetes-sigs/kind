@@ -80,6 +80,7 @@ RUN echo "Ensuring scripts are executable ..." \
     && chmod 755 /usr/local/sbin/runc \
     && containerd --version \
     && systemctl enable containerd \
+    && mkdir -p /etc/containerd/user \
  && echo "Installing crictl ..." \
     && curl -fSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz" | tar xzC /usr/local/bin \
  && echo "Installing CNI binaries ..." \
