@@ -1,5 +1,4 @@
 <p align="center"><img alt="kind" src="./logo/logo.png" width="300x" /></p>
-<p align="center"><a href="https://prow.k8s.io/?job=ci-kind-build">
 
 # Please see [Our Documentation](https://kind.sigs.k8s.io/docs/user/quick-start/) for more in-depth installation etc.
 
