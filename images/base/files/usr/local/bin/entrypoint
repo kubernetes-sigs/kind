@@ -42,6 +42,33 @@ fix_mount() {
   mount --make-rshared /
 }
 
+fix_cgroup() {
+  echo 'INFO: fix cgroup mounts for all subsystems'
+  # For each cgroup subsystem, Docker does a bind mount from the current
+  # cgroup to the root of the cgroup subsystem. For instance:
+  #   /sys/fs/cgroup/memory/docker/<cid> -> /sys/fs/cgroup/memory
+  #
+  # This will confuse Kubelet and cadvisor and will dump the following error
+  # messages in kubelet log:
+  #   `summary_sys_containers.go:47] Failed to get system container stats for ".../kubelet.service"`
+  #
+  # This is because `/proc/<pid>/cgroup` is not affected by the bind mount.
+  # The following is a workaround to recreate the original cgroup
+  # environment by doing another bind mount for each subsystem.
+  local docker_cgroup_mounts
+  docker_cgroup_mounts=$(grep /sys/fs/cgroup /proc/self/mountinfo | grep docker || true)
+  if [[ -n "${docker_cgroup_mounts}" ]]; then
+    local docker_cgroup cgroup_subsystems subsystem
+    docker_cgroup=$(echo "${docker_cgroup_mounts}" | head -n 1 | cut -d' ' -f 4)
+    cgroup_subsystems=$(echo "${docker_cgroup_mounts}" | cut -d' ' -f 5)
+    echo "${cgroup_subsystems}" |
+    while IFS= read -r subsystem; do
+      mkdir -p "${subsystem}${docker_cgroup}"
+      mount --bind "${subsystem}" "${subsystem}${docker_cgroup}"
+    done
+  fi
+}
+
 fix_machine_id() {
   # Deletes the machine-id embedded in the node image and generates a new one.
   # This is necessary because both kubelet and other components like weave net
@@ -90,6 +117,7 @@ EOF
 # run pre-init fixups
 fix_kmsg
 fix_mount
+fix_cgroup
 fix_machine_id
 fix_product_name
 configure_proxy
