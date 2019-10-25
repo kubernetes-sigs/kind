@@ -55,16 +55,18 @@ fix_cgroup() {
   # This is because `/proc/<pid>/cgroup` is not affected by the bind mount.
   # The following is a workaround to recreate the original cgroup
   # environment by doing another bind mount for each subsystem.
-  MOUNT_TABLE=$(cat /proc/self/mountinfo)
-  DOCKER_CGROUP_MOUNTS=$(echo "${MOUNT_TABLE}" | grep /sys/fs/cgroup | grep docker)
-  DOCKER_CGROUP=$(echo "${DOCKER_CGROUP_MOUNTS}" | head -n 1 | cut -d' ' -f 4)
-  CGROUP_SUBSYSTEMS=$(echo "${DOCKER_CGROUP_MOUNTS}" | cut -d' ' -f 5)
-
-  echo "${CGROUP_SUBSYSTEMS}" |
-  while IFS= read -r SUBSYSTEM; do
-    mkdir -p "${SUBSYSTEM}${DOCKER_CGROUP}"
-    mount --bind "${SUBSYSTEM}" "${SUBSYSTEM}${DOCKER_CGROUP}"
-  done
+  local docker_cgroup_mounts
+  docker_cgroup_mounts=$(grep /sys/fs/cgroup /proc/self/mountinfo | grep docker || true)
+  if [[ -n "${docker_cgroup_mounts}" ]]; then
+    local docker_cgroup cgroup_subsystems subsystem
+    docker_cgroup=$(echo "${docker_cgroup_mounts}" | head -n 1 | cut -d' ' -f 4)
+    cgroup_subsystems=$(echo "${docker_cgroup_mounts}" | cut -d' ' -f 5)
+    echo "${cgroup_subsystems}" |
+    while IFS= read -r subsystem; do
+      mkdir -p "${subsystem}${docker_cgroup}"
+      mount --bind "${subsystem}" "${subsystem}${docker_cgroup}"
+    done
+  fi
 }
 
 fix_machine_id() {
