@@ -115,10 +115,10 @@ func RunWithStdoutReader(cmd Cmd, readerFunc func(io.Reader) error) error {
 	}()
 
 	err = cmd.Run()
-	err2 := <-errChan
 	if err != nil {
 		return err
 	}
+	err2 := <-errChan
 	if err2 != nil {
 		return err2
 	}
