@@ -18,7 +18,6 @@ package logs
 
 import (
 	"archive/tar"
-	"fmt"
 	"io"
 	"os"
 	"path"
@@ -133,17 +132,7 @@ func dumpDir(node nodes.Node, nodeDir, hostDir string) (err error) {
 	}
 
 	// tar out to the host
-	cmd := node.Command(
-		"sh", "-c",
-		// Tar will exit 1 if a file changed during the archival.
-		// We don't care about this, so we're invoking it in a shell
-		// And masking out 1 as a return value.
-		// Fatal errors will return exit code 2.
-		// http://man7.org/linux/man-pages/man1/tar.1.html#RETURN_VALUE
-		fmt.Sprintf(
-			`tar --hard-dereference -C %s -chf - . || (r=$?; [ $r -eq 1 ] || exit $r)`, tmp,
-		),
-	)
+	cmd := node.Command("tar", "--hard-dereference", "-C", tmp, "-chf", "-", ".")
 	return exec.RunWithStdoutReader(cmd, func(outReader io.Reader) error {
 		if err := untar(outReader, hostDir); err != nil {
 			return errors.Wrapf(err, "Untarring %q: %v", nodeDir, err)
