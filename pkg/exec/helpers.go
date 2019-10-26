@@ -110,10 +110,11 @@ func RunWithStdoutReader(cmd Cmd, readerFunc func(io.Reader) error) error {
 	}()
 
 	err = cmd.Run()
+	pw.Close()
+	err2 := <-errChan
 	if err != nil {
 		return err
 	}
-	err2 := <-errChan
 	if err2 != nil {
 		return err2
 	}
@@ -137,10 +138,11 @@ func RunWithStdinWriter(cmd Cmd, writerFunc func(io.Writer) error) error {
 	}()
 
 	err = cmd.Run()
+	pr.Close()
+	err2 := <-errChan
 	if err != nil {
 		return err
 	}
-	err2 := <-errChan
 	if err2 != nil {
 		return err2
 	}
