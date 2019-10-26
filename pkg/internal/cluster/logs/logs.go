@@ -20,7 +20,9 @@ import (
 	"archive/tar"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -70,23 +72,7 @@ func Collect(nodes []nodes.Node, dir string) error {
 	for _, n := range nodes {
 		node := n // https://golang.org/doc/faq#closures_and_goroutines
 		name := node.String()
-		// grab all logs under /var/log (pods and containers)
-		cmd := node.Command(
-			"sh", "-c",
-			// Tar will exit 1 if a file changed during the archival.
-			// We don't care about this, so we're invoking it in a shell
-			// And masking out 1 as a return value.
-			// Fatal errors will return exit code 2.
-			// http://man7.org/linux/man-pages/man1/tar.1.html#RETURN_VALUE
-			`tar --hard-dereference -C /var/log -chf - . || (r=$?; [ $r -eq 1 ] || exit $r)`,
-		)
-
-		if err := exec.RunWithStdoutReader(cmd, func(outReader io.Reader) error {
-			if err := untar(outReader, filepath.Join(dir, name)); err != nil {
-				return errors.Wrapf(err, "Untarring %q: %v", name, err)
-			}
-			return nil
-		}); err != nil {
+		if err := dumpDir(n, "/var/log", filepath.Join(dir, name)); err != nil {
 			errs = append(errs, err)
 		}
 
@@ -125,6 +111,46 @@ func Collect(nodes []nodes.Node, dir string) error {
 	// run and collect up all errors
 	errs = append(errs, concurrent.Coalesce(fns...))
 	return errors.NewAggregate(errs)
+}
+
+// dumpDir dumps the dir nodeDir on the node to the dir hostDir on the host
+func dumpDir(node nodes.Node, nodeDir, hostDir string) (err error) {
+	// make tempdir to rsync nodeDir into (rsync handles taking a snapshot better)
+	tmp, err := mktemp(node)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if rerr := node.Command("rm", "-rf", tmp).Run(); rerr != nil && err == nil {
+			err = rerr
+		}
+	}()
+
+	// rsync into the temp dir
+	if err := node.Command("rsync", "--archive", path.Clean(nodeDir)+"/", tmp).Run(); err != nil {
+		return err
+	}
+
+	// tar out to the host
+	cmd := node.Command("tar", "--hard-dereference", "-C", tmp, "-chf", "-", ".")
+	return exec.RunWithStdoutReader(cmd, func(outReader io.Reader) error {
+		if err := untar(outReader, hostDir); err != nil {
+			return errors.Wrapf(err, "Untarring %q: %v", nodeDir, err)
+		}
+		return nil
+	})
+}
+
+// mktemp creates a tempdir on the node
+func mktemp(node nodes.Node) (string, error) {
+	lines, err := exec.OutputLines(node.Command("mktemp", "-d"))
+	if err != nil {
+		return "", err
+	}
+	if len(lines) != 1 {
+		return "", errors.Errorf("invalid output from mktemp -d: %q", strings.Join(lines, "\n"))
+	}
+	return lines[0], nil
 }
 
 // untar reads the tar file from r and writes it into dir.
