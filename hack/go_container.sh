@@ -82,6 +82,8 @@ run_in_go_container() {
       -e GO111MODULE -e GOPROXY -e CGO_ENABLED -e GOOS -e GOARCH \
     `# pass through proxy settings` \
       -e HTTP_PROXY -e HTTPS_PROXY -e NO_PROXY \
+    `# use host certificates` \
+      -v "/etc/ssl/certs:/etc/ssl/certs" \
     `# run the image with the args passed to this script` \
       "${GOIMAGE}" "$@"
 }
