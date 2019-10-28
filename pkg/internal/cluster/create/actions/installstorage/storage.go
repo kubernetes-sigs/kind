@@ -71,9 +71,7 @@ metadata:
   namespace: kube-system
   name: standard
   annotations:
-    storageclass.beta.kubernetes.io/is-default-class: "true"
-  labels:
-    addonmanager.kubernetes.io/mode: EnsureExists
+    storageclass.kubernetes.io/is-default-class: "true"
 provisioner: kubernetes.io/host-path`
 
 func addDefaultStorageClass(controlPlane nodes.Node) error {
