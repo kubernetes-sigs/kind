@@ -18,17 +18,12 @@ limitations under the License.
 package kubeadmjoin
 
 import (
-	"os"
-	"path"
-	"path/filepath"
 	"strings"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/container/docker"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
-	"sigs.k8s.io/kind/pkg/fs"
 	"sigs.k8s.io/kind/pkg/globals"
 	"sigs.k8s.io/kind/pkg/util/concurrent"
 
@@ -59,9 +54,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 	if len(secondaryControlPlanes) > 0 {
-		if err := joinSecondaryControlPlanes(
-			ctx, allNodes, secondaryControlPlanes,
-		); err != nil {
+		if err := joinSecondaryControlPlanes(ctx, secondaryControlPlanes); err != nil {
 			return err
 		}
 	}
@@ -82,7 +75,6 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 
 func joinSecondaryControlPlanes(
 	ctx *actions.ActionContext,
-	allNodes []nodes.Node,
 	secondaryControlPlanes []nodes.Node,
 ) error {
 	ctx.Status.Start("Joining more control-plane nodes 🎮")
@@ -92,7 +84,7 @@ func joinSecondaryControlPlanes(
 	// (this is not safe currently)
 	for _, node := range secondaryControlPlanes {
 		node := node // capture loop variable
-		if err := runKubeadmJoinControlPlane(allNodes, node); err != nil {
+		if err := runKubeadmJoin(node); err != nil {
 			return err
 		}
 	}
@@ -122,66 +114,6 @@ func joinWorkers(
 
 	ctx.Status.End(true)
 	return nil
-}
-
-// runKubeadmJoinControlPlane executes kubadm join --control-plane command
-func runKubeadmJoinControlPlane(
-	allNodes []nodes.Node,
-	node nodes.Node,
-) error {
-	// creates the folder tree for pre-loading necessary cluster certificates
-	// on the joining node
-	if err := node.Command("mkdir", "-p", "/etc/kubernetes/pki/etcd").Run(); err != nil {
-		return errors.Wrap(err, "failed to join node with kubeadm")
-	}
-
-	// define the list of necessary cluster certificates
-	fileNames := []string{
-		"ca.crt", "ca.key",
-		"front-proxy-ca.crt", "front-proxy-ca.key",
-		"sa.pub", "sa.key",
-		// TODO(someone): if we gain external etcd support these will be
-		// handled differently
-		"etcd/ca.crt", "etcd/ca.key",
-	}
-
-	// creates a temporary folder on the host that should acts as a transit area
-	// for moving necessary cluster certificates
-	tmpDir, err := fs.TempDir("", "")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(tmpDir)
-
-	err = os.MkdirAll(filepath.Join(tmpDir, "/etcd"), os.ModePerm)
-	if err != nil {
-		return err
-	}
-
-	// get the handle for the bootstrap control plane node (the source for necessary cluster certificates)
-	controlPlaneHandle, err := nodeutils.BootstrapControlPlaneNode(allNodes)
-	if err != nil {
-		return err
-	}
-
-	// copies certificates from the bootstrap control plane node to the joining node
-	for _, fileName := range fileNames {
-		// sets the path of the certificate into a node
-		containerPath := path.Join("/etc/kubernetes/pki", fileName)
-		// set the path of the certificate into the tmp area on the host
-		tmpPath := filepath.Join(tmpDir, fileName)
-		// TODO(bentheelder): refactor to copy between nodes instead
-		// copies from bootstrap control plane node to tmp area
-		if err := docker.CopyFrom(controlPlaneHandle.String(), containerPath, tmpPath); err != nil {
-			return errors.Wrapf(err, "failed to copy certificate %s", fileName)
-		}
-		// copies from tmp area to joining node
-		if err := docker.CopyTo(tmpPath, node.String(), containerPath); err != nil {
-			return errors.Wrapf(err, "failed to copy certificate %s", fileName)
-		}
-	}
-
-	return runKubeadmJoin(node)
 }
 
 // runKubeadmJoin executes kubadm join command
