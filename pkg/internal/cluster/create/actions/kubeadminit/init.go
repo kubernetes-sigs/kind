@@ -57,6 +57,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// get the target node for this task
+	// TODO: eliminate the concept of bootstrapcontrolplane node entirely
+	// outside this method
 	node, err := nodeutils.BootstrapControlPlaneNode(allNodes)
 	if err != nil {
 		return err
@@ -81,15 +83,26 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to init node with kubeadm")
 	}
 
-	// copy the kubeconfig to all control plane nodes so we don't have to
-	// determine which ran init later to access this
+	// copy some files to the other control plane nodes
 	otherControlPlanes, err := nodeutils.SecondaryControlPlaneNodes(allNodes)
 	if err != nil {
 		return err
 	}
 	for _, otherNode := range otherControlPlanes {
-		if err := nodeutils.CopyNodeToNode(node, otherNode, "/etc/kubernetes/admin.conf"); err != nil {
-			return errors.Wrap(err, "failed to copy admin kubeconfig")
+		for _, file := range []string{
+			// copy over admin config so we can use any control plane to get it later
+			"/etc/kubernetes/admin.conf",
+			// copy over certs
+			"/etc/kubernetes/pki/ca.crt", "/etc/kubernetes/pki/ca.key",
+			"/etc/kubernetes/pki/front-proxy-ca.crt", "/etc/kubernetes/pki/front-proxy-ca.key",
+			"/etc/kubernetes/pki/sa.pub", "/etc/kubernetes/pki/sa.key",
+			// TODO: if we gain external etcd support these will be
+			// handled differently
+			"/etc/kubernetes/pki/etcd/ca.crt", "/etc/kubernetes/pki/etcd/ca.key",
+		} {
+			if err := nodeutils.CopyNodeToNode(node, otherNode, file); err != nil {
+				return errors.Wrap(err, "failed to copy admin kubeconfig")
+			}
 		}
 	}
 
