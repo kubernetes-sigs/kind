@@ -16,10 +16,6 @@ limitations under the License.
 
 package v1alpha3
 
-import (
-	"sigs.k8s.io/kind/pkg/container/cri"
-)
-
 // Cluster contains kind cluster configuration
 type Cluster struct {
 	TypeMeta `yaml:",inline" json:",inline"`
@@ -72,11 +68,11 @@ type Node struct {
 	// TODO: cri-like types should be inline instead
 	// ExtraMounts describes additional mount points for the node container
 	// These may be used to bind a hostPath
-	ExtraMounts []cri.Mount `yaml:"extraMounts,omitempty" json:"extraMounts,omitempty"`
+	ExtraMounts []Mount `yaml:"extraMounts,omitempty" json:"extraMounts,omitempty"`
 
 	// ExtraPortMappings describes additional port mappings for the node container
 	// binded to a host Port
-	ExtraPortMappings []cri.PortMapping `yaml:"extraPortMappings,omitempty" json:"extraPortMappings,omitempty"`
+	ExtraPortMappings []PortMapping `yaml:"extraPortMappings,omitempty" json:"extraPortMappings,omitempty"`
 }
 
 // NodeRole defines possible role for nodes in a Kubernetes cluster managed by `kind`
@@ -139,4 +135,116 @@ type PatchJSON6902 struct {
 	Namespace string `yaml:"namespace,omitempty" json:"namespace,omitempty"`
 	// Patch should contain the contents of the json patch as a string
 	Patch string `yaml:"patch" json:"patch"`
+}
+
+/*
+These types are from
+https://github.com/kubernetes/kubernetes/blob/063e7ff358fdc8b0916e6f39beedc0d025734cb1/pkg/kubelet/apis/cri/runtime/v1alpha2/api.pb.go#L183
+*/
+
+// Mount specifies a host volume to mount into a container.
+// This is a close copy of the upstream cri Mount type
+// see: k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2
+// It additionally serializes the "propagation" field with the string enum
+// names on disk as opposed to the int32 values, and the serlialzed field names
+// have been made closer to core/v1 VolumeMount field names
+// In yaml this looks like:
+//  containerPath: /foo
+//  hostPath: /bar
+//  readOnly: true
+//  selinuxRelabel: false
+//  propagation: None
+// Propagation may be one of: None, HostToContainer, Bidirectional
+type Mount struct {
+	// Path of the mount within the container.
+	ContainerPath string `yaml:"containerPath,omitempty" json:"containerPath,omitempty"`
+	// Path of the mount on the host. If the hostPath doesn't exist, then runtimes
+	// should report error. If the hostpath is a symbolic link, runtimes should
+	// follow the symlink and mount the real destination to container.
+	HostPath string `yaml:"hostPath,omitempty" json:"hostPath,omitempty"`
+	// If set, the mount is read-only.
+	Readonly bool `yaml:"readOnly,omitempty" json:"readOnly,omitempty"`
+	// If set, the mount needs SELinux relabeling.
+	SelinuxRelabel bool `yaml:"selinuxRelabel,omitempty" json:"selinuxRelabel,omitempty"`
+	// Requested propagation mode.
+	Propagation MountPropagation `yaml:"propagation,omitempty" json:"propagation,omitempty"`
+}
+
+// PortMapping specifies a host port mapped into a container port.
+// In yaml this looks like:
+//  containerPort: 80
+//  hostPort: 8000
+//  listenAddress: 127.0.0.1
+//  protocol: TCP
+type PortMapping struct {
+	// Port within the container.
+	ContainerPort int32 `yaml:"containerPort,omitempty" json:"containerPort,omitempty"`
+	// Port on the host.
+	HostPort int32 `yaml:"hostPort,omitempty" json:"hostPort,omitempty"`
+	// TODO: add protocol (tcp/udp) and port-ranges
+	ListenAddress string `yaml:"listenAddress,omitempty" json:"listenAddress,omitempty"`
+	// Protocol (TCP/UDP)
+	Protocol PortMappingProtocol `yaml:"protocol,omitempty" json:"protocol,omitempty"`
+}
+
+// MountPropagation represents an "enum" for mount propagation options,
+// see also Mount.
+type MountPropagation int32
+
+const (
+	// MountPropagationNone specifies that no mount propagation
+	// ("private" in Linux terminology).
+	MountPropagationNone MountPropagation = 0
+	// MountPropagationHostToContainer specifies that mounts get propagated
+	// from the host to the container ("rslave" in Linux).
+	MountPropagationHostToContainer MountPropagation = 1
+	// MountPropagationBidirectional specifies that mounts get propagated from
+	// the host to the container and from the container to the host
+	// ("rshared" in Linux).
+	MountPropagationBidirectional MountPropagation = 2
+)
+
+// MountPropagationValueToName is a map of valid MountPropogation values to
+// their string names
+var MountPropagationValueToName = map[MountPropagation]string{
+	MountPropagationNone:            "None",
+	MountPropagationHostToContainer: "HostToContainer",
+	MountPropagationBidirectional:   "Bidirectional",
+}
+
+// MountPropagationNameToValue is a map of valid MountPropogation names to
+// their values
+var MountPropagationNameToValue = map[string]MountPropagation{
+	"None":            MountPropagationNone,
+	"HostToContainer": MountPropagationHostToContainer,
+	"Bidirectional":   MountPropagationBidirectional,
+}
+
+// PortMappingProtocol represents an "enum" for port mapping protocol options,
+// see also PortMapping.
+type PortMappingProtocol int32
+
+const (
+	// PortMappingProtocolTCP specifies TCP protocol
+	PortMappingProtocolTCP PortMappingProtocol = 0
+	// PortMappingProtocolUDP specifies UDP protocol
+	PortMappingProtocolUDP PortMappingProtocol = 1
+	// PortMappingProtocolSCTP specifies SCTP protocol
+	PortMappingProtocolSCTP PortMappingProtocol = 2
+)
+
+// PortMappingProtocolValueToName is a map of valid PortMappingProtocol values to
+// their string names
+var PortMappingProtocolValueToName = map[PortMappingProtocol]string{
+	PortMappingProtocolTCP:  "TCP",
+	PortMappingProtocolUDP:  "UDP",
+	PortMappingProtocolSCTP: "SCTP",
+}
+
+// PortMappingProtocolNameToValue is a map of valid PortMappingProtocol names to
+// their values
+var PortMappingProtocolNameToValue = map[string]PortMappingProtocol{
+	"TCP":  PortMappingProtocolTCP,
+	"UDP":  PortMappingProtocolUDP,
+	"SCTP": PortMappingProtocolSCTP,
 }

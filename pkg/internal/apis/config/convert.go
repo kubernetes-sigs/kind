@@ -44,8 +44,17 @@ func Convertv1alpha3(in *v1alpha3.Cluster) *Cluster {
 func convertv1alpha3Node(in *v1alpha3.Node, out *Node) {
 	out.Role = NodeRole(in.Role)
 	out.Image = in.Image
-	out.ExtraMounts = in.ExtraMounts
-	out.ExtraPortMappings = in.ExtraPortMappings
+
+	out.ExtraMounts = make([]Mount, len(in.ExtraMounts))
+	out.ExtraPortMappings = make([]PortMapping, len(in.ExtraPortMappings))
+
+	for i := range in.ExtraMounts {
+		convertv1alpha3Mount(&in.ExtraMounts[i], &out.ExtraMounts[i])
+	}
+
+	for i := range in.ExtraPortMappings {
+		convertv1alpha3PortMapping(&in.ExtraPortMappings[i], &out.ExtraPortMappings[i])
+	}
 }
 
 func convertv1alphaPatchJSON6902(in *v1alpha3.PatchJSON6902, out *PatchJSON6902) {
@@ -64,4 +73,19 @@ func convertv1alpha3Networking(in *v1alpha3.Networking, out *Networking) {
 	out.PodSubnet = in.PodSubnet
 	out.ServiceSubnet = in.ServiceSubnet
 	out.DisableDefaultCNI = in.DisableDefaultCNI
+}
+
+func convertv1alpha3Mount(in *v1alpha3.Mount, out *Mount) {
+	out.ContainerPath = in.ContainerPath
+	out.HostPath = in.HostPath
+	out.Readonly = in.Readonly
+	out.SelinuxRelabel = in.SelinuxRelabel
+	out.Propagation = MountPropagation(in.Propagation)
+}
+
+func convertv1alpha3PortMapping(in *v1alpha3.PortMapping, out *PortMapping) {
+	out.ContainerPort = in.ContainerPort
+	out.HostPort = in.HostPort
+	out.ListenAddress = in.ListenAddress
+	out.Protocol = PortMappingProtocol(in.Protocol)
 }

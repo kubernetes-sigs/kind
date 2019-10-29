@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
-	"sigs.k8s.io/kind/pkg/container/cri"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 
@@ -72,7 +71,7 @@ func planCreation(cluster string, cfg *config.Cluster) (createContainerFuncs []f
 					return errors.Wrap(err, "failed to get port for API server")
 				}
 				node.ExtraPortMappings = append(node.ExtraPortMappings,
-					cri.PortMapping{
+					config.PortMapping{
 						ListenAddress: apiServerAddress,
 						HostPort:      port,
 						ContainerPort: common.APIServerInternalPort,
@@ -198,7 +197,7 @@ func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) ([]
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get port for api server load balancer")
 	}
-	args = append(args, generatePortMappings(cri.PortMapping{
+	args = append(args, generatePortMappings(config.PortMapping{
 		ListenAddress: listenAddress,
 		HostPort:      port,
 		ContainerPort: common.APIServerInternalPort,
@@ -239,7 +238,7 @@ func getSubnets(networkName string) ([]string, error) {
 // is a comma-separated list of the following strings:
 // 'ro', if the path is read only
 // 'Z', if the volume requires SELinux relabeling
-func generateMountBindings(mounts ...cri.Mount) []string {
+func generateMountBindings(mounts ...config.Mount) []string {
 	args := make([]string, 0, len(mounts))
 	for _, m := range mounts {
 		bind := fmt.Sprintf("%s:%s", m.HostPath, m.ContainerPath)
@@ -255,11 +254,11 @@ func generateMountBindings(mounts ...cri.Mount) []string {
 			attrs = append(attrs, "Z")
 		}
 		switch m.Propagation {
-		case cri.MountPropagationNone:
+		case config.MountPropagationNone:
 			// noop, private is default
-		case cri.MountPropagationBidirectional:
+		case config.MountPropagationBidirectional:
 			attrs = append(attrs, "rshared")
-		case cri.MountPropagationHostToContainer:
+		case config.MountPropagationHostToContainer:
 			attrs = append(attrs, "rslave")
 		default: // Falls back to "private"
 		}
@@ -272,7 +271,7 @@ func generateMountBindings(mounts ...cri.Mount) []string {
 }
 
 // generatePortMappings converts the portMappings list to a list of args for docker
-func generatePortMappings(portMappings ...cri.PortMapping) []string {
+func generatePortMappings(portMappings ...config.PortMapping) []string {
 	args := make([]string, 0, len(portMappings))
 	for _, pm := range portMappings {
 		var hostPortBinding string
@@ -283,9 +282,9 @@ func generatePortMappings(portMappings ...cri.PortMapping) []string {
 		}
 		protocol := "TCP" // TCP is the default
 		switch pm.Protocol {
-		case cri.PortMappingProtocolUDP:
+		case config.PortMappingProtocolUDP:
 			protocol = "UDP"
-		case cri.PortMappingProtocolSCTP:
+		case config.PortMappingProtocolSCTP:
 			protocol = "SCTP"
 		default: // also covers cri.PortMappingProtocolTCP
 		}
