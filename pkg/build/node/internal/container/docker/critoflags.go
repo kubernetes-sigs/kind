@@ -21,7 +21,7 @@ import (
 	"net"
 	"strings"
 
-	"sigs.k8s.io/kind/pkg/container/cri"
+	"sigs.k8s.io/kind/pkg/build/node/internal/container/cri"
 	"sigs.k8s.io/kind/pkg/globals"
 )
 

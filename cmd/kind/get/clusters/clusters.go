@@ -41,7 +41,7 @@ func NewCommand() *cobra.Command {
 }
 
 func runE() error {
-	clusters, err := cluster.List()
+	clusters, err := cluster.NewProvider().List()
 	if err != nil {
 		return err
 	}

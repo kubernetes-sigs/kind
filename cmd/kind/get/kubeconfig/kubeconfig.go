@@ -58,8 +58,7 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole) error {
-	// get the bootstrap node to get the kubeconfig
-	cfg, err := cluster.NewContext(flags.Name).KubeConfig(flags.Internal)
+	cfg, err := cluster.NewProvider().KubeConfig(flags.Name, flags.Internal)
 	if err != nil {
 		return err
 	}

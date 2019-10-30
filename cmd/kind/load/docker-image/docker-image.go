@@ -23,15 +23,14 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/kind/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
-	"sigs.k8s.io/kind/pkg/container/docker"
+	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
 	"sigs.k8s.io/kind/pkg/globals"
-	"sigs.k8s.io/kind/pkg/util/concurrent"
 )
 
 type flagpole struct {
@@ -72,25 +71,22 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole, args []string) error {
-	imageName := args[0]
+	provider := cluster.NewProvider()
+
 	// Check that the image exists locally and gets its ID, if not return error
-	imageID, err := docker.ImageID(imageName)
+	imageName := args[0]
+	imageID, err := imageID(imageName)
 	if err != nil {
 		return fmt.Errorf("image: %q not present locally", imageName)
 	}
-	// Check if the cluster name exists
-	known, err := cluster.IsKnown(flags.Name)
-	if err != nil {
-		return err
-	}
-	if !known {
-		return fmt.Errorf("unknown cluster %q", flags.Name)
-	}
 
-	context := cluster.NewContext(flags.Name)
-	nodeList, err := context.ListInternalNodes()
+	// Check if the cluster nodes exist
+	nodeList, err := provider.ListInternalNodes(flags.Name)
 	if err != nil {
 		return err
+	}
+	if len(nodeList) == 0 {
+		return fmt.Errorf("no nodes found for cluster %q", flags.Name)
 	}
 
 	// map cluster nodes by their name
@@ -137,7 +133,7 @@ func runE(flags *flagpole, args []string) error {
 	defer os.RemoveAll(dir)
 	imageTarPath := filepath.Join(dir, "image.tar")
 
-	err = docker.Save(imageName, imageTarPath)
+	err = save(imageName, imageTarPath)
 	if err != nil {
 		return err
 	}
@@ -150,8 +146,10 @@ func runE(flags *flagpole, args []string) error {
 			return loadImage(imageTarPath, selectedNode)
 		})
 	}
-	return concurrent.UntilError(fns)
+	return errors.UntilErrorConcurrent(fns)
 }
+
+// TODO: we should consider having a cluster method to load images
 
 // loads an image tarball onto a node
 func loadImage(imageTarName string, node nodes.Node) error {
@@ -161,4 +159,25 @@ func loadImage(imageTarName string, node nodes.Node) error {
 	}
 	defer f.Close()
 	return nodeutils.LoadImageArchive(node, f)
+}
+
+// save saves image to dest, as in `docker save`
+func save(image, dest string) error {
+	return exec.Command("docker", "save", "-o", dest, image).Run()
+}
+
+// imageID return the Id of the container image
+func imageID(containerNameOrID string) (string, error) {
+	cmd := exec.Command("docker", "image", "inspect",
+		"-f", "{{ .Id }}",
+		containerNameOrID, // ... against the container
+	)
+	lines, err := exec.CombinedOutputLines(cmd)
+	if err != nil {
+		return "", err
+	}
+	if len(lines) != 1 {
+		return "", errors.Errorf("Docker image ID should only be one line, got %d lines", len(lines))
+	}
+	return lines[0], nil
 }

@@ -31,41 +31,65 @@ import (
 	internalcreate "sigs.k8s.io/kind/pkg/internal/cluster/create"
 	internaldelete "sigs.k8s.io/kind/pkg/internal/cluster/delete"
 	internallogs "sigs.k8s.io/kind/pkg/internal/cluster/logs"
+	"sigs.k8s.io/kind/pkg/internal/cluster/providers/docker"
+	internalprovider "sigs.k8s.io/kind/pkg/internal/cluster/providers/provider"
 )
 
 // DefaultName is the default cluster name
 const DefaultName = constants.DefaultClusterName
 
-// Context is used to create / manipulate kubernetes-in-docker clusters
-// See: NewContext()
-type Context struct {
-	// the internal context type, shared between implementations of more
-	// advanced methods like create
-	ic *internalcontext.Context
+// Provider is used to perform cluster operations
+type Provider struct {
+	provider internalprovider.Provider
 }
 
-// NewContext returns a new cluster management context
-// if name is "" the default name will be used (constants.DefaultClusterName)
-// TODO(bentheelder): this should take options
-func NewContext(name string) *Context {
-	// wrap a new internal context
-	return &Context{
-		ic: internalcontext.NewContext(name),
+// NewProvider returns a new provider based on the supplied options
+func NewProvider(options ...ProviderOption) *Provider {
+	p := &Provider{}
+	for _, o := range options {
+		p = o(p)
 	}
+	if p.provider == nil {
+		p.provider = docker.NewProvider()
+	}
+	return p
+}
+
+// ProviderOption is an option for configuring a provider
+type ProviderOption func(*Provider) *Provider
+
+// TODO: remove this, rename internal context to something else
+func (p *Provider) ic(name string) *internalcontext.Context {
+	return internalcontext.NewProviderContext(p.provider, name)
+}
+
+// Create provisions and starts a kubernetes-in-docker cluster
+func (p *Provider) Create(name string, options ...create.ClusterOption) error {
+	return internalcreate.Cluster(p.ic(name), options...)
+}
+
+// Delete tears down a kubernetes-in-docker cluster
+func (p *Provider) Delete(name string) error {
+	return internaldelete.Cluster(p.ic(name))
+}
+
+// List returns a list of clusters for which nodes exist
+func (p *Provider) List() ([]string, error) {
+	return p.provider.ListClusters()
 }
 
 // KubeConfigPath returns the path to where the Kubeconfig would be placed
 // by kind based on the configuration.
-func (c *Context) KubeConfigPath() string {
-	return c.ic.KubeConfigPath()
+func (p *Provider) KubeConfigPath(name string) string {
+	return p.ic(name).KubeConfigPath()
 }
 
 // KubeConfig returns the KUBECONFIG for the cluster
 // If internal is true, this will contain the internal IP etc.
 // If internal is fale, this will contain the host IP etc.
-func (c *Context) KubeConfig(internal bool) (string, error) {
+func (p *Provider) KubeConfig(name string, internal bool) (string, error) {
 	// TODO(bentheelder): move implementation to node provider
-	n, err := c.ic.ListNodes()
+	n, err := p.ic(name).ListNodes()
 	if err != nil {
 		return "", err
 	}
@@ -87,7 +111,7 @@ func (c *Context) KubeConfig(internal bool) (string, error) {
 	}
 
 	// TODO(bentheelder): should not depend on host kubeconfig file!
-	f, err := os.Open(c.KubeConfigPath())
+	f, err := os.Open(p.KubeConfigPath(name))
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get cluster kubeconfig")
 	}
@@ -99,34 +123,22 @@ func (c *Context) KubeConfig(internal bool) (string, error) {
 	return string(out), nil
 }
 
-// Create provisions and starts a kubernetes-in-docker cluster
-func (c *Context) Create(options ...create.ClusterOption) error {
-	return internalcreate.Cluster(c.ic, options...)
-}
-
-// Delete tears down a kubernetes-in-docker cluster
-func (c *Context) Delete() error {
-	return internaldelete.Cluster(c.ic)
-}
-
 // ListNodes returns the list of container IDs for the "nodes" in the cluster
-// TODO: move to public nodes type
-func (c *Context) ListNodes() ([]nodes.Node, error) {
-	return c.ic.ListNodes()
+func (p *Provider) ListNodes(name string) ([]nodes.Node, error) {
+	return p.ic(name).ListNodes()
 }
 
 // ListInternalNodes returns the list of container IDs for the "nodes" in the cluster
 // that are not external
-// TODO: move to public nodes type
-func (c *Context) ListInternalNodes() ([]nodes.Node, error) {
-	return c.ic.ListInternalNodes()
+func (p *Provider) ListInternalNodes(name string) ([]nodes.Node, error) {
+	return p.ic(name).ListInternalNodes()
 }
 
 // CollectLogs will populate dir with cluster logs and other debug files
-func (c *Context) CollectLogs(dir string) error {
+func (p *Provider) CollectLogs(name, dir string) error {
 	// TODO: should use ListNodes and Collect should handle nodes differently
 	// based on role ...
-	n, err := c.ListInternalNodes()
+	n, err := p.ListInternalNodes(name)
 	if err != nil {
 		return err
 	}

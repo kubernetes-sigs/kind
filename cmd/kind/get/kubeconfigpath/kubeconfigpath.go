@@ -52,7 +52,6 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole) error {
-	// Obtain the kubeconfig path for this cluster
-	fmt.Println(cluster.NewContext(flags.Name).KubeConfigPath())
+	fmt.Println(cluster.NewProvider().KubeConfigPath(flags.Name))
 	return nil
 }

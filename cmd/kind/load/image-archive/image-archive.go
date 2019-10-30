@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
-	"sigs.k8s.io/kind/pkg/util/concurrent"
 )
 
 type flagpole struct {
@@ -68,24 +67,21 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole, args []string) error {
-	imageTarPath := args[0]
+	provider := cluster.NewProvider()
+
 	// Check if file exists
+	imageTarPath := args[0]
 	if _, err := os.Stat(imageTarPath); err != nil {
 		return err
 	}
-	// Check if the cluster name exists
-	known, err := cluster.IsKnown(flags.Name)
-	if err != nil {
-		return err
-	}
-	if !known {
-		return fmt.Errorf("unknown cluster %q", flags.Name)
-	}
 
-	context := cluster.NewContext(flags.Name)
-	nodeList, err := context.ListInternalNodes()
+	// Check if the cluster nodes exist
+	nodeList, err := provider.ListInternalNodes(flags.Name)
 	if err != nil {
 		return err
+	}
+	if len(nodeList) == 0 {
+		return fmt.Errorf("no nodes found for cluster %q", flags.Name)
 	}
 
 	// map cluster nodes by their name
@@ -109,6 +105,7 @@ func runE(flags *flagpole, args []string) error {
 			selectedNodes = append(selectedNodes, node)
 		}
 	}
+
 	// Load the image on the selected nodes
 	fns := []func() error{}
 	for _, selectedNode := range selectedNodes {
@@ -117,7 +114,7 @@ func runE(flags *flagpole, args []string) error {
 			return loadImage(imageTarPath, selectedNode)
 		})
 	}
-	return concurrent.UntilError(fns)
+	return errors.UntilErrorConcurrent(fns)
 }
 
 // loads an image tarball onto a node

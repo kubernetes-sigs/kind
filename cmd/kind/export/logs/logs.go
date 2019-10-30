@@ -48,14 +48,17 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole, args []string) error {
-	// Check if the cluster name exists
-	known, err := cluster.IsKnown(flags.Name)
+	provider := cluster.NewProvider()
+
+	// Check if the cluster has any running nodes
+	nodes, err := provider.ListNodes(flags.Name)
 	if err != nil {
 		return err
 	}
-	if !known {
+	if len(nodes) == 0 {
 		return fmt.Errorf("unknown cluster %q", flags.Name)
 	}
+
 	// get the optional directory argument, or create a tempdir
 	var dir string
 	if len(args) == 0 {
@@ -67,10 +70,12 @@ func runE(flags *flagpole, args []string) error {
 	} else {
 		dir = args[0]
 	}
-	context := cluster.NewContext(flags.Name)
-	if err := context.CollectLogs(dir); err != nil {
+
+	// collect the logs
+	if err := provider.CollectLogs(flags.Name, dir); err != nil {
 		return err
 	}
+
 	fmt.Println("Exported logs to: " + dir)
 	return nil
 }
