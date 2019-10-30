@@ -22,8 +22,6 @@ import (
 	"path/filepath"
 
 	"k8s.io/apimachinery/pkg/util/sets"
-
-	"sigs.k8s.io/kind/pkg/internal/util/env"
 )
 
 const kubeconfigEnv = "KUBECONFIG"
@@ -54,7 +52,7 @@ func paths(explicitPath string, getEnv func(string) string) []string {
 		return paths
 	}
 
-	return []string{path.Join(env.HomeDir(), ".kube", "config")}
+	return []string{path.Join(homeDir(), ".kube", "config")}
 }
 
 // pathForMerge returns the file that kubectl would merge into
