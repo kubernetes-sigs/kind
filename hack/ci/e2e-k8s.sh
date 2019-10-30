@@ -95,10 +95,6 @@ EOF
 
 # run e2es with ginkgo-e2e.sh
 run_tests() {
-  # export the KUBECONFIG
-  KUBECONFIG="$(kind get kubeconfig-path)"
-  export KUBECONFIG
-
   # IPv6 clusters need some CoreDNS changes in order to work in k8s CI:
   # 1. k8s CI doesn´t offer IPv6 connectivity, so CoreDNS should be configured
   # to work in an offline environment:
@@ -163,6 +159,11 @@ main() {
   # ensure artifacts (results) directory exists when not in CI
   export ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
   mkdir -p "${ARTIFACTS}"
+
+  # export the KUBECONFIG to a unique path for testing
+  KUBECONFIG="${HOME}/.kube/kind-test-config"
+  export KUBECONFIG
+  echo "exported KUBECONFIG=${KUBECONFIG}"
 
   # debug kind version
   kind version
