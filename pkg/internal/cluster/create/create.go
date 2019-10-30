@@ -17,7 +17,10 @@ limitations under the License.
 package create
 
 import (
+	"fmt"
 	"regexp"
+
+	"github.com/alessio/shellescape"
 
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
 
@@ -129,12 +132,26 @@ func Cluster(ctx *context.Context, options ...create.ClusterOption) error {
 		return nil
 	}
 
-	// export KUBECONFIG
-	if err := kubeconfig.Export(ctx, opts.KubeconfigPath); err != nil {
+	return exportKubeconfig(ctx, opts.KubeconfigPath)
+}
+
+// exportKubeconfig exports the cluster's kubeconfig and prints usage
+func exportKubeconfig(ctx *context.Context, kubeconfigPath string) error {
+	// actually export KUBECONFIG
+	if err := kubeconfig.Export(ctx, kubeconfigPath); err != nil {
 		return err
 	}
-	globals.GetLogger().V(0).Infof("Set kubectl context to to: %s", kubeconfig.Context(ctx.Name()))
 
+	// construct a sample command for interacting with the cluster
+	kctx := kubeconfig.Context(ctx.Name())
+	sampleCommand := fmt.Sprintf("kubectl cluster-info --context %s", kctx)
+	if kubeconfigPath != "" {
+		// explicit path, include this
+		sampleCommand += " --kubeconfig " + shellescape.Quote(kubeconfigPath)
+	}
+
+	globals.GetLogger().V(0).Infof(`Set kubectl context to "%s"`, kctx)
+	globals.GetLogger().V(0).Infof("You can now use your cluster with:\n\n" + sampleCommand)
 	return nil
 }
 
