@@ -18,7 +18,6 @@ package kubeconfig
 
 import (
 	"os"
-	"sort"
 
 	"sigs.k8s.io/kind/pkg/errors"
 )
@@ -26,32 +25,34 @@ import (
 // RemoveKIND removes the kind cluster kindClusterName from the KUBECONFIG
 // files at configPaths
 func RemoveKIND(kindClusterName string, explicitPath string) error {
-	configPaths := paths(explicitPath, os.Getenv)
-
-	// lock all the files for modifying
-	sort.Strings(configPaths)
-	for _, configPath := range configPaths {
-		if err := lockFile(configPath); err != nil {
-			return errors.Wrap(err, "failed to lock config file")
-		}
-		defer func(configPath string) {
-			_ = unlockFile(configPath)
-		}(configPath)
-	}
-
 	// remove kind from each if present
-	for _, configPath := range configPaths {
-		// read in existing
-		existing, err := read(configPath)
-		if err != nil {
-			return errors.Wrap(err, "failed to read kubeconfig to remove KIND entry")
-		}
-		// remove the kind cluster from the config
-		if remove(existing, kindClusterName) {
-			// write out the updated config if we modified anything
-			if err := write(existing, configPath); err != nil {
-				return err
+	for _, configPath := range paths(explicitPath, os.Getenv) {
+		if err := func(configPath string) error {
+			// lock before modifying
+			if err := lockFile(configPath); err != nil {
+				return errors.Wrap(err, "failed to lock config file")
 			}
+			defer func(configPath string) {
+				_ = unlockFile(configPath)
+			}(configPath)
+
+			// read in existing
+			existing, err := read(configPath)
+			if err != nil {
+				return errors.Wrap(err, "failed to read kubeconfig to remove KIND entry")
+			}
+
+			// remove the kind cluster from the config
+			if remove(existing, kindClusterName) {
+				// write out the updated config if we modified anything
+				if err := write(existing, configPath); err != nil {
+					return err
+				}
+			}
+
+			return nil
+		}(configPath); err != nil {
+			return err
 		}
 	}
 	return nil
