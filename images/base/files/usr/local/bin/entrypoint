@@ -88,6 +88,26 @@ fix_product_name() {
   fi
 }
 
+fix_product_uuid() {
+  # The system UUID is usually read from DMI via sysfs, the problem is that
+  # in the kind case this means that all (container) nodes share the same
+  # system/product uuid, as they share the same DMI.
+  # Note: The UUID is read from DMI, this tool is overwriting the sysfs files
+  # which should fix the attached issue, but this workaround does not address
+  # the issue if a tool is reading directly from DMI.
+  # https://github.com/kubernetes-sigs/kind/issues/1027
+  if [[ -f /sys/class/dmi/id/product_uuid ]]; then
+    echo 'INFO: faking /sys/class/dmi/id/product_uuid to be random'
+    cat /proc/sys/kernel/random/uuid > /kind/product_uuid
+    mount -o ro,bind /kind/product_uuid /sys/class/dmi/id/product_uuid
+  fi
+
+  if [[ -f /sys/devices/virtual/dmi/id/product_uuid ]]; then
+    echo 'INFO: faking /sys/devices/virtual/dmi/id/product_uuid as well'
+    mount -o ro,bind /sys/class/dmi/id/product_uuid /sys/devices/virtual/dmi/id/product_uuid
+  fi
+}
+
 fix_kmsg() {
   # In environments where /dev/kmsg is not available, the kubelet (1.15+) won't
   # start because it cannot open /dev/kmsg when starting the kmsgparser in the
@@ -120,6 +140,7 @@ fix_mount
 fix_cgroup
 fix_machine_id
 fix_product_name
+fix_product_uuid
 configure_proxy
 
 # we want the command (expected to be systemd) to be PID1, so exec to it
