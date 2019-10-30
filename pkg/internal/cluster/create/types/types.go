@@ -31,9 +31,10 @@ import (
 type ClusterOptions struct {
 	Config *config.Cluster
 	// NodeImage overrides the nodes' images in Config if non-zero
-	NodeImage    string
-	Retain       bool
-	WaitForReady time.Duration
+	NodeImage      string
+	Retain         bool
+	WaitForReady   time.Duration
+	KubeconfigPath string
 	//TODO: Refactor this. It is a temporary solution for a phased breakdown of different
 	//      operations, specifically create. see https://github.com/kubernetes-sigs/kind/issues/324
 	SetupKubernetes bool // if kind should setup kubernetes after creating nodes

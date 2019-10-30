@@ -17,9 +17,7 @@ limitations under the License.
 package create
 
 import (
-	"fmt"
 	"regexp"
-	"runtime"
 
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
 
@@ -40,6 +38,7 @@ import (
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions/kubeadmjoin"
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions/loadbalancer"
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions/waitforready"
+	"sigs.k8s.io/kind/pkg/internal/cluster/kubeconfig"
 )
 
 const (
@@ -87,7 +86,7 @@ func Cluster(ctx *context.Context, options ...create.ClusterOption) error {
 		// In case of errors nodes are deleted (except if retain is explicitly set)
 		globals.GetLogger().Errorf("%v", err)
 		if !opts.Retain {
-			_ = delete.Cluster(ctx)
+			_ = delete.Cluster(ctx, opts.KubeconfigPath)
 		}
 		return err
 	}
@@ -120,20 +119,21 @@ func Cluster(ctx *context.Context, options ...create.ClusterOption) error {
 	for _, action := range actionsToRun {
 		if err := action.Execute(actionsContext); err != nil {
 			if !opts.Retain {
-				_ = delete.Cluster(ctx)
+				_ = delete.Cluster(ctx, opts.KubeconfigPath)
 			}
 			return err
 		}
 	}
 
 	if !opts.SetupKubernetes {
-		// prints how to manually setup the cluster
-		printSetupInstruction(ctx.Name())
 		return nil
 	}
 
-	// print how to set KUBECONFIG to point to the cluster etc.
-	printUsage(ctx.Name())
+	// export KUBECONFIG
+	if err := kubeconfig.Export(ctx, opts.KubeconfigPath); err != nil {
+		return err
+	}
+	globals.GetLogger().V(0).Infof("Set kubectl context to to: %s", kubeconfig.Context(ctx.Name()))
 
 	return nil
 }
@@ -176,42 +176,4 @@ func collectOptions(options ...create.ClusterOption) (*createtypes.ClusterOption
 	config.SetDefaultsCluster(opts.Config)
 
 	return opts, nil
-}
-
-func printUsage(name string) {
-	// TODO: consider shell detection.
-	if runtime.GOOS == "windows" {
-		fmt.Printf(
-			"Cluster creation complete. To setup KUBECONFIG:\n\n"+
-
-				"For the default cmd.exe console call:\n"+
-				"kind get kubeconfig-path > kindpath\n"+
-				"set /p KUBECONFIG=<kindpath && del kindpath\n\n"+
-
-				"for PowerShell call:\n"+
-				"$env:KUBECONFIG=\"$(kind get kubeconfig-path --name=%[1]q)\"\n\n"+
-
-				"For bash on Windows:\n"+
-				"export KUBECONFIG=\"$(kind get kubeconfig-path --name=%[1]q)\"\n\n"+
-
-				"You can now use the cluster:\n"+
-				"kubectl cluster-info\n",
-			name,
-		)
-	} else {
-		fmt.Printf(
-			"Cluster creation complete. You can now use the cluster with:\n\n"+
-
-				"export KUBECONFIG=\"$(kind get kubeconfig-path --name=%q)\"\n"+
-				"kubectl cluster-info\n",
-			name,
-		)
-	}
-}
-
-func printSetupInstruction(name string) {
-	fmt.Printf(
-		"Nodes creation complete. You can now setup kubernetes using docker exec %s-<node> kubeadm ...\n",
-		name,
-	)
 }
