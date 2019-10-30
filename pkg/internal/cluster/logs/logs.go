@@ -28,7 +28,6 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/globals"
-	"sigs.k8s.io/kind/pkg/util/concurrent"
 )
 
 // Collect collects logs related to / from the cluster nodes and the host
@@ -77,7 +76,7 @@ func Collect(nodes []nodes.Node, dir string) error {
 		}
 
 		fns = append(fns, func() error {
-			return concurrent.Coalesce(
+			return errors.AggregateConcurrent(
 				// record info about the node container
 				execToPathFn(
 					exec.Command("docker", "inspect", name),
@@ -109,7 +108,7 @@ func Collect(nodes []nodes.Node, dir string) error {
 	}
 
 	// run and collect up all errors
-	errs = append(errs, concurrent.Coalesce(fns...))
+	errs = append(errs, errors.AggregateConcurrent(fns...))
 	return errors.NewAggregate(errs)
 }
 

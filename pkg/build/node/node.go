@@ -37,7 +37,6 @@ import (
 	"sigs.k8s.io/kind/pkg/globals"
 	"sigs.k8s.io/kind/pkg/internal/build/kube"
 	"sigs.k8s.io/kind/pkg/internal/util/env"
-	"sigs.k8s.io/kind/pkg/util/concurrent"
 )
 
 // DefaultImage is the default name:tag for the built image
@@ -464,7 +463,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 			return nil
 		})
 	}
-	if err := concurrent.Coalesce(fns...); err != nil {
+	if err := errors.AggregateConcurrent(fns...); err != nil {
 		return err
 	}
 	close(pulledImages)
@@ -520,7 +519,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	}
 
 	// run all image loading concurrently until one fails or all succeed
-	if err := concurrent.UntilError(loadFns); err != nil {
+	if err := errors.UntilErrorConcurrent(loadFns); err != nil {
 		globals.GetLogger().Errorf("Image build Failed! Failed to load images %v", err)
 		return err
 	}

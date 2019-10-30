@@ -25,7 +25,6 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/globals"
-	"sigs.k8s.io/kind/pkg/util/concurrent"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
@@ -113,7 +112,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// Create the config in all nodes concurrently
-	if err := concurrent.UntilError(fns); err != nil {
+	if err := errors.UntilErrorConcurrent(fns); err != nil {
 		return err
 	}
 

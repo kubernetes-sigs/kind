@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
-	"sigs.k8s.io/kind/pkg/util/concurrent"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
@@ -63,7 +62,7 @@ func (p *Provider) Provision(status *cli.Status, cluster string, cfg *config.Clu
 	}
 
 	// actually create nodes
-	return concurrent.UntilError(createContainerFuncs)
+	return errors.UntilErrorConcurrent(createContainerFuncs)
 }
 
 // ListClusters is part of the providers.Provider interface

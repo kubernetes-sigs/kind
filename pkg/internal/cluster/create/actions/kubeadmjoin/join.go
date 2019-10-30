@@ -25,7 +25,6 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/globals"
-	"sigs.k8s.io/kind/pkg/util/concurrent"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 
@@ -108,7 +107,7 @@ func joinWorkers(
 			return runKubeadmJoin(node)
 		})
 	}
-	if err := concurrent.UntilError(fns); err != nil {
+	if err := errors.UntilErrorConcurrent(fns); err != nil {
 		return err
 	}
 

@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
-	"sigs.k8s.io/kind/pkg/util/concurrent"
 )
 
 type flagpole struct {
@@ -115,7 +114,7 @@ func runE(flags *flagpole, args []string) error {
 			return loadImage(imageTarPath, selectedNode)
 		})
 	}
-	return concurrent.UntilError(fns)
+	return errors.UntilErrorConcurrent(fns)
 }
 
 // loads an image tarball onto a node
