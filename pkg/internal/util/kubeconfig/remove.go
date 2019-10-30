@@ -34,7 +34,9 @@ func RemoveKIND(kindClusterName string, explicitPath string) error {
 		if err := lockFile(configPath); err != nil {
 			return errors.Wrap(err, "failed to lock config file")
 		}
-		defer unlockFile(configPath)
+		defer func(configPath string) {
+			_ = unlockFile(configPath)
+		}(configPath)
 	}
 
 	// remove kind from each if present

@@ -31,7 +31,9 @@ func WriteMerged(kindConfig *Config, explicitConfigPath string) error {
 	if err := lockFile(configPath); err != nil {
 		return errors.Wrap(err, "failed to lock config file")
 	}
-	defer unlockFile(configPath)
+	defer func() {
+		_ = unlockFile(configPath)
+	}()
 
 	// read in existing
 	existing, err := read(configPath)
