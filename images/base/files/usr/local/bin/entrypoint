@@ -96,15 +96,14 @@ fix_product_uuid() {
   # which should fix the attached issue, but this workaround does not address
   # the issue if a tool is reading directly from DMI.
   # https://github.com/kubernetes-sigs/kind/issues/1027
+  [[ ! -f /kind/product_uuid ]] && cat /proc/sys/kernel/random/uuid > /kind/product_uuid
   if [[ -f /sys/class/dmi/id/product_uuid ]]; then
     echo 'INFO: faking /sys/class/dmi/id/product_uuid to be random'
-    cat /proc/sys/kernel/random/uuid > /kind/product_uuid
     mount -o ro,bind /kind/product_uuid /sys/class/dmi/id/product_uuid
   fi
-
   if [[ -f /sys/devices/virtual/dmi/id/product_uuid ]]; then
     echo 'INFO: faking /sys/devices/virtual/dmi/id/product_uuid as well'
-    mount -o ro,bind /sys/class/dmi/id/product_uuid /sys/devices/virtual/dmi/id/product_uuid
+    mount -o ro,bind /kind/product_uuid /sys/devices/virtual/dmi/id/product_uuid
   fi
 }
 
