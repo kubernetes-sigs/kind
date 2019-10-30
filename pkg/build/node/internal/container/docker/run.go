@@ -17,7 +17,7 @@ limitations under the License.
 package docker
 
 import (
-	"sigs.k8s.io/kind/pkg/container/cri"
+	"sigs.k8s.io/kind/pkg/build/node/internal/container/cri"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/globals"
 )

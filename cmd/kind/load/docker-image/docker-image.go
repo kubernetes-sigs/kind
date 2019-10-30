@@ -23,12 +23,12 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/kind/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
-	"sigs.k8s.io/kind/pkg/container/docker"
+	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
 	"sigs.k8s.io/kind/pkg/globals"
 	"sigs.k8s.io/kind/pkg/util/concurrent"
@@ -76,7 +76,7 @@ func runE(flags *flagpole, args []string) error {
 
 	// Check that the image exists locally and gets its ID, if not return error
 	imageName := args[0]
-	imageID, err := docker.ImageID(imageName)
+	imageID, err := imageID(imageName)
 	if err != nil {
 		return fmt.Errorf("image: %q not present locally", imageName)
 	}
@@ -134,7 +134,7 @@ func runE(flags *flagpole, args []string) error {
 	defer os.RemoveAll(dir)
 	imageTarPath := filepath.Join(dir, "image.tar")
 
-	err = docker.Save(imageName, imageTarPath)
+	err = save(imageName, imageTarPath)
 	if err != nil {
 		return err
 	}
@@ -150,6 +150,8 @@ func runE(flags *flagpole, args []string) error {
 	return concurrent.UntilError(fns)
 }
 
+// TODO: we should consider having a cluster method to load images
+
 // loads an image tarball onto a node
 func loadImage(imageTarName string, node nodes.Node) error {
 	f, err := os.Open(imageTarName)
@@ -158,4 +160,25 @@ func loadImage(imageTarName string, node nodes.Node) error {
 	}
 	defer f.Close()
 	return nodeutils.LoadImageArchive(node, f)
+}
+
+// save saves image to dest, as in `docker save`
+func save(image, dest string) error {
+	return exec.Command("docker", "save", "-o", dest, image).Run()
+}
+
+// imageID return the Id of the container image
+func imageID(containerNameOrID string) (string, error) {
+	cmd := exec.Command("docker", "image", "inspect",
+		"-f", "{{ .Id }}",
+		containerNameOrID, // ... against the container
+	)
+	lines, err := exec.CombinedOutputLines(cmd)
+	if err != nil {
+		return "", err
+	}
+	if len(lines) != 1 {
+		return "", errors.Errorf("Docker image ID should only be one line, got %d lines", len(lines))
+	}
+	return lines[0], nil
 }
