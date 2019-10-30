@@ -19,6 +19,7 @@ package docker
 import (
 	"fmt"
 	"net"
+	"path/filepath"
 	"strings"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
@@ -63,6 +64,18 @@ func planCreation(cluster string, cfg *config.Cluster) (createContainerFuncs []f
 	for _, node := range cfg.Nodes {
 		node := node.DeepCopy()              // copy so we can modify
 		name := nodeNamer(string(node.Role)) // name the node
+
+		// fixup relative paths, docker can only handle absolute paths
+		for i := range node.ExtraMounts {
+			hostPath := node.ExtraMounts[i].HostPath
+			absHostPath, err := filepath.Abs(hostPath)
+			if err != nil {
+				return nil, errors.Wrapf(err, "unable to resolve absolute path for hostPath: %q", hostPath)
+			}
+			node.ExtraMounts[i].HostPath = absHostPath
+		}
+
+		// plan actual creation based on role
 		switch node.Role {
 		case config.ControlPlaneRole:
 			createContainerFuncs = append(createContainerFuncs, func() error {
