@@ -73,12 +73,6 @@ func (p *Provider) List() ([]string, error) {
 	return p.provider.ListClusters()
 }
 
-// KubeConfigPath returns the path to where the Kubeconfig would be placed
-// by kind based on the configuration.
-func (p *Provider) KubeConfigPath(name string) string {
-	return p.ic(name).KubeConfigPath()
-}
-
 // KubeConfig returns the KUBECONFIG for the cluster
 // If internal is true, this will contain the internal IP etc.
 // If internal is fale, this will contain the host IP etc.

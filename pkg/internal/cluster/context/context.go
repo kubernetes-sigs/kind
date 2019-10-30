@@ -19,15 +19,11 @@ limitations under the License.
 package context
 
 import (
-	"fmt"
-	"path/filepath"
-
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 
 	"sigs.k8s.io/kind/pkg/internal/cluster/providers/docker"
 	"sigs.k8s.io/kind/pkg/internal/cluster/providers/provider"
-	"sigs.k8s.io/kind/pkg/internal/util/env"
 )
 
 // Context is the private shared context underlying pkg/cluster.Context
@@ -72,23 +68,6 @@ func (c *Context) Provider() provider.Provider {
 
 func (c *Context) GetAPIServerEndpoint() (string, error) {
 	return c.provider.GetAPIServerEndpoint(c.Name())
-}
-
-// KubeConfigPath returns the path to where the Kubeconfig would be placed
-// by kind based on the configuration.
-func (c *Context) KubeConfigPath() string {
-	// configDir matches the standard directory expected by kubectl etc
-	configDir := filepath.Join(env.HomeDir(), ".kube")
-	// note that the file name however does not, we do not want to overwrite
-	// the standard config, though in the future we may (?) merge them
-	fileName := fmt.Sprintf("kind-config-%s", c.Name())
-	return filepath.Join(configDir, fileName)
-}
-
-// ClusterLabel returns the docker object label that will be applied
-// to cluster "node" containers
-func (c *Context) ClusterLabel() string {
-	return fmt.Sprintf("%s=%s", constants.ClusterLabelKey, c.Name())
 }
 
 // ListNodes returns the list of container IDs for the "nodes" in the cluster
