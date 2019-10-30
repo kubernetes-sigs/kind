@@ -58,19 +58,21 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole) error {
+	provider := cluster.NewProvider()
+
 	// Check if the cluster name already exists
-	known, err := cluster.IsKnown(flags.Name)
+	n, err := provider.ListNodes(flags.Name)
 	if err != nil {
 		return err
 	}
-	if known {
+	if len(n) != 0 {
 		return fmt.Errorf("a cluster with the name %q already exists", flags.Name)
 	}
 
-	// create a cluster context and create the cluster
-	ctx := cluster.NewContext(flags.Name)
+	// create the cluster
 	fmt.Printf("Creating cluster %q ...\n", flags.Name)
-	if err = ctx.Create(
+	if err = provider.Create(
+		flags.Name,
 		create.WithConfigFile(flags.Config),
 		create.WithNodeImage(flags.ImageName),
 		create.Retain(flags.Retain),

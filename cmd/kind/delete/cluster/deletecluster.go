@@ -51,8 +51,7 @@ func NewCommand() *cobra.Command {
 func runE(flags *flagpole) error {
 	// Delete the cluster
 	fmt.Printf("Deleting cluster %q ...\n", flags.Name)
-	ctx := cluster.NewContext(flags.Name)
-	if err := ctx.Delete(); err != nil {
+	if err := cluster.NewProvider().Delete(flags.Name); err != nil {
 		return errors.Wrap(err, "failed to delete cluster")
 	}
 	return nil

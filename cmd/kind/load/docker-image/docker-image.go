@@ -72,25 +72,22 @@ func NewCommand() *cobra.Command {
 }
 
 func runE(flags *flagpole, args []string) error {
-	imageName := args[0]
+	provider := cluster.NewProvider()
+
 	// Check that the image exists locally and gets its ID, if not return error
+	imageName := args[0]
 	imageID, err := docker.ImageID(imageName)
 	if err != nil {
 		return fmt.Errorf("image: %q not present locally", imageName)
 	}
-	// Check if the cluster name exists
-	known, err := cluster.IsKnown(flags.Name)
-	if err != nil {
-		return err
-	}
-	if !known {
-		return fmt.Errorf("unknown cluster %q", flags.Name)
-	}
 
-	context := cluster.NewContext(flags.Name)
-	nodeList, err := context.ListInternalNodes()
+	// Check if the cluster nodes exist
+	nodeList, err := provider.ListInternalNodes(flags.Name)
 	if err != nil {
 		return err
+	}
+	if len(nodeList) == 0 {
+		return fmt.Errorf("no nodes found for cluster %q", flags.Name)
 	}
 
 	// map cluster nodes by their name

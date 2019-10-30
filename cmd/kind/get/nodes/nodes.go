@@ -52,7 +52,7 @@ func NewCommand() *cobra.Command {
 
 func runE(flags *flagpole) error {
 	// List nodes by cluster context name
-	n, err := cluster.NewContext(flags.Name).ListNodes()
+	n, err := cluster.NewProvider().ListNodes(flags.Name)
 	if err != nil {
 		return err
 	}

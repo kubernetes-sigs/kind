@@ -54,6 +54,13 @@ func NewContext(name string) *Context {
 	}
 }
 
+func NewProviderContext(p provider.Provider, name string) *Context {
+	return &Context{
+		name:     name,
+		provider: p,
+	}
+}
+
 // Name returns the cluster's name
 func (c *Context) Name() string {
 	return c.name
