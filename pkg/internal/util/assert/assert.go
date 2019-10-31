@@ -16,11 +16,14 @@ limitations under the License.
 
 package assert
 
-import (
-	"testing"
-)
+// *testing.T methods used by assert
+type testingDotT interface {
+	Errorf(format string, args ...interface{})
+}
 
-func ExpectError(t *testing.T, expectError bool, err error) {
+// ExpectError will call t.Errorf if expectError != (err == nil)
+// t should be a *testing.T normally
+func ExpectError(t testingDotT, expectError bool, err error) {
 	if err != nil && !expectError {
 		t.Errorf("Did not expect error: %v", err)
 	}
@@ -29,7 +32,9 @@ func ExpectError(t *testing.T, expectError bool, err error) {
 	}
 }
 
-func StringEqual(t *testing.T, expected, result string) {
+// StringEqual will call t.Errorf if expected != result
+// t should be a *testing.T normally
+func StringEqual(t testingDotT, expected, result string) {
 	if expected != result {
 		t.Errorf("Strings did not match!")
 		t.Errorf("Expected: %q", expected)
