@@ -408,7 +408,7 @@ func testWriteMergedNoExistingFile(t *testing.T) {
 		},
 	}
 
-	nonExistentPath := filepath.Join(dir, "bogus")
+	nonExistentPath := filepath.Join(dir, "bogus", "extra-bogus")
 	err = WriteMerged(kindConfig, nonExistentPath)
 	assert.ExpectError(t, false, err)
 

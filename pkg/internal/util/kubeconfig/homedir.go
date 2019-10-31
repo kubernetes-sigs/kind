@@ -17,8 +17,9 @@ limitations under the License.
 package kubeconfig
 
 // NOTE this is from client-go. Rather than pull in client-go for this one
-// standalone method, we have an (unmodified) fork here.
+// standalone method, we have a fork here.
 // https://github.com/kubernetes/client-go/blob/6d7018244d72350e2e8c4a19ccdbe4c8083a9143/util/homedir/homedir.go
+// We've modified this to require injecting os.Getenv as a dependency for testing purposes
 
 import (
 	"os"
@@ -32,14 +33,14 @@ import (
 // 2. if none of those locations contain a `.kube\config` file, the first of %HOME%, %USERPROFILE%, %HOMEDRIVE%%HOMEPATH% that exists and is writeable is returned.
 // 3. if none of those locations are writeable, the first of %HOME%, %USERPROFILE%, %HOMEDRIVE%%HOMEPATH% that exists is returned.
 // 4. if none of those locations exists, the first of %HOME%, %USERPROFILE%, %HOMEDRIVE%%HOMEPATH% that is set is returned.
-func homeDir() string {
+func homeDir(getEnv func(string) string) string {
 	if runtime.GOOS == "windows" {
-		home := os.Getenv("HOME")
+		home := getEnv("HOME")
 		homeDriveHomePath := ""
-		if homeDrive, homePath := os.Getenv("HOMEDRIVE"), os.Getenv("HOMEPATH"); len(homeDrive) > 0 && len(homePath) > 0 {
+		if homeDrive, homePath := getEnv("HOMEDRIVE"), getEnv("HOMEPATH"); len(homeDrive) > 0 && len(homePath) > 0 {
 			homeDriveHomePath = homeDrive + homePath
 		}
-		userProfile := os.Getenv("USERPROFILE")
+		userProfile := getEnv("USERPROFILE")
 
 		// Return first of %HOME%, %HOMEDRIVE%/%HOMEPATH%, %USERPROFILE% that contains a `.kube\config` file.
 		// %HOMEDRIVE%/%HOMEPATH% is preferred over %USERPROFILE% for backwards-compatibility.
@@ -92,5 +93,5 @@ func homeDir() string {
 		// We've got nothing
 		return ""
 	}
-	return os.Getenv("HOME")
+	return getEnv("HOME")
 }

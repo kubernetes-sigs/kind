@@ -52,13 +52,13 @@ func paths(explicitPath string, getEnv func(string) string) []string {
 		return paths
 	}
 
-	return []string{path.Join(homeDir(), ".kube", "config")}
+	return []string{path.Join(homeDir(getEnv), ".kube", "config")}
 }
 
 // pathForMerge returns the file that kubectl would merge into
-func pathForMerge(explicitPath string) string {
+func pathForMerge(explicitPath string, getEnv func(string) string) string {
 	// find the first file that exists
-	p := paths(explicitPath, os.Getenv)
+	p := paths(explicitPath, getEnv)
 	if len(p) == 1 {
 		return p[0]
 	}
