@@ -97,7 +97,7 @@ the container filesystem, and processes in the container. The cluster itself
 stores all state. No external state stores are used and the only stateful
 process is the container runtime. kind does not itself store or manage state.
 
-This simplifes a lot of problems and eases portability, while forcing cluster
+This simplifies a lot of problems and eases portability, while forcing cluster
 interactions to be consistent.
 
 ## Consider Automation
