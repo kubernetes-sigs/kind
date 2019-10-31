@@ -17,8 +17,13 @@ limitations under the License.
 package kubeconfig
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
+
+	"sigs.k8s.io/kind/pkg/internal/util/assert"
 )
 
 func TestRemove(t *testing.T) {
@@ -139,4 +144,148 @@ func TestRemove(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRemoveKIND(t *testing.T) {
+	t.Run("only kind", testRemoveKINDTrivial)
+	t.Run("leave another cluster", testRemoveKINDKeepOther)
+}
+
+func testRemoveKINDTrivial(t *testing.T) {
+	t.Parallel()
+	dir, err := ioutil.TempDir("", "kind-testremovekind")
+	if err != nil {
+		t.Fatalf("Failed to create tempdir: %d", err)
+	}
+	defer os.RemoveAll(dir)
+
+	// create an existing kubeconfig
+	const existingConfig = `clusters:
+- cluster:
+    certificate-authority-data: definitelyacert
+    server: https://192.168.9.4:6443
+  name: kind-foo
+contexts:
+- context:
+    cluster: kind-foo
+    user: kind-foo
+  name: kind-foo
+current-context: kind-foo
+kind: Config
+apiVersion: v1
+preferences: {}
+users:
+- name: kind-foo
+  user:
+    client-certificate-data: seemslegit
+    client-key-data: yep
+`
+	existingConfigPath := filepath.Join(dir, "existing-kubeconfig")
+	if err := ioutil.WriteFile(existingConfigPath, []byte(existingConfig), os.ModePerm); err != nil {
+		t.Fatalf("Failed to create existing kubeconfig: %d", err)
+	}
+
+	// ensure that we can write this merged config
+	if err := RemoveKIND("foo", existingConfigPath); err != nil {
+		t.Fatalf("Failed to remove kind from kubeconfig: %v", err)
+	}
+
+	// ensure the output matches expected
+	f, err := os.Open(existingConfigPath)
+	if err != nil {
+		t.Fatalf("Failed to open merged kubeconfig: %v", err)
+	}
+	contents, err := ioutil.ReadAll(f)
+	if err != nil {
+		t.Fatalf("Failed to read merged kubeconfig: %v", err)
+	}
+	expected := `apiVersion: v1
+kind: Config
+preferences: {}
+`
+	assert.StringEqual(t, expected, string(contents))
+}
+
+func testRemoveKINDKeepOther(t *testing.T) {
+	// tests removing a kind cluster but keeping another cluster
+	t.Parallel()
+	dir, err := ioutil.TempDir("", "kind-testremovekind")
+	if err != nil {
+		t.Fatalf("Failed to create tempdir: %d", err)
+	}
+	defer os.RemoveAll(dir)
+
+	// create an existing kubeconfig
+	const existingConfig = `clusters:
+- cluster:
+    certificate-authority-data: definitelyacert
+    server: https://192.168.9.4:6443
+  name: kind-foo
+- cluster:
+    certificate-authority-data: definitelyacert
+    server: https://192.168.9.4:6443
+  name: kops-foo
+contexts:
+- context:
+    cluster: kind-foo
+    user: kind-foo
+  name: kind-foo
+- context:
+    cluster: kops-foo
+    user: kops-foo
+  name: kops-foo
+current-context: kops-foo
+kind: Config
+apiVersion: v1
+preferences: {}
+users:
+- name: kind-foo
+  user:
+    client-certificate-data: seemslegit
+    client-key-data: yep
+- name: kops-foo
+  user:
+    client-certificate-data: seemslegit
+    client-key-data: yep
+`
+	existingConfigPath := filepath.Join(dir, "existing-kubeconfig")
+	if err := ioutil.WriteFile(existingConfigPath, []byte(existingConfig), os.ModePerm); err != nil {
+		t.Fatalf("Failed to create existing kubeconfig: %d", err)
+	}
+
+	// ensure that we can write this merged config
+	if err := RemoveKIND("foo", existingConfigPath); err != nil {
+		t.Fatalf("Failed to remove kind from kubeconfig: %v", err)
+	}
+
+	// ensure the output matches expected
+	f, err := os.Open(existingConfigPath)
+	if err != nil {
+		t.Fatalf("Failed to open merged kubeconfig: %v", err)
+	}
+	contents, err := ioutil.ReadAll(f)
+	if err != nil {
+		t.Fatalf("Failed to read merged kubeconfig: %v", err)
+	}
+	expected := `apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: definitelyacert
+    server: https://192.168.9.4:6443
+  name: kops-foo
+contexts:
+- context:
+    cluster: kops-foo
+    user: kops-foo
+  name: kops-foo
+current-context: kops-foo
+kind: Config
+preferences: {}
+users:
+- name: kops-foo
+  user:
+    client-certificate-data: seemslegit
+    client-key-data: yep
+`
+	assert.StringEqual(t, expected, string(contents))
 }
