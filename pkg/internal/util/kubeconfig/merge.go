@@ -17,6 +17,8 @@ limitations under the License.
 package kubeconfig
 
 import (
+	"os"
+
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
@@ -25,7 +27,7 @@ import (
 // the kind config's current context.
 func WriteMerged(kindConfig *Config, explicitConfigPath string) error {
 	// figure out what filepath we should use
-	configPath := pathForMerge(explicitConfigPath)
+	configPath := pathForMerge(explicitConfigPath, os.Getenv)
 
 	// lock config file the same as client-go
 	if err := lockFile(configPath); err != nil {
