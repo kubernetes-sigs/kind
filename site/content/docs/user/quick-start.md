@@ -101,10 +101,10 @@ kind
 kind-2
 ```
 
-In order to interact with an specific cluster, you only need to specify the
+In order to interact with a specific cluster, you only need to specify the
 cluster name as a context in kubectl:
 ```
-kubectl cluster-info --context kind
+kubectl cluster-info --context kind-kind
 kubectl cluster-info --context kind-2
 ```
 
@@ -414,4 +414,4 @@ kind, the Kubernetes cluster itself, etc.
 [Private Registries]: /docs/user/private-registries
 [customize control plane with kubeadm]: https://kubernetes.io/docs/setup/independent/control-plane-flags/
 [docker enable ipv6]: https://docs.docker.com/v17.09/engine/userguide/networking/default_network/ipv6/
-[access multiple clusters] https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/
+[access multiple clusters]: https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/
