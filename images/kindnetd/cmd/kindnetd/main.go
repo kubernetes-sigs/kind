@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"time"
@@ -42,6 +43,11 @@ import (
 // TODO: improve logging & error handling
 
 func main() {
+	// enable logging
+	klog.InitFlags(nil)
+	flag.Set("logtostderr", "true")
+	flag.Parse()
+
 	// create a Kubernetes client
 	config, err := rest.InClusterConfig()
 	if err != nil {
