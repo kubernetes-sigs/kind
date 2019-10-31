@@ -45,7 +45,7 @@ import (
 func main() {
 	// enable logging
 	klog.InitFlags(nil)
-	flag.Set("logtostderr", "true")
+	_ = flag.Set("logtostderr", "true")
 	flag.Parse()
 
 	// create a Kubernetes client
