@@ -30,11 +30,12 @@ import (
 )
 
 type flagpole struct {
-	Name      string
-	Config    string
-	ImageName string
-	Retain    bool
-	Wait      time.Duration
+	Name       string
+	Config     string
+	ImageName  string
+	Retain     bool
+	Wait       time.Duration
+	Kubeconfig string
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
@@ -54,6 +55,7 @@ func NewCommand() *cobra.Command {
 	cmd.Flags().StringVar(&flags.ImageName, "image", "", "node docker image to use for booting the cluster")
 	cmd.Flags().BoolVar(&flags.Retain, "retain", false, "retain nodes for debugging when cluster creation fails")
 	cmd.Flags().DurationVar(&flags.Wait, "wait", time.Duration(0), "Wait for control plane node to be ready (default 0s)")
+	cmd.Flags().StringVar(&flags.Kubeconfig, "kubeconfig", "", "sets kubeconfig path instead of $KUBECONFIG or $HOME/.kube/config")
 	return cmd
 }
 
@@ -77,6 +79,7 @@ func runE(flags *flagpole) error {
 		create.WithNodeImage(flags.ImageName),
 		create.Retain(flags.Retain),
 		create.WaitForReady(flags.Wait),
+		create.WithKubeconfigPath(flags.Kubeconfig),
 	); err != nil {
 		if errs := errors.Errors(err); errs != nil {
 			for _, problem := range errs {

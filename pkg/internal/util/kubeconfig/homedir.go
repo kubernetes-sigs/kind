@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package env
+package kubeconfig
 
 // NOTE this is from client-go. Rather than pull in client-go for this one
 // standalone method, we have an (unmodified) fork here.
@@ -26,13 +26,13 @@ import (
 	"runtime"
 )
 
-// HomeDir returns the home directory for the current user.
+// homeDir returns the home directory for the current user.
 // On Windows:
 // 1. the first of %HOME%, %HOMEDRIVE%%HOMEPATH%, %USERPROFILE% containing a `.kube\config` file is returned.
 // 2. if none of those locations contain a `.kube\config` file, the first of %HOME%, %USERPROFILE%, %HOMEDRIVE%%HOMEPATH% that exists and is writeable is returned.
 // 3. if none of those locations are writeable, the first of %HOME%, %USERPROFILE%, %HOMEDRIVE%%HOMEPATH% that exists is returned.
 // 4. if none of those locations exists, the first of %HOME%, %USERPROFILE%, %HOMEDRIVE%%HOMEPATH% that is set is returned.
-func HomeDir() string {
+func homeDir() string {
 	if runtime.GOOS == "windows" {
 		home := os.Getenv("HOME")
 		homeDriveHomePath := ""

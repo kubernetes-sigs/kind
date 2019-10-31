@@ -27,8 +27,8 @@ import (
 )
 
 type flagpole struct {
-	Name   string
-	Retain bool
+	Name       string
+	Kubeconfig string
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
@@ -45,13 +45,14 @@ func NewCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "the cluster name")
+	cmd.Flags().StringVar(&flags.Kubeconfig, "kubeconfig", "", "sets kubeconfig path instead of $KUBECONFIG or $HOME/.kube/config")
 	return cmd
 }
 
 func runE(flags *flagpole) error {
 	// Delete the cluster
 	fmt.Printf("Deleting cluster %q ...\n", flags.Name)
-	if err := cluster.NewProvider().Delete(flags.Name); err != nil {
+	if err := cluster.NewProvider().Delete(flags.Name, flags.Kubeconfig); err != nil {
 		return errors.Wrap(err, "failed to delete cluster")
 	}
 	return nil

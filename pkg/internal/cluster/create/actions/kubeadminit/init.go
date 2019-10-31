@@ -18,15 +18,8 @@ limitations under the License.
 package kubeadminit
 
 import (
-	"bytes"
-	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"regexp"
 	"strings"
 
-	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/globals"
@@ -106,20 +99,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 	}
 
-	// copies the kubeconfig files locally in order to make the cluster
-	// usable with kubectl.
-	// the kubeconfig file created by kubeadm internally to the node
-	// must be modified in order to use the random host port reserved
-	// for the API server and exposed by the node
-	endpoint, err := ctx.ClusterContext.GetAPIServerEndpoint()
-	if err != nil {
-		return errors.Wrap(err, "failed to get api server endpoint from node")
-	}
-	kubeConfigPath := ctx.ClusterContext.KubeConfigPath()
-	if err := writeKubeConfig(node, kubeConfigPath, endpoint); err != nil {
-		return errors.Wrap(err, "failed to get kubeconfig from node")
-	}
-
 	// if we are only provisioning one node, remove the master taint
 	// https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#master-isolation
 	if len(allNodes) == 1 {
@@ -134,43 +113,4 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	// mark success
 	ctx.Status.End(true)
 	return nil
-}
-
-// matches kubeconfig server entry like:
-//    server: https://172.17.0.2:6443
-// which we rewrite to:
-//    server: https://$ADDRESS:$PORT
-var serverAddressRE = regexp.MustCompile(`^(\s+server:) https://.*:\d+$`)
-
-// writeKubeConfig writes a fixed KUBECONFIG to dest
-// this should only be called on a control plane node
-// While copyng to the host machine the control plane address
-// is replaced with local host and the control plane port with
-// a randomly generated port reserved during node creation.
-func writeKubeConfig(n nodes.Node, dest string, endpoint string) error {
-	cmd := n.Command("cat", "/etc/kubernetes/admin.conf")
-	lines, err := exec.CombinedOutputLines(cmd)
-	if err != nil {
-		return errors.Wrap(err, "failed to get kubeconfig from node")
-	}
-
-	// fix the config file, swapping out the server for the forwarded localhost:port
-	var buff bytes.Buffer
-	for _, line := range lines {
-		match := serverAddressRE.FindStringSubmatch(line)
-		if len(match) > 1 {
-			line = fmt.Sprintf("%s https://%s", match[1], endpoint)
-		}
-		buff.WriteString(line)
-		buff.WriteString("\n")
-	}
-
-	// create the directory to contain the KUBECONFIG file.
-	// 0755 is taken from client-go's config handling logic: https://github.com/kubernetes/client-go/blob/5d107d4ebc00ee0ea606ad7e39fd6ce4b0d9bf9e/tools/clientcmd/loader.go#L412
-	err = os.MkdirAll(filepath.Dir(dest), 0755)
-	if err != nil {
-		return errors.Wrap(err, "failed to create kubeconfig output directory")
-	}
-
-	return ioutil.WriteFile(dest, buff.Bytes(), 0600)
 }

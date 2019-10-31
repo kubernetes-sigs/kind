@@ -17,19 +17,14 @@ limitations under the License.
 package cluster
 
 import (
-	"bytes"
-	"io/ioutil"
-	"os"
-
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/create"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/errors"
 
-	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	internalcontext "sigs.k8s.io/kind/pkg/internal/cluster/context"
 	internalcreate "sigs.k8s.io/kind/pkg/internal/cluster/create"
 	internaldelete "sigs.k8s.io/kind/pkg/internal/cluster/delete"
+	"sigs.k8s.io/kind/pkg/internal/cluster/kubeconfig"
 	internallogs "sigs.k8s.io/kind/pkg/internal/cluster/logs"
 	"sigs.k8s.io/kind/pkg/internal/cluster/providers/docker"
 	internalprovider "sigs.k8s.io/kind/pkg/internal/cluster/providers/provider"
@@ -69,8 +64,8 @@ func (p *Provider) Create(name string, options ...create.ClusterOption) error {
 }
 
 // Delete tears down a kubernetes-in-docker cluster
-func (p *Provider) Delete(name string) error {
-	return internaldelete.Cluster(p.ic(name))
+func (p *Provider) Delete(name, explicitKubeconfigPath string) error {
+	return internaldelete.Cluster(p.ic(name), explicitKubeconfigPath)
 }
 
 // List returns a list of clusters for which nodes exist
@@ -78,49 +73,11 @@ func (p *Provider) List() ([]string, error) {
 	return p.provider.ListClusters()
 }
 
-// KubeConfigPath returns the path to where the Kubeconfig would be placed
-// by kind based on the configuration.
-func (p *Provider) KubeConfigPath(name string) string {
-	return p.ic(name).KubeConfigPath()
-}
-
 // KubeConfig returns the KUBECONFIG for the cluster
 // If internal is true, this will contain the internal IP etc.
 // If internal is fale, this will contain the host IP etc.
 func (p *Provider) KubeConfig(name string, internal bool) (string, error) {
-	// TODO(bentheelder): move implementation to node provider
-	n, err := p.ic(name).ListNodes()
-	if err != nil {
-		return "", err
-	}
-	if internal {
-		var buff bytes.Buffer
-		nodes, err := nodeutils.ControlPlaneNodes(n)
-		if err != nil {
-			return "", err
-		}
-		if len(nodes) < 1 {
-			return "", errors.New("could not locate any control plane nodes")
-		}
-		node := nodes[0]
-		// grab kubeconfig version from one of the control plane nodes
-		if err := node.Command("cat", "/etc/kubernetes/admin.conf").SetStdout(&buff).Run(); err != nil {
-			return "", errors.Wrap(err, "failed to get cluster internal kubeconfig")
-		}
-		return buff.String(), nil
-	}
-
-	// TODO(bentheelder): should not depend on host kubeconfig file!
-	f, err := os.Open(p.KubeConfigPath(name))
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get cluster kubeconfig")
-	}
-	defer f.Close()
-	out, err := ioutil.ReadAll(f)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to read kubeconfig")
-	}
-	return string(out), nil
+	return kubeconfig.Get(p.ic(name), internal)
 }
 
 // ListNodes returns the list of container IDs for the "nodes" in the cluster

@@ -78,3 +78,12 @@ func SetupKubernetes(setupKubernetes bool) ClusterOption {
 		return o, nil
 	}
 }
+
+// WithKubeconfigPath sets the explicit --kubeconfig path
+// The rules from https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands apply
+func WithKubeconfigPath(kubeconfigPath string) ClusterOption {
+	return func(o *internaltypes.ClusterOptions) (*internaltypes.ClusterOptions, error) {
+		o.KubeconfigPath = kubeconfigPath
+		return o, nil
+	}
+}
