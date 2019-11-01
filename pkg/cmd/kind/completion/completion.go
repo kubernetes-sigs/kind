@@ -20,8 +20,8 @@ package completion
 import (
 	"github.com/spf13/cobra"
 
-	"sigs.k8s.io/kind/cmd/kind/completion/bash"
-	"sigs.k8s.io/kind/cmd/kind/completion/zsh"
+	"sigs.k8s.io/kind/pkg/cmd/kind/completion/bash"
+	"sigs.k8s.io/kind/pkg/cmd/kind/completion/zsh"
 )
 
 // NewCommand returns a new cobra.Command for cluster creation

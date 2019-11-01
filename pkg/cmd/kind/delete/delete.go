@@ -14,23 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package create implements the `create` command
-package create
+// Package delete implements the `delete` command
+package delete
 
 import (
 	"github.com/spf13/cobra"
 
-	createcluster "sigs.k8s.io/kind/cmd/kind/create/cluster"
+	deletecluster "sigs.k8s.io/kind/pkg/cmd/kind/delete/cluster"
 )
 
 // NewCommand returns a new cobra.Command for cluster creation
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Args:  cobra.NoArgs,
-		Use:   "create",
-		Short: "Creates one of [cluster]",
-		Long:  "Creates one of local Kubernetes cluster (cluster)",
+		Args: cobra.NoArgs,
+		// TODO(bentheelder): more detailed usage
+		Use:   "delete",
+		Short: "Deletes one of [cluster]",
+		Long:  "Deletes one of [cluster]",
 	}
-	cmd.AddCommand(createcluster.NewCommand())
+	cmd.AddCommand(deletecluster.NewCommand())
 	return cmd
 }

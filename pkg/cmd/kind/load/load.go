@@ -20,8 +20,8 @@ package load
 import (
 	"github.com/spf13/cobra"
 
-	dockerimage "sigs.k8s.io/kind/cmd/kind/load/docker-image"
-	imagearchive "sigs.k8s.io/kind/cmd/kind/load/image-archive"
+	dockerimage "sigs.k8s.io/kind/pkg/cmd/kind/load/docker-image"
+	imagearchive "sigs.k8s.io/kind/pkg/cmd/kind/load/image-archive"
 )
 
 // NewCommand returns a new cobra.Command for get

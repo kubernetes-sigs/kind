@@ -14,29 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package get implements the `get` command
-package get
+// Package create implements the `create` command
+package create
 
 import (
 	"github.com/spf13/cobra"
 
-	"sigs.k8s.io/kind/cmd/kind/get/clusters"
-	"sigs.k8s.io/kind/cmd/kind/get/kubeconfig"
-	"sigs.k8s.io/kind/cmd/kind/get/nodes"
+	createcluster "sigs.k8s.io/kind/pkg/cmd/kind/create/cluster"
 )
 
-// NewCommand returns a new cobra.Command for get
+// NewCommand returns a new cobra.Command for cluster creation
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Args: cobra.NoArgs,
-		// TODO(bentheelder): more detailed usage
-		Use:   "get",
-		Short: "Gets one of [clusters, nodes, kubeconfig]",
-		Long:  "Gets one of [clusters, nodes, kubeconfig]",
+		Args:  cobra.NoArgs,
+		Use:   "create",
+		Short: "Creates one of [cluster]",
+		Long:  "Creates one of local Kubernetes cluster (cluster)",
 	}
-	// add subcommands
-	cmd.AddCommand(clusters.NewCommand())
-	cmd.AddCommand(nodes.NewCommand())
-	cmd.AddCommand(kubeconfig.NewCommand())
+	cmd.AddCommand(createcluster.NewCommand())
 	return cmd
 }
