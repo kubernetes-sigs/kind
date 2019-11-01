@@ -129,7 +129,7 @@ git clone --depth 1 https://github.com/microsoft/WSL2-Linux-Kernel.git
 cd WSL2-Linux-Kernel
 make -j4 KCONFIG_CONFIG=Microsoft/config-wsl
 mkdir /mnt/c/linuxtemp
-cp arch/x86/boot/bzImage /mnt/c/linuxtemp/
+cp arch/x86_x64/boot/bzImage /mnt/c/linuxtemp/
 ```
 
 Now, open an administrator PowerShell window and run these steps to apply the kernel:
