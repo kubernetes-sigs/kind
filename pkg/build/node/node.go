@@ -22,6 +22,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"runtime"
 	"strings"
 	"time"
 
@@ -36,7 +37,6 @@ import (
 	"sigs.k8s.io/kind/pkg/fs"
 	"sigs.k8s.io/kind/pkg/globals"
 	"sigs.k8s.io/kind/pkg/internal/build/kube"
-	"sigs.k8s.io/kind/pkg/internal/util/env"
 )
 
 // DefaultImage is the default name:tag for the built image
@@ -101,7 +101,11 @@ func NewBuildContext(options ...Option) (ctx *BuildContext, err error) {
 		mode:      DefaultMode,
 		image:     DefaultImage,
 		baseImage: DefaultBaseImage,
-		arch:      env.GetArch(),
+		// TODO: only host arch supported. changing this will be tricky
+		arch: runtime.GOARCH,
+	}
+	if !supportedArch(ctx.arch) {
+		return nil, errors.Errorf("unsupported architecture %q", ctx.arch)
 	}
 	// apply user options
 	for _, option := range options {
@@ -120,12 +124,22 @@ func NewBuildContext(options ...Option) (ctx *BuildContext, err error) {
 		ctx.kubeRoot = kubeRoot
 	}
 	// initialize bits
-	bits, err := kube.NewNamedBits(ctx.mode, ctx.kubeRoot)
+	bits, err := kube.NewNamedBits(ctx.mode, ctx.kubeRoot, ctx.arch)
 	if err != nil {
 		return nil, err
 	}
 	ctx.bits = bits
 	return ctx, nil
+}
+
+func supportedArch(arch string) bool {
+	// currently we nominally support building node images for these
+	return map[string]bool{
+		"amd64":   true,
+		"arm":     true,
+		"arm64":   true,
+		"ppc64le": true,
+	}[arch]
 }
 
 // Build builds the cluster node image, the sourcedir must be set on
@@ -387,7 +401,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	}
 
 	// get image tag fixing function for this version
-	fixRepository := repositoryCorrectorForVersion(ver)
+	fixRepository := repositoryCorrectorForVersion(ver, c.arch)
 
 	// correct set of built tags using the same logic we will use to rewrite
 	// the tags as we load the archives
@@ -527,10 +541,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	return nil
 }
 
-func repositoryCorrectorForVersion(kubeVersion *version.Version) func(string) string {
-	// TODO(bentheelder): we assume the host arch, but cross compiling should
-	// be possible now
-	arch := env.GetArch()
+func repositoryCorrectorForVersion(kubeVersion *version.Version, arch string) func(string) string {
 	archSuffix := "-" + arch
 
 	// For kubernetes v1.15+ (actually 1.16 alpha versions) we may need to
