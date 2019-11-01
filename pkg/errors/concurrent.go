@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package concurrent provides utilities for concurrent execution
 package errors
 
 import (
@@ -40,7 +39,7 @@ func UntilErrorConcurrent(funcs []func() error) error {
 }
 
 // AggregateConcurrent runs fns concurrently, returning a NewAggregate if there are > 1 errors
-func AggregateConcurrent(funcs ...func() error) error {
+func AggregateConcurrent(funcs []func() error) error {
 	// run all fns concurrently
 	ch := make(chan error, len(funcs))
 	var wg sync.WaitGroup

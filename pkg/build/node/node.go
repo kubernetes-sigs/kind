@@ -477,7 +477,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 			return nil
 		})
 	}
-	if err := errors.AggregateConcurrent(fns...); err != nil {
+	if err := errors.AggregateConcurrent(fns); err != nil {
 		return err
 	}
 	close(pulledImages)
