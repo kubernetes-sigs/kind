@@ -578,18 +578,18 @@ func (c *BuildContext) createBuildContainer(buildDir string) (id string, err err
 	id = "kind-build-" + uuid.New().String()
 	err = docker.Run(
 		c.baseImage,
-		docker.WithRunArgs(
+		[]string{
 			"-d", // make the client exit while the container continues to run
 			// label the container to make them easier to track
 			"--label", fmt.Sprintf("%s=%s", BuildContainerLabelKey, time.Now().Format(time.RFC3339Nano)),
 			"-v", fmt.Sprintf("%s:/build", buildDir),
 			// the container should hang forever so we can exec in it
 			"--entrypoint=sleep",
-			"--name="+id,
-		),
-		docker.WithContainerArgs(
+			"--name=" + id,
+		},
+		[]string{
 			"infinity", // sleep infinitely to keep the container around
-		),
+		},
 	)
 	if err != nil {
 		return id, errors.Wrap(err, "failed to create build container")
