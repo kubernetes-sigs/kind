@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package cluster implements kind kubernetes-in-docker cluster management
 package cluster
 
 import (
