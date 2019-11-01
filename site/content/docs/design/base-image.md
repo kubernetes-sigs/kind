@@ -28,8 +28,9 @@ the container truly boots
 - we do a few tricks to minimize unnecessary services and inform systemd that it
 is in docker (see the [Dockerfile][dockerfile])
 
-This image is based on `ubuntu:18.04` image
-due to high availability of tooling.
+This image is based on the `ubuntu` image which starts relatively small for
+a Kubernetes node image, has near exclusively packages we need, and has
+relatively up to date packages.
 We strive to minimize the image size where possible.
 
 [base image]: https://sigs.k8s.io/kind/images/base
