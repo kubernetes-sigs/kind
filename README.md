@@ -48,13 +48,14 @@ mv ./kind /some-dir-in-your-PATH/kind
 ```
 
 To use kind, you will need to [install docker].  
-Once you have docker running you can create a cluster with 
+Once you have docker running you can create a cluster with:
 
 ```console
 kind create cluster
 ```
 
-To delete your cluster use 
+To delete your cluster use:
+
 ```console
 kind delete cluster
 ```
@@ -62,7 +63,7 @@ kind delete cluster
 <!--TODO(bentheelder): improve this part of the guide-->
 To create a cluster from Kubernetes source:
 - ensure that Kubernetes is cloned in `$(go env GOPATH)/src/k8s.io/kubernetes`
-- build a node image and create a cluster with 
+- build a node image and create a cluster with:
 ```console
 kind build node-image
 kind create cluster --image kindest/node:latest
