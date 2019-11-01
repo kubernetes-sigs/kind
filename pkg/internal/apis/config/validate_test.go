@@ -38,11 +38,49 @@ func TestClusterValidate(t *testing.T) {
 			}(),
 		},
 		{
+			Name: "multiple valid nodes",
+			Cluster: func() Cluster {
+				c := Cluster{}
+				SetDefaultsCluster(&c)
+				c.Nodes = append(c.Nodes, newDefaultedNode(WorkerRole), newDefaultedNode(WorkerRole))
+				return c
+			}(),
+		},
+		{
+			Name: "default IPv6",
+			Cluster: func() Cluster {
+				c := Cluster{}
+				c.Networking.IPFamily = IPv6Family
+				SetDefaultsCluster(&c)
+				return c
+			}(),
+		},
+		{
 			Name: "bogus podSubnet",
 			Cluster: func() Cluster {
 				c := Cluster{}
 				SetDefaultsCluster(&c)
 				c.Networking.PodSubnet = "aa"
+				return c
+			}(),
+			ExpectErrors: 1,
+		},
+		{
+			Name: "bogus serviceSubnet",
+			Cluster: func() Cluster {
+				c := Cluster{}
+				SetDefaultsCluster(&c)
+				c.Networking.ServiceSubnet = "aa"
+				return c
+			}(),
+			ExpectErrors: 1,
+		},
+		{
+			Name: "bogus apiServerPort",
+			Cluster: func() Cluster {
+				c := Cluster{}
+				SetDefaultsCluster(&c)
+				c.Networking.APIServerPort = 9999999
 				return c
 			}(),
 			ExpectErrors: 1,
@@ -97,13 +135,13 @@ func TestClusterValidate(t *testing.T) {
 	}
 }
 
-// TODO(fabriziopandini): ideally this should use scheme.Default, but this creates a circular dependency
-// So the current solution is to mimic defaulting for the validation test
 func newDefaultedNode(role NodeRole) Node {
-	return Node{
+	n := Node{
 		Role:  role,
 		Image: "myImage:latest",
 	}
+	SetDefaultsNode(&n)
+	return n
 }
 
 func TestNodeValidate(t *testing.T) {
@@ -146,6 +184,34 @@ func TestNodeValidate(t *testing.T) {
 			Node: func() Node {
 				cfg := newDefaultedNode(ControlPlaneRole)
 				cfg.Role = "ssss"
+				return cfg
+			}(),
+			ExpectErrors: 1,
+		},
+		{
+			TestName: "Invalid ContainerPort",
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg.ExtraPortMappings = []PortMapping{
+					{
+						ContainerPort: 999999999,
+						HostPort:      8080,
+					},
+				}
+				return cfg
+			}(),
+			ExpectErrors: 1,
+		},
+		{
+			TestName: "Invalid HostPort",
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg.ExtraPortMappings = []PortMapping{
+					{
+						ContainerPort: 8080,
+						HostPort:      999999999,
+					},
+				}
 				return cfg
 			}(),
 			ExpectErrors: 1,
