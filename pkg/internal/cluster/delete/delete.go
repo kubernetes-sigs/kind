@@ -21,7 +21,8 @@ import (
 	"sigs.k8s.io/kind/pkg/globals"
 
 	"sigs.k8s.io/kind/pkg/internal/cluster/context"
-	"sigs.k8s.io/kind/pkg/internal/util/kubeconfig"
+	// TODO: we shouldn't need to import this here
+	"sigs.k8s.io/kind/pkg/internal/cluster/kubeconfig"
 )
 
 // Cluster deletes the cluster identified by ctx
@@ -33,7 +34,7 @@ func Cluster(c *context.Context, explicitKubeconfigPath string) error {
 		return errors.Wrap(err, "error listing nodes")
 	}
 
-	kerr := kubeconfig.RemoveKIND(c.Name(), explicitKubeconfigPath)
+	kerr := kubeconfig.Remove(c.Name(), explicitKubeconfigPath)
 	if kerr != nil {
 		globals.GetLogger().Errorf("failed to update kubeconfig: %v", kerr)
 	}

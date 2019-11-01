@@ -19,18 +19,17 @@ package create
 import (
 	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/alessio/shellescape"
 
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
 
-	"sigs.k8s.io/kind/pkg/cluster/create"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/globals"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/apis/config/encoding"
 	"sigs.k8s.io/kind/pkg/internal/cluster/context"
-	createtypes "sigs.k8s.io/kind/pkg/internal/cluster/create/types"
 	"sigs.k8s.io/kind/pkg/internal/cluster/delete"
 	"sigs.k8s.io/kind/pkg/internal/util/cli"
 
@@ -56,11 +55,22 @@ const (
 // https://godoc.org/github.com/docker/docker/daemon/names#pkg-constants
 var validNameRE = regexp.MustCompile(`^[a-zA-Z0-9_.-]+$`)
 
+// ClusterOptions holds cluster creation options
+type ClusterOptions struct {
+	Config *config.Cluster
+	// NodeImage overrides the nodes' images in Config if non-zero
+	NodeImage      string
+	Retain         bool
+	WaitForReady   time.Duration
+	KubeconfigPath string
+	// see https://github.com/kubernetes-sigs/kind/issues/324
+	StopBeforeSettingUpKubernetes bool // if false kind should setup kubernetes after creating nodes
+}
+
 // Cluster creates a cluster
-func Cluster(ctx *context.Context, options ...create.ClusterOption) error {
-	// apply options, do defaulting etc.
-	opts, err := collectOptions(options...)
-	if err != nil {
+func Cluster(ctx *context.Context, opts *ClusterOptions) error {
+	// default / process options (namely config)
+	if err := fixupOptions(opts); err != nil {
 		return err
 	}
 
@@ -99,7 +109,7 @@ func Cluster(ctx *context.Context, options ...create.ClusterOption) error {
 		loadbalancer.NewAction(), // setup external loadbalancer
 		configaction.NewAction(), // setup kubeadm config
 	}
-	if opts.SetupKubernetes {
+	if !opts.StopBeforeSettingUpKubernetes {
 		actionsToRun = append(actionsToRun,
 			kubeadminit.NewAction(), // run kubeadm init
 		)
@@ -128,7 +138,7 @@ func Cluster(ctx *context.Context, options ...create.ClusterOption) error {
 		}
 	}
 
-	if !opts.SetupKubernetes {
+	if opts.StopBeforeSettingUpKubernetes {
 		return nil
 	}
 
@@ -155,25 +165,13 @@ func exportKubeconfig(ctx *context.Context, kubeconfigPath string) error {
 	return nil
 }
 
-func collectOptions(options ...create.ClusterOption) (*createtypes.ClusterOptions, error) {
-	// apply options
-	opts := &createtypes.ClusterOptions{
-		SetupKubernetes: true,
-	}
-	for _, option := range options {
-		newOpts, err := option(opts)
-		if err != nil {
-			return nil, err
-		}
-		opts = newOpts
-	}
-
+func fixupOptions(opts *ClusterOptions) error {
 	// do post processing for options
 	// first ensure we at least have a default cluster config
 	if opts.Config == nil {
 		cfg, err := encoding.Load("")
 		if err != nil {
-			return nil, err
+			return err
 		}
 		opts.Config = cfg
 	}
@@ -192,5 +190,5 @@ func collectOptions(options ...create.ClusterOption) (*createtypes.ClusterOption
 	// may be constructed in memory rather than from disk)
 	config.SetDefaultsCluster(opts.Config)
 
-	return opts, nil
+	return nil
 }

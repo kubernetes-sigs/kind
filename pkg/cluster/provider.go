@@ -14,12 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package cluster implements kind kubernetes-in-docker cluster management
 package cluster
 
 import (
 	"sigs.k8s.io/kind/pkg/cluster/constants"
-	"sigs.k8s.io/kind/pkg/cluster/create"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 
 	internalcontext "sigs.k8s.io/kind/pkg/internal/cluster/context"
@@ -60,8 +58,15 @@ func (p *Provider) ic(name string) *internalcontext.Context {
 }
 
 // Create provisions and starts a kubernetes-in-docker cluster
-func (p *Provider) Create(name string, options ...create.ClusterOption) error {
-	return internalcreate.Cluster(p.ic(name), options...)
+func (p *Provider) Create(name string, options ...CreateOption) error {
+	// apply options
+	opts := &internalcreate.ClusterOptions{}
+	for _, o := range options {
+		if err := o.apply(opts); err != nil {
+			return err
+		}
+	}
+	return internalcreate.Cluster(p.ic(name), opts)
 }
 
 // Delete tears down a kubernetes-in-docker cluster
