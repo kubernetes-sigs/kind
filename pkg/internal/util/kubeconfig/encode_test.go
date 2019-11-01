@@ -23,6 +23,7 @@ import (
 )
 
 func TestEncodeRoundtrip(t *testing.T) {
+	t.Parallel()
 	// test round tripping a kubeconfig
 	const aConfig = `apiVersion: v1
 clusters:
@@ -56,6 +57,7 @@ users:
 }
 
 func TestEncodeEmpty(t *testing.T) {
+	t.Parallel()
 	encoded, err := Encode(&Config{})
 	if err != nil {
 		t.Fatalf("failed to encode kubeconfig: %v", err)

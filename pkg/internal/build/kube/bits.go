@@ -58,15 +58,15 @@ type InstallContext interface {
 // "apt" -> NewAptBits(kubeRoot)
 // "bazel" -> NewBazelBuildBits(kubeRoot)
 // "docker" or "make" -> NewDockerBuildBits(kubeRoot)
-func NewNamedBits(name string, kubeRoot string) (bits Bits, err error) {
+func NewNamedBits(name, kubeRoot, arch string) (bits Bits, err error) {
 	fn, err := nameToImpl(name)
 	if err != nil {
 		return nil, err
 	}
-	return fn(kubeRoot)
+	return fn(kubeRoot, arch)
 }
 
-func nameToImpl(name string) (func(string) (Bits, error), error) {
+func nameToImpl(name string) (func(string, string) (Bits, error), error) {
 	switch name {
 	case "bazel":
 		return NewBazelBuildBits, nil
@@ -77,11 +77,4 @@ func nameToImpl(name string) (func(string) (Bits, error), error) {
 	default:
 	}
 	return nil, errors.Errorf("no Bits implementation with name: %s", name)
-}
-
-// NamedBitsRegistered returns true if name is in the registry backing
-// NewNamedBits
-func NamedBitsRegistered(name string) bool {
-	_, err := nameToImpl(name)
-	return err == nil
 }

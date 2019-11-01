@@ -25,7 +25,6 @@ import (
 
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
-	"sigs.k8s.io/kind/pkg/internal/util/env"
 )
 
 // TODO(bentheelder): plumb through arch
@@ -33,15 +32,17 @@ import (
 // DockerBuildBits implements Bits for a local docker-ized make / bash build
 type DockerBuildBits struct {
 	kubeRoot string
+	arch     string
 }
 
 var _ Bits = &DockerBuildBits{}
 
 // NewDockerBuildBits returns a new Bits backed by the docker-ized build,
 // given kubeRoot, the path to the kubernetes source directory
-func NewDockerBuildBits(kubeRoot string) (bits Bits, err error) {
+func NewDockerBuildBits(kubeRoot, arch string) (bits Bits, err error) {
 	return &DockerBuildBits{
 		kubeRoot: kubeRoot,
+		arch:     arch,
 	}, nil
 }
 
@@ -87,8 +88,8 @@ func (b *DockerBuildBits) Build() error {
 	return err
 }
 
-func dockerBuildOsAndArch() string {
-	return "linux/" + env.GetArch()
+func dockerBuildOsAndArch(arch string) string {
+	return "linux/" + arch
 }
 
 // binary and image build when we have `make quick-release-images` support
@@ -103,7 +104,7 @@ func (b *DockerBuildBits) build() error {
 			"KUBE_BUILD_HYPERKUBE=n",
 			"KUBE_BUILD_CONFORMANCE=n",
 			// build for the host platform
-			"KUBE_BUILD_PLATFORMS=" + dockerBuildOsAndArch(),
+			"KUBE_BUILD_PLATFORMS=" + dockerBuildOsAndArch(b.arch),
 			// leverage in-tree-cloud-provider-free builds by default
 			// https://github.com/kubernetes/kubernetes/pull/80353
 			"GOFLAGS=-tags=providerless",
@@ -154,7 +155,7 @@ func (b *DockerBuildBits) buildBash() error {
 	}
 	cmd := exec.Command(
 		"build/run.sh", "make", "all",
-		"WHAT="+strings.Join(what, " "), "KUBE_BUILD_PLATFORMS="+dockerBuildOsAndArch(),
+		"WHAT="+strings.Join(what, " "), "KUBE_BUILD_PLATFORMS="+dockerBuildOsAndArch(b.arch),
 	)
 	// ensure the build isn't especially noisy..., inherit existing env
 	cmd.SetEnv(
@@ -170,7 +171,7 @@ func (b *DockerBuildBits) buildBash() error {
 
 	// mimic `make quick-release` internals, clear previous images
 	if err := os.RemoveAll(filepath.Join(
-		".", "_output", "release-images", env.GetArch(),
+		".", "_output", "release-images", b.arch,
 	)); err != nil {
 		return errors.Wrap(err, "failed to remove old release-images")
 	}
@@ -182,7 +183,7 @@ func (b *DockerBuildBits) buildBash() error {
 		"source build/lib/release.sh;",
 		"kube::version::get_version_vars;",
 		fmt.Sprintf(`kube::release::create_docker_images_for_server "${LOCAL_OUTPUT_ROOT}/dockerized/bin/%s" "%s"`,
-			dockerBuildOsAndArch(), env.GetArch()),
+			dockerBuildOsAndArch(b.arch), b.arch),
 	}
 	cmd = exec.Command("bash", "-c", strings.Join(buildImages, " "))
 	cmd.SetEnv(
@@ -202,7 +203,7 @@ func (b *DockerBuildBits) buildBash() error {
 // Paths implements Bits.Paths
 func (b *DockerBuildBits) Paths() map[string]string {
 	binDir := filepath.Join(b.kubeRoot,
-		"_output", "dockerized", "bin", "linux", env.GetArch(),
+		"_output", "dockerized", "bin", "linux", b.arch,
 	)
 	return map[string]string{
 		// binaries (hyperkube)
@@ -217,7 +218,7 @@ func (b *DockerBuildBits) Paths() map[string]string {
 // ImagePaths implements Bits.ImagePaths
 func (b *DockerBuildBits) ImagePaths() []string {
 	imageDir := filepath.Join(b.kubeRoot,
-		"_output", "release-images", env.GetArch(),
+		"_output", "release-images", b.arch,
 	)
 	return []string{
 		filepath.Join(imageDir, "kube-apiserver.tar"),

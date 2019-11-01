@@ -23,10 +23,12 @@ import (
 )
 
 func TestKINDClusterKey(t *testing.T) {
+	t.Parallel()
 	assert.StringEqual(t, "kind-foobar", KINDClusterKey("foobar"))
 }
 
 func TestCheckKubeadmExpectations(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Name        string
 		Config      *Config

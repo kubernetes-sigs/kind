@@ -24,12 +24,12 @@ import (
 
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
-	"sigs.k8s.io/kind/pkg/internal/util/env"
 )
 
 // BazelBuildBits implements Bits for a local Bazel build
 type BazelBuildBits struct {
 	kubeRoot string
+	arch     string
 	// computed at build time
 	paths      map[string]string
 	imagePaths []string
@@ -39,9 +39,10 @@ var _ Bits = &BazelBuildBits{}
 
 // NewBazelBuildBits returns a new Bits backed by bazel build,
 // given kubeRoot, the path to the kubernetes source directory
-func NewBazelBuildBits(kubeRoot string) (bits Bits, err error) {
+func NewBazelBuildBits(kubeRoot, arch string) (bits Bits, err error) {
 	return &BazelBuildBits{
 		kubeRoot: kubeRoot,
+		arch:     arch,
 	}, nil
 }
 
@@ -62,11 +63,6 @@ func (b *BazelBuildBits) Build() error {
 		return err
 	}
 
-	// TODO(bentheelder): we assume the host arch, but cross compiling should
-	// be possible now
-	arch := env.GetArch()
-	bazelGoosGoarch := fmt.Sprintf("linux_%s", arch)
-
 	// build artifacts
 	cmd := exec.Command(
 		"bazel", "build",
@@ -81,6 +77,7 @@ func (b *BazelBuildBits) Build() error {
 	}
 
 	// capture the output paths
+	bazelGoosGoarch := fmt.Sprintf("linux_%s", b.arch)
 	b.paths = b.findPaths(bazelGoosGoarch)
 
 	// capture version info

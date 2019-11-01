@@ -21,6 +21,7 @@ import (
 )
 
 func TestTruncate(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Value     string
 		MaxLength int

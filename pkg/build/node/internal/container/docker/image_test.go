@@ -19,6 +19,7 @@ package docker
 import "testing"
 
 func TestSplitImage(t *testing.T) {
+	t.Parallel()
 	/*
 		alpine -> (alpine, latest)
 

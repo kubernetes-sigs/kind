@@ -76,7 +76,7 @@ func Collect(nodes []nodes.Node, dir string) error {
 		}
 
 		fns = append(fns, func() error {
-			return errors.AggregateConcurrent(
+			return errors.AggregateConcurrent([]func() error{
 				// record info about the node container
 				execToPathFn(
 					exec.Command("docker", "inspect", name),
@@ -103,12 +103,12 @@ func Collect(nodes []nodes.Node, dir string) error {
 					node.Command("journalctl", "--no-pager", "-u", "containerd.service"),
 					filepath.Join(name, "containerd.log"),
 				),
-			)
+			})
 		})
 	}
 
 	// run and collect up all errors
-	errs = append(errs, errors.AggregateConcurrent(fns...))
+	errs = append(errs, errors.AggregateConcurrent(fns))
 	return errors.NewAggregate(errs)
 }
 

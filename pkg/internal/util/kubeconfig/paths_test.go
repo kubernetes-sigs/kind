@@ -19,6 +19,7 @@ package kubeconfig
 import (
 	//"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -29,6 +30,7 @@ import (
 )
 
 func TestPaths(t *testing.T) {
+	t.Parallel()
 	// test explicit kubeconfig
 	t.Run("explicit path", func(t *testing.T) {
 		t.Parallel()
@@ -134,5 +136,79 @@ func TestPathForMerge(t *testing.T) {
 		})
 		expected := "/bogus/path/two"
 		assert.StringEqual(t, expected, result)
+	})
+}
+
+func TestHomeDir(t *testing.T) {
+	t.Parallel()
+	t.Run("windows HOME with .kube/config", func(t *testing.T) {
+		t.Parallel()
+		// create a directory structure with a "kubeconfigs"
+		dir, err := fs.TempDir("", "kind-testwritemerged")
+		if err != nil {
+			t.Fatalf("Failed to create tempdir: %v", err)
+		}
+		defer os.RemoveAll(dir)
+
+		// create the fake kubeconfig
+		fakeHomeDir := path.Join(dir, "fake-home")
+		fakeKubeConfig := path.Join(fakeHomeDir, ".kube", "config")
+		if err := os.MkdirAll(path.Dir(fakeKubeConfig), os.ModePerm); err != nil {
+			t.Fatalf("Failed to create fake kubeconfig dir: %v", err)
+		}
+		f, err := os.Create(fakeKubeConfig)
+		if err != nil {
+			t.Fatalf("Failed to create tempdir: %v", err)
+		}
+		f.Close()
+
+		// this should return the fake kubeconfig
+		result := homeDir("windows", func(e string) string {
+			return map[string]string{
+				"HOME":      fakeHomeDir,
+				"HOMEDRIVE": "ZZ:",
+				"HOMEPATH":  `ZZ:\Users\fake-user-zzz`,
+			}[e]
+		})
+		assert.StringEqual(t, fakeHomeDir, result)
+	})
+	t.Run("windows HOME without .kube/config", func(t *testing.T) {
+		t.Parallel()
+		// create a fake home dir
+		fakeHomeDir, err := fs.TempDir("", "kind-testwritemerged")
+		if err != nil {
+			t.Fatalf("Failed to create tempdir: %v", err)
+		}
+		defer os.RemoveAll(fakeHomeDir)
+
+		// this should return the fake kubeconfig
+		result := homeDir("windows", func(e string) string {
+			return map[string]string{
+				"HOME":      fakeHomeDir,
+				"HOMEDRIVE": filepath.VolumeName(fakeHomeDir),
+				"HOMEPATH":  path.Join("Users", "fake-user-zzz"),
+			}[e]
+		})
+		assert.StringEqual(t, fakeHomeDir, result)
+	})
+	t.Run("windows HOME none exist", func(t *testing.T) {
+		t.Parallel()
+		// this should return the fake kubeconfig
+		result := homeDir("windows", func(e string) string {
+			return map[string]string{
+				"HOME":      "Z:/faaaaake",
+				"HOMEDRIVE": "Z:/",
+				"HOMEPATH":  path.Join("Users", "fake-user-zzz"),
+			}[e]
+		})
+		assert.StringEqual(t, "Z:/faaaaake", result)
+	})
+	t.Run("windows no path", func(t *testing.T) {
+		t.Parallel()
+		// this should return the fake kubeconfig
+		result := homeDir("windows", func(e string) string {
+			return ""
+		})
+		assert.StringEqual(t, "", result)
 	})
 }
