@@ -24,6 +24,7 @@ import (
 )
 
 func TestPatch(t *testing.T) {
+	t.Parallel()
 	type testCase struct {
 		Name            string
 		ToPatch         string

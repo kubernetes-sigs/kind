@@ -25,6 +25,7 @@ import (
 )
 
 func TestRequiredNodeImages(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		cluster *config.Cluster

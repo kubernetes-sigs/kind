@@ -24,6 +24,7 @@ import (
 )
 
 func TestGetProxyEnvs(t *testing.T) {
+	t.Parallel()
 	// first test the public method
 	cfg := &config.Cluster{}
 	config.SetDefaultsCluster(cfg)

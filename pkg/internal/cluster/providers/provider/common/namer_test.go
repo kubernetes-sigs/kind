@@ -22,6 +22,7 @@ import (
 )
 
 func TestMakeNodeNamer(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		clusterName string

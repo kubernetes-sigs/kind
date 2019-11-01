@@ -23,6 +23,7 @@ import (
 )
 
 func TestClusterValidate(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Name         string
 		Cluster      Cluster
@@ -106,6 +107,7 @@ func newDefaultedNode(role NodeRole) Node {
 }
 
 func TestNodeValidate(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		TestName     string
 		Node         Node

@@ -21,6 +21,7 @@ import (
 )
 
 func TestLoadCurrent(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		TestName    string
 		Path        string

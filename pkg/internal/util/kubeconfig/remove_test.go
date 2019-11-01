@@ -27,6 +27,7 @@ import (
 )
 
 func TestRemove(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Name           string
 		Existing       *Config
@@ -147,6 +148,7 @@ func TestRemove(t *testing.T) {
 }
 
 func TestRemoveKIND(t *testing.T) {
+	t.Parallel()
 	t.Run("only kind", testRemoveKINDTrivial)
 	t.Run("leave another cluster", testRemoveKINDKeepOther)
 }

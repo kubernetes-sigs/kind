@@ -31,6 +31,7 @@ func (t *fakeT) Errorf(format string, args ...interface{}) {
 func TestExpectError(t *testing.T) {
 	t.Parallel()
 	t.Run("expect error, nil error", func(t *testing.T) {
+		t.Parallel()
 		var f fakeT
 		ExpectError(&f, true, nil)
 		if int(f) == 0 {
@@ -38,6 +39,7 @@ func TestExpectError(t *testing.T) {
 		}
 	})
 	t.Run("expect error, have error", func(t *testing.T) {
+		t.Parallel()
 		var f fakeT
 		ExpectError(&f, true, fmt.Errorf("heh"))
 		if int(f) != 0 {
@@ -45,6 +47,7 @@ func TestExpectError(t *testing.T) {
 		}
 	})
 	t.Run("do not expect error, nil error", func(t *testing.T) {
+		t.Parallel()
 		var f fakeT
 		ExpectError(&f, false, nil)
 		if int(f) != 0 {
@@ -52,6 +55,7 @@ func TestExpectError(t *testing.T) {
 		}
 	})
 	t.Run("do not expect error, have error", func(t *testing.T) {
+		t.Parallel()
 		var f fakeT
 		ExpectError(&f, false, fmt.Errorf("heh"))
 		if int(f) == 0 {
@@ -63,6 +67,7 @@ func TestExpectError(t *testing.T) {
 func TestStringEqual(t *testing.T) {
 	t.Parallel()
 	t.Run("not equal", func(t *testing.T) {
+		t.Parallel()
 		var f fakeT
 		StringEqual(&f, "a", "b")
 		if int(f) == 0 {
@@ -70,6 +75,7 @@ func TestStringEqual(t *testing.T) {
 		}
 	})
 	t.Run("equal", func(t *testing.T) {
+		t.Parallel()
 		var f fakeT
 		StringEqual(&f, "a", "a")
 		if int(f) != 0 {

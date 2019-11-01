@@ -27,6 +27,7 @@ import (
 )
 
 func TestMerge(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		Name        string
 		Existing    *Config
@@ -225,6 +226,7 @@ func TestMerge(t *testing.T) {
 }
 
 func TestWriteMerged(t *testing.T) {
+	t.Parallel()
 	t.Run("normal merge", testWriteMergedNormal)
 	t.Run("bad kind config", testWriteMergedBogusConfig)
 	t.Run("merge into non-existent file", testWriteMergedNoExistingFile)

@@ -24,6 +24,7 @@ import (
 )
 
 func TestKINDFromRawKubeadm(t *testing.T) {
+	t.Parallel()
 	// test that a bogus config is caught
 	t.Run("bad config", func(t *testing.T) {
 		t.Parallel()

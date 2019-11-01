@@ -29,6 +29,7 @@ import (
 )
 
 func TestPaths(t *testing.T) {
+	t.Parallel()
 	// test explicit kubeconfig
 	t.Run("explicit path", func(t *testing.T) {
 		t.Parallel()
