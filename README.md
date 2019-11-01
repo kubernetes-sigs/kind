@@ -64,7 +64,8 @@ To create a cluster from Kubernetes source:
 - ensure that Kubernetes is cloned in `$(go env GOPATH)/src/k8s.io/kubernetes`
 - build a node image and create a cluster with 
 ```console
-kind build node-image && kind create cluster --image kindest/node:latest
+kind build node-image
+kind create cluster --image kindest/node:latest
 ```
 
 Multi-node clusters and other advanced features may be configured with a config
