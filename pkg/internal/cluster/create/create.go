@@ -153,7 +153,7 @@ func exportKubeconfig(ctx *context.Context, kubeconfigPath string) error {
 	}
 
 	// construct a sample command for interacting with the cluster
-	kctx := kubeconfig.Context(ctx.Name())
+	kctx := kubeconfig.ContextForCluster(ctx.Name())
 	sampleCommand := fmt.Sprintf("kubectl cluster-info --context %s", kctx)
 	if kubeconfigPath != "" {
 		// explicit path, include this
