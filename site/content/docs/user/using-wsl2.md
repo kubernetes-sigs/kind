@@ -10,11 +10,6 @@ menu:
 
 Kind can run using Windows Subsystem for Linux 2 (WSL2) on Windows 10 Insider builds. All the tools needed to build or run kind work in WSL2, but some extra steps are needed to switch to WSL2. This page covers these steps in brief but also links to the official documentation if you would like more details.
 
-## Known Issues
-
-- The default kernel shipped with WSL2 is missing a few options needed for Kubernetes to work correctly. Instructions for building an updated kernel are included below.
-
-
 ## Getting Windows 10 Insider Preview
 
 Download latest ISO at https://www.microsoft.com/en-us/software-download/windowsinsiderpreviewadvanced . Choose "Windows 10 Insider Preview (FAST) - Build 18990". If there's a later build, that will work too.
