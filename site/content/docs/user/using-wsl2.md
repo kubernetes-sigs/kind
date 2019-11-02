@@ -17,7 +17,7 @@ Kind can run using Windows Subsystem for Linux 2 (WSL2) on Windows 10 Insider bu
 
 ## Getting Windows 10 Insider Preview
 
-Download latest ISO at https://www.microsoft.com/en-us/software-download/windowsinsiderpreviewadvanced . Choose "Windows 10 Insider Preview (FAST) - Build 18932". If there's a later build, that will work too.
+Download latest ISO at https://www.microsoft.com/en-us/software-download/windowsinsiderpreviewadvanced . Choose "Windows 10 Insider Preview (FAST) - Build 18990". If there's a later build, that will work too.
 
 ### Installing on a virtual machine
 
