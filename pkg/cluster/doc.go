@@ -14,23 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package create implements the `create` command
-package create
-
-import (
-	"github.com/spf13/cobra"
-
-	createcluster "sigs.k8s.io/kind/cmd/kind/create/cluster"
-)
-
-// NewCommand returns a new cobra.Command for cluster creation
-func NewCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Args:  cobra.NoArgs,
-		Use:   "create",
-		Short: "Creates one of [cluster]",
-		Long:  "Creates one of local Kubernetes cluster (cluster)",
-	}
-	cmd.AddCommand(createcluster.NewCommand())
-	return cmd
-}
+// Package cluster implements kind kubernetes-in-docker cluster management
+package cluster

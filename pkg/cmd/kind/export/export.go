@@ -14,27 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package build implements the `build` command
-package build
+// Package export implements the `export` command
+package export
 
 import (
 	"github.com/spf13/cobra"
 
-	"sigs.k8s.io/kind/cmd/kind/build/baseimage"
-	"sigs.k8s.io/kind/cmd/kind/build/nodeimage"
+	"sigs.k8s.io/kind/pkg/cmd/kind/export/logs"
 )
 
-// NewCommand returns a new cobra.Command for building
+// NewCommand returns a new cobra.Command for export
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
-		Use:   "build",
-		Short: "Build one of [base-image, node-image]",
-		Long:  "Build the base node image (base-image) or the node image (node-image)",
+		Use:   "export",
+		Short: "exports one of [logs]",
+		Long:  "exports one of [logs]",
 	}
 	// add subcommands
-	cmd.AddCommand(baseimage.NewCommand())
-	cmd.AddCommand(nodeimage.NewCommand())
+	cmd.AddCommand(logs.NewCommand())
 	return cmd
 }

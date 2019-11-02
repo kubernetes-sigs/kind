@@ -14,25 +14,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package export implements the `export` command
-package export
+// Package get implements the `get` command
+package get
 
 import (
 	"github.com/spf13/cobra"
 
-	"sigs.k8s.io/kind/cmd/kind/export/logs"
+	"sigs.k8s.io/kind/pkg/cmd/kind/get/clusters"
+	"sigs.k8s.io/kind/pkg/cmd/kind/get/kubeconfig"
+	"sigs.k8s.io/kind/pkg/cmd/kind/get/nodes"
 )
 
-// NewCommand returns a new cobra.Command for export
+// NewCommand returns a new cobra.Command for get
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
-		Use:   "export",
-		Short: "exports one of [logs]",
-		Long:  "exports one of [logs]",
+		Use:   "get",
+		Short: "Gets one of [clusters, nodes, kubeconfig]",
+		Long:  "Gets one of [clusters, nodes, kubeconfig]",
 	}
 	// add subcommands
-	cmd.AddCommand(logs.NewCommand())
+	cmd.AddCommand(clusters.NewCommand())
+	cmd.AddCommand(nodes.NewCommand())
+	cmd.AddCommand(kubeconfig.NewCommand())
 	return cmd
 }

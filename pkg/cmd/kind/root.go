@@ -22,14 +22,14 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"sigs.k8s.io/kind/cmd/kind/build"
-	"sigs.k8s.io/kind/cmd/kind/completion"
-	"sigs.k8s.io/kind/cmd/kind/create"
-	"sigs.k8s.io/kind/cmd/kind/delete"
-	"sigs.k8s.io/kind/cmd/kind/export"
-	"sigs.k8s.io/kind/cmd/kind/get"
-	"sigs.k8s.io/kind/cmd/kind/load"
-	"sigs.k8s.io/kind/cmd/kind/version"
+	"sigs.k8s.io/kind/pkg/cmd/kind/build"
+	"sigs.k8s.io/kind/pkg/cmd/kind/completion"
+	"sigs.k8s.io/kind/pkg/cmd/kind/create"
+	"sigs.k8s.io/kind/pkg/cmd/kind/delete"
+	"sigs.k8s.io/kind/pkg/cmd/kind/export"
+	"sigs.k8s.io/kind/pkg/cmd/kind/get"
+	"sigs.k8s.io/kind/pkg/cmd/kind/load"
+	"sigs.k8s.io/kind/pkg/cmd/kind/version"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/globals"
@@ -52,7 +52,11 @@ func NewCommand() *cobra.Command {
 		Short: "kind is a tool for managing local Kubernetes clusters",
 		Long:  "kind creates and manages local Kubernetes clusters using Docker container 'nodes'",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return runE(flags, cmd)
+			err := runE(flags, cmd)
+			if err != nil {
+				logError(err)
+			}
+			return err
 		},
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -113,19 +117,6 @@ func runE(flags *Flags, cmd *cobra.Command) error {
 		globals.GetLogger().Warn("WARNING: --loglevel is deprecated, please switch to -v and -q!")
 	}
 	return nil
-}
-
-// Run runs the `kind` root command
-func Run() error {
-	return NewCommand().Execute()
-}
-
-// Main wraps Run and sets the log formatter
-func Main() {
-	if err := Run(); err != nil {
-		logError(err)
-		os.Exit(1)
-	}
 }
 
 // logError logs the error and the root stacktrace if there is one

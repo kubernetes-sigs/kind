@@ -24,7 +24,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
-	"sigs.k8s.io/kind/pkg/cluster/create"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/globals"
 )
@@ -75,11 +74,11 @@ func runE(flags *flagpole) error {
 	fmt.Printf("Creating cluster %q ...\n", flags.Name)
 	if err = provider.Create(
 		flags.Name,
-		create.WithConfigFile(flags.Config),
-		create.WithNodeImage(flags.ImageName),
-		create.Retain(flags.Retain),
-		create.WaitForReady(flags.Wait),
-		create.WithKubeconfigPath(flags.Kubeconfig),
+		cluster.CreateWithConfigFile(flags.Config),
+		cluster.CreateWithNodeImage(flags.ImageName),
+		cluster.CreateWithRetain(flags.Retain),
+		cluster.CreateWithWaitForReady(flags.Wait),
+		cluster.CreateWithKubeconfigPath(flags.Kubeconfig),
 	); err != nil {
 		if errs := errors.Errors(err); errs != nil {
 			for _, problem := range errs {

@@ -30,7 +30,7 @@ INSTALL?=install
 INSTALL_DIR?=$(shell hack/build/goinstalldir.sh)
 # record the source commit in the binary
 COMMIT?=$(shell git rev-parse HEAD 2>/dev/null)
-LD_FLAGS:=-X sigs.k8s.io/kind/cmd/kind/version.GitCommit=$(COMMIT)
+LD_FLAGS:=-X sigs.k8s.io/kind/pkg/cmd/kind/version.GitCommit=$(COMMIT)
 # the output binary name, overridden when cross compiling
 KIND_BINARY_NAME?=kind
 

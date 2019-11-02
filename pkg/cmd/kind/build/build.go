@@ -14,24 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package delete implements the `delete` command
-package delete
+// Package build implements the `build` command
+package build
 
 import (
 	"github.com/spf13/cobra"
 
-	deletecluster "sigs.k8s.io/kind/cmd/kind/delete/cluster"
+	"sigs.k8s.io/kind/pkg/cmd/kind/build/baseimage"
+	"sigs.k8s.io/kind/pkg/cmd/kind/build/nodeimage"
 )
 
-// NewCommand returns a new cobra.Command for cluster creation
+// NewCommand returns a new cobra.Command for building
 func NewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
-		Use:   "delete",
-		Short: "Deletes one of [cluster]",
-		Long:  "Deletes one of [cluster]",
+		Use:   "build",
+		Short: "Build one of [base-image, node-image]",
+		Long:  "Build the base node image (base-image) or the node image (node-image)",
 	}
-	cmd.AddCommand(deletecluster.NewCommand())
+	// add subcommands
+	cmd.AddCommand(baseimage.NewCommand())
+	cmd.AddCommand(nodeimage.NewCommand())
 	return cmd
 }

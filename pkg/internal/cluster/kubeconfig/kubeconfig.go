@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package kubeconfig provides utilites kind uses internally to manage
+// kind cluster kubeconfigs
 package kubeconfig
 
 import (
@@ -23,7 +25,9 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/internal/cluster/context"
 
-	"sigs.k8s.io/kind/pkg/internal/util/kubeconfig"
+	// this package has slightly more generic kubeconfig helpers
+	// and minimal dependencies on the rest of kind
+	"sigs.k8s.io/kind/pkg/internal/cluster/kubeconfig/internal/kubeconfig"
 )
 
 // Export exports the kubeconfig given the cluster context and a path to write it to
@@ -34,6 +38,14 @@ func Export(ctx *context.Context, explicitPath string) error {
 		return err
 	}
 	return kubeconfig.WriteMerged(cfg, explicitPath)
+}
+
+// Remove removes clusterName from the kubeconfig paths detected based on
+// either explicitPath being set or $KUBECONFIG or $HOME/.kube/config, following
+// the rules set by kubectl
+// clusterName must identify a kind cluster.
+func Remove(clusterName, explicitPath string) error {
+	return kubeconfig.RemoveKIND(clusterName, explicitPath)
 }
 
 // Get returns the kubeconfig for the cluster
@@ -50,7 +62,9 @@ func Get(ctx *context.Context, external bool) (string, error) {
 	return string(b), err
 }
 
-func Context(kindClusterName string) string {
+// ContextForCluster returns the context name for a kind cluster based on
+// it's name. This key is used for all list entries of kind clusters
+func ContextForCluster(kindClusterName string) string {
 	return kubeconfig.KINDClusterKey(kindClusterName)
 }
 
