@@ -40,7 +40,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "build the base node image",
 		Long:  `build the base node image for running nested containers, systemd, and kubernetes components.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(logger, streams, flags)
+			return runE(logger, flags)
 		},
 	}
 	cmd.Flags().StringVar(
@@ -56,7 +56,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
+func runE(logger log.Logger, flags *flagpole) error {
 	// TODO(bentheelder): inject logger down the chain
 	ctx := base.NewBuildContext(
 		base.WithImage(flags.Image),

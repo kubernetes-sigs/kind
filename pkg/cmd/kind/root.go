@@ -53,7 +53,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "kind is a tool for managing local Kubernetes clusters",
 		Long:  "kind creates and manages local Kubernetes clusters using Docker container 'nodes'",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			err := runE(logger, streams, flags, cmd)
+			err := runE(logger, flags, cmd)
 			if err != nil {
 				logError(logger, err)
 			}
@@ -95,7 +95,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func runE(logger log.Logger, streams cmd.IOStreams, flags *Flags, cmd *cobra.Command) error {
+func runE(logger log.Logger, flags *Flags, cmd *cobra.Command) error {
 	// handle limited migration for --loglevel
 	setLogLevel := cmd.Flag("loglevel").Changed
 	setVerbosity := cmd.Flag("verbosity").Changed

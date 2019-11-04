@@ -36,13 +36,13 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "lists existing kind clusters by their name",
 		Long:  "lists existing kind clusters by their name",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(logger, streams)
+			return runE(streams)
 		},
 	}
 	return cmd
 }
 
-func runE(logger log.Logger, streams cmd.IOStreams) error {
+func runE(streams cmd.IOStreams) error {
 	clusters, err := cluster.NewProvider().List()
 	if err != nil {
 		return err

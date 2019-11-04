@@ -53,7 +53,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "loads docker image from host into nodes",
 		Long:  "loads docker image from host into all or specified nodes by name",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(logger, streams, flags, args)
+			return runE(logger, flags, args)
 		},
 	}
 	cmd.Flags().StringVar(
@@ -71,7 +71,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole, args []string) error {
+func runE(logger log.Logger, flags *flagpole, args []string) error {
 	provider := cluster.NewProvider()
 
 	// Check that the image exists locally and gets its ID, if not return error

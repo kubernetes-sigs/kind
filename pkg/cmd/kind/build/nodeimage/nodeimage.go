@@ -43,7 +43,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "build the node image",
 		Long:  "build the node image which contains kubernetes build artifacts and other kind requirements",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(logger, streams, flags)
+			return runE(logger, flags)
 		},
 	}
 	cmd.Flags().StringVar(
@@ -68,7 +68,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
+func runE(logger log.Logger, flags *flagpole) error {
 	// TODO(bentheelder): inject logger down the chain
 	ctx, err := node.NewBuildContext(
 		node.WithMode(flags.BuildType),

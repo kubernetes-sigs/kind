@@ -41,7 +41,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "Deletes a cluster",
 		Long:  "Deletes a resource",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(logger, streams, flags)
+			return runE(logger, flags)
 		},
 	}
 	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "the cluster name")
@@ -49,7 +49,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
+func runE(logger log.Logger, flags *flagpole) error {
 	// Delete the cluster
 	logger.V(0).Infof("Deleting cluster %q ...\n", flags.Name)
 	if err := cluster.NewProvider().Delete(flags.Name, flags.Kubeconfig); err != nil {

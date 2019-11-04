@@ -42,14 +42,14 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "exports logs to a tempdir or [output-dir] if specified",
 		Long:  "exports logs to a tempdir or [output-dir] if specified",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(logger, streams, flags, args)
+			return runE(logger, flags, args)
 		},
 	}
 	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "the cluster context name")
 	return cmd
 }
 
-func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole, args []string) error {
+func runE(logger log.Logger, flags *flagpole, args []string) error {
 	provider := cluster.NewProvider()
 
 	// Check if the cluster has any running nodes

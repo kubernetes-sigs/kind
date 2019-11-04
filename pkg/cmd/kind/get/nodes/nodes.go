@@ -40,7 +40,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "lists existing kind nodes by their name",
 		Long:  "lists existing kind nodes by their name",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(logger, streams, flags)
+			return runE(streams, flags)
 		},
 	}
 	cmd.Flags().StringVar(
@@ -52,7 +52,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
+func runE(streams cmd.IOStreams, flags *flagpole) error {
 	// List nodes by cluster context name
 	n, err := cluster.NewProvider().ListNodes(flags.Name)
 	if err != nil {

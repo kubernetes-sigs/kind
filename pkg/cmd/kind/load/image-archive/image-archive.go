@@ -50,7 +50,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "loads docker image from archive into nodes",
 		Long:  "loads docker image from archive into all or specified nodes by name",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(logger, streams, flags, args)
+			return runE(flags, args)
 		},
 	}
 	cmd.Flags().StringVar(
@@ -68,7 +68,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole, args []string) error {
+func runE(flags *flagpole, args []string) error {
 	provider := cluster.NewProvider()
 
 	// Check if file exists
