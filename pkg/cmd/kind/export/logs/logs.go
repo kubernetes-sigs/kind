@@ -22,10 +22,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"sigs.k8s.io/kind/pkg/cmd"
-	"sigs.k8s.io/kind/pkg/log"
 	"sigs.k8s.io/kind/pkg/cluster"
+	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/fs"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 type flagpole struct {

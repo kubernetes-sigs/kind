@@ -20,9 +20,9 @@ package export
 import (
 	"github.com/spf13/cobra"
 
-	"sigs.k8s.io/kind/pkg/log"
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/cmd/kind/export/logs"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // NewCommand returns a new cobra.Command for export
