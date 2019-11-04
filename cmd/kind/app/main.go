@@ -15,6 +15,6 @@ func Main() {
 
 // Run invokes the kind root command, returning the error.
 // See: sigs.k8s.io/kind/pkg/cmd/kind
-func Run() (err error) {
+func Run() error {
 	return kind.Execute()
 }
