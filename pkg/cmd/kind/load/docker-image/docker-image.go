@@ -42,15 +42,15 @@ type flagpole struct {
 func NewCommand() *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
-		Args: func(cmd *cobra.Command, args []string) error {
+		Use:   "docker-image",
+		Short: "loads docker image from host into nodes",
+		Long:  "loads docker image from host into all or specified nodes by name",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return errors.New("name of image is required")
 			}
 			return nil
 		},
-		Use:   "docker-image",
-		Short: "loads docker image from host into nodes",
-		Long:  "loads docker image from host into all or specified nodes by name",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(flags, args)
 		},
