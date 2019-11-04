@@ -119,16 +119,19 @@ func runE(logger log.Logger, flags *Flags, cmd *cobra.Command) error {
 	return nil
 }
 
+// maybeSetWriter will call logger.SetWriter(w) if logger has a SetWriter method
 func maybeSetWriter(logger log.Logger, w io.Writer) {
-	type writerer interface {
+	type writerSetter interface {
 		SetWriter(io.Writer)
 	}
-	v, ok := logger.(writerer)
+	v, ok := logger.(writerSetter)
 	if ok {
 		v.SetWriter(w)
 	}
 }
 
+// maybeSetVerbosity will call logger.SetVerbosity(verbosity) if logger
+// has a SetVerbosity method
 func maybeSetVerbosity(logger log.Logger, verbosity log.Level) {
 	type verboser interface {
 		SetVerbosity(log.Level)
