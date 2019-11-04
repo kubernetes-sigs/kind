@@ -134,3 +134,11 @@ func logError(err error) {
 		}
 	}
 }
+
+func Execute() (err error) {
+	err = NewCommand().Execute()
+	if err != nil {
+		logError(err)
+	}
+	return
+}
