@@ -23,8 +23,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/version"
 	"sigs.k8s.io/kind/pkg/errors"
-
-	"sigs.k8s.io/kind/pkg/globals"
 )
 
 // ConfigData is supplied to the kubeadm config template, with values populated
@@ -442,7 +440,6 @@ metadata:
 // Config returns a kubeadm config generated from config data, in particular
 // the kubernetes version
 func Config(data ConfigData) (config string, err error) {
-	globals.GetLogger().V(3).Infof("Configuration Input data: %v", data)
 	ver, err := version.ParseGeneric(data.KubernetesVersion)
 	if err != nil {
 		return "", err

@@ -19,6 +19,7 @@ package cluster
 import (
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/log"
 
 	internalcontext "sigs.k8s.io/kind/pkg/internal/cluster/context"
 	internalcreate "sigs.k8s.io/kind/pkg/internal/cluster/create"
@@ -35,6 +36,7 @@ const DefaultName = constants.DefaultClusterName
 // Provider is used to perform cluster operations
 type Provider struct {
 	provider internalprovider.Provider
+	logger   log.Logger
 }
 
 // NewProvider returns a new provider based on the supplied options
@@ -43,8 +45,12 @@ func NewProvider(options ...ProviderOption) *Provider {
 	for _, o := range options {
 		p = o(p)
 	}
+	// TODO: ensure logger is setup before provider
+	if p.logger == nil {
+		p.logger = log.NoopLogger{}
+	}
 	if p.provider == nil {
-		p.provider = docker.NewProvider()
+		p.provider = docker.NewProvider(p.logger)
 	}
 	return p
 }
@@ -66,12 +72,12 @@ func (p *Provider) Create(name string, options ...CreateOption) error {
 			return err
 		}
 	}
-	return internalcreate.Cluster(p.ic(name), opts)
+	return internalcreate.Cluster(p.logger, p.ic(name), opts)
 }
 
 // Delete tears down a kubernetes-in-docker cluster
 func (p *Provider) Delete(name, explicitKubeconfigPath string) error {
-	return internaldelete.Cluster(p.ic(name), explicitKubeconfigPath)
+	return internaldelete.Cluster(p.logger, p.ic(name), explicitKubeconfigPath)
 }
 
 // List returns a list of clusters for which nodes exist
@@ -105,5 +111,5 @@ func (p *Provider) CollectLogs(name, dir string) error {
 	if err != nil {
 		return err
 	}
-	return internallogs.Collect(n, dir)
+	return internallogs.Collect(p.logger, n, dir)
 }

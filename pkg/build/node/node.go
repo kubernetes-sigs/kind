@@ -36,7 +36,7 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
-	"sigs.k8s.io/kind/pkg/globals"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // DefaultImage is the default name:tag for the built image
@@ -80,6 +80,13 @@ func WithKuberoot(root string) Option {
 	}
 }
 
+// WithLogger sets the logger
+func WithLogger(logger log.Logger) Option {
+	return func(b *BuildContext) {
+		b.logger = logger
+	}
+}
+
 // BuildContext is used to build the kind node image, and contains
 // build configuration
 type BuildContext struct {
@@ -87,6 +94,7 @@ type BuildContext struct {
 	mode      string
 	image     string
 	baseImage string
+	logger    log.Logger
 	// non-option fields
 	arch     string // TODO(bentheelder): this should be an option
 	kubeRoot string
@@ -101,6 +109,7 @@ func NewBuildContext(options ...Option) (ctx *BuildContext, err error) {
 		mode:      DefaultMode,
 		image:     DefaultImage,
 		baseImage: DefaultBaseImage,
+		logger:    log.NoopLogger{},
 		// TODO: only host arch supported. changing this will be tricky
 		arch: runtime.GOARCH,
 	}
@@ -124,7 +133,7 @@ func NewBuildContext(options ...Option) (ctx *BuildContext, err error) {
 		ctx.kubeRoot = kubeRoot
 	}
 	// initialize bits
-	bits, err := kube.NewNamedBits(ctx.mode, ctx.kubeRoot, ctx.arch)
+	bits, err := kube.NewNamedBits(ctx.logger, ctx.mode, ctx.kubeRoot, ctx.arch)
 	if err != nil {
 		return nil, err
 	}
@@ -146,12 +155,12 @@ func supportedArch(arch string) bool {
 // the BuildContext
 func (c *BuildContext) Build() (err error) {
 	// ensure kubernetes build is up to date first
-	globals.GetLogger().V(0).Info("Starting to build Kubernetes")
+	c.logger.V(0).Info("Starting to build Kubernetes")
 	if err = c.bits.Build(); err != nil {
-		globals.GetLogger().Errorf("Failed to build Kubernetes: %v", err)
+		c.logger.Errorf("Failed to build Kubernetes: %v", err)
 		return errors.Wrap(err, "failed to build kubernetes")
 	}
-	globals.GetLogger().V(0).Info("Finished building Kubernetes")
+	c.logger.V(0).Info("Finished building Kubernetes")
 
 	// create tempdir to build the image in
 	buildDir, err := fs.TempDir("", "kind-node-image")
@@ -160,7 +169,7 @@ func (c *BuildContext) Build() (err error) {
 	}
 	defer os.RemoveAll(buildDir)
 
-	globals.GetLogger().V(0).Infof("Building node image in: %s", buildDir)
+	c.logger.V(0).Infof("Building node image in: %s", buildDir)
 
 	// populate the kubernetes artifacts first
 	if err := c.populateBits(buildDir); err != nil {
@@ -248,7 +257,7 @@ func (ic *installContext) CombinedOutputLines(command string, args ...string) ([
 
 func (c *BuildContext) buildImage(dir string) error {
 	// build the image, tagged as tagImageAs, using the our tempdir as the context
-	globals.GetLogger().V(0).Info("Starting image build ...")
+	c.logger.V(0).Info("Starting image build ...")
 	// create build container
 	// NOTE: we are using docker run + docker commit so we can install
 	// debians without permanently copying them into the image.
@@ -265,11 +274,11 @@ func (c *BuildContext) buildImage(dir string) error {
 		}()
 	}
 	if err != nil {
-		globals.GetLogger().Errorf("Image build Failed! Failed to create build container: %v", err)
+		c.logger.Errorf("Image build Failed! Failed to create build container: %v", err)
 		return err
 	}
 
-	globals.GetLogger().V(0).Info("Building in " + containerID)
+	c.logger.V(0).Info("Building in " + containerID)
 
 	// helper we will use to run "build steps"
 	execInBuild := func(command string, args ...string) error {
@@ -278,13 +287,13 @@ func (c *BuildContext) buildImage(dir string) error {
 
 	// make artifacts directory
 	if err = execInBuild("mkdir", "/kind/"); err != nil {
-		globals.GetLogger().Errorf("Image build Failed! Failed to make directory %v", err)
+		c.logger.Errorf("Image build Failed! Failed to make directory %v", err)
 		return err
 	}
 
 	// copy artifacts in
 	if err = execInBuild("rsync", "-r", "/build/bits/", "/kind/"); err != nil {
-		globals.GetLogger().Errorf("Image build Failed! Failed to sync bits: %v", err)
+		c.logger.Errorf("Image build Failed! Failed to sync bits: %v", err)
 		return err
 	}
 
@@ -294,7 +303,7 @@ func (c *BuildContext) buildImage(dir string) error {
 		containerID: containerID,
 	}
 	if err = c.bits.Install(ic); err != nil {
-		globals.GetLogger().Errorf("Image build Failed! Failed to install Kubernetes: %v", err)
+		c.logger.Errorf("Image build Failed! Failed to install Kubernetes: %v", err)
 		return err
 	}
 
@@ -320,13 +329,13 @@ func (c *BuildContext) buildImage(dir string) error {
 	if err = execInBuild("/bin/sh", "-c",
 		`echo "KUBELET_EXTRA_ARGS=--fail-swap-on=false" >> /etc/default/kubelet`,
 	); err != nil {
-		globals.GetLogger().Errorf("Image build Failed! Failed to add kubelet extra args: %v", err)
+		c.logger.Errorf("Image build Failed! Failed to add kubelet extra args: %v", err)
 		return err
 	}
 
 	// pre-pull images that were not part of the build
 	if err = c.prePullImages(dir, containerID); err != nil {
-		globals.GetLogger().Errorf("Image build Failed! Failed to pull Images: %v", err)
+		c.logger.Errorf("Image build Failed! Failed to pull Images: %v", err)
 		return err
 	}
 
@@ -339,11 +348,11 @@ func (c *BuildContext) buildImage(dir string) error {
 	)
 	exec.InheritOutput(cmd)
 	if err = cmd.Run(); err != nil {
-		globals.GetLogger().Errorf("Image build Failed! Failed to save image: %v", err)
+		c.logger.Errorf("Image build Failed! Failed to save image: %v", err)
 		return err
 	}
 
-	globals.GetLogger().V(0).Info("Image build completed.")
+	c.logger.V(0).Info("Image build completed.")
 	return nil
 }
 
@@ -368,7 +377,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	// first get the images we actually built
 	builtImages, err := c.getBuiltImages()
 	if err != nil {
-		globals.GetLogger().Errorf("Image build Failed! Failed to get built images: %v", err)
+		c.logger.Errorf("Image build Failed! Failed to get built images: %v", err)
 		return err
 	}
 
@@ -383,11 +392,11 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	// we need this to ask kubeadm what images we need
 	rawVersion, err := exec.CombinedOutputLines(cmder.Command("cat", kubernetesVersionLocation))
 	if err != nil {
-		globals.GetLogger().Errorf("Image build Failed! Failed to get Kubernetes version: %v", err)
+		c.logger.Errorf("Image build Failed! Failed to get Kubernetes version: %v", err)
 		return err
 	}
 	if len(rawVersion) != 1 {
-		globals.GetLogger().Errorf("Image build Failed! Failed to get Kubernetes version: %v", err)
+		c.logger.Errorf("Image build Failed! Failed to get Kubernetes version: %v", err)
 		return errors.New("invalid kubernetes version file")
 	}
 
@@ -415,7 +424,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 		fixedImages.Insert(registry + ":" + tag)
 	}
 	builtImages = fixedImages
-	globals.GetLogger().V(0).Info("Detected built images: " + strings.Join(builtImages.List(), ", "))
+	c.logger.V(0).Info("Detected built images: " + strings.Join(builtImages.List(), ", "))
 
 	// write the default CNI manifest
 	// NOTE: the paths inside the container should use the path package
@@ -424,7 +433,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	if err := inheritOutputAndRun(cmder.Command(
 		"mkdir", "-p", path.Dir(defaultCNIManifestLocation),
 	)); err != nil {
-		globals.GetLogger().Errorf("Image build Failed! Failed write default CNI Manifest: %v", err)
+		c.logger.Errorf("Image build Failed! Failed write default CNI Manifest: %v", err)
 		return err
 	}
 	if err := cmder.Command(
@@ -432,7 +441,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	).SetStdin(
 		strings.NewReader(defaultCNIManifest),
 	).Run(); err != nil {
-		globals.GetLogger().Errorf("Image build Failed! Failed write default CNI Manifest: %v", err)
+		c.logger.Errorf("Image build Failed! Failed write default CNI Manifest: %v", err)
 		return err
 	}
 
@@ -450,7 +459,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	// Create "images" subdir.
 	imagesDir := path.Join(dir, "bits", "images")
 	if err := os.MkdirAll(imagesDir, 0777); err != nil {
-		globals.GetLogger().Errorf("Image build Failed! Failed create local images dir: %v", err)
+		c.logger.Errorf("Image build Failed! Failed create local images dir: %v", err)
 		return errors.Wrap(err, "failed to make images dir")
 	}
 
@@ -461,9 +470,9 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 		fns = append(fns, func() error {
 			if !builtImages.Has(image) {
 				fmt.Printf("Pulling: %s\n", image)
-				err := docker.Pull(image, 2)
+				err := docker.Pull(c.logger, image, 2)
 				if err != nil {
-					globals.GetLogger().Warnf("Failed to pull %s with error: %v", image, err)
+					c.logger.Warnf("Failed to pull %s with error: %v", image, err)
 				}
 				// TODO(bentheelder): generate a friendlier name
 				pullName := fmt.Sprintf("%d.tar", i)
@@ -489,14 +498,14 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	// setup image importer
 	importer := newContainerdImporter(cmder)
 	if err := importer.Prepare(); err != nil {
-		globals.GetLogger().Errorf("Image build Failed! Failed to prepare containerd to load images %v", err)
+		c.logger.Errorf("Image build Failed! Failed to prepare containerd to load images %v", err)
 		return err
 	}
 
 	// TODO: return this error?
 	defer func() {
 		if err := importer.End(); err != nil {
-			globals.GetLogger().Errorf("Image build Failed! Failed to tear down containerd after loading images %v", err)
+			c.logger.Errorf("Image build Failed! Failed to tear down containerd after loading images %v", err)
 		}
 	}()
 
@@ -534,7 +543,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 
 	// run all image loading concurrently until one fails or all succeed
 	if err := errors.UntilErrorConcurrent(loadFns); err != nil {
-		globals.GetLogger().Errorf("Image build Failed! Failed to load images %v", err)
+		c.logger.Errorf("Image build Failed! Failed to load images %v", err)
 		return err
 	}
 
@@ -574,7 +583,7 @@ func repositoryCorrectorForVersion(kubeVersion *version.Version, arch string) fu
 func (c *BuildContext) createBuildContainer(buildDir string) (id string, err error) {
 	// attempt to explicitly pull the image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
-	_, _ = docker.PullIfNotPresent(c.baseImage, 4)
+	_, _ = docker.PullIfNotPresent(c.logger, c.baseImage, 4)
 	id = "kind-build-" + uuid.New().String()
 	err = docker.Run(
 		c.baseImage,

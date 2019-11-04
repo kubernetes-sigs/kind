@@ -24,14 +24,14 @@ import (
 
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
-	"sigs.k8s.io/kind/pkg/globals"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // buildVersionFile creates a file for the kubernetes git version in
 // ./_output/version based on hack/print-workspace-status.sh,
 // these are built into the node image and consumed by the cluster tooling
 // the raw version is also returned
-func buildVersionFile(kubeRoot string) (string, error) {
+func buildVersionFile(logger log.Logger, kubeRoot string) (string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return "", err
@@ -65,7 +65,7 @@ func buildVersionFile(kubeRoot string) (string, error) {
 	for _, line := range output {
 		parts := strings.SplitN(line, " ", 2)
 		if len(parts) != 2 {
-			globals.GetLogger().Error("Could not parse kubernetes version, output: " + strings.Join(output, "\n"))
+			logger.Error("Could not parse kubernetes version, output: " + strings.Join(output, "\n"))
 			return "", errors.New("could not parse kubernetes version")
 		}
 		if parts[0] == "gitVersion" {
@@ -80,7 +80,7 @@ func buildVersionFile(kubeRoot string) (string, error) {
 		}
 	}
 	if version == "" {
-		globals.GetLogger().Error("Could not obtain kubernetes version, output: " + strings.Join(output, "\n"))
+		logger.Error("Could not obtain kubernetes version, output: " + strings.Join(output, "\n"))
 		return "", errors.New("could not obtain kubernetes version")
 	}
 	return version, nil

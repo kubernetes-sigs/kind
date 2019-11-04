@@ -61,6 +61,7 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	ctx := base.NewBuildContext(
 		base.WithImage(flags.Image),
 		base.WithSourceDir(flags.Source),
+		base.WithLogger(logger),
 	)
 	if err := ctx.Build(); err != nil {
 		return errors.Wrap(err, "build failed")

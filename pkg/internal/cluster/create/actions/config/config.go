@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
-	"sigs.k8s.io/kind/pkg/globals"
+	"sigs.k8s.io/kind/pkg/log"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
@@ -90,7 +90,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		node := node             // capture loop variable
 		configData := configData // copy config data
 		fns = append(fns, func() error {
-			return writeKubeadmConfig(ctx.Config, configData, node)
+			return writeKubeadmConfig(ctx.Logger, ctx.Config, configData, node)
 		})
 	}
 
@@ -106,7 +106,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 			configData := configData // copy config data
 			configData.ControlPlane = false
 			fns = append(fns, func() error {
-				return writeKubeadmConfig(ctx.Config, configData, node)
+				return writeKubeadmConfig(ctx.Logger, ctx.Config, configData, node)
 			})
 		}
 	}
@@ -179,7 +179,7 @@ func setPatchNames(patches []string, jsonPatches []config.PatchJSON6902) ([]stri
 }
 
 // writeKubeadmConfig writes the kubeadm configuration in the specified node
-func writeKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.Node) error {
+func writeKubeadmConfig(logger log.Logger, cfg *config.Cluster, data kubeadm.ConfigData, node nodes.Node) error {
 	kubeVersion, err := nodeutils.KubeVersion(node)
 	if err != nil {
 		// TODO(bentheelder): logging here
@@ -206,7 +206,7 @@ func writeKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes
 		return errors.Wrap(err, "failed to generate kubeadm config content")
 	}
 
-	globals.GetLogger().V(2).Info("Using kubeadm config:\n" + kubeadmConfig)
+	logger.V(2).Info("Using kubeadm config:\n" + kubeadmConfig)
 
 	// copy the config to the node
 	if err := nodeutils.WriteFile(node, "/kind/kubeadm.conf", kubeadmConfig); err != nil {

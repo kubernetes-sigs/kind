@@ -75,6 +75,7 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		node.WithImage(flags.Image),
 		node.WithBaseImage(flags.BaseImage),
 		node.WithKuberoot(flags.KubeRoot),
+		node.WithLogger(logger),
 	)
 	if err != nil {
 		return errors.Wrap(err, "error creating build context")

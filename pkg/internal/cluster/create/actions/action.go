@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/cluster/context"
 	"sigs.k8s.io/kind/pkg/internal/util/cli"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // Action defines a step of bringing up a kind cluster after initial node
@@ -33,6 +34,7 @@ type Action interface {
 
 // ActionContext is data supplied to all actions
 type ActionContext struct {
+	Logger         log.Logger
 	Status         *cli.Status
 	Config         *config.Cluster
 	ClusterContext *context.Context
@@ -41,11 +43,13 @@ type ActionContext struct {
 
 // NewActionContext returns a new ActionContext
 func NewActionContext(
+	logger log.Logger,
 	cfg *config.Cluster,
 	ctx *context.Context,
 	status *cli.Status,
 ) *ActionContext {
 	return &ActionContext{
+		Logger:         logger,
 		Status:         status,
 		Config:         cfg,
 		ClusterContext: ctx,

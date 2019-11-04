@@ -23,16 +23,15 @@ import (
 
 	"github.com/alessio/shellescape"
 
-	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
-
 	"sigs.k8s.io/kind/pkg/errors"
-	"sigs.k8s.io/kind/pkg/globals"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/apis/config/encoding"
 	"sigs.k8s.io/kind/pkg/internal/cluster/context"
 	"sigs.k8s.io/kind/pkg/internal/cluster/delete"
 	"sigs.k8s.io/kind/pkg/internal/util/cli"
+	"sigs.k8s.io/kind/pkg/log"
 
+	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions"
 	configaction "sigs.k8s.io/kind/pkg/internal/cluster/create/actions/config"
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions/installcni"
 	"sigs.k8s.io/kind/pkg/internal/cluster/create/actions/installstorage"
@@ -68,7 +67,7 @@ type ClusterOptions struct {
 }
 
 // Cluster creates a cluster
-func Cluster(ctx *context.Context, opts *ClusterOptions) error {
+func Cluster(logger log.Logger, ctx *context.Context, opts *ClusterOptions) error {
 	// default / process options (namely config)
 	if err := fixupOptions(opts); err != nil {
 		return err
@@ -83,7 +82,7 @@ func Cluster(ctx *context.Context, opts *ClusterOptions) error {
 	}
 	// warn if cluster name might typically be too long
 	if len(ctx.Name()) > clusterNameMax {
-		globals.GetLogger().Warnf("cluster name %q is probably too long, this might not work properly on some systems", ctx.Name())
+		logger.Warnf("cluster name %q is probably too long, this might not work properly on some systems", ctx.Name())
 	}
 
 	// then validate
@@ -92,14 +91,14 @@ func Cluster(ctx *context.Context, opts *ClusterOptions) error {
 	}
 
 	// setup a status object to show progress to the user
-	status := cli.StatusForLogger(globals.GetLogger())
+	status := cli.StatusForLogger(logger)
 
 	// Create node containers implementing defined config Nodes
 	if err := ctx.Provider().Provision(status, ctx.Name(), opts.Config); err != nil {
 		// In case of errors nodes are deleted (except if retain is explicitly set)
-		globals.GetLogger().Errorf("%v", err)
+		logger.Errorf("%v", err)
 		if !opts.Retain {
-			_ = delete.Cluster(ctx, opts.KubeconfigPath)
+			_ = delete.Cluster(logger, ctx, opts.KubeconfigPath)
 		}
 		return err
 	}
@@ -128,11 +127,11 @@ func Cluster(ctx *context.Context, opts *ClusterOptions) error {
 	}
 
 	// run all actions
-	actionsContext := actions.NewActionContext(opts.Config, ctx, status)
+	actionsContext := actions.NewActionContext(logger, opts.Config, ctx, status)
 	for _, action := range actionsToRun {
 		if err := action.Execute(actionsContext); err != nil {
 			if !opts.Retain {
-				_ = delete.Cluster(ctx, opts.KubeconfigPath)
+				_ = delete.Cluster(logger, ctx, opts.KubeconfigPath)
 			}
 			return err
 		}
@@ -142,11 +141,11 @@ func Cluster(ctx *context.Context, opts *ClusterOptions) error {
 		return nil
 	}
 
-	return exportKubeconfig(ctx, opts.KubeconfigPath)
+	return exportKubeconfig(logger, ctx, opts.KubeconfigPath)
 }
 
 // exportKubeconfig exports the cluster's kubeconfig and prints usage
-func exportKubeconfig(ctx *context.Context, kubeconfigPath string) error {
+func exportKubeconfig(logger log.Logger, ctx *context.Context, kubeconfigPath string) error {
 	// actually export KUBECONFIG
 	if err := kubeconfig.Export(ctx, kubeconfigPath); err != nil {
 		return err
@@ -160,8 +159,8 @@ func exportKubeconfig(ctx *context.Context, kubeconfigPath string) error {
 		sampleCommand += " --kubeconfig " + shellescape.Quote(kubeconfigPath)
 	}
 
-	globals.GetLogger().V(0).Infof(`Set kubectl context to "%s"`, kctx)
-	globals.GetLogger().V(0).Infof("You can now use your cluster with:\n\n" + sampleCommand)
+	logger.V(0).Infof(`Set kubectl context to "%s"`, kctx)
+	logger.V(0).Infof("You can now use your cluster with:\n\n" + sampleCommand)
 	return nil
 }
 

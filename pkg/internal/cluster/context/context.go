@@ -21,6 +21,7 @@ package context
 import (
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/log"
 
 	"sigs.k8s.io/kind/pkg/internal/cluster/providers/docker"
 	"sigs.k8s.io/kind/pkg/internal/cluster/providers/provider"
@@ -40,13 +41,13 @@ type Context struct {
 
 // NewContext returns a new internal cluster management context
 // if name is "" the default name will be used
-func NewContext(name string) *Context {
+func NewContext(logger log.Logger, name string) *Context {
 	if name == "" {
 		name = constants.DefaultClusterName
 	}
 	return &Context{
 		name:     name,
-		provider: docker.NewProvider(),
+		provider: docker.NewProvider(logger),
 	}
 }
 

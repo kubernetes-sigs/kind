@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/log"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
@@ -36,19 +37,23 @@ import (
 )
 
 // NewProvider returns a new provider based on executing `docker ...`
-func NewProvider() provider.Provider {
-	return &Provider{}
+func NewProvider(logger log.Logger) provider.Provider {
+	return &Provider{
+		logger: logger,
+	}
 }
 
 // Provider implements provider.Provider
 // see NewProvider
-type Provider struct{}
+type Provider struct {
+	logger log.Logger
+}
 
 // Provision is part of the providers.Provider interface
 func (p *Provider) Provision(status *cli.Status, cluster string, cfg *config.Cluster) (err error) {
 	// TODO: validate cfg
 	// ensure node images are pulled before actually provisioning
-	ensureNodeImages(status, cfg)
+	ensureNodeImages(p.logger, status, cfg)
 
 	// actually provision the cluster
 	// TODO: strings.Repeat("📦", len(desiredNodes))
