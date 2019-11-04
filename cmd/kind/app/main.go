@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"os"
 
 	"sigs.k8s.io/kind/pkg/cmd/kind"
@@ -10,6 +11,7 @@ import (
 // it will then call os.Exit
 func Main() {
 	if err := Run(); err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 }
