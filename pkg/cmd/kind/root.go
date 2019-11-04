@@ -24,7 +24,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cmd"
-	"sigs.k8s.io/kind/pkg/globals"
 	"sigs.k8s.io/kind/pkg/cmd/kind/build"
 	"sigs.k8s.io/kind/pkg/cmd/kind/completion"
 	"sigs.k8s.io/kind/pkg/cmd/kind/create"
@@ -113,8 +112,6 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *Flags, cmd *cobra.Com
 		maybeSetWriter(logger, ioutil.Discard)
 	}
 	maybeSetVerbosity(logger, log.Level(flags.Verbosity))
-	// TODO: eliminate this!!
-	globals.SetLogger(logger)
 	// warn about deprecated flag if used
 	if setLogLevel {
 		logger.Warn("WARNING: --loglevel is deprecated, please switch to -v and -q!")
