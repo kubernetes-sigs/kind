@@ -22,6 +22,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"sigs.k8s.io/kind/pkg/cmd"
+	"sigs.k8s.io/kind/pkg/log"
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/fs"
 )
@@ -31,7 +33,7 @@ type flagpole struct {
 }
 
 // NewCommand returns a new cobra.Command for getting the cluster logs
-func NewCommand() *cobra.Command {
+func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
 		Args: cobra.MaximumNArgs(1),
@@ -40,14 +42,14 @@ func NewCommand() *cobra.Command {
 		Short: "exports logs to a tempdir or [output-dir] if specified",
 		Long:  "exports logs to a tempdir or [output-dir] if specified",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(flags, args)
+			return runE(logger, streams, flags, args)
 		},
 	}
 	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "the cluster context name")
 	return cmd
 }
 
-func runE(flags *flagpole, args []string) error {
+func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole, args []string) error {
 	provider := cluster.NewProvider()
 
 	// Check if the cluster has any running nodes
@@ -76,6 +78,6 @@ func runE(flags *flagpole, args []string) error {
 		return err
 	}
 
-	fmt.Println("Exported logs to: " + dir)
+	logger.V(0).Info("Exported logs to: " + dir)
 	return nil
 }

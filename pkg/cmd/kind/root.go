@@ -18,10 +18,13 @@ limitations under the License.
 package kind
 
 import (
-	"os"
+	"io"
+	"io/ioutil"
 
 	"github.com/spf13/cobra"
 
+	"sigs.k8s.io/kind/pkg/cmd"
+	"sigs.k8s.io/kind/pkg/globals"
 	"sigs.k8s.io/kind/pkg/cmd/kind/build"
 	"sigs.k8s.io/kind/pkg/cmd/kind/completion"
 	"sigs.k8s.io/kind/pkg/cmd/kind/create"
@@ -32,7 +35,6 @@ import (
 	"sigs.k8s.io/kind/pkg/cmd/kind/version"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
-	"sigs.k8s.io/kind/pkg/globals"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
@@ -44,7 +46,7 @@ type Flags struct {
 }
 
 // NewCommand returns a new cobra.Command implementing the root command for kind
-func NewCommand() *cobra.Command {
+func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	flags := &Flags{}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
@@ -52,9 +54,9 @@ func NewCommand() *cobra.Command {
 		Short: "kind is a tool for managing local Kubernetes clusters",
 		Long:  "kind creates and manages local Kubernetes clusters using Docker container 'nodes'",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			err := runE(flags, cmd)
+			err := runE(logger, streams, flags, cmd)
 			if err != nil {
-				logError(err)
+				logError(logger, err)
 			}
 			return err
 		},
@@ -83,18 +85,18 @@ func NewCommand() *cobra.Command {
 		"silence all stderr output",
 	)
 	// add all top level subcommands
-	cmd.AddCommand(build.NewCommand())
-	cmd.AddCommand(completion.NewCommand())
-	cmd.AddCommand(create.NewCommand())
-	cmd.AddCommand(delete.NewCommand())
-	cmd.AddCommand(export.NewCommand())
-	cmd.AddCommand(get.NewCommand())
-	cmd.AddCommand(version.NewCommand())
-	cmd.AddCommand(load.NewCommand())
+	cmd.AddCommand(build.NewCommand(logger, streams))
+	cmd.AddCommand(completion.NewCommand(logger, streams))
+	cmd.AddCommand(create.NewCommand(logger, streams))
+	cmd.AddCommand(delete.NewCommand(logger, streams))
+	cmd.AddCommand(export.NewCommand(logger, streams))
+	cmd.AddCommand(get.NewCommand(logger, streams))
+	cmd.AddCommand(version.NewCommand(logger, streams))
+	cmd.AddCommand(load.NewCommand(logger, streams))
 	return cmd
 }
 
-func runE(flags *Flags, cmd *cobra.Command) error {
+func runE(logger log.Logger, streams cmd.IOStreams, flags *Flags, cmd *cobra.Command) error {
 	// handle limited migration for --loglevel
 	setLogLevel := cmd.Flag("loglevel").Changed
 	setVerbosity := cmd.Flag("verbosity").Changed
@@ -108,29 +110,50 @@ func runE(flags *Flags, cmd *cobra.Command) error {
 	}
 	// normal logger setup
 	if flags.Quiet {
-		globals.SetLogger(log.NoopLogger{})
-	} else {
-		globals.UseCLILogger(os.Stderr, log.Level(flags.Verbosity))
+		maybeSetWriter(logger, ioutil.Discard)
 	}
+	maybeSetVerbosity(logger, log.Level(flags.Verbosity))
+	// TODO: eliminate this!!
+	globals.SetLogger(logger)
 	// warn about deprecated flag if used
 	if setLogLevel {
-		globals.GetLogger().Warn("WARNING: --loglevel is deprecated, please switch to -v and -q!")
+		logger.Warn("WARNING: --loglevel is deprecated, please switch to -v and -q!")
 	}
 	return nil
 }
 
+func maybeSetWriter(logger log.Logger, w io.Writer) {
+	type writerer interface {
+		SetWriter(io.Writer)
+	}
+	v, ok := logger.(writerer)
+	if ok {
+		v.SetWriter(w)
+	}
+}
+
+func maybeSetVerbosity(logger log.Logger, verbosity log.Level) {
+	type verboser interface {
+		SetVerbosity(log.Level)
+	}
+	v, ok := logger.(verboser)
+	if ok {
+		v.SetVerbosity(verbosity)
+	}
+}
+
 // logError logs the error and the root stacktrace if there is one
-func logError(err error) {
-	globals.GetLogger().Errorf("ERROR: %v", err)
+func logError(logger log.Logger, err error) {
+	logger.Errorf("ERROR: %v", err)
 	// If debugging is enabled (non-zero verbosity), display more info
-	if globals.GetLogger().V(1).Enabled() {
+	if logger.V(1).Enabled() {
 		// Display Output if the error was running a command ...
 		if err := exec.RunErrorForError(err); err != nil {
-			globals.GetLogger().Errorf("\nOutput:\n%s", err.Output)
+			logger.Errorf("\nOutput:\n%s", err.Output)
 		}
 		// Then display stack trace if any (there should be one...)
 		if trace := errors.StackTrace(err); trace != nil {
-			globals.GetLogger().Errorf("\nStack Trace: %+v", trace)
+			logger.Errorf("\nStack Trace: %+v", trace)
 		}
 	}
 }

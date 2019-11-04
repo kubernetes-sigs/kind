@@ -24,8 +24,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
+	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/errors"
-	"sigs.k8s.io/kind/pkg/globals"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 type flagpole struct {
@@ -38,7 +39,7 @@ type flagpole struct {
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
-func NewCommand() *cobra.Command {
+func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
@@ -46,7 +47,7 @@ func NewCommand() *cobra.Command {
 		Short: "Creates a local Kubernetes cluster",
 		Long:  "Creates a local Kubernetes cluster using Docker container 'nodes'",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(flags)
+			return runE(logger, streams, flags)
 		},
 	}
 	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "cluster context name")
@@ -58,7 +59,7 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func runE(flags *flagpole) error {
+func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	provider := cluster.NewProvider()
 
 	// Check if the cluster name already exists
@@ -71,7 +72,7 @@ func runE(flags *flagpole) error {
 	}
 
 	// create the cluster
-	fmt.Printf("Creating cluster %q ...\n", flags.Name)
+	logger.V(0).Infof("Creating cluster %q ...\n", flags.Name)
 	if err = provider.Create(
 		flags.Name,
 		cluster.CreateWithConfigFile(flags.Config),
@@ -82,7 +83,7 @@ func runE(flags *flagpole) error {
 	); err != nil {
 		if errs := errors.Errors(err); errs != nil {
 			for _, problem := range errs {
-				globals.GetLogger().Errorf("%v", problem)
+				logger.Errorf("%v", problem)
 			}
 			return errors.New("aborting due to invalid configuration")
 		}

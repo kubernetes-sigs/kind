@@ -18,19 +18,20 @@ limitations under the License.
 package bash
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
+
+	"sigs.k8s.io/kind/pkg/cmd"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // NewCommand returns a new cobra.Command for cluster creation
-func NewCommand() *cobra.Command {
+func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "bash",
 		Short: "Output shell completions for bash",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return cmd.Parent().Parent().GenBashCompletion(os.Stdout)
+			return cmd.Parent().Parent().GenBashCompletion(streams.Out)
 		},
 	}
 	return cmd

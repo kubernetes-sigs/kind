@@ -20,12 +20,14 @@ package load
 import (
 	"github.com/spf13/cobra"
 
+	"sigs.k8s.io/kind/pkg/cmd"
 	dockerimage "sigs.k8s.io/kind/pkg/cmd/kind/load/docker-image"
 	imagearchive "sigs.k8s.io/kind/pkg/cmd/kind/load/image-archive"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // NewCommand returns a new cobra.Command for get
-func NewCommand() *cobra.Command {
+func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "load",
@@ -33,7 +35,7 @@ func NewCommand() *cobra.Command {
 		Long:  "Loads images into node from an archive or image on host",
 	}
 	// add subcommands
-	cmd.AddCommand(dockerimage.NewCommand())
-	cmd.AddCommand(imagearchive.NewCommand())
+	cmd.AddCommand(dockerimage.NewCommand(logger, streams))
+	cmd.AddCommand(imagearchive.NewCommand(logger, streams))
 	return cmd
 }
