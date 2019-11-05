@@ -52,9 +52,13 @@ COPY files/ /
 #
 # Next we download and extract crictl and CNI plugin binaries from upstream.
 #
-# Finally we ensure the /etc/kubernetes/manifests directory exists. Normally
+# Next we ensure the /etc/kubernetes/manifests directory exists. Normally
 # a kubeadm debain / rpm package would ensure that this exists but we install
 # freshly built binaries directly when we build the node image.
+#
+# Finally we adjust tempfiles cleanup to be 1 minute after "boot" instead of 15m
+# This is plenty after we've done initial setup for a node, but before we are
+# likely to try to export logs etc.
 RUN echo "Ensuring scripts are executable ..." \
     && chmod +x /usr/local/bin/clean-install /usr/local/bin/entrypoint \
  && echo "Installing Packages ..." \
@@ -91,7 +95,9 @@ RUN echo "Ensuring scripts are executable ..." \
     && tar -C /opt/cni/bin -xzf /tmp/cni.tgz \
     && rm -rf /tmp/cni.tgz \
  && echo "Ensuring /etc/kubernetes/manifests" \
-    && mkdir -p /etc/kubernetes/manifests
+    && mkdir -p /etc/kubernetes/manifests \
+ && echo "Adjusting systemd-tmpfiles timer" \
+    && sed -i /usr/lib/systemd/system/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#'
 
 # tell systemd that it is in docker (it will check for the container env)
 # https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
