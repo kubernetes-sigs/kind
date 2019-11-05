@@ -20,6 +20,8 @@ import (
 	"os"
 
 	"sigs.k8s.io/kind/pkg/cmd"
+	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/cmd/kind"
 	"sigs.k8s.io/kind/pkg/log"
 )
@@ -35,5 +37,25 @@ func Main() {
 // Run invokes the kind root command, returning the error.
 // See: sigs.k8s.io/kind/pkg/cmd/kind
 func Run(logger log.Logger, streams cmd.IOStreams) error {
-	return kind.NewCommand(logger, streams).Execute()
+	err := kind.NewCommand(logger, streams).Execute()
+	if err != nil {
+		logError(logger, err)
+	}
+	return err
+}
+
+// logError logs the error and the root stacktrace if there is one
+func logError(logger log.Logger, err error) {
+	logger.Errorf("ERROR: %v", err)
+	// If debugging is enabled (non-zero verbosity), display more info
+	if logger.V(1).Enabled() {
+		// Display Output if the error was running a command ...
+		if err := exec.RunErrorForError(err); err != nil {
+			logger.Errorf("\nOutput:\n%s", err.Output)
+		}
+		// Then display stack trace if any (there should be one...)
+		if trace := errors.StackTrace(err); trace != nil {
+			logger.Errorf("\nStack Trace: %+v", trace)
+		}
+	}
 }

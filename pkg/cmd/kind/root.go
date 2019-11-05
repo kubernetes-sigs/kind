@@ -32,8 +32,6 @@ import (
 	"sigs.k8s.io/kind/pkg/cmd/kind/get"
 	"sigs.k8s.io/kind/pkg/cmd/kind/load"
 	"sigs.k8s.io/kind/pkg/cmd/kind/version"
-	"sigs.k8s.io/kind/pkg/errors"
-	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
@@ -53,11 +51,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "kind is a tool for managing local Kubernetes clusters",
 		Long:  "kind creates and manages local Kubernetes clusters using Docker container 'nodes'",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			err := runE(logger, flags, cmd)
-			if err != nil {
-				logError(logger, err)
-			}
-			return err
+			return runE(logger, flags, cmd)
 		},
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -139,21 +133,5 @@ func maybeSetVerbosity(logger log.Logger, verbosity log.Level) {
 	v, ok := logger.(verboser)
 	if ok {
 		v.SetVerbosity(verbosity)
-	}
-}
-
-// logError logs the error and the root stacktrace if there is one
-func logError(logger log.Logger, err error) {
-	logger.Errorf("ERROR: %v", err)
-	// If debugging is enabled (non-zero verbosity), display more info
-	if logger.V(1).Enabled() {
-		// Display Output if the error was running a command ...
-		if err := exec.RunErrorForError(err); err != nil {
-			logger.Errorf("\nOutput:\n%s", err.Output)
-		}
-		// Then display stack trace if any (there should be one...)
-		if trace := errors.StackTrace(err); trace != nil {
-			logger.Errorf("\nStack Trace: %+v", trace)
-		}
 	}
 }
