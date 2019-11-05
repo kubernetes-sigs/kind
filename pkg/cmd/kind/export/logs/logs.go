@@ -50,7 +50,9 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 }
 
 func runE(logger log.Logger, flags *flagpole, args []string) error {
-	provider := cluster.NewProvider()
+	provider := cluster.NewProvider(
+		cluster.ProviderWithLogger(logger),
+	)
 
 	// Check if the cluster has any running nodes
 	nodes, err := provider.ListNodes(flags.Name)

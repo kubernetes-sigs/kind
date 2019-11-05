@@ -52,7 +52,10 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 func runE(logger log.Logger, flags *flagpole) error {
 	// Delete the cluster
 	logger.V(0).Infof("Deleting cluster %q ...\n", flags.Name)
-	if err := cluster.NewProvider().Delete(flags.Name, flags.Kubeconfig); err != nil {
+	provider := cluster.NewProvider(
+		cluster.ProviderWithLogger(logger),
+	)
+	if err := provider.Delete(flags.Name, flags.Kubeconfig); err != nil {
 		return errors.Wrap(err, "failed to delete cluster")
 	}
 	return nil

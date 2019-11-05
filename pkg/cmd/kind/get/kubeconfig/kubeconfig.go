@@ -41,7 +41,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "prints cluster kubeconfig",
 		Long:  "prints cluster kubeconfig",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(streams, flags)
+			return runE(logger, streams, flags)
 		},
 	}
 	cmd.Flags().StringVar(
@@ -59,8 +59,11 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func runE(streams cmd.IOStreams, flags *flagpole) error {
-	cfg, err := cluster.NewProvider().KubeConfig(flags.Name, flags.Internal)
+func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
+	provider := cluster.NewProvider(
+		cluster.ProviderWithLogger(logger),
+	)
+	cfg, err := provider.KubeConfig(flags.Name, flags.Internal)
 	if err != nil {
 		return err
 	}

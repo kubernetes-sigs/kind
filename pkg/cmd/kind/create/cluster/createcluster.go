@@ -60,7 +60,9 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 }
 
 func runE(logger log.Logger, flags *flagpole) error {
-	provider := cluster.NewProvider()
+	provider := cluster.NewProvider(
+		cluster.ProviderWithLogger(logger),
+	)
 
 	// Check if the cluster name already exists
 	n, err := provider.ListNodes(flags.Name)

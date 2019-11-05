@@ -17,6 +17,8 @@ limitations under the License.
 package cluster
 
 import (
+	"sort"
+
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/log"
@@ -41,13 +43,20 @@ type Provider struct {
 
 // NewProvider returns a new provider based on the supplied options
 func NewProvider(options ...ProviderOption) *Provider {
-	p := &Provider{}
-	for _, o := range options {
-		p = o(p)
+	p := &Provider{
+		logger: log.NoopLogger{},
 	}
-	// TODO: ensure logger is setup before provider
-	if p.logger == nil {
-		p.logger = log.NoopLogger{}
+	// Ensure we apply the logger options first, while maintaining the order
+	// otherwise. This way we can trivially init the internal provider with
+	// the logger.
+	sort.SliceStable(options, func(i, j int) bool {
+		a, b := options[i], options[j]
+		_, aIsLogger := a.(providerLoggerOption)
+		_, bIsLaIsLogger := b.(providerLoggerOption)
+		return aIsLogger && !bIsLaIsLogger
+	})
+	for _, o := range options {
+		o.apply(p)
 	}
 	if p.provider == nil {
 		p.provider = docker.NewProvider(p.logger)
@@ -56,7 +65,24 @@ func NewProvider(options ...ProviderOption) *Provider {
 }
 
 // ProviderOption is an option for configuring a provider
-type ProviderOption func(*Provider) *Provider
+type ProviderOption interface {
+	apply(p *Provider)
+}
+
+// providerLoggerOption is a trivial ProviderOption adapter
+// we use a type specific to logging options so we can handle them first
+type providerLoggerOption func(p *Provider)
+
+func (a providerLoggerOption) apply(p *Provider) {
+	a(p)
+}
+
+// ProviderWithLogger configures the provider to use Logger logger
+func ProviderWithLogger(logger log.Logger) ProviderOption {
+	return providerLoggerOption(func(p *Provider) {
+		p.logger = logger
+	})
+}
 
 // TODO: remove this, rename internal context to something else
 func (p *Provider) ic(name string) *internalcontext.Context {

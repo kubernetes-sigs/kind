@@ -72,7 +72,9 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 }
 
 func runE(logger log.Logger, flags *flagpole, args []string) error {
-	provider := cluster.NewProvider()
+	provider := cluster.NewProvider(
+		cluster.ProviderWithLogger(logger),
+	)
 
 	// Check that the image exists locally and gets its ID, if not return error
 	imageName := args[0]
