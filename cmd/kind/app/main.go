@@ -17,6 +17,7 @@ limitations under the License.
 package app
 
 import (
+	"io/ioutil"
 	"os"
 
 	"github.com/spf13/pflag"
@@ -45,11 +46,10 @@ func Run(logger log.Logger, streams cmd.IOStreams, args []string) error {
 		// if we are in quiet mode, we want to suppress all status output
 		// only streams.Out should be written to (program output)
 		logger = log.NoopLogger{}
+		streams.ErrOut = ioutil.Discard
 	}
-	// suppress usage if quiet is set, again we only want program output
+	// actually run the command
 	c := kind.NewCommand(logger, streams)
-	c.SilenceUsage = quiet
-	// pass in args and execute
 	c.SetArgs(args)
 	if err := c.Execute(); err != nil {
 		logError(logger, err)
