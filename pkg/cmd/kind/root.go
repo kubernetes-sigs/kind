@@ -54,7 +54,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return runE(logger, flags, cmd)
 		},
-		SilenceUsage:  false,
+		SilenceUsage:  true,
 		SilenceErrors: true,
 		Version:       version.Version(),
 	}
