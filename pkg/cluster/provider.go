@@ -50,10 +50,9 @@ func NewProvider(options ...ProviderOption) *Provider {
 	// otherwise. This way we can trivially init the internal provider with
 	// the logger.
 	sort.SliceStable(options, func(i, j int) bool {
-		a, b := options[i], options[j]
-		_, aIsLogger := a.(providerLoggerOption)
-		_, bIsLaIsLogger := b.(providerLoggerOption)
-		return aIsLogger && !bIsLaIsLogger
+		_, iIsLogger := options[i].(providerLoggerOption)
+		_, jIsLogger := options[j].(providerLoggerOption)
+		return iIsLogger && !jIsLogger
 	})
 	for _, o := range options {
 		o.apply(p)
