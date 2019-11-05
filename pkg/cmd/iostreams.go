@@ -21,19 +21,21 @@ import (
 // IOStreams provides the standard names for iostreams.
 // This is useful for embedding and for unit testing.
 // Inconsistent and different names make it hard to read and review code
+// This is based on cli-runtime, but just the nice type without the dependency
 type IOStreams struct {
 	// In think, os.Stdin
 	In io.Reader
 	// Out think, os.Stdout
 	Out io.Writer
-	// NOTE: we do NOT have ErrOut
-	// This is because we exclusively use sigs.k8s.io/kind/pkg/log for that
+	// ErrOut think, os.Stderr
+	ErrOut io.Writer
 }
 
 // StandardIOStreams returns an IOStreams from os.Stdin, os.Stdout
 func StandardIOStreams() IOStreams {
 	return IOStreams{
-		In:  os.Stdin,
-		Out: os.Stdout,
+		In:     os.Stdin,
+		Out:    os.Stdout,
+		ErrOut: os.Stderr,
 	}
 }
