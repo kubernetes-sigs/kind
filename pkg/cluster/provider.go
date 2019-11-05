@@ -83,7 +83,7 @@ func (p *Provider) List() ([]string, error) {
 // If internal is true, this will contain the internal IP etc.
 // If internal is fale, this will contain the host IP etc.
 func (p *Provider) KubeConfig(name string, internal bool) (string, error) {
-	return kubeconfig.Get(p.ic(name), internal)
+	return kubeconfig.Get(p.ic(name), !internal)
 }
 
 // ListNodes returns the list of container IDs for the "nodes" in the cluster
