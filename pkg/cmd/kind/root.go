@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/cmd/kind/build"
@@ -53,7 +54,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return runE(logger, flags, cmd)
 		},
-		SilenceUsage:  true,
+		SilenceUsage:  false,
 		SilenceErrors: true,
 		Version:       version.Version(),
 	}
@@ -70,13 +71,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		0,
 		"info log verbosity",
 	)
-	cmd.PersistentFlags().BoolVarP(
-		&flags.Quiet,
-		"quiet",
-		"q",
-		false,
-		"silence all stderr output",
-	)
+	AddQuietFlag(cmd.PersistentFlags(), &flags.Quiet)
 	// add all top level subcommands
 	cmd.AddCommand(build.NewCommand(logger, streams))
 	cmd.AddCommand(completion.NewCommand(logger, streams))
@@ -87,6 +82,20 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd.AddCommand(version.NewCommand(logger, streams))
 	cmd.AddCommand(load.NewCommand(logger, streams))
 	return cmd
+}
+
+// AddQuietFlag adds the -q / --quiet boolean flag to flags
+// with the value stored in valuePointer
+// The default value is false.
+// This is used by app.Run to handle quiet before we get to cobra
+func AddQuietFlag(flags *pflag.FlagSet, valuePointer *bool) {
+	flags.BoolVarP(
+		valuePointer,
+		"quiet",
+		"q",
+		false,
+		"silence all stderr output",
+	)
 }
 
 func runE(logger log.Logger, flags *Flags, cmd *cobra.Command) error {
@@ -103,6 +112,8 @@ func runE(logger log.Logger, flags *Flags, cmd *cobra.Command) error {
 	}
 	// normal logger setup
 	if flags.Quiet {
+		// NOTE: if we are coming from app.Run handling this flag is
+		// redundant, however it doesn't hurt, and this may be called directly.
 		maybeSetWriter(logger, ioutil.Discard)
 	}
 	maybeSetVerbosity(logger, log.Level(flags.Verbosity))
