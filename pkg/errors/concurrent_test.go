@@ -18,6 +18,7 @@ package errors
 
 import (
 	"reflect"
+	"sort"
 	"testing"
 )
 
@@ -77,6 +78,10 @@ func TestAggregateConcurrent(t *testing.T) {
 			},
 		})
 		resultErrors := Errors(result)
+		// We just want to check if we aggregate all the errors independent of the order
+		sort.SliceStable(resultErrors, func(i, j int) bool {
+			return resultErrors[i].Error() < resultErrors[j].Error()
+		})
 		if !reflect.DeepEqual(expected, resultErrors) {
 			t.Errorf("Result did not equal Expected")
 			t.Errorf("Expected: %+v", expected)
