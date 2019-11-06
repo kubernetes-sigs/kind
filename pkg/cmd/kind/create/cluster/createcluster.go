@@ -19,6 +19,8 @@ package cluster
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -47,7 +49,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "Creates a local Kubernetes cluster",
 		Long:  "Creates a local Kubernetes cluster using Docker container 'nodes'",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(logger, flags)
+			return runE(logger, streams, flags)
 		},
 	}
 	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "cluster context name")
@@ -59,7 +61,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func runE(logger log.Logger, flags *flagpole) error {
+func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	provider := cluster.NewProvider(
 		cluster.ProviderWithLogger(logger),
 	)
@@ -73,11 +75,17 @@ func runE(logger log.Logger, flags *flagpole) error {
 		return fmt.Errorf("a cluster with the name %q already exists", flags.Name)
 	}
 
+	// handle config flag, we might need to read from stdin
+	withConfig, err := configOption(flags.Config, streams.In)
+	if err != nil {
+		return err
+	}
+
 	// create the cluster
 	logger.V(0).Infof("Creating cluster %q ...\n", flags.Name)
 	if err = provider.Create(
 		flags.Name,
-		cluster.CreateWithConfigFile(flags.Config),
+		withConfig,
 		cluster.CreateWithNodeImage(flags.ImageName),
 		cluster.CreateWithRetain(flags.Retain),
 		cluster.CreateWithWaitForReady(flags.Wait),
@@ -93,4 +101,19 @@ func runE(logger log.Logger, flags *flagpole) error {
 	}
 
 	return nil
+}
+
+// configOption converts the raw --config flag value to a cluster creation
+// option matching it. it will read from stdin if the flag value is `-`
+func configOption(rawConfigFlag string, stdin io.Reader) (cluster.CreateOption, error) {
+	// if not - then we are using a real file
+	if rawConfigFlag != "-" {
+		return cluster.CreateWithConfigFile(rawConfigFlag), nil
+	}
+	// otherwise read from stdin
+	raw, err := ioutil.ReadAll(stdin)
+	if err != nil {
+		return nil, errors.Wrap(err, "error reading config from stdin")
+	}
+	return cluster.CreateWithRawConfig(raw), nil
 }

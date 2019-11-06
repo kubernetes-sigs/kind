@@ -44,6 +44,15 @@ func CreateWithConfigFile(path string) CreateOption {
 	})
 }
 
+// CreateWithRawConfig configures the config to use from raw (yaml) bytes
+func CreateWithRawConfig(raw []byte) CreateOption {
+	return createOptionAdapter(func(o *internalcreate.ClusterOptions) error {
+		var err error
+		o.Config, err = internalencoding.Parse(raw)
+		return err
+	})
+}
+
 // CreateWithV1Alpha3Config configures the cluster with a v1alpha3 config
 func CreateWithV1Alpha3Config(config *v1alpha3.Cluster) CreateOption {
 	return createOptionAdapter(func(o *internalcreate.ClusterOptions) error {
