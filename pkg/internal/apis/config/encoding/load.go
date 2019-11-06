@@ -73,8 +73,7 @@ func Parse(raw []byte) (*config.Cluster, error) {
 			return nil, errors.Wrap(err, "unable to decode config")
 		}
 		// apply defaults for version and convert
-		v1alpha3.SetDefaultsCluster(cfg)
-		return config.Convertv1alpha3(cfg), nil
+		return V1Alpha3ToInternal(cfg), nil
 	}
 	// unknown apiVersion if we haven't already returned ...
 	return nil, errors.Errorf("unknown apiVersion: %s", tm.APIVersion)
