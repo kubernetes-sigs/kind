@@ -41,8 +41,7 @@ func Main() {
 // See: sigs.k8s.io/kind/pkg/cmd/kind
 func Run(logger log.Logger, streams cmd.IOStreams, args []string) error {
 	// NOTE: we handle the quiet flag here so we can fully silence cobra
-	quiet := checkQuiet(args)
-	if quiet {
+	if checkQuiet(args) {
 		// if we are in quiet mode, we want to suppress all status output
 		// only streams.Out should be written to (program output)
 		logger = log.NoopLogger{}
@@ -58,11 +57,18 @@ func Run(logger log.Logger, streams cmd.IOStreams, args []string) error {
 	return nil
 }
 
+// checkQuiet returns true if -q / --quiet was set in args
 func checkQuiet(args []string) bool {
 	flags := pflag.NewFlagSet("persistent-quiet", pflag.ContinueOnError)
 	flags.ParseErrorsWhitelist.UnknownFlags = true
 	quiet := false
-	kind.AddQuietFlag(flags, &quiet)
+	flags.BoolVarP(
+		&quiet,
+		"quiet",
+		"q",
+		false,
+		"silence all stderr output",
+	)
 	// NOTE: pflag will error if -h / --help is specified
 	// We don't care here. That will be handled downstream
 	// It will also call flags.Usage so we're making that no-op
