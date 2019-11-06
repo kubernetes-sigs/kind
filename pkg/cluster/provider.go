@@ -17,8 +17,11 @@ limitations under the License.
 package cluster
 
 import (
+	"sort"
+
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/log"
 
 	internalcontext "sigs.k8s.io/kind/pkg/internal/cluster/context"
 	internalcreate "sigs.k8s.io/kind/pkg/internal/cluster/create"
@@ -35,22 +38,50 @@ const DefaultName = constants.DefaultClusterName
 // Provider is used to perform cluster operations
 type Provider struct {
 	provider internalprovider.Provider
+	logger   log.Logger
 }
 
 // NewProvider returns a new provider based on the supplied options
 func NewProvider(options ...ProviderOption) *Provider {
-	p := &Provider{}
+	p := &Provider{
+		logger: log.NoopLogger{},
+	}
+	// Ensure we apply the logger options first, while maintaining the order
+	// otherwise. This way we can trivially init the internal provider with
+	// the logger.
+	sort.SliceStable(options, func(i, j int) bool {
+		_, iIsLogger := options[i].(providerLoggerOption)
+		_, jIsLogger := options[j].(providerLoggerOption)
+		return iIsLogger && !jIsLogger
+	})
 	for _, o := range options {
-		p = o(p)
+		o.apply(p)
 	}
 	if p.provider == nil {
-		p.provider = docker.NewProvider()
+		p.provider = docker.NewProvider(p.logger)
 	}
 	return p
 }
 
 // ProviderOption is an option for configuring a provider
-type ProviderOption func(*Provider) *Provider
+type ProviderOption interface {
+	apply(p *Provider)
+}
+
+// providerLoggerOption is a trivial ProviderOption adapter
+// we use a type specific to logging options so we can handle them first
+type providerLoggerOption func(p *Provider)
+
+func (a providerLoggerOption) apply(p *Provider) {
+	a(p)
+}
+
+// ProviderWithLogger configures the provider to use Logger logger
+func ProviderWithLogger(logger log.Logger) ProviderOption {
+	return providerLoggerOption(func(p *Provider) {
+		p.logger = logger
+	})
+}
 
 // TODO: remove this, rename internal context to something else
 func (p *Provider) ic(name string) *internalcontext.Context {
@@ -66,12 +97,12 @@ func (p *Provider) Create(name string, options ...CreateOption) error {
 			return err
 		}
 	}
-	return internalcreate.Cluster(p.ic(name), opts)
+	return internalcreate.Cluster(p.logger, p.ic(name), opts)
 }
 
 // Delete tears down a kubernetes-in-docker cluster
 func (p *Provider) Delete(name, explicitKubeconfigPath string) error {
-	return internaldelete.Cluster(p.ic(name), explicitKubeconfigPath)
+	return internaldelete.Cluster(p.logger, p.ic(name), explicitKubeconfigPath)
 }
 
 // List returns a list of clusters for which nodes exist
@@ -105,5 +136,5 @@ func (p *Provider) CollectLogs(name, dir string) error {
 	if err != nil {
 		return err
 	}
-	return internallogs.Collect(n, dir)
+	return internallogs.Collect(p.logger, n, dir)
 }

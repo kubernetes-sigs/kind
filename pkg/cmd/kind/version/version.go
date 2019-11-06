@@ -23,7 +23,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"sigs.k8s.io/kind/pkg/globals"
+	"sigs.k8s.io/kind/pkg/cmd"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // Version returns the kind CLI Semantic Version
@@ -60,19 +61,19 @@ const VersionPreRelease = "alpha"
 var GitCommit = ""
 
 // NewCommand returns a new cobra.Command for version
-func NewCommand() *cobra.Command {
+func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "version",
 		Short: "prints the kind CLI version",
 		Long:  "prints the kind CLI version",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// if not -q / --quiet, show lots of info
-			if globals.GetLogger().V(0).Enabled() {
-				fmt.Println(DisplayVersion())
-
-			} else { // otherwise only show semver
-				fmt.Println(Version())
+			if logger.V(0).Enabled() {
+				// if not -q / --quiet, show lots of info
+				fmt.Fprintln(streams.Out, DisplayVersion())
+			} else {
+				// otherwise only show semver
+				fmt.Fprintln(streams.Out, Version())
 			}
 			return nil
 		},

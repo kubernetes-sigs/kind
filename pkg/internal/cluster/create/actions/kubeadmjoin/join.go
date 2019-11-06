@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
-	"sigs.k8s.io/kind/pkg/globals"
+	"sigs.k8s.io/kind/pkg/log"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 
@@ -83,7 +83,7 @@ func joinSecondaryControlPlanes(
 	// (this is not safe currently)
 	for _, node := range secondaryControlPlanes {
 		node := node // capture loop variable
-		if err := runKubeadmJoin(node); err != nil {
+		if err := runKubeadmJoin(ctx.Logger, node); err != nil {
 			return err
 		}
 	}
@@ -104,7 +104,7 @@ func joinWorkers(
 	for _, node := range workers {
 		node := node // capture loop variable
 		fns = append(fns, func() error {
-			return runKubeadmJoin(node)
+			return runKubeadmJoin(ctx.Logger, node)
 		})
 	}
 	if err := errors.UntilErrorConcurrent(fns); err != nil {
@@ -116,7 +116,7 @@ func joinWorkers(
 }
 
 // runKubeadmJoin executes kubadm join command
-func runKubeadmJoin(node nodes.Node) error {
+func runKubeadmJoin(logger log.Logger, node nodes.Node) error {
 	// run kubeadm join
 	// TODO(bentheelder): this should be using the config file
 	cmd := node.Command(
@@ -130,7 +130,7 @@ func runKubeadmJoin(node nodes.Node) error {
 		"--v=6",
 	)
 	lines, err := exec.CombinedOutputLines(cmd)
-	globals.GetLogger().V(3).Info(strings.Join(lines, "\n"))
+	logger.V(3).Info(strings.Join(lines, "\n"))
 	if err != nil {
 		return errors.Wrap(err, "failed to join node with kubeadm")
 	}

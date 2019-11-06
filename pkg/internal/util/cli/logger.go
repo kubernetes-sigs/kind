@@ -23,6 +23,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"sigs.k8s.io/kind/pkg/log"
 )
@@ -44,6 +45,21 @@ func NewLogger(writer io.Writer, verbosity log.Level) *Logger {
 		writer:     writer,
 		bufferPool: newBufferPool(),
 	}
+}
+
+func (l *Logger) SetWriter(w io.Writer) {
+	l.writerMu.Lock()
+	defer l.writerMu.Unlock()
+	l.writer = w
+}
+
+func (l *Logger) getVerbosity() log.Level {
+	return log.Level(atomic.LoadInt32((*int32)(&l.verbosity)))
+}
+
+// SetVerbosity sets the loggers verbosity
+func (l *Logger) SetVerbosity(verbosity log.Level) {
+	atomic.StoreInt32((*int32)(&l.verbosity), int32(verbosity))
 }
 
 // synchronized write to the inner writer
@@ -146,7 +162,7 @@ func (l *Logger) V(level log.Level) log.InfoLogger {
 	return infoLogger{
 		logger:  l,
 		level:   level,
-		enabled: level <= l.verbosity,
+		enabled: level <= l.getVerbosity(),
 	}
 }
 

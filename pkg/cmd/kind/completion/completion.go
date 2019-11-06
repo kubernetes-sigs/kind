@@ -20,20 +20,22 @@ package completion
 import (
 	"github.com/spf13/cobra"
 
+	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/cmd/kind/completion/bash"
 	"sigs.k8s.io/kind/pkg/cmd/kind/completion/zsh"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // NewCommand returns a new cobra.Command for cluster creation
-func NewCommand() *cobra.Command {
+func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "completion",
 		Short: "Output shell completion code for the specified shell (bash or zsh)",
 		Long:  longDescription,
 	}
-	cmd.AddCommand(zsh.NewCommand())
-	cmd.AddCommand(bash.NewCommand())
+	cmd.AddCommand(zsh.NewCommand(logger, streams))
+	cmd.AddCommand(bash.NewCommand(logger, streams))
 	return cmd
 }
 

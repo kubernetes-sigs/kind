@@ -18,12 +18,12 @@ limitations under the License.
 package cluster
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/kind/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/cluster"
+	"sigs.k8s.io/kind/pkg/cmd"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 type flagpole struct {
@@ -32,7 +32,7 @@ type flagpole struct {
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
-func NewCommand() *cobra.Command {
+func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
 		Args: cobra.NoArgs,
@@ -41,7 +41,7 @@ func NewCommand() *cobra.Command {
 		Short: "Deletes a cluster",
 		Long:  "Deletes a resource",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(flags)
+			return runE(logger, flags)
 		},
 	}
 	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "the cluster name")
@@ -49,10 +49,13 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func runE(flags *flagpole) error {
+func runE(logger log.Logger, flags *flagpole) error {
 	// Delete the cluster
-	fmt.Printf("Deleting cluster %q ...\n", flags.Name)
-	if err := cluster.NewProvider().Delete(flags.Name, flags.Kubeconfig); err != nil {
+	logger.V(0).Infof("Deleting cluster %q ...\n", flags.Name)
+	provider := cluster.NewProvider(
+		cluster.ProviderWithLogger(logger),
+	)
+	if err := provider.Delete(flags.Name, flags.Kubeconfig); err != nil {
 		return errors.Wrap(err, "failed to delete cluster")
 	}
 	return nil

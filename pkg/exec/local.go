@@ -23,7 +23,6 @@ import (
 	"sync"
 
 	"sigs.k8s.io/kind/pkg/errors"
-	"sigs.k8s.io/kind/pkg/globals"
 )
 
 // LocalCmd wraps os/exec.Cmd, implementing the kind/pkg/exec.Cmd interface
@@ -113,7 +112,6 @@ func (cmd *LocalCmd) Run() error {
 		}
 	}
 	// TODO: should be in the caller or logger should be injected somehow ...
-	globals.GetLogger().V(3).Infof("Running: \"%s\"", PrettyCommand(cmd.Args[0], cmd.Args[1:]...))
 	if err := cmd.Cmd.Run(); err != nil {
 		return errors.WithStack(&RunError{
 			Command: cmd.Args,

@@ -18,7 +18,6 @@ package docker
 
 import (
 	"sigs.k8s.io/kind/pkg/exec"
-	"sigs.k8s.io/kind/pkg/globals"
 )
 
 // Run creates a container with "docker run", with some error handling
@@ -29,14 +28,6 @@ func Run(image string, runArgs []string, containerArgs []string) error {
 	args = append(args, image)
 	args = append(args, containerArgs...)
 	cmd := exec.Command("docker", args...)
-	output, err := exec.CombinedOutputLines(cmd)
-	if err != nil {
-		// log error output if there was any
-		// TODO: this should be in the caller instead
-		for _, line := range output {
-			globals.GetLogger().Error(line)
-		}
-		return err
-	}
-	return nil
+	_, err := exec.CombinedOutputLines(cmd)
+	return err
 }

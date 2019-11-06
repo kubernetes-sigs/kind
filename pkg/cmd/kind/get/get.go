@@ -20,13 +20,15 @@ package get
 import (
 	"github.com/spf13/cobra"
 
+	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/cmd/kind/get/clusters"
 	"sigs.k8s.io/kind/pkg/cmd/kind/get/kubeconfig"
 	"sigs.k8s.io/kind/pkg/cmd/kind/get/nodes"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // NewCommand returns a new cobra.Command for get
-func NewCommand() *cobra.Command {
+func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
@@ -35,8 +37,8 @@ func NewCommand() *cobra.Command {
 		Long:  "Gets one of [clusters, nodes, kubeconfig]",
 	}
 	// add subcommands
-	cmd.AddCommand(clusters.NewCommand())
-	cmd.AddCommand(nodes.NewCommand())
-	cmd.AddCommand(kubeconfig.NewCommand())
+	cmd.AddCommand(clusters.NewCommand(logger, streams))
+	cmd.AddCommand(nodes.NewCommand(logger, streams))
+	cmd.AddCommand(kubeconfig.NewCommand(logger, streams))
 	return cmd
 }

@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"sigs.k8s.io/kind/pkg/exec"
-	"sigs.k8s.io/kind/pkg/globals"
+	"sigs.k8s.io/kind/pkg/log"
 
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/cluster/providers/provider/common"
@@ -31,7 +31,7 @@ import (
 
 // ensureNodeImages ensures that the node images used by the create
 // configuration are present
-func ensureNodeImages(status *cli.Status, cfg *config.Cluster) {
+func ensureNodeImages(logger log.Logger, status *cli.Status, cfg *config.Cluster) {
 	// pull each required image
 	for _, image := range common.RequiredNodeImages(cfg).List() {
 		// prints user friendly message
@@ -42,35 +42,35 @@ func ensureNodeImages(status *cli.Status, cfg *config.Cluster) {
 
 		// attempt to explicitly pull the image if it doesn't exist locally
 		// we don't care if this errors, we'll still try to run which also pulls
-		_, _ = pullIfNotPresent(image, 4)
+		_, _ = pullIfNotPresent(logger, image, 4)
 	}
 }
 
 // pullIfNotPresent will pull an image if it is not present locally
 // retrying up to retries times
 // it returns true if it attempted to pull, and any errors from pulling
-func pullIfNotPresent(image string, retries int) (pulled bool, err error) {
+func pullIfNotPresent(logger log.Logger, image string, retries int) (pulled bool, err error) {
 	// TODO(bentheelder): switch most (all) of the logging here to debug level
 	// once we have configurable log levels
 	// if this did not return an error, then the image exists locally
 	cmd := exec.Command("docker", "inspect", "--type=image", image)
 	if err := cmd.Run(); err == nil {
-		globals.GetLogger().V(1).Infof("Image: %s present locally", image)
+		logger.V(1).Infof("Image: %s present locally", image)
 		return false, nil
 	}
 	// otherwise try to pull it
-	return true, pull(image, retries)
+	return true, pull(logger, image, retries)
 }
 
 // pull pulls an image, retrying up to retries times
-func pull(image string, retries int) error {
-	globals.GetLogger().V(1).Infof("Pulling image: %s ...", image)
+func pull(logger log.Logger, image string, retries int) error {
+	logger.V(1).Infof("Pulling image: %s ...", image)
 	err := exec.Command("docker", "pull", image).Run()
 	// retry pulling up to retries times if necessary
 	if err != nil {
 		for i := 0; i < retries; i++ {
 			time.Sleep(time.Second * time.Duration(i+1))
-			globals.GetLogger().V(1).Infof("Trying again to pull image: %q ... %v", image, err)
+			logger.V(1).Infof("Trying again to pull image: %q ... %v", image, err)
 			// TODO(bentheelder): add some backoff / sleep?
 			err = exec.Command("docker", "pull", image).Run()
 			if err == nil {
@@ -79,7 +79,7 @@ func pull(image string, retries int) error {
 		}
 	}
 	if err != nil {
-		globals.GetLogger().V(1).Infof("Failed to pull image: %q %v", image, err)
+		logger.V(1).Infof("Failed to pull image: %q %v", image, err)
 	}
 	return err
 }

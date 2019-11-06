@@ -22,7 +22,6 @@ import (
 
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
-	"sigs.k8s.io/kind/pkg/globals"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 
@@ -71,7 +70,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		"--v=6",
 	)
 	lines, err := exec.CombinedOutputLines(cmd)
-	globals.GetLogger().V(3).Info(strings.Join(lines, "\n"))
+	ctx.Logger.V(3).Info(strings.Join(lines, "\n"))
 	if err != nil {
 		return errors.Wrap(err, "failed to init node with kubeadm")
 	}

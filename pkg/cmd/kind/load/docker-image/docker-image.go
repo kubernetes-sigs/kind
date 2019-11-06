@@ -27,10 +27,11 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
+	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
-	"sigs.k8s.io/kind/pkg/globals"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 type flagpole struct {
@@ -39,7 +40,7 @@ type flagpole struct {
 }
 
 // NewCommand returns a new cobra.Command for loading an image into a cluster
-func NewCommand() *cobra.Command {
+func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
 		Args: func(cmd *cobra.Command, args []string) error {
@@ -52,7 +53,7 @@ func NewCommand() *cobra.Command {
 		Short: "loads docker image from host into nodes",
 		Long:  "loads docker image from host into all or specified nodes by name",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(flags, args)
+			return runE(logger, flags, args)
 		},
 	}
 	cmd.Flags().StringVar(
@@ -70,8 +71,10 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func runE(flags *flagpole, args []string) error {
-	provider := cluster.NewProvider()
+func runE(logger log.Logger, flags *flagpole, args []string) error {
+	provider := cluster.NewProvider(
+		cluster.ProviderWithLogger(logger),
+	)
 
 	// Check that the image exists locally and gets its ID, if not return error
 	imageName := args[0]
@@ -117,7 +120,7 @@ func runE(flags *flagpole, args []string) error {
 		id, err := nodeutils.ImageID(node, imageName)
 		if err != nil || id != imageID {
 			selectedNodes = append(selectedNodes, node)
-			globals.GetLogger().V(0).Infof("Image: %q with ID %q not present on node %q", imageName, imageID, node.String())
+			logger.V(0).Infof("Image: %q with ID %q not present on node %q", imageName, imageID, node.String())
 		}
 	}
 

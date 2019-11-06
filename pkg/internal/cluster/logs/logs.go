@@ -27,12 +27,12 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
-	"sigs.k8s.io/kind/pkg/globals"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // Collect collects logs related to / from the cluster nodes and the host
 // system to the specified directory
-func Collect(nodes []nodes.Node, dir string) error {
+func Collect(logger log.Logger, nodes []nodes.Node, dir string) error {
 	prefixedPath := func(path string) string {
 		return filepath.Join(dir, path)
 	}
@@ -71,7 +71,7 @@ func Collect(nodes []nodes.Node, dir string) error {
 	for _, n := range nodes {
 		node := n // https://golang.org/doc/faq#closures_and_goroutines
 		name := node.String()
-		if err := dumpDir(n, "/var/log", filepath.Join(dir, name)); err != nil {
+		if err := dumpDir(logger, n, "/var/log", filepath.Join(dir, name)); err != nil {
 			errs = append(errs, err)
 		}
 
@@ -113,7 +113,7 @@ func Collect(nodes []nodes.Node, dir string) error {
 }
 
 // dumpDir dumps the dir nodeDir on the node to the dir hostDir on the host
-func dumpDir(node nodes.Node, nodeDir, hostDir string) (err error) {
+func dumpDir(logger log.Logger, node nodes.Node, nodeDir, hostDir string) (err error) {
 	// make tempdir to rsync nodeDir into (rsync handles taking a snapshot better)
 	tmp, err := mktemp(node)
 	if err != nil {
@@ -133,7 +133,7 @@ func dumpDir(node nodes.Node, nodeDir, hostDir string) (err error) {
 	// tar out to the host
 	cmd := node.Command("tar", "--hard-dereference", "-C", tmp, "-chf", "-", ".")
 	return exec.RunWithStdoutReader(cmd, func(outReader io.Reader) error {
-		if err := untar(outReader, hostDir); err != nil {
+		if err := untar(logger, outReader, hostDir); err != nil {
 			return errors.Wrapf(err, "Untarring %q: %v", nodeDir, err)
 		}
 		return nil
@@ -156,7 +156,7 @@ func mktemp(node nodes.Node) (string, error) {
 }
 
 // untar reads the tar file from r and writes it into dir.
-func untar(r io.Reader, dir string) (err error) {
+func untar(logger log.Logger, r io.Reader, dir string) (err error) {
 	tr := tar.NewReader(r)
 	for {
 		f, err := tr.Next()
@@ -196,7 +196,7 @@ func untar(r io.Reader, dir string) (err error) {
 				}
 			}
 		default:
-			globals.GetLogger().Warnf("tar file entry %s contained unsupported file type %v", f.Name, f.Typeflag)
+			logger.Warnf("tar file entry %s contained unsupported file type %v", f.Name, f.Typeflag)
 		}
 	}
 }

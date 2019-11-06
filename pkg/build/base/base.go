@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
-	"sigs.k8s.io/kind/pkg/globals"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // DefaultImage is the default name:tag of the built base image
@@ -37,6 +37,7 @@ type BuildContext struct {
 	// option fields
 	sourceDir string
 	image     string
+	logger    log.Logger
 }
 
 // Option is BuildContext configuration option supplied to NewBuildContext
@@ -56,11 +57,19 @@ func WithImage(image string) Option {
 	}
 }
 
+// WithLogger configures a NewBuildContext to log using logger
+func WithLogger(logger log.Logger) Option {
+	return func(b *BuildContext) {
+		b.logger = logger
+	}
+}
+
 // NewBuildContext creates a new BuildContext with
 // default configuration
 func NewBuildContext(options ...Option) *BuildContext {
 	ctx := &BuildContext{
-		image: DefaultImage,
+		image:  DefaultImage,
+		logger: log.NoopLogger{},
 	}
 	for _, option := range options {
 		option(ctx)
@@ -91,11 +100,11 @@ func (c *BuildContext) Build() (err error) {
 
 	err = fs.Copy(c.sourceDir, buildDir)
 	if err != nil {
-		globals.GetLogger().Errorf("failed to copy sources to build dir %v", err)
+		c.logger.Errorf("failed to copy sources to build dir %v", err)
 		return err
 	}
 
-	globals.GetLogger().V(0).Infof("Building base image in: %s", buildDir)
+	c.logger.V(0).Infof("Building base image in: %s", buildDir)
 
 	// then the actual docker image
 	return c.buildImage(buildDir)
@@ -104,13 +113,13 @@ func (c *BuildContext) Build() (err error) {
 func (c *BuildContext) buildImage(dir string) error {
 	// build the image, tagged as tagImageAs, using the our tempdir as the context
 	cmd := exec.Command("docker", "build", "-t", c.image, dir)
-	globals.GetLogger().V(0).Info("Starting Docker build ...")
+	c.logger.V(0).Info("Starting Docker build ...")
 	exec.InheritOutput(cmd)
 	err := cmd.Run()
 	if err != nil {
-		globals.GetLogger().Errorf("Docker build Failed! %v", err)
+		c.logger.Errorf("Docker build Failed! %v", err)
 		return err
 	}
-	globals.GetLogger().V(0).Info("Docker build completed.")
+	c.logger.V(0).Info("Docker build completed.")
 	return nil
 }

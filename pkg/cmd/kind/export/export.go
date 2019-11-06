@@ -20,11 +20,13 @@ package export
 import (
 	"github.com/spf13/cobra"
 
+	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/cmd/kind/export/logs"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // NewCommand returns a new cobra.Command for export
-func NewCommand() *cobra.Command {
+func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
@@ -33,6 +35,6 @@ func NewCommand() *cobra.Command {
 		Long:  "exports one of [logs]",
 	}
 	// add subcommands
-	cmd.AddCommand(logs.NewCommand())
+	cmd.AddCommand(logs.NewCommand(logger, streams))
 	return cmd
 }

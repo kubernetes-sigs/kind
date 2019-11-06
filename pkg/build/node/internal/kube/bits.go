@@ -18,6 +18,7 @@ package kube
 
 import (
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // Bits provides the locations of Kubernetes Binaries / Images
@@ -58,15 +59,15 @@ type InstallContext interface {
 // "apt" -> NewAptBits(kubeRoot)
 // "bazel" -> NewBazelBuildBits(kubeRoot)
 // "docker" or "make" -> NewDockerBuildBits(kubeRoot)
-func NewNamedBits(name, kubeRoot, arch string) (bits Bits, err error) {
+func NewNamedBits(logger log.Logger, name, kubeRoot, arch string) (bits Bits, err error) {
 	fn, err := nameToImpl(name)
 	if err != nil {
 		return nil, err
 	}
-	return fn(kubeRoot, arch)
+	return fn(logger, kubeRoot, arch)
 }
 
-func nameToImpl(name string) (func(string, string) (Bits, error), error) {
+func nameToImpl(name string) (func(log.Logger, string, string) (Bits, error), error) {
 	switch name {
 	case "bazel":
 		return NewBazelBuildBits, nil

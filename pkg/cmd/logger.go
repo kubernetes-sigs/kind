@@ -14,25 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package zsh implements the `zsh` command
-package zsh
+package cmd
 
 import (
-	"github.com/spf13/cobra"
+	"io"
+	"os"
 
-	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/log"
+
+	"sigs.k8s.io/kind/pkg/internal/util/cli"
+	"sigs.k8s.io/kind/pkg/internal/util/env"
 )
 
-// NewCommand returns a new cobra.Command for cluster creation
-func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
-	cmd := &cobra.Command{
-		Args:  cobra.NoArgs,
-		Use:   "zsh",
-		Short: "Output shell completions for zsh",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return cmd.Parent().Parent().GenZshCompletion(streams.Out)
-		},
+// NewLogger returns the standard logger used by the kind CLI
+// This logger writes to os.Stderr
+func NewLogger() log.Logger {
+	var writer io.Writer = os.Stderr
+	if env.IsTerminal(writer) {
+		writer = cli.NewSpinner(writer)
 	}
-	return cmd
+	return cli.NewLogger(writer, 0)
 }

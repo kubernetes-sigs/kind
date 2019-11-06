@@ -24,12 +24,14 @@ import (
 
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // BazelBuildBits implements Bits for a local Bazel build
 type BazelBuildBits struct {
 	kubeRoot string
 	arch     string
+	logger   log.Logger
 	// computed at build time
 	paths      map[string]string
 	imagePaths []string
@@ -39,10 +41,11 @@ var _ Bits = &BazelBuildBits{}
 
 // NewBazelBuildBits returns a new Bits backed by bazel build,
 // given kubeRoot, the path to the kubernetes source directory
-func NewBazelBuildBits(kubeRoot, arch string) (bits Bits, err error) {
+func NewBazelBuildBits(logger log.Logger, kubeRoot, arch string) (bits Bits, err error) {
 	return &BazelBuildBits{
 		kubeRoot: kubeRoot,
 		arch:     arch,
+		logger:   logger,
 	}, nil
 }
 
@@ -81,7 +84,7 @@ func (b *BazelBuildBits) Build() error {
 	b.paths = b.findPaths(bazelGoosGoarch)
 
 	// capture version info
-	_, err = buildVersionFile(b.kubeRoot)
+	_, err = buildVersionFile(b.logger, b.kubeRoot)
 	if err != nil {
 		return err
 	}

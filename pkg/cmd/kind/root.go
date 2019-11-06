@@ -18,10 +18,13 @@ limitations under the License.
 package kind
 
 import (
-	"os"
+	"io"
+	"io/ioutil"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
+	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/cmd/kind/build"
 	"sigs.k8s.io/kind/pkg/cmd/kind/completion"
 	"sigs.k8s.io/kind/pkg/cmd/kind/create"
@@ -30,9 +33,6 @@ import (
 	"sigs.k8s.io/kind/pkg/cmd/kind/get"
 	"sigs.k8s.io/kind/pkg/cmd/kind/load"
 	"sigs.k8s.io/kind/pkg/cmd/kind/version"
-	"sigs.k8s.io/kind/pkg/errors"
-	"sigs.k8s.io/kind/pkg/exec"
-	"sigs.k8s.io/kind/pkg/globals"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
@@ -44,7 +44,7 @@ type Flags struct {
 }
 
 // NewCommand returns a new cobra.Command implementing the root command for kind
-func NewCommand() *cobra.Command {
+func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	flags := &Flags{}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
@@ -52,16 +52,13 @@ func NewCommand() *cobra.Command {
 		Short: "kind is a tool for managing local Kubernetes clusters",
 		Long:  "kind creates and manages local Kubernetes clusters using Docker container 'nodes'",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			err := runE(flags, cmd)
-			if err != nil {
-				logError(err)
-			}
-			return err
+			return runE(logger, flags, cmd)
 		},
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Version:       version.Version(),
 	}
+	cmd.SetOutput(streams.ErrOut)
 	cmd.PersistentFlags().StringVar(
 		&flags.LogLevel,
 		"loglevel",
@@ -75,26 +72,34 @@ func NewCommand() *cobra.Command {
 		0,
 		"info log verbosity",
 	)
-	cmd.PersistentFlags().BoolVarP(
-		&flags.Quiet,
+	AddQuietFlag(cmd.PersistentFlags(), &flags.Quiet)
+	// add all top level subcommands
+	cmd.AddCommand(build.NewCommand(logger, streams))
+	cmd.AddCommand(completion.NewCommand(logger, streams))
+	cmd.AddCommand(create.NewCommand(logger, streams))
+	cmd.AddCommand(delete.NewCommand(logger, streams))
+	cmd.AddCommand(export.NewCommand(logger, streams))
+	cmd.AddCommand(get.NewCommand(logger, streams))
+	cmd.AddCommand(version.NewCommand(logger, streams))
+	cmd.AddCommand(load.NewCommand(logger, streams))
+	return cmd
+}
+
+// AddQuietFlag adds the -q / --quiet boolean flag to flags
+// with the value stored in valuePointer
+// The default value is false.
+// This is used by app.Run to handle quiet before we get to cobra
+func AddQuietFlag(flags *pflag.FlagSet, valuePointer *bool) {
+	flags.BoolVarP(
+		valuePointer,
 		"quiet",
 		"q",
 		false,
 		"silence all stderr output",
 	)
-	// add all top level subcommands
-	cmd.AddCommand(build.NewCommand())
-	cmd.AddCommand(completion.NewCommand())
-	cmd.AddCommand(create.NewCommand())
-	cmd.AddCommand(delete.NewCommand())
-	cmd.AddCommand(export.NewCommand())
-	cmd.AddCommand(get.NewCommand())
-	cmd.AddCommand(version.NewCommand())
-	cmd.AddCommand(load.NewCommand())
-	return cmd
 }
 
-func runE(flags *Flags, cmd *cobra.Command) error {
+func runE(logger log.Logger, flags *Flags, cmd *cobra.Command) error {
 	// handle limited migration for --loglevel
 	setLogLevel := cmd.Flag("loglevel").Changed
 	setVerbosity := cmd.Flag("verbosity").Changed
@@ -108,29 +113,37 @@ func runE(flags *Flags, cmd *cobra.Command) error {
 	}
 	// normal logger setup
 	if flags.Quiet {
-		globals.SetLogger(log.NoopLogger{})
-	} else {
-		globals.UseCLILogger(os.Stderr, log.Level(flags.Verbosity))
+		// NOTE: if we are coming from app.Run handling this flag is
+		// redundant, however it doesn't hurt, and this may be called directly.
+		maybeSetWriter(logger, ioutil.Discard)
 	}
+	maybeSetVerbosity(logger, log.Level(flags.Verbosity))
 	// warn about deprecated flag if used
 	if setLogLevel {
-		globals.GetLogger().Warn("WARNING: --loglevel is deprecated, please switch to -v and -q!")
+		logger.Warn("WARNING: --loglevel is deprecated, please switch to -v and -q!")
 	}
 	return nil
 }
 
-// logError logs the error and the root stacktrace if there is one
-func logError(err error) {
-	globals.GetLogger().Errorf("ERROR: %v", err)
-	// If debugging is enabled (non-zero verbosity), display more info
-	if globals.GetLogger().V(1).Enabled() {
-		// Display Output if the error was running a command ...
-		if err := exec.RunErrorForError(err); err != nil {
-			globals.GetLogger().Errorf("\nOutput:\n%s", err.Output)
-		}
-		// Then display stack trace if any (there should be one...)
-		if trace := errors.StackTrace(err); trace != nil {
-			globals.GetLogger().Errorf("\nStack Trace: %+v", trace)
-		}
+// maybeSetWriter will call logger.SetWriter(w) if logger has a SetWriter method
+func maybeSetWriter(logger log.Logger, w io.Writer) {
+	type writerSetter interface {
+		SetWriter(io.Writer)
+	}
+	v, ok := logger.(writerSetter)
+	if ok {
+		v.SetWriter(w)
+	}
+}
+
+// maybeSetVerbosity will call logger.SetVerbosity(verbosity) if logger
+// has a SetVerbosity method
+func maybeSetVerbosity(logger log.Logger, verbosity log.Level) {
+	type verboser interface {
+		SetVerbosity(log.Level)
+	}
+	v, ok := logger.(verboser)
+	if ok {
+		v.SetVerbosity(verbosity)
 	}
 }

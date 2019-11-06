@@ -23,6 +23,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
+	"sigs.k8s.io/kind/pkg/cmd"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 type flagpole struct {
@@ -30,7 +32,7 @@ type flagpole struct {
 }
 
 // NewCommand returns a new cobra.Command for getting the list of nodes for a given cluster
-func NewCommand() *cobra.Command {
+func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
@@ -38,7 +40,7 @@ func NewCommand() *cobra.Command {
 		Short: "lists existing kind nodes by their name",
 		Long:  "lists existing kind nodes by their name",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(flags)
+			return runE(logger, streams, flags)
 		},
 	}
 	cmd.Flags().StringVar(
@@ -50,14 +52,17 @@ func NewCommand() *cobra.Command {
 	return cmd
 }
 
-func runE(flags *flagpole) error {
+func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	// List nodes by cluster context name
-	n, err := cluster.NewProvider().ListNodes(flags.Name)
+	provider := cluster.NewProvider(
+		cluster.ProviderWithLogger(logger),
+	)
+	n, err := provider.ListNodes(flags.Name)
 	if err != nil {
 		return err
 	}
 	for _, node := range n {
-		fmt.Println(node.String())
+		fmt.Fprintln(streams.Out, node.String())
 	}
 	return nil
 }

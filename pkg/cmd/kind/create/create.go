@@ -20,17 +20,19 @@ package create
 import (
 	"github.com/spf13/cobra"
 
+	"sigs.k8s.io/kind/pkg/cmd"
 	createcluster "sigs.k8s.io/kind/pkg/cmd/kind/create/cluster"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // NewCommand returns a new cobra.Command for cluster creation
-func NewCommand() *cobra.Command {
+func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "create",
 		Short: "Creates one of [cluster]",
 		Long:  "Creates one of local Kubernetes cluster (cluster)",
 	}
-	cmd.AddCommand(createcluster.NewCommand())
+	cmd.AddCommand(createcluster.NewCommand(logger, streams))
 	return cmd
 }

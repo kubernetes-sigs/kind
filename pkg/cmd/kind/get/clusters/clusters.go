@@ -23,10 +23,12 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
+	"sigs.k8s.io/kind/pkg/cmd"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // NewCommand returns a new cobra.Command for getting the list of clusters
-func NewCommand() *cobra.Command {
+func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
@@ -34,19 +36,22 @@ func NewCommand() *cobra.Command {
 		Short: "lists existing kind clusters by their name",
 		Long:  "lists existing kind clusters by their name",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE()
+			return runE(logger, streams)
 		},
 	}
 	return cmd
 }
 
-func runE() error {
-	clusters, err := cluster.NewProvider().List()
+func runE(logger log.Logger, streams cmd.IOStreams) error {
+	provider := cluster.NewProvider(
+		cluster.ProviderWithLogger(logger),
+	)
+	clusters, err := provider.List()
 	if err != nil {
 		return err
 	}
 	for _, cluster := range clusters {
-		fmt.Println(cluster)
+		fmt.Fprintln(streams.Out, cluster)
 	}
 	return nil
 }

@@ -25,6 +25,7 @@ import (
 
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // TODO(bentheelder): plumb through arch
@@ -33,16 +34,18 @@ import (
 type DockerBuildBits struct {
 	kubeRoot string
 	arch     string
+	logger   log.Logger
 }
 
 var _ Bits = &DockerBuildBits{}
 
 // NewDockerBuildBits returns a new Bits backed by the docker-ized build,
 // given kubeRoot, the path to the kubernetes source directory
-func NewDockerBuildBits(kubeRoot, arch string) (bits Bits, err error) {
+func NewDockerBuildBits(logger log.Logger, kubeRoot, arch string) (bits Bits, err error) {
 	return &DockerBuildBits{
 		kubeRoot: kubeRoot,
 		arch:     arch,
+		logger:   logger,
 	}, nil
 }
 
@@ -84,7 +87,7 @@ func (b *DockerBuildBits) Build() error {
 	}
 
 	// capture version info
-	_, err = buildVersionFile(b.kubeRoot)
+	_, err = buildVersionFile(b.logger, b.kubeRoot)
 	return err
 }
 

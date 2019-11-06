@@ -20,11 +20,13 @@ package delete
 import (
 	"github.com/spf13/cobra"
 
+	"sigs.k8s.io/kind/pkg/cmd"
 	deletecluster "sigs.k8s.io/kind/pkg/cmd/kind/delete/cluster"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // NewCommand returns a new cobra.Command for cluster creation
-func NewCommand() *cobra.Command {
+func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
@@ -32,6 +34,6 @@ func NewCommand() *cobra.Command {
 		Short: "Deletes one of [cluster]",
 		Long:  "Deletes one of [cluster]",
 	}
-	cmd.AddCommand(deletecluster.NewCommand())
+	cmd.AddCommand(deletecluster.NewCommand(logger, streams))
 	return cmd
 }
