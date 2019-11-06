@@ -20,7 +20,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"sigs.k8s.io/kind/pkg/internal/util/assert"
@@ -138,11 +137,7 @@ func TestRemove(t *testing.T) {
 					t.Errorf("Expected config to be modified but got modified == true")
 				}
 			}
-			if !reflect.DeepEqual(tc.Existing, tc.Expected) {
-				t.Errorf("Merged Config did not equal Expected")
-				t.Errorf("Expected: %+v", tc.Expected)
-				t.Errorf("Actual: %+v", tc.Existing)
-			}
+			assert.DeepEqual(t, tc.Expected, tc.Existing)
 		})
 	}
 }

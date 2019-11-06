@@ -16,6 +16,8 @@ limitations under the License.
 
 package assert
 
+import "reflect"
+
 // *testing.T methods used by assert
 type testingDotT interface {
 	Errorf(format string, args ...interface{})
@@ -39,5 +41,15 @@ func StringEqual(t testingDotT, expected, result string) {
 		t.Errorf("Strings did not match!")
 		t.Errorf("Expected: %q", expected)
 		t.Errorf("But got: %q", result)
+	}
+}
+
+// DeepEqual will call t.Errorf if !reflect.DeepEqual(expected, result)
+// t should be a *testing.T normally
+func DeepEqual(t testingDotT, expected, result interface{}) {
+	if !reflect.DeepEqual(expected, result) {
+		t.Errorf("Result did not DeepEqual Expected!")
+		t.Errorf("Expected: %+v", expected)
+		t.Errorf("But got: %+v", result)
 	}
 }

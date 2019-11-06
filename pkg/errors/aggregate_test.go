@@ -17,8 +17,9 @@ limitations under the License.
 package errors
 
 import (
-	"reflect"
 	"testing"
+
+	"sigs.k8s.io/kind/pkg/internal/util/assert"
 )
 
 func TestErrors(t *testing.T) {
@@ -28,20 +29,12 @@ func TestErrors(t *testing.T) {
 		errs := []error{New("foo"), Errorf("bar")}
 		err := Wrapf(NewAggregate(errs), "baz: %s", "quux")
 		result := Errors(err)
-		if !reflect.DeepEqual(result, errs) {
-			t.Errorf("Result did not equal Expected")
-			t.Errorf("Expected: %v", errs)
-			t.Errorf("Result: %v", result)
-		}
+		assert.DeepEqual(t, errs, result)
 	})
 	t.Run("nil", func(t *testing.T) {
 		t.Parallel()
 		result := Errors(nil)
 		var expected []error
-		if !reflect.DeepEqual(result, expected) {
-			t.Errorf("Result did not equal Expected")
-			t.Errorf("Expected: %v", expected)
-			t.Errorf("Result: %v", result)
-		}
+		assert.DeepEqual(t, expected, result)
 	})
 }

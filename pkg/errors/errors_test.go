@@ -17,10 +17,11 @@ limitations under the License.
 package errors
 
 import (
-	"reflect"
 	"testing"
 
 	pkgerrors "github.com/pkg/errors"
+
+	"sigs.k8s.io/kind/pkg/internal/util/assert"
 )
 
 func TestStackTrace(t *testing.T) {
@@ -30,20 +31,12 @@ func TestStackTrace(t *testing.T) {
 		err := New("foo")
 		expected := err.(StackTracer).StackTrace()
 		result := StackTrace(Wrap(Wrap(err, "bar"), "baz"))
-		if !reflect.DeepEqual(result, expected) {
-			t.Errorf("Result did not equal Expected")
-			t.Errorf("Expected: %v", expected)
-			t.Errorf("Result: %v", result)
-		}
+		assert.DeepEqual(t, expected, result)
 	})
 	t.Run("nil", func(t *testing.T) {
 		t.Parallel()
 		result := StackTrace(nil)
 		var expected pkgerrors.StackTrace
-		if !reflect.DeepEqual(result, expected) {
-			t.Errorf("Result did not equal Expected")
-			t.Errorf("Expected: %v", expected)
-			t.Errorf("Result: %v", result)
-		}
+		assert.DeepEqual(t, expected, result)
 	})
 }
