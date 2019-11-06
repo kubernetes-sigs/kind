@@ -17,13 +17,14 @@ limitations under the License.
 package common
 
 import (
-	"reflect"
 	"testing"
+
+	"sigs.k8s.io/kind/pkg/internal/util/assert"
 )
 
 func TestMakeNodeNamer(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
+	cases := []struct {
 		name        string
 		clusterName string
 		nodes       []string // list of role nodes that belong to the cluster
@@ -48,18 +49,16 @@ func TestMakeNodeNamer(t *testing.T) {
 			want:        []string{"ab1-control-plane", "ab1-control-plane2", "ab1-control-plane3", "ab1-external-load-balancer", "ab1-worker", "ab1-worker2", "ab1-worker3"},
 		},
 	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			var names []string
-			nodeNamer := MakeNodeNamer(tt.clusterName)
-			for _, nodeRole := range tt.nodes {
+			nodeNamer := MakeNodeNamer(tc.clusterName)
+			for _, nodeRole := range tc.nodes {
 				names = append(names, nodeNamer(nodeRole))
 			}
-			if !reflect.DeepEqual(names, tt.want) {
-				t.Errorf("MakeNodeNamer() = %v, want %v", names, tt.want)
-			}
+			assert.DeepEqual(t, tc.want, names)
 		})
 	}
 }

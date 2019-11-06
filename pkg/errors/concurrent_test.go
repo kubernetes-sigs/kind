@@ -17,9 +17,10 @@ limitations under the License.
 package errors
 
 import (
-	"reflect"
 	"sort"
 	"testing"
+
+	"sigs.k8s.io/kind/pkg/internal/util/assert"
 )
 
 func TestUntilErrorConcurrent(t *testing.T) {
@@ -39,11 +40,7 @@ func TestUntilErrorConcurrent(t *testing.T) {
 			},
 		})
 		wait <- true
-		if !reflect.DeepEqual(expected, result) {
-			t.Errorf("Result did not equal Expected")
-			t.Errorf("Expected: %v", expected)
-			t.Errorf("Result: %v", result)
-		}
+		assert.DeepEqual(t, expected, result)
 	})
 	t.Run("nil", func(t *testing.T) {
 		t.Parallel()
@@ -53,11 +50,7 @@ func TestUntilErrorConcurrent(t *testing.T) {
 			},
 		})
 		var expected error
-		if !reflect.DeepEqual(expected, result) {
-			t.Errorf("Result did not equal Expected")
-			t.Errorf("Expected: %v", expected)
-			t.Errorf("Result: %v", result)
-		}
+		assert.DeepEqual(t, expected, result)
 	})
 }
 
@@ -82,11 +75,7 @@ func TestAggregateConcurrent(t *testing.T) {
 		sort.SliceStable(resultErrors, func(i, j int) bool {
 			return resultErrors[i].Error() < resultErrors[j].Error()
 		})
-		if !reflect.DeepEqual(expected, resultErrors) {
-			t.Errorf("Result did not equal Expected")
-			t.Errorf("Expected: %+v", expected)
-			t.Errorf("Result: %+v", result)
-		}
+		assert.DeepEqual(t, expected, resultErrors)
 	})
 	t.Run("one error", func(t *testing.T) {
 		t.Parallel()
@@ -96,11 +85,7 @@ func TestAggregateConcurrent(t *testing.T) {
 				return expected
 			},
 		})
-		if !reflect.DeepEqual(expected, result) {
-			t.Errorf("Result did not equal Expected")
-			t.Errorf("Expected: %+v", expected)
-			t.Errorf("Result: %+v", result)
-		}
+		assert.DeepEqual(t, expected, result)
 	})
 	t.Run("nil", func(t *testing.T) {
 		t.Parallel()
@@ -110,10 +95,6 @@ func TestAggregateConcurrent(t *testing.T) {
 			},
 		})
 		var expected error
-		if !reflect.DeepEqual(expected, result) {
-			t.Errorf("Result did not equal Expected")
-			t.Errorf("Expected: %+v", expected)
-			t.Errorf("Result: %+v", result)
-		}
+		assert.DeepEqual(t, expected, result)
 	})
 }

@@ -83,3 +83,23 @@ func TestStringEqual(t *testing.T) {
 		}
 	})
 }
+
+func TestDeepEqual(t *testing.T) {
+	t.Parallel()
+	t.Run("not equal", func(t *testing.T) {
+		t.Parallel()
+		var f fakeT
+		DeepEqual(&f, "a", "b")
+		if int(f) == 0 {
+			t.Fatalf("Expected t.Errorf to be called but it was not")
+		}
+	})
+	t.Run("equal", func(t *testing.T) {
+		t.Parallel()
+		var f fakeT
+		DeepEqual(&f, f, f)
+		if int(f) != 0 {
+			t.Fatalf("Expected t.Errorf not to be called but it was")
+		}
+	})
+}

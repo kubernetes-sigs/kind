@@ -17,10 +17,10 @@ limitations under the License.
 package common
 
 import (
-	"reflect"
 	"testing"
 
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
+	"sigs.k8s.io/kind/pkg/internal/util/assert"
 )
 
 func TestGetProxyEnvs(t *testing.T) {
@@ -35,7 +35,7 @@ func TestGetProxyEnvs(t *testing.T) {
 	}
 
 	// now test the internal one (with all of the logic)
-	tests := []struct {
+	cases := []struct {
 		name    string
 		cluster *config.Cluster
 		env     map[string]string
@@ -92,18 +92,17 @@ func TestGetProxyEnvs(t *testing.T) {
 			want: map[string]string{"HTTPS_PROXY": "5.5.5.5", "https_proxy": "5.5.5.5", "NO_PROXY": "8.8.8.8,10.0.0.0/24,12.0.0.0/24", "no_proxy": "8.8.8.8,10.0.0.0/24,12.0.0.0/24"},
 		},
 	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			if got := getProxyEnvs(tt.cluster, func(e string) string {
-				if tt.env == nil {
+			result := getProxyEnvs(tc.cluster, func(e string) string {
+				if tc.env == nil {
 					return ""
 				}
-				return tt.env[e]
-			}); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetProxyEnvs() = %v, want %v", got, tt.want)
-			}
+				return tc.env[e]
+			})
+			assert.DeepEqual(t, tc.want, result)
 		})
 	}
 }

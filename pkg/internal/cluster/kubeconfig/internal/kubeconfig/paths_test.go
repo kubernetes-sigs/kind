@@ -17,15 +17,14 @@ limitations under the License.
 package kubeconfig
 
 import (
-	//"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 
 	"sigs.k8s.io/kind/pkg/fs"
+
 	"sigs.k8s.io/kind/pkg/internal/util/assert"
 )
 
@@ -42,11 +41,7 @@ func TestPaths(t *testing.T) {
 			}[s]
 		})
 		expected := []string{explicitPath}
-		if !reflect.DeepEqual(expected, result) {
-			t.Error("Expected did not equal Result")
-			t.Errorf("Expected: %v", expected)
-			t.Errorf("Result: %v", result)
-		}
+		assert.DeepEqual(t, expected, result)
 	})
 	t.Run("KUBECONFIG list", func(t *testing.T) {
 		t.Parallel()
@@ -57,11 +52,7 @@ func TestPaths(t *testing.T) {
 			}[s]
 		})
 		expected := []string{"/foo", "/bar"}
-		if !reflect.DeepEqual(expected, result) {
-			t.Error("Expected did not equal Result")
-			t.Errorf("Expected: %v", expected)
-			t.Errorf("Result: %v", result)
-		}
+		assert.DeepEqual(t, expected, result)
 	})
 	t.Run("$HOME/.kube/config", func(t *testing.T) {
 		t.Parallel()
@@ -71,11 +62,7 @@ func TestPaths(t *testing.T) {
 			}[s]
 		})
 		expected := []string{"/home/.kube/config"}
-		if !reflect.DeepEqual(expected, result) {
-			t.Error("Expected did not equal Result")
-			t.Errorf("Expected: %v", expected)
-			t.Errorf("Result: %v", result)
-		}
+		assert.DeepEqual(t, expected, result)
 	})
 }
 
