@@ -141,8 +141,11 @@ func dumpDir(node nodes.Node, nodeDir, hostDir string) (err error) {
 }
 
 // mktemp creates a tempdir on the node
+// the result should be deleted by the caller when they are done.
 func mktemp(node nodes.Node) (string, error) {
-	lines, err := exec.OutputLines(node.Command("mktemp", "-d"))
+	// NOTE: we use /var/tmp to store persistent temp contents that will NOT
+	// be automatically cleaned. This needs to be cleaned up by the caller
+	lines, err := exec.OutputLines(node.Command("mktemp", "-d").SetEnv("TMPDIR=/var/tmp"))
 	if err != nil {
 		return "", err
 	}
