@@ -112,11 +112,8 @@ func RunWithStdoutReader(cmd Cmd, readerFunc func(io.Reader) error) error {
 	err = cmd.Run()
 	pw.Close()
 	err2 := <-errChan
-	if err != nil {
-		return err
-	}
-	if err2 != nil {
-		return err2
+	if err != nil || err2 != nil {
+		return errors.NewAggregate([]error{err, err2})
 	}
 	return nil
 }
