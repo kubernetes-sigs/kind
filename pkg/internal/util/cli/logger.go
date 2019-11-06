@@ -72,7 +72,7 @@ func (l *Logger) write(p []byte) (n int, err error) {
 // writeBuffer writes buf with write, ensuring there is a trailing newline
 func (l *Logger) writeBuffer(buf *bytes.Buffer) {
 	// ensure trailing newline
-	if buf.Bytes()[buf.Len()-1] != '\n' {
+	if buf.Len() == 0 || buf.Bytes()[buf.Len()-1] != '\n' {
 		buf.WriteByte('\n')
 	}
 	// TODO: should we handle this somehow??
