@@ -20,6 +20,7 @@ package kubeconfig
 
 import (
 	"bytes"
+	"os"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -66,6 +67,12 @@ func Get(ctx *context.Context, external bool) (string, error) {
 // it's name. This key is used for all list entries of kind clusters
 func ContextForCluster(kindClusterName string) string {
 	return kubeconfig.KINDClusterKey(kindClusterName)
+}
+
+// LegacyPath is used for kind get kubeconfig-path
+// TODO: delete me after release when we remove kind get kubeconfig-path
+func LegacyPath() string {
+	return kubeconfig.PathForMerge("", os.Getenv)
 }
 
 func get(ctx *context.Context, external bool) (*kubeconfig.Config, error) {
