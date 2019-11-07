@@ -31,10 +31,10 @@ import (
 // ./_output/version based on hack/print-workspace-status.sh,
 // these are built into the node image and consumed by the cluster tooling
 // the raw version is also returned
-func buildVersionFile(logger log.Logger, kubeRoot string) (string, error) {
+func buildVersionFile(logger log.Logger, kubeRoot string) error {
 	cwd, err := os.Getwd()
 	if err != nil {
-		return "", err
+		return err
 	}
 	// make sure we cd back when done
 	defer func() {
@@ -42,14 +42,14 @@ func buildVersionFile(logger log.Logger, kubeRoot string) (string, error) {
 		_ = os.Chdir(cwd)
 	}()
 	if err := os.Chdir(kubeRoot); err != nil {
-		return "", err
+		return err
 	}
 
 	// get the version output
 	cmd := exec.Command("hack/print-workspace-status.sh")
 	output, err := exec.CombinedOutputLines(cmd)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	// we will place the file in _output with other build artifacts
@@ -66,7 +66,7 @@ func buildVersionFile(logger log.Logger, kubeRoot string) (string, error) {
 		parts := strings.SplitN(line, " ", 2)
 		if len(parts) != 2 {
 			logger.Error("Could not parse kubernetes version, output: " + strings.Join(output, "\n"))
-			return "", errors.New("could not parse kubernetes version")
+			return errors.New("could not parse kubernetes version")
 		}
 		if parts[0] == "gitVersion" {
 			version = parts[1]
@@ -75,13 +75,13 @@ func buildVersionFile(logger log.Logger, kubeRoot string) (string, error) {
 				[]byte(version),
 				0777,
 			); err != nil {
-				return "", errors.Wrap(err, "failed to write version file")
+				return errors.Wrap(err, "failed to write version file")
 			}
 		}
 	}
 	if version == "" {
 		logger.Error("Could not obtain kubernetes version, output: " + strings.Join(output, "\n"))
-		return "", errors.New("could not obtain kubernetes version")
+		return errors.New("could not obtain kubernetes version")
 	}
-	return version, nil
+	return nil
 }

@@ -64,7 +64,11 @@ clean: clean-output clean-cache
 unit:
 	hack/ci/unit.sh
 
+# code linters
+lint:
+	hack/verify/lint.sh
+
 # unit test alias
 test: unit
 
-.PHONY: all kind build install clean-cache clean-output clean unit test
+.PHONY: all kind build install clean-cache clean-output clean unit test lint
