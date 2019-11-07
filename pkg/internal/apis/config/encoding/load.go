@@ -23,6 +23,7 @@ import (
 	yaml "gopkg.in/yaml.v3"
 
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha3"
+	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	"sigs.k8s.io/kind/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
@@ -62,19 +63,33 @@ func Parse(raw []byte) (*config.Cluster, error) {
 
 	// decode specific (apiVersion, kind)
 	switch tm.APIVersion {
+	// handle v1alpha4
+	case "kind.x-k8s.io/v1alpha4":
+		if tm.Kind != "Cluster" {
+			return nil, errors.Errorf("unknown kind %s for apiVersion: %s", tm.APIVersion, tm.Kind)
+		}
+		// load version
+		cfg := &v1alpha4.Cluster{}
+		if err := yamlUnmarshalStrict(raw, cfg); err != nil {
+			return nil, errors.Wrap(err, "unable to decode config")
+		}
+		// apply defaults for version and convert
+		return V1Alpha4ToInternal(cfg), nil
+
+	// handle v1alpha3
 	case "kind.sigs.k8s.io/v1alpha3":
 		if tm.Kind != "Cluster" {
 			return nil, errors.Errorf("unknown kind %s for apiVersion: %s", tm.APIVersion, tm.Kind)
 		}
 		// load version
 		cfg := &v1alpha3.Cluster{}
-		//if err := yaml.UnmarshalStrict(raw, cfg); err != nil {
 		if err := yamlUnmarshalStrict(raw, cfg); err != nil {
 			return nil, errors.Wrap(err, "unable to decode config")
 		}
 		// apply defaults for version and convert
 		return V1Alpha3ToInternal(cfg), nil
 	}
+
 	// unknown apiVersion if we haven't already returned ...
 	return nil, errors.Errorf("unknown apiVersion: %s", tm.APIVersion)
 }
