@@ -212,10 +212,6 @@ func (c *BuildContext) getBuiltImages() (sets.String, error) {
 	return images, nil
 }
 
-// DockerImageArchives is the path within the node image where image archives
-// will be stored.
-const DockerImageArchives = "/kind/images"
-
 // private kube.InstallContext implementation, local to the image build
 type installContext struct {
 	basePath    string
