@@ -84,12 +84,7 @@ func (b *BazelBuildBits) Build() error {
 	b.paths = b.findPaths(bazelGoosGoarch)
 
 	// capture version info
-	_, err = buildVersionFile(b.logger, b.kubeRoot)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return buildVersionFile(b.logger, b.kubeRoot)
 }
 
 func (b *BazelBuildBits) findPaths(bazelGoosGoarch string) map[string]string {
