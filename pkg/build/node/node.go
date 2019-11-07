@@ -212,9 +212,6 @@ func (c *BuildContext) getBuiltImages() (sets.String, error) {
 	return images, nil
 }
 
-// BuildContainerLabelKey is applied to each build container
-const BuildContainerLabelKey = "io.k8s.sigs.kind.build"
-
 // DockerImageArchives is the path within the node image where image archives
 // will be stored.
 const DockerImageArchives = "/kind/images"
@@ -591,8 +588,6 @@ func (c *BuildContext) createBuildContainer(buildDir string) (id string, err err
 		c.baseImage,
 		[]string{
 			"-d", // make the client exit while the container continues to run
-			// label the container to make them easier to track
-			"--label", fmt.Sprintf("%s=%s", BuildContainerLabelKey, time.Now().Format(time.RFC3339Nano)),
 			"-v", fmt.Sprintf("%s:/build", buildDir),
 			// the container should hang forever so we can exec in it
 			"--entrypoint=sleep",
