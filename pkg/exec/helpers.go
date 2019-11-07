@@ -103,22 +103,14 @@ func RunWithStdoutReader(cmd Cmd, readerFunc func(io.Reader) error) error {
 	defer pr.Close()
 	cmd.SetStdout(pw)
 
-	errChan := make(chan error, 1)
-	go func() {
-		errChan <- readerFunc(pr)
-		pr.Close()
-	}()
-
-	err = cmd.Run()
-	pw.Close()
-	err2 := <-errChan
-	if err != nil {
-		return err
-	}
-	if err2 != nil {
-		return err2
-	}
-	return nil
+	return errors.AggregateConcurrent([]func() error{
+		func() error {
+			return readerFunc(pr)
+		},
+		func() error {
+			return cmd.Run()
+		},
+	})
 }
 
 // RunWithStdinWriter runs cmd with writerFunc piped to stdin
@@ -131,20 +123,12 @@ func RunWithStdinWriter(cmd Cmd, writerFunc func(io.Writer) error) error {
 	defer pr.Close()
 	cmd.SetStdin(pr)
 
-	errChan := make(chan error, 1)
-	go func() {
-		errChan <- writerFunc(pw)
-		pw.Close()
-	}()
-
-	err = cmd.Run()
-	pr.Close()
-	err2 := <-errChan
-	if err != nil {
-		return err
-	}
-	if err2 != nil {
-		return err2
-	}
-	return nil
+	return errors.AggregateConcurrent([]func() error{
+		func() error {
+			return writerFunc(pw)
+		},
+		func() error {
+			return cmd.Run()
+		},
+	})
 }
