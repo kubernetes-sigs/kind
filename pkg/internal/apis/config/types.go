@@ -174,62 +174,30 @@ type PortMapping struct {
 
 // MountPropagation represents an "enum" for mount propagation options,
 // see also Mount.
-type MountPropagation int32
+type MountPropagation string
 
 const (
 	// MountPropagationNone specifies that no mount propagation
 	// ("private" in Linux terminology).
-	MountPropagationNone MountPropagation = 0
+	MountPropagationNone MountPropagation = "None"
 	// MountPropagationHostToContainer specifies that mounts get propagated
 	// from the host to the container ("rslave" in Linux).
-	MountPropagationHostToContainer MountPropagation = 1
+	MountPropagationHostToContainer MountPropagation = "HostToContainer"
 	// MountPropagationBidirectional specifies that mounts get propagated from
 	// the host to the container and from the container to the host
 	// ("rshared" in Linux).
-	MountPropagationBidirectional MountPropagation = 2
+	MountPropagationBidirectional MountPropagation = "Bidirectional"
 )
-
-// MountPropagationValueToName is a map of valid MountPropogation values to
-// their string names
-var MountPropagationValueToName = map[MountPropagation]string{
-	MountPropagationNone:            "None",
-	MountPropagationHostToContainer: "HostToContainer",
-	MountPropagationBidirectional:   "Bidirectional",
-}
-
-// MountPropagationNameToValue is a map of valid MountPropogation names to
-// their values
-var MountPropagationNameToValue = map[string]MountPropagation{
-	"None":            MountPropagationNone,
-	"HostToContainer": MountPropagationHostToContainer,
-	"Bidirectional":   MountPropagationBidirectional,
-}
 
 // PortMappingProtocol represents an "enum" for port mapping protocol options,
 // see also PortMapping.
-type PortMappingProtocol int32
+type PortMappingProtocol string
 
 const (
 	// PortMappingProtocolTCP specifies TCP protocol
-	PortMappingProtocolTCP PortMappingProtocol = 0
+	PortMappingProtocolTCP PortMappingProtocol = "TCP"
 	// PortMappingProtocolUDP specifies UDP protocol
-	PortMappingProtocolUDP PortMappingProtocol = 1
+	PortMappingProtocolUDP PortMappingProtocol = "UDP"
 	// PortMappingProtocolSCTP specifies SCTP protocol
-	PortMappingProtocolSCTP PortMappingProtocol = 2
+	PortMappingProtocolSCTP PortMappingProtocol = "SCTP"
 )
-
-// PortMappingProtocolValueToName is a map of valid PortMappingProtocol values to
-// their string names
-var PortMappingProtocolValueToName = map[PortMappingProtocol]string{
-	PortMappingProtocolTCP:  "TCP",
-	PortMappingProtocolUDP:  "UDP",
-	PortMappingProtocolSCTP: "SCTP",
-}
-
-// PortMappingProtocolNameToValue is a map of valid PortMappingProtocol names to
-// their values
-var PortMappingProtocolNameToValue = map[string]PortMappingProtocol{
-	"TCP":  PortMappingProtocolTCP,
-	"UDP":  PortMappingProtocolUDP,
-	"SCTP": PortMappingProtocolSCTP,
-}
