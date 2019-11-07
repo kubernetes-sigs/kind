@@ -117,6 +117,14 @@ func (p *Provider) KubeConfig(name string, internal bool) (string, error) {
 	return kubeconfig.Get(p.ic(name), !internal)
 }
 
+// ExportKubeConfig exports the KUBECONFIG for the cluster, merging
+// it into the selected file, following the rules from
+// https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#config
+// where explicitPath is the --kubeconfig value.
+func (p *Provider) ExportKubeConfig(name string, explicitPath string) error {
+	return kubeconfig.Export(p.ic(name), explicitPath)
+}
+
 // ListNodes returns the list of container IDs for the "nodes" in the cluster
 func (p *Provider) ListNodes(name string) ([]nodes.Node, error) {
 	return p.ic(name).ListNodes()
