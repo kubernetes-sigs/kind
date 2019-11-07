@@ -23,7 +23,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/alessio/shellescape"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
@@ -125,7 +124,8 @@ func dumpDir(logger log.Logger, node nodes.Node, nodeDir, hostDir string) (err e
 		// http://man7.org/linux/man-pages/man1/tar.1.html#RETURN_VALUE
 		fmt.Sprintf(
 			`tar --hard-dereference -C %s -chf - . || (r=$?; [ $r -eq 1 ] || exit $r)`,
-			shellescape.Quote(path.Clean(nodeDir)+"/")),
+			shellescape.Quote(path.Clean(nodeDir)+"/"),
+		),
 	)
 
 	return exec.RunWithStdoutReader(cmd, func(outReader io.Reader) error {
@@ -134,21 +134,6 @@ func dumpDir(logger log.Logger, node nodes.Node, nodeDir, hostDir string) (err e
 		}
 		return nil
 	})
-}
-
-// mktemp creates a tempdir on the node
-// the result should be deleted by the caller when they are done.
-func mktemp(node nodes.Node) (string, error) {
-	// NOTE: we use /var/tmp to store persistent temp contents that will NOT
-	// be automatically cleaned. This needs to be cleaned up by the caller
-	lines, err := exec.OutputLines(node.Command("mktemp", "-d").SetEnv("TMPDIR=/var/tmp"))
-	if err != nil {
-		return "", err
-	}
-	if len(lines) != 1 {
-		return "", errors.Errorf("invalid output from mktemp -d: %q", strings.Join(lines, "\n"))
-	}
-	return lines[0], nil
 }
 
 // untar reads the tar file from r and writes it into dir.
