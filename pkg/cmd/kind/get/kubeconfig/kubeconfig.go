@@ -32,7 +32,7 @@ type flagpole struct {
 	Internal bool
 }
 
-// NewCommand returns a new cobra.Command for getting the kubeconfig with the internal node IP address
+// NewCommand returns a new cobra.Command for getting the kubeconfig
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
