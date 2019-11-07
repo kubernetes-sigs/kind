@@ -133,6 +133,7 @@ func commonArgs(cluster string, cfg *config.Cluster) ([]string, error) {
 		"--tty",    // allocate a tty for entrypoint logs
 		// label the node with the cluster ID
 		"--label", fmt.Sprintf("%s=%s", constants.ClusterLabelKey, cluster),
+		"--label", fmt.Sprintf("%s=%s", constants.DeprecatedClusterLabelKey, cluster),
 	}
 
 	// enable IPv6 if necessary
@@ -162,7 +163,8 @@ func runArgsForNode(node *config.Node, name string, args []string) []string {
 		"--hostname", name, // make hostname match container name
 		"--name", name, // ... and set the container name
 		// label the node with the role ID
-		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleKey, node.Role),
+		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleLabelKey, node.Role),
+		"--label", fmt.Sprintf("%s=%s", constants.DeprecatedNodeRoleLabelKey, node.Role),
 		// running containers in a container requires privileged
 		// NOTE: we could try to replicate this with --cap-add, and use less
 		// privileges, but this flag also changes some mounts that are necessary
@@ -199,7 +201,8 @@ func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) ([]
 		"--hostname", name, // make hostname match container name
 		"--name", name, // ... and set the container name
 		// label the node with the role ID
-		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleKey, constants.ExternalLoadBalancerNodeRoleValue),
+		"--label", fmt.Sprintf("%s=%s", constants.DeprecatedNodeRoleLabelKey, constants.ExternalLoadBalancerNodeRoleValue),
+		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleLabelKey, constants.ExternalLoadBalancerNodeRoleValue),
 	},
 		args...,
 	)

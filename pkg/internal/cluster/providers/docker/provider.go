@@ -78,9 +78,9 @@ func (p *Provider) ListClusters() ([]string, error) {
 		"-a",         // show stopped nodes
 		"--no-trunc", // don't truncate
 		// filter for nodes with the cluster label
-		"--filter", "label="+constants.ClusterLabelKey,
+		"--filter", "label="+constants.DeprecatedClusterLabelKey,
 		// format to include the cluster name
-		"--format", fmt.Sprintf(`{{.Label "%s"}}`, constants.ClusterLabelKey),
+		"--format", fmt.Sprintf(`{{.Label "%s"}}`, constants.DeprecatedClusterLabelKey),
 	)
 	lines, err := exec.OutputLines(cmd)
 	if err != nil {
@@ -97,7 +97,7 @@ func (p *Provider) ListNodes(cluster string) ([]nodes.Node, error) {
 		"-a",         // show stopped nodes
 		"--no-trunc", // don't truncate
 		// filter for nodes with the cluster label
-		"--filter", fmt.Sprintf("label=%s=%s", constants.ClusterLabelKey, cluster),
+		"--filter", fmt.Sprintf("label=%s=%s", constants.DeprecatedClusterLabelKey, cluster),
 		// format to include the cluster name
 		"--format", `{{.Names}}`,
 	)

@@ -37,7 +37,7 @@ func (n *node) String() string {
 
 func (n *node) Role() (string, error) {
 	cmd := exec.Command("docker", "inspect",
-		"--format", fmt.Sprintf(`{{ index .Config.Labels "%s"}}`, constants.NodeRoleKey),
+		"--format", fmt.Sprintf(`{{ index .Config.Labels "%s"}}`, constants.DeprecatedNodeRoleLabelKey),
 		n.name,
 	)
 	lines, err := exec.OutputLines(cmd)

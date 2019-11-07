@@ -20,12 +20,24 @@ package constants
 // DefaultClusterName is the default cluster Context name
 const DefaultClusterName = "kind"
 
-// ClusterLabelKey is applied to each "node" docker container for identification
-const ClusterLabelKey = "io.k8s.sigs.kind.cluster"
+// TODO: the requirements for labels may vary by provider, these should probably
+// be per-provider (though commonly the same)
 
-// NodeRoleKey is applied to each "node" docker container for categorization
+// ClusterLabelKey is applied to each "node" docker container for identification
+const ClusterLabelKey = "io.x-k8s.kind.cluster"
+
+// DeprecatedClusterLabelKey is applied to each "node" docker container for identification
+// This is the deprecated value of ClusterLabelKey, and will be removed in a future release
+const DeprecatedClusterLabelKey = "io.k8s.sigs.kind.cluster"
+
+// NodeRoleLabelKey is applied to each "node" docker container for categorization
 // of nodes by role
-const NodeRoleKey = "io.k8s.sigs.kind.role"
+const NodeRoleLabelKey = "io.x-k8s.kind.role"
+
+// DeprecatedNodeRoleLabelKey is applied to each "node" docker container for categorization
+// of nodes by role.
+// This is the deprecated value of NodeRoleKey, and will be removed in a future release
+const DeprecatedNodeRoleLabelKey = "io.k8s.sigs.kind.role"
 
 /* node role value constants */
 const (
