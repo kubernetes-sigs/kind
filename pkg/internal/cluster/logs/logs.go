@@ -18,12 +18,14 @@ package logs
 
 import (
 	"archive/tar"
+	"fmt"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
+	"github.com/alessio/shellescape"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
@@ -114,24 +116,18 @@ func Collect(logger log.Logger, nodes []nodes.Node, dir string) error {
 
 // dumpDir dumps the dir nodeDir on the node to the dir hostDir on the host
 func dumpDir(logger log.Logger, node nodes.Node, nodeDir, hostDir string) (err error) {
-	// make tempdir to rsync nodeDir into (rsync handles taking a snapshot better)
-	tmp, err := mktemp(node)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if rerr := node.Command("rm", "-rf", tmp).Run(); rerr != nil && err == nil {
-			err = rerr
-		}
-	}()
+	cmd := node.Command(
+		"sh", "-c",
+		// Tar will exit 1 if a file changed during the archival.
+		// We don't care about this, so we're invoking it in a shell
+		// And masking out 1 as a return value.
+		// Fatal errors will return exit code 2.
+		// http://man7.org/linux/man-pages/man1/tar.1.html#RETURN_VALUE
+		fmt.Sprintf(
+			`tar --hard-dereference -C %s -chf - . || (r=$?; [ $r -eq 1 ] || exit $r)`,
+			shellescape.Quote(path.Clean(nodeDir)+"/")),
+	)
 
-	// rsync into the temp dir
-	if err := node.Command("rsync", "--archive", path.Clean(nodeDir)+"/", tmp).Run(); err != nil {
-		return err
-	}
-
-	// tar out to the host
-	cmd := node.Command("tar", "--hard-dereference", "-C", tmp, "-chf", "-", ".")
 	return exec.RunWithStdoutReader(cmd, func(outReader io.Reader) error {
 		if err := untar(logger, outReader, hostDir); err != nil {
 			return errors.Wrapf(err, "Untarring %q: %v", nodeDir, err)
