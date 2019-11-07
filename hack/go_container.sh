@@ -75,7 +75,7 @@ run_in_go_container() {
     `# docker options: remove container on exit, run as the host user / group` \
       --rm --user "$(id -u):$(id -g)" \
     `# golang caching: mount and use the cache volume` \
-      -v "${CACHE_VOLUME}:/go" -e GOCACHE=/go/cache -e XDG_CACHE_HOME=/go \
+      -v "${CACHE_VOLUME}:/go" -e XDG_CACHE_HOME=/go/cache \
     `# mount the output & source dir, set working directory to the source dir` \
       -v "${OUT_DIR}:/out" -v "${SOURCE_DIR}:/src" -w "/src" \
     `# pass through go settings: modules, proxy, cgo, OS / Arch` \
