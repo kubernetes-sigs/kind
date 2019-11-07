@@ -35,8 +35,7 @@ import (
 	"sigs.k8s.io/kind/pkg/log"
 )
 
-// Flags for the kind command
-type Flags struct {
+type flagpole struct {
 	LogLevel  string
 	Verbosity int32
 	Quiet     bool
@@ -44,7 +43,7 @@ type Flags struct {
 
 // NewCommand returns a new cobra.Command implementing the root command for kind
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
-	flags := &Flags{}
+	flags := &flagpole{}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "kind",
@@ -90,7 +89,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func runE(logger log.Logger, flags *Flags, cmd *cobra.Command) error {
+func runE(logger log.Logger, flags *flagpole, cmd *cobra.Command) error {
 	// handle limited migration for --loglevel
 	setLogLevel := cmd.Flag("loglevel").Changed
 	setVerbosity := cmd.Flag("verbosity").Changed
