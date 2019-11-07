@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cmd"
+	"sigs.k8s.io/kind/pkg/cmd/kind/export/kubeconfig"
 	"sigs.k8s.io/kind/pkg/cmd/kind/export/logs"
 	"sigs.k8s.io/kind/pkg/log"
 )
@@ -31,10 +32,11 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
 		Use:   "export",
-		Short: "exports one of [logs]",
-		Long:  "exports one of [logs]",
+		Short: "exports one of [kubeconfig, logs]",
+		Long:  "exports one of [kubeconfig, logs]",
 	}
 	// add subcommands
 	cmd.AddCommand(logs.NewCommand(logger, streams))
+	cmd.AddCommand(kubeconfig.NewCommand(logger, streams))
 	return cmd
 }
