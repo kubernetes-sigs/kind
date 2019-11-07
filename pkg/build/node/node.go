@@ -20,13 +20,12 @@ package node
 import (
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"path"
 	"runtime"
 	"strings"
 	"time"
-
-	"github.com/google/uuid"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/version"
@@ -584,7 +583,10 @@ func (c *BuildContext) createBuildContainer(buildDir string) (id string, err err
 	// attempt to explicitly pull the image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
 	_, _ = docker.PullIfNotPresent(c.logger, c.baseImage, 4)
-	id = "kind-build-" + uuid.New().String()
+	// this should be good enough: a specific prefix, the current unix time,
+	// and a little random bits in case we have multiple builds simultaneously
+	random := rand.New(rand.NewSource(time.Now().UnixNano())).Int31()
+	id = fmt.Sprintf("kind-build-%d-%d", time.Now().UTC().Unix(), random)
 	err = docker.Run(
 		c.baseImage,
 		[]string{
