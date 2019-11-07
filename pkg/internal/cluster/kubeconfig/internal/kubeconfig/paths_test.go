@@ -115,7 +115,7 @@ func TestPathForMerge(t *testing.T) {
 		assert.StringEqual(t, expected, result)
 	})
 	t.Run("KUBECONFIG select last if none exist", func(t *testing.T) {
-		kubeconfigEnvValue := strings.Join(append([]string{"/bogus/path", "/bogus/path/two"}), string(filepath.ListSeparator))
+		kubeconfigEnvValue := strings.Join([]string{"/bogus/path", "/bogus/path/two"}, string(filepath.ListSeparator))
 		result := PathForMerge("", func(s string) string {
 			return map[string]string{
 				"KUBECONFIG": kubeconfigEnvValue,
