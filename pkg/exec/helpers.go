@@ -123,20 +123,12 @@ func RunWithStdinWriter(cmd Cmd, writerFunc func(io.Writer) error) error {
 	defer pr.Close()
 	cmd.SetStdin(pr)
 
-	errChan := make(chan error, 1)
-	go func() {
-		errChan <- writerFunc(pw)
-		pw.Close()
-	}()
-
-	err = cmd.Run()
-	pr.Close()
-	err2 := <-errChan
-	if err != nil {
-		return err
-	}
-	if err2 != nil {
-		return err2
-	}
-	return nil
+	return errors.AggregateConcurrent([]func() error{
+		func() error {
+			return writerFunc(pw)
+		},
+		func() error {
+			return cmd.Run()
+		},
+	})
 }
