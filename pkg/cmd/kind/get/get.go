@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/cmd/kind/get/clusters"
 	"sigs.k8s.io/kind/pkg/cmd/kind/get/kubeconfig"
+	"sigs.k8s.io/kind/pkg/cmd/kind/get/kubeconfigpath"
 	"sigs.k8s.io/kind/pkg/cmd/kind/get/nodes"
 	"sigs.k8s.io/kind/pkg/log"
 )
@@ -40,5 +41,6 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd.AddCommand(clusters.NewCommand(logger, streams))
 	cmd.AddCommand(nodes.NewCommand(logger, streams))
 	cmd.AddCommand(kubeconfig.NewCommand(logger, streams))
+	cmd.AddCommand(kubeconfigpath.NewCommand(logger, streams))
 	return cmd
 }

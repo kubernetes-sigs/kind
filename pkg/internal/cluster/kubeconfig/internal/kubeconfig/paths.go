@@ -56,8 +56,9 @@ func paths(explicitPath string, getEnv func(string) string) []string {
 	return []string{path.Join(homeDir(runtime.GOOS, getEnv), ".kube", "config")}
 }
 
-// pathForMerge returns the file that kubectl would merge into
-func pathForMerge(explicitPath string, getEnv func(string) string) string {
+// PathForMerge returns the file that kubectl would merge into
+// TODO: unexport once we remove kind get kubeconfig-path
+func PathForMerge(explicitPath string, getEnv func(string) string) string {
 	// find the first file that exists
 	p := paths(explicitPath, getEnv)
 	if len(p) == 1 {
