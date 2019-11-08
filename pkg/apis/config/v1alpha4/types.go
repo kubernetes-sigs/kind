@@ -140,10 +140,6 @@ type PatchJSON6902 struct {
 	Group   string `yaml:"group"`
 	Version string `yaml:"version"`
 	Kind    string `yaml:"kind"`
-	// WARNING: Name & Namespace are actually ignored!
-	// See the docs for the Cluster type
-	Name      string `yaml:"name,omitempty"`
-	Namespace string `yaml:"namespace,omitempty"`
 	// Patch should contain the contents of the json patch as a string
 	Patch string `yaml:"patch"`
 }

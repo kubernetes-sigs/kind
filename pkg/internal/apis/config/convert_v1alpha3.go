@@ -61,8 +61,7 @@ func convertv1alpha3PatchJSON6902(in *v1alpha3.PatchJSON6902, out *PatchJSON6902
 	out.Group = in.Group
 	out.Version = in.Version
 	out.Kind = in.Kind
-	out.Name = in.Name
-	out.Namespace = in.Namespace
+	// NOTE: name and namespace are discarded, see the docs for the types.
 	out.Patch = in.Patch
 }
 

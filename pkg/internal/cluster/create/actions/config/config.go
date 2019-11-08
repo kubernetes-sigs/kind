@@ -18,7 +18,6 @@ limitations under the License.
 package config
 
 import (
-	"fmt"
 	"strings"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
@@ -130,9 +129,7 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData) (path string
 		return "", err
 	}
 	// fix all the patches to have name metadata matching the generated config
-	patches, jsonPatches := setPatchNames(
-		allPatchesFromConfig(cfg),
-	)
+	patches, jsonPatches := allPatchesFromConfig(cfg)
 	// apply patches
 	// TODO(bentheelder): this does not respect per node patches at all
 	// either make patches cluster wide, or change this
@@ -158,24 +155,6 @@ func removeMetadata(kustomized string) string {
 
 func allPatchesFromConfig(cfg *config.Cluster) (patches []string, jsonPatches []config.PatchJSON6902) {
 	return cfg.KubeadmConfigPatches, cfg.KubeadmConfigPatchesJSON6902
-}
-
-// setPatchNames sets the targeted object name on every patch to be the fixed
-// name we use when generating config objects (we have one of each type, all of
-// which have the same fixed name)
-func setPatchNames(patches []string, jsonPatches []config.PatchJSON6902) ([]string, []config.PatchJSON6902) {
-	fixedPatches := make([]string, len(patches))
-	fixedJSONPatches := make([]config.PatchJSON6902, len(jsonPatches))
-	for i, patch := range patches {
-		// insert the generated name metadata
-		fixedPatches[i] = fmt.Sprintf("metadata:\nname: %s\n%s", kubeadm.ObjectName, patch)
-	}
-	for i, patch := range jsonPatches {
-		// insert the generated name metadata
-		patch.Name = kubeadm.ObjectName
-		fixedJSONPatches[i] = patch
-	}
-	return fixedPatches, fixedJSONPatches
 }
 
 // writeKubeadmConfig writes the kubeadm configuration in the specified node

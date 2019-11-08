@@ -61,8 +61,6 @@ func convertv1alpha4PatchJSON6902(in *v1alpha4.PatchJSON6902, out *PatchJSON6902
 	out.Group = in.Group
 	out.Version = in.Version
 	out.Kind = in.Kind
-	out.Name = in.Name
-	out.Namespace = in.Namespace
 	out.Patch = in.Patch
 }
 
