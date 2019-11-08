@@ -72,7 +72,7 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		return err
 	}
 	if len(n) != 0 {
-		return fmt.Errorf("node(s) for a cluster with the name %q already exist", flags.Name)
+		return fmt.Errorf("node(s) already exist for a cluster with the name %q", flags.Name)
 	}
 
 	// handle config flag, we might need to read from stdin
