@@ -32,13 +32,25 @@ type Cluster struct {
 	Networking Networking `yaml:"networking,omitempty"`
 
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
-	// strategic merge patches to `kustomize build` internally
-	// https://github.com/kubernetes/community/blob/a9cf5c8f3380bb52ebe57b1e2dbdec136d8dd484/contributors/devel/sig-api-machinery/strategic-merge-patch.md
+	// merge patches. The `kind` field must match the target object, and
+	// if `apiVersion` is specified it will only be applied to matching objects.
+	//
 	// This should be an inline yaml blob-string
+	//
+	// https://tools.ietf.org/html/rfc7386
 	KubeadmConfigPatches []string `yaml:"kubeadmConfigPatches,omitempty"`
 
 	// KubeadmConfigPatchesJSON6902 are applied to the generated kubeadm config
-	// as patchesJson6902 to `kustomize build`
+	// as JSON 6902 patches. The `kind` field must match the target object, and
+	// if group or version are specified it will only be objects matching the
+	// apiVersion: group+"/"+version
+	//
+	// Name and Namespace are now ignored, but the fields continue to exist for
+	// backwards compatibility of parsing the config. The name of the generated
+	// config was/is always fixed as as is the namespace so these fields have
+	// always been a no-op.
+	//
+	// https://tools.ietf.org/html/rfc6902
 	KubeadmConfigPatchesJSON6902 []PatchJSON6902 `yaml:"kubeadmConfigPatchesJson6902,omitempty"`
 }
 
@@ -128,9 +140,8 @@ type PatchJSON6902 struct {
 	Group   string `yaml:"group"`
 	Version string `yaml:"version"`
 	Kind    string `yaml:"kind"`
-	// Name and Namespace are optional
-	// NOTE: technically name is required now, but we default it elsewhere
-	// Third party users of this type / library would need to set it.
+	// WARNING: Name & Namespace are actually ignored!
+	// See the docs for the Cluster type
 	Name      string `yaml:"name,omitempty"`
 	Namespace string `yaml:"namespace,omitempty"`
 	// Patch should contain the contents of the json patch as a string
