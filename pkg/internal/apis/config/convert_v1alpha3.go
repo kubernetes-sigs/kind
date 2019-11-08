@@ -35,7 +35,7 @@ func Convertv1alpha3(in *v1alpha3.Cluster) *Cluster {
 	convertv1alpha3Networking(&in.Networking, &out.Networking)
 
 	for i := range in.KubeadmConfigPatchesJSON6902 {
-		convertv1alphaPatchJSON6902(&in.KubeadmConfigPatchesJSON6902[i], &out.KubeadmConfigPatchesJSON6902[i])
+		convertv1alpha3PatchJSON6902(&in.KubeadmConfigPatchesJSON6902[i], &out.KubeadmConfigPatchesJSON6902[i])
 	}
 
 	return out
@@ -57,7 +57,7 @@ func convertv1alpha3Node(in *v1alpha3.Node, out *Node) {
 	}
 }
 
-func convertv1alphaPatchJSON6902(in *v1alpha3.PatchJSON6902, out *PatchJSON6902) {
+func convertv1alpha3PatchJSON6902(in *v1alpha3.PatchJSON6902, out *PatchJSON6902) {
 	out.Group = in.Group
 	out.Version = in.Version
 	out.Kind = in.Kind
@@ -80,12 +80,12 @@ func convertv1alpha3Mount(in *v1alpha3.Mount, out *Mount) {
 	out.HostPath = in.HostPath
 	out.Readonly = in.Readonly
 	out.SelinuxRelabel = in.SelinuxRelabel
-	out.Propagation = MountPropagation(in.Propagation)
+	out.Propagation = MountPropagation(v1alpha3.MountPropagationValueToName[in.Propagation])
 }
 
 func convertv1alpha3PortMapping(in *v1alpha3.PortMapping, out *PortMapping) {
 	out.ContainerPort = in.ContainerPort
 	out.HostPort = in.HostPort
 	out.ListenAddress = in.ListenAddress
-	out.Protocol = PortMappingProtocol(in.Protocol)
+	out.Protocol = PortMappingProtocol(v1alpha3.PortMappingProtocolValueToName[in.Protocol])
 }

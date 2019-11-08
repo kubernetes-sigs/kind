@@ -20,13 +20,6 @@ package constants
 // DefaultClusterName is the default cluster Context name
 const DefaultClusterName = "kind"
 
-// ClusterLabelKey is applied to each "node" docker container for identification
-const ClusterLabelKey = "io.k8s.sigs.kind.cluster"
-
-// NodeRoleKey is applied to each "node" docker container for categorization
-// of nodes by role
-const NodeRoleKey = "io.k8s.sigs.kind.role"
-
 /* node role value constants */
 const (
 	// ControlPlaneNodeRoleValue identifies a node that hosts a Kubernetes
