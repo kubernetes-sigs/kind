@@ -17,13 +17,13 @@ limitations under the License.
 package patch
 
 import (
+	"bufio"
+	"bytes"
 	"io"
-	"io/ioutil"
 	"strings"
 
 	jsonpatch "github.com/evanphx/json-patch"
 
-	yamlutil "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/yaml"
 
 	"sigs.k8s.io/kind/pkg/errors"
@@ -103,16 +103,46 @@ func parseResources(yamlDocumentStream string) ([]resource, error) {
 
 func splitYAMLDocuments(yamlDocumentStream string) ([]string, error) {
 	documents := []string{}
-	buff := make([]byte, len(yamlDocumentStream))
-	r := yamlutil.NewDocumentDecoder(ioutil.NopCloser(strings.NewReader(yamlDocumentStream)))
-	for {
-		n, err := r.Read(buff)
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return nil, errors.Wrap(err, "error splitting documents")
-		}
-		documents = append(documents, string(buff[:n]))
+	scanner := bufio.NewScanner(strings.NewReader(yamlDocumentStream))
+	scanner.Split(splitYAMLDocument)
+	for scanner.Scan() {
+		documents = append(documents, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, errors.Wrap(err, "error splitting documents")
 	}
 	return documents, nil
+}
+
+const yamlSeparator = "\n---"
+
+// splitYAMLDocument is a bufio.SplitFunc for splitting YAML streams into individual documents.
+// this is borrowed from k8s.io/apimachinery/pkg/util/yaml/decoder.go
+func splitYAMLDocument(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+	sep := len([]byte(yamlSeparator))
+	if i := bytes.Index(data, []byte(yamlSeparator)); i >= 0 {
+		// We have a potential document terminator
+		i += sep
+		after := data[i:]
+		if len(after) == 0 {
+			// we can't read any more characters
+			if atEOF {
+				return len(data), data[:len(data)-sep], nil
+			}
+			return 0, nil, nil
+		}
+		if j := bytes.IndexByte(after, '\n'); j >= 0 {
+			return i + j + 1, data[0 : i-sep], nil
+		}
+		return 0, nil, nil
+	}
+	// If we're at EOF, we have a final, non-terminated line. Return it.
+	if atEOF {
+		return len(data), data, nil
+	}
+	// Request more data.
+	return 0, nil, nil
 }
