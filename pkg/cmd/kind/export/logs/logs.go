@@ -42,14 +42,14 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "exports logs to a tempdir or [output-dir] if specified",
 		Long:  "exports logs to a tempdir or [output-dir] if specified",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(logger, flags, args)
+			return runE(logger, streams, flags, args)
 		},
 	}
 	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "the cluster context name")
 	return cmd
 }
 
-func runE(logger log.Logger, flags *flagpole, args []string) error {
+func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole, args []string) error {
 	provider := cluster.NewProvider(
 		cluster.ProviderWithLogger(logger),
 	)
@@ -80,6 +80,7 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 		return err
 	}
 
-	logger.V(0).Info("Exported logs to: " + dir)
+	logger.V(0).Infof("Exported logs for cluster %q to:", flags.Name)
+	fmt.Fprintln(streams.Out, dir)
 	return nil
 }
