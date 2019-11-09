@@ -51,6 +51,7 @@ func NewContext(logger log.Logger, name string) *Context {
 	}
 }
 
+// NewProviderContext returns a new context with given provider and name
 func NewProviderContext(p provider.Provider, name string) *Context {
 	return &Context{
 		name:     name,
@@ -63,10 +64,12 @@ func (c *Context) Name() string {
 	return c.name
 }
 
+// Provider returns the provider of the context
 func (c *Context) Provider() provider.Provider {
 	return c.provider
 }
 
+// GetAPIServerEndpoint returns the cluster's API Server endpoint
 func (c *Context) GetAPIServerEndpoint() (string, error) {
 	return c.provider.GetAPIServerEndpoint(c.Name())
 }
