@@ -159,7 +159,7 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.N
 
 	clusterPatches, clusterJSONPatches := allPatchesFromConfig(cfg)
 	// apply cluster-level patches first
-	patchedConfig, err := patch.Patch(cf, clusterPatches, clusterJSONPatches)
+	patchedConfig, err := patch.KubeYAML(cf, clusterPatches, clusterJSONPatches)
 	if err != nil {
 		return "", err
 	}
@@ -171,7 +171,7 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.N
 		nodeSuffix := namer(string(inode.Role))
 		// if needed, apply current node's patches
 		if strings.HasSuffix(node.String(), nodeSuffix) && (len(inode.KubeadmConfigPatches) > 0 || len(inode.KubeadmConfigPatchesJSON6902) > 0) {
-			patchedConfig, err = patch.Patch(patchedConfig, inode.KubeadmConfigPatches, inode.KubeadmConfigPatchesJSON6902)
+			patchedConfig, err = patch.KubeYAML(patchedConfig, inode.KubeadmConfigPatches, inode.KubeadmConfigPatchesJSON6902)
 			if err != nil {
 				return "", err
 			}
