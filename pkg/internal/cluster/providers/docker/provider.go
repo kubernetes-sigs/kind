@@ -133,6 +133,7 @@ func (p *Provider) DeleteNodes(n []nodes.Node) error {
 	return nil
 }
 
+// GetAPIServerEndpoint is part of the providers.Provider interface
 func (p *Provider) GetAPIServerEndpoint(cluster string) (string, error) {
 	// locate the node that hosts this
 	allNodes, err := p.ListNodes(cluster)

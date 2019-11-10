@@ -66,6 +66,9 @@ func ExternalLoadBalancerNode(allNodes []nodes.Node) (nodes.Node, error) {
 	return loadBalancerNodes[0], nil
 }
 
+// APIServerEndpointNode selects the node from allNodes which hosts the API Server endpoint
+// This should be the control plane node if there is one control plane node, or a LoadBalancer otherwise.
+// It returns an error if the node list is invalid (E.G. two control planes and no load balancer)
 func APIServerEndpointNode(allNodes []nodes.Node) (nodes.Node, error) {
 	if n, err := ExternalLoadBalancerNode(allNodes); err != nil {
 		return nil, errors.Wrap(err, "failed to find api-server endpoint node")

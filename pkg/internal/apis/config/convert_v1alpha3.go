@@ -20,6 +20,7 @@ import (
 	v1alpha3 "sigs.k8s.io/kind/pkg/apis/config/v1alpha3"
 )
 
+// Convertv1alpha3 converts a v1alpha3 cluster to a cluster at the internal API version
 func Convertv1alpha3(in *v1alpha3.Cluster) *Cluster {
 	in = in.DeepCopy() // deep copy first to avoid touching the original
 	out := &Cluster{

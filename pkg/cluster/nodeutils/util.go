@@ -97,6 +97,7 @@ func CopyNodeToNode(a, b nodes.Node, file string) error {
 	return nil
 }
 
+// LoadImageArchive loads image onto the node, where image is a Reader over an image archive
 func LoadImageArchive(n nodes.Node, image io.Reader) error {
 	cmd := n.Command("ctr", "--namespace=k8s.io", "images", "import", "-").SetStdin(image)
 	if err := cmd.Run(); err != nil {
@@ -105,6 +106,7 @@ func LoadImageArchive(n nodes.Node, image io.Reader) error {
 	return nil
 }
 
+// ImageID returns ID of image on the node with the given image name if present
 func ImageID(n nodes.Node, image string) (string, error) {
 	var out bytes.Buffer
 	if err := n.Command("crictl", "inspecti", image).SetStdout(&out).Run(); err != nil {
