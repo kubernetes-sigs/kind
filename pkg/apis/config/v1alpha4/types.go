@@ -85,6 +85,28 @@ type Node struct {
 	// ExtraPortMappings describes additional port mappings for the node container
 	// binded to a host Port
 	ExtraPortMappings []PortMapping `yaml:"extraPortMappings,omitempty"`
+
+	// KubeadmConfigPatches are applied to the generated kubeadm config as
+	// merge patches. The `kind` field must match the target object, and
+	// if `apiVersion` is specified it will only be applied to matching objects.
+	//
+	// This should be an inline yaml blob-string
+	//
+	// https://tools.ietf.org/html/rfc7386
+	KubeadmConfigPatches []string `yaml:"kubeadmConfigPatches,omitempty"`
+
+	// KubeadmConfigPatchesJSON6902 are applied to the generated kubeadm config
+	// as JSON 6902 patches. The `kind` field must match the target object, and
+	// if group or version are specified it will only be objects matching the
+	// apiVersion: group+"/"+version
+	//
+	// Name and Namespace are now ignored, but the fields continue to exist for
+	// backwards compatibility of parsing the config. The name of the generated
+	// config was/is always fixed as as is the namespace so these fields have
+	// always been a no-op.
+	//
+	// https://tools.ietf.org/html/rfc6902
+	KubeadmConfigPatchesJSON6902 []PatchJSON6902 `yaml:"kubeadmConfigPatchesJson6902,omitempty"`
 }
 
 // NodeRole defines possible role for nodes in a Kubernetes cluster managed by `kind`

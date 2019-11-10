@@ -100,6 +100,16 @@ func (in *Node) DeepCopyInto(out *Node) {
 		*out = make([]PortMapping, len(*in))
 		copy(*out, *in)
 	}
+	if in.KubeadmConfigPatches != nil {
+		in, out := &in.KubeadmConfigPatches, &out.KubeadmConfigPatches
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.KubeadmConfigPatchesJSON6902 != nil {
+		in, out := &in.KubeadmConfigPatchesJSON6902, &out.KubeadmConfigPatchesJSON6902
+		*out = make([]PatchJSON6902, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 
