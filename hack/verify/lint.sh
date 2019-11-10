@@ -36,7 +36,7 @@ LINTS=(
 )
 ENABLE=$(sed 's/ /,/g' <<< "${LINTS[@]}")
 # first for the repo in general
-GO111MODULE=on bin/golangci-lint --disable-all --enable="${ENABLE}" run ./pkg/... ./cmd/... .
+GO111MODULE=on bin/golangci-lint --disable-all --exclude-use-default=false --enable="${ENABLE}" run ./pkg/... ./cmd/... .
 # ... and then for kindnetd, which is only on linux
 SOURCE_DIR="${REPO_ROOT}/images/kindnetd" GOOS="linux" "${REPO_ROOT}/hack/go_container.sh" \
-  /out/golangci-lint-linux --disable-all --enable="${ENABLE}" run ./...
+  /out/golangci-lint-linux --disable-all --exclude-use-default=false --enable="${ENABLE}" run ./...
