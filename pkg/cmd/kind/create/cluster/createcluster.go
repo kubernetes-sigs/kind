@@ -90,6 +90,8 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		cluster.CreateWithRetain(flags.Retain),
 		cluster.CreateWithWaitForReady(flags.Wait),
 		cluster.CreateWithKubeconfigPath(flags.Kubeconfig),
+		cluster.CreateWithDisplayUsage(true),
+		cluster.CreateWithDisplaySalutation(true),
 	); err != nil {
 		if errs := errors.Errors(err); errs != nil {
 			for _, problem := range errs {
