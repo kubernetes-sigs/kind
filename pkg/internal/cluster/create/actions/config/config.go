@@ -79,19 +79,9 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		IPv6:                 ctx.Config.Networking.IPFamily == "ipv6",
 	}
 
-	// create the kubeadm join configuration for control plane nodes
-	controlPlanes, err := nodeutils.ControlPlaneNodes(allNodes)
-	if err != nil {
-		return err
-	}
-
-	kubeadmConfigPlusPatches := func(node nodes.Node, configData kubeadm.ConfigData) func() error {
+	kubeadmConfigPlusPatches := func(node nodes.Node, data kubeadm.ConfigData) func() error {
 		return func() error {
-			// determine if we're dealing with a worker node
-			// so we can include it's corresponding patches
-			includeWorkerPatches := !configData.ControlPlane
-			patches, jsonPatches := allPatchesFromConfig(ctx.Config, includeWorkerPatches)
-			kubeadmConfig, err := getKubeadmConfig(configData, patches, jsonPatches)
+			kubeadmConfig, err := getKubeadmConfig(ctx.Config, data, node)
 			if err != nil {
 				// TODO(bentheelder): logging here
 				return errors.Wrap(err, "failed to generate kubeadm config content")
@@ -100,6 +90,12 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 			ctx.Logger.V(2).Info("Using kubeadm config:\n" + kubeadmConfig)
 			return writeKubeadmConfig(ctx.Config, kubeadmConfig, configData, node)
 		}
+	}
+
+	// create the kubeadm join configuration for control plane nodes
+	controlPlanes, err := nodeutils.ControlPlaneNodes(allNodes)
+	if err != nil {
+		return err
 	}
 
 	for _, node := range controlPlanes {
@@ -135,21 +131,28 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 
 // getKubeadmConfig generates the kubeadm config contents for the cluster
 // by running data through the template and applying patches as needed.
-func getKubeadmConfig(data kubeadm.ConfigData, patches []string, jsonPatches []config.PatchJSON6902) (path string, err error) {
+func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.Node) (path string, err error) {
 	// generate the config contents
 	cf, err := kubeadm.Config(data)
 	if err != nil {
 		return "", err
 	}
 
-	// apply patches
-	patched, err := patch.Patch(cf, patches, jsonPatches)
+	clusterPatches, clusterJSONPatches := allPatchesFromConfig(cfg)
+	// apply cluster-level patches  first
+	patchedConfig, err := patch.Patch(cf, clusterPatches, clusterJSONPatches)
 	if err != nil {
 		return "", err
 	}
 
+	// // if needed, apply node-level patches
+	// patchedConfig, err = patch.Patch(patchedConfig, node.KubeadmConfigPatches, node.KubeadmConfigPatchesJSON6902)
+	// if err != nil {
+	// 	return "", err
+	// }
+
 	// fix all the patches to have name metadata matching the generated config
-	return removeMetadata(patched), nil
+	return removeMetadata(patchedConfig), nil
 }
 
 // trims out the metadata.name we put in the config for kustomize matching,
@@ -165,17 +168,8 @@ func removeMetadata(kustomized string) string {
 	)
 }
 
-func allPatchesFromConfig(cfg *config.Cluster, includeWorkerPatches bool) (patches []string, jsonPatches []config.PatchJSON6902) {
-	patches, jsonPatches = cfg.KubeadmConfigPatches, cfg.KubeadmConfigPatchesJSON6902
-
-	if includeWorkerPatches {
-		for _, node := range cfg.Nodes {
-			patches = append(patches, node.KubeadmConfigPatches...)
-			jsonPatches = append(jsonPatches, node.KubeadmConfigPatchesJSON6902...)
-		}
-	}
-
-	return
+func allPatchesFromConfig(cfg *config.Cluster) (patches []string, jsonPatches []config.PatchJSON6902) {
+	return cfg.KubeadmConfigPatches, cfg.KubeadmConfigPatchesJSON6902
 }
 
 // writeKubeadmConfig writes the kubeadm configuration in the specified node
