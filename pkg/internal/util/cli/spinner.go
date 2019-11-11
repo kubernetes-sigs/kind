@@ -19,8 +19,11 @@ package cli
 import (
 	"fmt"
 	"io"
+	"os"
 	"sync"
 	"time"
+
+	colorable "github.com/mattn/go-colorable"
 )
 
 // custom CLI loading spinner for kind
@@ -60,7 +63,11 @@ type Spinner struct {
 var _ io.Writer = &Spinner{}
 
 // NewSpinner initializes and returns a new Spinner that will write to w
+// NOTE: w should be os.Stderr or similar, and it should be a Terminal
 func NewSpinner(w io.Writer) *Spinner {
+	if v, ok := w.(*os.File); ok {
+		w = colorable.NewColorable(v)
+	}
 	return &Spinner{
 		stop:    make(chan struct{}, 1),
 		stopped: make(chan struct{}),
@@ -116,7 +123,7 @@ func (s *Spinner) Start() {
 					func() {
 						s.mu.Lock()
 						defer s.mu.Unlock()
-						fmt.Fprintf(s.writer, "\r%s%s%s", s.prefix, frame, s.suffix)
+						fmt.Fprintf(s.writer, "\x1b[?7l\x1b[2K\r%s%s%s\x1b[?7h", s.prefix, frame, s.suffix)
 					}()
 				}
 			}
@@ -149,7 +156,7 @@ func (s *Spinner) Write(p []byte) (n int, err error) {
 		return s.writer.Write(p)
 	}
 	// otherwise: we will rewrite the line first
-	if _, err := s.writer.Write([]byte("\r")); err != nil {
+	if _, err := s.writer.Write([]byte("\x1b[2K\r")); err != nil {
 		return 0, err
 	}
 	return s.writer.Write(p)
