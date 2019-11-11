@@ -23,7 +23,7 @@ FROM ubuntu:19.10
 
 # Configure containerd and runc binaries from kind-ci/containerd-nightlies repository
 # The repository contains latest stable releases and nightlies built for multiple architectures
-ARG CONTAINERD_VERSION="v1.3.0-20-g7af311b4"
+ARG CONTAINERD_VERSION="v1.3.0-27-g54658b88"
 # Configure CNI binaries from upstream
 ARG CNI_VERSION="v0.8.2"
 # Configure crictl binary from upstream
