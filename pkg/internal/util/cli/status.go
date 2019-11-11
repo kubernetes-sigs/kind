@@ -28,6 +28,9 @@ type Status struct {
 	spinner *Spinner
 	status  string
 	logger  log.Logger
+	// for controlling coloring etc
+	successFormat string
+	failureFormat string
 }
 
 // StatusForLogger returns a new status object for the logger l,
@@ -35,13 +38,18 @@ type Status struct {
 // will be used for the status
 func StatusForLogger(l log.Logger) *Status {
 	s := &Status{
-		logger: l,
+		logger:        l,
+		successFormat: " ✓ %s\n",
+		failureFormat: " ✗ %s\n",
 	}
 	// if we're using the CLI logger, check for if it has a spinner setup
 	// and wire the status to that
 	if v, ok := l.(*Logger); ok {
 		if v2, ok := v.writer.(*Spinner); ok {
 			s.spinner = v2
+			// use colored success / failure messages
+			s.successFormat = " \x1b[32m✓\x1b[0m %s\n"
+			s.failureFormat = " \x1b[31m✗\x1b[0m %s\n"
 		}
 	}
 	return s
@@ -72,11 +80,10 @@ func (s *Status) End(success bool) {
 		s.spinner.Stop()
 		fmt.Fprint(s.spinner.writer, "\r")
 	}
-
 	if success {
-		s.logger.V(0).Infof(" ✓ %s\n", s.status)
+		s.logger.V(0).Infof(s.successFormat, s.status)
 	} else {
-		s.logger.V(0).Infof(" ✗ %s\n", s.status)
+		s.logger.V(0).Infof(s.failureFormat, s.status)
 	}
 
 	s.status = ""

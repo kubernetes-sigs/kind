@@ -19,6 +19,7 @@ package env
 import (
 	"io"
 	"os"
+	"runtime"
 
 	isatty "github.com/mattn/go-isatty"
 )
@@ -29,4 +30,22 @@ func IsTerminal(w io.Writer) bool {
 		return isatty.IsTerminal(v.Fd())
 	}
 	return false
+}
+
+// IsSmartTerminal returns true if the writer w is a terminal AND
+// we think that the terminal is smart enough to use VT escape codes etc.
+func IsSmartTerminal(w io.Writer) bool {
+	if !IsTerminal(w) {
+		return false
+	}
+	// explicitly dumb terminals are not smart
+	if os.Getenv("TERM") == "dumb" {
+		return false
+	}
+	// On Windows WT_SESSION is set by the modern terminal component.
+	// Older terminals have poor support for UTF-8, VT escape codes, etc.
+	if runtime.GOOS == "windows" && os.Getenv("WT_SESSION") == "" {
+		return false
+	}
+	return true
 }

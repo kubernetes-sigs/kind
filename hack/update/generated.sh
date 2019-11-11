@@ -45,7 +45,13 @@ cd "${FAKE_REPOPATH}"
 
 # run the generators
 bin/deepcopy-gen -i ./pkg/internal/apis/config/ -O zz_generated.deepcopy --go-header-file hack/tools/boilerplate.go.txt
+<<<<<<< HEAD
 bin/deepcopy-gen -i ./pkg/apis/config/v1alpha4 -O zz_generated.deepcopy --go-header-file hack/tools/boilerplate.go.txt
+=======
+bin/deepcopy-gen -i ./pkg/apis/config/v1alpha3 -O zz_generated.deepcopy --go-header-file hack/tools/boilerplate.go.txt
+bin/deepcopy-gen -i ./pkg/apis/config/v1alpha4 -O zz_generated.deepcopy --go-header-file hack/tools/boilerplate.go.txt
+
+>>>>>>> master
 
 # set module mode back, return to repo root and gofmt to ensure we format generated code
 export GO111MODULE="on"

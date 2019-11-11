@@ -30,7 +30,7 @@ import (
 // This logger writes to os.Stderr
 func NewLogger() log.Logger {
 	var writer io.Writer = os.Stderr
-	if env.IsTerminal(writer) {
+	if env.IsSmartTerminal(writer) {
 		writer = cli.NewSpinner(writer)
 	}
 	return cli.NewLogger(writer, 0)

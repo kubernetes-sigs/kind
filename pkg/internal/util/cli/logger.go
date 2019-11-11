@@ -47,6 +47,7 @@ func NewLogger(writer io.Writer, verbosity log.Level) *Logger {
 	}
 }
 
+// SetWriter sets the output writer
 func (l *Logger) SetWriter(w io.Writer) {
 	l.writerMu.Lock()
 	defer l.writerMu.Unlock()

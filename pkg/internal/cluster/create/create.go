@@ -18,6 +18,7 @@ package create
 
 import (
 	"fmt"
+	"math/rand"
 	"regexp"
 	"time"
 
@@ -64,6 +65,9 @@ type ClusterOptions struct {
 	KubeconfigPath string
 	// see https://github.com/kubernetes-sigs/kind/issues/324
 	StopBeforeSettingUpKubernetes bool // if false kind should setup kubernetes after creating nodes
+	// Options to control output
+	DisplayUsage      bool
+	DisplaySalutation bool
 }
 
 // Cluster creates a cluster
@@ -137,31 +141,49 @@ func Cluster(logger log.Logger, ctx *context.Context, opts *ClusterOptions) erro
 		}
 	}
 
+	// skip the rest if we're not setting up kubernetes
 	if opts.StopBeforeSettingUpKubernetes {
 		return nil
 	}
 
-	return exportKubeconfig(logger, ctx, opts.KubeconfigPath)
-}
-
-// exportKubeconfig exports the cluster's kubeconfig and prints usage
-func exportKubeconfig(logger log.Logger, ctx *context.Context, kubeconfigPath string) error {
-	// actually export KUBECONFIG
-	if err := kubeconfig.Export(ctx, kubeconfigPath); err != nil {
+	if err := kubeconfig.Export(ctx, opts.KubeconfigPath); err != nil {
 		return err
 	}
 
+	// optionally display usage
+	if opts.DisplayUsage {
+		logUsage(logger, ctx, opts.KubeconfigPath)
+	}
+	// optionally give the user a friendly salutation
+	if opts.DisplaySalutation {
+		logger.V(0).Info("")
+		logSalutation(logger)
+	}
+	return nil
+}
+
+func logUsage(logger log.Logger, ctx *context.Context, explicitKubeconfigPath string) {
 	// construct a sample command for interacting with the cluster
 	kctx := kubeconfig.ContextForCluster(ctx.Name())
 	sampleCommand := fmt.Sprintf("kubectl cluster-info --context %s", kctx)
-	if kubeconfigPath != "" {
+	if explicitKubeconfigPath != "" {
 		// explicit path, include this
-		sampleCommand += " --kubeconfig " + shellescape.Quote(kubeconfigPath)
+		sampleCommand += " --kubeconfig " + shellescape.Quote(explicitKubeconfigPath)
 	}
-
 	logger.V(0).Infof(`Set kubectl context to "%s"`, kctx)
 	logger.V(0).Infof("You can now use your cluster with:\n\n" + sampleCommand)
-	return nil
+}
+
+func logSalutation(logger log.Logger) {
+	salutations := []string{
+		"Have a nice day! 👋",
+		"Thanks for using kind! 😊",
+		"Not sure what to do next? 😅 Check out https://kind.sigs.k8s.io/docs/user/quick-start/",
+		"Have a question, bug, or feature request? Let us know! https://kind.sigs.k8s.io/#community 🙂",
+	}
+	r := rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
+	s := salutations[r.Intn(len(salutations))]
+	logger.V(0).Info(s)
 }
 
 func fixupOptions(opts *ClusterOptions) error {
