@@ -38,6 +38,8 @@ type Cluster struct {
 	// This should be an inline yaml blob-string
 	//
 	// https://tools.ietf.org/html/rfc7386
+	//
+	// The cluster-level patches are appied before the node-level patches.
 	KubeadmConfigPatches []string `yaml:"kubeadmConfigPatches,omitempty"`
 
 	// KubeadmConfigPatchesJSON6902 are applied to the generated kubeadm config
@@ -51,6 +53,8 @@ type Cluster struct {
 	// always been a no-op.
 	//
 	// https://tools.ietf.org/html/rfc6902
+	//
+	// The cluster-level patches are appied before the node-level patches.
 	KubeadmConfigPatchesJSON6902 []PatchJSON6902 `yaml:"kubeadmConfigPatchesJson6902,omitempty"`
 }
 
@@ -93,6 +97,9 @@ type Node struct {
 	// This should be an inline yaml blob-string
 	//
 	// https://tools.ietf.org/html/rfc7386
+	//
+	// The node-level patches will be applied after the cluster-level patches
+	// have been applied. (See Cluster.KubeadmConfigPatches)
 	KubeadmConfigPatches []string `yaml:"kubeadmConfigPatches,omitempty"`
 
 	// KubeadmConfigPatchesJSON6902 are applied to the generated kubeadm config
@@ -106,6 +113,9 @@ type Node struct {
 	// always been a no-op.
 	//
 	// https://tools.ietf.org/html/rfc6902
+	//
+	// The node-level patches will be applied after the cluster-level patches
+	// have been applied. (See Cluster.KubeadmConfigPatchesJSON6902)
 	KubeadmConfigPatchesJSON6902 []PatchJSON6902 `yaml:"kubeadmConfigPatchesJson6902,omitempty"`
 }
 

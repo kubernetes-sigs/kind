@@ -139,17 +139,25 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.N
 	}
 
 	clusterPatches, clusterJSONPatches := allPatchesFromConfig(cfg)
-	// apply cluster-level patches  first
+	// apply cluster-level patches first
 	patchedConfig, err := patch.Patch(cf, clusterPatches, clusterJSONPatches)
 	if err != nil {
 		return "", err
 	}
 
-	// // if needed, apply node-level patches
-	// patchedConfig, err = patch.Patch(patchedConfig, node.KubeadmConfigPatches, node.KubeadmConfigPatchesJSON6902)
-	// if err != nil {
-	// 	return "", err
-	// }
+	// since we only need the last portion of the name,
+	// create namer without a clusterName
+	namer := common.MakeNodeNamer("")
+	for _, inode := range cfg.Nodes {
+		nodeSuffix := namer(string(inode.Role))
+		// if needed, apply current node's patches
+		if strings.HasSuffix(node.String(), nodeSuffix) && (len(inode.KubeadmConfigPatches) > 0 || len(inode.KubeadmConfigPatchesJSON6902) > 0) {
+			patchedConfig, err = patch.Patch(patchedConfig, inode.KubeadmConfigPatches, inode.KubeadmConfigPatchesJSON6902)
+			if err != nil {
+				return "", err
+			}
+		}
+	}
 
 	// fix all the patches to have name metadata matching the generated config
 	return removeMetadata(patchedConfig), nil
