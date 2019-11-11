@@ -107,3 +107,20 @@ func CreateWithStopBeforeSettingUpKubernetes(stopBeforeSettingUpKubernetes bool)
 		return nil
 	})
 }
+
+// CreateWithDisplayUsage enables displaying usage if displayUsage is true
+func CreateWithDisplayUsage(displayUsage bool) CreateOption {
+	return createOptionAdapter(func(o *internalcreate.ClusterOptions) error {
+		o.DisplayUsage = displayUsage
+		return nil
+	})
+}
+
+// CreateWithDisplaySalutation enables display a salutation t the end of create
+// cluster if displaySalutation is true
+func CreateWithDisplaySalutation(displaySalutation bool) CreateOption {
+	return createOptionAdapter(func(o *internalcreate.ClusterOptions) error {
+		o.DisplaySalutation = displaySalutation
+		return nil
+	})
+}

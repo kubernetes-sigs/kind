@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053
 	github.com/evanphx/json-patch v4.5.0+incompatible
+	github.com/mattn/go-colorable v0.1.4
 	github.com/mattn/go-isatty v0.0.10
 	github.com/pkg/errors v0.8.1
 	github.com/spf13/cobra v0.0.5
