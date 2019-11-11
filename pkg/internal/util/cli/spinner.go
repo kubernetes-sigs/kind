@@ -19,11 +19,9 @@ package cli
 import (
 	"fmt"
 	"io"
-	"os"
+	"runtime"
 	"sync"
 	"time"
-
-	colorable "github.com/mattn/go-colorable"
 )
 
 // custom CLI loading spinner for kind
@@ -57,6 +55,8 @@ type Spinner struct {
 	ticker  *time.Ticker // signals that it is time to write a frame
 	prefix  string
 	suffix  string
+	// format string used to write a frame, depends on the host OS / terminal
+	frameFormat string
 }
 
 // spinner implements writer
@@ -65,14 +65,19 @@ var _ io.Writer = &Spinner{}
 // NewSpinner initializes and returns a new Spinner that will write to w
 // NOTE: w should be os.Stderr or similar, and it should be a Terminal
 func NewSpinner(w io.Writer) *Spinner {
-	if v, ok := w.(*os.File); ok {
-		w = colorable.NewColorable(v)
+	frameFormat := "\x1b[?7l\x1b[2K\r%s%s%s\x1b[?7h"
+	// toggling wrapping seems to behave poorly on windows
+	// in general only the simplest escape codes behave well at the moment,
+	// and only in newer shells
+	if runtime.GOOS == "windows" {
+		frameFormat = "\x1b[2K\r%s%s%s"
 	}
 	return &Spinner{
-		stop:    make(chan struct{}, 1),
-		stopped: make(chan struct{}),
-		mu:      &sync.Mutex{},
-		writer:  w,
+		stop:        make(chan struct{}, 1),
+		stopped:     make(chan struct{}),
+		mu:          &sync.Mutex{},
+		writer:      w,
+		frameFormat: frameFormat,
 	}
 }
 
@@ -123,7 +128,7 @@ func (s *Spinner) Start() {
 					func() {
 						s.mu.Lock()
 						defer s.mu.Unlock()
-						fmt.Fprintf(s.writer, "\x1b[?7l\x1b[2K\r%s%s%s\x1b[?7h", s.prefix, frame, s.suffix)
+						fmt.Fprintf(s.writer, s.frameFormat, s.prefix, frame, s.suffix)
 					}()
 				}
 			}
