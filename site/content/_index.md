@@ -54,7 +54,7 @@ kind create cluster --image kindest/node:latest
 Multi-node clusters and other advanced features may be configured with a config
 file, for more usage see [the user guide][user guide] or run `kind [command] --help`
 
-## Community, discussion, contribution, and support
+## Community
 
 Please reach out for bugs, feature requests, and other issues!  
 The maintainers of this project are reachable via:
@@ -67,7 +67,10 @@ Current maintainers are [@BenTheElder] and [@munnerz] - feel free to
 reach out if you have any questions!
 
 Pull Requests are very welcome!  
-See the [issue tracker] if you're unsure where to start, or feel free to reach out to discuss.
+If you're planning a new feature, please file an issue to discuss first.
+
+Check the [issue tracker] for `help wanted` issues if you're unsure where to
+start, or feel free to reach out to discuss. 🙂
 
 See also: our own [contributor guide] and the Kubernetes [community page]. 
 
