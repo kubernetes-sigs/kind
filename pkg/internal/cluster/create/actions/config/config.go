@@ -88,7 +88,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 			}
 
 			ctx.Logger.V(2).Info("Using kubeadm config:\n" + kubeadmConfig)
-			return writeKubeadmConfig(ctx.Config, kubeadmConfig, configData, node)
+			return writeKubeadmConfig(kubeadmConfig, node)
 		}
 	}
 
@@ -132,6 +132,25 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 // getKubeadmConfig generates the kubeadm config contents for the cluster
 // by running data through the template and applying patches as needed.
 func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.Node) (path string, err error) {
+	kubeVersion, err := nodeutils.KubeVersion(node)
+	if err != nil {
+		// TODO(bentheelder): logging here
+		return "", errors.Wrap(err, "failed to get kubernetes version from node")
+	}
+	data.KubernetesVersion = kubeVersion
+
+	// get the node ip address
+	nodeAddress, nodeAddressIPv6, err := node.IP()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get IP for node")
+	}
+
+	data.NodeAddress = nodeAddress
+	// configure the right protocol addresses
+	if cfg.Networking.IPFamily == "ipv6" {
+		data.NodeAddress = nodeAddressIPv6
+	}
+
 	// generate the config contents
 	cf, err := kubeadm.Config(data)
 	if err != nil {
@@ -181,26 +200,7 @@ func allPatchesFromConfig(cfg *config.Cluster) (patches []string, jsonPatches []
 }
 
 // writeKubeadmConfig writes the kubeadm configuration in the specified node
-func writeKubeadmConfig(cfg *config.Cluster, kubeadmConfig string, data kubeadm.ConfigData, node nodes.Node) error {
-	kubeVersion, err := nodeutils.KubeVersion(node)
-	if err != nil {
-		// TODO(bentheelder): logging here
-		return errors.Wrap(err, "failed to get kubernetes version from node")
-	}
-	data.KubernetesVersion = kubeVersion
-
-	// get the node ip address
-	nodeAddress, nodeAddressIPv6, err := node.IP()
-	if err != nil {
-		return errors.Wrap(err, "failed to get IP for node")
-	}
-
-	data.NodeAddress = nodeAddress
-	// configure the right protocol addresses
-	if cfg.Networking.IPFamily == "ipv6" {
-		data.NodeAddress = nodeAddressIPv6
-	}
-
+func writeKubeadmConfig(kubeadmConfig string, node nodes.Node) error {
 	// copy the config to the node
 	if err := nodeutils.WriteFile(node, "/kind/kubeadm.conf", kubeadmConfig); err != nil {
 		// TODO(bentheelder): logging here
