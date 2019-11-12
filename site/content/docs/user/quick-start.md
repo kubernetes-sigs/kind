@@ -132,16 +132,21 @@ kind load docker-image my-custom-image:unique-tag
 kubectl apply -f my-manifest-using-my-image:unique-tag
 ```
 
-**Note**: The Kubernetes default pull policy is `IfNotPresent` unless
-the image tag is `:latest` in which case the default policy is `Always`.
-`IfNotPresent` causes the Kubelet to skip pulling an image if it already exists.
-If you want those images loaded into node to work as expected, please:
+**Note**: The Kubernetes default pull policy is `IfNotPresent` unless the image
+tag is `:latest` in which case the default policy is `Always`.  `IfNotPresent`
+causes the Kubelet to skip pulling an image if it already exists. When using
+`kind load` we would like to avoid the `Always` pull policy, so that we can
+instead rely on the images which we inject. If you want images loaded
+into the cluster to work as expected, please:
 
-- don't use a `:latest` tag
+- don't use a `:latest` tag. If you must, then you required to set
+  `imagePullPolicy` to `IfNotPresent` or `Never`.
 
-and / or:
+or
 
-- specify `imagePullPolicy: IfNotPresent` or `imagePullPolicy: Never` on your container(s).
+- use a unique tag whenever your image changes. Then you can leave
+  `imagePullPolicy` unset, which will make it default to `IfNotPresent`. If you
+  want you can also explicitly set it to `IfNotPresent` or `Never`.
 
 See [Kubernetes imagePullPolicy][Kubernetes imagePullPolicy] for more information.
 
