@@ -98,6 +98,11 @@ func TestLoadCurrent(t *testing.T) {
 			ExpectError: false,
 		},
 		{
+			TestName:    "v1alpha4 config with workers patches",
+			Path:        "./testdata/v1alpha4/valid-kind-workers-patches.yaml",
+			ExpectError: false,
+		},
+		{
 			TestName:    "v1alpha4 non-existent field",
 			Path:        "./testdata/v1alpha4/invalid-bogus-field.yaml",
 			ExpectError: true,
