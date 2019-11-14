@@ -23,7 +23,6 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
-	"sigs.k8s.io/kind/pkg/log"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
@@ -80,17 +79,29 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		IPv6:                 ctx.Config.Networking.IPFamily == "ipv6",
 	}
 
+	kubeadmConfigPlusPatches := func(node nodes.Node, data kubeadm.ConfigData) func() error {
+		return func() error {
+			kubeadmConfig, err := getKubeadmConfig(ctx.Config, data, node)
+			if err != nil {
+				// TODO(bentheelder): logging here
+				return errors.Wrap(err, "failed to generate kubeadm config content")
+			}
+
+			ctx.Logger.V(2).Info("Using kubeadm config:\n" + kubeadmConfig)
+			return writeKubeadmConfig(kubeadmConfig, node)
+		}
+	}
+
 	// create the kubeadm join configuration for control plane nodes
 	controlPlanes, err := nodeutils.ControlPlaneNodes(allNodes)
 	if err != nil {
 		return err
 	}
+
 	for _, node := range controlPlanes {
 		node := node             // capture loop variable
 		configData := configData // copy config data
-		fns = append(fns, func() error {
-			return writeKubeadmConfig(ctx.Logger, ctx.Config, configData, node)
-		})
+		fns = append(fns, kubeadmConfigPlusPatches(node, configData))
 	}
 
 	// then create the kubeadm join config for the worker nodes if any
@@ -104,9 +115,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 			node := node             // capture loop variable
 			configData := configData // copy config data
 			configData.ControlPlane = false
-			fns = append(fns, func() error {
-				return writeKubeadmConfig(ctx.Logger, ctx.Config, configData, node)
-			})
+			fns = append(fns, kubeadmConfigPlusPatches(node, configData))
 		}
 	}
 
@@ -121,23 +130,56 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 }
 
 // getKubeadmConfig generates the kubeadm config contents for the cluster
-// by running data through the template.
-func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData) (path string, err error) {
+// by running data through the template and applying patches as needed.
+func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.Node) (path string, err error) {
+	kubeVersion, err := nodeutils.KubeVersion(node)
+	if err != nil {
+		// TODO(bentheelder): logging here
+		return "", errors.Wrap(err, "failed to get kubernetes version from node")
+	}
+	data.KubernetesVersion = kubeVersion
+
+	// get the node ip address
+	nodeAddress, nodeAddressIPv6, err := node.IP()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get IP for node")
+	}
+
+	data.NodeAddress = nodeAddress
+	// configure the right protocol addresses
+	if cfg.Networking.IPFamily == "ipv6" {
+		data.NodeAddress = nodeAddressIPv6
+	}
+
 	// generate the config contents
-	config, err := kubeadm.Config(data)
+	cf, err := kubeadm.Config(data)
 	if err != nil {
 		return "", err
 	}
+
+	clusterPatches, clusterJSONPatches := allPatchesFromConfig(cfg)
+	// apply cluster-level patches first
+	patchedConfig, err := patch.Patch(cf, clusterPatches, clusterJSONPatches)
+	if err != nil {
+		return "", err
+	}
+
+	// since we only need the last portion of the name,
+	// create namer without a clusterName
+	namer := common.MakeNodeNamer("")
+	for _, inode := range cfg.Nodes {
+		nodeSuffix := namer(string(inode.Role))
+		// if needed, apply current node's patches
+		if strings.HasSuffix(node.String(), nodeSuffix) && (len(inode.KubeadmConfigPatches) > 0 || len(inode.KubeadmConfigPatchesJSON6902) > 0) {
+			patchedConfig, err = patch.Patch(patchedConfig, inode.KubeadmConfigPatches, inode.KubeadmConfigPatchesJSON6902)
+			if err != nil {
+				return "", err
+			}
+		}
+	}
+
 	// fix all the patches to have name metadata matching the generated config
-	patches, jsonPatches := allPatchesFromConfig(cfg)
-	// apply patches
-	// TODO(bentheelder): this does not respect per node patches at all
-	// either make patches cluster wide, or change this
-	patched, err := patch.Patch(config, patches, jsonPatches)
-	if err != nil {
-		return "", err
-	}
-	return removeMetadata(patched), nil
+	return removeMetadata(patchedConfig), nil
 }
 
 // trims out the metadata.name we put in the config for kustomize matching,
@@ -158,35 +200,7 @@ func allPatchesFromConfig(cfg *config.Cluster) (patches []string, jsonPatches []
 }
 
 // writeKubeadmConfig writes the kubeadm configuration in the specified node
-func writeKubeadmConfig(logger log.Logger, cfg *config.Cluster, data kubeadm.ConfigData, node nodes.Node) error {
-	kubeVersion, err := nodeutils.KubeVersion(node)
-	if err != nil {
-		// TODO(bentheelder): logging here
-		return errors.Wrap(err, "failed to get kubernetes version from node")
-	}
-	data.KubernetesVersion = kubeVersion
-
-	// get the node ip address
-	nodeAddress, nodeAddressIPv6, err := node.IP()
-	if err != nil {
-		return errors.Wrap(err, "failed to get IP for node")
-	}
-
-	data.NodeAddress = nodeAddress
-	// configure the right protocol addresses
-	if cfg.Networking.IPFamily == "ipv6" {
-		data.NodeAddress = nodeAddressIPv6
-	}
-
-	kubeadmConfig, err := getKubeadmConfig(cfg, data)
-
-	if err != nil {
-		// TODO(bentheelder): logging here
-		return errors.Wrap(err, "failed to generate kubeadm config content")
-	}
-
-	logger.V(2).Info("Using kubeadm config:\n" + kubeadmConfig)
-
+func writeKubeadmConfig(kubeadmConfig string, node nodes.Node) error {
 	// copy the config to the node
 	if err := nodeutils.WriteFile(node, "/kind/kubeadm.conf", kubeadmConfig); err != nil {
 		// TODO(bentheelder): logging here
