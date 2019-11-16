@@ -1,9 +1,6 @@
 # explicitly use v2 config format
 version = 2
 
-# disable plugins we don't / can't support
-disabled_plugins = ["aufs", "btrfs", "zfs"]
-
 # set default runtime handler to v2, which has a per-pod shim
 [plugins."io.containerd.grpc.v1.cri".containerd.default_runtime]
   runtime_type="io.containerd.runc.v2"
