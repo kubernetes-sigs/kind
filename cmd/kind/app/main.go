@@ -79,7 +79,11 @@ func checkQuiet(args []string) bool {
 
 // logError logs the error and the root stacktrace if there is one
 func logError(logger log.Logger, err error) {
-	logger.Errorf("ERROR: %v", err)
+	if cmd.ColorEnabled(logger) {
+		logger.Errorf("\x1b[31mERROR\x1b[0m: %v", err)
+	} else {
+		logger.Errorf("ERROR: %v", err)
+	}
 	// If debugging is enabled (non-zero verbosity), display more info
 	if logger.V(1).Enabled() {
 		// Display Output if the error was running a command ...

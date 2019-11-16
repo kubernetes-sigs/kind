@@ -89,10 +89,10 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func runE(logger log.Logger, flags *flagpole, cmd *cobra.Command) error {
+func runE(logger log.Logger, flags *flagpole, command *cobra.Command) error {
 	// handle limited migration for --loglevel
-	setLogLevel := cmd.Flag("loglevel").Changed
-	setVerbosity := cmd.Flag("verbosity").Changed
+	setLogLevel := command.Flag("loglevel").Changed
+	setVerbosity := command.Flag("verbosity").Changed
 	if setLogLevel && !setVerbosity {
 		switch flags.LogLevel {
 		case "debug":
@@ -110,7 +110,11 @@ func runE(logger log.Logger, flags *flagpole, cmd *cobra.Command) error {
 	maybeSetVerbosity(logger, log.Level(flags.Verbosity))
 	// warn about deprecated flag if used
 	if setLogLevel {
-		logger.Warn("WARNING: --loglevel is deprecated, please switch to -v and -q!")
+		if cmd.ColorEnabled(logger) {
+			logger.Warn("\x1b[93mWARNING\x1b[0m: --loglevel is deprecated, please switch to -v and -q!")
+		} else {
+			logger.Warn("WARNING: --loglevel is deprecated, please switch to -v and -q!")
+		}
 	}
 	return nil
 }
