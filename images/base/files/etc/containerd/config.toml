@@ -1,11 +1,11 @@
-# disable plugins we don't / can't support
-disabled_plugins = ["aufs", "btrfs", "zfs"]
+# explicitly use v2 config format
+version = 2
 
 # set default runtime handler to v2, which has a per-pod shim
-[plugins.cri.containerd.default_runtime]
+[plugins."io.containerd.grpc.v1.cri".containerd.default_runtime]
   runtime_type="io.containerd.runc.v2"
 
 # Setup a runtime with the magic name ("test-handler") used for Kubernetes
 # runtime class tests ...
-[plugins.cri.containerd.runtimes.test-handler]
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test-handler]
   runtime_type = "io.containerd.runc.v2"

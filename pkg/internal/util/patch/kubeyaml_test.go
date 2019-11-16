@@ -23,7 +23,7 @@ import (
 	"sigs.k8s.io/kind/pkg/internal/util/assert"
 )
 
-func TestPatch(t *testing.T) {
+func TestKubeYAML(t *testing.T) {
 	t.Parallel()
 	type testCase struct {
 		Name            string
@@ -66,7 +66,7 @@ func TestPatch(t *testing.T) {
 		tc := tc // capture test case
 		t.Run(tc.Name, func(t *testing.T) {
 			t.Parallel()
-			out, err := Patch(tc.ToPatch, tc.Patches, tc.PatchesJSON6902)
+			out, err := KubeYAML(tc.ToPatch, tc.Patches, tc.PatchesJSON6902)
 			assert.ExpectError(t, tc.ExpectError, err)
 			if err == nil {
 				assert.StringEqual(t, tc.ExpectOutput, out)

@@ -55,7 +55,17 @@ type Cluster struct {
 	// https://tools.ietf.org/html/rfc6902
 	//
 	// The cluster-level patches are appied before the node-level patches.
-	KubeadmConfigPatchesJSON6902 []PatchJSON6902 `yaml:"kubeadmConfigPatchesJson6902,omitempty"`
+	KubeadmConfigPatchesJSON6902 []PatchJSON6902 `yaml:"kubeadmConfigPatchesJSON6902,omitempty"`
+
+	// ContainerdConfigPatches are applied to every node's containerd config
+	// in the order listed.
+	// These should be toml stringsto be applied as merge patches
+	ContainerdConfigPatches []string `yaml:"containerdConfigPatches,omitempty"`
+
+	// ContainerdConfigPatchesJSON6902 are applied to every node's containerd config
+	// in the order listed.
+	// These should be YAML or JSON formatting RFC 6902 JSON patches
+	ContainerdConfigPatchesJSON6902 []string `yaml:"containerdConfigPatchesJSON6902,omitempty"`
 }
 
 // TypeMeta partially copies apimachinery/pkg/apis/meta/v1.TypeMeta
@@ -116,7 +126,7 @@ type Node struct {
 	//
 	// The node-level patches will be applied after the cluster-level patches
 	// have been applied. (See Cluster.KubeadmConfigPatchesJSON6902)
-	KubeadmConfigPatchesJSON6902 []PatchJSON6902 `yaml:"kubeadmConfigPatchesJson6902,omitempty"`
+	KubeadmConfigPatchesJSON6902 []PatchJSON6902 `yaml:"kubeadmConfigPatchesJSON6902,omitempty"`
 }
 
 // NodeRole defines possible role for nodes in a Kubernetes cluster managed by `kind`

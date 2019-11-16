@@ -17,7 +17,7 @@ nodes:
         node-labels: "aqua=gateway"
         authorization-mode: "AlwaysAllow"
 - role: worker
-  kubeadmConfigPatchesJson6902:
+  kubeadmConfigPatchesJSON6902:
   - group: kubelet.config.k8s.io
     version: v1beta1
     kind: KubeletConfiguration

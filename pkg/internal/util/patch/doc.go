@@ -14,8 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package defaults contains cross-api-version configuration defaults
-package defaults
-
-// Image is the default for the Config.Image field, aka the default node image.
-const Image = "kindest/node:v1.16.3@sha256:bced4bc71380b59873ea3917afe9fb35b00e174d22f50c7cab9188eac2b0fb88"
+// Package patch contains helpers for applying patches
+package patch

@@ -24,9 +24,11 @@ import (
 func Convertv1alpha4(in *v1alpha4.Cluster) *Cluster {
 	in = in.DeepCopy() // deep copy first to avoid touching the original
 	out := &Cluster{
-		Nodes:                        make([]Node, len(in.Nodes)),
-		KubeadmConfigPatches:         in.KubeadmConfigPatches,
-		KubeadmConfigPatchesJSON6902: make([]PatchJSON6902, len(in.KubeadmConfigPatchesJSON6902)),
+		Nodes:                           make([]Node, len(in.Nodes)),
+		KubeadmConfigPatches:            in.KubeadmConfigPatches,
+		KubeadmConfigPatchesJSON6902:    make([]PatchJSON6902, len(in.KubeadmConfigPatchesJSON6902)),
+		ContainerdConfigPatches:         in.ContainerdConfigPatches,
+		ContainerdConfigPatchesJSON6902: in.ContainerdConfigPatchesJSON6902,
 	}
 
 	for i := range in.Nodes {

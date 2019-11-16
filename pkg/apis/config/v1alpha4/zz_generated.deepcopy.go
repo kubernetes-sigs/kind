@@ -42,6 +42,16 @@ func (in *Cluster) DeepCopyInto(out *Cluster) {
 		*out = make([]PatchJSON6902, len(*in))
 		copy(*out, *in)
 	}
+	if in.ContainerdConfigPatches != nil {
+		in, out := &in.ContainerdConfigPatches, &out.ContainerdConfigPatches
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.ContainerdConfigPatchesJSON6902 != nil {
+		in, out := &in.ContainerdConfigPatchesJSON6902, &out.ContainerdConfigPatchesJSON6902
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

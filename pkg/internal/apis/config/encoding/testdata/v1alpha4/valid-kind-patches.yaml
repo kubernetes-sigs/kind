@@ -11,7 +11,7 @@ kubeadmConfigPatches:
   networking:
     serviceSubnet: 10.0.0.0/16
 # patch it further using a JSON 6902 patch
-kubeadmConfigPatchesJson6902:
+kubeadmConfigPatchesJSON6902:
 - group: kubeadm.k8s.io
   version: v1beta2
   kind: ClusterConfiguration
@@ -19,6 +19,11 @@ kubeadmConfigPatchesJson6902:
     - op: add
       path: /apiServer/certSANs/-
       value: my-hostname
+# patch containerd config
+containerdConfigPatches:
+# configure a local insecure registry
+- |-
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."registry:5000"]
 # 1 control plane node and 3 workers
 nodes:
 # the control plane node config
