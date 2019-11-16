@@ -26,6 +26,8 @@ import (
 	"sync/atomic"
 
 	"sigs.k8s.io/kind/pkg/log"
+
+	"sigs.k8s.io/kind/pkg/internal/util/env"
 )
 
 // Logger is the kind cli's log.Logger implementation
@@ -34,17 +36,20 @@ type Logger struct {
 	writerMu   sync.Mutex
 	verbosity  log.Level
 	bufferPool *bufferPool
+	// kind special additions
+	isSmartWriter bool
 }
 
 var _ log.Logger = &Logger{}
 
 // NewLogger returns a new Logger with the given verbosity
 func NewLogger(writer io.Writer, verbosity log.Level) *Logger {
-	return &Logger{
+	l := &Logger{
 		verbosity:  verbosity,
-		writer:     writer,
 		bufferPool: newBufferPool(),
 	}
+	l.SetWriter(writer)
+	return l
 }
 
 // SetWriter sets the output writer
@@ -52,6 +57,15 @@ func (l *Logger) SetWriter(w io.Writer) {
 	l.writerMu.Lock()
 	defer l.writerMu.Unlock()
 	l.writer = w
+	_, isSpinner := w.(*Spinner)
+	l.isSmartWriter = isSpinner || env.IsSmartTerminal(w)
+}
+
+// ColorEnabled returns true if the caller is OK to write colored output
+func (l *Logger) ColorEnabled() bool {
+	l.writerMu.Lock()
+	defer l.writerMu.Unlock()
+	return l.isSmartWriter
 }
 
 func (l *Logger) getVerbosity() log.Level {
