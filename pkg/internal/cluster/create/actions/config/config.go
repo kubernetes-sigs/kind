@@ -18,6 +18,7 @@ limitations under the License.
 package config
 
 import (
+	"bytes"
 	"strings"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
@@ -32,18 +33,17 @@ import (
 	"sigs.k8s.io/kind/pkg/internal/util/patch"
 )
 
-// Action implements action for creating the kubeadm config
-// and deployng it on the bootrap control-plane node.
+// Action implements action for creating the node config files
 type Action struct{}
 
-// NewAction returns a new action for creating the kubadm config
+// NewAction returns a new action for creating the config files
 func NewAction() actions.Action {
 	return &Action{}
 }
 
 // Execute runs the action
 func (a *Action) Execute(ctx *actions.ActionContext) error {
-	ctx.Status.Start("Creating kubeadm config 📜")
+	ctx.Status.Start("Writing configuration 📜")
 	defer ctx.Status.End(false)
 
 	allNodes, err := ctx.Nodes()
@@ -119,9 +119,40 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		}
 	}
 
-	// Create the config in all nodes concurrently
+	// Create the kubeadm config in all nodes concurrently
 	if err := errors.UntilErrorConcurrent(fns); err != nil {
 		return err
+	}
+
+	// if we have containerd config, patch all the nodes concurrently
+	if len(ctx.Config.ContainerdConfigPatches) > 0 {
+		fns := make([]func() error, len(allNodes))
+		for i, node := range allNodes {
+			node := node // capture loop variable
+			fns[i] = func() error {
+				// read and patch the config
+				const containerdConfigPath = "/etc/containerd/config.toml"
+				var buff bytes.Buffer
+				if err := node.Command("cat", containerdConfigPath).SetStdout(&buff).Run(); err != nil {
+					return errors.Wrap(err, "failed to read containerd config from node")
+				}
+				patched, err := patch.TOML(buff.String(), ctx.Config.ContainerdConfigPatches, ctx.Config.ContainerdConfigPatchesJSON6902)
+				if err != nil {
+					return errors.Wrap(err, "failed to patch contianerd config")
+				}
+				if err := nodeutils.WriteFile(node, containerdConfigPath, patched); err != nil {
+					return errors.Wrap(err, "failed to write patched containerd config")
+				}
+				// restart containerd now that we've re-configured it
+				if err := node.Command("systemctl", "restart", "containerd").Run(); err != nil {
+					return errors.Wrap(err, "failed to restart containerd after patching config")
+				}
+				return nil
+			}
+		}
+		if err := errors.UntilErrorConcurrent(fns); err != nil {
+			return err
+		}
 	}
 
 	// mark success

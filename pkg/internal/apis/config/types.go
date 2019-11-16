@@ -38,6 +38,16 @@ type Cluster struct {
 	// KubeadmConfigPatchesJSON6902 are applied to the generated kubeadm config
 	// as patchesJson6902 to `kustomize build`
 	KubeadmConfigPatchesJSON6902 []PatchJSON6902
+
+	// ContainerdConfigPatches are applied to every node's containerd config
+	// in the order listed.
+	// These should be toml stringsto be applied as merge patches
+	ContainerdConfigPatches []string
+
+	// ContainerdConfigPatchesJSON6902 are applied to every node's containerd config
+	// in the order listed.
+	// These should be YAML or JSON formatting RFC 6902 JSON patches
+	ContainerdConfigPatchesJSON6902 []string
 }
 
 // Node contains settings for a node in the `kind` Cluster.
