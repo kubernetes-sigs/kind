@@ -125,7 +125,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// if we have containerd config, patch all the nodes concurrently
-	if len(ctx.Config.ContainerdConfigPatches) > 0 {
+	if len(ctx.Config.ContainerdConfigPatches) > 0 || len(ctx.Config.ContainerdConfigPatchesJSON6902) > 0 {
 		fns := make([]func() error, len(allNodes))
 		for i, node := range allNodes {
 			node := node // capture loop variable
