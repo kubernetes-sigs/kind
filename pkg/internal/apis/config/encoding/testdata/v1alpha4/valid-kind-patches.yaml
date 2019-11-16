@@ -11,7 +11,7 @@ kubeadmConfigPatches:
   networking:
     serviceSubnet: 10.0.0.0/16
 # patch it further using a JSON 6902 patch
-kubeadmConfigPatchesJson6902:
+kubeadmConfigPatchesJSON6902:
 - group: kubeadm.k8s.io
   version: v1beta2
   kind: ClusterConfiguration
