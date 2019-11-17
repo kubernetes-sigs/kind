@@ -42,7 +42,7 @@ On Mac & Linux:
 ```console
 curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/download/v0.5.1/kind-$(uname)-amd64
 chmod +x ./kind
-mv ./kind /some-dir-in-your-PATH/kind
+mv ./kind $(go env GOPATH)/bin/kind
 ```
 
 On Windows:
