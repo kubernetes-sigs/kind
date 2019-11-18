@@ -400,7 +400,7 @@ kind, the Kubernetes cluster itself, etc.
 [node image]: /docs/design/node-image
 [base image]: /docs/design/base-image
 [kind-example-config]: https://raw.githubusercontent.com/kubernetes-sigs/kind/master/site/content/docs/user/kind-example-config.yaml
-[pkg/build/base/sources]: https://github.com/kubernetes-sigs/kind/tree/master/pkg/build/base/sources
+[pkg/build/base/base.go]: https://github.com/kubernetes-sigs/kind/tree/master/pkg/build/base/base.go
 [kubernetes]: https://github.com/kubernetes/kubernetes
 [kindest/node]: https://hub.docker.com/r/kindest/node/
 [kubectl]: https://kubernetes.io/docs/reference/kubectl/overview/
