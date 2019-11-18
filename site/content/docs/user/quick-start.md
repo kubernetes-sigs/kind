@@ -150,6 +150,8 @@ See also: [Using kind with Private Registries][Private Registries].
 
 ## Building Images
 
+> Note: If you're using Docker Desktop, be sure to read [Settings for Docker Desktop](#settings-for-docker-desktop) first.
+
 kind runs a local Kubernetes cluster by using Docker containers as "nodes".
 kind uses the [`node-image`][node image] to run Kubernetes artifacts, such
 as `kubeadm` or `kubelet`.
@@ -179,9 +181,11 @@ the resulting node image using the flag `--image`.
 If you previously changed the name and tag of the base image, you can use here
 the flag `--base-image` to specify the name and tag you used.
 
-**Note**: If you are running kind on MacOS or Windows then it is recommended
-that you have at least 8GB of RAM dedicated to the virtual machine (VM) running
-the Docker engine otherwise Building Kubernetes may fail.
+
+### Settings for Docker Desktop
+
+If you are building using kind on MacOS or Windows then you need a minimum of 6GB of RAM 
+dedicated to the virtual machine (VM) running the Docker engine. 8GB is recommended.
 
 To change the resource limits for the Docker on Mac, you'll need to open the
 **Preferences** menu.  
