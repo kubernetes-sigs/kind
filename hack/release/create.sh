@@ -39,7 +39,7 @@ if ! (${SED} --version 2>&1 | grep -q GNU); then
   exit 1
 fi
 
-VERSION_FILE="./cmd/kind/version/version.go"
+VERSION_FILE="./pkg/cmd/kind/version/version.go"
 
 # update core version in go code to $1 and pre-release version to $2
 set_version() {
