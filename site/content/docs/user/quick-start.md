@@ -184,7 +184,7 @@ the flag `--base-image` to specify the name and tag you used.
 
 ### Settings for Docker Desktop
 
-If you are building using kind on MacOS or Windows then you need a minimum of 6GB of RAM 
+If you are building Kubernetes (for example - `kind build node-image`) on MacOS or Windows then you need a minimum of 6GB of RAM 
 dedicated to the virtual machine (VM) running the Docker engine. 8GB is recommended.
 
 To change the resource limits for the Docker on Mac, you'll need to open the
