@@ -45,6 +45,12 @@ chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
 ```
 
+On Mac via Homebrew:
+
+```console
+brew install kind
+```
+
 On Windows:
 
 ```powershell
