@@ -24,6 +24,7 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/cmd"
+	"sigs.k8s.io/kind/pkg/internal/util/cli"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
@@ -40,23 +41,23 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "lists existing kind nodes by their name",
 		Long:  "lists existing kind nodes by their name",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(logger, streams, flags)
+			return runE(cmd, logger, streams, flags)
 		},
 	}
-	cmd.Flags().StringVar(
-		&flags.Name,
+	cmd.Flags().String(
 		"name",
-		cluster.DefaultName,
-		"the cluster context name",
+		"",
+		fmt.Sprintf(`the cluster name. Overrides KIND_CLUSTER_NAME environment variable (default "%s")`, cluster.DefaultName),
 	)
 	return cmd
 }
 
-func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
+func runE(cmd *cobra.Command, logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	// List nodes by cluster context name
 	provider := cluster.NewProvider(
 		cluster.ProviderWithLogger(logger),
 	)
+	flags.Name = cli.GetClusterNameFlags(cmd)
 	n, err := provider.ListNodes(flags.Name)
 	if err != nil {
 		return err

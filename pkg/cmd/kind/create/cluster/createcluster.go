@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/internal/util/cli"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
@@ -49,10 +50,10 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "Creates a local Kubernetes cluster",
 		Long:  "Creates a local Kubernetes cluster using Docker container 'nodes'",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(logger, streams, flags)
+			return runE(cmd, logger, streams, flags)
 		},
 	}
-	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "cluster context name")
+	cmd.Flags().String("name", "", fmt.Sprintf(`the cluster name. Overrides KIND_CLUSTER_NAME environment variable (default "%s")`, cluster.DefaultName))
 	cmd.Flags().StringVar(&flags.Config, "config", "", "path to a kind config file")
 	cmd.Flags().StringVar(&flags.ImageName, "image", "", "node docker image to use for booting the cluster")
 	cmd.Flags().BoolVar(&flags.Retain, "retain", false, "retain nodes for debugging when cluster creation fails")
@@ -61,11 +62,12 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
+func runE(cmd *cobra.Command, logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	provider := cluster.NewProvider(
 		cluster.ProviderWithLogger(logger),
 	)
 
+	flags.Name = cli.GetClusterNameFlags(cmd)
 	// Check if the cluster name already exists
 	n, err := provider.ListNodes(flags.Name)
 	if err != nil {

@@ -18,10 +18,13 @@ limitations under the License.
 package kubeconfig
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/cmd"
+	"sigs.k8s.io/kind/pkg/internal/util/cli"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
@@ -39,14 +42,13 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "exports cluster kubeconfig",
 		Long:  "exports cluster kubeconfig",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(logger, flags)
+			return runE(cmd, logger, flags)
 		},
 	}
-	cmd.Flags().StringVar(
-		&flags.Name,
+	cmd.Flags().String(
 		"name",
-		cluster.DefaultName,
-		"the cluster context name",
+		"",
+		fmt.Sprintf(`the cluster name. Overrides KIND_CLUSTER_NAME environment variable (default "%s")`, cluster.DefaultName),
 	)
 	cmd.Flags().StringVar(
 		&flags.Kubeconfig,
@@ -57,10 +59,12 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func runE(logger log.Logger, flags *flagpole) error {
+func runE(cmd *cobra.Command, logger log.Logger, flags *flagpole) error {
 	provider := cluster.NewProvider(
 		cluster.ProviderWithLogger(logger),
 	)
+
+	flags.Name = cli.GetClusterNameFlags(cmd)
 	if err := provider.ExportKubeConfig(flags.Name, flags.Kubeconfig); err != nil {
 		return err
 	}

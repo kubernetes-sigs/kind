@@ -18,11 +18,14 @@ limitations under the License.
 package cluster
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/kind/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/cmd"
+	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/internal/util/cli"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
@@ -41,16 +44,17 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "Deletes a cluster",
 		Long:  "Deletes a resource",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(logger, flags)
+			return runE(cmd, logger, flags)
 		},
 	}
-	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "the cluster name")
+	cmd.Flags().String("name", "", fmt.Sprintf(`the cluster name. Overrides KIND_CLUSTER_NAME environment variable (default "%s")`, cluster.DefaultName))
 	cmd.Flags().StringVar(&flags.Kubeconfig, "kubeconfig", "", "sets kubeconfig path instead of $KUBECONFIG or $HOME/.kube/config")
 	return cmd
 }
 
-func runE(logger log.Logger, flags *flagpole) error {
+func runE(cmd *cobra.Command, logger log.Logger, flags *flagpole) error {
 	// Delete the cluster
+	flags.Name = cli.GetClusterNameFlags(cmd)
 	logger.V(0).Infof("Deleting cluster %q ...\n", flags.Name)
 	provider := cluster.NewProvider(
 		cluster.ProviderWithLogger(logger),

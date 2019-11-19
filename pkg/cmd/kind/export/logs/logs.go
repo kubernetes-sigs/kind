@@ -25,6 +25,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/fs"
+	"sigs.k8s.io/kind/pkg/internal/util/cli"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
@@ -42,18 +43,19 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "exports logs to a tempdir or [output-dir] if specified",
 		Long:  "exports logs to a tempdir or [output-dir] if specified",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(logger, streams, flags, args)
+			return runE(cmd, logger, streams, flags, args)
 		},
 	}
-	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "the cluster context name")
+	cmd.Flags().String("name", "", fmt.Sprintf(`the cluster name. Overrides KIND_CLUSTER_NAME environment variable (default "%s")`, cluster.DefaultName))
 	return cmd
 }
 
-func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole, args []string) error {
+func runE(cmd *cobra.Command, logger log.Logger, streams cmd.IOStreams, flags *flagpole, args []string) error {
 	provider := cluster.NewProvider(
 		cluster.ProviderWithLogger(logger),
 	)
 
+	flags.Name = cli.GetClusterNameFlags(cmd)
 	// Check if the cluster has any running nodes
 	nodes, err := provider.ListNodes(flags.Name)
 	if err != nil {
