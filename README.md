@@ -21,7 +21,7 @@ kind bootstraps each "node" with [kubeadm][kubeadm]. For more details see [the d
 
 ## Installation and usage
 
-You can install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.5.1`.
+You can install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.6.0`.
 
 **NOTE**: please use the latest go to do this, ideally go 1.13 or greater.
 
