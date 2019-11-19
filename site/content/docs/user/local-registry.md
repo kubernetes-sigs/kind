@@ -17,7 +17,7 @@ The following recipe leverages this to enable a local registry.
 The following shell script will create a local docker registry and a kind cluster
 with it enabled.
 
-```
+```bash
 #!/bin/sh
 set -o errexit
 
