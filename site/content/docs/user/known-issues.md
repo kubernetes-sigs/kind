@@ -17,19 +17,17 @@ It may additionally be helpful to:
 - reach out and ask for help in [#kind] on the [kubernetes slack]
 
 ## Contents
-- [Known Issues](#known-issues)
-  - [Contents](#contents)
-  - [Failures involving mismatched kubectl versions](#failures-involving-mismatched-kubectl-versions)
-  - [Older Docker Installations](#older-docker-installations)
-  - [Docker on Btrfs](#docker-on-btrfs)
-    - [Docker Installed with Snap](#docker-installed-with-snap)
-  - [Failing to apply overlay network](#failing-to-apply-overlay-network)
-  - [Failure to build node image](#failure-to-build-node-image)
-  - [Failing to properly start cluster](#failing-to-properly-start-cluster)
-  - [Pod errors due to "too many open files"](#pod-errors-due-to-%22too-many-open-files%22)
-  - [Docker permission denied](#docker-permission-denied)
-  - [Docker on Windows](#docker-on-windows)
-  - [Unable to pull images](#unable-to-pull-images)
+* [Failures involving mismatched kubectl versions](#failures-involving-mismatched-kubectl-version)
+* [Older Docker Installations](#older-docker-installations)
+* [Docker on Btrfs](#docker-on-btrfs)
+* [Docker installed with Snap](#docker-installed-with-snap)
+* [Failing to apply overlay network](#failing-to-apply-overlay-network)
+* [Failure to build node image](#failure-to-build-node-image)
+* [Failure for cluster to properly start](#failure-for-cluster-to-properly-start)
+* [Pod errors due to "too many open files"](#pod-errors-due-to-too-many-open-files)
+* [Docker permission denied](#docker-permission-denied)
+* [Docker on Windows](#docker-on-windows)
+* [Unable to pull images](#unable-to-pull-images)
 
 ## Failures involving mismatched kubectl versions
 
