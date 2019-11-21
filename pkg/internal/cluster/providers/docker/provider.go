@@ -106,8 +106,9 @@ func (p *Provider) ListNodes(cluster string) ([]nodes.Node, error) {
 	}
 	// convert names to node handles
 	ret := make([]nodes.Node, 0, len(lines))
-	for _, name := range lines {
-		ret = append(ret, p.node(name))
+	for _, line := range lines {
+		names := strings.Split(line, ",") // omit linked containers
+		ret = append(ret, p.node(names[0]))
 	}
 	return ret, nil
 }
