@@ -37,7 +37,7 @@ if [[ "${VERIFY_GENERATED:-true}" == "true" ]]; then
 fi
 
 if [[ "${VERIFY_MDLINT:-true}" == "true" ]]; then
-  echo "verifying generated ..."
+  echo "verifying markdown ..."
   hack/verify/mdlint.sh || res=1
   cd "${REPO_ROOT}"
 fi
