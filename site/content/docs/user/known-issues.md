@@ -17,16 +17,17 @@ It may additionally be helpful to:
 - reach out and ask for help in [#kind] on the [kubernetes slack]
 
 ## Contents
-* [Failures involving mismatched kubectl versions](#failures-involving-mismatched-kubectl-version)
-* [Older Docker Installations](#older-docker-installations)
-* [Docker on Btrfs](#docker-on-btrfs)
-* [Docker installed with Snap](#docker-installed-with-snap)
-* [Failing to apply overlay network](#failing-to-apply-overlay-network)
-* [Failure to build node image](#failure-to-build-node-image)
-* [Failure for cluster to properly start](#failure-for-cluster-to-properly-start)
-* [Pod errors due to "too many open files"](#pod-errors-due-to-too-many-open-files)
-* [Docker permission denied](#docker-permission-denied)
-* [Docker on Windows](#docker-on-windows)
+
+- [Failures involving mismatched kubectl versions](#failures-involving-mismatched-kubectl-version)
+- [Older Docker Installations](#older-docker-installations)
+- [Docker on Btrfs](#docker-on-btrfs)
+- [Docker installed with Snap](#docker-installed-with-snap)
+- [Failing to apply overlay network](#failing-to-apply-overlay-network)
+- [Failure to build node image](#failure-to-build-node-image)
+- [Failure for cluster to properly start](#failure-for-cluster-to-properly-start)
+- [Pod errors due to "too many open files"](#pod-errors-due-to-too-many-open-files)
+- [Docker permission denied](#docker-permission-denied)
+- [Docker on Windows](#docker-on-windows)
 
 ## Failures involving mismatched kubectl versions
 
@@ -37,24 +38,28 @@ This is a issue that frequently occurs when running `kind` alongside Docker For 
 This problem is related to a bug in [docker on macOS][for-mac#3663]
 
 If you see something like the following error message:
+
 ```bash
 kubectl edit deploy -n kube-system kubernetes-dashboard
 error: SchemaError(io.k8s.api.autoscaling.v2beta1.ExternalMetricStatus): invalid object doesn't have additional properties
 ```
 
 You can check your client and server versions by running:
+
 ```bash
 kubectl version
 ```
 
-If there is a mismatch between the server and client versions, you should install a newer client version. 
+If there is a mismatch between the server and client versions, you should install a newer client version.
 
 If you are using Mac, you can install kubectl via homebrew by running:
+
 ```bash
 brew install kubernetes-cli
 ```
 
 And overwrite the symlinks created by Docker For Mac by running:
+
 ```bash
 brew link --overwrite kubernetes-cli
 ```
@@ -81,13 +86,13 @@ kind is tested with a recent stable docker-ce release.
 
 This should only be relevant on Linux, on which you can check with:
 
-```
+```bash
 docker info | grep -i storage
 ```
 
 As a workaround, create the following configuration in `/etc/docker/daemon.json`:
 
-```
+```json
 {
   "storage-driver": "overlay2"
 }
@@ -106,20 +111,23 @@ a directory snap does have access to when working with kind.
 This can for example be some directory under `$HOME`.
 
 ## Failing to apply overlay network
+
 There are two known causes for problems while applying the overlay network
 while building a kind cluster:
 
-* Host machine is behind a proxy
-* Usage of Docker version 18.09
+- Host machine is behind a proxy
+- Usage of Docker version 18.09
 
 If you see something like the following error message:
-```
+
+```log
  ✗ [kind-1-control-plane] Starting Kubernetes (this may take a minute) ☸
 FATA[07:20:43] Failed to create cluster: failed to apply overlay network: exit status 1
 ```
 
 or the following, when setting the `loglevel` flag to debug,
-```
+
+```log
 DEBU[16:26:53] Running: /usr/bin/docker [docker exec --privileged kind-1-control-plane /bin/sh -c kubectl apply --kubeconfig=/etc/kubernetes/admin.conf -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version --kubeconfig=/etc/kubernetes/admin.conf | base64 | tr -d '\n')"]
 ERRO[16:28:25] failed to apply overlay network: exit status 1 ) ☸
  ✗ [control-plane] Starting Kubernetes (this may take a minute) ☸
@@ -136,19 +144,19 @@ artifacts, see [kind#200][kind#200].
 Another possible solution is to enable kind nodes to use a proxy when
 downloading images, see [kind#270][kind#270].
 
-The last known case for this issue comes from the host machine 
-[using Docker 18.09 in kind#136][kind#136-docker]. 
+The last known case for this issue comes from the host machine
+[using Docker 18.09 in kind#136][kind#136-docker].
 In this case, a known solution is to upgrade to any Docker version greater than or
 equal to Docker 18.09.1.
 
-
 ## Failure to build node image
+
 Building kind's node image may fail due to running out of memory on Docker for Mac or Docker for Windows.
 See [kind#229][kind#229].
 
 If you see something like this:
 
-```
+```log
     cmd/kube-scheduler
     cmd/kube-proxy
 /usr/local/go/pkg/tool/linux_amd64/link: signal: killed
@@ -190,22 +198,23 @@ It is recommended that you allocate at least 8GB of RAM to build Kubernetes.
 
 Open the **Preferences** menu.
 
-<img src="/docs/user/images/docker-pref-1.png"/>
+![Open the Preferences menu](/docs/user/images/docker-pref-1.png)
 
-Go to the **Advanced** settings page, and change the settings there, see 
+Go to the **Advanced** settings page, and change the settings there, see
 [changing Docker's resource limits][Docker resource lims].
 
-<img width="400px" src="/docs/user/images/docker-pref-build.png" alt="Setting 8Gb of memory in Docker for Mac" />
+![Setting 8Gb of memory in Docker for Mac](/docs/user/images/docker-pref-build.png =400px)
 
-<img width="400px" src="/docs/user/images/docker-pref-build-win.png" alt="Setting 8Gb of memory in Docker for Windows" />
+![Setting 8Gb of memory in Docker for Windows](/docs/user/images/docker-pref-build-win.png =400px)
 
 ## Failing to properly start cluster
-This issue is similar to a 
+
+This issue is similar to a
 [failure while building the node image](#failure-to-build-node-image).
 If the cluster creation process was successful but you are unable to see any
 Kubernetes resources running, for example:
 
-```
+```bash
 $ docker ps
 CONTAINER ID        IMAGE                  COMMAND                  CREATED              STATUS              PORTS                      NAMES
 c0261f7512fd        kindest/node:v1.12.2   "/usr/local/bin/entr…"   About a minute ago   Up About a minute   0.0.0.0:64907->64907/tcp   kind-1-control-plane
@@ -216,7 +225,8 @@ CONTAINER ID        IMAGE               COMMAND             CREATED             
 ```
 
 or `kubectl` being unable to connect to the cluster,
-```
+
+```bash
 $ export KUBECONFIG="$(kind get kubeconfig-path)"
 $ kubectl cluster-info
 
@@ -225,27 +235,31 @@ Unable to connect to the server: EOF
 ```
 
 Then as in [kind#156][kind#156], you may solve this issue by claiming back some
-space on your machine by removing unused data or images left by the Docker 
+space on your machine by removing unused data or images left by the Docker
 engine by running:
-```
+
+```bash
 docker system prune
 ```
 
 and / or:
-```
+
+```bash
 docker image prune
 ```
 
 You can verify the issue by exporting the logs (`kind export logs`) and looking
 at the kubelet logs, which may have something like the following:
-```
+
+```log
 Dec 07 00:37:53 kind-1-control-plane kubelet[688]: I1207 00:37:53.229561     688 eviction_manager.go:340] eviction manager: must evict pod(s) to reclaim ephemeral-storage
 Dec 07 00:37:53 kind-1-control-plane kubelet[688]: E1207 00:37:53.229638     688 eviction_manager.go:351] eviction manager: eviction thresholds have been met, but no pods are active to evict
 ```
 
 If on the other hand you are running kind on a btrfs partition and your logs
 show something like the following:
-```
+
+```log
 an 03 17:42:41 kind-1-control-plane kubelet[3804]: F0103 17:42:41.470269 3804 kubelet.go:1359] Failed to start ContainerManager failed to get rootfs info: failed to get device for dir "/ var/lib/kubelet": could not find device with major: 0, minor: 67 in cached partitions map
 ```
 
@@ -256,13 +270,15 @@ This problem seems to be related to a [bug in Docker][moby#9939].
 This may be caused by running out of [inotify](https://linux.die.net/man/7/inotify) resources. Resource limits are defined by `fs.inotify.max_user_watches` and `fs.inotify.max_user_instances` system variables. For example, in Ubuntu these default to 8192 and 128 respectively, which is not enough to create a cluster with many nodes.
 
 To increase these limits temporarily run the following commands on the host:
-```
-$ sudo sysctl fs.inotify.max_user_watches=524288
-$ sudo sysctl fs.inotify.max_user_instances=512
+
+```bash
+sudo sysctl fs.inotify.max_user_watches=524288
+sudo sysctl fs.inotify.max_user_instances=512
 ```
 
 To make the changes persistent, edit the file `/etc/sysctl.conf` and add these lines:
-```
+
+```bash
 fs.inotify.max_user_watches = 524288
 fs.inotify.max_user_instances = 512
 ```
@@ -272,7 +288,7 @@ fs.inotify.max_user_instances = 512
 When using `kind`, we assume that the user you are executing kind as has permission to use docker.
 If you initially ran Docker CLI commands using `sudo`, you may see the following error, which indicates that your `~/.docker/` directory was created with incorrect permissions due to the `sudo` commands.
 
-```
+```bash
 WARNING: Error loading config file: /home/user/.docker/config.json
 open /home/user/.docker/config.json: permission denied
 ```
@@ -285,7 +301,6 @@ or try to use `sudo` before your commands (if you get `command not found` please
 [Docker Desktop for Windows][docker desktop for windows] supports running both Linux (the default) and Windows Docker containers.
 
 `kind` for Windows requires Linux containers. To switch between Linux and Windows containers see [this page][switch between windows and linux containers].
-
 
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new

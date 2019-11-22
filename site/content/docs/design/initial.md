@@ -18,7 +18,7 @@ Going forward the [design principles] may be more relevant.
 
 ## Overview
 
-`kind` or **k**ubernetes **in** **d**ocker is a suite of tooling for local 
+`kind` or **k**ubernetes **in** **d**ocker is a suite of tooling for local
 Kubernetes "clusters" where each "node" is a Docker container.
 `kind` is targeted at testing Kubernetes.
 
@@ -30,18 +30,18 @@ while the CLI provides a quick way to use and debug these packages.
 
 For [the original proposal][original proposal] by [Q-Lee][q-lee] see [the kubernetes-sig-testing post][sig-testing-post] (NOTE: this document is shared with [kubernetes-sig-testing][kubernetes-sig-testing]).
 
-In short `kind` targets local clusters for testing purposes. While not all 
-testing can be performed without "real" clusters in "the cloud" with provider 
+In short `kind` targets local clusters for testing purposes. While not all
+testing can be performed without "real" clusters in "the cloud" with provider
 enabled CCMs, enough can that we want something that:
 
- - runs very cheap clusters that any developer can locally replicate
- - integrates with our tooling
- - is thoroughly documented and maintainable
- - is very stable, and has extensive error handling and sanity checking
- - passes all conformance tests
+- runs very cheap clusters that any developer can locally replicate
+- integrates with our tooling
+- is thoroughly documented and maintainable
+- is very stable, and has extensive error handling and sanity checking
+- passes all conformance tests
 
 In practice kind looks something like this:
-<img src="/docs/images/diagram.png"/>
+![kind architecture](/docs/images/diagram.png)
 
 ## Clusters
 
@@ -51,13 +51,13 @@ Clusters are managed by logic in [`pkg/cluster`][pkg/cluster], which the
 Each "cluster" is identified by an internal but well-known [docker object label](https://docs.docker.com/config/labels-custom-metadata/) key, with the cluster
 name / ID as the value on each "node" container.
 
-We initially offload this type of state into the containers and Docker. 
+We initially offload this type of state into the containers and Docker.
 Similarly the container names are automatically managed by `kind`, though
 we will select over labels instead of names because these are less brittle and
 are properly namespaced. Doing this also avoids us needing to manage anything
 on the host filesystem, but should not degrade usage.
 
-The `KUBECONFIG` will be bind-mounted to a temp directory, with the tooling 
+The `KUBECONFIG` will be bind-mounted to a temp directory, with the tooling
 capable of detecting this from the containers and providing helpers to use it.
 
 ## Images
@@ -93,7 +93,6 @@ Once kubeadm has booted, we export the [KUBECONFIG][kubeconfig], then apply
 an [overlay network][overlay network].
 
 At this point users can test Kubernetes by using the exported kubeconfig.
-
 
 ### Cluster Deletion
 

@@ -15,6 +15,7 @@ See also: the [1.0 roadmap], and the [1.0 tracking milestone].
 ## Priorities (from greatest to least)
 
 ### P-1: Bootstrapping the kind Project Itself
+
 ---
 
 **Stakeholders**:
@@ -32,9 +33,10 @@ See also: the [1.0 roadmap], and the [1.0 tracking milestone].
 - Setting up a recurring subproject meeting
 
 ### P0: Support Testing Kubernetes
+
 ---
 
-**Stakeholders**: 
+**Stakeholders**:
 
 - [SIG Testing][sigs]
 - [SIG Cluster-Lifecycle][sigs]
@@ -53,6 +55,7 @@ See also: the [1.0 roadmap], and the [1.0 tracking milestone].
 - ...
 
 ### P1: Support Testing Kubernetes Applications
+
 ---
 
 **Stakeholders**: Various projects both inside & outside the Kubernetes Org.
@@ -64,7 +67,7 @@ See also: the [1.0 roadmap], and the [1.0 tracking milestone].
 
 **Covered Work**:
 
-Most of the necessary work should be covered under 
+Most of the necessary work should be covered under
 [P1: Support Testing Kubernetes Applications](#p1-support-testing-kubernetes-applications),
 however there is some additional work.
 
@@ -76,7 +79,8 @@ however there is some additional work.
 - Most of the rest should be covered by improving "kind the binary" outlined above
 - ...
 
-### P2: Provide Cheap Bootstrap Clusters for the Cluster-API 
+### P2: Provide Cheap Bootstrap Clusters for the Cluster-API
+
 ---
 
 **Stakeholders**:
@@ -86,9 +90,10 @@ developers
 - various [cluster-api][cluster-api] users
 
 ### P3: Extended Testing Not Covered Above
+
 ---
 
-**Stakeholders**: 
+**Stakeholders**:
 
 - Indeterminate / many
 
@@ -105,6 +110,7 @@ Possibly supporting various things that we cannot reasonably test today includin
 Several of these make sense but are not possible with the current tooling and will require a reasonable amount of design and thought to do well. Some of them may not be solve-able in a good way, but are at least technologically feasible to explore.
 
 ### Out of Scope
+
 ---
 
 Some things we can likely never cover in a reasonable way:
@@ -114,7 +120,6 @@ Some things we can likely never cover in a reasonable way:
 - Being an alternative to "docker compose" etc.
 - Replacing [Phippy][phippy] ❤️ 🦒 ❤️
 - ...
-
 
 [#166]: https://github.com/kubernetes-sigs/kind/issues/166
 [1.0 roadmap]: /docs/contributing/1.0-roadmap

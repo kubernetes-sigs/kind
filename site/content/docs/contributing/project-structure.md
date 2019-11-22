@@ -10,7 +10,8 @@ menu:
 🚧 This is a work-in-progress 🚧
 
 ## Code Layout
-The kind project is composed of two parts: the CLI and the packages that        
+
+The kind project is composed of two parts: the CLI and the packages that
 implement kind's functionality.
 We will go more in depth below.
 
@@ -22,7 +23,8 @@ implements a subcommand.
 The CLI is built using [cobra][cobra] and you can see the app's entrypoint,
 
 ### Packages
-```
+
+```text
 ├── pkg
 │   ├── build      # Build and manage images
 │   ├── cluster    # Build and manage clusters
@@ -34,12 +36,13 @@ The CLI is built using [cobra][cobra] and you can see the app's entrypoint,
 │   ├── log        # Logging
 │   └── util
 ```
+
 `kind` commands rely on the functionality of the [packages directory][pkg].
 Here, you will find everything needed to build container images for `kind`;
 create clusters from these images; interact with the Docker engine and file system; customize configuration files; and logging.
 
-
 ## Developer Tooling
+
 Kind includes some tools to help developers maintain the source code compliant to Go best coding practices using tools such as Go fmt, Go lint, and Go vet. It also includes utility scripts that will generate code necessary for kind to make use of Kubernetes-style resource definitions.
 
 Tools are included in the [hack/][hack] directory and fall in one of two categories:
@@ -50,6 +53,7 @@ Tools are included in the [hack/][hack] directory and fall in one of two categor
 We will proceed by describing all of the current tooling in [hack/][hack].
 
 ### Verify
+
 You can check the compliance of the entire project by running the `verify-all.sh` script. This script will do the following:
 
 * check spelling using [client9/misspell](https://github.com/client9/misspell)
@@ -59,13 +63,13 @@ You can check the compliance of the entire project by running the `verify-all.sh
 * verify that any of the generated files is up to date
 * verify vendored dependencies are present
 
-
 ### Update
+
 In order to get the project’s source code into a compilable state, the script
 **[update-all.sh](https://sigs.k8s.io/kind/hack/update/all.sh)** performs the following tasks:
 
 * runs update-deps.sh to obtain all of the project’s dependencies
-* runs update-generated.sh to generate code necessary to generate Kubernetes API code for kind, see https://kind.sigs.k8s.io/docs/user/quick-start/#configuring-your-kind-cluster
+* runs update-generated.sh to generate code necessary to generate Kubernetes API code for kind, see [https://kind.sigs.k8s.io/docs/user/quick-start/#configuring-your-kind-cluster](https://kind.sigs.k8s.io/docs/user/quick-start/#configuring-your-kind-cluster)
 * runs update-gofmt.sh which formats all Go source code using the Go fmt tool.
 
 Let’s go a little in depth on each of these files.
@@ -104,14 +108,16 @@ followed by running deepcopy-gen, defaulter-gen, and conversion-gen on all versi
 (i.e. [v1alpha3][v1alpha3]).
 
 The [kubernetes/code-generator](https://github.com/kubernetes/code-generator) tools work by comment tags which are specified in the `doc.go` file for each directory. For example, all `doc.go` files within [kind/pkg/cluster/config](https://sigs.k8s.io/kind/pkg/cluster/config) have the following tags:
-```
+
+```bash
 // +k8s:deepcopy-gen=package
 // +k8s:conversion-gen=sigs.k8s.io/kind/pkg/cluster/config
 // +k8s:defaulter-gen=TypeMeta
 ```
 
 Additionally, [pkg/cluster/config/types.go](https://sigs.k8s.io/kind/pkg/cluster/config/types.go) has an additional tag:
-```
+
+```bash
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 ```
 
@@ -134,18 +140,16 @@ The `TypeMeta` field is defined in
 [k8s.io/apimachinery/pkg/apis/meta/v1](https://godoc.org/k8s.io/apimachinery/pkg/apis/meta/v1#TypeMeta).
 `TypeMeta` is a struct with a Kind and APIVersion fields. Structures that are versioned or persisted should inline TypeMeta.
 
-
 The final step in code generation for kind’s configuration specification involves running
 [conversion-gen](https://godoc.org/k8s.io/code-generator/cmd/conversion-gen)
 which will scan its input directories, looking at the package defined in each of those directories for comment tags that define a conversion code generation task. In Kind, you will see the following comment tag
-```
+
+```bash
 // +k8s:conversion-gen=sigs.k8s.io/kind/pkg/cluster/config
 ```
+
 which introduces a conversion task for which the destination package (the top level configuration definition in [kind/pkg/cluster/config](https://sigs.k8s.io/kind/pkg/cluster/config)) is the one containing the file with the tag.
 This last step builds on the deep copy generators and defaulters previously created to enable kind to understand any known configuration version.
-
-
-
 
 [cobra]: https://github.com/spf13/cobra
 [cmd]: https://sigs.k8s.io/kind/cmd/kind/

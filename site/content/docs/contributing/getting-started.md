@@ -25,20 +25,19 @@ an account to contribute.
 Our source code is managed with [`git`][git], to develop locally you
 will need to install `git`.
 
-You can check if `git` is already on your system and properly installed with 
+You can check if `git` is already on your system and properly installed with
 the following command:
 
-```
+```bash
 git --version
 ```
 
 ### Install Hugo
 
-If you wish to contribute to the documentation, it is recommended but not 
+If you wish to contribute to the documentation, it is recommended but not
 required to install [hugo], which we use to develop this site.
 
-Please see: https://gohugo.io/getting-started/installing/
-
+Please see: [https://gohugo.io/getting-started/installing/](https://gohugo.io/getting-started/installing/)
 
 ### Install Go
 
@@ -47,11 +46,11 @@ To work on kind's codebase you will need [Go][golang].
 Install or upgrade [Go using the instructions for your operating system][golang].
 You can check if Go is in your system with the following command:
 
-```
+```bash
 go version
 ```
 
-Preferably Go `1.13` or greater should be installed. 
+Preferably Go `1.13` or greater should be installed.
 
 Correct automatic formatting of the source with `gofmt` requires at least
 `1.11.0`.
@@ -69,12 +68,14 @@ If you have an existing installation, check your version and make sure you have
 the latest Docker.
 
 To check if `docker` has has been installed:
-```
+
+```bash
 docker --version
 ```
+
 This documentation is written using Docker version 18.09.2.
 
-## 3. Read The Docs 
+## 3. Read The Docs
 
 The [design principles], [1.0 roadmap], [project structure], and [initial design]
 may be helpful to review before contributing.

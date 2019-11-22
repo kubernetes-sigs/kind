@@ -1,4 +1,11 @@
 {
   "default": true,
-  "line_length": false
+  "line_length": false,
+  "single-title": "",
+  "no-inline-html": {
+    "allowed_elements": ["p", "img"] 
+  },
+  "no-trailing-punctuation": {
+    "punctuation": ",;:!。，；：！"
+  }
 }

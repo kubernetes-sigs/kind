@@ -21,7 +21,7 @@ with it enabled.
 #!/bin/sh
 set -o errexit
 
-# create registry container unless it already exists 
+# create registry container unless it already exists
 REGISTRY_CONTAINER_NAME='kind-registry'
 REGISTRY_PORT='5000'
 if [ "$(docker inspect -f '{{.State.Running}}' "${REGISTRY_CONTAINER_NAME}")" != 'true' ]; then
@@ -32,7 +32,7 @@ fi
 cat <<EOF | kind create cluster --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
-containerdConfigPatches: 
+containerdConfigPatches:
 - |-
   [plugins."io.containerd.grpc.v1.cri".registry.mirrors."registry:${REGISTRY_PORT}"]
     endpoint = ["http://registry:${REGISTRY_PORT}"]

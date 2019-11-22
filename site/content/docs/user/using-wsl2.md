@@ -12,7 +12,7 @@ Kind can run using Windows Subsystem for Linux 2 (WSL2) on Windows 10 Insider bu
 
 ## Getting Windows 10 Insider Preview
 
-Download latest ISO at https://www.microsoft.com/en-us/software-download/windowsinsiderpreviewadvanced . Choose "Windows 10 Insider Preview (FAST) - Build 18990". If there's a later build, that will work too.
+Download latest ISO at [https://www.microsoft.com/en-us/software-download/windowsinsiderpreviewadvanced](https://www.microsoft.com/en-us/software-download/windowsinsiderpreviewadvanced) . Choose "Windows 10 Insider Preview (FAST) - Build 18990". If there's a later build, that will work too.
 
 ### Installing on a virtual machine
 
@@ -49,13 +49,14 @@ Once your Windows Insider machine is ready, you need to do a few more steps to s
     Enable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform, Microsoft-Windows-Subsystem-Linux
     ```
 
-1. Reboot when prompted. 
+1. Reboot when prompted.
 1. After the reboot, set WSL to default to WSL2. Open an admin PowerShell window and run `wsl --set-default-version 2`.
 1. Now, you can install your Linux distro of choice by searching the Windows Store. If you don't want to use the Windows Store, then follow the steps in the WSL docs for [manual install](https://docs.microsoft.com/en-us/windows/wsl/install-manual).
 1. Start up your distro with the shortcut added to the start menu
 1. If you're on build 18941 (July 19, 2019) or earlier, then you'll need to build and update the kernel. See [Updating Kernel](#updating-kernel). Otherwise, move on to the next section.
 
 ## Setting up Docker in WSL2
+
 1. Install Docker - here's links for [Debian](https://docs.docker.com/install/linux/docker-ce/debian/), [Fedora](https://docs.docker.com/install/linux/docker-ce/fedora/), and [Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
 1. Start the Docker daemon using init (not systemd) `sudo service docker start`. This needs to be done each time you start WSL2.
 
@@ -113,7 +114,7 @@ This bug is tracked in [WSL#994](https://github.com/microsoft/WSL/issues/994).
 
 In Windows 10 Insider build **18941 and earlier**, the WSL2 kernel is still missing a few features needed for kind to work correctly. A custom kernel is needed. Since WSL2 is installed and working, it's easy to build a new one with the right features included. Builds after that don't need any kernel changes.
 
-For the latest status on this, see [issue #707](https://github.com/kubernetes-sigs/kind/issues/707) and [microsoft/wsl#4165](https://github.com/microsoft/WSL/issues/4165). 
+For the latest status on this, see [issue #707](https://github.com/kubernetes-sigs/kind/issues/707) and [microsoft/wsl#4165](https://github.com/microsoft/WSL/issues/4165).
 
 First, clone the latest WSL2-Linux-Kernel source and build it.
 

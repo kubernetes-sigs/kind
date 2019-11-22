@@ -1,6 +1,8 @@
 <p style="text-align: center; margin-top: 2em; margin-bottom: -.75em;"><img alt="kind" src="./logo/logo.png" width="300px" /></p>
 
-[kind] is a tool for running local Kubernetes clusters using Docker container "nodes".  
+# Introduction
+
+[kind] is a tool for running local Kubernetes clusters using Docker container "nodes".
 kind is primarily designed for testing Kubernetes 1.11+, initially targeting the [conformance tests].
 
 If you have [go] \([1.11+][go-supported]) and [docker] installed `GO111MODULE="on" go get sigs.k8s.io/kind@v0.6.0 && kind create cluster` is all you need!
@@ -30,13 +32,13 @@ shown [here](https://golang.org/doc/code.html#GOPATH) if you encounter the error
 To use kind, you will also need to [install docker].  
 Once you have docker running you can create a cluster with:
 
-```
+```bash
 kind create cluster
 ```
 
 To delete your cluster use:
 
-```
+```bash
 kind delete cluster
 ```
 
@@ -44,9 +46,9 @@ kind delete cluster
 To create a cluster from Kubernetes source:
 
 - ensure that Kubernetes is cloned in `$(go env GOPATH)/src/k8s.io/kubernetes`
-- build a node image and create a cluster with 
+- build a node image and create a cluster with
 
-```
+```bash
 kind build node-image
 kind create cluster --image kindest/node:latest
 ```
@@ -72,7 +74,7 @@ If you're planning a new feature, please file an issue to discuss first.
 Check the [issue tracker] for `help wanted` issues if you're unsure where to
 start, or feel free to reach out to discuss. 🙂
 
-See also: our own [contributor guide] and the Kubernetes [community page]. 
+See also: our own [contributor guide] and the Kubernetes [community page].
 
 ## Why kind?
 
@@ -86,11 +88,11 @@ See also: our own [contributor guide] and the Kubernetes [community page].
 
 Some other open source projects with slightly different but overlapping use cases, features etc.
 
-- https://github.com/bsycorp/kind
-- https://github.com/ubuntu/microk8s
-- https://github.com/kinvolk/kube-spawn
-- https://github.com/kubernetes/minikube
-- https://github.com/kubernetes-sigs/kubeadm-dind-cluster
+- [https://github.com/bsycorp/kind](https://github.com/bsycorp/kind)
+- [https://github.com/ubuntu/microk8s](https://github.com/ubuntu/microk8s)
+- [https://github.com/kinvolk/kube-spawn](https://github.com/kinvolk/kube-spawn)
+- [https://github.com/kubernetes/minikube](https://github.com/kubernetes/minikube)
+- [https://github.com/kubernetes-sigs/kubeadm-dind-cluster](https://github.com/kubernetes-sigs/kubeadm-dind-cluster)
 
 ### Code of conduct
 

@@ -28,7 +28,7 @@ which may mean gracefully degrading functionality for older releases.
 Currently kind only supports [docker] and uses it directly to create "node" containers.
 
 In order to aid [supporting multiple container runtimes] going forward and
-avoid unnecessary coupling, we should target functionality covered by the 
+avoid unnecessary coupling, we should target functionality covered by the
 Kubernetes [CRI][CRI] (Container Runtime Interface).
 
 ## Leverage Existing Tooling
@@ -69,7 +69,7 @@ Kubernetes style configuration files.
 While doing this we should respect the Kubernetes [API Conventions].
 
 Additionally we should minimize the number of flags used and avoid structured
-values in flags as these cannot be versioned. 
+values in flags as these cannot be versioned.
 
 ## Minimize Assumptions
 
@@ -105,7 +105,6 @@ interactions to be consistent.
 While kind strives to present a pleasant UX to users on their local machines,
 automation for end to end testing is the original & primary use case.
 Automated usage should be considered for all features.
-
 
 [docker]: https://www.docker.com/
 [node image]: /docs/design/node-image

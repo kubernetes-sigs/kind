@@ -12,7 +12,7 @@ menu:
 The ["base" image][base image] is a small-ish Docker image for running
 nested containers, systemd, and kubernetes components.
 
-To do this we need to set up an environment that will meet the CRI 
+To do this we need to set up an environment that will meet the CRI
 (currently just docker) and systemd's particular needs. Documentation for each
 step we take is inline to the image's [Dockerfile][dockerfile]),
 but essentially:

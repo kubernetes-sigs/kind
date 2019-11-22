@@ -49,16 +49,15 @@ Here are a useful external guides / tutorials covering things not yet covered in
 
 ### How to use KIND with MetallLB
 
-https://mauilion.dev/posts/kind-metallb/
+[https://mauilion.dev/posts/kind-metallb/](https://mauilion.dev/posts/kind-metallb/)
 
 ### How to Test a Kubernetes PR with KIND
 
-https://mauilion.dev/posts/kind-k8s-testing/
+[https://mauilion.dev/posts/kind-k8s-testing/](https://mauilion.dev/posts/kind-k8s-testing/)
 
 ### Using Contour Ingress with KIND
 
-https://projectcontour.io/kindly-running-contour/
-
+[https://projectcontour.io/kindly-running-contour/](https://projectcontour.io/kindly-running-contour/)
 
 [@krzyzacy]: https://github.com/krzyzacy
 [kind-ci/examples]: https://github.com/kind-ci/examples

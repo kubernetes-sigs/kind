@@ -11,7 +11,6 @@ menu:
 Some users may want to test applications on kind that require pulling images
 from authenticated private registries, there are multiple ways to do this.
 
-
 ## Use ImagePullSecrets
 
 Kubernetes supports configuring pods to use `imagePullSecrets` for pulling
@@ -26,10 +25,9 @@ read through kubernetes' docs for [creating a secret from a file][imagePullFileS
 ## Pull to the Host and Side-Load
 
 kind can [load an image][loading an image] from the host with the `kind load ...`
-commands. If you configure your host with credentials to pull the desired 
-image(s) and then load them to the nodes you can avoid needing to authenticate 
+commands. If you configure your host with credentials to pull the desired
+image(s) and then load them to the nodes you can avoid needing to authenticate
 on the nodes.
-
 
 # Add Credentials to the Nodes
 
@@ -96,13 +94,13 @@ rm $HOME/.docker/config.json
 Access tokens are short lived, so you may prefer to use a Service Account and keyfile instead.
 First, either download the key from the console or generate one with gcloud:
 
-```
+```bash
 gcloud iam service-accounts keys create <output.json> --iam-account <account email>
 ```
 
 Then, replace the `gcloud auth print-access-token | ...` line from the [access token snippet](#use-an-access-token) with:
 
-```
+```bash
 cat <output.json> | docker login -u _json_key --password-stdin https://gcr.io
 ```
 

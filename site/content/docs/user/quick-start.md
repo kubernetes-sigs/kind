@@ -14,7 +14,7 @@ This guide covers getting started with the `kind` command.
 
 ## Installation
 
-You can either install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.6.0` or clone this repo 
+You can either install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.6.0` or clone this repo
 and run `make build` from the repository.
 
 **NOTE**: please use the latest Go to do this, ideally go 1.13 or greater.
@@ -29,7 +29,7 @@ Without installing go, kind can be built reproducibly with docker using `make bu
 Stable binaries are also available on the [releases] page.
 Stable releases are generally recommended for CI usage in particular.
 To install, download the binary for your platform from "Assets" and place this
-into your `$PATH`. 
+into your `$PATH`.
 
 On macOS / Linux:
 
@@ -51,7 +51,6 @@ On Windows:
 curl.exe -Lo kind-windows-amd64.exe https://github.com/kubernetes-sigs/kind/releases/download/v0.6.0/kind-windows-amd64
 Move-Item .\kind-windows-amd64.exe c:\some-dir-in-your-PATH\kind.exe
 ```
-
 
 ## Creating a Cluster
 
@@ -93,14 +92,16 @@ To see all the clusters you have created, you can use the `get clusters`
 command.
 
 For example, let's say you create two clusters:
-```
+
+```bash
 kind create cluster # Default cluster context name is `kind`.
 ...
 kind create cluster --name kind-2
 ```
 
 When you list your kind clusters, you will see something like the following:
-```
+
+```bash
 kind get clusters
 kind
 kind-2
@@ -108,7 +109,8 @@ kind-2
 
 In order to interact with a specific cluster, you only need to specify the
 cluster name as a context in kubectl:
-```
+
+```bash
 kubectl cluster-info --context kind-kind
 kubectl cluster-info --context kind-2
 ```
@@ -117,7 +119,8 @@ kubectl cluster-info --context kind-2
 
 If you created a cluster with `kind create cluster` then deleting is equally
 simple:
-```
+
+```bash
 kind delete cluster
 ```
 
@@ -133,7 +136,8 @@ Additionally, image archives can be loaded with:
 `kind load image-archive /my-image-archive.tar`
 
 This allows a workflow like:
-```
+
+```bash
 docker build -t my-custom-image:unique-tag ./my-image-dir
 kind load docker-image my-custom-image:unique-tag
 kubectl apply -f my-manifest-using-my-image:unique-tag
@@ -151,7 +155,6 @@ and / or:
 - specify `imagePullPolicy: IfNotPresent` or `imagePullPolicy: Never` on your container(s).
 
 See [Kubernetes imagePullPolicy][Kubernetes imagePullPolicy] for more information.
-
 
 See also: [Using kind with Private Registries][Private Registries].
 
@@ -178,7 +181,7 @@ A workaround may be enabled in the future.
 
 kind will default to using the build type `docker` if none is specified.
 
-```
+```bash
 kind build node-image --type bazel
 ```
 
@@ -188,32 +191,29 @@ the resulting node image using the flag `--image`.
 If you previously changed the name and tag of the base image, you can use here
 the flag `--base-image` to specify the name and tag you used.
 
-
 ### Settings for Docker Desktop
 
-If you are building Kubernetes (for example - `kind build node-image`) on MacOS or Windows then you need a minimum of 6GB of RAM 
+If you are building Kubernetes (for example - `kind build node-image`) on MacOS or Windows then you need a minimum of 6GB of RAM
 dedicated to the virtual machine (VM) running the Docker engine. 8GB is recommended.
 
 To change the resource limits for the Docker on Mac, you'll need to open the
 **Preferences** menu.  
-<img src="/docs/user/images/docker-pref-1.png"/>
+![Choose Settings on macOS](/docs/user/images/docker-pref-1.png)
 
 Now, go to the **Advanced** settings page, and change the
 settings there, see [changing Docker's resource limits][Docker resource lims].  
-<img src="/docs/user/images/docker-pref-2.png" alt="Setting 8Gb of memory in Docker for Mac" />
-
+![Setting 8Gb of memory in Docker for Mac](/docs/user/images/docker-pref-2.png)
 
 To change the resource limits for the Docker on Windows, you'll need to right-click the Moby
 icon on the taskbar, and choose "Settings". If you see "Switch to Linux Containers", then you'll need
 to do that first before opening "Settings"
 
-<img src="/docs/user/images/docker-pref-1-win.png"/>
+![Choose Settings on Windows](/docs/user/images/docker-pref-1-win.png)
 
 Now, go to the **Advanced** settings page, and change the
 settings there, see [changing Docker's resource limits][Docker resource lims].  
 
-<img src="/docs/user/images/docker-pref-build-win.png" alt="Setting 8Gb of memory in Docker for Windows" />
-
+![Setting 8Gb of memory in Docker for Windows](/docs/user/images/docker-pref-build-win.png)
 
 You may also try removing any unused data left by the Docker engine - e.g.,
 `docker system prune`.
@@ -221,8 +221,10 @@ You may also try removing any unused data left by the Docker engine - e.g.,
 ## Advanced
 
 ### Building The Base Image
+
 To build the `base-image` we use the `build` command:
-```
+
+```bash
 kind build base-image
 ```
 
@@ -235,12 +237,12 @@ the `images/base` base source directory.
 By default, the base image will be tagged as `kindest/base:latest`.
 If you want to change this, you can use the `--image` flag.
 
-```
+```bash
 kind build base-image --image base:v0.1.0
 ```
 
-
 ### Configuring Your kind Cluster
+
 When creating your kind cluster, via `create cluster`, you can use a
 configuration file to run specific commands before or after systemd or kubeadm
 run.
@@ -248,13 +250,15 @@ For a sample kind configuration file see [kind-example-config][kind-example-conf
 To specify a configuration file when creating a cluster, use the `--config`
 flag:
 
-```
+```bash
 kind create cluster --config kind-example-config.yaml
 ```
 
 #### Multi-node clusters
+
 In particular, many users may be interested in multi-node clusters. A simple
 configuration for this can be achieved with the following config file contents:
+
 ```yaml
 # three node (two workers) cluster config
 kind: Cluster
@@ -266,7 +270,9 @@ nodes:
 ```
 
 #### Control-plane HA
+
 You can also have a cluster with multiple control-plane nodes:
+
 ```yaml
 # a cluster with 3 control-plane nodes and 3 workers
 kind: Cluster
@@ -281,7 +287,9 @@ nodes:
 ```
 
 #### Mapping ports to the host machine
+
 You can map extra ports from the nodes to the host machine with `extraPortMappings`:
+
 ```yaml
 kind: Cluster
 apiVersion: kind.sigs.k8s.io/v1alpha3
@@ -294,16 +302,16 @@ nodes:
     listenAddress: "0.0.0.0" # Optional, defaults to "0.0.0.0"
     protocol: udp # Optional, defaults to tcp
 ```
+
 This can be useful if using `NodePort` services or daemonsets exposing host ports.
 
 Note: binding the `listenAddress` to `127.0.0.1` may affect your ability to access the service.
-
 
 ### Enable Feature Gates in Your Cluster
 
 Feature gates are a set of key=value pairs that describe alpha or experimental features. In order to enable a gate you have to [customize your kubeadm configuration][customize control plane with kubeadm], and it will depend on what gate and component you want to enable. An example kind config can be:
 
-```
+```yaml
 # this config file contains all config fields with comments
 kind: Cluster
 apiVersion: kind.sigs.k8s.io/v1alpha3
@@ -342,6 +350,7 @@ nodes:
 ```
 
 #### IPv6 clusters
+
 You can run ipv6 only clusters using `kind`, but first you need to enable ipv6 in your docker daemon by editing `/etc/docker/daemon.json` [as described here][docker enable ipv6].
 Ensure you `systemctl restart docker` to pick up the changes.
 
@@ -359,21 +368,24 @@ nodes:
 ```
 
 ### Configure kind to use a proxy
+
 If you are running kind in an environment that requires a proxy, you may need to configure kind to use it.
 
 You can configure kind to use a proxy using one or more of the following [environment variables][proxy environment variables] (uppercase takes precedence):
 
-* HTTP_PROXY or http_proxy
-* HTTPS_PROXY or https_proxy
-* NO_PROXY or no_proxy
+- HTTP_PROXY or http_proxy
+- HTTPS_PROXY or https_proxy
+- NO_PROXY or no_proxy
 
 **Note**: If you set a proxy it would be used for all the connection requests.
 It's important that you define what addresses doesn't need to be proxied with the NO_PROXY variable, typically you should avoid to proxy your docker network range `NO_PROXY=172.17.0.0/16`
 
 ### Exporting Cluster Logs
+
 kind has the ability to export all kind related logs for you to explore.
 To export all logs from the default cluster (context name `kind`):
-```
+
+```bash
 kind export logs
 Exported logs to: /tmp/396758314
 ```
@@ -384,13 +396,15 @@ different context name use the `--name` flag.
 As you can see, kind placed all the logs for the cluster `kind` in a
 temporary directory. If you want to specify a location then simply add the path
 to the directory after the command:
-```
+
+```bash
 kind export logs ./somedir  
 Exported logs to: ./somedir
 ```
 
 The structure of the logs will look more or less like this:
-```
+
+```text
 .
 ├── docker-info.txt
 └── kind-control-plane/
@@ -402,7 +416,8 @@ The structure of the logs will look more or less like this:
     ├── kubernetes-version.txt
     └── pods/
 ```
-The logs contain information about the Docker host, the containers running 
+
+The logs contain information about the Docker host, the containers running
 kind, the Kubernetes cluster itself, etc.
 
 [go-supported]: https://golang.org/doc/devel/release.html#policy
