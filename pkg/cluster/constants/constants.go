@@ -20,6 +20,9 @@ package constants
 // DefaultClusterName is the default cluster Context name
 const DefaultClusterName = "kind"
 
+// DefaultConfigPath is the default cluster config file path
+const DefaultConfigPath = ".kind.yaml"
+
 /* node role value constants */
 const (
 	// ControlPlaneNodeRoleValue identifies a node that hosts a Kubernetes

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -53,7 +54,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "cluster context name")
-	cmd.Flags().StringVar(&flags.Config, "config", "", "path to a kind config file")
+	cmd.Flags().StringVar(&flags.Config, "config", cluster.DefaultConfig, "path to a kind config file")
 	cmd.Flags().StringVar(&flags.ImageName, "image", "", "node docker image to use for booting the cluster")
 	cmd.Flags().BoolVar(&flags.Retain, "retain", false, "retain nodes for debugging when cluster creation fails")
 	cmd.Flags().DurationVar(&flags.Wait, "wait", time.Duration(0), "Wait for control plane node to be ready (default 0s)")
@@ -110,6 +111,14 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 func configOption(rawConfigFlag string, stdin io.Reader) (cluster.CreateOption, error) {
 	// if not - then we are using a real file
 	if rawConfigFlag != "-" {
+
+		// If the default config doesn't exist set rawConfigFlag to ""
+		if rawConfigFlag == cluster.DefaultConfig {
+			if _, err := os.Stat(rawConfigFlag); err == nil {
+				rawConfigFlag = ""
+			}
+		}
+
 		return cluster.CreateWithConfigFile(rawConfigFlag), nil
 	}
 	// otherwise read from stdin

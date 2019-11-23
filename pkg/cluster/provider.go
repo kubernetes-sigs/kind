@@ -35,6 +35,9 @@ import (
 // DefaultName is the default cluster name
 const DefaultName = constants.DefaultClusterName
 
+// DefaultConfig is the default config file path
+const DefaultConfig = constants.DefaultConfigPath
+
 // Provider is used to perform cluster operations
 type Provider struct {
 	provider internalprovider.Provider
