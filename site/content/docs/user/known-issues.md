@@ -27,6 +27,7 @@ It may additionally be helpful to:
 * [Pod errors due to "too many open files"](#pod-errors-due-to-too-many-open-files)
 * [Docker permission denied](#docker-permission-denied)
 * [Docker on Windows](#docker-on-windows)
+* [Unable to pull images](#unable-to-pull-images)
 
 ## Failures involving mismatched kubectl versions
 
@@ -286,6 +287,19 @@ or try to use `sudo` before your commands (if you get `command not found` please
 
 `kind` for Windows requires Linux containers. To switch between Linux and Windows containers see [this page][switch between windows and linux containers].
 
+## Unable to pull images
+
+When using named Kind instances you may sometimes see your images failing to pull correctly on pods. This will usually manifest itself with the following output when doing a `kubectl describe pod my-pod`
+
+```
+Failed to pull image "docker.io/my-custom-image:tag": rpc error: code = Unknown desc = failed to resolve image "docker.io/library/my-custom-image:tag": no available registry endpoint: pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed
+```
+
+If this image has been loaded onto your kind cluster using the command `kind load docker-image my-custom-image` then you have likely not provided the name parameter. 
+
+Re-run the command this time adding the `--name my-cluster-name` param:
+
+`kind load docker-image my-custom-image --name my-cluster-name`
 
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new
