@@ -126,8 +126,13 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 
 	// if we have containerd config, patch all the nodes concurrently
 	if len(ctx.Config.ContainerdConfigPatches) > 0 || len(ctx.Config.ContainerdConfigPatchesJSON6902) > 0 {
-		fns := make([]func() error, len(allNodes))
-		for i, node := range allNodes {
+		// we only want to patch kubernetes nodes
+		// this is a cheap workaround to re-use the already listed
+		// workers + control planes
+		kubeNodes := append([]nodes.Node{}, controlPlanes...)
+		kubeNodes = append(kubeNodes, workers...)
+		fns := make([]func() error, len(kubeNodes))
+		for i, node := range kubeNodes {
 			node := node // capture loop variable
 			fns[i] = func() error {
 				// read and patch the config
