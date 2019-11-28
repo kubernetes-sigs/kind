@@ -37,6 +37,7 @@ func (m *Mount) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 	// now handle propagation
 	switch a.Propagation {
+	case "": // unset, will be defaulted
 	case MountPropagationNone:
 	case MountPropagationHostToContainer:
 	case MountPropagationBidirectional:
@@ -60,6 +61,7 @@ func (p *PortMapping) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	// now handle the protocol field
 	a.Protocol = PortMappingProtocol(strings.ToUpper(string(a.Protocol)))
 	switch a.Protocol {
+	case "": // unset, will be defaulted
 	case PortMappingProtocolTCP:
 	case PortMappingProtocolUDP:
 	case PortMappingProtocolSCTP:
