@@ -108,6 +108,11 @@ func TestLoadCurrent(t *testing.T) {
 			ExpectError: false,
 		},
 		{
+			TestName:    "v1alpha4 config with port mapping and mount",
+			Path:        "./testdata/v1alpha4/valid-port-and-mount.yaml",
+			ExpectError: false,
+		},
+		{
 			TestName:    "v1alpha4 non-existent field",
 			Path:        "./testdata/v1alpha4/invalid-bogus-field.yaml",
 			ExpectError: true,
