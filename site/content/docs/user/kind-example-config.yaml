@@ -1,7 +1,7 @@
 # this config file contains all config fields with comments
 # NOTE: this is not a particularly useful config file
 kind: Cluster
-apiVersion: kind.sigs.k8s.io/v1alpha3
+apiVersion: kind.x-k8s.io/v1alpha4
 # patch the generated kubeadm config with some extra settings
 kubeadmConfigPatches:
 - |
@@ -10,7 +10,7 @@ kubeadmConfigPatches:
   evictionHard:
     nodefs.available: "0%"
 # patch it further using a JSON 6902 patch
-kubeadmConfigPatchesJson6902:
+kubeadmConfigPatchesJSON6902:
 - group: kubeadm.k8s.io
   version: v1beta2
   kind: ClusterConfiguration

@@ -28,6 +28,11 @@ func TestLoadCurrent(t *testing.T) {
 		ExpectError bool
 	}{
 		{
+			TestName:    "example config",
+			Path:        "./../../../../../site/content/docs/user/kind-example-config.yaml",
+			ExpectError: false,
+		},
+		{
 			TestName:    "no config",
 			Path:        "",
 			ExpectError: false,
@@ -100,6 +105,11 @@ func TestLoadCurrent(t *testing.T) {
 		{
 			TestName:    "v1alpha4 config with workers patches",
 			Path:        "./testdata/v1alpha4/valid-kind-workers-patches.yaml",
+			ExpectError: false,
+		},
+		{
+			TestName:    "v1alpha4 config with port mapping and mount",
+			Path:        "./testdata/v1alpha4/valid-port-and-mount.yaml",
 			ExpectError: false,
 		},
 		{
