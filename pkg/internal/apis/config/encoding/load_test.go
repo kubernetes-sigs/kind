@@ -28,6 +28,11 @@ func TestLoadCurrent(t *testing.T) {
 		ExpectError bool
 	}{
 		{
+			TestName:    "example config",
+			Path:        "./../../../../../site/content/docs/user/kind-example-config.yaml",
+			ExpectError: false,
+		},
+		{
 			TestName:    "no config",
 			Path:        "",
 			ExpectError: false,
