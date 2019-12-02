@@ -79,9 +79,8 @@ const cniConfigTemplate = `
 	},
 	{
 		"type": "portmap",
-		"capabilities": {
-			"portMappings": true
-		}
+		"capabilities": {"portMappings": true},
+		"externalSetMarkChain": "KUBE-MARK-MASQ"
 	}
 	]
 }
