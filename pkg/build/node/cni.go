@@ -27,7 +27,7 @@ const (
 The default CNI manifest and images are our own tiny kindnet
 */
 
-var defaultCNIImages = []string{"kindest/kindnetd:0.5.4"}
+var defaultCNIImages = []string{"aojea/kindnetd:0.5.4"}
 
 const defaultCNIManifest = `
 # kindnetd networking manifest
@@ -100,7 +100,7 @@ spec:
       serviceAccountName: kindnet
       containers:
       - name: kindnet-cni
-        image: kindest/kindnetd:0.5.4
+        image: aojea/kindnetd:0.5.4
         env:
         - name: HOST_IP
           valueFrom:
