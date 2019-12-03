@@ -28,6 +28,7 @@ It may additionally be helpful to:
 * [Docker permission denied](#docker-permission-denied)
 * [Docker on Windows](#docker-on-windows)
 * [Unable to pull images](#unable-to-pull-images)
+* [Chrome OS](#chrome-os)
 
 ## Failures involving mismatched kubectl versions
 
@@ -300,6 +301,14 @@ If this image has been loaded onto your kind cluster using the command `kind loa
 Re-run the command this time adding the `--name my-cluster-name` param:
 
 `kind load docker-image my-custom-image --name my-cluster-name`
+
+## Chrome OS
+
+Kubernetes does not work in the Chrome OS Linux sandbox.
+
+Please see the upstream issue https://bugs.chromium.org/p/chromium/issues/detail?id=878034
+
+For previous discussion see: https://github.com/kubernetes-sigs/kind/issues/763
 
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new
