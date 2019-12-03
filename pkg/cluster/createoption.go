@@ -81,7 +81,7 @@ func CreateWithRetain(retain bool) CreateOption {
 }
 
 // CreateWithWaitForReady configures a maximum wait time for the control plane
-// node(s) to be ready. By defeault no waiting is performed
+// node(s) to be ready. By default no waiting is performed
 func CreateWithWaitForReady(waitTime time.Duration) CreateOption {
 	return createOptionAdapter(func(o *internalcreate.ClusterOptions) error {
 		o.WaitForReady = waitTime
@@ -116,7 +116,7 @@ func CreateWithDisplayUsage(displayUsage bool) CreateOption {
 	})
 }
 
-// CreateWithDisplaySalutation enables display a salutation t the end of create
+// CreateWithDisplaySalutation enables display a salutation at the end of create
 // cluster if displaySalutation is true
 func CreateWithDisplaySalutation(displaySalutation bool) CreateOption {
 	return createOptionAdapter(func(o *internalcreate.ClusterOptions) error {
