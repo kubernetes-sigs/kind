@@ -19,7 +19,7 @@ It may additionally be helpful to:
 ## Contents
 * [Failures involving mismatched kubectl versions](#failures-involving-mismatched-kubectl-version)
 * [Older Docker Installations](#older-docker-installations)
-* [Docker on Btrfs](#docker-on-btrfs)
+* [Docker on Btrfs or ZFS](#docker-on-btrfs-zfs)
 * [Docker installed with Snap](#docker-installed-with-snap)
 * [Failing to apply overlay network](#failing-to-apply-overlay-network)
 * [Failure to build node image](#failure-to-build-node-image)
@@ -28,6 +28,7 @@ It may additionally be helpful to:
 * [Docker permission denied](#docker-permission-denied)
 * [Docker on Windows](#docker-on-windows)
 * [Unable to pull images](#unable-to-pull-images)
+* [Chrome OS](#chrome-os)
 
 ## Failures involving mismatched kubectl versions
 
@@ -75,10 +76,11 @@ With these versions you must use Kubernetes >= 1.14, or more ideally upgrade Doc
 
 kind is tested with a recent stable docker-ce release.
 
-## Docker on Btrfs
+## Docker on Btrfs or ZFS
 
 `kind` cannot run properly if containers on your machine / host are backed by a
-[Btrfs](https://en.wikipedia.org/wiki/Btrfs) filesystem.
+[Btrfs](https://en.wikipedia.org/wiki/Btrfs) or [ZFS](https://en.wikipedia.org/wiki/ZFS)
+filesystem.
 
 This should only be relevant on Linux, on which you can check with:
 
@@ -86,7 +88,10 @@ This should only be relevant on Linux, on which you can check with:
 docker info | grep -i storage
 ```
 
-As a workaround, create the following configuration in `/etc/docker/daemon.json`:
+As a workaround, you'll need to ensure that the storage driver is one that works.
+Docker's default of `overlay2` is a good choice, but `aufs` should also work.
+
+You can set the storage driver with the following configuration in `/etc/docker/daemon.json`:
 
 ```
 {
@@ -95,6 +100,11 @@ As a workaround, create the following configuration in `/etc/docker/daemon.json`
 ```
 
 After restarting the Docker daemon you should see that Docker is now using the `overlay2` storage driver instead of `btrfs`.
+
+
+**NOTE**: You'll need to make sure the backing filesystem is not btrfs / ZFS as well,
+which may require creating a partition on your host disk with a suitable filesystem and ensuring Docker's
+data root is on this (by default `/var/lib/docker`). Ext4 is a reasonable choice.
 
 ### Docker Installed with Snap
 
@@ -300,6 +310,14 @@ If this image has been loaded onto your kind cluster using the command `kind loa
 Re-run the command this time adding the `--name my-cluster-name` param:
 
 `kind load docker-image my-custom-image --name my-cluster-name`
+
+## Chrome OS
+
+Kubernetes does not work in the Chrome OS Linux sandbox.
+
+Please see the upstream issue https://bugs.chromium.org/p/chromium/issues/detail?id=878034
+
+For previous discussion see: https://github.com/kubernetes-sigs/kind/issues/763
 
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new
