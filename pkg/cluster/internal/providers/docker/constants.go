@@ -19,15 +19,6 @@ package docker
 // clusterLabelKey is applied to each "node" docker container for identification
 const clusterLabelKey = "io.x-k8s.kind.cluster"
 
-// deprecatedClusterLabelKey is applied to each "node" docker container for identification
-// This is the deprecated value of ClusterLabelKey, and will be removed in a future release
-const deprecatedClusterLabelKey = "io.k8s.sigs.kind.cluster"
-
 // nodeRoleLabelKey is applied to each "node" docker container for categorization
 // of nodes by role
 const nodeRoleLabelKey = "io.x-k8s.kind.role"
-
-// DeprecatedNodeRoleLabelKey is applied to each "node" docker container for categorization
-// of nodes by role.
-// This is the deprecated value of NodeRoleKey, and will be removed in a future release
-const deprecatedNodeRoleLabelKey = "io.k8s.sigs.kind.role"

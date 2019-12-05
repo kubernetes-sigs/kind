@@ -28,10 +28,10 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/log"
 
-	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
-	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider/common"
+	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
+	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/cli"
 )
 
@@ -77,9 +77,9 @@ func (p *Provider) ListClusters() ([]string, error) {
 		"-a",         // show stopped nodes
 		"--no-trunc", // don't truncate
 		// filter for nodes with the cluster label
-		"--filter", "label="+deprecatedClusterLabelKey,
+		"--filter", "label="+clusterLabelKey,
 		// format to include the cluster name
-		"--format", fmt.Sprintf(`{{.Label "%s"}}`, deprecatedClusterLabelKey),
+		"--format", fmt.Sprintf(`{{.Label "%s"}}`, clusterLabelKey),
 	)
 	lines, err := exec.OutputLines(cmd)
 	if err != nil {
@@ -96,7 +96,7 @@ func (p *Provider) ListNodes(cluster string) ([]nodes.Node, error) {
 		"-a",         // show stopped nodes
 		"--no-trunc", // don't truncate
 		// filter for nodes with the cluster label
-		"--filter", fmt.Sprintf("label=%s=%s", deprecatedClusterLabelKey, cluster),
+		"--filter", fmt.Sprintf("label=%s=%s", clusterLabelKey, cluster),
 		// format to include the cluster name
 		"--format", `{{.Names}}`,
 	)
