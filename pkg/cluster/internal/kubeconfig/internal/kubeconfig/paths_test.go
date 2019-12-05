@@ -96,7 +96,7 @@ func TestPathForMerge(t *testing.T) {
 	// test explicit kubeconfig
 	t.Run("explicit path", func(t *testing.T) {
 		explicitPath := "foo"
-		result := PathForMerge(explicitPath, func(s string) string {
+		result := pathForMerge(explicitPath, func(s string) string {
 			return map[string]string{
 				"KUBECONFIG": strings.Join([]string{"/foo", "/bar", "", "/foo", "/bar"}, string(filepath.ListSeparator)),
 				"HOME":       "/home",
@@ -106,7 +106,7 @@ func TestPathForMerge(t *testing.T) {
 		assert.StringEqual(t, expected, result)
 	})
 	t.Run("KUBECONFIG list", func(t *testing.T) {
-		result := PathForMerge("", func(s string) string {
+		result := pathForMerge("", func(s string) string {
 			return map[string]string{
 				"KUBECONFIG": strings.Join(fakeKubeconfigs, string(filepath.ListSeparator)),
 			}[s]
@@ -116,7 +116,7 @@ func TestPathForMerge(t *testing.T) {
 	})
 	t.Run("KUBECONFIG select last if none exist", func(t *testing.T) {
 		kubeconfigEnvValue := strings.Join([]string{"/bogus/path", "/bogus/path/two"}, string(filepath.ListSeparator))
-		result := PathForMerge("", func(s string) string {
+		result := pathForMerge("", func(s string) string {
 			return map[string]string{
 				"KUBECONFIG": kubeconfigEnvValue,
 			}[s]
