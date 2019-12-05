@@ -24,11 +24,11 @@ import (
 
 	"github.com/alessio/shellescape"
 
+	"sigs.k8s.io/kind/pkg/cluster/internal/context"
+	"sigs.k8s.io/kind/pkg/cluster/internal/delete"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/apis/config/encoding"
-	"sigs.k8s.io/kind/pkg/cluster/internal/context"
-	"sigs.k8s.io/kind/pkg/cluster/internal/delete"
 	"sigs.k8s.io/kind/pkg/internal/cli"
 	"sigs.k8s.io/kind/pkg/log"
 

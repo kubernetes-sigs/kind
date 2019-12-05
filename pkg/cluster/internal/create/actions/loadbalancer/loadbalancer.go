@@ -23,10 +23,10 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/errors"
 
-	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider/common"
+	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 )
 
 // Action implements and action for configuring and starting the

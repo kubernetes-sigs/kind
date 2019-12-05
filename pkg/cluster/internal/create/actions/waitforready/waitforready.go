@@ -22,10 +22,10 @@ import (
 	"strings"
 	"time"
 
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/exec"
-	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 )
 
 // Action implements an action for waiting for the cluster to be ready

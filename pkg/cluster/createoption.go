@@ -20,8 +20,8 @@ import (
 	"time"
 
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha3"
-	internalencoding "sigs.k8s.io/kind/pkg/internal/apis/config/encoding"
 	internalcreate "sigs.k8s.io/kind/pkg/cluster/internal/create"
+	internalencoding "sigs.k8s.io/kind/pkg/internal/apis/config/encoding"
 )
 
 // CreateOption is a Provider.Create option
