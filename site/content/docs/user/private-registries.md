@@ -66,7 +66,7 @@ using Access Tokens:
 # login to GCR on all your kind nodes
 
 # KUBECONFIG should point to your kind cluster
-export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
+kind export kubeconfig --name="kind"
 
 # move the host config out of the way if it exists
 [ -f $HOME/.docker/config.json ] && mv $HOME/.docker/config.json $HOME/.docker/config.json.host

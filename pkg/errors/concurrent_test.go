@@ -20,7 +20,7 @@ import (
 	"sort"
 	"testing"
 
-	"sigs.k8s.io/kind/pkg/internal/util/assert"
+	"sigs.k8s.io/kind/pkg/internal/assert"
 )
 
 func TestUntilErrorConcurrent(t *testing.T) {

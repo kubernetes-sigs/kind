@@ -19,7 +19,7 @@ package errors
 import (
 	"testing"
 
-	"sigs.k8s.io/kind/pkg/internal/util/assert"
+	"sigs.k8s.io/kind/pkg/internal/assert"
 )
 
 func TestErrors(t *testing.T) {

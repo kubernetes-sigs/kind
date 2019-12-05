@@ -22,8 +22,8 @@ import (
 
 	"sigs.k8s.io/kind/pkg/log"
 
-	"sigs.k8s.io/kind/pkg/internal/util/cli"
-	"sigs.k8s.io/kind/pkg/internal/util/env"
+	"sigs.k8s.io/kind/pkg/internal/cli"
+	"sigs.k8s.io/kind/pkg/internal/env"
 )
 
 // NewLogger returns the standard logger used by the kind CLI
