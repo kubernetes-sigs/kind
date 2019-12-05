@@ -26,7 +26,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/log"
 
-	"sigs.k8s.io/kind/pkg/internal/cluster/kubeconfig"
+	"sigs.k8s.io/kind/pkg/cluster/internal/kubeconfig"
 )
 
 type flagpole struct {

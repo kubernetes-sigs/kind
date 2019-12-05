@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 
-	"sigs.k8s.io/kind/pkg/internal/cluster/providers/provider/common"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider/common"
 )
 
 // GetControlPlaneEndpoint returns the control plane endpoints for IPv4 and IPv6
