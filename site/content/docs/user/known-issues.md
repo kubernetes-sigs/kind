@@ -228,7 +228,7 @@ CONTAINER ID        IMAGE               COMMAND             CREATED             
 
 or `kubectl` being unable to connect to the cluster,
 ```
-$ export KUBECONFIG="$(kind get kubeconfig-path)"
+$ kind export kubeconfig
 $ kubectl cluster-info
 
 To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
