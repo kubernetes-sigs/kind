@@ -18,9 +18,13 @@ limitations under the License.
 package load
 
 import (
+	"archive/tar"
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -166,7 +170,71 @@ func loadImage(imageTarName string, node nodes.Node) error {
 
 // save saves image to dest, as in `docker save`
 func save(image, dest string) error {
-	return exec.Command("docker", "save", "-o", dest, image).Run()
+	shaKey := "@sha256:"
+	tag := image
+	if !strings.Contains(tag, shaKey) {
+		return exec.Command("docker", "save", "-o", dest, image).Run()
+	}
+
+	// docker save does not write tag when sha256 is specified
+	strs := strings.Split(tag, shaKey)
+	if len(strs) > 0 {
+		tag = strs[0]
+	}
+
+	tarFile, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	defer tarFile.Close()
+	tw := tar.NewWriter(tarFile)
+	defer tw.Close()
+	saveCmd := exec.Command("docker", "save", image)
+	var b bytes.Buffer
+	saveCmd.SetStdout(&b)
+	err = saveCmd.Run()
+	if err != nil {
+		return err
+	}
+
+	tr := tar.NewReader(&b)
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break // End of archive
+		}
+		if err != nil {
+			return err
+		}
+		var content bytes.Buffer
+		if _, err := io.Copy(&content, tr); err != nil {
+			return err
+		}
+		if hdr.Name == "manifest.json" {
+			s := content.String()
+			s = strings.Replace(s, "\"RepoTags\":null", "\"RepoTags\":[\""+tag+"\"]", -1)
+			hdr.Size = int64(len([]byte(s)))
+			err = tw.WriteHeader(hdr)
+			if err != nil {
+				return err
+			}
+			_, err = tw.Write([]byte(s))
+			if err != nil {
+				return err
+			}
+		} else {
+			err = tw.WriteHeader(hdr)
+			if err != nil {
+				return err
+			}
+			_, err = tw.Write(content.Bytes())
+			if err != nil {
+				return err
+			}
+		}
+	}
+	tw.Flush()
+	return nil
 }
 
 // imageID return the Id of the container image
