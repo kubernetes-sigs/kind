@@ -43,6 +43,10 @@ type flagpole struct {
 	Nodes []string
 }
 
+var (
+	shaKey = "@sha256:"
+)
+
 // NewCommand returns a new cobra.Command for loading an image into a cluster
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	flags := &flagpole{}
@@ -120,8 +124,13 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 
 	// pick only the nodes that don't have the image
 	selectedNodes := []nodes.Node{}
+	tagName := imageName
+	strs := strings.Split(imageName, shaKey)
+	if len(strs) > 0 {
+		tagName = strs[0]
+	}
 	for _, node := range candidateNodes {
-		id, err := nodeutils.ImageID(node, imageName)
+		id, err := nodeutils.ImageID(node, tagName)
 		if err != nil || id != imageID {
 			selectedNodes = append(selectedNodes, node)
 			logger.V(0).Infof("Image: %q with ID %q not present on node %q", imageName, imageID, node.String())
@@ -170,7 +179,6 @@ func loadImage(imageTarName string, node nodes.Node) error {
 
 // save saves image to dest, as in `docker save`
 func save(image, dest string) error {
-	shaKey := "@sha256:"
 	tag := image
 	if !strings.Contains(tag, shaKey) {
 		return exec.Command("docker", "save", "-o", dest, image).Run()
