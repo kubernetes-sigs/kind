@@ -13,6 +13,6 @@
 # limitations under the License.
 
 ARG GOARCH=amd64
-FROM gcr.io/google-containers/debian-iptables-${GOARCH}:v11.0.2
+FROM gcr.io/google-containers/debian-iptables-${GOARCH}:v12.0.1
 COPY --chown=root:root kindnetd /bin/kindnetd
 CMD ["/bin/kindnetd"]
