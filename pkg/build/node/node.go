@@ -375,10 +375,6 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 
 	// helpers to run things in the build container
 	cmder := docker.ContainerCmder(containerID)
-	inheritOutputAndRun := func(cmd exec.Cmd) error {
-		exec.InheritOutput(cmd)
-		return cmd.Run()
-	}
 
 	// get the Kubernetes version we installed on the node
 	// we need this to ask kubeadm what images we need
@@ -419,21 +415,14 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	c.logger.V(0).Info("Detected built images: " + strings.Join(builtImages.List(), ", "))
 
 	// write the default CNI manifest
-	// NOTE: the paths inside the container should use the path package
-	// and not filepath (!), we want posixy paths in the linux container, NOT
-	// whatever path format the host uses. For paths on the host we use filepath
-	if err := inheritOutputAndRun(cmder.Command(
-		"mkdir", "-p", path.Dir(defaultCNIManifestLocation),
-	)); err != nil {
+	if err := writeManifest(cmder, defaultCNIManifestLocation, defaultCNIManifest); err != nil {
 		c.logger.Errorf("Image build Failed! Failed write default CNI Manifest: %v", err)
 		return err
 	}
-	if err := cmder.Command(
-		"cp", "/dev/stdin", defaultCNIManifestLocation,
-	).SetStdin(
-		strings.NewReader(defaultCNIManifest),
-	).Run(); err != nil {
-		c.logger.Errorf("Image build Failed! Failed write default CNI Manifest: %v", err)
+
+	// write the default Storage manifest
+	if err := writeManifest(cmder, defaultStorageManifestLocation, defaultStorageManifest); err != nil {
+		c.logger.Errorf("Image build Failed! Failed write default Storage Manifest: %v", err)
 		return err
 	}
 
@@ -447,6 +436,8 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 
 	// all builds should isntall the default CNI images currently
 	requiredImages = append(requiredImages, defaultCNIImages...)
+	// all builds should isntall the default storage driver images currently
+	requiredImages = append(requiredImages, defaultStorageImages...)
 
 	// Create "images" subdir.
 	imagesDir := path.Join(dir, "bits", "images")
@@ -540,6 +531,23 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	}
 
 	return nil
+}
+
+func writeManifest(cmder exec.Cmder, manifestPath, manifestContents string) error {
+	// NOTE: the paths inside the container should use the path package
+	// and not filepath (!), we want posixy paths in the linux container, NOT
+	// whatever path format the host uses. For paths on the host we use filepath
+	cmdMkdir := cmder.Command("mkdir", "-p", path.Dir(manifestPath))
+	exec.InheritOutput(cmdMkdir)
+	if err := cmdMkdir.Run(); err != nil {
+		return err
+	}
+
+	return cmder.Command(
+		"cp", "/dev/stdin", manifestPath,
+	).SetStdin(
+		strings.NewReader(manifestContents),
+	).Run()
 }
 
 func repositoryCorrectorForVersion(kubeVersion *version.Version, arch string) func(string) string {

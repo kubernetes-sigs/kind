@@ -16,13 +16,6 @@ limitations under the License.
 
 package node
 
-// these are well known paths within the node image
-const (
-	// TODO: refactor kubernetesVersionLocation to a common internal package
-	kubernetesVersionLocation  = "/kind/version"
-	defaultCNIManifestLocation = "/kind/manifests/default-cni.yaml"
-)
-
 /*
 The default CNI manifest and images are our own tiny kindnet
 */
