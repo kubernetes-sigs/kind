@@ -19,10 +19,12 @@ limitations under the License.
 package installstorage
 
 import (
+	"bytes"
 	"strings"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/log"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
@@ -53,7 +55,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	node := controlPlanes[0] // kind expects at least one always
 
 	// add the default storage class
-	if err := addDefaultStorageClass(node); err != nil {
+	if err := addDefaultStorage(ctx.Logger, node); err != nil {
 		return errors.Wrap(err, "failed to add default storage class")
 	}
 
@@ -62,9 +64,10 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	return nil
 }
 
-// a default storage class
+// legacy default storage class
 // we need this for e2es (StatefulSet)
-const defaultStorageClassManifest = `# host-path based default storage class
+// newer kind images ship a storage driver manifest
+const defaultStorageManifest = `# host-path based default storage class
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
@@ -74,8 +77,19 @@ metadata:
     storageclass.kubernetes.io/is-default-class: "true"
 provisioner: kubernetes.io/host-path`
 
-func addDefaultStorageClass(controlPlane nodes.Node) error {
-	in := strings.NewReader(defaultStorageClassManifest)
+func addDefaultStorage(logger log.Logger, controlPlane nodes.Node) error {
+	// start with fallback default, and then try to get the newer kind node
+	// storage manifest if present
+	manifest := defaultStorageManifest
+	var raw bytes.Buffer
+	if err := controlPlane.Command("cat", "/kind/manifests/default-storage.yaml").SetStdout(&raw).Run(); err != nil {
+		logger.Warn("Could not read storage manifest, falling back on old k8s.io/host-path default ...")
+	} else {
+		manifest = raw.String()
+	}
+
+	// apply the manifest
+	in := strings.NewReader(manifest)
 	cmd := controlPlane.Command(
 		"kubectl",
 		"--kubeconfig=/etc/kubernetes/admin.conf", "apply", "-f", "-",
