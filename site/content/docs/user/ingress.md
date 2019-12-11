@@ -19,14 +19,9 @@ The following ingress controllers are known to work:
 
 ### Ingress NGINX
 
-The following shell script will create a kind cluster, deploy 
-the standard ingress-nginx components, and apply the necessary patches.
+Create a kind cluster with `extraPortMappings` and `node-labels`.
 
-```bash 
-#!/bin/sh
-set -o errexit
-
-# Create cluster with hostPorts opened for http and https
+```shell script
 cat <<EOF | kind create cluster --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
@@ -46,13 +41,15 @@ nodes:
   - containerPort: 443
     hostPort: 443
 EOF
+```
+Apply the [mandatory ingress-nginx components](https://kubernetes.github.io/ingress-nginx/deploy/#prerequisite-generic-deployment-command).
 
-# Apply the mandatory ingress-nginx components 
-# https://kubernetes.github.io/ingress-nginx/deploy/#prerequisite-generic-deployment-command
+```shell script
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/mandatory.yaml
+```
+Apply kind specific patches
 
-# Apply kind specific patches
-kubectl patch deployments -n ingress-nginx nginx-ingress-controller -p "$(cat<<EOF
+```yaml
 spec:
   template:
     spec:
@@ -73,8 +70,10 @@ spec:
       - key: node-role.kubernetes.io/master
         operator: Equal
         effect: NoSchedule
-EOF
-)"
+```
+
+```shell script
+kubectl patch deployments -n ingress-nginx nginx-ingress-controller -p "$(curl https://kind.sigs.k8s.io/manifests/ingress/nginx/patch.yaml)"
 ```
 
 
@@ -156,13 +155,13 @@ spec:
 
 Apply the contents
 
-```bash
-kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/kind/master/site/content/docs/user/ingress-nginx-example.yaml
+```shell script
+kubectl apply -f https://kind.sigs.k8s.io/manifests/ingress/nginx/example.yaml
 ```
 
 Now verify that the ingress works
 
-```bash
+```shell script
 curl localhost/foo # should output "foo"
 curl localhost/bar # should output "bar"
 ```

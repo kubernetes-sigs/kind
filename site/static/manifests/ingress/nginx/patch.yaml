@@ -1,0 +1,20 @@
+spec:
+  template:
+    spec:
+      containers:
+      - name: nginx-ingress-controller
+        ports:
+        - containerPort: 80
+          # Proxy the host port 80 for http
+          hostPort: 80
+        - containerPort: 443
+          # Proxy the host port 443 for https
+          hostPort: 443
+      nodeSelector:
+        # schedule it on the control-plane node
+        ingress-ready: 'true'
+      tolerations:
+      # tolerate the the control-plane taints
+      - key: node-role.kubernetes.io/master
+        operator: Equal
+        effect: NoSchedule
