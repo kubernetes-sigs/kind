@@ -10,7 +10,9 @@ menu:
 ## Setting Up An Ingress Controller
 
 We can leverage KIND's `extraPortMapping` config option when creating a cluster to
-forward ports from the host to an ingress controller running on a node.
+forward ports from the host to an ingress controller running on a node. We can also specify 
+custom node label by using `node-labels` in the kubeadm `InitConfiguration`, to be used
+by the ingress controller `nodeSelector`.
 The following ingress controllers are known to work:
 
  - [Ingress NGINX](#ingress-nginx)
@@ -19,9 +21,6 @@ The following ingress controllers are known to work:
 
 The following shell script will create a kind cluster, deploy 
 the standard ingress-nginx components, and apply the necessary patches.
-
-**Note:** This setup is independent of the number of worker nodes 
-and only works on a single control-plane cluster.
 
 ```bash 
 #!/bin/sh
@@ -33,6 +32,14 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
+  kubeadmConfigPatches:
+  - |
+    apiVersion: kubeadm.k8s.io/v1beta2
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+        authorization-mode: "AlwaysAllow"
   extraPortMappings:
   - containerPort: 80
     hostPort: 80
@@ -60,7 +67,7 @@ spec:
           hostPort: 443
       nodeSelector:
         # schedule it on the control-plane node
-        node-role.kubernetes.io/master: ''
+        ingress-ready: 'true'
       tolerations:
       # tolerate the the control-plane taints
       - key: node-role.kubernetes.io/master
