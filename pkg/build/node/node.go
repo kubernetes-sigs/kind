@@ -414,18 +414,6 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	builtImages = fixedImages
 	c.logger.V(0).Info("Detected built images: " + strings.Join(builtImages.List(), ", "))
 
-	// write the default CNI manifest
-	if err := writeManifest(cmder, defaultCNIManifestLocation, defaultCNIManifest); err != nil {
-		c.logger.Errorf("Image build Failed! Failed write default CNI Manifest: %v", err)
-		return err
-	}
-
-	// write the default Storage manifest
-	if err := writeManifest(cmder, defaultStorageManifestLocation, defaultStorageManifest); err != nil {
-		c.logger.Errorf("Image build Failed! Failed write default Storage Manifest: %v", err)
-		return err
-	}
-
 	// gets the list of images required by kubeadm
 	requiredImages, err := exec.OutputLines(cmder.Command(
 		"kubeadm", "config", "images", "list", "--kubernetes-version", rawVersion[0],
@@ -434,10 +422,31 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 		return err
 	}
 
-	// all builds should isntall the default CNI images currently
+	// write the default CNI manifest
+	if err := writeManifest(cmder, defaultCNIManifestLocation, defaultCNIManifest); err != nil {
+		c.logger.Errorf("Image build Failed! Failed write default CNI Manifest: %v", err)
+		return err
+	}
+	// all builds should install the default CNI images from the above manifest currently
 	requiredImages = append(requiredImages, defaultCNIImages...)
-	// all builds should isntall the default storage driver images currently
-	requiredImages = append(requiredImages, defaultStorageImages...)
+
+	// for v1.12.0+ we support a nicer storage driver
+	if ver.LessThan(version.MustParseGeneric("v1.12.0")) {
+		// otherwise, we must use something built in and simpler, which is
+		// also the same as what kind previously used...
+		if err := writeManifest(cmder, legacyDefaultStorage, defaultStorageManifest); err != nil {
+			c.logger.Errorf("Image build Failed! Failed write default Storage Manifest: %v", err)
+			return err
+		}
+	} else {
+		// write the default Storage manifest
+		if err := writeManifest(cmder, defaultStorageManifestLocation, defaultStorageManifest); err != nil {
+			c.logger.Errorf("Image build Failed! Failed write default Storage Manifest: %v", err)
+			return err
+		}
+		// all builds should install the default storage driver images currently
+		requiredImages = append(requiredImages, defaultStorageImages...)
+	}
 
 	// Create "images" subdir.
 	imagesDir := path.Join(dir, "bits", "images")
