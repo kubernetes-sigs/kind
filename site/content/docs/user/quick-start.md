@@ -338,6 +338,16 @@ kubeadmConfigPatches:
   nodeRegistration:
     kubeletExtraArgs:
       "feature-gates": "FeatureGateName=true"
+- |
+  apiVersion: kubelet.config.k8s.io/v1beta1
+  kind: KubeletConfiguration
+  featureGates:
+    FeatureGateName: true
+- |
+  apiVersion: kubeproxy.config.k8s.io/v1alpha1
+  kind: KubeProxyConfiguration
+  featureGates:
+    FeatureGateName: true
 # 1 control plane node and 3 workers
 nodes:
 # the control plane node config
