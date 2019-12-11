@@ -392,7 +392,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	// later releases use manifest list images
 	// at node boot time we retag our images to handle this where necessary,
 	// so we virtually re-tag them here.
-	ver, err := version.ParseGeneric(rawVersion[0])
+	ver, err := version.ParseSemantic(rawVersion[0])
 	if err != nil {
 		return err
 	}
@@ -431,7 +431,7 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	requiredImages = append(requiredImages, defaultCNIImages...)
 
 	// for v1.12.0+ we support a nicer storage driver
-	if ver.LessThan(version.MustParseGeneric("v1.12.0")) {
+	if ver.LessThan(version.MustParseSemantic("v1.12.0")) {
 		// otherwise, we must use something built in and simpler, which is
 		// also the same as what kind previously used...
 		if err := writeManifest(cmder, legacyDefaultStorage, defaultStorageManifest); err != nil {
