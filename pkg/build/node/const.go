@@ -14,8 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package defaults contains cross-api-version configuration defaults
-package defaults
+package node
 
-// Image is the default for the Config.Image field, aka the default node image.
-const Image = "kindest/node:v1.17.0@sha256:c1ccbb2d2a5358a7dfba838537baeed84c2f6c0c69ae8a15df8a4915b4dc9a14"
+// these are well known paths within the node image
+const (
+	// TODO: refactor kubernetesVersionLocation to a common internal package
+	kubernetesVersionLocation      = "/kind/version"
+	defaultCNIManifestLocation     = "/kind/manifests/default-cni.yaml"
+	defaultStorageManifestLocation = "/kind/manifests/default-storage.yaml"
+)
