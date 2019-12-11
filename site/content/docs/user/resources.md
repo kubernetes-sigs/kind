@@ -8,36 +8,48 @@ menu:
 ---
 # Additional Resources
 
-Here are some additional resources for learning about kind and how to use it.
+Here are some additional resources for learning about KIND and how to use it.
 
 ## KubeCon Talks
 
-The authors have given the following talks relating to kind:
+The authors have given the following talks relating to KIND:
+
+### A Kind Workflow for Contributing to Kubernetes - Benjamin Elder & Duffie Cooley & James Munnelly & Patrick Lang
+
+At KubeCon US 2019 we provided a hands on tutorial [for contributing and testing your Kubernetes code with KIND][kind-workflow-for-contributing-to-kubernetes].
+
+{{< youtube id="BPVO2mcfjJk" class="video-wrapper" >}}
+
+### Deep Dive: KIND - Benjamin Elder & Antonio Ojea
+
+At KubeCon US 2019 we spoke about [KIND internals and the challenges ahead on the road to 1.0][kind-deep-dive].
+
+{{< youtube id="tT-GiZAr6eQ" class="video-wrapper" >}}
 
 ### Testing your K8s apps with KIND - Benjamin Elder & James Munnelly
 
-At KubeCon EU 2019 we spoke about [kind and testing your Kubernetes Applications][testing-k8s-apps-with-kind].
+At KubeCon EU 2019 we spoke about [KIND and testing your Kubernetes Applications][testing-k8s-apps-with-kind].
 
 {{< youtube id="8KtmevMFfxA" class="video-wrapper" >}}
 
 ### Deep Dive: Testing SIG - Benjamin Elder & James Munnelly
 
-At KubeCon EU 2019 we spoke about kind and how we use it to test Kubernetes for the [SIG Testing Deep Dive][sig-testing-deep-dive-kind].
+At KubeCon EU 2019 we spoke about KIND and how we use it to test Kubernetes for the [SIG Testing Deep Dive][sig-testing-deep-dive-kind].
 
 {{< youtube id="6m9frvTxK0o" class="video-wrapper" >}}
 
 ### Behind Your PR: How Kubernetes Uses Kubernetes to Run Kubernetes CI - Sen Lu & Benjamin Elder
 
 At KubeCon NA 2018 we spoke with [Sen Lu][@krzyzacy] about The Kubernetes Project's
-testing tools and infrastructure, including a brief discussion of kind and running
+testing tools and infrastructure, including a brief discussion of KIND and running
 it on Kubernetes's Kubernetes-based CI infrastructure.
 
 {{< youtube id="pz0lpl6h-Gc" class="video-wrapper" >}}
 
-## Using Kind in CI
+## Using KIND in CI
 
 The [kind-ci/examples] project is a work-in-progress project to give working
-examples of using kind in various continuous integration environments / platforms.
+examples of using KIND in various continuous integration environments / platforms.
 
 ## Tutorials and Guides
 
@@ -64,3 +76,5 @@ https://projectcontour.io/kindly-running-contour/
 [kind-ci/examples]: https://github.com/kind-ci/examples
 [testing-k8s-apps-with-kind]: https://kccnceu19.sched.com/event/MPYy/testing-your-k8s-apps-with-kind-benjamin-elder-google-james-munnelly-jetstackio
 [sig-testing-deep-dive-kind]: https://kccnceu19.sched.com/event/MPkC/deep-dive-testing-sig-benjamin-elder-google-james-munnelly-jetstack
+[kind-deep-dive]: https://kccncna19.sched.com/event/Uah7/deep-dive-kind-benjamin-elder-google-antonio-ojea-garcia-suse
+[kind-workflow-for-contributing-to-kubernetes]: https://kccncna19.sched.com/event/Uaek/tutorial-a-kind-workflow-for-contributing-to-kubernetes-benjamin-elder-google-duffie-cooley-vmware-james-munnelly-jetstack-patrick-lang-microsoft-limited-available-seating-first-come-first-served-basis
