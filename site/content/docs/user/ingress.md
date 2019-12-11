@@ -86,8 +86,7 @@ Now you will want to checkout [Using Ingress](#using-ingress)
 The following example creates simple http-echo services 
 and an Ingress object to route to these services.
 
-```bash
-cat <<EOF | kubectl apply -f -
+```yaml
 kind: Pod
 apiVersion: v1
 metadata:
@@ -153,7 +152,12 @@ spec:
             serviceName: bar-service
             servicePort: 5678
 ---
-EOF
+```
+
+Apply the contents
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/kind/master/site/content/docs/user/ingress-nginx-example.yaml
 ```
 
 Now verify that the ingress works

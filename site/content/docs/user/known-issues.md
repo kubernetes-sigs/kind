@@ -4,7 +4,7 @@ menu:
   main:
     parent: "user"
     identifier: "known-issues"
-    weight: 3
+    weight: 2
 ---
 # Known Issues
 
