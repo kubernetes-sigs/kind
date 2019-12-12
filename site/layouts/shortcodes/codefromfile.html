@@ -1,0 +1,8 @@
+{{ $file := .Get "file" }}
+{{ $lang := "" }}
+{{ $suffix := findRE "(\\.[^.]+)$" $file 1 }}
+{{ with  $suffix }}
+{{ $lang = (index . 0 | strings.TrimPrefix ".") }}
+{{ end }}
+{{ with .Get "lang" }}{{ $lang = . }}{{ end }}
+{{- highlight (trim ($file | readFile) "\n") $lang "" | -}}
