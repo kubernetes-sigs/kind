@@ -50,8 +50,10 @@ On Windows:
 ```powershell
 curl.exe -Lo kind-windows-amd64.exe https://github.com/kubernetes-sigs/kind/releases/download/v0.6.1/kind-windows-amd64
 Move-Item .\kind-windows-amd64.exe c:\some-dir-in-your-PATH\kind.exe
+```
 
-# OR via Chocolatey (https://chocolatey.org/packages/kind)
+OR via Chocolatey (https://chocolatey.org/packages/kind)
+```powershell
 choco install kind
 ```
 

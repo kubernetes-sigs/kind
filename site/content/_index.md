@@ -1,3 +1,6 @@
+---
+tile: kind
+---
 <p style="text-align: center; margin-top: 2em; margin-bottom: -.75em;"><img alt="kind" src="./logo/logo.png" width="300px" /></p>
 
 [kind] is a tool for running local Kubernetes clusters using Docker container "nodes".  
