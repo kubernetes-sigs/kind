@@ -152,8 +152,8 @@ hr {
 pre {
   background-color: #f3f4f4 !important;
   overflow-x: auto;
-  border-radius: 5px;
-  padding: .5em;
+  border-radius: 0;
+  padding: 1em;
   font-size: 85%;
 }
 
@@ -168,6 +168,56 @@ pre code {
   background-color: transparent;
   padding: 0;
   font-size: 100%;
+  border-radius: 0;
+}
+
+/* inline copyable code snippet styling */
+table.includecode {
+  width: 100%;
+  background: #f3f4f4;
+  border: 1px solid black;
+  border-spacing: 0;
+}
+
+table.includecode thead {
+  background: #333;
+  color: white;
+}
+
+table.includecode thead th a {
+  color: white;
+}
+
+table.includecode thead th {
+  border-bottom: 1px solid black;
+  font-weight: normal;
+  font-size: .9em;
+}
+
+table.includecode thead th {
+  text-align: right;
+}
+
+table.includecode thead th button {
+  background: blue;
+  border: 1px solid white;
+  color: white;
+  font-weight: bold;
+  margin: .25em;
+}
+
+table.includecode pre {
+  margin: 0;
+}
+
+/* don't display this, these are textareas needed to copy to clipboard */
+.hidden-copy-text {
+ background: transparent;
+ width: 2em;
+ height: 2em;
+ position: fixed;
+ top: 0;
+ left: 0;
 }
 
 /* page footer*/

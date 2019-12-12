@@ -5,4 +5,18 @@
 {{ $lang = (index . 0 | strings.TrimPrefix ".") }}
 {{ end }}
 {{ with .Get "lang" }}{{ $lang = . }}{{ end }}
-{{- highlight (trim ($file | readFile) "\n") $lang "" | -}}
+{{ $virtualPath :=  strings.TrimPrefix `static/` $file }}
+<table class="includecode" id="code-{{ $virtualPath }}">
+  <thead>
+    <tr>
+      <th><a href="/{{ $virtualPath }}">{{ $virtualPath }}</a> <button
+          onclick='copyText("code-{{ $virtualPath }}-hidden-copy-text");'>COPY</button></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>{{- highlight (trim ($file | readFile) "\n") $lang "" | -}}</td>
+    </tr>
+  </tbody>
+  <textarea class="hidden-copy-text" id="code-{{ $virtualPath }}-hidden-copy-text">{{ ($file | readFile) }}</textarea>
+</table>
