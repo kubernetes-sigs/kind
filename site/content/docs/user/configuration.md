@@ -6,6 +6,9 @@ menu:
     identifier: "user-configuration"
     weight: 3
 ---
+
+<h1>⚠️ This page is a stub! We're working on it! ⚠️ </h1>
+
 # Configuration
 
 This guide covers how to configure KIND cluster creation.

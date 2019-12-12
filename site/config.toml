@@ -23,6 +23,10 @@ disableKinds = ["taxonomy", "taxonomyTerm"]
     style = "vs"
     tabWidth = 4
 
+# allow html in markdown
+[markup.goldmark.renderer]
+  unsafe=true
+
 # enable hugo's menu system for the site, name the primary menu
 sectionPagesMenu = "main"
 # menu entries
