@@ -62,3 +62,16 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
+
+/* used to copy code snippets */
+function copyText(elementID) {
+    /* Get the text field */
+    var elem = document.getElementById(elementID);
+
+    /* Select the text field */
+    elem.select();
+    elem.setSelectionRange(0, 99999); /*For mobile devices*/
+
+    /* Copy the text inside the text field */
+    document.execCommand("copy");
+}
