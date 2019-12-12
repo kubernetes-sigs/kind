@@ -8,12 +8,20 @@ enableRobotsTXT = true
 # this allows us to show the source commit in the footer
 enableGitInfo = true
 
-# syntax highlighting options
-pygmentsCodeFences = true
-pygmentsStyle = "tango"
-
 # we don't use these currently
 disableKinds = ["taxonomy", "taxonomyTerm"]
+
+# syntax highlighting options
+[markup]
+  [markup.highlight]
+    codeFences = true
+    hl_Lines = ""
+    lineNoStart = 1
+    lineNos = false
+    lineNumbersInTable = true
+    noClasses = true
+    style = "vs"
+    tabWidth = 4
 
 # enable hugo's menu system for the site, name the primary menu
 sectionPagesMenu = "main"
