@@ -173,7 +173,9 @@ pre code {
 
 /* inline copyable code snippet styling */
 table.includecode {
+  max-width: 100%;
   width: 100%;
+  table-layout: fixed;
   background: #f3f4f4;
   border: 1px solid black;
   border-spacing: 0;
