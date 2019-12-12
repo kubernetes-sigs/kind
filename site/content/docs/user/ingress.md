@@ -156,7 +156,7 @@ spec:
 Apply the contents
 
 ```shell script
-kubectl apply -f https://kind.sigs.k8s.io/manifests/ingress/nginx/example.yaml
+kubectl apply -f {{< absurl "manifests/ingress/nginx/example.yaml" >}}
 ```
 
 Now verify that the ingress works
