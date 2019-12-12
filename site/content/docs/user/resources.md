@@ -14,17 +14,17 @@ Here are some additional resources for learning about KIND and how to use it.
 
 The authors have given the following talks relating to KIND:
 
-### A Kind Workflow for Contributing to Kubernetes - Benjamin Elder & Duffie Cooley & James Munnelly & Patrick Lang
-
-At KubeCon US 2019 we provided a hands on tutorial [for contributing and testing your Kubernetes code with KIND][kind-workflow-for-contributing-to-kubernetes].
-
-{{< youtube id="BPVO2mcfjJk" class="video-wrapper" >}}
-
 ### Deep Dive: KIND - Benjamin Elder & Antonio Ojea
 
 At KubeCon US 2019 we spoke about [KIND internals and the challenges ahead on the road to 1.0][kind-deep-dive].
 
 {{< youtube id="tT-GiZAr6eQ" class="video-wrapper" >}}
+
+### A Kind Workflow for Contributing to Kubernetes - Benjamin Elder & Duffie Cooley & James Munnelly & Patrick Lang
+
+At KubeCon US 2019 we provided a hands on tutorial [for contributing and testing your Kubernetes code with KIND][kind-workflow-for-contributing-to-kubernetes].
+
+{{< youtube id="BPVO2mcfjJk" class="video-wrapper" >}}
 
 ### Testing your K8s apps with KIND - Benjamin Elder & James Munnelly
 
