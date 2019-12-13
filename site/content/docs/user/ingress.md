@@ -83,7 +83,7 @@ The following example creates simple http-echo services
 and an Ingress object to route to these services.
 
 ```yaml
-{{< readFile "static/examples/ingress/usage.yaml" >}}
+{{% readFile "static/examples/ingress/usage.yaml" %}}
 ```
 
 Apply the contents
