@@ -43,15 +43,15 @@ you can mount it to each kind node.
 
 Assuming your file is at `/path/to/my/secret.json`, the kind config would be:
 
-```yaml
+{{< codeFromInline lang="yaml" >}}
 kind: Cluster
-apiVersion: kind.sigs.k8s.io/v1alpha3
+apiVersion: kind.sigs.k8s.io/v1alpha4
 nodes:
 - role: control-plane
   extraMounts:
   - containerPath: /var/lib/kubelet/config.json
     hostPath: /path/to/my/secret.json
-```
+{{< /codeFromInline >}}
 
 ### Use an Access Token
 
