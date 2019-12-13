@@ -61,11 +61,11 @@ Apply kind specific patches to forward the hostPorts to the
 ingress controller, set taint tolerations and 
 schedule it to the custom labelled node.
 
-{{< codefromfile file="assets/examples/ingress/nginx/patch.json" lang="json" >}}
+{{< codefromfile file="examples/ingress/nginx/patch.json" lang="json" >}}
 
-```shell script
+{{% mdwithcopy lang="bash" %}}
 kubectl patch deployments -n ingress-nginx nginx-ingress-controller -p '{{< minify file="examples/ingress/nginx/patch.json" >}}' 
-```
+{{% /mdwithcopy %}}
 
 
 Now the Ingress is all setup to be used. 
@@ -76,17 +76,19 @@ Refer [Using Ingress](#using-ingress) for a basic example usage.
 The following example creates simple http-echo services 
 and an Ingress object to route to these services.
 
-{{< codefromfile file="static/examples/ingress/usage.yaml" lang="yaml" >}}
+{{< codefromfile file="examples/ingress/usage.yaml" lang="yaml" >}}
 
 Apply the contents
 
-```shell script
+{{% mdwithcopy lang="bash" %}}
 kubectl apply -f {{< absurl "examples/ingress/nginx/example.yaml" >}}
-```
+{{% /mdwithcopy %}}
 
 Now verify that the ingress works
 
-```shell script
-curl localhost/foo # should output "foo"
-curl localhost/bar # should output "bar"
-```
+{{% mdwithcopy lang="bash" %}}
+# should output "foo"
+curl localhost/foo
+# should output "bar"
+curl localhost/bar
+{{% /mdwithcopy %}}
