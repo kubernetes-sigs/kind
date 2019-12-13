@@ -45,12 +45,15 @@ Once your Windows Insider machine is ready, you need to do a few more steps to s
 
 1. Open a PowerShell window as an admin, then run
 
-    ```powershell
-    Enable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform, Microsoft-Windows-Subsystem-Linux
-    ```
+    {{< codeFromInline lang="powershell" >}}
+Enable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform, Microsoft-Windows-Subsystem-Linux
+{{< /codeFromInline >}}
 
 1. Reboot when prompted. 
-1. After the reboot, set WSL to default to WSL2. Open an admin PowerShell window and run `wsl --set-default-version 2`.
+1. After the reboot, set WSL to default to WSL2. Open an admin PowerShell window and run
+    {{< codeFromInline lang="powershell" >}}
+wsl --set-default-version 2
+{{< /codeFromInline >}}
 1. Now, you can install your Linux distro of choice by searching the Windows Store. If you don't want to use the Windows Store, then follow the steps in the WSL docs for [manual install](https://docs.microsoft.com/en-us/windows/wsl/install-manual).
 1. Start up your distro with the shortcut added to the start menu
 1. If you're on build 18941 (July 19, 2019) or earlier, then you'll need to build and update the kernel. See [Updating Kernel](#updating-kernel). Otherwise, move on to the next section.
@@ -117,7 +120,7 @@ For the latest status on this, see [issue #707](https://github.com/kubernetes-si
 
 First, clone the latest WSL2-Linux-Kernel source and build it.
 
-```bash
+{{< codeFromInline lang="bash" >}}
 # This assumes Ubuntu or Debian, a different step may be needed for RPM based distributions
 sudo apt install build-essential flex bison libssl-dev libelf-dev
 git clone --depth 1 https://github.com/microsoft/WSL2-Linux-Kernel.git
@@ -125,11 +128,11 @@ cd WSL2-Linux-Kernel
 make -j4 KCONFIG_CONFIG=Microsoft/config-wsl
 mkdir /mnt/c/linuxtemp
 cp arch/x86_x64/boot/bzImage /mnt/c/linuxtemp/
-```
+{{< /codeFromInline >}}
 
 Now, open an administrator PowerShell window and run these steps to apply the kernel:
 
-```powershell
+{{< codeFromInline lang="powershell" >}}
 wsl.exe --shutdown
 cd C:\WINDOWS\system32\lxss\tools
 $acl = Get-Acl .\kernel
@@ -137,4 +140,4 @@ $acl.AddAccessRule( ( New-Object System.Security.AccessControl.FileSystemAccessR
 $acl | Set-Acl .\kernel
 Move-Item kernel kernel.orig
 Copy-Item c:\linuxtemp\bzImage kernel
-```
+{{< /codeFromInline >}}
