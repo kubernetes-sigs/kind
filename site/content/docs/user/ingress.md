@@ -31,7 +31,7 @@ The following ingress controllers are known to work:
 
 Create a kind cluster with `extraPortMappings` and `node-labels`.
 
-```shell script
+{{< codeFromInline lang="bash" >}}
 cat <<EOF | kind create cluster --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
@@ -51,21 +51,27 @@ nodes:
   - containerPort: 443
     hostPort: 443
 EOF
-```
+{{< /codeFromInline >}}
+
 Apply the [mandatory ingress-nginx components](https://kubernetes.github.io/ingress-nginx/deploy/#prerequisite-generic-deployment-command).
 
-```shell script
+{{< codeFromInline lang="bash" >}}
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/mandatory.yaml
-```
+{{< /codeFromInline >}}
+
 Apply kind specific patches to forward the hostPorts to the 
 ingress controller, set taint tolerations and 
 schedule it to the custom labelled node.
 
-{{< codefromfile file="examples/ingress/nginx/patch.json" lang="json" >}}
+```json
+{{% readFile "static/examples/ingress/nginx/patch.json" %}}
+```
 
-{{% mdwithcopy lang="bash" %}}
-kubectl patch deployments -n ingress-nginx nginx-ingress-controller -p '{{< minify file="examples/ingress/nginx/patch.json" >}}' 
-{{% /mdwithcopy %}}
+Apply it by running:
+
+{{< codeFromInline lang="bash" >}}
+kubectl patch deployments -n ingress-nginx nginx-ingress-controller -p '{{< minify file="static/examples/ingress/nginx/patch.json" >}}' 
+{{< /codeFromInline >}}
 
 
 Now the Ingress is all setup to be used. 
@@ -76,19 +82,21 @@ Refer [Using Ingress](#using-ingress) for a basic example usage.
 The following example creates simple http-echo services 
 and an Ingress object to route to these services.
 
-{{< codefromfile file="examples/ingress/usage.yaml" lang="yaml" >}}
+```yaml
+{{< readFile "static/examples/ingress/usage.yaml" >}}
+```
 
 Apply the contents
 
-{{% mdwithcopy lang="bash" %}}
-kubectl apply -f {{< absurl "examples/ingress/nginx/example.yaml" >}}
-{{% /mdwithcopy %}}
+{{< codeFromInline lang="bash" >}}
+kubectl apply -f {{< absURL "examples/ingress/usage.yaml" >}}
+{{< /codeFromInline >}}
 
 Now verify that the ingress works
 
-{{% mdwithcopy lang="bash" %}}
+{{< codeFromInline lang="bash" >}}
 # should output "foo"
 curl localhost/foo
 # should output "bar"
 curl localhost/bar
-{{% /mdwithcopy %}}
+{{< /codeFromInline >}}

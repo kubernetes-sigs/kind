@@ -1,4 +1,4 @@
-{{ $file := printf "static/%s" (.Get "file") }}
+{{ $file := .Get "file" }}
 {{- $contents := readFile $file -}}
 {{ $res := $contents | resources.FromString $file }}
-{{- ($res | resources.Minify).Content -}}
+{{- safeHTML (($res | resources.Minify).Content) -}}

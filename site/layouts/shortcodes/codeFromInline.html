@@ -1,4 +1,4 @@
-{{ $code := trim .Inner "\n" }}
+{{ $code := trim .Inner  "\n"  }}
 {{ $lang := "" }}
 {{ with .Get "lang" }}{{ $lang = . }}{{ end }}
 {{ $hash := md5 $code }}

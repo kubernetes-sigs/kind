@@ -1,4 +1,4 @@
-{{ $file := printf "static/%s" (.Get "file") }}
+{{ $file := .Get "file" }}
 {{ $lang := "" }}
 {{ $suffix := findRE "(\\.[^.]+)$" $file 1 }}
 {{ with  $suffix }}
