@@ -45,7 +45,7 @@ Assuming your file is at `/path/to/my/secret.json`, the kind config would be:
 
 {{< codeFromInline lang="yaml" >}}
 kind: Cluster
-apiVersion: kind.sigs.k8s.io/v1alpha4
+apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
   extraMounts:

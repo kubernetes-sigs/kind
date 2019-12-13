@@ -267,7 +267,7 @@ configuration for this can be achieved with the following config file contents:
 ```yaml
 # three node (two workers) cluster config
 kind: Cluster
-apiVersion: kind.sigs.k8s.io/v1alpha4
+apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
 - role: worker
@@ -279,7 +279,7 @@ You can also have a cluster with multiple control-plane nodes:
 ```yaml
 # a cluster with 3 control-plane nodes and 3 workers
 kind: Cluster
-apiVersion: kind.sigs.k8s.io/v1alpha4
+apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
 - role: control-plane
@@ -293,7 +293,7 @@ nodes:
 You can map extra ports from the nodes to the host machine with `extraPortMappings`:
 ```yaml
 kind: Cluster
-apiVersion: kind.sigs.k8s.io/v1alpha4
+apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
   extraPortMappings:
@@ -313,7 +313,7 @@ Feature gates are a set of key=value pairs that describe alpha or experimental f
 
 ```
 kind: Cluster
-apiVersion: kind.sigs.k8s.io/v1alpha4
+apiVersion: kind.x-k8s.io/v1alpha4
 # patch the generated kubeadm config with featuregates
 kubeadmConfigPatches:
 - |
@@ -357,7 +357,7 @@ Ensure you `systemctl restart docker` to pick up the changes.
 ```yaml
 # an ipv6 cluster
 kind: Cluster
-apiVersion: kind.sigs.k8s.io/v1alpha4
+apiVersion: kind.x-k8s.io/v1alpha4
 networking:
   ipFamily: ipv6
 ```
