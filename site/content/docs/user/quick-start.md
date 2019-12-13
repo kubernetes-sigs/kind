@@ -33,29 +33,29 @@ into your `$PATH`.
 
 On macOS / Linux:
 
-```bash
+{{< codeFromInline lang="bash" >}}
 curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/download/v0.6.1/kind-$(uname)-amd64
 chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
-```
+{{< /codeFromInline >}}
 
 On Mac via Homebrew:
 
-```bash
+{{< codeFromInline lang="bash" >}}
 brew install kind
-```
+{{< /codeFromInline >}}
 
 On Windows:
 
-```powershell
+{{< codeFromInline lang="powershell" >}}
 curl.exe -Lo kind-windows-amd64.exe https://github.com/kubernetes-sigs/kind/releases/download/v0.6.1/kind-windows-amd64
 Move-Item .\kind-windows-amd64.exe c:\some-dir-in-your-PATH\kind.exe
-```
+{{< /codeFromInline >}}
 
 OR via Chocolatey (https://chocolatey.org/packages/kind)
-```powershell
+{{< codeFromInline lang="powershell" >}}
 choco install kind
-```
+{{< /codeFromInline >}}
 
 
 ## Creating a Cluster
@@ -267,7 +267,7 @@ configuration for this can be achieved with the following config file contents:
 ```yaml
 # three node (two workers) cluster config
 kind: Cluster
-apiVersion: kind.sigs.k8s.io/v1alpha3
+apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
 - role: worker
@@ -279,7 +279,7 @@ You can also have a cluster with multiple control-plane nodes:
 ```yaml
 # a cluster with 3 control-plane nodes and 3 workers
 kind: Cluster
-apiVersion: kind.sigs.k8s.io/v1alpha3
+apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
 - role: control-plane
@@ -293,10 +293,9 @@ nodes:
 You can map extra ports from the nodes to the host machine with `extraPortMappings`:
 ```yaml
 kind: Cluster
-apiVersion: kind.sigs.k8s.io/v1alpha3
+apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
-- role: worker
   extraPortMappings:
   - containerPort: 80
     hostPort: 80
@@ -313,10 +312,9 @@ Note: binding the `listenAddress` to `127.0.0.1` may affect your ability to acce
 Feature gates are a set of key=value pairs that describe alpha or experimental features. In order to enable a gate you have to [customize your kubeadm configuration][customize control plane with kubeadm], and it will depend on what gate and component you want to enable. An example kind config can be:
 
 ```
-# this config file contains all config fields with comments
 kind: Cluster
-apiVersion: kind.sigs.k8s.io/v1alpha3
-# patch the generated kubeadm config with some extra settings
+apiVersion: kind.x-k8s.io/v1alpha4
+# patch the generated kubeadm config with featuregates
 kubeadmConfigPatches:
 - |
   apiVersion: kubeadm.k8s.io/v1beta2
@@ -350,14 +348,6 @@ kubeadmConfigPatches:
   kind: KubeProxyConfiguration
   featureGates:
     FeatureGateName: true
-# 1 control plane node and 3 workers
-nodes:
-# the control plane node config
-- role: control-plane
-# the three workers
-- role: worker
-- role: worker
-- role: worker
 ```
 
 #### IPv6 clusters
@@ -367,14 +357,9 @@ Ensure you `systemctl restart docker` to pick up the changes.
 ```yaml
 # an ipv6 cluster
 kind: Cluster
-apiVersion: kind.sigs.k8s.io/v1alpha3
+apiVersion: kind.x-k8s.io/v1alpha4
 networking:
   ipFamily: ipv6
-nodes:
-# the control plane node
-- role: control-plane
-- role: worker
-- role: worker
 ```
 
 ### Configure kind to use a proxy

@@ -40,26 +40,26 @@ This problem is related to a bug in [docker on macOS][for-mac#3663]
 
 If you see something like the following error message:
 ```bash
-kubectl edit deploy -n kube-system kubernetes-dashboard
+$ kubectl edit deploy -n kube-system kubernetes-dashboard
 error: SchemaError(io.k8s.api.autoscaling.v2beta1.ExternalMetricStatus): invalid object doesn't have additional properties
 ```
 
 You can check your client and server versions by running:
-```bash
+{{< codeFromInline lang="bash" >}}
 kubectl version
-```
+{{< /codeFromInline >}}
 
 If there is a mismatch between the server and client versions, you should install a newer client version. 
 
 If you are using Mac, you can install kubectl via homebrew by running:
-```bash
+{{< codeFromInline lang="bash" >}}
 brew install kubernetes-cli
-```
+{{< /codeFromInline >}}
 
 And overwrite the symlinks created by Docker For Mac by running:
-```bash
+{{< codeFromInline lang="bash" >}}
 brew link --overwrite kubernetes-cli
-```
+{{< /codeFromInline >}}
 
 [for-mac#3663]: https://github.com/docker/for-mac/issues/3663
 
@@ -84,9 +84,9 @@ filesystem.
 
 This should only be relevant on Linux, on which you can check with:
 
-```
+{{< codeFromInline lang="bash" >}}
 docker info | grep -i storage
-```
+{{< /codeFromInline >}}
 
 As a workaround, you'll need to ensure that the storage driver is one that works.
 Docker's default of `overlay2` is a good choice, but `aufs` should also work.
@@ -238,14 +238,14 @@ Unable to connect to the server: EOF
 Then as in [kind#156][kind#156], you may solve this issue by claiming back some
 space on your machine by removing unused data or images left by the Docker 
 engine by running:
-```
+{{< codeFromInline lang="bash" >}}
 docker system prune
-```
+{{< /codeFromInline >}}
 
-and / or:
-```
+And / or:
+{{< codeFromInline lang="bash" >}}
 docker image prune
-```
+{{< /codeFromInline >}}
 
 You can verify the issue by exporting the logs (`kind export logs`) and looking
 at the kubelet logs, which may have something like the following:
@@ -257,7 +257,7 @@ Dec 07 00:37:53 kind-1-control-plane kubelet[688]: E1207 00:37:53.229638     688
 If on the other hand you are running kind on a btrfs partition and your logs
 show something like the following:
 ```
-an 03 17:42:41 kind-1-control-plane kubelet[3804]: F0103 17:42:41.470269 3804 kubelet.go:1359] Failed to start ContainerManager failed to get rootfs info: failed to get device for dir "/ var/lib/kubelet": could not find device with major: 0, minor: 67 in cached partitions map
+F0103 17:42:41.470269 3804 kubelet.go:1359] Failed to start ContainerManager failed to get rootfs info: failed to get device for dir "/ var/lib/kubelet": could not find device with major: 0, minor: 67 in cached partitions map
 ```
 
 This problem seems to be related to a [bug in Docker][moby#9939].
@@ -267,16 +267,16 @@ This problem seems to be related to a [bug in Docker][moby#9939].
 This may be caused by running out of [inotify](https://linux.die.net/man/7/inotify) resources. Resource limits are defined by `fs.inotify.max_user_watches` and `fs.inotify.max_user_instances` system variables. For example, in Ubuntu these default to 8192 and 128 respectively, which is not enough to create a cluster with many nodes.
 
 To increase these limits temporarily run the following commands on the host:
-```
-$ sudo sysctl fs.inotify.max_user_watches=524288
-$ sudo sysctl fs.inotify.max_user_instances=512
-```
+{{< codeFromInline lang="bash" >}}
+sudo sysctl fs.inotify.max_user_watches=524288
+sudo sysctl fs.inotify.max_user_instances=512
+{{< /codeFromInline >}}
 
 To make the changes persistent, edit the file `/etc/sysctl.conf` and add these lines:
-```
+{{< codeFromInline lang="bash" >}}
 fs.inotify.max_user_watches = 524288
 fs.inotify.max_user_instances = 512
-```
+{{< /codeFromInline >}}
 
 ## Docker permission denied
 
