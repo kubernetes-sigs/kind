@@ -59,37 +59,10 @@ A credential can be programmatically added to the nodes at runtime.
 
 If you do this then kubelet must be restarted on each node to pick up the new credentials.
 
-An example bash snippet for generating a [gcr.io][GCR] cred file on your host machine
+An example shell snippet for generating a [gcr.io][GCR] cred file on your host machine
 using Access Tokens:
 
-```bash
-# login to GCR on all your kind nodes
-
-# KUBECONFIG should point to your kind cluster
-kind export kubeconfig --name="kind"
-
-# move the host config out of the way if it exists
-[ -f $HOME/.docker/config.json ] && mv $HOME/.docker/config.json $HOME/.docker/config.json.host
-
-# https://cloud.google.com/container-registry/docs/advanced-authentication#access_token
-gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://gcr.io
-
-# setup credentials on each node
-for node in $(kubectl get nodes -oname); do
-    # the -oname format is kind/name (so node/name) we just want name
-    node_name=${node#node/}
-    # copy the config to where kubelet will look
-    docker cp $HOME/.docker/config.json ${node_name}:/var/lib/kubelet/config.json
-    # restart kubelet to pick up the config
-    docker exec ${node_name} systemctl restart kubelet.service
-done
-
-# delete the temporary config
-rm $HOME/.docker/config.json
-
-# move the original, host config back if it exists
-[-f $HOME/.docker/config.json.host] && mv $HOME/.docker/config.json.host $HOME/.docker/config.json
-```
+{{< codefromfile file="static/examples/kind-gcr.sh" >}}
 
 ### Use a Service Account
 
