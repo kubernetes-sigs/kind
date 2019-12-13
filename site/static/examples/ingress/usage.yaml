@@ -6,10 +6,10 @@ metadata:
     app: foo
 spec:
   containers:
-    - name: foo-app
-      image: hashicorp/http-echo
-      args:
-        - "-text=foo"
+  - name: foo-app
+    image: hashicorp/http-echo
+    args:
+    - "-text=foo"
 ---
 kind: Service
 apiVersion: v1
@@ -19,7 +19,8 @@ spec:
   selector:
     app: foo
   ports:
-    - port: 5678 # Default port used by the image
+  # Default port used by the image
+  - port: 5678
 ---
 kind: Pod
 apiVersion: v1
@@ -29,10 +30,10 @@ metadata:
     app: bar
 spec:
   containers:
-    - name: bar-app
-      image: hashicorp/http-echo
-      args:
-        - "-text=bar"
+  - name: bar-app
+    image: hashicorp/http-echo
+    args:
+    - "-text=bar"
 ---
 kind: Service
 apiVersion: v1
@@ -42,7 +43,8 @@ spec:
   selector:
     app: bar
   ports:
-    - port: 5678 # Default port used by the image
+  # Default port used by the image
+  - port: 5678
 ---
 apiVersion: extensions/v1beta1
 kind: Ingress
@@ -52,14 +54,14 @@ metadata:
     ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
-    - http:
-        paths:
-          - path: /foo
-            backend:
-              serviceName: foo-service
-              servicePort: 5678
-          - path: /bar
-            backend:
-              serviceName: bar-service
-              servicePort: 5678
+  - http:
+      paths:
+      - path: /foo
+        backend:
+          serviceName: foo-service
+          servicePort: 5678
+      - path: /bar
+        backend:
+          serviceName: bar-service
+          servicePort: 5678
 ---

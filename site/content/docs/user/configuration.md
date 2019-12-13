@@ -53,5 +53,5 @@ NOTE: not all options are documented yet!  We will fix this with time, PRs welco
 Extra mounts can be used to pass through storage on the host to a kind node
 for persisting data, mounting through code etc.
 
-{{< codefromfile file="static/examples/config-with-mounts.yaml" lang="yaml" >}}
+{{< codeFromFile file="static/examples/config-with-mounts.yaml" lang="yaml" >}}
 

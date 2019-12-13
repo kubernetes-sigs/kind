@@ -7,12 +7,22 @@ menu:
     weight: 3
 ---
 
+# Ingress
+
+This guide covers setting up [ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) 
+on a kind cluster.
+
 ## Setting Up An Ingress Controller
 
-We can leverage KIND's `extraPortMapping` config option when creating a cluster to
-forward ports from the host to an ingress controller running on a node. We can also specify 
-custom node label by using `node-labels` in the kubeadm `InitConfiguration`, to be used
+We can leverage KIND's `extraPortMapping` config option when 
+creating a cluster to forward ports from the host 
+to an ingress controller running on a node. 
+
+We can also setup a custom node label by using `node-labels` 
+in the kubeadm `InitConfiguration`, to be used
 by the ingress controller `nodeSelector`.
+
+
 The following ingress controllers are known to work:
 
  - [Ingress NGINX](#ingress-nginx)
@@ -21,7 +31,7 @@ The following ingress controllers are known to work:
 
 Create a kind cluster with `extraPortMappings` and `node-labels`.
 
-```shell script
+{{< codeFromInline lang="bash" >}}
 cat <<EOF | kind create cluster --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
@@ -41,44 +51,31 @@ nodes:
   - containerPort: 443
     hostPort: 443
 EOF
-```
+{{< /codeFromInline >}}
+
 Apply the [mandatory ingress-nginx components](https://kubernetes.github.io/ingress-nginx/deploy/#prerequisite-generic-deployment-command).
 
-```shell script
+{{< codeFromInline lang="bash" >}}
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/mandatory.yaml
-```
-Apply kind specific patches
+{{< /codeFromInline >}}
 
-```yaml
-spec:
-  template:
-    spec:
-      containers:
-      - name: nginx-ingress-controller
-        ports:
-        - containerPort: 80
-        # Proxy the host port 80 for http
-          hostPort: 80
-        - containerPort: 443
-        # Proxy the host port 443 for https
-          hostPort: 443
-      nodeSelector:
-        # schedule it on the control-plane node
-        ingress-ready: 'true'
-      tolerations:
-      # tolerate the the control-plane taints
-      - key: node-role.kubernetes.io/master
-        operator: Equal
-        effect: NoSchedule
+Apply kind specific patches to forward the hostPorts to the 
+ingress controller, set taint tolerations and 
+schedule it to the custom labelled node.
+
+```json
+{{% readFile "static/examples/ingress/nginx/patch.json" %}}
 ```
 
-```shell script
-kubectl patch deployments -n ingress-nginx nginx-ingress-controller -p "$(curl https://kind.sigs.k8s.io/manifests/ingress/nginx/patch.yaml)"
-```
+Apply it by running:
+
+{{< codeFromInline lang="bash" >}}
+kubectl patch deployments -n ingress-nginx nginx-ingress-controller -p '{{< minify file="static/examples/ingress/nginx/patch.json" >}}' 
+{{< /codeFromInline >}}
 
 
-Now you will want to checkout [Using Ingress](#using-ingress)
-
+Now the Ingress is all setup to be used. 
+Refer [Using Ingress](#using-ingress) for a basic example usage.
 
 ## Using Ingress
 
@@ -86,82 +83,20 @@ The following example creates simple http-echo services
 and an Ingress object to route to these services.
 
 ```yaml
-kind: Pod
-apiVersion: v1
-metadata:
-  name: foo-app
-  labels:
-    app: foo
-spec:
-  containers:
-    - name: foo-app
-      image: hashicorp/http-echo
-      args:
-        - "-text=foo"
----
-kind: Service
-apiVersion: v1
-metadata:
-  name: foo-service
-spec:
-  selector:
-    app: foo
-  ports:
-    - port: 5678 # Default port used by the image
----
-kind: Pod
-apiVersion: v1
-metadata:
-  name: bar-app
-  labels:
-    app: bar
-spec:
-  containers:
-    - name: bar-app
-      image: hashicorp/http-echo
-      args:
-        - "-text=bar"
----
-kind: Service
-apiVersion: v1
-metadata:
-  name: bar-service
-spec:
-  selector:
-    app: bar
-  ports:
-    - port: 5678 # Default port used by the image
----
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: example-ingress
-  annotations:
-    ingress.kubernetes.io/rewrite-target: /
-spec:
-  rules:
-  - http:
-      paths:
-        - path: /foo
-          backend:
-            serviceName: foo-service
-            servicePort: 5678
-        - path: /bar
-          backend:
-            serviceName: bar-service
-            servicePort: 5678
----
+{{% readFile "static/examples/ingress/usage.yaml" %}}
 ```
 
 Apply the contents
 
-```shell script
-kubectl apply -f {{< absurl "manifests/ingress/nginx/example.yaml" >}}
-```
+{{< codeFromInline lang="bash" >}}
+kubectl apply -f {{< absURL "examples/ingress/usage.yaml" >}}
+{{< /codeFromInline >}}
 
 Now verify that the ingress works
 
-```shell script
-curl localhost/foo # should output "foo"
-curl localhost/bar # should output "bar"
-```
+{{< codeFromInline lang="bash" >}}
+# should output "foo"
+curl localhost/foo
+# should output "bar"
+curl localhost/bar
+{{< /codeFromInline >}}

@@ -62,7 +62,7 @@ If you do this then kubelet must be restarted on each node to pick up the new cr
 An example shell snippet for generating a [gcr.io][GCR] cred file on your host machine
 using Access Tokens:
 
-{{< codefromfile file="static/examples/kind-gcr.sh" >}}
+{{< codeFromFile file="static/examples/kind-gcr.sh" >}}
 
 ### Use a Service Account
 
