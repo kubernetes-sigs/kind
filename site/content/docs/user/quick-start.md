@@ -33,29 +33,29 @@ into your `$PATH`.
 
 On macOS / Linux:
 
-```bash
+{{< codeFromInline lang="bash" >}}
 curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/download/v0.6.1/kind-$(uname)-amd64
 chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
-```
+{{< /codeFromInline >}}
 
 On Mac via Homebrew:
 
-```bash
+{{< codeFromInline lang="bash" >}}
 brew install kind
-```
+{{< /codeFromInline >}}
 
 On Windows:
 
-```powershell
+{{< codeFromInline lang="powershell" >}}
 curl.exe -Lo kind-windows-amd64.exe https://github.com/kubernetes-sigs/kind/releases/download/v0.6.1/kind-windows-amd64
 Move-Item .\kind-windows-amd64.exe c:\some-dir-in-your-PATH\kind.exe
-```
+{{< /codeFromInline >}}
 
 OR via Chocolatey (https://chocolatey.org/packages/kind)
-```powershell
+{{< codeFromInline lang="powershell" >}}
 choco install kind
-```
+{{< /codeFromInline >}}
 
 
 ## Creating a Cluster
