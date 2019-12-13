@@ -8,7 +8,7 @@ kind is primarily designed for testing Kubernetes 1.11+, initially targeting the
 
 If you have [go] \([1.11+][go-supported]) and [docker] installed `GO111MODULE="on" go get sigs.k8s.io/kind@v0.6.1 && kind create cluster` is all you need!
 
-<img src="https://gist.githubusercontent.com/BenTheElder/621bc321fc6d9506fd936feb36d32dd0/raw/13fe81c219e64b4917575c8988e06719c072c7f1/kind-demo.gif" alt="2x speed `kind create cluster` demo" />
+<img src="images/kind-create-cluster.png" />
 
 kind consists of:
 
