@@ -137,14 +137,10 @@ run_tests() {
 
   # setting this env prevents ginkgo e2e from trying to run provider setup
   export KUBERNETES_CONFORMANCE_TEST='y'
-  # setting these is required to make RuntimeClass tests work ...
+  # setting these is required to make RuntimeClass tests work ... :/
   export KUBE_CONTAINER_RUNTIME=remote
   export KUBE_CONTAINER_RUNTIME_ENDPOINT=unix:///run/containerd/containerd.sock
   export KUBE_CONTAINER_RUNTIME_NAME=containerd
-  # unless we specify otherwise, tolerate flakes :/
-  # TODO: remove this when kubernetes e2e testing no longer tolerates flakes ...
-  # https://github.com/kubernetes/test-infra/blob/608557bbe4342da9895a0762cbdbf8a508ee59e9/config/jobs/kubernetes/sig-cloud-provider/gcp/gcp-gce.yaml#L5-L6
-  export GINKGO_TOLERATE_FLAKES="${GINKGO_TOLERATE_FLAKES:-y}"
   ./hack/ginkgo-e2e.sh \
     '--provider=skeleton' "--num-nodes=${NUM_NODES}" \
     "--ginkgo.focus=${FOCUS}" "--ginkgo.skip=${SKIP}" \
