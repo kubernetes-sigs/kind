@@ -52,11 +52,7 @@ func planCreation(cluster string, cfg *config.Cluster) (createContainerFuncs []f
 		// plan loadbalancer node
 		name := nodeNamer(constants.ExternalLoadBalancerNodeRoleValue)
 		createContainerFuncs = append(createContainerFuncs, func() error {
-			args, err := runArgsForLoadBalancer(cfg, name, genericArgs)
-			if err != nil {
-				return err
-			}
-			return createContainer(args)
+			return createContainer(runArgsForLoadBalancer(cfg, name, genericArgs))
 		})
 	}
 
@@ -191,7 +187,7 @@ func runArgsForNode(node *config.Node, name string, args []string) []string {
 	return append(args, node.Image)
 }
 
-func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) ([]string, error) {
+func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) []string {
 	args = append([]string{
 		"run",
 		"--hostname", name, // make hostname match container name
@@ -211,7 +207,7 @@ func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) ([]
 	})...)
 
 	// finally, specify the image to run
-	return append(args, loadbalancer.Image), nil
+	return append(args, loadbalancer.Image)
 }
 
 func getProxyEnv(cfg *config.Cluster) (map[string]string, error) {
