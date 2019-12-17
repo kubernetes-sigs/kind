@@ -79,14 +79,10 @@ func planCreation(cluster string, cfg *config.Cluster) (createContainerFuncs []f
 		switch node.Role {
 		case config.ControlPlaneRole:
 			createContainerFuncs = append(createContainerFuncs, func() error {
-				port, err := common.PortOrGetFreePort(apiServerPort, apiServerAddress)
-				if err != nil {
-					return errors.Wrap(err, "failed to get port for API server")
-				}
 				node.ExtraPortMappings = append(node.ExtraPortMappings,
 					config.PortMapping{
 						ListenAddress: apiServerAddress,
-						HostPort:      port,
+						HostPort:      apiServerPort,
 						ContainerPort: common.APIServerInternalPort,
 					},
 				)
@@ -208,14 +204,9 @@ func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) ([]
 	)
 
 	// load balancer port mapping
-	listenAddress := cfg.Networking.APIServerAddress
-	port, err := common.PortOrGetFreePort(cfg.Networking.APIServerPort, listenAddress)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get port for api server load balancer")
-	}
 	args = append(args, generatePortMappings(config.PortMapping{
-		ListenAddress: listenAddress,
-		HostPort:      port,
+		ListenAddress: cfg.Networking.APIServerAddress,
+		HostPort:      cfg.Networking.APIServerPort,
 		ContainerPort: common.APIServerInternalPort,
 	})...)
 
