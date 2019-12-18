@@ -42,9 +42,128 @@ To use this config, place the contents in a file `config.yaml` and then run
 
 You can also include a full file path like `kind create cluster --config=/foo/bar/config.yaml`.
 
-## Options
+## Cluster-Wide Options
 
 The following high level options are available.
+
+NOTE: not all options are documented yet!  We will fix this with time, PRs welcome!
+
+### Networking
+
+Multiple details of the cluster's networking can be customized under the
+`networking` field.
+
+#### IP Family
+
+KIND has limited support for IPv6 (and soon dual-stack!) clusters, you can switch
+from the default of IPv4 by setting:
+
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  ipFamily: ipv6
+{{< /codeFromInline >}}
+
+NOTE: you may need to reconfigure your docker daemon to enable ipv6 in order
+to use this. 
+
+IPv6 does not work on docker for mac because port forwarding ipv6
+is not yet supported in docker for mac.
+
+#### API Server
+
+The API Server listen address and port can be customized with:
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  # WARNING: It is _strongly_ recommended that you keep this the default
+  # (127.0.0.1) for security reasons. However it is possible to change this.
+  apiServerAddress: "127.0.0.1"
+  # By default the API server listens on a random open port.
+  # You may choose a specific port but probably don't need to in most cases.
+  # Using a random port makes it easier to spin up multiple clusters.
+  apiServerPort: 6443
+{{< /codeFromInline  >}}
+
+#### Pod Subnet
+
+You can configure the subnet used for pod IPs by setting
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  podSubnet: "10.244.0.0/16"
+{{< /codeFromInline >}}
+
+#### Service Subnet
+
+You can configure the Kubernetes service subnet used for service IPs by setting
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  serviceSubnet: "10.96.0.0/12"
+{{< /codeFromInline >}}
+
+#### Disable Default CNI
+
+KIND ships with a simple networking implementation ("kindnetd") based around
+standard CNI plugins (`ptp`, `host-local`, ...) and simple netlink routes.
+
+This CNI also handles IP masquerade.
+
+You may disable the default to install a different CNI. This is a power user
+feature with limited support, but many common CNI manifests are known to work,
+e.g. Calico.
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  # the default CNI will not be installed
+  disableDefaultCNI: true
+{{< /codeFromInline >}}
+
+
+### Nodes
+The `kind: Cluster` object has a `nodes` field containing a list of `node`
+objects. If unset this defaults to:
+
+```yaml
+nodes:
+# one node hosting a control plane
+- role: control-plane
+```
+
+You can create a multi node cluster with the following config:
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+# One control plane node and three "workers".
+#
+# While these will not add more real compute capacity and
+# have limited isolation, this can be useful for testing
+# rolling updates etc.
+#
+# The API-server and other control plane components will be
+# on the control-plane node.
+#
+# You probably don't need this unless you are testing Kubernetes itself.
+nodes:
+- role: control-plane
+- role: worker
+- role: worker
+- role: worker
+{{< /codeFromInline >}}
+
+## Per-Node Options
+
+The following options are available for setting on each entry in `nodes`.
 
 NOTE: not all options are documented yet!  We will fix this with time, PRs welcome!
 
