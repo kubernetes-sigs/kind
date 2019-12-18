@@ -52,11 +52,7 @@ func planCreation(cluster string, cfg *config.Cluster) (createContainerFuncs []f
 		// plan loadbalancer node
 		name := nodeNamer(constants.ExternalLoadBalancerNodeRoleValue)
 		createContainerFuncs = append(createContainerFuncs, func() error {
-			args, err := runArgsForLoadBalancer(cfg, name, genericArgs)
-			if err != nil {
-				return err
-			}
-			return createContainer(args)
+			return createContainer(runArgsForLoadBalancer(cfg, name, genericArgs))
 		})
 	}
 
@@ -79,14 +75,10 @@ func planCreation(cluster string, cfg *config.Cluster) (createContainerFuncs []f
 		switch node.Role {
 		case config.ControlPlaneRole:
 			createContainerFuncs = append(createContainerFuncs, func() error {
-				port, err := common.PortOrGetFreePort(apiServerPort, apiServerAddress)
-				if err != nil {
-					return errors.Wrap(err, "failed to get port for API server")
-				}
 				node.ExtraPortMappings = append(node.ExtraPortMappings,
 					config.PortMapping{
 						ListenAddress: apiServerAddress,
-						HostPort:      port,
+						HostPort:      apiServerPort,
 						ContainerPort: common.APIServerInternalPort,
 					},
 				)
@@ -195,7 +187,7 @@ func runArgsForNode(node *config.Node, name string, args []string) []string {
 	return append(args, node.Image)
 }
 
-func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) ([]string, error) {
+func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) []string {
 	args = append([]string{
 		"run",
 		"--hostname", name, // make hostname match container name
@@ -208,19 +200,14 @@ func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) ([]
 	)
 
 	// load balancer port mapping
-	listenAddress := cfg.Networking.APIServerAddress
-	port, err := common.PortOrGetFreePort(cfg.Networking.APIServerPort, listenAddress)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get port for api server load balancer")
-	}
 	args = append(args, generatePortMappings(config.PortMapping{
-		ListenAddress: listenAddress,
-		HostPort:      port,
+		ListenAddress: cfg.Networking.APIServerAddress,
+		HostPort:      cfg.Networking.APIServerPort,
 		ContainerPort: common.APIServerInternalPort,
 	})...)
 
 	// finally, specify the image to run
-	return append(args, loadbalancer.Image), nil
+	return append(args, loadbalancer.Image)
 }
 
 func getProxyEnv(cfg *config.Cluster) (map[string]string, error) {
