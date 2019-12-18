@@ -55,3 +55,18 @@ for persisting data, mounting through code etc.
 
 {{< codeFromFile file="static/examples/config-with-mounts.yaml" lang="yaml" >}}
 
+
+### Extra Port Mappings
+
+Extra port mappings can be used to port forward to the kind nodes. This is a 
+cross-platform option to get traffic into your kind cluster. 
+
+With docker on Linux you can simply send traffic to the node IPs from the host
+without this, but to cover macOS and Windows you'll want to use these.
+
+You may also want to see the [Ingress Guide].
+
+{{< codeFromFile file="static/examples/config-with-port-mapping.yaml" lang="yaml" >}}
+
+
+[Ingress Guide]: ./../ingress
