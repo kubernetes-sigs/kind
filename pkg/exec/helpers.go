@@ -62,8 +62,8 @@ func RunErrorForError(err error) *RunError {
 // stderr + stdout, it scans these for lines and returns a slice of output lines
 func CombinedOutputLines(cmd Cmd) (lines []string, err error) {
 	var buff bytes.Buffer
-	cmd.SetStdout(&buff)
-	cmd.SetStderr(&buff)
+	cmd = cmd.SetStdout(&buff)
+	cmd = cmd.SetStderr(&buff)
 	err = cmd.Run()
 	scanner := bufio.NewScanner(&buff)
 	for scanner.Scan() {
@@ -77,7 +77,7 @@ func CombinedOutputLines(cmd Cmd) (lines []string, err error) {
 // stdout, it scans these for lines and returns a slice of output lines
 func OutputLines(cmd Cmd) (lines []string, err error) {
 	var buff bytes.Buffer
-	cmd.SetStdout(&buff)
+	cmd = cmd.SetStdout(&buff)
 	err = cmd.Run()
 	scanner := bufio.NewScanner(&buff)
 	for scanner.Scan() {
@@ -88,8 +88,8 @@ func OutputLines(cmd Cmd) (lines []string, err error) {
 
 // InheritOutput sets cmd's output to write to the current process's stdout and stderr
 func InheritOutput(cmd Cmd) Cmd {
-	cmd.SetStderr(os.Stderr)
-	cmd.SetStdout(os.Stdout)
+	cmd = cmd.SetStderr(os.Stderr)
+	cmd = cmd.SetStdout(os.Stdout)
 	return cmd
 }
 
@@ -101,7 +101,7 @@ func RunWithStdoutReader(cmd Cmd, readerFunc func(io.Reader) error) error {
 	}
 	defer pw.Close()
 	defer pr.Close()
-	cmd.SetStdout(pw)
+	cmd = cmd.SetStdout(pw)
 
 	return errors.AggregateConcurrent([]func() error{
 		func() error {
@@ -121,7 +121,7 @@ func RunWithStdinWriter(cmd Cmd, writerFunc func(io.Writer) error) error {
 	}
 	defer pw.Close()
 	defer pr.Close()
-	cmd.SetStdin(pr)
+	cmd = cmd.SetStdin(pr)
 
 	return errors.AggregateConcurrent([]func() error{
 		func() error {
