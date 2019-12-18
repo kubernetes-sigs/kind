@@ -40,7 +40,7 @@ func StringEqual(t testingDotT, expected, result string) {
 	if expected != result {
 		t.Errorf("Strings did not match!")
 		t.Errorf("Expected: %q", expected)
-		t.Errorf("But got: %q", result)
+		t.Errorf("Received: %q", result)
 	}
 }
 
@@ -49,7 +49,7 @@ func StringEqual(t testingDotT, expected, result string) {
 func DeepEqual(t testingDotT, expected, result interface{}) {
 	if !reflect.DeepEqual(expected, result) {
 		t.Errorf("Result did not DeepEqual Expected!")
-		t.Errorf("Expected: %+v", expected)
-		t.Errorf("But got: %+v", result)
+		t.Errorf("Expected: %#+v", expected)
+		t.Errorf("Received: %#+v", result)
 	}
 }
