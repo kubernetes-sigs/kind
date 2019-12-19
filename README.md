@@ -123,6 +123,7 @@ Some other open source projects with slightly different but overlapping use case
 - https://github.com/kinvolk/kube-spawn
 - https://github.com/kubernetes/minikube
 - https://github.com/kubernetes-sigs/kubeadm-dind-cluster
+- https://github.com/rancher/k3d
 
 ### Code of conduct
 
