@@ -3,7 +3,7 @@
 # Please see [Our Documentation](https://kind.sigs.k8s.io/docs/user/quick-start/) for more in-depth installation etc.
 
 kind is a tool for running local Kubernetes clusters using Docker container "nodes".  
-kind is primarily designed for testing Kubernetes 1.11+, initially targeting the [conformance tests].
+kind was primarily designed for testing Kubernetes itself, but may be used for local development or CI.
 
 If you have [go] ([1.11+][go-supported]) and [docker] installed `GO111MODULE="on" go get sigs.k8s.io/kind@v0.6.1 && kind create cluster` is all you need!
 
@@ -111,19 +111,8 @@ See also: our own [contributor guide] and the Kubernetes [community page].
 - kind supports multi-node (including HA) clusters
 - kind supports building Kubernetes release builds from source
   - support for make / bash / docker or bazel, in addition to pre-published builds
-- kind supports Windows in addition to MacOS and Linux
+- kind supports Linux, macOS and Windows
 - kind is a [CNCF certified conformant Kubernetes installer](https://landscape.cncf.io/selected=kind)
-
-## Alternatives
-
-Some other open source projects with slightly different but overlapping use cases, features etc.
-
-- https://github.com/bsycorp/kind
-- https://github.com/ubuntu/microk8s
-- https://github.com/kinvolk/kube-spawn
-- https://github.com/kubernetes/minikube
-- https://github.com/kubernetes-sigs/kubeadm-dind-cluster
-- https://github.com/rancher/k3d
 
 ### Code of conduct
 
