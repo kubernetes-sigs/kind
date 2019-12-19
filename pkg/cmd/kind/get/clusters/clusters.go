@@ -50,12 +50,12 @@ func runE(logger log.Logger, streams cmd.IOStreams) error {
 	if err != nil {
 		return err
 	}
-	if len(clusters) > 0 {
-		for _, cluster := range clusters {
-			fmt.Fprintln(streams.Out, cluster)
-		}
-	} else {
-		logger.Warn("No clusters available")
+	if len(clusters) == 0 {
+		logger.V(0).Info("No kind clusters found.")
+		return nil
+	}
+	for _, cluster := range clusters {
+		fmt.Fprintln(streams.Out, cluster)
 	}
 	return nil
 }
