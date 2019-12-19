@@ -61,6 +61,10 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	if err != nil {
 		return err
 	}
+	if len(n) == 0 {
+		logger.V(0).Infof("No kind nodes found for cluster %q.", flags.Name)
+		return nil
+	}
 	for _, node := range n {
 		fmt.Fprintln(streams.Out, node.String())
 	}
