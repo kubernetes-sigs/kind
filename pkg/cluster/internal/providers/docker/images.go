@@ -35,10 +35,11 @@ func ensureNodeImages(logger log.Logger, status *cli.Status, cfg *config.Cluster
 	// pull each required image
 	for _, image := range common.RequiredNodeImages(cfg).List() {
 		// prints user friendly message
+		friendlyImageName := image
 		if strings.Contains(image, "@sha256:") {
-			image = strings.Split(image, "@sha256:")[0]
+			friendlyImageName = strings.Split(image, "@sha256:")[0]
 		}
-		status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", image))
+		status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", friendlyImageName))
 
 		// attempt to explicitly pull the image if it doesn't exist locally
 		// we don't care if this errors, we'll still try to run which also pulls
