@@ -32,7 +32,9 @@ It may additionally be helpful to:
 
 ## Failures involving mismatched kubectl versions
 
-`kind` will fail create a cluster, if the version of Kubernetes for the client and server differ.
+You may have problems interacting with your kind cluster if your client(s) are
+skewed too far from the kind node version. Kubernetes [only supports limited skew][version skew]
+between clients and the API server.
 
 This is a issue that frequently occurs when running `kind` alongside Docker For Mac.
 
@@ -74,7 +76,7 @@ And possibly other old versions of Docker.
 
 With these versions you must use Kubernetes >= 1.14, or more ideally upgrade Docker instead.
 
-kind is tested with a recent stable docker-ce release.
+kind is tested with a recent stable `docker-ce` release.
 
 ## Docker on Btrfs or ZFS
 
@@ -337,3 +339,4 @@ For previous discussion see: https://github.com/kubernetes-sigs/kind/issues/763
 [sudo with kind]: https://github.com/kubernetes-sigs/kind/issues/713#issuecomment-512665315
 [docker desktop for windows]: https://hub.docker.com/editions/community/docker-ce-desktop-windows
 [switch between windows and linux containers]: https://docs.docker.com/docker-for-windows/#switch-between-windows-and-linux-containers
+[version skew]: https://kubernetes.io/docs/setup/release/version-skew-policy/#supported-version-skew
