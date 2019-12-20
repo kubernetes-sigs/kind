@@ -28,7 +28,7 @@ cd "${REPO_ROOT}"
 cd ./images/haproxy
 
 IMAGE="${IMAGE:-kindest/haproxy}"
-TAG="${TAG:-2.0.0-alpine}"
+TAG="${TAG:-2.1.1-alpine}"
 BASE="haproxy:${TAG}"
 
 # tag arch, manifest architecture, variant

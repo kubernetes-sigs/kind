@@ -14,6 +14,6 @@
 
 # standard haproxy image + minimal config so the container will not exit
 ARG ARCH="amd64"
-ARG BASE="haproxy:2.0.0-alpine"
+ARG BASE="haproxy:2.1.1-alpine"
 FROM ${ARCH}/${BASE}
 COPY haproxy.cfg /usr/local/etc/haproxy/haproxy.cfg
