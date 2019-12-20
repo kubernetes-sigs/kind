@@ -200,6 +200,7 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.N
 		return "", errors.Wrap(err, "failed to get IP for node")
 	}
 
+	// TODO: this is no longer needed since v1.18
 	data.NodeAddress = nodeAddress
 	// configure the right protocol addresses
 	if cfg.Networking.IPFamily == "ipv6" {
