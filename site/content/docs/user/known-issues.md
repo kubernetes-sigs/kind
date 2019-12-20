@@ -17,20 +17,21 @@ It may additionally be helpful to:
 - reach out and ask for help in [#kind] on the [kubernetes slack]
 
 ## Contents
-* [Failures involving mismatched kubectl versions](#failures-involving-mismatched-kubectl-version)
+* [kubectl version skew](#kubectl-version-skew)
 * [Older Docker Installations](#older-docker-installations)
 * [Docker on Btrfs or ZFS](#docker-on-btrfs-zfs)
-* [Docker installed with Snap](#docker-installed-with-snap)
+* [Docker Installed With Snap](#docker-installed-with-snap)
 * [Failing to apply overlay network](#failing-to-apply-overlay-network)
 * [Failure to build node image](#failure-to-build-node-image)
 * [Failure for cluster to properly start](#failure-for-cluster-to-properly-start)
 * [Pod errors due to "too many open files"](#pod-errors-due-to-too-many-open-files)
 * [Docker permission denied](#docker-permission-denied)
-* [Docker on Windows](#docker-on-windows)
+* [Windows Containers](#windows-containers)
+* [Non-AMD64 Architectures](#nonamd64-architectures)
 * [Unable to pull images](#unable-to-pull-images)
 * [Chrome OS](#chrome-os)
 
-## Failures involving mismatched kubectl versions
+## Kubectl Version Skew
 
 You may have problems interacting with your kind cluster if your client(s) are
 skewed too far from the kind node version. Kubernetes [only supports limited skew][version skew]
@@ -108,7 +109,7 @@ After restarting the Docker daemon you should see that Docker is now using the `
 which may require creating a partition on your host disk with a suitable filesystem and ensuring Docker's
 data root is on this (by default `/var/lib/docker`). Ext4 is a reasonable choice.
 
-### Docker Installed with Snap
+## Docker Installed with Snap
 
 If you installed Docker with [snap], it is likely that `docker` commands do not
 have access to `$TMPDIR`. This may break some kind commands which depend
@@ -293,15 +294,30 @@ open /home/user/.docker/config.json: permission denied
 To fix this problem, either follow the docker's docs [manage docker as a non root user][manage docker as a non root user],
 or try to use `sudo` before your commands (if you get `command not found` please check [this comment about sudo with kind][sudo with kind]).
 
-## Docker on Windows
+## Windows Containers
 
 [Docker Desktop for Windows][docker desktop for windows] supports running both Linux (the default) and Windows Docker containers.
 
 `kind` for Windows requires Linux containers. To switch between Linux and Windows containers see [this page][switch between windows and linux containers].
 
+Windows containers are not like Linux containers and do not support running docker in docker and therefore cannot support kind.
+
+## Non-AMD64 Architectures
+
+KIND does not currently ship pre-built images for non-amd64 architectures.
+In the future we may, but currently demand has been low and the cost to build
+has been high.
+
+To use kind on other architectures, you need to first build a base image
+and then build a node image.
+
+Run `images/base/build.sh` and then taking note of the built image name use `kind build node-image --base-image=kindest/base:tag-i-built`.
+
+There are more details about how to do this in the [Quick Start] guide.
+
 ## Unable to pull images
 
-When using named Kind instances you may sometimes see your images failing to pull correctly on pods. This will usually manifest itself with the following output when doing a `kubectl describe pod my-pod`
+When using named KIND instances you may sometimes see your images failing to pull correctly on pods. This will usually manifest itself with the following output when doing a `kubectl describe pod my-pod`
 
 ```
 Failed to pull image "docker.io/my-custom-image:tag": rpc error: code = Unknown desc = failed to resolve image "docker.io/library/my-custom-image:tag": no available registry endpoint: pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed
@@ -340,3 +356,4 @@ For previous discussion see: https://github.com/kubernetes-sigs/kind/issues/763
 [docker desktop for windows]: https://hub.docker.com/editions/community/docker-ce-desktop-windows
 [switch between windows and linux containers]: https://docs.docker.com/docker-for-windows/#switch-between-windows-and-linux-containers
 [version skew]: https://kubernetes.io/docs/setup/release/version-skew-policy/#supported-version-skew
+[Quick Start]: /docs/user/quick-start
