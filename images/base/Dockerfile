@@ -41,6 +41,7 @@ COPY files/ /
 # Packages installed are broken down into (each on a line):
 # - packages needed to run services (systemd)
 # - packages needed for kubernetes components
+# - packages needed by the container runtime
 # - misc packages kind uses itself
 # After installing packages we cleanup by:
 # - removing unwanted systemd services
@@ -63,8 +64,9 @@ RUN echo "Ensuring scripts are executable ..." \
     && chmod +x /usr/local/bin/clean-install /usr/local/bin/entrypoint \
  && echo "Installing Packages ..." \
     && DEBIAN_FRONTEND=noninteractive clean-install \
-      systemd systemd-sysv libsystemd0 \
+      systemd \
       conntrack iptables iproute2 ethtool socat util-linux mount ebtables udev kmod \
+      libseccomp2 \
       bash ca-certificates curl rsync \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
     && rm -f /lib/systemd/system/multi-user.target.wants/* \
@@ -78,8 +80,9 @@ RUN echo "Ensuring scripts are executable ..." \
     && export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
     && export CONTAINERD_BASE_URL="https://github.com/kind-ci/containerd-nightlies/releases/download/containerd-${CONTAINERD_VERSION#v}" \
     && curl -sSL --retry 5 --output /tmp/containerd.tgz "${CONTAINERD_BASE_URL}/containerd-${CONTAINERD_VERSION#v}.linux-${ARCH}.tar.gz" \
-    && tar -C /usr/local -xzf /tmp/containerd.tgz \
+    && tar -C /usr/local -xzvf /tmp/containerd.tgz \
     && rm -rf /tmp/containerd.tgz \
+    && rm -f /usr/local/bin/containerd-stress /usr/local/bin/containerd-shim-runc-v1 \
     && curl -sSL --retry 5 --output /usr/local/sbin/runc "${CONTAINERD_BASE_URL}/runc.${ARCH}" \
     && chmod 755 /usr/local/sbin/runc \
     && containerd --version \
@@ -100,6 +103,7 @@ RUN echo "Ensuring scripts are executable ..." \
          -o -iname portmap \
          -o -iname loopback \
       \) \
+      -delete \
  && echo "Ensuring /etc/kubernetes/manifests" \
     && mkdir -p /etc/kubernetes/manifests \
  && echo "Adjusting systemd-tmpfiles timer" \
