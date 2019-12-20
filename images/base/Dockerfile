@@ -94,6 +94,12 @@ RUN echo "Ensuring scripts are executable ..." \
     && mkdir -p /opt/cni/bin \
     && tar -C /opt/cni/bin -xzf /tmp/cni.tgz \
     && rm -rf /tmp/cni.tgz \
+    && find /opt/cni/bin -type f -not \( \
+         -iname host-local \
+         -o -iname ptp \
+         -o -iname portmap \
+         -o -iname loopback \
+      \) \
  && echo "Ensuring /etc/kubernetes/manifests" \
     && mkdir -p /etc/kubernetes/manifests \
  && echo "Adjusting systemd-tmpfiles timer" \
