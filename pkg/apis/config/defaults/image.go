@@ -18,4 +18,4 @@ limitations under the License.
 package defaults
 
 // Image is the default for the Config.Image field, aka the default node image.
-const Image = "kindest/node:v1.17.0@sha256:c1ccbb2d2a5358a7dfba838537baeed84c2f6c0c69ae8a15df8a4915b4dc9a14"
+const Image = "kindest/node:v1.17.0@sha256:190c97963ec4f4121c3f1e96ca6eb104becda5bae1df3a13f01649b2dd372f6d"
