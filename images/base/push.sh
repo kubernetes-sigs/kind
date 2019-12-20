@@ -1,5 +1,6 @@
+#!/bin/bash
 #!/usr/bin/env bash
-# Copyright 2018 The Kubernetes Authors.
+# Copyright 2019 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,18 +17,18 @@
 set -o errexit -o nounset -o pipefail
 
 # cd to the repo root
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 cd "${REPO_ROOT}"
 
-# ensure we have up to date kind
-make build
-
+set -x;
 # generate tag
-TAG="$(date +v%Y%m%d)-$(git describe --always --dirty)"
+TAG="${TAG:-"$(date +v%Y%m%d)-$(git describe --always --dirty)"}"
 IMAGE="kindest/base:${TAG}"
+export TAG
+export IMAGE
 
 # build
-(set -x; "${REPO_ROOT}/bin/kind" build base-image --image="${IMAGE}" --source="${REPO_ROOT}/images/base/")
+"${REPO_ROOT}"/images/base/build.sh
 
 # push
 docker push "${IMAGE}"
