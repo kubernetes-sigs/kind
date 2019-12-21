@@ -55,8 +55,8 @@ func (p *Provider) Provision(status *cli.Status, cluster string, cfg *config.Clu
 	ensureNodeImages(p.logger, status, cfg)
 
 	// actually provision the cluster
-	// TODO: strings.Repeat("📦", len(desiredNodes))
-	status.Start("Preparing nodes 📦")
+	icons := strings.Repeat("📦 ", len(cfg.Nodes))
+	status.Start(fmt.Sprintf("Preparing nodes %s", icons))
 	defer func() { status.End(err == nil) }()
 
 	// plan creating the containers
