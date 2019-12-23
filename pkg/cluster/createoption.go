@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha3"
+	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	internalcreate "sigs.k8s.io/kind/pkg/cluster/internal/create"
 	internalencoding "sigs.k8s.io/kind/pkg/internal/apis/config/encoding"
 )
@@ -57,6 +58,14 @@ func CreateWithRawConfig(raw []byte) CreateOption {
 func CreateWithV1Alpha3Config(config *v1alpha3.Cluster) CreateOption {
 	return createOptionAdapter(func(o *internalcreate.ClusterOptions) error {
 		o.Config = internalencoding.V1Alpha3ToInternal(config)
+		return nil
+	})
+}
+
+// CreateWithV1Alpha4Config configures the cluster with a v1alpha4 config
+func CreateWithV1Alpha4Config(config *v1alpha4.Cluster) CreateOption {
+	return createOptionAdapter(func(o *internalcreate.ClusterOptions) error {
+		o.Config = internalencoding.V1Alpha4ToInternal(config)
 		return nil
 	})
 }
