@@ -14,49 +14,63 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package cluster implements the `delete` command
-package cluster
+// Package clusters implements the `delete` command for multiple clusters
+package clusters
 
 import (
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/kind/pkg/errors"
-
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/cmd"
+	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
 type flagpole struct {
-	Name       string
 	Kubeconfig string
+	All        bool
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
-		Args: cobra.NoArgs,
+		Args: cobra.MinimumNArgs(0),
 		// TODO(bentheelder): more detailed usage
-		Use:   "cluster",
-		Short: "Deletes a cluster",
+		Use:   "clusters",
+		Short: "Deletes one or more clusters",
 		Long:  "Deletes a resource",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return deleteCluster(logger, flags)
+			if !flags.All && len(args) == 0 {
+				return errors.New("no cluster names provided")
+			}
+
+			return deleteClusters(logger, flags, args)
 		},
 	}
-	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "the cluster name")
 	cmd.Flags().StringVar(&flags.Kubeconfig, "kubeconfig", "", "sets kubeconfig path instead of $KUBECONFIG or $HOME/.kube/config")
+	cmd.Flags().BoolVar(&flags.All, "all", false, "delete all clusters")
 	return cmd
 }
 
-func deleteCluster(logger log.Logger, flags *flagpole) error {
+func deleteClusters(logger log.Logger, flags *flagpole, clusters []string) error {
 	provider := cluster.NewProvider(
 		cluster.ProviderWithLogger(logger),
 	)
-	// Delete individual cluster
-	logger.V(0).Infof("Deleting cluster %q ...", flags.Name)
-	if err := provider.Delete(flags.Name, flags.Kubeconfig); err != nil {
-		return errors.Wrapf(err, "failed to delete cluster %q", flags.Name)
+	var err error
+	if flags.All {
+		//Delete all clusters
+		if clusters, err = provider.List(); err != nil {
+			return errors.Wrap(err, "failed listing clusters for delete")
+		}
 	}
+	var success []string
+	for _, cluster := range clusters {
+		if err = provider.Delete(cluster, flags.Kubeconfig); err != nil {
+			logger.V(0).Infof("%s\n", errors.Wrapf(err, "failed to delete cluster %q", cluster))
+			continue
+		}
+		success = append(success, cluster)
+	}
+	logger.V(0).Infof("Deleted clusters: %q", success)
 	return nil
 }
