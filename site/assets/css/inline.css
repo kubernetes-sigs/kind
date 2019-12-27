@@ -284,3 +284,10 @@ h1:hover a, h2:hover a, h3:hover a, h4:hover a {
     padding-left: 1.5em;
   }
 }
+
+:target::before {
+  content: "";
+  display: block;
+  height: 2em;
+  margin: -2em 0 0;
+}
