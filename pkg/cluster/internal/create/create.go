@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/alessio/shellescape"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/registry"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/context"
 	"sigs.k8s.io/kind/pkg/cluster/internal/delete"
@@ -126,6 +127,7 @@ func Cluster(logger log.Logger, ctx *context.Context, opts *ClusterOptions) erro
 		actionsToRun = append(actionsToRun,
 			installstorage.NewAction(),                // install StorageClass
 			kubeadmjoin.NewAction(),                   // run kubeadm join
+			registry.NewAction(),                      // initialize image registry
 			waitforready.NewAction(opts.WaitForReady), // wait for cluster readiness
 		)
 	}

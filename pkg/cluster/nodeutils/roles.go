@@ -66,6 +66,29 @@ func ExternalLoadBalancerNode(allNodes []nodes.Node) (nodes.Node, error) {
 	return loadBalancerNodes[0], nil
 }
 
+// ImageRegistryNode returns a node handle for the kind-registry node or nil if there isn't one
+func ImageRegistryNode(allNodes []nodes.Node) (nodes.Node, error) {
+	// identify and validate registry node
+	registryNodes, err := SelectNodesByRole(
+		allNodes,
+		constants.ImageRegistryNodeRoleValue,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if len(registryNodes) < 1 {
+		return nil, nil
+	}
+	if len(registryNodes) > 1 {
+		return nil, errors.Errorf(
+			"unexpected number of %s nodes %d",
+			constants.ImageRegistryNodeRoleValue,
+			len(registryNodes),
+		)
+	}
+	return registryNodes[0], nil
+}
+
 // APIServerEndpointNode selects the node from allNodes which hosts the API Server endpoint
 // This should be the control plane node if there is one control plane node, or a LoadBalancer otherwise.
 // It returns an error if the node list is invalid (E.G. two control planes and no load balancer)

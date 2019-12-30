@@ -46,4 +46,10 @@ const (
 	// Please note that `kind` nodes hosting external etcd are not
 	// kubernetes nodes
 	ExternalEtcdNodeRoleValue string = "external-etcd"
+
+	// ImageRegistryNodeRoleValue identifies a node that hosts docker registry
+	//
+	// Please note that `kind` nodes hosting registry are not
+	// kubernetes nodes
+	ImageRegistryNodeRoleValue string = "registry"
 )

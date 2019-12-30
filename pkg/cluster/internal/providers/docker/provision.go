@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
+	"sigs.k8s.io/kind/pkg/cluster/internal/registry"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 
@@ -55,6 +56,12 @@ func planCreation(cluster string, cfg *config.Cluster) (createContainerFuncs []f
 			return createContainer(runArgsForLoadBalancer(cfg, name, genericArgs))
 		})
 	}
+
+	// plan image registry node
+	name := nodeNamer(constants.ImageRegistryNodeRoleValue)
+	createContainerFuncs = append(createContainerFuncs, func() error {
+		return createContainer(runArgsForImageRegistry(cfg, name, genericArgs))
+	})
 
 	// plan normal nodes
 	for _, node := range cfg.Nodes {
@@ -209,6 +216,30 @@ func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) []s
 
 	// finally, specify the image to run
 	return append(args, loadbalancer.Image)
+}
+
+func runArgsForImageRegistry(cfg *config.Cluster, name string, args []string) []string {
+	args = append([]string{
+		"run",
+		"--hostname", name, // make hostname match container name
+		"--name", name, // ... and set the container name
+		// label the node with the role ID
+		"--label", fmt.Sprintf("%s=%s", nodeRoleLabelKey, constants.ImageRegistryNodeRoleValue),
+		"--label", fmt.Sprintf("%s=%s", nodeRoleLabelKey, constants.ImageRegistryNodeRoleValue),
+	},
+		args...,
+	)
+
+	// registry port mapping
+	// TODO(h7kanna): figure out how to read this from configuration or extraPortMappings
+	args = append(args, generatePortMappings(config.PortMapping{
+		ListenAddress: "127.0.0.1",
+		HostPort:      5000,
+		ContainerPort: 5000,
+	})...)
+
+	// finally, specify the image to run
+	return append(args, registry.Image)
 }
 
 func getProxyEnv(cfg *config.Cluster) (map[string]string, error) {
