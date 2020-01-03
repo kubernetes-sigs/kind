@@ -40,7 +40,7 @@ into your `$PATH`:
 On Mac & Linux:
 
 ```console
-curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/download/v0.6.1/kind-$(uname)-amd64
+curl -Lo ./kind "https://github.com/kubernetes-sigs/kind/releases/download/v0.6.1/kind-$(uname)-amd64"
 chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
 ```
