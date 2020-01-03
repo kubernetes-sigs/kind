@@ -50,8 +50,8 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 			return nil
 		},
 		Use:   "docker-image",
-		Short: "loads docker image from host into nodes",
-		Long:  "loads docker image from host into all or specified nodes by name",
+		Short: "Loads docker image from host into nodes",
+		Long:  "Loads docker image from host into all or specified nodes by name",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(logger, flags, args)
 		},

@@ -37,8 +37,8 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "nodes",
-		Short: "lists existing kind nodes by their name",
-		Long:  "lists existing kind nodes by their name",
+		Short: "Lists existing kind nodes by their name",
+		Long:  "Lists existing kind nodes by their name",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(logger, streams, flags)
 		},

@@ -40,8 +40,8 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
 		Use:   "node-image",
-		Short: "build the node image",
-		Long:  "build the node image which contains kubernetes build artifacts and other kind requirements",
+		Short: "Build the node image",
+		Long:  "Build the node image which contains kubernetes build artifacts and other kind requirements",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(logger, flags)
 		},
