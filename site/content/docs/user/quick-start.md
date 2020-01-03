@@ -230,6 +230,7 @@ You may also try removing any unused data left by the Docker engine - e.g.,
 ## Advanced
 
 ### Building The Base Image
+
 To build the `base-image` we use the `build` command:
 ```
 kind build base-image
@@ -250,6 +251,7 @@ kind build base-image --image base:v0.1.0
 
 
 ### Configuring Your kind Cluster
+
 When creating your kind cluster, via `create cluster`, you can use a
 configuration file to run specific commands before or after systemd or kubeadm
 run.
@@ -262,6 +264,7 @@ kind create cluster --config kind-example-config.yaml
 ```
 
 #### Multi-node clusters
+
 In particular, many users may be interested in multi-node clusters. A simple
 configuration for this can be achieved with the following config file contents:
 ```yaml
@@ -311,13 +314,12 @@ Note: binding the `listenAddress` to `127.0.0.1` may affect your ability to acce
 
 Feature gates are a set of key=value pairs that describe alpha or experimental features. In order to enable a gate you have to [customize your kubeadm configuration][customize control plane with kubeadm], and it will depend on what gate and component you want to enable. An example kind config can be:
 
-```
+{{< codeFromInline lang="yaml" >}}
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
-# patch the generated kubeadm config with featuregates
+# patch the generated kubeadm config with a featuregate
 kubeadmConfigPatches:
 - |
-  apiVersion: kubeadm.k8s.io/v1beta2
   kind: ClusterConfiguration
   metadata:
     name: config
@@ -331,7 +333,6 @@ kubeadmConfigPatches:
     extraArgs:
       "feature-gates": "FeatureGateName=true"
 - |
-  apiVersion: kubeadm.k8s.io/v1beta2
   kind: InitConfiguration
   metadata:
     name: config
@@ -339,16 +340,14 @@ kubeadmConfigPatches:
     kubeletExtraArgs:
       "feature-gates": "FeatureGateName=true"
 - |
-  apiVersion: kubelet.config.k8s.io/v1beta1
   kind: KubeletConfiguration
   featureGates:
     FeatureGateName: true
 - |
-  apiVersion: kubeproxy.config.k8s.io/v1alpha1
   kind: KubeProxyConfiguration
   featureGates:
     FeatureGateName: true
-```
+{{< /codeFromInline >}}
 
 #### IPv6 clusters
 You can run ipv6 only clusters using `kind`, but first you need to enable ipv6 in your docker daemon by editing `/etc/docker/daemon.json` [as described here][docker enable ipv6].
