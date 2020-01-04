@@ -21,17 +21,17 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.com/digitalxero/simple-actions/term"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/log"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider/common"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
-	"sigs.k8s.io/kind/pkg/internal/cli"
 )
 
 // ensureNodeImages ensures that the node images used by the create
 // configuration are present
-func ensureNodeImages(logger log.Logger, status *cli.Status, cfg *config.Cluster) {
+func ensureNodeImages(logger log.Logger, status *term.Status, cfg *config.Cluster) {
 	// pull each required image
 	for _, image := range common.RequiredNodeImages(cfg).List() {
 		// prints user friendly message

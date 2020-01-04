@@ -32,7 +32,11 @@ import (
 
 // Export exports the kubeconfig given the cluster context and a path to write it to
 // This will always be an external kubeconfig
-func Export(ctx *context.Context, explicitPath string) error {
+func Export(ctx *context.Context, explicitPath string, dryRun bool) error {
+	if dryRun {
+		return nil
+	}
+
 	cfg, err := get(ctx, true)
 	if err != nil {
 		return err

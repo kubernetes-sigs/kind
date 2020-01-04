@@ -41,14 +41,15 @@ func Main() {
 // See: sigs.k8s.io/kind/pkg/cmd/kind
 func Run(logger log.Logger, streams cmd.IOStreams, args []string) error {
 	// NOTE: we handle the quiet flag here so we can fully silence cobra
-	if checkQuiet(args) {
+	quiet, dryRun := checkQuietDryRun(args)
+	if quiet {
 		// if we are in quiet mode, we want to suppress all status output
 		// only streams.Out should be written to (program output)
 		logger = log.NoopLogger{}
 		streams.ErrOut = ioutil.Discard
 	}
 	// actually run the command
-	c := kind.NewCommand(logger, streams)
+	c := kind.NewCommand(logger, streams, dryRun)
 	c.SetArgs(args)
 	if err := c.Execute(); err != nil {
 		logError(logger, err)
@@ -58,10 +59,9 @@ func Run(logger log.Logger, streams cmd.IOStreams, args []string) error {
 }
 
 // checkQuiet returns true if -q / --quiet was set in args
-func checkQuiet(args []string) bool {
+func checkQuietDryRun(args []string) (quiet, dryRun bool) {
 	flags := pflag.NewFlagSet("persistent-quiet", pflag.ContinueOnError)
 	flags.ParseErrorsWhitelist.UnknownFlags = true
-	quiet := false
 	flags.BoolVarP(
 		&quiet,
 		"quiet",
@@ -69,12 +69,19 @@ func checkQuiet(args []string) bool {
 		false,
 		"silence all stderr output",
 	)
+	flags.BoolVarP(
+		&dryRun,
+		"dry-run",
+		"",
+		false,
+		"perform a dry run",
+	)
 	// NOTE: pflag will error if -h / --help is specified
 	// We don't care here. That will be handled downstream
 	// It will also call flags.Usage so we're making that no-op
 	flags.Usage = func() {}
 	_ = flags.Parse(args)
-	return quiet
+	return quiet, dryRun
 }
 
 // logError logs the error and the root stacktrace if there is one

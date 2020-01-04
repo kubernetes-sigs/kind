@@ -20,6 +20,7 @@ package loadbalancer
 import (
 	"fmt"
 
+	simpleActions "gitlab.com/digitalxero/simple-actions"
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/errors"
 
@@ -34,13 +35,25 @@ import (
 type Action struct{}
 
 // NewAction returns a new Action for configuring the load balancer
-func NewAction() actions.Action {
+func NewAction() simpleActions.Action {
 	return &Action{}
 }
 
 // Execute runs the action
-func (a *Action) Execute(ctx *actions.ActionContext) error {
-	allNodes, err := ctx.Nodes()
+func (a *Action) Execute(ctx simpleActions.ActionContext) (err error) {
+	ctx.Status().Start("Configuring the load balancer ⚖️")
+	defer func() {
+		ctx.Status().End(err == nil)
+	}()
+	if ctx.IsDryRun() {
+		return nil
+	}
+	var data *actions.ActionContextData
+	if data, err = actions.Data(ctx); err != nil {
+		return err
+	}
+
+	allNodes, err := data.Nodes()
 	if err != nil {
 		return err
 	}
@@ -58,13 +71,9 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 
 	// obtain IP family
 	ipv6 := false
-	if ctx.Config.Networking.IPFamily == "ipv6" {
+	if data.Config.Networking.IPFamily == "ipv6" {
 		ipv6 = true
 	}
-
-	// otherwise notify the user
-	ctx.Status.Start("Configuring the external load balancer ⚖️")
-	defer ctx.Status.End(false)
 
 	// collect info about the existing controlplane nodes
 	var backendServers = map[string]string{}
@@ -99,16 +108,15 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// create loadbalancer config on the node
-	if err := nodeutils.WriteFile(loadBalancerNode, loadbalancer.ConfigPath, loadbalancerConfig); err != nil {
+	if err = nodeutils.WriteFile(loadBalancerNode, loadbalancer.ConfigPath, loadbalancerConfig); err != nil {
 		// TODO: logging here
 		return errors.Wrap(err, "failed to copy loadbalancer config to node")
 	}
 
 	// reload the config. haproxy will reload on SIGHUP
-	if err := loadBalancerNode.Command("kill", "-s", "HUP", "1").Run(); err != nil {
+	if err = loadBalancerNode.Command("kill", "-s", "HUP", "1").Run(); err != nil {
 		return errors.Wrap(err, "failed to reload loadbalancer")
 	}
 
-	ctx.Status.End(true)
 	return nil
 }

@@ -17,10 +17,10 @@ limitations under the License.
 package provider
 
 import (
+	"gitlab.com/digitalxero/simple-actions/term"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
-	"sigs.k8s.io/kind/pkg/internal/cli"
 )
 
 // Provider represents a provider of cluster / node infrastructure
@@ -28,7 +28,7 @@ import (
 type Provider interface {
 	// Provision should create and start the nodes, just short of
 	// actually starting up Kubernetes, based on the given cluster config
-	Provision(status *cli.Status, cluster string, cfg *config.Cluster) error
+	Provision(status *term.Status, cluster string, cfg *config.Cluster) error
 	// ListClusters discovers the clusters that currently have resources
 	// under this providers
 	ListClusters() ([]string, error)

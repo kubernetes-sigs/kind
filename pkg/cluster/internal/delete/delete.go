@@ -28,10 +28,14 @@ import (
 // Cluster deletes the cluster identified by ctx
 // explicitKubeconfigPath is --kubeconfig, following the rules from
 // https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands
-func Cluster(logger log.Logger, c *context.Context, explicitKubeconfigPath string) error {
+func Cluster(logger log.Logger, c *context.Context, explicitKubeconfigPath string, dryRun bool) error {
 	n, err := c.ListNodes()
 	if err != nil {
 		return errors.Wrap(err, "error listing nodes")
+	}
+
+	if dryRun {
+		return nil
 	}
 
 	kerr := kubeconfig.Remove(c.Name(), explicitKubeconfigPath)

@@ -21,11 +21,12 @@ import (
 	"bytes"
 	"strings"
 
+	simpleActions "gitlab.com/digitalxero/simple-actions"
 	"sigs.k8s.io/kind/pkg/cluster/constants"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 
-	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
 	"sigs.k8s.io/kind/pkg/cluster/internal/patch"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider/common"
@@ -37,16 +38,25 @@ import (
 type Action struct{}
 
 // NewAction returns a new action for creating the config files
-func NewAction() actions.Action {
+func NewAction() simpleActions.Action {
 	return &Action{}
 }
 
 // Execute runs the action
-func (a *Action) Execute(ctx *actions.ActionContext) error {
-	ctx.Status.Start("Writing configuration 📜")
-	defer ctx.Status.End(false)
+func (a *Action) Execute(ctx simpleActions.ActionContext) (err error) {
+	ctx.Status().Start("Writing configuration 📜")
+	defer func() {
+		ctx.Status().End(err == nil)
+	}()
+	if ctx.IsDryRun() {
+		return nil
+	}
+	var data *actions.ActionContextData
+	if data, err = actions.Data(ctx); err != nil {
+		return err
+	}
 
-	allNodes, err := ctx.Nodes()
+	allNodes, err := data.Nodes()
 	if err != nil {
 		return err
 	}
@@ -60,7 +70,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// configure the right protocol addresses
-	if ctx.Config.Networking.IPFamily == "ipv6" {
+	if data.Config.Networking.IPFamily == "ipv6" {
 		controlPlaneEndpoint = controlPlaneEndpointIPv6
 	}
 
@@ -68,26 +78,26 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	fns := []func() error{}
 
 	configData := kubeadm.ConfigData{
-		ClusterName:          ctx.ClusterContext.Name(),
+		ClusterName:          data.ClusterContext.Name(),
 		ControlPlaneEndpoint: controlPlaneEndpoint,
 		APIBindPort:          common.APIServerInternalPort,
-		APIServerAddress:     ctx.Config.Networking.APIServerAddress,
+		APIServerAddress:     data.Config.Networking.APIServerAddress,
 		Token:                kubeadm.Token,
-		PodSubnet:            ctx.Config.Networking.PodSubnet,
-		ServiceSubnet:        ctx.Config.Networking.ServiceSubnet,
+		PodSubnet:            data.Config.Networking.PodSubnet,
+		ServiceSubnet:        data.Config.Networking.ServiceSubnet,
 		ControlPlane:         true,
-		IPv6:                 ctx.Config.Networking.IPFamily == "ipv6",
+		IPv6:                 data.Config.Networking.IPFamily == "ipv6",
 	}
 
-	kubeadmConfigPlusPatches := func(node nodes.Node, data kubeadm.ConfigData) func() error {
+	kubeadmConfigPlusPatches := func(node nodes.Node, kadmData kubeadm.ConfigData) func() error {
 		return func() error {
-			kubeadmConfig, err := getKubeadmConfig(ctx.Config, data, node)
+			kubeadmConfig, err := getKubeadmConfig(data.Config, kadmData, node)
 			if err != nil {
 				// TODO(bentheelder): logging here
 				return errors.Wrap(err, "failed to generate kubeadm config content")
 			}
 
-			ctx.Logger.V(2).Info("Using kubeadm config:\n" + kubeadmConfig)
+			ctx.Logger().V(2).Info("Using kubeadm config:\n" + kubeadmConfig)
 			return writeKubeadmConfig(kubeadmConfig, node)
 		}
 	}
@@ -120,12 +130,12 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// Create the kubeadm config in all nodes concurrently
-	if err := errors.UntilErrorConcurrent(fns); err != nil {
+	if err = errors.UntilErrorConcurrent(fns); err != nil {
 		return err
 	}
 
 	// if we have containerd config, patch all the nodes concurrently
-	if len(ctx.Config.ContainerdConfigPatches) > 0 || len(ctx.Config.ContainerdConfigPatchesJSON6902) > 0 {
+	if len(data.Config.ContainerdConfigPatches) > 0 || len(data.Config.ContainerdConfigPatchesJSON6902) > 0 {
 		// we only want to patch kubernetes nodes
 		// this is a cheap workaround to re-use the already listed
 		// workers + control planes
@@ -138,31 +148,29 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 				// read and patch the config
 				const containerdConfigPath = "/etc/containerd/config.toml"
 				var buff bytes.Buffer
-				if err := node.Command("cat", containerdConfigPath).SetStdout(&buff).Run(); err != nil {
+				if err = node.Command("cat", containerdConfigPath).SetStdout(&buff).Run(); err != nil {
 					return errors.Wrap(err, "failed to read containerd config from node")
 				}
-				patched, err := patch.TOML(buff.String(), ctx.Config.ContainerdConfigPatches, ctx.Config.ContainerdConfigPatchesJSON6902)
+				patched, err := patch.TOML(buff.String(), data.Config.ContainerdConfigPatches, data.Config.ContainerdConfigPatchesJSON6902)
 				if err != nil {
 					return errors.Wrap(err, "failed to patch contianerd config")
 				}
-				if err := nodeutils.WriteFile(node, containerdConfigPath, patched); err != nil {
+				if err = nodeutils.WriteFile(node, containerdConfigPath, patched); err != nil {
 					return errors.Wrap(err, "failed to write patched containerd config")
 				}
 				// restart containerd now that we've re-configured it
 				// skip if the systemd (also the containerd) is not running
-				if err := node.Command("bash", "-c", `! systemctl is-system-running || systemctl restart containerd`).Run(); err != nil {
+				if err = node.Command("bash", "-c", `! systemctl is-system-running || systemctl restart containerd`).Run(); err != nil {
 					return errors.Wrap(err, "failed to restart containerd after patching config")
 				}
 				return nil
 			}
 		}
-		if err := errors.UntilErrorConcurrent(fns); err != nil {
+		if err = errors.UntilErrorConcurrent(fns); err != nil {
 			return err
 		}
 	}
 
-	// mark success
-	ctx.Status.End(true)
 	return nil
 }
 

@@ -28,11 +28,14 @@ import (
 type flagpole struct {
 	Source string
 	Image  string
+	DryRun bool
 }
 
 // NewCommand returns a new cobra.Command for building the base image
-func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
-	flags := &flagpole{}
+func NewCommand(logger log.Logger, streams cmd.IOStreams, dryRun bool) *cobra.Command {
+	flags := &flagpole{
+		DryRun: dryRun,
+	}
 	cmd := &cobra.Command{
 		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
@@ -59,6 +62,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 func runE(logger log.Logger, flags *flagpole) error {
 	// TODO(bentheelder): inject logger down the chain
 	ctx := base.NewBuildContext(
+		base.WithDryRun(flags.DryRun),
 		base.WithImage(flags.Image),
 		base.WithSourceDir(flags.Source),
 		base.WithLogger(logger),

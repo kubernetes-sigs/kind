@@ -20,6 +20,7 @@ package kubeadmjoin
 import (
 	"strings"
 
+	simpleActions "gitlab.com/digitalxero/simple-actions"
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -36,13 +37,22 @@ import (
 type Action struct{}
 
 // NewAction returns a new action for creating the kubeadm jion
-func NewAction() actions.Action {
+func NewAction() simpleActions.Action {
 	return &Action{}
 }
 
 // Execute runs the action
-func (a *Action) Execute(ctx *actions.ActionContext) error {
-	allNodes, err := ctx.Nodes()
+func (a *Action) Execute(ctx simpleActions.ActionContext) (err error) {
+	if ctx.IsDryRun() {
+		return nil
+	}
+
+	var data *actions.ActionContextData
+	if data, err = actions.Data(ctx); err != nil {
+		return err
+	}
+
+	allNodes, err := data.Nodes()
 	if err != nil {
 		return err
 	}
@@ -73,45 +83,53 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 }
 
 func joinSecondaryControlPlanes(
-	ctx *actions.ActionContext,
+	ctx simpleActions.ActionContext,
 	secondaryControlPlanes []nodes.Node,
-) error {
-	ctx.Status.Start("Joining more control-plane nodes 🎮")
-	defer ctx.Status.End(false)
+) (err error) {
+	ctx.Status().Start("Joining more control-plane nodes 🎮")
+	defer func() {
+		ctx.Status().End(err == nil)
+	}()
+	if ctx.IsDryRun() {
+		return nil
+	}
 
 	// TODO(bentheelder): it's too bad we can't do this concurrently
 	// (this is not safe currently)
 	for _, node := range secondaryControlPlanes {
 		node := node // capture loop variable
-		if err := runKubeadmJoin(ctx.Logger, node); err != nil {
+		if err = runKubeadmJoin(ctx.Logger(), node); err != nil {
 			return err
 		}
 	}
 
-	ctx.Status.End(true)
 	return nil
 }
 
 func joinWorkers(
-	ctx *actions.ActionContext,
+	ctx simpleActions.ActionContext,
 	workers []nodes.Node,
-) error {
-	ctx.Status.Start("Joining worker nodes 🚜")
-	defer ctx.Status.End(false)
+) (err error) {
+	ctx.Status().Start("Joining worker nodes 🚜")
+	defer func() {
+		ctx.Status().End(err == nil)
+	}()
+	if ctx.IsDryRun() {
+		return nil
+	}
 
 	// create the workers concurrently
-	fns := []func() error{}
+	var fns []func() error
 	for _, node := range workers {
 		node := node // capture loop variable
 		fns = append(fns, func() error {
-			return runKubeadmJoin(ctx.Logger, node)
+			return runKubeadmJoin(ctx.Logger(), node)
 		})
 	}
-	if err := errors.UntilErrorConcurrent(fns); err != nil {
+	if err = errors.UntilErrorConcurrent(fns); err != nil {
 		return err
 	}
 
-	ctx.Status.End(true)
 	return nil
 }
 

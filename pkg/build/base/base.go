@@ -38,6 +38,7 @@ type BuildContext struct {
 	sourceDir string
 	image     string
 	logger    log.Logger
+	dryRun bool
 }
 
 // Option is BuildContext configuration option supplied to NewBuildContext
@@ -47,6 +48,13 @@ type Option func(*BuildContext)
 func WithSourceDir(sourceDir string) Option {
 	return func(b *BuildContext) {
 		b.sourceDir = sourceDir
+	}
+}
+
+// WithDryRun configures a NewBuildContext with the ability to do a dry run
+func WithDryRun(dryRun bool) Option {
+	return func(b *BuildContext) {
+		b.dryRun = dryRun
 	}
 }
 

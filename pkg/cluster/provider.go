@@ -39,6 +39,7 @@ const DefaultName = constants.DefaultClusterName
 type Provider struct {
 	provider internalprovider.Provider
 	logger   log.Logger
+	dryRun bool
 }
 
 // NewProvider returns a new provider based on the supplied options
@@ -76,6 +77,13 @@ func (a providerLoggerOption) apply(p *Provider) {
 	a(p)
 }
 
+// ProviderWithDryRun configures the provider to use Logger logger
+func ProviderWithDryRun(dryRun bool) ProviderOption {
+	return providerLoggerOption(func(p *Provider) {
+		p.dryRun = dryRun
+	})
+}
+
 // ProviderWithLogger configures the provider to use Logger logger
 func ProviderWithLogger(logger log.Logger) ProviderOption {
 	return providerLoggerOption(func(p *Provider) {
@@ -97,12 +105,12 @@ func (p *Provider) Create(name string, options ...CreateOption) error {
 			return err
 		}
 	}
-	return internalcreate.Cluster(p.logger, p.ic(name), opts)
+	return internalcreate.Cluster(p.logger, p.ic(name), opts, p.dryRun)
 }
 
 // Delete tears down a kubernetes-in-docker cluster
 func (p *Provider) Delete(name, explicitKubeconfigPath string) error {
-	return internaldelete.Cluster(p.logger, p.ic(name), explicitKubeconfigPath)
+	return internaldelete.Cluster(p.logger, p.ic(name), explicitKubeconfigPath, p.dryRun)
 }
 
 // List returns a list of clusters for which nodes exist
@@ -122,7 +130,7 @@ func (p *Provider) KubeConfig(name string, internal bool) (string, error) {
 // https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#config
 // where explicitPath is the --kubeconfig value.
 func (p *Provider) ExportKubeConfig(name string, explicitPath string) error {
-	return kubeconfig.Export(p.ic(name), explicitPath)
+	return kubeconfig.Export(p.ic(name), explicitPath, p.dryRun)
 }
 
 // ListNodes returns the list of container IDs for the "nodes" in the cluster

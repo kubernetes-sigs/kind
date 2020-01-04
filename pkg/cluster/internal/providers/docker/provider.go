@@ -21,6 +21,7 @@ import (
 	"net"
 	"strings"
 
+	"gitlab.com/digitalxero/simple-actions/term"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
@@ -32,7 +33,6 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider/common"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
-	"sigs.k8s.io/kind/pkg/internal/cli"
 )
 
 // NewProvider returns a new provider based on executing `docker ...`
@@ -49,7 +49,7 @@ type Provider struct {
 }
 
 // Provision is part of the providers.Provider interface
-func (p *Provider) Provision(status *cli.Status, cluster string, cfg *config.Cluster) (err error) {
+func (p *Provider) Provision(status *term.Status, cluster string, cfg *config.Cluster) (err error) {
 	// TODO: validate cfg
 	// ensure node images are pulled before actually provisioning
 	ensureNodeImages(p.logger, status, cfg)

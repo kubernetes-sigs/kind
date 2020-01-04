@@ -23,13 +23,13 @@ import (
 	"time"
 
 	"github.com/alessio/shellescape"
+	simpleActions "gitlab.com/digitalxero/simple-actions"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/context"
 	"sigs.k8s.io/kind/pkg/cluster/internal/delete"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/apis/config/encoding"
-	"sigs.k8s.io/kind/pkg/internal/cli"
 	"sigs.k8s.io/kind/pkg/log"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
@@ -71,9 +71,9 @@ type ClusterOptions struct {
 }
 
 // Cluster creates a cluster
-func Cluster(logger log.Logger, ctx *context.Context, opts *ClusterOptions) error {
+func Cluster(logger log.Logger, ctx *context.Context, opts *ClusterOptions, dryRun bool) (err error) {
 	// default / process options (namely config)
-	if err := fixupOptions(opts); err != nil {
+	if err = fixupOptions(opts); err != nil {
 		return err
 	}
 
@@ -90,25 +90,26 @@ func Cluster(logger log.Logger, ctx *context.Context, opts *ClusterOptions) erro
 	}
 
 	// then validate
-	if err := opts.Config.Validate(); err != nil {
+	if err = opts.Config.Validate(); err != nil {
 		return err
 	}
 
-	// setup a status object to show progress to the user
-	status := cli.StatusForLogger(logger)
+	actionsContext := actions.NewActionContext(logger, opts.Config, ctx, dryRun)
 
 	// Create node containers implementing defined config Nodes
-	if err := ctx.Provider().Provision(status, ctx.Name(), opts.Config); err != nil {
-		// In case of errors nodes are deleted (except if retain is explicitly set)
-		logger.Errorf("%v", err)
-		if !opts.Retain {
-			_ = delete.Cluster(logger, ctx, opts.KubeconfigPath)
+	if !dryRun {
+		if err = ctx.Provider().Provision(actionsContext.Status(), ctx.Name(), opts.Config); err != nil {
+			// In case of errors nodes are deleted (except if retain is explicitly set)
+			logger.Errorf("%v", err)
+			if !opts.Retain {
+				_ = delete.Cluster(logger, ctx, opts.KubeconfigPath, dryRun)
+			}
+			return err
 		}
-		return err
 	}
 
 	// TODO(bentheelder): make this controllable from the command line?
-	actionsToRun := []actions.Action{
+	actionsToRun := simpleActions.Actions{
 		loadbalancer.NewAction(), // setup external loadbalancer
 		configaction.NewAction(), // setup kubeadm config
 	}
@@ -131,14 +132,11 @@ func Cluster(logger log.Logger, ctx *context.Context, opts *ClusterOptions) erro
 	}
 
 	// run all actions
-	actionsContext := actions.NewActionContext(logger, opts.Config, ctx, status)
-	for _, action := range actionsToRun {
-		if err := action.Execute(actionsContext); err != nil {
-			if !opts.Retain {
-				_ = delete.Cluster(logger, ctx, opts.KubeconfigPath)
-			}
-			return err
+	if err = actionsToRun.Execute(actionsContext); err != nil {
+		if !opts.Retain {
+			_ = delete.Cluster(logger, ctx, opts.KubeconfigPath, dryRun)
 		}
+		return err
 	}
 
 	// skip the rest if we're not setting up kubernetes
@@ -146,10 +144,15 @@ func Cluster(logger log.Logger, ctx *context.Context, opts *ClusterOptions) erro
 		return nil
 	}
 
-	if err := kubeconfig.Export(ctx, opts.KubeconfigPath); err != nil {
+	if err = kubeconfig.Export(ctx, opts.KubeconfigPath, dryRun); err != nil {
 		return err
 	}
 
+	if dryRun {
+		logger.V(0).Info("")
+		logger.V(0).Info("This has been a dry run, so nothing really happened.")
+		return nil
+	}
 	// optionally display usage
 	if opts.DisplayUsage {
 		logUsage(logger, ctx, opts.KubeconfigPath)

@@ -35,14 +35,17 @@ type flagpole struct {
 	Name       string
 	Config     string
 	ImageName  string
-	Retain     bool
+	Retain,
+	DryRun bool
 	Wait       time.Duration
 	Kubeconfig string
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
-func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
-	flags := &flagpole{}
+func NewCommand(logger log.Logger, streams cmd.IOStreams, dryRun bool) *cobra.Command {
+	flags := &flagpole{
+		DryRun: dryRun,
+	}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "cluster",
@@ -63,6 +66,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 
 func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	provider := cluster.NewProvider(
+		cluster.ProviderWithDryRun(flags.DryRun),
 		cluster.ProviderWithLogger(logger),
 	)
 

@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"strings"
 
+	simpleActions "gitlab.com/digitalxero/simple-actions"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/log"
@@ -33,16 +34,25 @@ import (
 type action struct{}
 
 // NewAction returns a new action for installing storage
-func NewAction() actions.Action {
+func NewAction() simpleActions.Action {
 	return &action{}
 }
 
 // Execute runs the action
-func (a *action) Execute(ctx *actions.ActionContext) error {
-	ctx.Status.Start("Installing StorageClass 💾")
-	defer ctx.Status.End(false)
+func (a *action) Execute(ctx simpleActions.ActionContext) (err error) {
+	ctx.Status().Start("Installing StorageClass 💾")
+	defer func() {
+		ctx.Status().End(err == nil)
+	}()
+	if ctx.IsDryRun() {
+		return nil
+	}
+	var data *actions.ActionContextData
+	if data, err = actions.Data(ctx); err != nil {
+		return err
+	}
 
-	allNodes, err := ctx.Nodes()
+	allNodes, err := data.Nodes()
 	if err != nil {
 		return err
 	}
@@ -55,12 +65,10 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	node := controlPlanes[0] // kind expects at least one always
 
 	// add the default storage class
-	if err := addDefaultStorage(ctx.Logger, node); err != nil {
+	if err := addDefaultStorage(ctx.Logger(), node); err != nil {
 		return errors.Wrap(err, "failed to add default storage class")
 	}
 
-	// mark success
-	ctx.Status.End(true)
 	return nil
 }
 

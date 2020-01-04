@@ -17,25 +17,53 @@ limitations under the License.
 package actions
 
 import (
+	"fmt"
 	"sync"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/context"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
-	"sigs.k8s.io/kind/pkg/internal/cli"
 	"sigs.k8s.io/kind/pkg/log"
+
+	simpleActions "gitlab.com/digitalxero/simple-actions"
+	"gitlab.com/digitalxero/simple-actions/term"
 )
 
-// Action defines a step of bringing up a kind cluster after initial node
-// container creation
-type Action interface {
-	Execute(ctx *ActionContext) error
+type actionContext struct {
+	logger log.Logger
+	status *term.Status
+	dryRun bool
+	data   *ActionContextData
+}
+
+func (ac *actionContext) Logger() log.Logger {
+	return ac.logger
+}
+
+func (ac *actionContext) Status() *term.Status {
+	return ac.status
+}
+
+func (ac *actionContext) IsDryRun() bool {
+	return ac.dryRun
+}
+
+func (ac *actionContext) Data() interface{} {
+	return ac.data
+}
+
+func Data(ctx simpleActions.ActionContext) (data *ActionContextData, err error) {
+	var ok bool
+	data, ok = ctx.Data().(*ActionContextData)
+	if !ok {
+		return nil, fmt.Errorf("unable to convert ctx data to required struct")
+	}
+
+	return data, nil
 }
 
 // ActionContext is data supplied to all actions
-type ActionContext struct {
-	Logger         log.Logger
-	Status         *cli.Status
+type ActionContextData struct {
 	Config         *config.Cluster
 	ClusterContext *context.Context
 	cache          *cachedData
@@ -46,14 +74,17 @@ func NewActionContext(
 	logger log.Logger,
 	cfg *config.Cluster,
 	ctx *context.Context,
-	status *cli.Status,
-) *ActionContext {
-	return &ActionContext{
-		Logger:         logger,
-		Status:         status,
-		Config:         cfg,
-		ClusterContext: ctx,
-		cache:          &cachedData{},
+	dryRun bool,
+) simpleActions.ActionContext {
+	return &actionContext{
+		logger: logger,
+		status: term.StatusForLogger(logger),
+		dryRun: dryRun,
+		data: &ActionContextData{
+			Config:         cfg,
+			ClusterContext: ctx,
+			cache:          &cachedData{},
+		},
 	}
 }
 
@@ -75,7 +106,7 @@ func (cd *cachedData) setNodes(n []nodes.Node) {
 }
 
 // Nodes returns the list of cluster nodes, this is a cached call
-func (ac *ActionContext) Nodes() ([]nodes.Node, error) {
+func (ac *ActionContextData) Nodes() ([]nodes.Node, error) {
 	cachedNodes := ac.cache.getNodes()
 	if cachedNodes != nil {
 		return cachedNodes, nil

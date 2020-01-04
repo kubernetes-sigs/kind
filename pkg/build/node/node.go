@@ -86,6 +86,13 @@ func WithLogger(logger log.Logger) Option {
 	}
 }
 
+// WithDryRun configures a NewBuildContext with the ability to do a dry run
+func WithDryRun(dryRun bool) Option {
+	return func(b *BuildContext) {
+		b.dryRun = dryRun
+	}
+}
+
 // BuildContext is used to build the kind node image, and contains
 // build configuration
 type BuildContext struct {
@@ -98,6 +105,7 @@ type BuildContext struct {
 	arch     string // TODO(bentheelder): this should be an option
 	kubeRoot string
 	bits     kube.Bits
+	dryRun bool
 }
 
 // NewBuildContext creates a new BuildContext with default configuration,

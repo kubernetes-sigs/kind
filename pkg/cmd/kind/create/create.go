@@ -26,13 +26,13 @@ import (
 )
 
 // NewCommand returns a new cobra.Command for cluster creation
-func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
+func NewCommand(logger log.Logger, streams cmd.IOStreams, dryRun bool) *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "create",
 		Short: "Creates one of [cluster]",
 		Long:  "Creates one of local Kubernetes cluster (cluster)",
 	}
-	cmd.AddCommand(createcluster.NewCommand(logger, streams))
+	cmd.AddCommand(createcluster.NewCommand(logger, streams, dryRun))
 	return cmd
 }

@@ -31,11 +31,14 @@ type flagpole struct {
 	Image     string
 	BaseImage string
 	KubeRoot  string
+	DryRun bool
 }
 
 // NewCommand returns a new cobra.Command for building the node image
-func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
-	flags := &flagpole{}
+func NewCommand(logger log.Logger, streams cmd.IOStreams, dryRun bool) *cobra.Command {
+	flags := &flagpole{
+		DryRun: dryRun,
+	}
 	cmd := &cobra.Command{
 		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage

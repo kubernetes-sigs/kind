@@ -22,6 +22,7 @@ import (
 	"html/template"
 	"strings"
 
+	simpleActions "gitlab.com/digitalxero/simple-actions"
 	"sigs.k8s.io/kind/pkg/errors"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
@@ -31,16 +32,25 @@ import (
 type action struct{}
 
 // NewAction returns a new action for installing default CNI
-func NewAction() actions.Action {
+func NewAction() simpleActions.Action {
 	return &action{}
 }
 
 // Execute runs the action
-func (a *action) Execute(ctx *actions.ActionContext) error {
-	ctx.Status.Start("Installing CNI 🔌")
-	defer ctx.Status.End(false)
+func (a *action) Execute(ctx simpleActions.ActionContext) (err error) {
+	ctx.Status().Start("Installing CNI 🔌")
+	defer func() {
+		ctx.Status().End(err == nil)
+	}()
+	if ctx.IsDryRun() {
+		return nil
+	}
+	var data *actions.ActionContextData
+	if data, err = actions.Data(ctx); err != nil {
+		return err
+	}
 
-	allNodes, err := ctx.Nodes()
+	allNodes, err := data.Nodes()
 	if err != nil {
 		return err
 	}
@@ -54,7 +64,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	// read the manifest from the node
 	var raw bytes.Buffer
-	if err := node.Command("cat", "/kind/manifests/default-cni.yaml").SetStdout(&raw).Run(); err != nil {
+	if err = node.Command("cat", "/kind/manifests/default-cni.yaml").SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to read CNI manifest")
 	}
 	manifest := raw.String()
@@ -75,7 +85,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		err = t.Execute(&out, &struct {
 			PodSubnet string
 		}{
-			PodSubnet: ctx.Config.Networking.PodSubnet,
+			PodSubnet: data.Config.Networking.PodSubnet,
 		})
 		if err != nil {
 			return errors.Wrap(err, "failed to execute CNI manifest template")
@@ -84,7 +94,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// install the manifest
-	if err := node.Command(
+	if err = node.Command(
 		"kubectl", "create", "--kubeconfig=/etc/kubernetes/admin.conf",
 		"-f", "-",
 	).SetStdin(strings.NewReader(manifest)).Run(); err != nil {
@@ -92,6 +102,5 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// mark success
-	ctx.Status.End(true)
 	return nil
 }

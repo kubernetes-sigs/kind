@@ -38,12 +38,15 @@ import (
 type flagpole struct {
 	LogLevel  string
 	Verbosity int32
-	Quiet     bool
+	Quiet,
+	DryRun bool
 }
 
 // NewCommand returns a new cobra.Command implementing the root command for kind
-func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
-	flags := &flagpole{}
+func NewCommand(logger log.Logger, streams cmd.IOStreams, dryRun bool) *cobra.Command {
+	flags := &flagpole{
+		DryRun: dryRun,
+	}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "kind",
@@ -77,11 +80,18 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		false,
 		"silence all stderr output",
 	)
+	cmd.PersistentFlags().BoolVarP(
+		&flags.DryRun,
+		"dry-run",
+		"",
+		dryRun,
+		"perform a dry run",
+	)
 	// add all top level subcommands
-	cmd.AddCommand(build.NewCommand(logger, streams))
+	cmd.AddCommand(build.NewCommand(logger, streams, dryRun))
 	cmd.AddCommand(completion.NewCommand(logger, streams))
-	cmd.AddCommand(create.NewCommand(logger, streams))
-	cmd.AddCommand(delete.NewCommand(logger, streams))
+	cmd.AddCommand(create.NewCommand(logger, streams, dryRun))
+	cmd.AddCommand(delete.NewCommand(logger, streams, dryRun))
 	cmd.AddCommand(export.NewCommand(logger, streams))
 	cmd.AddCommand(get.NewCommand(logger, streams))
 	cmd.AddCommand(version.NewCommand(logger, streams))

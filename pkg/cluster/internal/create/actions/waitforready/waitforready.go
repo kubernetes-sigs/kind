@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	simpleActions "gitlab.com/digitalxero/simple-actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
@@ -34,26 +35,36 @@ type Action struct {
 }
 
 // NewAction returns a new action for waiting for the cluster to be ready
-func NewAction(waitTime time.Duration) actions.Action {
+func NewAction(waitTime time.Duration) simpleActions.Action {
 	return &Action{
 		waitTime: waitTime,
 	}
 }
 
 // Execute runs the action
-func (a *Action) Execute(ctx *actions.ActionContext) error {
+func (a *Action) Execute(ctx simpleActions.ActionContext) (err error) {
 	// skip entirely if the wait time is 0
 	if a.waitTime == time.Duration(0) {
 		return nil
 	}
-	ctx.Status.Start(
+	ctx.Status().Start(
 		fmt.Sprintf(
 			"Waiting ≤ %s for control-plane = Ready ⏳",
 			formatDuration(a.waitTime),
 		),
 	)
+	defer func() {
+		ctx.Status().End(err == nil)
+	}()
+	if ctx.IsDryRun() {
+		return nil
+	}
+	var data *actions.ActionContextData
+	if data, err = actions.Data(ctx); err != nil {
+		return err
+	}
 
-	allNodes, err := ctx.Nodes()
+	allNodes, err := data.Nodes()
 	if err != nil {
 		return err
 	}
@@ -68,13 +79,12 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	startTime := time.Now()
 	isReady := waitForReady(node, startTime.Add(a.waitTime))
 	if !isReady {
-		ctx.Status.End(false)
+		ctx.Status().End(false)
 		fmt.Println(" • WARNING: Timed out waiting for Ready ⚠️")
 		return nil
 	}
 
 	// mark success
-	ctx.Status.End(true)
 	fmt.Printf(" • Ready after %s 💚\n", formatDuration(time.Since(startTime)))
 	return nil
 }

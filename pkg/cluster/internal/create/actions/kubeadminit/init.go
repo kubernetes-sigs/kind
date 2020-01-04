@@ -20,6 +20,7 @@ package kubeadminit
 import (
 	"strings"
 
+	simpleActions "gitlab.com/digitalxero/simple-actions"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 
@@ -34,16 +35,25 @@ import (
 type action struct{}
 
 // NewAction returns a new action for kubeadm init
-func NewAction() actions.Action {
+func NewAction() simpleActions.Action {
 	return &action{}
 }
 
 // Execute runs the action
-func (a *action) Execute(ctx *actions.ActionContext) error {
-	ctx.Status.Start("Starting control-plane 🕹️")
-	defer ctx.Status.End(false)
+func (a *action) Execute(ctx simpleActions.ActionContext) (err error) {
+	ctx.Status().Start("Starting control-plane 🕹️")
+	defer func() {
+		ctx.Status().End(err == nil)
+	}()
+	if ctx.IsDryRun() {
+		return nil
+	}
+	var data *actions.ActionContextData
+	if data, err = actions.Data(ctx); err != nil {
+		return err
+	}
 
-	allNodes, err := ctx.Nodes()
+	allNodes, err := data.Nodes()
 	if err != nil {
 		return err
 	}
@@ -70,7 +80,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		"--v=6",
 	)
 	lines, err := exec.CombinedOutputLines(cmd)
-	ctx.Logger.V(3).Info(strings.Join(lines, "\n"))
+	ctx.Logger().V(3).Info(strings.Join(lines, "\n"))
 	if err != nil {
 		return errors.Wrap(err, "failed to init node with kubeadm")
 	}
@@ -92,7 +102,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			// handled differently
 			"/etc/kubernetes/pki/etcd/ca.crt", "/etc/kubernetes/pki/etcd/ca.key",
 		} {
-			if err := nodeutils.CopyNodeToNode(node, otherNode, file); err != nil {
+			if err = nodeutils.CopyNodeToNode(node, otherNode, file); err != nil {
 				return errors.Wrap(err, "failed to copy admin kubeconfig")
 			}
 		}
@@ -101,7 +111,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	// if we are only provisioning one node, remove the master taint
 	// https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#master-isolation
 	if len(allNodes) == 1 {
-		if err := node.Command(
+		if err = node.Command(
 			"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf",
 			"taint", "nodes", "--all", "node-role.kubernetes.io/master-",
 		).Run(); err != nil {
@@ -109,7 +119,5 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 	}
 
-	// mark success
-	ctx.Status.End(true)
 	return nil
 }

@@ -27,7 +27,7 @@ import (
 )
 
 // NewCommand returns a new cobra.Command for building
-func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
+func NewCommand(logger log.Logger, streams cmd.IOStreams, dryRun bool) *cobra.Command {
 	cmd := &cobra.Command{
 		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
@@ -36,7 +36,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Long:  "Build the base node image (base-image) or the node image (node-image)",
 	}
 	// add subcommands
-	cmd.AddCommand(baseimage.NewCommand(logger, streams))
-	cmd.AddCommand(nodeimage.NewCommand(logger, streams))
+	cmd.AddCommand(baseimage.NewCommand(logger, streams, dryRun))
+	cmd.AddCommand(nodeimage.NewCommand(logger, streams, dryRun))
 	return cmd
 }
