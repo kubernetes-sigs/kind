@@ -52,7 +52,9 @@ type Provider struct {
 func (p *Provider) Provision(status *cli.Status, cluster string, cfg *config.Cluster) (err error) {
 	// TODO: validate cfg
 	// ensure node images are pulled before actually provisioning
-	ensureNodeImages(p.logger, status, cfg)
+	if err := ensureNodeImages(p.logger, status, cfg); err != nil {
+		return err
+	}
 
 	// actually provision the cluster
 	icons := strings.Repeat("📦 ", len(cfg.Nodes))

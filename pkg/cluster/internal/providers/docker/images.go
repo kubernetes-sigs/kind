@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/log"
 
@@ -31,7 +32,7 @@ import (
 
 // ensureNodeImages ensures that the node images used by the create
 // configuration are present
-func ensureNodeImages(logger log.Logger, status *cli.Status, cfg *config.Cluster) {
+func ensureNodeImages(logger log.Logger, status *cli.Status, cfg *config.Cluster) error {
 	// pull each required image
 	for _, image := range common.RequiredNodeImages(cfg).List() {
 		// prints user friendly message
@@ -40,11 +41,12 @@ func ensureNodeImages(logger log.Logger, status *cli.Status, cfg *config.Cluster
 			friendlyImageName = strings.Split(image, "@sha256:")[0]
 		}
 		status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", friendlyImageName))
-
-		// attempt to explicitly pull the image if it doesn't exist locally
-		// we don't care if this errors, we'll still try to run which also pulls
-		_, _ = pullIfNotPresent(logger, image, 4)
+		if _, err := pullIfNotPresent(logger, image, 4); err != nil {
+			status.End(false)
+			return err
+		}
 	}
+	return nil
 }
 
 // pullIfNotPresent will pull an image if it is not present locally
@@ -79,8 +81,5 @@ func pull(logger log.Logger, image string, retries int) error {
 			}
 		}
 	}
-	if err != nil {
-		logger.V(1).Infof("Failed to pull image: %q %v", image, err)
-	}
-	return err
+	return errors.Wrapf(err, "failed to pull image %q", image)
 }
