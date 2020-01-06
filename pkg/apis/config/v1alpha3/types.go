@@ -47,7 +47,7 @@ type Cluster struct {
 	//
 	// Name and Namespace are now ignored, but the fields continue to exist for
 	// backwards compatibility of parsing the config. The name of the generated
-	// config was/is always fixed as as is the namespace so these fields have
+	// config was/is always fixed as is the namespace so these fields have
 	// always been a no-op.
 	//
 	// https://tools.ietf.org/html/rfc6902
