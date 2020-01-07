@@ -30,6 +30,7 @@ It may additionally be helpful to:
 * [Non-AMD64 Architectures](#nonamd64-architectures)
 * [Unable to pull images](#unable-to-pull-images)
 * [Chrome OS](#chrome-os)
+* [AppArmor](#apparmor)
 
 ## Kubectl Version Skew
 
@@ -337,6 +338,15 @@ Please see the upstream issue https://bugs.chromium.org/p/chromium/issues/detail
 
 For previous discussion see: https://github.com/kubernetes-sigs/kind/issues/763
 
+## AppArmor
+
+If your host has [AppArmor] enabled you may run into [moby/moby/issues/7512](https://github.com/moby/moby/issues/7512#issuecomment-51845976).
+
+You will likely need to disable apparmor on your host or at least any profile(s)
+related to applications you are trying to run in KIND.
+
+See Previous Discussion: [kind#1179]
+
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new
 [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
@@ -348,6 +358,7 @@ For previous discussion see: https://github.com/kubernetes-sigs/kind/issues/763
 [kind#200]: https://github.com/kubernetes-sigs/kind/issues/200
 [kind#229]: https://github.com/kubernetes-sigs/kind/issues/229
 [kind#270]: https://github.com/kubernetes-sigs/kind/issues/270
+[kind#1179]: https://github.com/kubernetes-sigs/kind/issues/1179
 [moby#9939]: https://github.com/moby/moby/issues/9939
 [Docker resource lims]: https://docs.docker.com/docker-for-mac/#advanced
 [snap]: https://snapcraft.io/
@@ -357,3 +368,5 @@ For previous discussion see: https://github.com/kubernetes-sigs/kind/issues/763
 [switch between windows and linux containers]: https://docs.docker.com/docker-for-windows/#switch-between-windows-and-linux-containers
 [version skew]: https://kubernetes.io/docs/setup/release/version-skew-policy/#supported-version-skew
 [Quick Start]: /docs/user/quick-start
+[AppArmor]: https://en.wikipedia.org/wiki/AppArmor
+
