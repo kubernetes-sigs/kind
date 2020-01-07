@@ -37,8 +37,8 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
 		Use:   "base-image",
-		Short: "build the base node image",
-		Long:  `build the base node image for running nested containers, systemd, and kubernetes components.`,
+		Short: "Build the base node image",
+		Long:  `Build the base node image for running nested containers, systemd, and kubernetes components.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(logger, flags)
 		},

@@ -32,8 +32,8 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
 		Use:   "export",
-		Short: "exports one of [kubeconfig, logs]",
-		Long:  "exports one of [kubeconfig, logs]",
+		Short: "Exports one of [kubeconfig, logs]",
+		Long:  "Exports one of [kubeconfig, logs]",
 	}
 	// add subcommands
 	cmd.AddCommand(logs.NewCommand(logger, streams))

@@ -36,8 +36,8 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
 		Use:   "kubeconfig",
-		Short: "exports cluster kubeconfig",
-		Long:  "exports cluster kubeconfig",
+		Short: "Exports cluster kubeconfig",
+		Long:  "Exports cluster kubeconfig",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(logger, flags)
 		},
