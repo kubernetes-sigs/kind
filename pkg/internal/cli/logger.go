@@ -40,8 +40,6 @@ type Logger struct {
 	isSmartWriter bool
 }
 
-var _ log.Logger = &Logger{}
-
 // NewLogger returns a new Logger with the given verbosity
 func NewLogger(writer io.Writer, verbosity log.Level) *Logger {
 	l := &Logger{
