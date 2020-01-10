@@ -423,7 +423,8 @@ func testWriteMergedNoExistingFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read merged kubeconfig: %v", err)
 	}
-	expected := `clusters:
+	expected := `apiVersion: v1
+clusters:
 - cluster:
     certificate-authority-data: definitelyacert
     server: https://127.0.0.1:6443
@@ -434,6 +435,8 @@ contexts:
     user: kind-kind
   name: kind-kind
 current-context: kind-kind
+kind: Config
+preferences: {}
 users:
 - name: kind-kind
   user:

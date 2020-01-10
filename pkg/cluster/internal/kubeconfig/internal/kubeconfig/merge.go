@@ -98,5 +98,14 @@ func merge(existing, kind *Config) error {
 	// set the current context
 	existing.CurrentContext = kind.CurrentContext
 
+	// TODO: We should not need this, but it allows broken clients that depend
+	// on apiVersion and kind to work. Notably the upstream javascript client.
+	// See: https://github.com/kubernetes-sigs/kind/issues/1242
+	if len(existing.OtherFields) == 0 {
+		// TODO: Should we be deep-copying? for now we don't need to
+		// and doing so would be a pain (re and de-serialize maybe?) :shrug:
+		existing.OtherFields = kind.OtherFields
+	}
+
 	return nil
 }
