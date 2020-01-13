@@ -55,10 +55,16 @@ nodes:
 EOF
 {{< /codeFromInline >}}
 
-Apply the [mandatory ingress-nginx components](https://kubernetes.github.io/ingress-nginx/deploy/#prerequisite-generic-deployment-command).
+Apply the [mandatory ingress-nginx components](https://kubernetes.github.io/ingress-nginx/deploy/#prerequisite-generic-deployment-command) 
 
 {{< codeFromInline lang="bash" >}}
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/mandatory.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.27.0/deploy/static/mandatory.yaml
+{{< /codeFromInline >}}
+
+and [expose the nginx service using NodePort](https://kubernetes.github.io/ingress-nginx/deploy/#bare-metal).  
+
+{{< codeFromInline lang="bash" >}}
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.27.0/deploy/static/provider/baremetal/service-nodeport.yaml
 {{< /codeFromInline >}}
 
 Apply kind specific patches to forward the hostPorts to the 
