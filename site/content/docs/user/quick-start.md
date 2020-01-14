@@ -14,7 +14,7 @@ This guide covers getting started with the `kind` command.
 
 ## Installation
 
-You can either install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.6.1` or clone this repo 
+You can either install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.7.0` or clone this repo 
 and run `make build` from the repository.
 
 **NOTE**: please use the latest Go to do this, ideally go 1.13 or greater.
@@ -34,7 +34,7 @@ into your `$PATH`.
 On macOS / Linux:
 
 {{< codeFromInline lang="bash" >}}
-curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/download/v0.6.1/kind-$(uname)-amd64
+curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/download/v0.7.0/kind-$(uname)-amd64
 chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
 {{< /codeFromInline >}}
@@ -48,7 +48,7 @@ brew install kind
 On Windows:
 
 {{< codeFromInline lang="powershell" >}}
-curl.exe -Lo kind-windows-amd64.exe https://github.com/kubernetes-sigs/kind/releases/download/v0.6.1/kind-windows-amd64
+curl.exe -Lo kind-windows-amd64.exe https://github.com/kubernetes-sigs/kind/releases/download/v0.7.0/kind-windows-amd64
 Move-Item .\kind-windows-amd64.exe c:\some-dir-in-your-PATH\kind.exe
 {{< /codeFromInline >}}
 
