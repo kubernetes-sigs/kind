@@ -43,7 +43,6 @@ nodes:
 - role: control-plane
   kubeadmConfigPatches:
   - |
-    apiVersion: kubeadm.k8s.io/v1beta2
     kind: InitConfiguration
     nodeRegistration:
       kubeletExtraArgs:
@@ -82,7 +81,7 @@ kubectl patch daemonsets -n projectcontour envoy -p '{{< minify file="static/exa
 {{< /codeFromInline >}}
 
 Now the Contour is all setup to be used. 
-Refer the [Using Ingress](#using-ingress) for a basic example usage.
+Refer to [Using Ingress](#using-ingress) for a basic example usage.
 
 Additional information about Contour can be found at: [projectcontour.io](https://projectcontour.io)
 
