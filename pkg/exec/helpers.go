@@ -72,6 +72,16 @@ func CombinedOutputLines(cmd Cmd) (lines []string, err error) {
 	return lines, err
 }
 
+// Output is similar to os/exec's cmd.Output(),
+// but over our Cmd interface, and instead of returning the byte buffer of
+// stdout, it returns a string
+func Output(cmd Cmd) (output string, err error) {
+	var buff bytes.Buffer
+	cmd.SetStdout(&buff)
+	err = cmd.Run()
+	return buff.String(), err
+}
+
 // OutputLines is like os/exec's cmd.Output(),
 // but over our Cmd interface, and instead of returning the byte buffer of
 // stdout, it scans these for lines and returns a slice of output lines

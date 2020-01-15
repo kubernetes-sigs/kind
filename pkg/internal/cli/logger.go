@@ -169,6 +169,11 @@ func (l *Logger) Error(message string) {
 
 // Errorf is part of the log.Logger interface
 func (l *Logger) Errorf(format string, args ...interface{}) {
+	if l.ColorEnabled() {
+		format = "\x1b[31mERROR\x1b[0m: " + format
+	} else {
+		format = "ERROR: " + format
+	}
 	l.printf(format, args...)
 }
 
