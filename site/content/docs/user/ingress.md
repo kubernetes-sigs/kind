@@ -23,13 +23,17 @@ in the kubeadm `InitConfiguration`, to be used
 by the ingress controller `nodeSelector`.
 
 
-The following ingress controllers are known to work:
+1. [Create a cluster](#create-cluster)
+2. Deploy an Ingress controller, the following ingress controllers are known to work:
+    - [Contour](#contour)
+    - [Ingress NGINX](#ingress-nginx)
 
- - [Ingress NGINX](#ingress-nginx)
-
-### Ingress NGINX
+### Create Cluster
 
 Create a kind cluster with `extraPortMappings` and `node-labels`.
+
+- **extraPortMappings** allow the local host to make requests to the Ingress controller over ports 80/443
+- **node-labels** only allow the ingress controller to run on a specific node(s) matching the label selector
 
 {{< codeFromInline lang="bash" >}}
 cat <<EOF | kind create cluster --config=-
@@ -54,6 +58,35 @@ nodes:
     protocol: TCP
 EOF
 {{< /codeFromInline >}}
+
+### Contour
+
+Deploy [Contour components](https://projectcontour.io/quickstart/contour.yaml).
+
+{{< codeFromInline lang="bash" >}}
+kubectl apply -f https://projectcontour.io/quickstart/contour.yaml
+{{< /codeFromInline >}}
+
+Apply kind specific patches to forward the hostPorts to the 
+ingress controller, set taint tolerations and 
+schedule it to the custom labelled node.
+
+```json
+{{% readFile "static/examples/ingress/contour/patch.json" %}}
+```
+
+Apply it by running:
+
+{{< codeFromInline lang="bash" >}}
+kubectl patch daemonsets -n projectcontour envoy -p '{{< minify file="static/examples/ingress/contour/patch.json" >}}' 
+{{< /codeFromInline >}}
+
+Now the Contour is all setup to be used. 
+Refer the [Using Ingress](#using-ingress) for a basic example usage.
+
+Additional information about Contour can be found at: [projectcontour.io](https://projectcontour.io)
+
+### Ingress NGINX
 
 Apply the [mandatory ingress-nginx components](https://kubernetes.github.io/ingress-nginx/deploy/#prerequisite-generic-deployment-command) 
 
@@ -80,7 +113,6 @@ Apply it by running:
 {{< codeFromInline lang="bash" >}}
 kubectl patch deployments -n ingress-nginx nginx-ingress-controller -p '{{< minify file="static/examples/ingress/nginx/patch.json" >}}' 
 {{< /codeFromInline >}}
-
 
 Now the Ingress is all setup to be used. 
 Refer [Using Ingress](#using-ingress) for a basic example usage.
