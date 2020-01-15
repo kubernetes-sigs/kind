@@ -36,6 +36,15 @@ func NewLogger() log.Logger {
 	return cli.NewLogger(writer, 0)
 }
 
+// NewLoggerWithWriter returns the standard logger used by the kind CLI
+// This logger writes to given external writter
+func NewLoggerWithWriter(writer io.Writer) log.Logger {
+	if env.IsSmartTerminal(writer) {
+		writer = cli.NewSpinner(writer)
+	}
+	return cli.NewLogger(writer, 0)
+}
+
 // ColorEnabled returns true if color is enabled for the logger
 // this should be used to control output
 func ColorEnabled(logger log.Logger) bool {
