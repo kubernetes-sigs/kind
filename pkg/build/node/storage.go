@@ -145,16 +145,3 @@ data:
                 ]
         }
 `
-
-// legacy default storage class for older than Kubernetes v1.12.0
-// we need this for e2es (StatefulSet)
-// newer kind images ship a storage driver manifest
-const legacyDefaultStorage = `# host-path based default storage class
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  namespace: kube-system
-  name: standard
-  annotations:
-    storageclass.kubernetes.io/is-default-class: "true"
-provisioner: kubernetes.io/host-path`

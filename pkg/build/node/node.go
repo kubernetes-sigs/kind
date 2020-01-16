@@ -430,23 +430,13 @@ func (c *BuildContext) prePullImages(dir, containerID string) error {
 	// all builds should install the default CNI images from the above manifest currently
 	requiredImages = append(requiredImages, defaultCNIImages...)
 
-	// for v1.12.0+ we support a nicer storage driver
-	if ver.LessThan(version.MustParseSemantic("v1.12.0")) {
-		// otherwise, we must use something built in and simpler, which is
-		// also the same as what kind previously used...
-		if err := writeManifest(cmder, legacyDefaultStorage, defaultStorageManifest); err != nil {
-			c.logger.Errorf("Image build Failed! Failed write default Storage Manifest: %v", err)
-			return err
-		}
-	} else {
-		// write the default Storage manifest
-		if err := writeManifest(cmder, defaultStorageManifestLocation, defaultStorageManifest); err != nil {
-			c.logger.Errorf("Image build Failed! Failed write default Storage Manifest: %v", err)
-			return err
-		}
-		// all builds should install the default storage driver images currently
-		requiredImages = append(requiredImages, defaultStorageImages...)
+	// write the default Storage manifest
+	if err := writeManifest(cmder, defaultStorageManifestLocation, defaultStorageManifest); err != nil {
+		c.logger.Errorf("Image build Failed! Failed write default Storage Manifest: %v", err)
+		return err
 	}
+	// all builds should install the default storage driver images currently
+	requiredImages = append(requiredImages, defaultStorageImages...)
 
 	// Create "images" subdir.
 	imagesDir := path.Join(dir, "bits", "images")
