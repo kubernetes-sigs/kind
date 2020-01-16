@@ -25,7 +25,7 @@ NOTE: we have customized it in the following ways:
 - install as the default storage class
 */
 
-var defaultStorageImages = []string{"rancher/local-path-provisioner:v0.0.11", "k8s.gcr.io/debian-base:v2.0.0"}
+var defaultStorageImages = []string{"rancher/local-path-provisioner:v0.0.12", "k8s.gcr.io/debian-base:v2.0.0"}
 
 const defaultStorageManifest = `
 # kind customized https://github.com/rancher/local-path-provisioner manifest
@@ -95,7 +95,7 @@ spec:
       serviceAccountName: local-path-provisioner-service-account
       containers:
       - name: local-path-provisioner
-        image: rancher/local-path-provisioner:v0.0.11
+        image: rancher/local-path-provisioner:v0.0.12
         imagePullPolicy: IfNotPresent
         command:
         - local-path-provisioner
