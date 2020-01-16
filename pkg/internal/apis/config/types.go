@@ -29,6 +29,12 @@ type Cluster struct {
 	// Networking contains cluster wide network settings
 	Networking Networking
 
+	// FeatureGates contains a map of Kubernetes feature gates to whether they
+	// are enabled. The feature gates specified here are passed to all Kubernetes components as flags or in config.
+	//
+	// https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/
+	FeatureGates map[string]bool
+
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// strategic merge patches to `kustomize build` internally
 	// https://github.com/kubernetes/community/blob/a9cf5c8f3380bb52ebe57b1e2dbdec136d8dd484/contributors/devel/sig-api-machinery/strategic-merge-patch.md
