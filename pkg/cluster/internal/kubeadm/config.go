@@ -134,6 +134,20 @@ nodeRegistration:
     node-ip: "{{ .NodeAddress }}"
 networking:
   podSubnet: "{{ .PodSubnet }}"
+# we need this to allow dynamic PVs to work properly
+apiServerExtraArgs:
+  "feature-gates": "DynamicProvisioningScheduling=true"
+controllerManagerExtraArgs:
+  "feature-gates": "DynamicProvisioningScheduling=true"
+schedulerExtraArgs:
+  "feature-gates": "DynamicProvisioningScheduling=true"
+nodeRegistration:
+  kubeletExtraArgs:
+    "feature-gates": "DynamicProvisioningScheduling=true"
+kubeProxy:
+  config:
+    featureGates:
+      DynamicProvisioningScheduling: true
 {{else}}# config for this worker node
 apiVersion: kubeadm.k8s.io/v1alpha2
 kind: NodeConfiguration
@@ -148,6 +162,8 @@ nodeRegistration:
   kubeletExtraArgs:
     fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
+    # we need this to allow dynamic PVs to work properly
+    "feature-gates": "DynamicProvisioningScheduling=true"
 {{end}}
 `
 
