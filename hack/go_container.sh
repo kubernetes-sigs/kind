@@ -74,6 +74,8 @@ run_in_go_container() {
   docker run \
     `# docker options: remove container on exit, run as the host user / group` \
       --rm --user "$(id -u):$(id -g)" \
+    `# disable SELinux relabelling /src` \
+      --security-opt label=disable \
     `# golang caching: mount and use the cache volume` \
       -v "${CACHE_VOLUME}:/go" -e XDG_CACHE_HOME=/go/cache \
     `# mount the output & source dir, set working directory to the source dir` \
