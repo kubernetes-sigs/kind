@@ -48,7 +48,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&flags.Kubeconfig, "kubeconfig", "", "sets kubeconfig path instead of $KUBECONFIG or $HOME/.kube/config")
-	cmd.Flags().BoolVar(&flags.All, "all", false, "delete all clusters")
+	cmd.Flags().BoolVar(&flags.All, "all", false, "delete all nodes (containers) labeled as kind cluster and kubeconfig entries for the nodes")
 	return cmd
 }
 
@@ -58,7 +58,7 @@ func deleteClusters(logger log.Logger, flags *flagpole, clusters []string) error
 	)
 	var err error
 	if flags.All {
-		//Delete all clusters
+		// Delete all clusters
 		if clusters, err = provider.List(); err != nil {
 			return errors.Wrap(err, "failed listing clusters for delete")
 		}
