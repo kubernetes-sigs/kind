@@ -31,6 +31,12 @@ type Cluster struct {
 	// Networking contains cluster wide network settings
 	Networking Networking `yaml:"networking,omitempty"`
 
+	// FeatureGates contains a map of Kubernetes feature gates to whether they
+	// are enabled. The feature gates specified here are passed to all Kubernetes components as flags or in config.
+	//
+	// https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/
+	FeatureGates map[string]bool `yaml:"featureGates,omitempty"`
+
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// merge patches. The `kind` field must match the target object, and
 	// if `apiVersion` is specified it will only be applied to matching objects.

@@ -77,6 +77,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		ServiceSubnet:        ctx.Config.Networking.ServiceSubnet,
 		ControlPlane:         true,
 		IPv6:                 ctx.Config.Networking.IPFamily == "ipv6",
+		FeatureGates:         ctx.Config.FeatureGates,
 	}
 
 	kubeadmConfigPlusPatches := func(node nodes.Node, data kubeadm.ConfigData) func() error {
@@ -176,6 +177,23 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.N
 	}
 	data.KubernetesVersion = kubeVersion
 
+	// TODO: gross hack!
+	// identify node in config by matching name (since these are named in order)
+	// we should really just streamline the bootstrap code and maintain
+	// this mapping ... something for the next major refactor
+	var configNode *config.Node
+	namer := common.MakeNodeNamer("")
+	for i := range cfg.Nodes {
+		n := &cfg.Nodes[i]
+		nodeSuffix := namer(string(n.Role))
+		if strings.HasSuffix(node.String(), nodeSuffix) {
+			configNode = n
+		}
+	}
+	if configNode == nil {
+		return "", errors.Errorf("failed to match node %q to config", node.String())
+	}
+
 	// get the node ip address
 	nodeAddress, nodeAddressIPv6, err := node.IP()
 	if err != nil {
@@ -201,17 +219,11 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.N
 		return "", err
 	}
 
-	// since we only need the last portion of the name,
-	// create namer without a clusterName
-	namer := common.MakeNodeNamer("")
-	for _, inode := range cfg.Nodes {
-		nodeSuffix := namer(string(inode.Role))
-		// if needed, apply current node's patches
-		if strings.HasSuffix(node.String(), nodeSuffix) && (len(inode.KubeadmConfigPatches) > 0 || len(inode.KubeadmConfigPatchesJSON6902) > 0) {
-			patchedConfig, err = patch.KubeYAML(patchedConfig, inode.KubeadmConfigPatches, inode.KubeadmConfigPatchesJSON6902)
-			if err != nil {
-				return "", err
-			}
+	// if needed, apply current node's patches
+	if len(configNode.KubeadmConfigPatches) > 0 || len(configNode.KubeadmConfigPatchesJSON6902) > 0 {
+		patchedConfig, err = patch.KubeYAML(patchedConfig, configNode.KubeadmConfigPatches, configNode.KubeadmConfigPatchesJSON6902)
+		if err != nil {
+			return "", err
 		}
 	}
 
