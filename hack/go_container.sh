@@ -33,6 +33,8 @@ export CGO_ENABLED="${CGO_ENABLED:-0}"
 GOIMAGE="${GOIMAGE:-golang:1.13.6}"
 # docker volume name, used as a go module / build cache
 CACHE_VOLUME="${CACHE_VOLUME:-kind-build-cache}"
+# allow overriding docker cli e.g podman
+DOCKER="${DOCKER:-docker}"
 # ========================== END SCRIPT SETTINGS ===============================
 
 # autodetects host GOOS and GOARCH and exports them if not set
@@ -71,9 +73,11 @@ detect_and_set_goos_goarch() {
 
 # run $@ in a golang container with caching etc.
 run_in_go_container() {
-  docker run \
+  "${DOCKER}" run \
     `# docker options: remove container on exit, run as the host user / group` \
       --rm --user "$(id -u):$(id -g)" \
+    `# disable SELinux relabelling /src` \
+      --security-opt label=disable \
     `# golang caching: mount and use the cache volume` \
       -v "${CACHE_VOLUME}:/go" -e XDG_CACHE_HOME=/go/cache \
     `# mount the output & source dir, set working directory to the source dir` \
@@ -87,6 +91,6 @@ run_in_go_container() {
 }
 
 mkdir -p "${OUT_DIR}"
-docker volume create "${CACHE_VOLUME}" >/dev/null
+"${DOCKER}" volume inspect "${CACHE_VOLUME}" >/dev/null || "${DOCKER}" volume create "${CACHE_VOLUME}" >/dev/null
 detect_and_set_goos_goarch
 run_in_go_container "$@"
