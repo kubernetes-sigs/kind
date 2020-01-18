@@ -84,6 +84,8 @@ EOF
   if [ "${IP_FAMILY}" = "DualStack" ]; then
     # enable DualStack on all componentes using the feature gates
     cat <<EOF >> "${ARTIFACTS}/kind-config.yaml"
+featureGates:
+  IPv6DualStack: true
 kubeadmConfigPatches:
 - |
   apiVersion: kubeadm.k8s.io/v1beta2
