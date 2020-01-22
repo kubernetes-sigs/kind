@@ -75,7 +75,6 @@ func (p *Provider) Provision(status *cli.Status, cluster string, cfg *config.Clu
 func (p *Provider) ListClusters() ([]string, error) {
 	cmd := exec.Command("docker",
 		"ps",
-		"-q",         // quiet output for parsing
 		"-a",         // show stopped nodes
 		"--no-trunc", // don't truncate
 		// filter for nodes with the cluster label
@@ -94,7 +93,6 @@ func (p *Provider) ListClusters() ([]string, error) {
 func (p *Provider) ListNodes(cluster string) ([]nodes.Node, error) {
 	cmd := exec.Command("docker",
 		"ps",
-		"-q",         // quiet output for parsing
 		"-a",         // show stopped nodes
 		"--no-trunc", // don't truncate
 		// filter for nodes with the cluster label
