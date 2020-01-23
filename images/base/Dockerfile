@@ -25,7 +25,7 @@ FROM ubuntu:19.10
 # The repository contains latest stable releases and nightlies built for multiple architectures
 ARG CONTAINERD_VERSION="v1.3.2"
 # Configure CNI binaries from upstream
-ARG CNI_VERSION="v0.8.4"
+ARG CNI_VERSION="v0.8.5"
 # Configure crictl binary from upstream
 ARG CRICTL_VERSION="v1.17.0"
 
