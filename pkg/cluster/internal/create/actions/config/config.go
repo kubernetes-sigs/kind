@@ -88,7 +88,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 				return errors.Wrap(err, "failed to generate kubeadm config content")
 			}
 
-			ctx.Logger.V(2).Info("Using kubeadm config:\n" + kubeadmConfig)
+			ctx.Logger.V(2).Infof("Using the following kubeadm config for node %s:\n%s", node.String(), kubeadmConfig)
 			return writeKubeadmConfig(kubeadmConfig, node)
 		}
 	}
