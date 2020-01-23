@@ -161,6 +161,18 @@ nodes:
 - role: worker
 {{< /codeFromInline >}}
 
+You can also set a specific Kubernetes version by setting the node image. You can find available versions on [DockerHub](https://hub.docker.com/r/kindest/node/tags):
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+- role: worker
+  image: kindest/node:v1.16.4
+{{< /codeFromInline >}}
+
+
+
 ## Per-Node Options
 
 The following options are available for setting on each entry in `nodes`.

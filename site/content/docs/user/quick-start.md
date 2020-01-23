@@ -309,6 +309,17 @@ This can be useful if using `NodePort` services or daemonsets exposing host port
 
 Note: binding the `listenAddress` to `127.0.0.1` may affect your ability to access the service.
 
+#### Setting Kubernetes version
+You can set a specific Kubernetes version by finding it's associated image on [Dockerhub](https://hub.docker.com/r/kindest/node/tags), then setting the image attribute explicitly:
+```yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  image: kindest/node:v1.16.4
+- role: worker
+  image: kindest/node:v1.16.4
+```
 
 ### Enable Feature Gates in Your Cluster
 
