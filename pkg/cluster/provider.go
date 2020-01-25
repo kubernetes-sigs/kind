@@ -117,6 +117,17 @@ func (p *Provider) KubeConfig(name string, internal bool) (string, error) {
 	return kubeconfig.Get(p.ic(name), !internal)
 }
 
+// ServerAddress return address of the api server (eg https://127.0.0.1:62183)
+func (p *Provider) ServerAddress(name string) (string, error) {
+	endpoint, err := p.ic(name).GetAPIServerEndpoint()
+	if err != nil {
+		return "", nil
+	}
+	server := "https://" + endpoint
+
+	return server, nil
+}
+
 // ExportKubeConfig exports the KUBECONFIG for the cluster, merging
 // it into the selected file, following the rules from
 // https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#config
