@@ -69,13 +69,13 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	isReady := waitForReady(node, startTime.Add(a.waitTime))
 	if !isReady {
 		ctx.Status.End(false)
-		fmt.Println(" • WARNING: Timed out waiting for Ready ⚠️")
+		ctx.Logger.V(0).Info(" • WARNING: Timed out waiting for Ready ⚠️")
 		return nil
 	}
 
 	// mark success
 	ctx.Status.End(true)
-	fmt.Printf(" • Ready after %s 💚\n", formatDuration(time.Since(startTime)))
+	ctx.Logger.V(0).Infof(" • Ready after %s 💚", formatDuration(time.Since(startTime)))
 	return nil
 }
 
