@@ -82,11 +82,11 @@ func planCreation(cluster string, cfg *config.Cluster) (createContainerFuncs []f
 						ContainerPort: common.APIServerInternalPort,
 					},
 				)
-				return createContainer(runArgsForNode(node, name, genericArgs))
+				return createContainer(runArgsForNode(node, cfg.Networking.IPFamily, name, genericArgs))
 			})
 		case config.WorkerRole:
 			createContainerFuncs = append(createContainerFuncs, func() error {
-				return createContainer(runArgsForNode(node, name, genericArgs))
+				return createContainer(runArgsForNode(node, cfg.Networking.IPFamily, name, genericArgs))
 			})
 		default:
 			return nil, errors.Errorf("unknown node role: %q", node.Role)
@@ -148,7 +148,7 @@ func commonArgs(cluster string, cfg *config.Cluster) ([]string, error) {
 	return args, nil
 }
 
-func runArgsForNode(node *config.Node, name string, args []string) []string {
+func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, name string, args []string) []string {
 	args = append([]string{
 		"run",
 		"--hostname", name, // make hostname match container name
@@ -180,7 +180,7 @@ func runArgsForNode(node *config.Node, name string, args []string) []string {
 
 	// convert mounts and port mappings to container run args
 	args = append(args, generateMountBindings(node.ExtraMounts...)...)
-	args = append(args, generatePortMappings(node.ExtraPortMappings...)...)
+	args = append(args, generatePortMappings(clusterIPFamily, node.ExtraPortMappings...)...)
 
 	// finally, specify the image to run
 	return append(args, node.Image)
@@ -198,11 +198,13 @@ func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) []s
 	)
 
 	// load balancer port mapping
-	args = append(args, generatePortMappings(config.PortMapping{
-		ListenAddress: cfg.Networking.APIServerAddress,
-		HostPort:      cfg.Networking.APIServerPort,
-		ContainerPort: common.APIServerInternalPort,
-	})...)
+	args = append(args, generatePortMappings(cfg.Networking.IPFamily,
+		config.PortMapping{
+			ListenAddress: cfg.Networking.APIServerAddress,
+			HostPort:      cfg.Networking.APIServerPort,
+			ContainerPort: common.APIServerInternalPort,
+		},
+	)...)
 
 	// finally, specify the image to run
 	return append(args, loadbalancer.Image)
@@ -272,23 +274,39 @@ func generateMountBindings(mounts ...config.Mount) []string {
 }
 
 // generatePortMappings converts the portMappings list to a list of args for docker
-func generatePortMappings(portMappings ...config.PortMapping) []string {
+func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings ...config.PortMapping) []string {
 	args := make([]string, 0, len(portMappings))
 	for _, pm := range portMappings {
-		var hostPortBinding string
-		if pm.ListenAddress != "" {
-			hostPortBinding = net.JoinHostPort(pm.ListenAddress, fmt.Sprintf("%d", pm.HostPort))
-		} else {
-			hostPortBinding = fmt.Sprintf("%d", pm.HostPort)
+		// do provider internal defaulting
+		// in a future API revision we will handle this at the API level and remove this
+		if pm.ListenAddress == "" {
+			switch clusterIPFamily {
+			case config.IPv4Family:
+				pm.ListenAddress = "0.0.0.0" // this is the docker default anyhow
+			case config.IPv6Family:
+				pm.ListenAddress = "::"
+			default:
+				// TODO: plumb an error instead?
+				panic(errors.Errorf("unknown cluster IP family: %v", clusterIPFamily))
+			}
 		}
-		protocol := "TCP" // TCP is the default
+		if string(pm.Protocol) == "" {
+			pm.Protocol = config.PortMappingProtocolTCP // TCP is the default
+		}
+
+		// validate that the provider can handle this binding
 		switch pm.Protocol {
+		case config.PortMappingProtocolTCP:
 		case config.PortMappingProtocolUDP:
-			protocol = "UDP"
 		case config.PortMappingProtocolSCTP:
-			protocol = "SCTP"
-		default: // also covers cri.PortMappingProtocolTCP
+		default:
+			// TODO: plumb an error instead?
+			panic(errors.Errorf("unknown port mapping protocol: %v", pm.Protocol))
 		}
+
+		// generate the actual mapping arg
+		protocol := string(pm.Protocol)
+		hostPortBinding := net.JoinHostPort(pm.ListenAddress, fmt.Sprintf("%d", pm.HostPort))
 		args = append(args, fmt.Sprintf("--publish=%s:%d/%s", hostPortBinding, pm.ContainerPort, protocol))
 	}
 	return args
