@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package docker
+package podman
 
 import (
 	"fmt"
@@ -61,7 +61,7 @@ func planCreation(cluster string, cfg *config.Cluster) (createContainerFuncs []f
 		node := node.DeepCopy()              // copy so we can modify
 		name := nodeNamer(string(node.Role)) // name the node
 
-		// fixup relative paths, docker can only handle absolute paths
+		// fixup relative paths, podman can only handle absolute paths
 		for i := range node.ExtraMounts {
 			hostPath := node.ExtraMounts[i].HostPath
 			absHostPath, err := filepath.Abs(hostPath)
@@ -96,8 +96,8 @@ func planCreation(cluster string, cfg *config.Cluster) (createContainerFuncs []f
 }
 
 func createContainer(args []string) error {
-	if err := exec.Command("docker", args...).Run(); err != nil {
-		return errors.Wrap(err, "docker run error")
+	if err := exec.Command("podman", args...).Run(); err != nil {
+		return errors.Wrap(err, "podman run error")
 	}
 	return nil
 }
@@ -158,7 +158,7 @@ func runArgsForNode(node *config.Node, name string, args []string) []string {
 		// running containers in a container requires privileged
 		// NOTE: we could try to replicate this with --cap-add, and use less
 		// privileges, but this flag also changes some mounts that are necessary
-		// including some ones docker would otherwise do by default.
+		// including some ones podman would otherwise do by default.
 		// for now this is what we want. in the future we may revisit this.
 		"--privileged",
 		"--security-opt", "seccomp=unconfined", // also ignore seccomp
@@ -210,9 +210,9 @@ func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) []s
 
 func getProxyEnv(cfg *config.Cluster) (map[string]string, error) {
 	envs := common.GetProxyEnvs(cfg)
-	// Specifically add the docker network subnets to NO_PROXY if we are using a proxy
+	// Specifically add the podman network subnets to NO_PROXY if we are using a proxy
 	if len(envs) > 0 {
-		// Docker default bridge network is named "bridge" (https://docs.docker.com/network/bridge/#use-the-default-bridge-network)
+		// podman default bridge network is named "bridge" (https://docs.podman.com/network/bridge/#use-the-default-bridge-network)
 		subnets, err := getSubnets("bridge")
 		if err != nil {
 			return nil, err
@@ -226,7 +226,7 @@ func getProxyEnv(cfg *config.Cluster) (map[string]string, error) {
 
 func getSubnets(networkName string) ([]string, error) {
 	format := `{{range (index (index . "IPAM") "Config")}}{{index . "Subnet"}} {{end}}`
-	cmd := exec.Command("docker", "network", "inspect", "-f", format, networkName)
+	cmd := exec.Command("podman", "network", "inspect", "-f", format, networkName)
 	lines, err := exec.CombinedOutputLines(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get subnets")
@@ -234,7 +234,7 @@ func getSubnets(networkName string) ([]string, error) {
 	return strings.Split(strings.TrimSpace(lines[0]), " "), nil
 }
 
-// generateMountBindings converts the mount list to a list of args for docker
+// generateMountBindings converts the mount list to a list of args for podman
 // '<HostPath>:<ContainerPath>[:options]', where 'options'
 // is a comma-separated list of the following strings:
 // 'ro', if the path is read only
@@ -271,7 +271,7 @@ func generateMountBindings(mounts ...config.Mount) []string {
 	return args
 }
 
-// generatePortMappings converts the portMappings list to a list of args for docker
+// generatePortMappings converts the portMappings list to a list of args for podman
 func generatePortMappings(portMappings ...config.PortMapping) []string {
 	args := make([]string, 0, len(portMappings))
 	for _, pm := range portMappings {

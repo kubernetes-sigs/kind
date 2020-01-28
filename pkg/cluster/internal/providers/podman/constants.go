@@ -14,11 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package docker
+package podman
 
-// clusterLabelKey is applied to each "node" docker container for identification
+// clusterLabelKey is applied to each "node" podman container for identification
 const clusterLabelKey = "io.x-k8s.kind.cluster"
 
-// nodeRoleLabelKey is applied to each "node" docker container for categorization
+// nodeRoleLabelKey is applied to each "node" podman container for categorization
 // of nodes by role
 const nodeRoleLabelKey = "io.x-k8s.kind.role"

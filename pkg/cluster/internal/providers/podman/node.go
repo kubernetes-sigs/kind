@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package docker
+package podman
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
-// nodes.Node implementation for the docker provider
+// nodes.Node implementation for the podman provider
 type node struct {
 	name string
 }
@@ -35,7 +35,7 @@ func (n *node) String() string {
 }
 
 func (n *node) Role() (string, error) {
-	cmd := exec.Command("docker", "inspect",
+	cmd := exec.Command("podman", "inspect",
 		"--format", fmt.Sprintf(`{{ index .Config.Labels "%s"}}`, nodeRoleLabelKey),
 		n.name,
 	)
@@ -50,8 +50,8 @@ func (n *node) Role() (string, error) {
 }
 
 func (n *node) IP() (ipv4 string, ipv6 string, err error) {
-	// retrieve the IP address of the node using docker inspect
-	cmd := exec.Command("docker", "inspect",
+	// retrieve the IP address of the node using podman inspect
+	cmd := exec.Command("podman", "inspect",
 		"-f", "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}",
 		n.name, // ... against the "node" container
 	)
@@ -77,7 +77,7 @@ func (n *node) Command(command string, args ...string) exec.Cmd {
 	}
 }
 
-// nodeCmd implements exec.Cmd for docker nodes
+// nodeCmd implements exec.Cmd for podman nodes
 type nodeCmd struct {
 	nameOrID string // the container name or ID
 	command  string
@@ -106,7 +106,7 @@ func (c *nodeCmd) Run() error {
 		args = append(args, "-e", env)
 	}
 	// specify the container and command, after this everything will be
-	// args the command in the container rather than to docker
+	// args the command in the container rather than to podman
 	args = append(
 		args,
 		c.nameOrID, // ... against the container
@@ -117,7 +117,7 @@ func (c *nodeCmd) Run() error {
 		// finally, with the caller args
 		c.args...,
 	)
-	cmd := exec.Command("docker", args...)
+	cmd := exec.Command("podman", args...)
 	if c.stdin != nil {
 		cmd.SetStdin(c.stdin)
 	}

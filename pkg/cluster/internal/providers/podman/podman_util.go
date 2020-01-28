@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package docker
+package podman
 
 import (
 	"strings"
@@ -22,9 +22,9 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
-// usernsRemap checks if userns-remap is enabled in dockerd
+// usernsRemap checks if userns-remap is enabled in podmand
 func usernsRemap() bool {
-	cmd := exec.Command("docker", "info", "--format", "'{{json .SecurityOptions}}'")
+	cmd := exec.Command("podman", "info", "--format", "'{{json .SecurityOptions}}'")
 	lines, err := exec.CombinedOutputLines(cmd)
 	if err != nil {
 		return false

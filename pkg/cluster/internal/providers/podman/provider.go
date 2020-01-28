@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package docker
+package podman
 
 import (
 	"fmt"
@@ -35,7 +35,7 @@ import (
 	"sigs.k8s.io/kind/pkg/internal/cli"
 )
 
-// NewProvider returns a new provider based on executing `docker ...`
+// NewProvider returns a new provider based on executing `podman ...`
 func NewProvider(logger log.Logger) provider.Provider {
 	return &Provider{
 		logger: logger,
@@ -73,7 +73,7 @@ func (p *Provider) Provision(status *cli.Status, cluster string, cfg *config.Clu
 
 // ListClusters is part of the providers.Provider interface
 func (p *Provider) ListClusters() ([]string, error) {
-	cmd := exec.Command("docker",
+	cmd := exec.Command("podman",
 		"ps",
 		"-a",         // show stopped nodes
 		"--no-trunc", // don't truncate
@@ -91,7 +91,7 @@ func (p *Provider) ListClusters() ([]string, error) {
 
 // ListNodes is part of the providers.Provider interface
 func (p *Provider) ListNodes(cluster string) ([]nodes.Node, error) {
-	cmd := exec.Command("docker",
+	cmd := exec.Command("podman",
 		"ps",
 		"-a",         // show stopped nodes
 		"--no-trunc", // don't truncate
@@ -117,7 +117,7 @@ func (p *Provider) DeleteNodes(n []nodes.Node) error {
 	if len(n) == 0 {
 		return nil
 	}
-	const command = "docker"
+	const command = "podman"
 	args := make([]string, 0, len(n)+3) // allocate once
 	args = append(args,
 		"rm",
@@ -145,9 +145,9 @@ func (p *Provider) GetAPIServerEndpoint(cluster string) (string, error) {
 		return "", errors.Wrap(err, "failed to get api server endpoint")
 	}
 
-	// retrieve the specific port mapping using docker inspect
+	// retrieve the specific port mapping using podman inspect
 	cmd := exec.Command(
-		"docker", "inspect",
+		"podman", "inspect",
 		"--format", fmt.Sprintf(
 			"{{ with (index (index .NetworkSettings.Ports \"%d/tcp\") 0) }}{{ printf \"%%s\t%%s\" .HostIp .HostPort }}{{ end }}", common.APIServerInternalPort,
 		),
