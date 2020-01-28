@@ -21,6 +21,7 @@ import (
 	"net"
 	"strings"
 
+	"github.com/coreos/go-semver/semver"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
@@ -33,6 +34,10 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/cli"
+)
+
+const (
+	minSupportedVersion = "1.7.1"
 )
 
 // NewProvider returns a new provider based on executing `podman ...`
@@ -50,6 +55,14 @@ type Provider struct {
 
 // Provision is part of the providers.Provider interface
 func (p *Provider) Provision(status *cli.Status, cluster string, cfg *config.Cluster) (err error) {
+	// ensure that podman version is a compatible version
+	version, err := version()
+	if err != nil {
+		return err
+	}
+	if semver.New(version).Compare(*semver.New(minSupportedVersion)) < 0 {
+		return errors.Errorf("podman version %q is too old, please upgrade to %q or later", version, minSupportedVersion)
+	}
 	// TODO: validate cfg
 	// ensure node images are pulled before actually provisioning
 	if err := ensureNodeImages(p.logger, status, cfg); err != nil {

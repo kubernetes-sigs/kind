@@ -19,6 +19,7 @@ package podman
 import (
 	"strings"
 
+	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
@@ -35,4 +36,20 @@ func usernsRemap() bool {
 		}
 	}
 	return false
+}
+
+func version() (string, error) {
+	cmd := exec.Command("podman", "--version")
+	lines, err := exec.CombinedOutputLines(cmd)
+	if err != nil {
+		return "", err
+	}
+	if len(lines) != 1 {
+		return "", errors.Errorf("podman version should only be one line, got %d", len(lines))
+	}
+	contents := strings.Split(lines[0], " ")
+	if len(contents) != 3 {
+		return "", errors.Errorf("podman version contents should have 3 parts, got %d", len(contents))
+	}
+	return strings.TrimSuffix(contents[2], "-dev"), nil
 }
