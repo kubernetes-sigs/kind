@@ -17,6 +17,7 @@ limitations under the License.
 package cluster
 
 import (
+	"os"
 	"sort"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
@@ -29,6 +30,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeconfig"
 	internallogs "sigs.k8s.io/kind/pkg/cluster/internal/logs"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/docker"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers/podman"
 	internalprovider "sigs.k8s.io/kind/pkg/cluster/internal/providers/provider"
 )
 
@@ -58,7 +60,15 @@ func NewProvider(options ...ProviderOption) *Provider {
 		o.apply(p)
 	}
 	if p.provider == nil {
-		p.provider = docker.NewProvider(p.logger)
+		// check if provider was overridden
+		// TODO: consider auto-detection once more than 1 provider is stable
+		providerEnv := os.Getenv("KIND_EXPERIMENTAL_PROVIDER")
+		if providerEnv == "podman" {
+			p.provider = podman.NewProvider(p.logger)
+			p.logger.Warn("enabling experimental podman provider")
+		} else {
+			p.provider = docker.NewProvider(p.logger)
+		}
 	}
 	return p
 }
