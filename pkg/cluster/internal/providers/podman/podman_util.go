@@ -19,6 +19,8 @@ package podman
 import (
 	"strings"
 
+	"k8s.io/apimachinery/pkg/util/version"
+
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 )
@@ -38,18 +40,36 @@ func usernsRemap() bool {
 	return false
 }
 
-func version() (string, error) {
+func getPodmanVersion() (*version.Version, error) {
 	cmd := exec.Command("podman", "--version")
 	lines, err := exec.CombinedOutputLines(cmd)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+
+	// output is like `podman version 1.7.1-dev`
 	if len(lines) != 1 {
-		return "", errors.Errorf("podman version should only be one line, got %d", len(lines))
+		return nil, errors.Errorf("podman version should only be one line, got %d", len(lines))
 	}
-	contents := strings.Split(lines[0], " ")
-	if len(contents) != 3 {
-		return "", errors.Errorf("podman version contents should have 3 parts, got %d", len(contents))
+	parts := strings.Split(lines[0], " ")
+	if len(parts) != 3 {
+		return nil, errors.Errorf("podman --version contents should have 3 parts, got %q", lines[0])
 	}
-	return strings.TrimSuffix(contents[2], "-dev"), nil
+	return version.ParseSemantic(parts[2])
+}
+
+const (
+	minSupportedVersion = "1.7.1"
+)
+
+func ensureMinVersion() error {
+	// ensure that podman version is a compatible version
+	v, err := getPodmanVersion()
+	if err != nil {
+		return errors.Wrap(err, "failed to check podman version")
+	}
+	if !v.AtLeast(version.MustParseSemantic(minSupportedVersion)) {
+		return errors.Errorf("podman version %q is too old, please upgrade to %q or later", v, minSupportedVersion)
+	}
+	return nil
 }
