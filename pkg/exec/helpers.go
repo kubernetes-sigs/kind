@@ -99,15 +99,15 @@ func RunWithStdoutReader(cmd Cmd, readerFunc func(io.Reader) error) error {
 	if err != nil {
 		return err
 	}
-	defer pw.Close()
-	defer pr.Close()
 	cmd.SetStdout(pw)
 
 	return errors.AggregateConcurrent([]func() error{
 		func() error {
+			defer pr.Close()
 			return readerFunc(pr)
 		},
 		func() error {
+			defer pw.Close()
 			return cmd.Run()
 		},
 	})
@@ -119,15 +119,15 @@ func RunWithStdinWriter(cmd Cmd, writerFunc func(io.Writer) error) error {
 	if err != nil {
 		return err
 	}
-	defer pw.Close()
-	defer pr.Close()
 	cmd.SetStdin(pr)
 
 	return errors.AggregateConcurrent([]func() error{
 		func() error {
+			defer pw.Close()
 			return writerFunc(pw)
 		},
 		func() error {
+			defer pr.Close()
 			return cmd.Run()
 		},
 	})
