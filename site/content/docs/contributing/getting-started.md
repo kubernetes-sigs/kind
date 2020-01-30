@@ -68,7 +68,7 @@ If you haven't already, [install Docker][install docker], following the
 If you have an existing installation, check your version and make sure you have
 the latest Docker.
 
-To check if `docker` has has been installed:
+To check if `docker` has been installed:
 ```
 docker --version
 ```
