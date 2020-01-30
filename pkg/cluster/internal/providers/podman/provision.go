@@ -141,10 +141,6 @@ func commonArgs(cluster string, cfg *config.Cluster) ([]string, error) {
 		args = append(args, "-e", fmt.Sprintf("%s=%s", key, val))
 	}
 
-	// handle hosts that have user namespace remapping enabled
-	if usernsRemap() {
-		args = append(args, "--userns=host")
-	}
 	return args, nil
 }
 
