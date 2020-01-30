@@ -20,19 +20,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/sets"
-	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider/common"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/log"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider"
-	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider/common"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/cli"
 )
@@ -54,6 +55,11 @@ type Provider struct {
 func (p *Provider) Provision(status *cli.Status, cluster string, cfg *config.Cluster) (err error) {
 	if err := ensureMinVersion(); err != nil {
 		return err
+	}
+
+	// kind doesn't currently work with podman rootless, surface a warning
+	if os.Geteuid() != 0 {
+		p.logger.Warn("podman provider may not work properly in rootless mode")
 	}
 
 	// TODO: validate cfg
@@ -181,7 +187,7 @@ func (p *Provider) GetAPIServerEndpoint(cluster string) (string, error) {
 	}
 	for _, pm := range portMappings {
 		if pm.ContainerPort == common.APIServerInternalPort && pm.Protocol == "tcp" {
-			return net.JoinHostPort(pm.HostIP, strconv.FormatInt(int64(pm.HostPort), 10)), nil
+			return net.JoinHostPort(pm.HostIP, strconv.Itoa(int(pm.HostPort))), nil
 		}
 	}
 
