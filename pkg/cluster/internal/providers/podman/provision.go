@@ -141,10 +141,6 @@ func commonArgs(cluster string, cfg *config.Cluster) ([]string, error) {
 		args = append(args, "-e", fmt.Sprintf("%s=%s", key, val))
 	}
 
-	// handle hosts that have user namespace remapping enabled
-	if usernsRemap() {
-		args = append(args, "--userns=host")
-	}
 	return args, nil
 }
 
@@ -307,6 +303,11 @@ func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings .
 		// generate the actual mapping arg
 		protocol := string(pm.Protocol)
 		hostPortBinding := net.JoinHostPort(pm.ListenAddress, fmt.Sprintf("%d", pm.HostPort))
+		// Podman expects empty string instead of 0 to assign a random port
+		// https://github.com/containers/libpod/blob/master/pkg/spec/ports.go#L68-L69
+		if strings.HasSuffix(hostPortBinding, ":0") {
+			hostPortBinding = strings.TrimSuffix(hostPortBinding, "0")
+		}
 		args = append(args, fmt.Sprintf("--publish=%s:%d/%s", hostPortBinding, pm.ContainerPort, protocol))
 	}
 	return args

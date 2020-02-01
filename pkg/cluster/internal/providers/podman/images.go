@@ -38,7 +38,10 @@ func ensureNodeImages(logger log.Logger, status *cli.Status, cfg *config.Cluster
 		// prints user friendly message
 		friendlyImageName := image
 		if strings.Contains(image, "@sha256:") {
-			friendlyImageName = strings.Split(image, "@sha256:")[0]
+			splits := strings.Split(image, "@sha256:")
+			friendlyImageName = splits[0]
+			// possibly trim tag and use sha
+			image = strings.Split(friendlyImageName, ":")[0] + "@sha256:" + splits[1]
 		}
 		status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", friendlyImageName))
 		if _, err := pullIfNotPresent(logger, image, 4); err != nil {

@@ -17,20 +17,23 @@ limitations under the License.
 package podman
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
+	"os"
+	"strconv"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/log"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider/common"
-	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/cli"
 )
@@ -52,6 +55,11 @@ type Provider struct {
 func (p *Provider) Provision(status *cli.Status, cluster string, cfg *config.Cluster) (err error) {
 	if err := ensureMinVersion(); err != nil {
 		return err
+	}
+
+	// kind doesn't currently work with podman rootless, surface a warning
+	if os.Geteuid() != 0 {
+		p.logger.Warn("podman provider may not work properly in rootless mode")
 	}
 
 	// TODO: validate cfg
@@ -152,9 +160,8 @@ func (p *Provider) GetAPIServerEndpoint(cluster string) (string, error) {
 	// retrieve the specific port mapping using podman inspect
 	cmd := exec.Command(
 		"podman", "inspect",
-		"--format", fmt.Sprintf(
-			"{{ with (index (index .NetworkSettings.Ports \"%d/tcp\") 0) }}{{ printf \"%%s\t%%s\" .HostIp .HostPort }}{{ end }}", common.APIServerInternalPort,
-		),
+		"--format",
+		"{{ json .NetworkSettings.Ports }}",
 		n.String(),
 	)
 	lines, err := exec.OutputLines(cmd)
@@ -164,13 +171,27 @@ func (p *Provider) GetAPIServerEndpoint(cluster string) (string, error) {
 	if len(lines) != 1 {
 		return "", errors.Errorf("network details should only be one line, got %d lines", len(lines))
 	}
-	parts := strings.Split(lines[0], "\t")
-	if len(parts) != 2 {
-		return "", errors.Errorf("network details should only be two parts, got %d", len(parts))
+
+	// portMapping maps to the standard CNI portmapping capability
+	// see: https://github.com/containernetworking/cni/blob/spec-v0.4.0/CONVENTIONS.md
+	type portMapping struct {
+		HostPort      int32  `json:"hostPort"`
+		ContainerPort int32  `json:"containerPort"`
+		Protocol      string `json:"protocol"`
+		HostIP        string `json:"hostIP"`
 	}
 
-	// join host and port
-	return net.JoinHostPort(parts[0], parts[1]), nil
+	var portMappings []portMapping
+	if err := json.Unmarshal([]byte(lines[0]), &portMappings); err != nil {
+		return "", errors.Errorf("invalid network details: %v", err)
+	}
+	for _, pm := range portMappings {
+		if pm.ContainerPort == common.APIServerInternalPort && pm.Protocol == "tcp" {
+			return net.JoinHostPort(pm.HostIP, strconv.Itoa(int(pm.HostPort))), nil
+		}
+	}
+
+	return "", errors.Errorf("unable to find apiserver endpoint information")
 }
 
 // node returns a new node handle for this provider

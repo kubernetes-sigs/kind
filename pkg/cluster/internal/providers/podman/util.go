@@ -25,21 +25,6 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
-// usernsRemap checks if userns-remap is enabled in podmand
-func usernsRemap() bool {
-	cmd := exec.Command("podman", "info", "--format", "'{{json .SecurityOptions}}'")
-	lines, err := exec.CombinedOutputLines(cmd)
-	if err != nil {
-		return false
-	}
-	if len(lines) > 0 {
-		if strings.Contains(lines[0], "name=userns") {
-			return true
-		}
-	}
-	return false
-}
-
 func getPodmanVersion() (*version.Version, error) {
 	cmd := exec.Command("podman", "--version")
 	lines, err := exec.CombinedOutputLines(cmd)
