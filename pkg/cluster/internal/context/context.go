@@ -98,3 +98,14 @@ func (c *Context) ListInternalNodes() ([]nodes.Node, error) {
 	}
 	return selectedNodes, nil
 }
+
+// CollectLogs will populate dir with cluster logs and other debug files
+func (c *Context) CollectLogs(dir string) error {
+	// TODO: should use ListNodes and Collect should handle nodes differently
+	// based on role ...
+	n, err := c.ListInternalNodes()
+	if err != nil {
+		return err
+	}
+	return c.provider.CollectLogs(dir, n)
+}

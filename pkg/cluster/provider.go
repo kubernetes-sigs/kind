@@ -28,7 +28,6 @@ import (
 	internalcreate "sigs.k8s.io/kind/pkg/cluster/internal/create"
 	internaldelete "sigs.k8s.io/kind/pkg/cluster/internal/delete"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeconfig"
-	internallogs "sigs.k8s.io/kind/pkg/cluster/internal/logs"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/docker"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/podman"
 	internalprovider "sigs.k8s.io/kind/pkg/cluster/internal/providers/provider"
@@ -148,11 +147,5 @@ func (p *Provider) ListInternalNodes(name string) ([]nodes.Node, error) {
 
 // CollectLogs will populate dir with cluster logs and other debug files
 func (p *Provider) CollectLogs(name, dir string) error {
-	// TODO: should use ListNodes and Collect should handle nodes differently
-	// based on role ...
-	n, err := p.ListInternalNodes(name)
-	if err != nil {
-		return err
-	}
-	return internallogs.Collect(p.logger, n, dir)
+	return p.ic(name).CollectLogs(dir)
 }
