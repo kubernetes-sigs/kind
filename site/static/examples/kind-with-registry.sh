@@ -13,6 +13,7 @@ if [ "${running}" != 'true' ]; then
     -d --restart=always -p "${reg_port}:5000" --name "${reg_name}" \
     registry:2
 fi
+reg_ip="$(docker inspect -f '{{.NetworkSettings.IPAddress}}' "${reg_name}")"
 
 # create a cluster with the local registry enabled in containerd
 cat <<EOF | kind create cluster --name "${KIND_CLUSTER_NAME}" --config=-
@@ -20,13 +21,6 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 containerdConfigPatches: 
 - |-
-  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."registry:${reg_port}"]
-    endpoint = ["http://registry:${reg_port}"]
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:${reg_port}"]
+    endpoint = ["http://${reg_ip}:${reg_port}"]
 EOF
-
-# add the registry to /etc/hosts on each node
-ip_fmt='{{.NetworkSettings.IPAddress}}'
-cmd="echo $(docker inspect -f "${ip_fmt}" "${reg_name}") registry >> /etc/hosts"
-for node in $(kind get nodes --name "${KIND_CLUSTER_NAME}"); do
-  docker exec "${node}" sh -c "${cmd}"
-done
