@@ -66,7 +66,7 @@ func Parse(raw []byte) (*config.Cluster, error) {
 	// handle v1alpha4
 	case "kind.x-k8s.io/v1alpha4":
 		if tm.Kind != "Cluster" {
-			return nil, errors.Errorf("unknown kind %s for apiVersion: %s", tm.APIVersion, tm.Kind)
+			return nil, errors.Errorf("unknown kind %s for apiVersion: %s", tm.Kind, tm.APIVersion)
 		}
 		// load version
 		cfg := &v1alpha4.Cluster{}
@@ -79,7 +79,7 @@ func Parse(raw []byte) (*config.Cluster, error) {
 	// handle v1alpha3
 	case "kind.sigs.k8s.io/v1alpha3":
 		if tm.Kind != "Cluster" {
-			return nil, errors.Errorf("unknown kind %s for apiVersion: %s", tm.APIVersion, tm.Kind)
+			return nil, errors.Errorf("unknown kind %s for apiVersion: %s", tm.Kind, tm.APIVersion)
 		}
 		// load version
 		cfg := &v1alpha3.Cluster{}
