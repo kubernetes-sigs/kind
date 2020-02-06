@@ -205,27 +205,14 @@ func (p *Provider) node(name string) nodes.Node {
 
 // CollectLogs will populate dir with cluster logs and other debug files
 func (p *Provider) CollectLogs(dir string, nodes []nodes.Node) error {
-	prefixedPath := func(path string) string {
-		return filepath.Join(dir, path)
-	}
-	// helper to run a cmd and write the output to path
-	execToPath := func(cmd exec.Cmd, path string) error {
-		realPath := prefixedPath(path)
-		if err := os.MkdirAll(filepath.Dir(realPath), os.ModePerm); err != nil {
-			return err
-		}
-		f, err := os.Create(realPath)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-		cmd.SetStdout(f)
-		cmd.SetStderr(f)
-		return cmd.Run()
-	}
 	execToPathFn := func(cmd exec.Cmd, path string) func() error {
 		return func() error {
-			return execToPath(cmd, path)
+			f, err := common.FileOnHost(path)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			return cmd.SetStdout(f).SetStderr(f).Run()
 		}
 	}
 	// construct a slice of methods to collect logs
@@ -234,49 +221,31 @@ func (p *Provider) CollectLogs(dir string, nodes []nodes.Node) error {
 		// record info about the host podman
 		execToPathFn(
 			exec.Command("podman", "info"),
-			"podman-info.txt",
+			filepath.Join(dir, "podman-info.txt"),
 		),
 	}
 
 	// collect /var/log for each node and plan collecting more logs
-	errs := []error{}
+	var errs []error
 	for _, n := range nodes {
 		node := n // https://golang.org/doc/faq#closures_and_goroutines
 		name := node.String()
-		if err := internallogs.DumpDir(p.logger, n, "/var/log", filepath.Join(dir, name)); err != nil {
+		path := filepath.Join(dir, name)
+		if err := internallogs.DumpDir(p.logger, node, "/var/log", path); err != nil {
 			errs = append(errs, err)
 		}
 
-		fns = append(fns, func() error {
-			return errors.AggregateConcurrent([]func() error{
-				// record info about the node container
-				execToPathFn(
-					exec.Command("podman", "inspect", name),
-					filepath.Join(name, "inspect.json"),
-				),
-				// grab all of the node logs
-				execToPathFn(
-					exec.Command("podman", "logs", name),
-					filepath.Join(name, "serial.log"),
-				),
-				execToPathFn(
-					node.Command("cat", "/kind/version"),
-					filepath.Join(name, "kubernetes-version.txt"),
-				),
-				execToPathFn(
-					node.Command("journalctl", "--no-pager"),
-					filepath.Join(name, "journal.log"),
-				),
-				execToPathFn(
-					node.Command("journalctl", "--no-pager", "-u", "kubelet.service"),
-					filepath.Join(name, "kubelet.log"),
-				),
-				execToPathFn(
-					node.Command("journalctl", "--no-pager", "-u", "containerd.service"),
-					filepath.Join(name, "containerd.log"),
-				),
-			})
-		})
+		fns = append(fns,
+			func() error { return common.CollectLogs(node, path) },
+			execToPathFn(exec.Command("podman", "inspect", name), filepath.Join(path, "inspect.json")),
+			func() error {
+				f, err := common.FileOnHost(filepath.Join(path, "serial.log"))
+				if err != nil {
+					return err
+				}
+				return node.SerialLogs(f)
+			},
+		)
 	}
 
 	// run and collect up all errors

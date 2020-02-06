@@ -149,3 +149,7 @@ func (c *nodeCmd) SetStderr(w io.Writer) exec.Cmd {
 	c.stderr = w
 	return c
 }
+
+func (n *node) SerialLogs(w io.Writer) error {
+	return exec.Command("podman", "logs", n.name).SetStdout(w).SetStderr(w).Run()
+}
