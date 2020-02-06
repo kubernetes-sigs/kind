@@ -80,6 +80,9 @@ type Node struct {
 	// binded to a host Port
 	ExtraPortMappings []PortMapping
 
+	// ExtraNetworks describes additional networks for the node container
+	ExtraNetworks []Network `yaml:"extraNetworks,omitempty"`
+
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// strategic merge patches to `kustomize build` internally
 	// https://github.com/kubernetes/community/blob/a9cf5c8f3380bb52ebe57b1e2dbdec136d8dd484/contributors/devel/sig-api-machinery/strategic-merge-patch.md
@@ -191,6 +194,13 @@ type PortMapping struct {
 	ListenAddress string
 	// Protocol (TCP/UDP)
 	Protocol PortMappingProtocol
+}
+
+// Network specifies a network to create and attach a container.
+// In yaml this looks like:
+//  name: secondary-nic1
+type Network struct {
+	Name string `yaml:"name,omitempty"`
 }
 
 // MountPropagation represents an "enum" for mount propagation options,

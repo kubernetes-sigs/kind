@@ -48,6 +48,7 @@ func convertv1alpha3Node(in *v1alpha3.Node, out *Node) {
 
 	out.ExtraMounts = make([]Mount, len(in.ExtraMounts))
 	out.ExtraPortMappings = make([]PortMapping, len(in.ExtraPortMappings))
+	out.ExtraNetworks = make([]Network, len(in.ExtraNetworks))
 
 	for i := range in.ExtraMounts {
 		convertv1alpha3Mount(&in.ExtraMounts[i], &out.ExtraMounts[i])
@@ -55,6 +56,10 @@ func convertv1alpha3Node(in *v1alpha3.Node, out *Node) {
 
 	for i := range in.ExtraPortMappings {
 		convertv1alpha3PortMapping(&in.ExtraPortMappings[i], &out.ExtraPortMappings[i])
+	}
+
+	for i := range in.ExtraNetworks {
+		convertv1alpha3Network(&in.ExtraNetworks[i], &out.ExtraNetworks[i])
 	}
 }
 
@@ -88,4 +93,8 @@ func convertv1alpha3PortMapping(in *v1alpha3.PortMapping, out *PortMapping) {
 	out.HostPort = in.HostPort
 	out.ListenAddress = in.ListenAddress
 	out.Protocol = PortMappingProtocol(v1alpha3.PortMappingProtocolValueToName[in.Protocol])
+}
+
+func convertv1alpha3Network(in *v1alpha3.Network, out *Network) {
+	out.Name = in.Name
 }

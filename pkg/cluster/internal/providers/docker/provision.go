@@ -52,6 +52,7 @@ func planCreation(cluster string, cfg *config.Cluster) (createContainerFuncs []f
 		// plan loadbalancer node
 		name := nodeNamer(constants.ExternalLoadBalancerNodeRoleValue)
 		createContainerFuncs = append(createContainerFuncs, func() error {
+			fmt.Println("runArgsForLoadBalancer")
 			return createContainer(runArgsForLoadBalancer(cfg, name, genericArgs))
 		})
 	}
@@ -82,11 +83,17 @@ func planCreation(cluster string, cfg *config.Cluster) (createContainerFuncs []f
 						ContainerPort: common.APIServerInternalPort,
 					},
 				)
-				return createContainer(runArgsForNode(node, cfg.Networking.IPFamily, name, genericArgs))
+				return createContainer(
+					runArgsForNode(node, cfg.Networking.IPFamily, name, genericArgs),
+					networkCmdsForNode(node, name)...,
+				)
 			})
 		case config.WorkerRole:
 			createContainerFuncs = append(createContainerFuncs, func() error {
-				return createContainer(runArgsForNode(node, cfg.Networking.IPFamily, name, genericArgs))
+				return createContainer(
+					runArgsForNode(node, cfg.Networking.IPFamily, name, genericArgs),
+					networkCmdsForNode(node, name)...,
+				)
 			})
 		default:
 			return nil, errors.Errorf("unknown node role: %q", node.Role)
@@ -95,9 +102,28 @@ func planCreation(cluster string, cfg *config.Cluster) (createContainerFuncs []f
 	return createContainerFuncs, nil
 }
 
-func createContainer(args []string) error {
-	if err := exec.Command("docker", args...).Run(); err != nil {
+func createContainer(runCommand []string, extraCommands ...[]string) error {
+	if err := docker(runCommand); err != nil {
 		return errors.Wrap(err, "docker run error")
+	}
+	if err := calls(docker, extraCommands); err != nil {
+		return errors.Wrap(err, "docker extra commands error")
+	}
+	return nil
+}
+
+func docker(args []string) error {
+	if err := exec.Command("docker", args...).Run(); err != nil {
+		return errors.Wrap(err, "docker error")
+	}
+	return nil
+}
+
+func calls(cmd func([]string) error, args [][]string) error {
+	for _, a := range args {
+		if err := cmd(a); err != nil {
+			return errors.Wrap(err, "cmd error")
+		}
 	}
 	return nil
 }
@@ -310,4 +336,33 @@ func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings .
 		args = append(args, fmt.Sprintf("--publish=%s:%d/%s", hostPortBinding, pm.ContainerPort, protocol))
 	}
 	return args
+}
+
+// generateNetworkAttachments converts the network list to a list of args for
+// multiple docker network calls one per network
+func networkCmdsForNode(node *config.Node, name string) [][]string {
+	args := make([][]string, 0, len(node.ExtraNetworks))
+	for _, n := range node.ExtraNetworks {
+		networkAttachment := generateNetworkAttachment(name, n)
+		args = append(args, networkAttachment...)
+	}
+	return args
+}
+
+// generateNetworkAttachment converts the network list to create/connect args for docker network
+func generateNetworkAttachment(node string, network config.Network) [][]string {
+	return [][]string{
+		generateNetworkCreate(network),
+		generateNetworkConnect(node, network),
+	}
+}
+
+// generateNetworkConnect converts the network into a `docker network create`
+func generateNetworkCreate(network config.Network) []string {
+	return []string{"network", "create", network.Name}
+}
+
+// generateNetworkConnect converts network into a `docker network connect`
+func generateNetworkConnect(node string, network config.Network) []string {
+	return []string{"network", "connect", network.Name, node}
 }

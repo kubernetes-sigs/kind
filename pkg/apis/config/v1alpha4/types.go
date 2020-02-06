@@ -106,6 +106,9 @@ type Node struct {
 	// binded to a host Port
 	ExtraPortMappings []PortMapping `yaml:"extraPortMappings,omitempty"`
 
+	// ExtraNetworks describes additional networks for the node container
+	ExtraNetworks []Network `yaml:"extraNetworks,omitempty"`
+
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// merge patches. The `kind` field must match the target object, and
 	// if `apiVersion` is specified it will only be applied to matching objects.
@@ -240,6 +243,13 @@ type PortMapping struct {
 	ListenAddress string `yaml:"listenAddress,omitempty"`
 	// Protocol (TCP/UDP)
 	Protocol PortMappingProtocol `yaml:"protocol,omitempty"`
+}
+
+// Network specifies a network to create and attach a container.
+// In yaml this looks like:
+//  name: secondary-nic1
+type Network struct {
+	Name string `yaml:"name,omitempty"`
 }
 
 // MountPropagation represents an "enum" for mount propagation options,

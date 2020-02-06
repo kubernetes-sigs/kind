@@ -63,8 +63,8 @@ func (n *node) IP() (ipv4 string, ipv6 string, err error) {
 		return "", "", errors.Errorf("file should only be one line, got %d lines", len(lines))
 	}
 	ips := strings.Split(lines[0], ",")
-	if len(ips) != 2 {
-		return "", "", errors.Errorf("container addresses should have 2 values, got %d values", len(ips))
+	if len(ips) < 2 {
+		return "", "", errors.Errorf("container addresses should have 2 or more values, got %d values", len(ips))
 	}
 	return ips[0], ips[1], nil
 }
