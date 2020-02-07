@@ -49,6 +49,10 @@ build_with_bazel() {
   # make sure we have e2e requirements
   bazel build //cmd/kubectl //test/e2e:e2e.test //vendor/github.com/onsi/ginkgo/ginkgo
 
+  # free up memory by terminating bazel
+  bazel shutdown || true
+  pkill ^bazel || true
+
   # ensure the e2e script will find our binaries ...
   # https://github.com/kubernetes/kubernetes/issues/68306
   # TODO: remove this, it was fixed in 1.13+
