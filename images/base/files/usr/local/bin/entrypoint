@@ -28,7 +28,10 @@ fix_mount() {
   # This is a workaround to an AUFS bug that might cause `Text file
   # busy` on `mount` command below. See more details in
   # https://github.com/moby/moby/issues/9547
-  sync
+  if [[ "$(stat -f -c %T /bin/mount)" == 'aufs' ]]; then
+    echo 'INFO: detected aufs, calling sync'
+    sync
+  fi
 
   echo 'INFO: remounting /sys read-only'
   # systemd-in-a-container should have read only /sys
