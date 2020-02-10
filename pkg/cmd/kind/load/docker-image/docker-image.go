@@ -120,7 +120,7 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 		id, err := nodeutils.ImageID(node, imageName)
 		if err != nil || id != imageID {
 			selectedNodes = append(selectedNodes, node)
-			logger.V(0).Infof("Image: %q with ID %q not present on node %q", imageName, imageID, node.String())
+			logger.V(0).Infof("Image: %q with ID %q not yet present on node %q, loading...", imageName, imageID, node.String())
 		}
 	}
 
