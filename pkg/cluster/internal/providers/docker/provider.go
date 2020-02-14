@@ -19,6 +19,7 @@ package docker
 import (
 	"fmt"
 	"net"
+	"path/filepath"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -28,6 +29,7 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/log"
 
+	internallogs "sigs.k8s.io/kind/pkg/cluster/internal/logs"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider/common"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
@@ -174,4 +176,55 @@ func (p *Provider) node(name string) nodes.Node {
 	return &node{
 		name: name,
 	}
+}
+
+// CollectLogs will populate dir with cluster logs and other debug files
+func (p *Provider) CollectLogs(dir string, nodes []nodes.Node) error {
+	execToPathFn := func(cmd exec.Cmd, path string) func() error {
+		return func() error {
+			f, err := common.FileOnHost(path)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			return cmd.SetStdout(f).SetStderr(f).Run()
+		}
+	}
+	// construct a slice of methods to collect logs
+	fns := []func() error{
+		// TODO(bentheelder): record the kind version here as well
+		// record info about the host docker
+		execToPathFn(
+			exec.Command("docker", "info"),
+			filepath.Join(dir, "docker-info.txt"),
+		),
+	}
+
+	// collect /var/log for each node and plan collecting more logs
+	var errs []error
+	for _, n := range nodes {
+		node := n // https://golang.org/doc/faq#closures_and_goroutines
+		name := node.String()
+		path := filepath.Join(dir, name)
+		if err := internallogs.DumpDir(p.logger, node, "/var/log", path); err != nil {
+			errs = append(errs, err)
+		}
+
+		fns = append(fns,
+			func() error { return common.CollectLogs(node, path) },
+			execToPathFn(exec.Command("docker", "inspect", name), filepath.Join(path, "inspect.json")),
+			func() error {
+				f, err := common.FileOnHost(filepath.Join(path, "serial.log"))
+				if err != nil {
+					return err
+				}
+				defer f.Close()
+				return node.SerialLogs(f)
+			},
+		)
+	}
+
+	// run and collect up all errors
+	errs = append(errs, errors.AggregateConcurrent(fns))
+	return errors.NewAggregate(errs)
 }

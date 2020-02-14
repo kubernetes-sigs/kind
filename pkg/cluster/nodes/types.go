@@ -17,6 +17,8 @@ limitations under the License.
 package nodes
 
 import (
+	"io"
+
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
@@ -33,4 +35,6 @@ type Node interface {
 	// Possibly remove this method in favor of obtaining this detail with
 	// exec or from the provider
 	IP() (ipv4 string, ipv6 string, err error)
+	// SerialLogs collects the "node" container logs
+	SerialLogs(writer io.Writer) error
 }
