@@ -62,9 +62,9 @@ In Linux hosts, you can access directly the Cluster IP address of the services j
 
 ## Multiple clusters
 
-As we explained before, all KIND clusters are sahring the same docker network, that means that all the cluster nodes have direct connectivity.
+As we explained before, all KIND clusters are sharing the same docker network, that means that all the cluster nodes have direct connectivity.
 
-If we want to spawn multiple cluster and provide Pod to Pod connectivity between different clusters, first we have to configure the cluster networking parameters to avoid address overlapping.
+If we want to spawn multiple clusters and provide Pod to Pod connectivity between different clusters, first we have to configure the cluster networking parameters to avoid address overlapping.
 
 ### Example: Kubernetes multi-region
 
@@ -130,7 +130,7 @@ $ docker exec -it alpine ip a
     inet 172.17.0.3/16 brd 172.17.255.255 scope global eth0
 {{< /codeFromInline >}}
 
-That means that Pods will be able to reach other dockers containers that does not belong to any KIND cluster, however, the docker container will not be able to answer to the Pod IP address until we intall the correspoding routes.
+That means that Pods will be able to reach other Docker containers that does not belong to any KIND cluster, however, the Docker container will not be able to answer to the Pod IP address until we install the correspoding routes.
 
 We can solve it installing routes in the new containers to the Pod Subnets in each Node.
 
