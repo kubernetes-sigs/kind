@@ -46,6 +46,20 @@ Docker also creates iptables NAT rules on the docker host that masquerade the tr
 
 By default, KIND uses its own CNI plugin, **Kindnet**, that install the corresponding routes and iptables rules on the cluster nodes.
 
+## Services
+
+[Kubernetes Services](https://kubernetes.io/docs/concepts/services-networking/service/) are an abstract way to expose an application running on a set of Pods as a network service.
+
+The are different types of Services:
+
+* Cluster IP
+* NodePort
+* LoadBalancer
+* Headless
+* ExternalName
+
+In Linux hosts, you can access directly the Cluster IP address of the services just adding one route to the configured **serviceSubnet** parameters via any of the nodes that belong to the cluster, so there is no need to use NodePort or LoadBalancer services.
+
 ## Multiple clusters
 
 As we explained before, all KIND clusters are sahring the same docker network, that means that all the cluster nodes have direct connectivity.
