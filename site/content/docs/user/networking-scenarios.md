@@ -134,8 +134,30 @@ That means that Pods will be able to reach other Docker containers that does not
 
 We can solve it installing routes in the new containers to the Pod Subnets in each Node.
 
-### Example: Multiple network interfaces
+### Example: Multiple network interfaces and Multi-Home Nodes
 
 There are scenarios that will require to create multiple interfaces in the KIND nodes to test multi-homing, VLANS, CNI plugins, ... 
 
 In order to do that, you can use tools like [koko](https://github.com/redhat-nfvpe/koko) to create new networking interfaces on the KIND nodes, you can check several examples of creating complex topologies with containers in this repo https://github.com/aojea/frr-lab.
+
+Other alternative is [using Docker user defined bridges](https://docs.docker.com/network/bridge/#connect-a-container-to-a-user-defined-bridge):
+
+```sh
+LOOPBACK_PREFIX="1.1.1."
+MY_BRIDGE="my_net2"
+MY_ROUTE=10.0.0.0/24
+MY_GW=172.16.17.1
+# Create 2nd network
+docker network create ${MY_BRIDGE}
+# Create kubernetes cluster
+kind create cluster
+# Configure nodes to use the second network
+for n in $(kind get nodes); do
+  # Connect the node to the second network
+  docker network connect ${MY_BRIDGE} ${n}
+  # Configure a loopback address
+  docker exec ${n} ip addr add ${LOOPBACK_PREFIX}${i}/32 dev lo
+  # Add static routes
+  docker exec ${n} ip route add ${MY_ROUTE} via {$MY_GW}
+done
+```
