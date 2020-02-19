@@ -136,9 +136,26 @@ We can solve it installing routes in the new containers to the Pod Subnets in ea
 
 ### Example: Multiple network interfaces and Multi-Home Nodes
 
-There are scenarios that will require to create multiple interfaces in the KIND nodes to test multi-homing, VLANS, CNI plugins, ... 
+There can be scenarios that requite multiple interfaces in the KIND nodes to test multi-homing, VLANS, CNI plugins, ... 
 
-In order to do that, you can use tools like [koko](https://github.com/redhat-nfvpe/koko) to create new networking interfaces on the KIND nodes, you can check several examples of creating complex topologies with containers in this repo https://github.com/aojea/frr-lab.
+Typically, you will want to use loopback addresses for communication. We can configure those loopback addresses after the cluster has been created, and then modify the Kubernetes components to use them.
+
+When creating the cluster we must add the loopback IP address of the control plane to the certificate SAN (the apiserver binds to "all-interfaces" by default):
+
+```yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+# add the loopback to apiServer cert SANS
+kubeadmConfigPatchesJSON6902:
+- group: kubeadm.k8s.io
+  kind: ClusterConfiguration
+  patch: |
+    - op: add
+      path: /apiServer/certSANs/-
+      value: my-loopback
+```
+
+In order to create the network interfaces, you can use tools like [koko](https://github.com/redhat-nfvpe/koko) to create new networking interfaces on the KIND nodes, you can check several examples of creating complex topologies with containers in this repo https://github.com/aojea/frr-lab.
 
 Other alternative is [using Docker user defined bridges](https://docs.docker.com/network/bridge/#connect-a-container-to-a-user-defined-bridge):
 
@@ -149,8 +166,6 @@ MY_ROUTE=10.0.0.0/24
 MY_GW=172.16.17.1
 # Create 2nd network
 docker network create ${MY_BRIDGE}
-# Create kubernetes cluster
-kind create cluster
 # Configure nodes to use the second network
 for n in $(kind get nodes); do
   # Connect the node to the second network
@@ -161,3 +176,32 @@ for n in $(kind get nodes); do
   docker exec ${n} ip route add ${MY_ROUTE} via {$MY_GW}
 done
 ```
+
+After the cluster has been created, we have to modify, in the control-plane node,  the kube-apiserver `--advertise-address` flag in the static pod manifest in `/etc/kubernetes/manifests/kube-apiserver.yaml` (once you write the file it restarts the pod with the new config):
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    component: kube-apiserver
+    tier: control-plane
+  name: kube-apiserver
+  namespace: kube-system
+spec:
+  containers:
+  - command:
+    - kube-apiserver
+    - --advertise-address=172.17.0.4
+```
+
+and then change in all the nodes the kubelet `node-ip` flag:
+
+```
+root@kind-worker:/# more /var/lib/kubelet/kubeadm-flags.env 
+KUBELET_KUBEADM_ARGS="--container-runtime=remote --container-runtime-endpoint=/run/containerd/containerd.sock --fail-swap-on=false --node-ip=172.17.0.4"
+ ```
+
+and restart them `systemctl restart kubelet` to use the new config
+
