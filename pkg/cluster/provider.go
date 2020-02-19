@@ -18,6 +18,7 @@ package cluster
 
 import (
 	"os"
+	"os/exec"
 	"sort"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
@@ -58,13 +59,22 @@ func NewProvider(options ...ProviderOption) *Provider {
 	for _, o := range options {
 		o.apply(p)
 	}
-	if p.provider == nil {
-		// check if provider was overridden
-		// TODO: consider auto-detection once more than 1 provider is stable
-		providerEnv := os.Getenv("KIND_EXPERIMENTAL_PROVIDER")
-		if providerEnv == "podman" {
+
+	supportedProviders := map[string]func(log.Logger) internalprovider.Provider{
+		"podman": podman.NewProvider,
+		"docker": docker.NewProvider,
+	}
+
+	// check if provider was overridden
+	if newProvider, ok := supportedProviders[os.Getenv("KIND_EXPERIMENTAL_PROVIDER")]; ok {
+		p.provider = newProvider(p.logger)
+	} else {
+		// auto-detect based on what is available in path
+		// default to docker for backwards compatibility
+		if path, err := exec.LookPath("docker"); err == nil && path != "" {
+			p.provider = docker.NewProvider(p.logger)
+		} else if path, err := exec.LookPath("podman"); err == nil && path != "" {
 			p.provider = podman.NewProvider(p.logger)
-			p.logger.Warn("enabling experimental podman provider")
 		} else {
 			p.provider = docker.NewProvider(p.logger)
 		}
