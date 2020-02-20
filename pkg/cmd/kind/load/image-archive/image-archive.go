@@ -29,6 +29,8 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/log"
+
+	"sigs.k8s.io/kind/pkg/internal/runtime"
 )
 
 type flagpole struct {
@@ -71,6 +73,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 func runE(logger log.Logger, flags *flagpole, args []string) error {
 	provider := cluster.NewProvider(
 		cluster.ProviderWithLogger(logger),
+		runtime.GetDefault(logger),
 	)
 
 	// Check if file exists

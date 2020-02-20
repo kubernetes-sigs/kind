@@ -19,10 +19,13 @@ package clusters
 
 import (
 	"github.com/spf13/cobra"
+
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/log"
+
+	"sigs.k8s.io/kind/pkg/internal/runtime"
 )
 
 type flagpole struct {
@@ -55,6 +58,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 func deleteClusters(logger log.Logger, flags *flagpole, clusters []string) error {
 	provider := cluster.NewProvider(
 		cluster.ProviderWithLogger(logger),
+		runtime.GetDefault(logger),
 	)
 	var err error
 	if flags.All {

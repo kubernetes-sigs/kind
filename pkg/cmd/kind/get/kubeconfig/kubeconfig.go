@@ -25,6 +25,8 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/log"
+
+	"sigs.k8s.io/kind/pkg/internal/runtime"
 )
 
 type flagpole struct {
@@ -62,6 +64,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	provider := cluster.NewProvider(
 		cluster.ProviderWithLogger(logger),
+		runtime.GetDefault(logger),
 	)
 	cfg, err := provider.KubeConfig(flags.Name, flags.Internal)
 	if err != nil {
