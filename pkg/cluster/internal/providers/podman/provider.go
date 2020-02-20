@@ -42,6 +42,7 @@ import (
 
 // NewProvider returns a new provider based on executing `podman ...`
 func NewProvider(logger log.Logger) provider.Provider {
+	logger.Warn("enabling experimental podman provider")
 	return &Provider{
 		logger: logger,
 	}

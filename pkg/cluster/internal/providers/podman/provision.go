@@ -179,7 +179,8 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 	args = append(args, generatePortMappings(clusterIPFamily, node.ExtraPortMappings...)...)
 
 	// finally, specify the image to run
-	return append(args, node.Image)
+	_, image := sanitizeImage(node.Image)
+	return append(args, image)
 }
 
 func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) []string {
@@ -203,7 +204,8 @@ func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) []s
 	)...)
 
 	// finally, specify the image to run
-	return append(args, loadbalancer.Image)
+	_, image := sanitizeImage(loadbalancer.Image)
+	return append(args, image)
 }
 
 func getProxyEnv(cfg *config.Cluster) (map[string]string, error) {

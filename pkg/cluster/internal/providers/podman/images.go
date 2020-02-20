@@ -36,13 +36,7 @@ func ensureNodeImages(logger log.Logger, status *cli.Status, cfg *config.Cluster
 	// pull each required image
 	for _, image := range common.RequiredNodeImages(cfg).List() {
 		// prints user friendly message
-		friendlyImageName := image
-		if strings.Contains(image, "@sha256:") {
-			splits := strings.Split(image, "@sha256:")
-			friendlyImageName = splits[0]
-			// possibly trim tag and use sha
-			image = strings.Split(friendlyImageName, ":")[0] + "@sha256:" + splits[1]
-		}
+		friendlyImageName, image := sanitizeImage(image)
 		status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", friendlyImageName))
 		if _, err := pullIfNotPresent(logger, image, 4); err != nil {
 			status.End(false)
@@ -85,4 +79,14 @@ func pull(logger log.Logger, image string, retries int) error {
 		}
 	}
 	return errors.Wrapf(err, "failed to pull image %q", image)
+}
+
+// sanitizeImage is a helper to return human readable image name and
+// the podman pullable image name from the provided image
+func sanitizeImage(image string) (string, string) {
+	if strings.Contains(image, "@sha256:") {
+		splits := strings.Split(image, "@sha256:")
+		return splits[0], strings.Split(splits[0], ":")[0] + "@sha256:" + splits[1]
+	}
+	return image, image
 }
