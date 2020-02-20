@@ -50,7 +50,8 @@ func (c *containerdImporter) Prepare() error {
 
 func (c *containerdImporter) LoadCommand() exec.Cmd {
 	return c.containerCmder.Command(
-		"ctr", "--namespace=k8s.io", "images", "import", "--no-unpack", "-",
+		// TODO: ideally we do not need this in the future. we have fixed at least one image
+		"ctr", "--namespace=k8s.io", "images", "import", "--all-platforms", "--no-unpack", "-",
 	)
 }
 
