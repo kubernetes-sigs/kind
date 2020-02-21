@@ -153,7 +153,12 @@ type Networking struct {
 	// IPFamily is the network cluster model, currently it can be ipv4 or ipv6
 	IPFamily ClusterIPFamily `yaml:"ipFamily,omitempty"`
 	// APIServerPort is the listen port on the host for the Kubernetes API Server
-	// Defaults to a random port on the host
+	// Defaults to a random port on the host obtained by kind
+	//
+	// NOTE: if you set the special value of `-1` then the node backend 
+	// (docker, podman...) will be left to pick the port instead.
+	// This is potentially useful for remote hosts, BUT it means when the container
+	// is restarted it will be randomized. Leave this unset to allow kind to pick it.
 	APIServerPort int32 `yaml:"apiServerPort,omitempty"`
 	// APIServerAddress is the listen address on the host for the Kubernetes
 	// API Server. This should be an IP address.
@@ -235,6 +240,13 @@ type PortMapping struct {
 	// Port within the container.
 	ContainerPort int32 `yaml:"containerPort,omitempty"`
 	// Port on the host.
+	//
+	// If unset, a random port will be selected.
+	//
+	// NOTE: if you set the special value of `-1` then the node backend 
+	// (docker, podman...) will be left to pick the port instead.
+	// This is potentially useful for remote hosts, BUT it means when the container
+	// is restarted it will be randomized. Leave this unset to allow kind to pick it.
 	HostPort int32 `yaml:"hostPort,omitempty"`
 	// TODO: add protocol (tcp/udp) and port-ranges
 	ListenAddress string `yaml:"listenAddress,omitempty"`
