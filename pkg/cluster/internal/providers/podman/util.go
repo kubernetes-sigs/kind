@@ -44,8 +44,7 @@ func getPodmanVersion() (*version.Version, error) {
 }
 
 const (
-	// TODO: probably should be a released version ...
-	minSupportedVersion = "1.7.1-dev"
+	minSupportedVersion = "1.8.0"
 )
 
 func ensureMinVersion() error {
