@@ -23,6 +23,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -41,6 +42,13 @@ func TempDir(dir, prefix string) (name string, err error) {
 		name = filepath.Join("/private", name)
 	}
 	return name, nil
+}
+
+// IsAbs is like filepath.IsAbs but also considering posix absolute paths
+// to be absolute even if filepath.IsAbs would not
+// This fixes the case of Posix paths on Windows
+func IsAbs(hostPath string) bool {
+	return path.IsAbs(hostPath) || filepath.IsAbs(hostPath)
 }
 
 // Copy recursively directories, symlinks, files copies from src to dst
