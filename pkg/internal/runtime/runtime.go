@@ -13,13 +13,13 @@ func GetDefault(logger log.Logger) cluster.ProviderOption {
 	case "":
 		return nil
 	case "podman":
-		logger.Warn("using runtime \"podman\" due to KIND_EXPERIMENTAL_PROVIDER")
+		logger.Warn("using podman due to KIND_EXPERIMENTAL_PROVIDER")
 		return cluster.ProviderWithPodman()
 	case "docker":
-		logger.Warn("using runtime \"docker\" due to KIND_EXPERIMENTAL_PROVIDER")
+		logger.Warn("using docker due to KIND_EXPERIMENTAL_PROVIDER")
 		return cluster.ProviderWithDocker()
 	default:
-		logger.Warnf("ignoring unknown runtime %q from KIND_EXPERIMENTAL_PROVIDER", p)
+		logger.Warnf("ignoring unknown value %q for KIND_EXPERIMENTAL_PROVIDER", p)
 		return nil
 	}
 }
