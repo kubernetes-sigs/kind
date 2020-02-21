@@ -25,6 +25,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/fs"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider/common"
@@ -64,11 +65,13 @@ func planCreation(cluster string, cfg *config.Cluster) (createContainerFuncs []f
 		// fixup relative paths, docker can only handle absolute paths
 		for i := range node.ExtraMounts {
 			hostPath := node.ExtraMounts[i].HostPath
-			absHostPath, err := filepath.Abs(hostPath)
-			if err != nil {
-				return nil, errors.Wrapf(err, "unable to resolve absolute path for hostPath: %q", hostPath)
+			if !fs.IsAbs(hostPath) {
+				absHostPath, err := filepath.Abs(hostPath)
+				if err != nil {
+					return nil, errors.Wrapf(err, "unable to resolve absolute path for hostPath: %q", hostPath)
+				}
+				node.ExtraMounts[i].HostPath = absHostPath
 			}
-			node.ExtraMounts[i].HostPath = absHostPath
 		}
 
 		// plan actual creation based on role
