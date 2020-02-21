@@ -44,6 +44,11 @@ func planCreation(cluster string, cfg *config.Cluster) (createContainerFuncs []f
 	apiServerPort := cfg.Networking.APIServerPort
 	apiServerAddress := cfg.Networking.APIServerAddress
 	if clusterHasImplicitLoadBalancer(cfg) {
+		// TODO: picking ports locally is less than ideal with a remote runtime
+		// (does podman have this?)
+		// but this is supposed to be an implementation detail and NOT picking
+		// them breaks host reboot ...
+		// For now remote podman + multi control plane is not supported
 		apiServerPort = 0              // replaced with random ports
 		apiServerAddress = "127.0.0.1" // only the LB needs to be non-local
 		if clusterIsIPv6(cfg) {
@@ -52,7 +57,11 @@ func planCreation(cluster string, cfg *config.Cluster) (createContainerFuncs []f
 		// plan loadbalancer node
 		name := nodeNamer(constants.ExternalLoadBalancerNodeRoleValue)
 		createContainerFuncs = append(createContainerFuncs, func() error {
-			return createContainer(runArgsForLoadBalancer(cfg, name, genericArgs))
+			args, err := runArgsForLoadBalancer(cfg, name, genericArgs)
+			if err != nil {
+				return err
+			}
+			return createContainer(args)
 		})
 	}
 
@@ -82,11 +91,19 @@ func planCreation(cluster string, cfg *config.Cluster) (createContainerFuncs []f
 						ContainerPort: common.APIServerInternalPort,
 					},
 				)
-				return createContainer(runArgsForNode(node, cfg.Networking.IPFamily, name, genericArgs))
+				args, err := runArgsForNode(node, cfg.Networking.IPFamily, name, genericArgs)
+				if err != nil {
+					return err
+				}
+				return createContainer(args)
 			})
 		case config.WorkerRole:
 			createContainerFuncs = append(createContainerFuncs, func() error {
-				return createContainer(runArgsForNode(node, cfg.Networking.IPFamily, name, genericArgs))
+				args, err := runArgsForNode(node, cfg.Networking.IPFamily, name, genericArgs)
+				if err != nil {
+					return err
+				}
+				return createContainer(args)
 			})
 		default:
 			return nil, errors.Errorf("unknown node role: %q", node.Role)
@@ -144,7 +161,7 @@ func commonArgs(cluster string, cfg *config.Cluster) ([]string, error) {
 	return args, nil
 }
 
-func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, name string, args []string) []string {
+func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, name string, args []string) ([]string, error) {
 	args = append([]string{
 		"run",
 		"--hostname", name, // make hostname match container name
@@ -176,14 +193,18 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 
 	// convert mounts and port mappings to container run args
 	args = append(args, generateMountBindings(node.ExtraMounts...)...)
-	args = append(args, generatePortMappings(clusterIPFamily, node.ExtraPortMappings...)...)
+	mappingArgs, err := generatePortMappings(clusterIPFamily, node.ExtraPortMappings...)
+	if err != nil {
+		return nil, err
+	}
+	args = append(args, mappingArgs...)
 
 	// finally, specify the image to run
 	_, image := sanitizeImage(node.Image)
-	return append(args, image)
+	return append(args, image), nil
 }
 
-func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) []string {
+func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) ([]string, error) {
 	args = append([]string{
 		"run",
 		"--hostname", name, // make hostname match container name
@@ -195,17 +216,21 @@ func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) []s
 	)
 
 	// load balancer port mapping
-	args = append(args, generatePortMappings(cfg.Networking.IPFamily,
+	mappingArgs, err := generatePortMappings(cfg.Networking.IPFamily,
 		config.PortMapping{
 			ListenAddress: cfg.Networking.APIServerAddress,
 			HostPort:      cfg.Networking.APIServerPort,
 			ContainerPort: common.APIServerInternalPort,
 		},
-	)...)
+	)
+	if err != nil {
+		return nil, err
+	}
+	args = append(args, mappingArgs...)
 
 	// finally, specify the image to run
 	_, image := sanitizeImage(loadbalancer.Image)
-	return append(args, image)
+	return append(args, image), nil
 }
 
 func getProxyEnv(cfg *config.Cluster) (map[string]string, error) {
@@ -272,7 +297,7 @@ func generateMountBindings(mounts ...config.Mount) []string {
 }
 
 // generatePortMappings converts the portMappings list to a list of args for podman
-func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings ...config.PortMapping) []string {
+func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings ...config.PortMapping) ([]string, error) {
 	args := make([]string, 0, len(portMappings))
 	for _, pm := range portMappings {
 		// do provider internal defaulting
@@ -284,8 +309,7 @@ func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings .
 			case config.IPv6Family:
 				pm.ListenAddress = "::"
 			default:
-				// TODO: plumb an error instead?
-				panic(errors.Errorf("unknown cluster IP family: %v", clusterIPFamily))
+				return nil, errors.Errorf("unknown cluster IP family: %v", clusterIPFamily)
 			}
 		}
 		if string(pm.Protocol) == "" {
@@ -298,13 +322,18 @@ func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings .
 		case config.PortMappingProtocolUDP:
 		case config.PortMappingProtocolSCTP:
 		default:
-			// TODO: plumb an error instead?
-			panic(errors.Errorf("unknown port mapping protocol: %v", pm.Protocol))
+			return nil, errors.Errorf("unknown port mapping protocol: %v", pm.Protocol)
+		}
+
+		// get a random port if necesary (port = 0)
+		hostPort, err := common.PortOrGetFreePort(pm.HostPort, pm.ListenAddress)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get random host port for port mapping")
 		}
 
 		// generate the actual mapping arg
 		protocol := string(pm.Protocol)
-		hostPortBinding := net.JoinHostPort(pm.ListenAddress, fmt.Sprintf("%d", pm.HostPort))
+		hostPortBinding := net.JoinHostPort(pm.ListenAddress, fmt.Sprintf("%d", hostPort))
 		// Podman expects empty string instead of 0 to assign a random port
 		// https://github.com/containers/libpod/blob/master/pkg/spec/ports.go#L68-L69
 		if strings.HasSuffix(hostPortBinding, ":0") {
@@ -312,5 +341,5 @@ func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings .
 		}
 		args = append(args, fmt.Sprintf("--publish=%s:%d/%s", hostPortBinding, pm.ContainerPort, protocol))
 	}
-	return args
+	return args, nil
 }
