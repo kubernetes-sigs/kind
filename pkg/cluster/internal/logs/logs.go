@@ -20,6 +20,7 @@ import (
 	"archive/tar"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -63,7 +64,10 @@ func untar(logger log.Logger, r io.Reader, dir string) (err error) {
 
 		switch {
 		case err == io.EOF:
-			return nil
+			// drain the reader, which may have trailing null bytes
+			// we don't want to leave the writer hanging
+			_, err := io.Copy(ioutil.Discard, r)
+			return err
 		case err != nil:
 			return errors.Wrapf(err, "tar reading error: %v", err)
 		case f == nil:
