@@ -155,7 +155,7 @@ type Networking struct {
 	// APIServerPort is the listen port on the host for the Kubernetes API Server
 	// Defaults to a random port on the host obtained by kind
 	//
-	// NOTE: if you set the special value of `-1` then the node backend 
+	// NOTE: if you set the special value of `-1` then the node backend
 	// (docker, podman...) will be left to pick the port instead.
 	// This is potentially useful for remote hosts, BUT it means when the container
 	// is restarted it will be randomized. Leave this unset to allow kind to pick it.
@@ -243,7 +243,7 @@ type PortMapping struct {
 	//
 	// If unset, a random port will be selected.
 	//
-	// NOTE: if you set the special value of `-1` then the node backend 
+	// NOTE: if you set the special value of `-1` then the node backend
 	// (docker, podman...) will be left to pick the port instead.
 	// This is potentially useful for remote hosts, BUT it means when the container
 	// is restarted it will be randomized. Leave this unset to allow kind to pick it.

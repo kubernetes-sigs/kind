@@ -44,7 +44,7 @@ func planCreation(cluster string, cfg *config.Cluster) (createContainerFuncs []f
 	apiServerPort := cfg.Networking.APIServerPort
 	apiServerAddress := cfg.Networking.APIServerAddress
 	if clusterHasImplicitLoadBalancer(cfg) {
-		// TODO: picking ports locally is less than ideal with remote docker 
+		// TODO: picking ports locally is less than ideal with remote docker
 		// but this is supposed to be an implementation detail and NOT picking
 		// them breaks host reboot ...
 		// For now remote docker + multi control plane is not supported
