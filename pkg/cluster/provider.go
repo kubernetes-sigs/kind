@@ -17,7 +17,6 @@ limitations under the License.
 package cluster
 
 import (
-	"os"
 	"os/exec"
 	"sort"
 
@@ -57,18 +56,12 @@ func NewProvider(options ...ProviderOption) *Provider {
 		return iIsLogger && !jIsLogger
 	})
 	for _, o := range options {
-		o.apply(p)
+		if o != nil {
+			o.apply(p)
+		}
 	}
 
-	supportedProviders := map[string]func(log.Logger) internalprovider.Provider{
-		"podman": podman.NewProvider,
-		"docker": docker.NewProvider,
-	}
-
-	// check if provider was overridden
-	if newProvider, ok := supportedProviders[os.Getenv("KIND_EXPERIMENTAL_PROVIDER")]; ok {
-		p.provider = newProvider(p.logger)
-	} else {
+	if p.provider == nil {
 		// auto-detect based on what is available in path
 		// default to docker for backwards compatibility
 		if path, err := exec.LookPath("docker"); err == nil && path != "" {
@@ -95,10 +88,36 @@ func (a providerLoggerOption) apply(p *Provider) {
 	a(p)
 }
 
+var _ ProviderOption = providerLoggerOption(nil)
+
 // ProviderWithLogger configures the provider to use Logger logger
 func ProviderWithLogger(logger log.Logger) ProviderOption {
 	return providerLoggerOption(func(p *Provider) {
 		p.logger = logger
+	})
+}
+
+// providerLoggerOption is a trivial ProviderOption adapter
+// we use a type specific to logging options so we can handle them first
+type providerRuntimeOption func(p *Provider)
+
+func (a providerRuntimeOption) apply(p *Provider) {
+	a(p)
+}
+
+var _ ProviderOption = providerRuntimeOption(nil)
+
+// ProviderWithDocker configures the provider to use docker runtime
+func ProviderWithDocker() ProviderOption {
+	return providerRuntimeOption(func(p *Provider) {
+		p.provider = docker.NewProvider(p.logger)
+	})
+}
+
+// ProviderWithPodman configures the provider to use podman runtime
+func ProviderWithPodman() ProviderOption {
+	return providerRuntimeOption(func(p *Provider) {
+		p.provider = podman.NewProvider(p.logger)
 	})
 }
 

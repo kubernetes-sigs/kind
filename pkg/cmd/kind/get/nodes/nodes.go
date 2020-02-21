@@ -25,6 +25,8 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/log"
+
+	"sigs.k8s.io/kind/pkg/internal/runtime"
 )
 
 type flagpole struct {
@@ -56,6 +58,7 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	// List nodes by cluster context name
 	provider := cluster.NewProvider(
 		cluster.ProviderWithLogger(logger),
+		runtime.GetDefault(logger),
 	)
 	n, err := provider.ListNodes(flags.Name)
 	if err != nil {
