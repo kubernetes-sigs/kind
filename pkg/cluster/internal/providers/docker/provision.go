@@ -326,7 +326,7 @@ func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings .
 			return nil, errors.Errorf("unknown port mapping protocol: %v", pm.Protocol)
 		}
 
-		// get a random port if necesary (port = 0)
+		// get a random port if necessary (port = 0)
 		hostPort, err := common.PortOrGetFreePort(pm.HostPort, pm.ListenAddress)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get random host port for port mapping")
