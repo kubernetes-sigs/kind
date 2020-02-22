@@ -109,7 +109,9 @@ func (n *Node) Validate() error {
 }
 
 func validatePort(port int32) error {
-	if port < 0 || port > 65535 {
+	// NOTE: -1 is a special value for auto-selecting the port in the container
+	// backend where possible as opposed to in kind itself.
+	if port < -1 || port > 65535 {
 		return errors.Errorf("invalid port number: %d", port)
 	}
 	return nil

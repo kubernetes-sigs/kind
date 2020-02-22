@@ -23,10 +23,16 @@ import (
 // PortOrGetFreePort is a helper that either returns the provided port
 // if valid or returns a new free port on listenAddr
 func PortOrGetFreePort(port int32, listenAddr string) (int32, error) {
-	if port > 0 {
-		return port, nil
+	// in the case of -1 we actually want to pass 0 to the backend to let it pick
+	if port == -1 {
+		return 0, nil
 	}
-	return GetFreePort(listenAddr)
+	// in the case of 0 (unset) we want kind to pick one and supply it to the backend
+	if port == 0 {
+		return GetFreePort(listenAddr)
+	}
+	// otherwise keep the port
+	return port, nil
 }
 
 // GetFreePort is a helper used to get a free TCP port on the host
