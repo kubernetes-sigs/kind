@@ -101,14 +101,35 @@ EOF
 {{< /codeFromInline >}}
 
 All the nodes in each cluster will have routes to the podsSubnets assigned to the nodes of the same cluster.
-If we want to provide Pod to Pod connectivity between different clusters we just have to do the same in each node:
+If we want to provide Pod to Pod connectivity between different clusters we just have to do the same in each node.
+
+We can obtain the routes using kubectl:
 
 {{< codeFromInline lang="bash" >}}
-for each node in all clusters
-  for each different node in all clusters
-    obtain pod subnet assigned to the node
-    obtain ip address in the docker network
-    install route to the pod subnet via the node IP
+$ kubectl --context kind-clusterA get nodes -o=jsonpath='{range .items[*]}{"ip route add "}{.spec.podCIDR}{" via "}{.status.addresses[?(@.type=="InternalIP")].address}{"\n"}{end}'
+ip route add 10.110.0.0/24 via 172.17.0.4
+ip route add 10.110.1.0/24 via 172.17.0.3
+ip route add 10.110.2.0/24 via 172.17.0.2
+
+$kubectl --context kind-clusterB get nodes -o=jsonpath='{range .items[*]}{"ip route add "}{.spec.podCIDR}{" via "}{.status.addresses[?(@.type=="InternalIP")].address}{"\n"}{end}'
+ip route add 10.120.0.0/24 via 172.17.0.7
+ip route add 10.120.1.0/24 via 172.17.0.6
+ip route add 10.120.2.0/24 via 172.17.0.5
+
+{{< /codeFromInline >}}
+
+Then we just need to install the routes obtained from cluterA in each node of clusterB and viceversa:
+
+{{< codeFromInline lang="bash" >}}
+for c in "clusterA clusterB"; do
+  for n in $(kind get nodes --name ${c}); do
+  # Add static routes to the pods in the other cluster
+  docker exec ${n} ip route add <POD_SUBNET> via <NODE_IP>
+  # Add static route to the service in the other cluster
+  # We just need to add one route only for services
+  docker exec ${n} ip route add <SCV_SUBNET> via <NODE_IP>
+  ...
+done
 {{< /codeFromInline >}}
 
 ### Example: Emulate external VMs
