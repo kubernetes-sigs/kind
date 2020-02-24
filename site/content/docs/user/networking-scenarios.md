@@ -1,12 +1,12 @@
 ---
-title: "Using KIND to emulate complex network scenarios"
+title: "Networking Scenarios"
 menu:
   main:
     parent: "user"
     identifier: "networking-scenarios"
     weight: 3
 ---
-# Using KIND to emulate complex network scenarios [Linux Only]
+# Networking scenarios [Linux Only]
 
 KIND runs Kubernetes cluster in Docker, and leverages Docker networking for all the network features: port mapping, IPv6, containers connectivity, etc.
 
