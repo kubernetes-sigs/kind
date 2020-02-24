@@ -9,16 +9,16 @@ menu:
 
 # Ingress
 
-This guide covers setting up [ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) 
+This guide covers setting up [ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/)
 on a kind cluster.
 
 ## Setting Up An Ingress Controller
 
-We can leverage KIND's `extraPortMapping` config option when 
-creating a cluster to forward ports from the host 
-to an ingress controller running on a node. 
+We can leverage KIND's `extraPortMapping` config option when
+creating a cluster to forward ports from the host
+to an ingress controller running on a node.
 
-We can also setup a custom node label by using `node-labels` 
+We can also setup a custom node label by using `node-labels`
 in the kubeadm `InitConfiguration`, to be used
 by the ingress controller `nodeSelector`.
 
@@ -66,8 +66,8 @@ Deploy [Contour components](https://projectcontour.io/quickstart/contour.yaml).
 kubectl apply -f https://projectcontour.io/quickstart/contour.yaml
 {{< /codeFromInline >}}
 
-Apply kind specific patches to forward the hostPorts to the 
-ingress controller, set taint tolerations and 
+Apply kind specific patches to forward the hostPorts to the
+ingress controller, set taint tolerations and
 schedule it to the custom labelled node.
 
 ```json
@@ -77,30 +77,30 @@ schedule it to the custom labelled node.
 Apply it by running:
 
 {{< codeFromInline lang="bash" >}}
-kubectl patch daemonsets -n projectcontour envoy -p '{{< minify file="static/examples/ingress/contour/patch.json" >}}' 
+kubectl patch daemonsets -n projectcontour envoy -p '{{< minify file="static/examples/ingress/contour/patch.json" >}}'
 {{< /codeFromInline >}}
 
-Now the Contour is all setup to be used. 
+Now the Contour is all setup to be used.
 Refer to [Using Ingress](#using-ingress) for a basic example usage.
 
 Additional information about Contour can be found at: [projectcontour.io](https://projectcontour.io)
 
 ### Ingress NGINX
 
-Apply the [mandatory ingress-nginx components](https://kubernetes.github.io/ingress-nginx/deploy/#prerequisite-generic-deployment-command) 
+Apply the [mandatory ingress-nginx components](https://kubernetes.github.io/ingress-nginx/deploy/#prerequisite-generic-deployment-command)
 
 {{< codeFromInline lang="bash" >}}
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.27.0/deploy/static/mandatory.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/mandatory.yaml
 {{< /codeFromInline >}}
 
-and [expose the nginx service using NodePort](https://kubernetes.github.io/ingress-nginx/deploy/#bare-metal).  
+and [expose the nginx service using NodePort](https://kubernetes.github.io/ingress-nginx/deploy/#bare-metal).
 
 {{< codeFromInline lang="bash" >}}
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.27.0/deploy/static/provider/baremetal/service-nodeport.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/provider/baremetal/service-nodeport.yaml
 {{< /codeFromInline >}}
 
-Apply kind specific patches to forward the hostPorts to the 
-ingress controller, set taint tolerations and 
+Apply kind specific patches to forward the hostPorts to the
+ingress controller, set taint tolerations and
 schedule it to the custom labelled node.
 
 ```json
@@ -110,15 +110,15 @@ schedule it to the custom labelled node.
 Apply it by running:
 
 {{< codeFromInline lang="bash" >}}
-kubectl patch deployments -n ingress-nginx nginx-ingress-controller -p '{{< minify file="static/examples/ingress/nginx/patch.json" >}}' 
+kubectl patch deployments -n ingress-nginx nginx-ingress-controller -p '{{< minify file="static/examples/ingress/nginx/patch.json" >}}'
 {{< /codeFromInline >}}
 
-Now the Ingress is all setup to be used. 
+Now the Ingress is all setup to be used.
 Refer [Using Ingress](#using-ingress) for a basic example usage.
 
 ## Using Ingress
 
-The following example creates simple http-echo services 
+The following example creates simple http-echo services
 and an Ingress object to route to these services.
 
 ```yaml
