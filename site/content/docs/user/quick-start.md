@@ -17,6 +17,8 @@ This guide covers getting started with the `kind` command.
 You can either install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.7.0` or clone this repo 
 and run `make build` from the repository.
 
+KIND does not require kubectl to function technically, but you will not be able to use the demo commands or follow most of the guide without it.
+
 **NOTE**: please use the latest Go to do this, ideally go 1.13 or greater.
 A version of Go officially [supported upstream][go-supported] by the Go project must be used.
 
