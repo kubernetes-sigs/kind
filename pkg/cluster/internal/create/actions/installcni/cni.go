@@ -19,8 +19,8 @@ package installcni
 
 import (
 	"bytes"
-	"html/template"
 	"strings"
+	"text/template"
 
 	"sigs.k8s.io/kind/pkg/errors"
 
