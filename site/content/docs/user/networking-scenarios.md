@@ -8,7 +8,7 @@ menu:
 ---
 # Using KIND to emulate complex network scenarios [Linux Only]
 
-KIND runs Kubernetes cluster in Docker, and leverages Docker networking for all the network features: portmapping, IPv6, containers connectivity, ...
+KIND runs Kubernetes cluster in Docker, and leverages Docker networking for all the network features: port mapping, IPv6, containers connectivity, etc.
 
 ## Docker Networking
 
@@ -36,7 +36,7 @@ $ ip addr show docker0
        valid_lft forever preferred_lft forever
 {{< /codeFromInline >}}
 
-Docker also creates iptables NAT rules on the docker host that masquerade the traffic from the containers connected to docker0 bridge to connect to the outside world.
+Docker also creates iptables NAT rules on the Docker host that masquerade the traffic from the containers connected to docker0 bridge to connect to the outside world.
 
 ## Kubernetes Networking
 
@@ -62,7 +62,7 @@ In Linux hosts, you can access directly the Cluster IP address of the services j
 
 ## Multiple clusters
 
-As we explained before, all KIND clusters are sharing the same docker network, that means that all the cluster nodes have direct connectivity.
+As we explained before, all KIND clusters are sharing the same Docker network, that means that all the cluster nodes have direct connectivity.
 
 If we want to spawn multiple clusters and provide Pod to Pod connectivity between different clusters, first we have to configure the cluster networking parameters to avoid address overlapping.
 
@@ -118,7 +118,7 @@ ip route add 10.120.2.0/24 via 172.17.0.5
 
 {{< /codeFromInline >}}
 
-Then we just need to install the routes obtained from cluterA in each node of clusterB and viceversa:
+Then we just need to install the routes obtained from cluterA in each node of clusterB and vice versa, it can be automated with a script like this:
 
 {{< codeFromInline lang="bash" >}}
 for c in "clusterA clusterB"; do
@@ -151,13 +151,13 @@ $ docker exec -it alpine ip a
     inet 172.17.0.3/16 brd 172.17.255.255 scope global eth0
 {{< /codeFromInline >}}
 
-That means that Pods will be able to reach other Docker containers that does not belong to any KIND cluster, however, the Docker container will not be able to answer to the Pod IP address until we install the correspoding routes.
+That means that Pods will be able to reach other Docker containers that does not belong to any KIND cluster, however, the Docker container will not be able to answer to the Pod IP address until we install the corresponding routes.
 
-We can solve it installing routes in the new containers to the Pod Subnets in each Node.
+We can solve it installing routes in the new containers to the Pod Subnets in each Node, as we explained in previous section.
 
 ### Example: Multiple network interfaces and Multi-Home Nodes
 
-There can be scenarios that requite multiple interfaces in the KIND nodes to test multi-homing, VLANS, CNI plugins, ... 
+There can be scenarios that requite multiple interfaces in the KIND nodes to test multi-homing, VLANS, CNI plugins, etc.
 
 Typically, you will want to use loopback addresses for communication. We can configure those loopback addresses after the cluster has been created, and then modify the Kubernetes components to use them.
 
@@ -217,12 +217,13 @@ spec:
     - --advertise-address=172.17.0.4
 ```
 
-and then change in all the nodes the kubelet `node-ip` flag:
+and then change the `node-ip` flag for the kubelets on all the nodes:
 
 ```
 root@kind-worker:/# more /var/lib/kubelet/kubeadm-flags.env 
 KUBELET_KUBEADM_ARGS="--container-runtime=remote --container-runtime-endpoint=/run/containerd/containerd.sock --fail-swap-on=false --node-ip=172.17.0.4"
  ```
 
-and restart them `systemctl restart kubelet` to use the new config
+Finally restart the kubelets to use the new configuration with `systemctl restart kubelet`.
 
+It's important to note that calling `kubeadm init / join` again on the node will override `/var/lib/kubelet/kubeadm-flags.env`. An [alternative is to use /etc/default/kubelet](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/kubelet-integration/#the-kubelet-drop-in-file-for-systemd).
