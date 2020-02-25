@@ -64,6 +64,8 @@ detect_and_set_goos_goarch() {
           export GOARCH="arm64"
         fi
       ;;
+      s390x) export GOARCH="s390x" ;;
+
       *) echo "Unknown host architecture! '$(uname -m)'" exit 2 ;;
     esac
   fi
