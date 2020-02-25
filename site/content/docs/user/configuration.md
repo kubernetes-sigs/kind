@@ -179,6 +179,12 @@ The following options are available for setting on each entry in `nodes`.
 
 NOTE: not all options are documented yet!  We will fix this with time, PRs welcome!
 
+### Extra Node Labels
+
+Extra node labels can be used to make deployment constraints.
+
+{{< codeFromFile file="static/examples/config-with-node-labels.yaml" lang="yaml" >}}
+
 ### Extra Mounts
 
 Extra mounts can be used to pass through storage on the host to a kind node
