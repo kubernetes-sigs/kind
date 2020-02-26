@@ -45,7 +45,7 @@ build_with_bazel() {
   fi
 
   # build the node image w/ kubernetes
-  kind build node-image --type=bazel
+  kind build node-image --type=bazel -v 1
   # make sure we have e2e requirements
   bazel build //cmd/kubectl //test/e2e:e2e.test //vendor/github.com/onsi/ginkgo/ginkgo
 
@@ -65,7 +65,7 @@ build_with_bazel() {
 # build kubernetes / node image, e2e binaries
 build() {
   # build the node image w/ kubernetes
-  kind build node-image
+  kind build node-image -v 1
   # make sure we have e2e requirements
   make all WHAT='cmd/kubectl test/e2e/e2e.test vendor/github.com/onsi/ginkgo/ginkgo'
 }
