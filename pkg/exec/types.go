@@ -17,6 +17,7 @@ limitations under the License.
 package exec
 
 import (
+	"context"
 	"fmt"
 	"io"
 )
@@ -37,6 +38,7 @@ type Cmd interface {
 type Cmder interface {
 	// command, args..., just like os/exec.Cmd
 	Command(string, ...string) Cmd
+	CommandContext(context.Context, string, ...string) Cmd
 }
 
 // RunError represents an error running a Cmd
