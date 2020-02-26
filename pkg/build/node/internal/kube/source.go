@@ -29,7 +29,8 @@ const ImportPath = "k8s.io/kubernetes"
 // FindSource attempts to locate a kubernetes checkout using go's build package
 func FindSource() (root string, err error) {
 	// look up the source the way go build would
-	pkg, err := build.Default.Import(ImportPath, build.Default.GOPATH, build.FindOnly)
+	build.Context
+	pkg, err := build.Default.Import(ImportPath, build.Default.GOPATH, build.FindOnly|build.IgnoreVendor)
 	if err == nil && maybeKubeDir(pkg.Dir) {
 		return pkg.Dir, nil
 	}
