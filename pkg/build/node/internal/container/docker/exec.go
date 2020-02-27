@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"context"
 	"io"
 
 	"sigs.k8s.io/kind/pkg/exec"
@@ -42,6 +43,15 @@ func (c *containerCmder) Command(command string, args ...string) exec.Cmd {
 	}
 }
 
+func (c *containerCmder) CommandContext(ctx context.Context, command string, args ...string) exec.Cmd {
+	return &containerCmd{
+		nameOrID: c.nameOrID,
+		command:  command,
+		args:     args,
+		ctx:      ctx,
+	}
+}
+
 // containerCmd implements exec.Cmd for docker containers
 type containerCmd struct {
 	nameOrID string // the container name or ID
@@ -51,6 +61,7 @@ type containerCmd struct {
 	stdin    io.Reader
 	stdout   io.Writer
 	stderr   io.Writer
+	ctx      context.Context
 }
 
 func (c *containerCmd) Run() error {
@@ -82,7 +93,12 @@ func (c *containerCmd) Run() error {
 		// finally, with the caller args
 		c.args...,
 	)
-	cmd := exec.Command("docker", args...)
+	var cmd exec.Cmd
+	if c.ctx != nil {
+		cmd = exec.CommandContext(c.ctx, "docker", args...)
+	} else {
+		cmd = exec.Command("docker", args...)
+	}
 	if c.stdin != nil {
 		cmd.SetStdin(c.stdin)
 	}

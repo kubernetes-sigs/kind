@@ -18,6 +18,7 @@ package exec
 
 import (
 	"bytes"
+	"context"
 	"io"
 	osexec "os/exec"
 	"sync"
@@ -41,6 +42,13 @@ var _ Cmder = &LocalCmder{}
 func (c *LocalCmder) Command(name string, arg ...string) Cmd {
 	return &LocalCmd{
 		Cmd: osexec.Command(name, arg...),
+	}
+}
+
+// CommandContext is like Command but includes a context
+func (c *LocalCmder) CommandContext(ctx context.Context, name string, arg ...string) Cmd {
+	return &LocalCmd{
+		Cmd: osexec.CommandContext(ctx, name, arg...),
 	}
 }
 
