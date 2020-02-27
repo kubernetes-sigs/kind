@@ -33,8 +33,8 @@ export CGO_ENABLED="${CGO_ENABLED:-0}"
 GOIMAGE="${GOIMAGE:-golang:1.14.0}"
 # docker volume name, used as a go module / build cache
 CACHE_VOLUME="${CACHE_VOLUME:-kind-build-cache}"
-# allow overriding docker cli e.g podman
-DOCKER="${DOCKER:-docker}"
+# allow overriding docker cli, auto-detect with fallback to docker
+DOCKER="${DOCKER:-"$(which docker || which podman || echo "docker")"}"
 # ========================== END SCRIPT SETTINGS ===============================
 
 # autodetects host GOOS and GOARCH and exports them if not set
