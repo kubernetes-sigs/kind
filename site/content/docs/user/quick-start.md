@@ -21,19 +21,18 @@ To install `kubectl` see https://kubernetes.io/docs/tasks/tools/install-kubectl/
 You can either install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.7.0` or clone this repo 
 and run `make build` from the repository.
 
-**NOTE**: please use the latest Go to do this, ideally go 1.13 or greater.
-A version of Go officially [supported upstream][go-supported] by the Go project must be used.
+Please use the latest Go when installing KIND from source this, ideally go 1.14 or greater.
 
 This will put `kind` in `$(go env GOPATH)/bin`. You may need to add that directory to your `$PATH` as
 shown [here](https://golang.org/doc/code.html#GOPATH) if you encounter the error
 `kind: command not found` after installation.
 
-Without installing go, kind can be built reproducibly with docker using `make build`.
+Without installing Go, kind can be built reproducibly with docker using `make build`.
 
 Stable binaries are also available on the [releases] page.
 Stable releases are generally recommended for CI usage in particular.
 To install, download the binary for your platform from "Assets" and place this
-into your `$PATH`. 
+into your `$PATH`.
 
 On macOS / Linux:
 
@@ -43,7 +42,7 @@ chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
 {{< /codeFromInline >}}
 
-On Mac via Homebrew:
+On Mac / Linux via Homebrew:
 
 {{< codeFromInline lang="bash" >}}
 brew install kind
@@ -56,7 +55,7 @@ curl.exe -Lo kind-windows-amd64.exe https://github.com/kubernetes-sigs/kind/rele
 Move-Item .\kind-windows-amd64.exe c:\some-dir-in-your-PATH\kind.exe
 {{< /codeFromInline >}}
 
-OR via Chocolatey (https://chocolatey.org/packages/kind)
+On Windows via Chocolatey (https://chocolatey.org/packages/kind)
 {{< codeFromInline lang="powershell" >}}
 choco install kind
 {{< /codeFromInline >}}
