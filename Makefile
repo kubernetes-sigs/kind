@@ -34,7 +34,8 @@ LD_FLAGS:=-X sigs.k8s.io/kind/pkg/cmd/kind/version.GitCommit=$(COMMIT)
 # the output binary name, overridden when cross compiling
 KIND_BINARY_NAME?=kind
 # the container cli to use e.g. docker,podman
-DOCKER?=docker
+DOCKER?=$(shell which docker || which podman || echo "docker")
+export DOCKER
 # standard "make" target -> builds
 all: build
 
