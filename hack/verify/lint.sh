@@ -21,10 +21,8 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 cd "${REPO_ROOT}"
 
 # build golangci-lint
-SOURCE_DIR="${REPO_ROOT}/hack/tools" hack/go_container.sh \
-  go build -o /out/golangci-lint github.com/golangci/golangci-lint/cmd/golangci-lint
 SOURCE_DIR="${REPO_ROOT}/hack/tools" GOOS="linux" hack/go_container.sh \
-  go build -o /out/golangci-lint-linux github.com/golangci/golangci-lint/cmd/golangci-lint
+  go build -o /out/golangci-lint github.com/golangci/golangci-lint/cmd/golangci-lint
 
 # run golangci-lint
 LINTS=(
@@ -36,7 +34,5 @@ LINTS=(
 )
 ENABLE=$(sed 's/ /,/g' <<< "${LINTS[@]}")
 # first for the repo in general
-GO111MODULE=on bin/golangci-lint --disable-all --enable="${ENABLE}" run ./pkg/... ./cmd/... .
-# ... and then for kindnetd, which is only on linux
-SOURCE_DIR="${REPO_ROOT}/images/kindnetd" GOOS="linux" "${REPO_ROOT}/hack/go_container.sh" \
-  /out/golangci-lint-linux --disable-all --enable="${ENABLE}" --timeout=2m run ./...
+SOURCE_DIR="${REPO_ROOT}" hack/go_container.sh \
+  /out/golangci-lint --disable-all --enable="${ENABLE}" --timeout=2m run .
