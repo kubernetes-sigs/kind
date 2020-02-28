@@ -21,7 +21,7 @@ To install `kubectl` see the upstream reference here https://kubernetes.io/docs/
 You can either install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.7.0` or clone this repo 
 and run `make build` from the repository.
 
-Please use the latest Go when installing KIND from source this, ideally go 1.14 or greater.
+Please use the latest Go when installing KIND from source, ideally go 1.14 or greater.
 
 This will put `kind` in `$(go env GOPATH)/bin`. You may need to add that directory to your `$PATH` as
 shown [here](https://golang.org/doc/code.html#GOPATH) if you encounter the error
