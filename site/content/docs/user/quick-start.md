@@ -14,9 +14,9 @@ This guide covers getting started with the `kind` command.
 
 ## Installation
 
-**NOTE**: KIND does not require [`kubectl`](https://kubernetes.io/docs/reference/kubectl/overview/) to function technically,
-but you will not be able to use some of the demo commands or follow much of the guide without it.
-To install `kubectl` see https://kubernetes.io/docs/tasks/tools/install-kubectl/
+**NOTE**: `kind` does not require [`kubectl`](https://kubernetes.io/docs/reference/kubectl/overview/),
+but you will not be able to perform some of the examples in our docs without it.
+To install `kubectl` see the upstream reference here https://kubernetes.io/docs/tasks/tools/install-kubectl/
 
 You can either install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.7.0` or clone this repo 
 and run `make build` from the repository.
