@@ -234,22 +234,16 @@ You may also try removing any unused data left by the Docker engine - e.g.,
 
 ### Building The Base Image
 
-To build the `base-image` we use the `build` command:
+To build the `base-image` we use the `make quick` command in `images/base` directory:
 ```
-kind build base-image
+make quick
 ```
 
-If you want to specify the path to the base image source files you can use the
-`--source` flag.
-
-If `--source` is not specified, kind will attempt to automatically locate
-the `images/base` base source directory.
-
-By default, the base image will be tagged as `kindest/base:latest`.
-If you want to change this, you can use the `--image` flag.
+By default, the base image will be tagged as `kindest/base:$(date +v%Y%m%d)-$(git describe --always --dirty)` format.
+If you want to change this, you can set `TAG` environment variable.
 
 ```
-kind build base-image --image base:v0.1.0
+TAG=v0.1.0 make quick
 ```
 
 

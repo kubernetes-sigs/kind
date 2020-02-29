@@ -3,7 +3,7 @@
 
 This directory contains sources for building the `kind` base "node" image.
 
-The image can be built with `kind build base-image`.
+The image can be built with `make quick`.
 
 ## Maintenance
 
