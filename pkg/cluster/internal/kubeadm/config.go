@@ -308,11 +308,13 @@ controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServer:
   certSANs: [localhost, "{{.APIServerAddress}}"]
+{{ if .FeatureGates -}}
   extraArgs:
     "feature-gates": "{{ .FeatureGatesString }}"
+{{- end}}
 controllerManager:
-  extraArgs:
 {{ if .FeatureGates -}}
+  extraArgs:
     "feature-gates": "{{ .FeatureGatesString }}"
 {{- end}}
     enable-hostpath-provisioner: "true"
