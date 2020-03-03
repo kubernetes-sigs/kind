@@ -33,7 +33,7 @@ type matchInfo struct {
 func parseYAMLMatchInfo(raw string) (matchInfo, error) {
 	m := matchInfo{}
 	if err := yaml.Unmarshal([]byte(raw), &m); err != nil {
-		return matchInfo{}, errors.Wrap(err, "failed to parse type meta")
+		return matchInfo{}, errors.Wrapf(err, "failed to parse type meta for %q", raw)
 	}
 	return m, nil
 }
