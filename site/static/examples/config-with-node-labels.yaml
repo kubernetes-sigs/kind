@@ -2,12 +2,21 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
+  - |
+    kind: JoinConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        # An example of node label for control-plane.
+        node-labels: "nodeType=controlplane"
 - role: worker
   kubeadmConfigPatches:
   - |
     kind: JoinConfiguration
     nodeRegistration:
       kubeletExtraArgs:
-        node-labels: "nodeType=processing"
+        # This adds to this worker two node labels. 
+        node-labels: "nodeType=processing,region=fr"
+- role: worker
+# No specific node-labels applied here.
         
         
