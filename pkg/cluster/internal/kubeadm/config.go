@@ -155,22 +155,22 @@ nodeRegistration:
     node-ip: "{{ .NodeAddress }}"
 networking:
   podSubnet: "{{ .PodSubnet }}"
+controllerManagerExtraArgs:
+  enable-hostpath-provisioner: "true"
+{{ if .FeatureGates }}  "feature-gates": "{{ .FeatureGatesString }}"
 apiServerExtraArgs:
   "feature-gates": "{{ .FeatureGatesString }}"
-controllerManagerExtraArgs:
-  "feature-gates": "{{ .FeatureGatesString }}"
-  enable-hostpath-provisioner: "true"
 schedulerExtraArgs:
   "feature-gates": "{{ .FeatureGatesString }}"
 nodeRegistration:
   kubeletExtraArgs:
     "feature-gates": "{{ .FeatureGatesString }}"
-{{if .FeatureGates}}kubeProxy:
+kubeProxy:
   config:
     featureGates:
 {{ range $key := .SortedFeatureGateKeys }}
       "{{ $key }}": {{ index $.FeatureGates $key }}
-{{end}}{{end}}
+{{ end }}{{ end }}
 {{else}}# config for this worker node
 apiVersion: kubeadm.k8s.io/v1alpha2
 kind: NodeConfiguration
@@ -213,13 +213,14 @@ apiServerExtraVolumes:
 # so we need to ensure the cert is valid for localhost so we can talk
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServerCertSANs: [localhost, "{{.APIServerAddress}}"]
+controllerManagerExtraArgs:
+  enable-hostpath-provisioner: "true"
+{{ if .FeatureGates }}  "feature-gates": "{{ .FeatureGatesString }}"
 apiServerExtraArgs:
   "feature-gates": "{{ .FeatureGatesString }}"
-controllerManagerExtraArgs:
-  "feature-gates": "{{ .FeatureGatesString }}"
-  enable-hostpath-provisioner: "true"
 schedulerExtraArgs:
   "feature-gates": "{{ .FeatureGatesString }}"
+{{ end }}
 networking:
   podSubnet: "{{ .PodSubnet }}"
 ---
@@ -307,11 +308,15 @@ controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServer:
   certSANs: [localhost, "{{.APIServerAddress}}"]
+{{ if .FeatureGates -}}
   extraArgs:
     "feature-gates": "{{ .FeatureGatesString }}"
+{{- end}}
 controllerManager:
+{{ if .FeatureGates -}}
   extraArgs:
     "feature-gates": "{{ .FeatureGatesString }}"
+{{- end}}
     enable-hostpath-provisioner: "true"
     # configure ipv6 default addresses for IPv6 clusters
     {{ if .IPv6 -}}
@@ -319,7 +324,9 @@ controllerManager:
     {{- end }}
 scheduler:
   extraArgs:
+{{ if .FeatureGates -}}
     "feature-gates": "{{ .FeatureGatesString }}"
+{{- end }}
     # configure ipv6 default addresses for IPv6 clusters
     {{ if .IPv6 -}}
     address: "::"
@@ -415,11 +422,15 @@ controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServer:
   certSANs: [localhost, "{{.APIServerAddress}}"]
+{{ if .FeatureGates -}}
   extraArgs:
     "feature-gates": "{{ .FeatureGatesString }}"
+{{- end }}
 controllerManager:
   extraArgs:
+{{ if .FeatureGates -}}
     "feature-gates": "{{ .FeatureGatesString }}"
+{{- end }}
     enable-hostpath-provisioner: "true"
     # configure ipv6 default addresses for IPv6 clusters
     {{ if .IPv6 -}}
@@ -427,7 +438,9 @@ controllerManager:
     {{- end }}
 scheduler:
   extraArgs:
+{{ if .FeatureGates -}}
     "feature-gates": "{{ .FeatureGatesString }}"
+{{- end}}
     # configure ipv6 default addresses for IPv6 clusters
     {{ if .IPv6 -}}
     address: "::"
