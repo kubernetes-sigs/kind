@@ -308,15 +308,15 @@ controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServer:
   certSANs: [localhost, "{{.APIServerAddress}}"]
-{{ if .FeatureGates -}}
+{{ if .FeatureGates }}
   extraArgs:
     "feature-gates": "{{ .FeatureGatesString }}"
-{{- end}}
+{{ end}}
 controllerManager:
-{{ if .FeatureGates -}}
+{{ if .FeatureGates }}
   extraArgs:
     "feature-gates": "{{ .FeatureGatesString }}"
-{{- end}}
+{{ end}}
     enable-hostpath-provisioner: "true"
     # configure ipv6 default addresses for IPv6 clusters
     {{ if .IPv6 -}}
@@ -324,9 +324,9 @@ controllerManager:
     {{- end }}
 scheduler:
   extraArgs:
-{{ if .FeatureGates -}}
+{{ if .FeatureGates }}
     "feature-gates": "{{ .FeatureGatesString }}"
-{{- end }}
+{{ end }}
     # configure ipv6 default addresses for IPv6 clusters
     {{ if .IPv6 -}}
     address: "::"
@@ -359,7 +359,7 @@ apiVersion: kubeadm.k8s.io/v1beta1
 kind: JoinConfiguration
 metadata:
   name: config
-{{ if .ControlPlane -}}	
+{{ if .ControlPlane -}}
 controlPlane:
   localAPIEndpoint:
     advertiseAddress: "{{ .NodeAddress }}"
@@ -422,15 +422,15 @@ controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServer:
   certSANs: [localhost, "{{.APIServerAddress}}"]
-{{ if .FeatureGates -}}
+{{ if .FeatureGates }}
   extraArgs:
     "feature-gates": "{{ .FeatureGatesString }}"
-{{- end }}
+{{ end }}
 controllerManager:
   extraArgs:
-{{ if .FeatureGates -}}
+{{ if .FeatureGates }}
     "feature-gates": "{{ .FeatureGatesString }}"
-{{- end }}
+{{ end }}
     enable-hostpath-provisioner: "true"
     # configure ipv6 default addresses for IPv6 clusters
     {{ if .IPv6 -}}
@@ -438,9 +438,9 @@ controllerManager:
     {{- end }}
 scheduler:
   extraArgs:
-{{ if .FeatureGates -}}
+{{ if .FeatureGates }}
     "feature-gates": "{{ .FeatureGatesString }}"
-{{- end}}
+{{ end }}
     # configure ipv6 default addresses for IPv6 clusters
     {{ if .IPv6 -}}
     address: "::"
