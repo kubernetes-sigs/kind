@@ -183,6 +183,8 @@ NOTE: not all options are documented yet!  We will fix this with time, PRs welco
 
 Extra node labels can be used to make deployment constraints.
 
+NOTE: this is kubeadm config patch, not a kind option.
+
 {{< codeFromFile file="static/examples/config-with-node-labels.yaml" lang="yaml" >}}
 
 ### Extra Mounts
