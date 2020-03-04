@@ -91,6 +91,6 @@ run_in_go_container() {
 }
 
 mkdir -p "${OUT_DIR}"
-"${DOCKER}" volume inspect "${CACHE_VOLUME}" >/dev/null || "${DOCKER}" volume create "${CACHE_VOLUME}" >/dev/null
+"${DOCKER}" volume inspect "${CACHE_VOLUME}" >/dev/null 2>&1 || "${DOCKER}" volume create "${CACHE_VOLUME}" >/dev/null
 detect_and_set_goos_goarch
 run_in_go_container "$@"
