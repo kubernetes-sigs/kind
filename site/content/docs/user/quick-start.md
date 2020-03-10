@@ -151,6 +151,13 @@ kind load docker-image my-custom-image:unique-tag
 kubectl apply -f my-manifest-using-my-image:unique-tag
 ```
 
+**Note**: You can get a list of images present on a cluster node by
+using `docker exec`:
+```
+docker exec -it my-node-name crictl images
+```
+Where `my-node-name` is the name of the Docker container.
+
 **Note**: The Kubernetes default pull policy is `IfNotPresent` unless
 the image tag is `:latest` in which case the default policy is `Always`.
 `IfNotPresent` causes the Kubelet to skip pulling an image if it already exists.
