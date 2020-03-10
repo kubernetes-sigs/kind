@@ -88,9 +88,9 @@ networking:
   apiServerPort: 6443
 {{< /codeFromInline  >}}
 
-{{< securitygoose >}} **NOTE**: You should really think thrice before exposing your KIND cluster publicly!
-KIND does not ship with state of the art security or any update strategy (other than
-disposing your cluster and creating a new one)! We strongly discourage exposing KIND
+{{< securitygoose >}}**NOTE**: You should really think thrice before exposing your kind cluster publicly!
+kind does not ship with state of the art security or any update strategy (other than
+disposing your cluster and creating a new one)! We strongly discourage exposing kind
 to anything other than loopback.{{</ securitygoose >}}
 
 #### Pod Subnet
