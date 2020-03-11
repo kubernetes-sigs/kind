@@ -19,9 +19,12 @@ set -o errexit -o nounset -o pipefail
 export DOCKER_CLI_EXPERIMENTAL=enabled
 
 # We can skip setup if the current builder already has multi-arch
+# AND if it isn't the docker driver, which doesn't work
 current_builder="$(docker buildx inspect)"
 # linux/amd64, linux/arm64, linux/riscv64, linux/ppc64le, linux/s390x, linux/386, linux/arm/v7, linux/arm/v6
-if grep -q "linux/amd64" <<<"${current_builder}" && grep -q "linux/arm64" <<<"${current_builder}"; then
+if ! grep -q "^Driver: docker$"  <<<"${current_builder}" && \
+     grep -q "linux/amd64" <<<"${current_builder}" && \
+     grep -q "linux/arm64" <<<"${current_builder}"; then
   exit 0
 fi
 
