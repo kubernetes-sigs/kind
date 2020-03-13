@@ -1,0 +1,22 @@
+issuer: https://dex-server:10443/dex
+web:
+  https: 0.0.0.0:10443
+  tlsCert: /cfg/dex-server.crt
+  tlsKey: /cfg/dex-server.key
+storage:
+  type: sqlite3
+  config:
+    file: /tmp/dex.db
+staticClients:
+  - id: YOUR_CLIENT_ID
+    redirectURIs:
+      - http://localhost:8000
+    name: kubelogin
+    secret: YOUR_CLIENT_SECRET
+staticPasswords:
+  - email: "admin@example.com"
+    # bcrypt hash of the string "password"
+    hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
+    username: "admin"
+    userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"
+enablePasswordDB: true

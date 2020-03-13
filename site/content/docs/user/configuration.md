@@ -177,6 +177,66 @@ nodes:
   image: kindest/node:v1.16.4@sha256:b91a2c2317a000f3a783489dfb755064177dbc3a0b2f4147d50f04825d016f55
 {{< /codeFromInline >}}
 
+### Authentication
+
+#### OpenID Connect
+
+You can set up OpenID Connect (OIDC) authentication by the following steps:
+
+1. Deploy an OIDC provider outside of the cluster.
+1. Create a cluster with the extra arguments for OIDC.
+1. Set up kubectl, e.g. [kubelogin](https://github.com/int128/kubelogin).
+
+You need to consider the following constraints:
+
+- The issuer URL must be HTTPS. A TLS certificate is required.
+- You cannot deploy an OIDC provider in the cluster,
+  because the API server cannot access any pod or service.
+- The API server and kubectl access an OIDC provider via the same URL.
+
+Here is an example of cluster config.
+
+{{< codeFromFile file="static/examples/config-with-oidc.yaml" lang="yaml" >}}
+
+You can use [Dex](https://github.com/dexidp/dex) as an OIDC provider.
+Here is a minimum config of Dex.
+
+{{< codeFromFile file="static/examples/oidc/dex.yaml" lang="yaml" >}}
+
+You can set up the authentication using Dex on Docker as follows:
+
+```sh
+# run a container of Dex
+docker run -d --name dex-server -p 10443:10443 -v $PWD:/cfg quay.io/dexidp/dex:v2.21.0 serve /cfg/dex.yaml
+
+# create a cluster
+kind create cluster --config config-with-oidc.yaml
+
+# set up the hosts so that the API server can access Dex
+docker inspect -f '{{.NetworkSettings.IPAddress}}' dex-server | sed -e 's,$, dex-server,' | \
+  kubectl -n kube-system exec -i kube-apiserver-kind-control-plane -- tee -a /etc/hosts
+
+# set up the hosts so that kubectl can access Dex
+echo '127.0.0.1 dex-server' | sudo tee -a /etc/hosts
+
+# bind a cluster role to your user
+kubectl create clusterrolebinding oidc-admin --clusterrole=cluster-admin --user=admin@example.com
+
+# set up the kubeconfig (using kubelogin)
+kubectl config set-credentials oidc --exec-api-version=client.authentication.k8s.io/v1beta1 \
+  --exec-command=kubectl \
+  --exec-arg=oidc-login \
+  --exec-arg=get-token \
+  --exec-arg=--oidc-issuer-url=https://dex-server:10443/dex \
+  --exec-arg=--oidc-client-id=YOUR_CLIENT_ID \
+  --exec-arg=--oidc-client-secret=YOUR_CLIENT_SECRET \
+  --exec-arg=--oidc-extra-scope=email \
+  --exec-arg=--certificate-authority=$PWD/dex-ca.crt
+
+# make sure you can access the cluster
+kubectl --user=oidc cluster-info
+```
+
 
 ## Per-Node Options
 
