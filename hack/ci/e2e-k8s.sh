@@ -131,6 +131,9 @@ kubeadmConfigPatches:
   kind: ClusterConfiguration
   metadata:
     name: config
+  etcd:
+    local:
+      dataDir: "/tmp/lib/etcd"
   apiServer:
     extraArgs:
       "runtime-config": "${runtime_config}"
