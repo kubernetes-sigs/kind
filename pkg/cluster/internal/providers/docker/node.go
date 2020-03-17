@@ -56,7 +56,7 @@ func (n *node) IP() (ipv4 string, ipv6 string, err error) {
 		"-f", "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}",
 		n.name, // ... against the "node" container
 	)
-	lines, err := exec.CombinedOutputLines(cmd)
+	lines, err := exec.OutputLines(cmd)
 	if err != nil {
 		return "", "", errors.Wrap(err, "failed to get container details")
 	}
