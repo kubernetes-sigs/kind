@@ -154,6 +154,33 @@ select_iptables() {
   update-alternatives --set ip6tables "/usr/sbin/ip6tables-${mode}" > /dev/null
 }
 
+enable_network_magic(){
+  # well-known docker embedded DNS is at 127.0.0.11:53
+  local docker_embedded_dns_ip='127.0.0.11'
+
+  # first we need to detect an IP to use for reaching the docker host
+  local docker_host_ip
+  docker_host_ip="$( (getent ahostsv4 'host.docker.internal' | head -n1 | cut -d' ' -f1) || true)"
+  if [[ -z "${docker_host_ip}" ]]; then
+    docker_host_ip=$(ip -4 route show default | cut -d' ' -f3)
+  fi
+
+  # patch docker's iptables rules to switch out the DNS IP
+  iptables-save \
+    | sed \
+      `# switch docker DNS DNAT rules to our chosen IP` \
+      -e "s/-d ${docker_embedded_dns_ip}/-d ${docker_host_ip}/g" \
+      `# we need to also apply these rules to non-local traffic (from pods)` \
+      -e 's/-A OUTPUT \(.*\) -j DOCKER_OUTPUT/\0\n-A PREROUTING \1 -j DOCKER_OUTPUT/' \
+      `# switch docker DNS SNAT rules rules to our chosen IP` \
+      -e "s/--to-source :53/--to-source ${docker_host_ip}:53/g"\
+    | iptables-restore
+
+  # now we can ensure that DNS is configured to use our IP
+  cp /etc/resolv.conf /etc/resolv.conf.original
+  sed -e "s/${docker_embedded_dns_ip}/${docker_host_ip}/g" /etc/resolv.conf.original >/etc/resolv.conf
+}
+
 # run pre-init fixups
 fix_kmsg
 fix_mount
@@ -163,6 +190,7 @@ fix_product_name
 fix_product_uuid
 configure_proxy
 select_iptables
+enable_network_magic
 
 # we want the command (expected to be systemd) to be PID1, so exec to it
 exec "$@"
