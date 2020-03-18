@@ -31,6 +31,7 @@ It may additionally be helpful to:
 * [Unable to pull images](#unable-to-pull-images)
 * [Chrome OS](#chrome-os)
 * [AppArmor](#apparmor)
+* [IPv6 port forwarding](#ipv6-port-forwarding)
 
 ## Kubectl Version Skew
 
@@ -347,6 +348,16 @@ related to applications you are trying to run in KIND.
 
 See Previous Discussion: [kind#1179]
 
+## IPv6 Port Forwarding
+
+Docker assumes that all the IPv6 addresses should be reachable, hence doesn't implement
+port mapping using NAT [moby#17666].
+
+You will likely need to use Kubernetes services like NodePort or LoadBalancer to access 
+your workloads inside the cluster via the nodes IPv6 addresses.
+
+See Previous Discussion: [kind#1326]
+
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new
 [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
@@ -359,7 +370,9 @@ See Previous Discussion: [kind#1179]
 [kind#229]: https://github.com/kubernetes-sigs/kind/issues/229
 [kind#270]: https://github.com/kubernetes-sigs/kind/issues/270
 [kind#1179]: https://github.com/kubernetes-sigs/kind/issues/1179
+[kind#1326]: https://github.com/kubernetes-sigs/kind/issues/1326
 [moby#9939]: https://github.com/moby/moby/issues/9939
+[moby#17666]: https://github.com/moby/moby/issues/17666
 [Docker resource lims]: https://docs.docker.com/docker-for-mac/#advanced
 [snap]: https://snapcraft.io/
 [manage docker as a non root user]: https://docs.docker.com/install/linux/linux-postinstall/#manage-docker-as-a-non-root-user
