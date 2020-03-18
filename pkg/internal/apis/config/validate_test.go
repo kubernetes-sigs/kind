@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"reflect"
 	"testing"
 
 	"sigs.k8s.io/kind/pkg/errors"
@@ -240,6 +241,51 @@ func TestNodeValidate(t *testing.T) {
 			if len(errs) != tc.ExpectErrors {
 				t.Errorf("expected %d errors but got len(%v) = %d", tc.ExpectErrors, errs, len(errs))
 			}
+		})
+	}
+}
+
+
+func TestPortValidate(t *testing.T) {
+	cases := []struct {
+		TestName     string
+		Port         int32
+		ExpectErrors error
+	}{
+		{
+			TestName:     "-1 port",
+			Port:         -1,
+			ExpectErrors: nil,
+		},
+		{
+			TestName:     "valid port",
+			Port:         10,
+			ExpectErrors: nil,
+		},
+		{
+			TestName:     "negative port",
+			Port:         -2,
+			ExpectErrors: errors.Errorf("invalid port number: -2"),
+		},
+		{
+			TestName:     "extra port",
+			Port:         65536,
+			ExpectErrors: errors.Errorf("invalid port number: 65536"),
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc //capture loop variable
+		t.Run(tc.TestName, func(t *testing.T) {
+			err := validatePort(tc.Port)
+			// the error can be:
+			// - nil, in which case we should expect no errors or fail
+			if err == nil && tc.ExpectErrors != nil {
+				t.Error("received no errors but expected errors for case")
+			}else if !reflect.DeepEqual(err, tc.ExpectErrors) {
+				t.Error("Expected \"%v\" error but go \"%v\" error in %s testcase", tc.ExpectErrors, err, tc.TestName)
+			}
+			return
 		})
 	}
 }
