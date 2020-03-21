@@ -78,7 +78,6 @@ func (p *Provider) ListClusters() ([]string, error) {
 	cmd := exec.Command("docker",
 		"ps",
 		"-a",         // show stopped nodes
-		"--no-trunc", // don't truncate
 		// filter for nodes with the cluster label
 		"--filter", "label="+clusterLabelKey,
 		// format to include the cluster name
@@ -96,7 +95,6 @@ func (p *Provider) ListNodes(cluster string) ([]nodes.Node, error) {
 	cmd := exec.Command("docker",
 		"ps",
 		"-a",         // show stopped nodes
-		"--no-trunc", // don't truncate
 		// filter for nodes with the cluster label
 		"--filter", fmt.Sprintf("label=%s=%s", clusterLabelKey, cluster),
 		// format to include the cluster name
