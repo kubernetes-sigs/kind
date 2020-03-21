@@ -26,4 +26,4 @@ cd "${REPO_ROOT}"
 # tidy all modules
 hack/go_container.sh go mod tidy
 SOURCE_DIR="${REPO_ROOT}/hack/tools" hack/go_container.sh go mod tidy
-SOURCE_DIR="${REPO_ROOT}/cmd/kindnetd" hack/go_container.sh go mod tidy
+SOURCE_DIR="${REPO_ROOT}/images/kindnetd" hack/go_container.sh go mod tidy
