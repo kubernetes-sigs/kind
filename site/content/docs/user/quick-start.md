@@ -118,7 +118,7 @@ In order to interact with a specific cluster, you only need to specify the
 cluster name as a context in kubectl:
 ```
 kubectl cluster-info --context kind-kind
-kubectl cluster-info --context kind-2
+kubectl cluster-info --context kind-kind-2
 ```
 
 ## Deleting a Cluster
