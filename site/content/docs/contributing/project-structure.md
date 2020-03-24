@@ -44,13 +44,13 @@ Kind includes some tools to help developers maintain the source code compliant t
 
 Tools are included in the [hack/][hack] directory and fall in one of two categories:
 
-* `update-*` : make changes to the source code
-* `verify-*` : verify that source code is in a good state
+* `update/*` : make changes to the source code
+* `verify/*` : verify that source code is in a good state
 
 We will proceed by describing all of the current tooling in [hack/][hack].
 
 ### Verify
-You can check the compliance of the entire project by running the `verify-all.sh` script. This script will do the following:
+You can check the compliance of the entire project by running the `verify/all.sh` script. This script will do the following:
 
 * check spelling using [client9/misspell](https://github.com/client9/misspell)
 * check that the code is properly formatted using Go fmt
@@ -62,28 +62,28 @@ You can check the compliance of the entire project by running the `verify-all.sh
 
 ### Update
 In order to get the project’s source code into a compilable state, the script
-**[update-all.sh](https://sigs.k8s.io/kind/hack/update/all.sh)** performs the following tasks:
+**[update/all.sh](https://sigs.k8s.io/kind/hack/update/all.sh)** performs the following tasks:
 
-* runs update-deps.sh to obtain all of the project’s dependencies
-* runs update-generated.sh to generate code necessary to generate Kubernetes API code for kind, see https://kind.sigs.k8s.io/docs/user/quick-start/#configuring-your-kind-cluster
-* runs update-gofmt.sh which formats all Go source code using the Go fmt tool.
+* runs `update/deps.sh` to obtain all of the project’s dependencies
+* runs `update/generated.sh` to generate code necessary to generate Kubernetes API code for kind, see https://kind.sigs.k8s.io/docs/user/quick-start/#configuring-your-kind-cluster
+* runs `update/gofmt.sh` which formats all Go source code using the Go fmt tool.
 
 Let’s go a little in depth on each of these files.
 
-**[update-deps.sh](https://sigs.k8s.io/kind/hack/update/deps.sh)** performs the following steps:
+**[update/deps.sh](https://sigs.k8s.io/kind/hack/update/deps.sh)** performs the following steps:
 
 * runs `go mod tidy` to remove any no-longer-needed dependencies from go.mod and add any dependencies needed for other combinations of OS, architecture, and build tags
 * runs `go mod vendor`, which re-populates the vendor directory, resets the main module's vendor directory to include all packages needed to build and test all of the module's packages based on the state of the go.mod files and Go source code.
 * finally, it prunes the vendor directory of any unnecessary files (keeps code source files, licenses, author files, etc).
 
-**[update-gofmt.sh](https://sigs.k8s.io/kind/hack/update/gofmt.sh)** runs gofmt on all nonvendored source code to format and simplify the code.
+**[update/gofmt.sh](https://sigs.k8s.io/kind/hack/update/gofmt.sh)** runs gofmt on all nonvendored source code to format and simplify the code.
 
-**[update-generated.sh](https://sigs.k8s.io/kind/hack/update/generated.sh)** in short, generates Go source code that is necessary to use a Kubernetes-style resource definition to define a schema that can be use to configure Kind.
+**[update/generated.sh](https://sigs.k8s.io/kind/hack/update/generated.sh)** in short, generates Go source code that is necessary to use a Kubernetes-style resource definition to define a schema that can be use to configure Kind.
 
-Going a bit more in depth, update-generated.sh does the following:
+Going a bit more in depth, `update/generated.sh` does the following:
 
 * Installs [go-bindata](https://github.com/jteeuwen/go-bindata) which is used to embed static assets in Go.
-* Installs the deepcopy-gen, defaulter-gen, and conversion-gen tools from [kubernetes/code-generator](https://github.com/kubernetes/code-generator).
+* Installs the `deepcopy-gen`, `defaulter-gen`, and `conversion-gen` tools from [kubernetes/code-generator](https://github.com/kubernetes/code-generator).
 
 These programs are used to generate Kubernetes-like APIs. These programs are run in the following sequence: deepcopy -> defaulter -> conversion.
 
