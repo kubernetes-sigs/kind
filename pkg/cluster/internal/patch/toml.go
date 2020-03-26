@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 
 	burntoml "github.com/BurntSushi/toml"
-	jsonpatch "github.com/evanphx/json-patch"
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	toml "github.com/pelletier/go-toml"
 	yaml "gopkg.in/yaml.v3"
 
