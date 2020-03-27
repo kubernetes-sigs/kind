@@ -39,6 +39,9 @@ func Cluster(logger log.Logger, c *context.Context, explicitKubeconfigPath strin
 		logger.Errorf("failed to update kubeconfig: %v", kerr)
 	}
 
+	if len(n) == 0 {
+		return errors.New("No such cluster")
+	}
 	err = c.Provider().DeleteNodes(n)
 	if err != nil {
 		return err
