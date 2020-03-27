@@ -17,7 +17,7 @@ limitations under the License.
 package patch
 
 import (
-	jsonpatch "github.com/evanphx/json-patch"
+	jsonpatch "github.com/evanphx/json-patch/v5"
 
 	"sigs.k8s.io/yaml"
 
