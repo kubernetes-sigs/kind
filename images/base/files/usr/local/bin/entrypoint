@@ -179,6 +179,15 @@ enable_network_magic(){
   # now we can ensure that DNS is configured to use our IP
   cp /etc/resolv.conf /etc/resolv.conf.original
   sed -e "s/${docker_embedded_dns_ip}/${docker_host_ip}/g" /etc/resolv.conf.original >/etc/resolv.conf
+
+  # fixup IPs in manifests ...
+  # TODO: dual-stack LOL :this-is-fine:
+  curr_ip=$(hostname --ip-address)
+  if [ -f /kind/old-ip ]; then
+    old_ip=$(cat /kind/old-ip)
+    sed -i "s#${old_ip}#${curr_ip}#" /etc/kubernetes/manifests/*.yaml /var/lib/kubelet/kubeadm-flags.env
+  fi
+  echo -n "${curr_ip}" >/kind/old-ip
 }
 
 # run pre-init fixups
