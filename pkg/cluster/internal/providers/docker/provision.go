@@ -144,6 +144,8 @@ func commonArgs(cluster string, cfg *config.Cluster) ([]string, error) {
 		"--tty",    // allocate a tty for entrypoint logs
 		// label the node with the cluster ID
 		"--label", fmt.Sprintf("%s=%s", clusterLabelKey, cluster),
+		// TODO: this should not be hardcoded
+		"--net=kind",
 	}
 
 	// enable IPv6 if necessary

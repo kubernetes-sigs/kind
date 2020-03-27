@@ -19,6 +19,8 @@ package config
 
 import (
 	"bytes"
+	"fmt"
+	"net"
 	"strings"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
@@ -63,6 +65,14 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	if ctx.Config.Networking.IPFamily == "ipv6" {
 		controlPlaneEndpoint = controlPlaneEndpointIPv6
 	}
+
+	// TODO: clean this up and make it optional
+
+	endpointNode, err := nodeutils.APIServerEndpointNode(allNodes)
+	if err != nil {
+		return err
+	}
+	controlPlaneEndpoint = net.JoinHostPort(endpointNode.String(), fmt.Sprintf("%d", common.APIServerInternalPort))
 
 	// create kubeadm init config
 	fns := []func() error{}
