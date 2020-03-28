@@ -16,7 +16,7 @@ You can first prepare the necessary environment according to the [installation d
 
 ## Using a pre-built [node image][node image]
 
-Kind provided some pre-built images,
+KIND provides some pre-built images,
 these images contain everything necessary to create a cluster and can be used in an offline environment.
 
 You can find available image tags on the [releases page][releases page].
@@ -87,6 +87,85 @@ kubectl cluster-info --context kind-kind
 Have a question, bug, or feature request? Let us know! https://kind.sigs.k8s.io/#community 🙂
 ```
 
+## Building the [node image][node image]
+
+In addition to using pre-built node image, 
+KIND also provides the ability to build [node image][node image] from Kubernetes source code.
+
+Please note that during the image building process, you need to download many dependencies.
+It is recommended that you build at least once online to ensure that these dependencies are downloaded to your local.
+See [building the node image][building the node image] for more detail.
+
+The node-image in turn is built off the [base image][base image],
+See [building the base image][building the base image] for more advanced information.
+
+### Prepare Kubernetes source code
+
+You can clone Kubernetes source code.
+
+```sh
+➜  ~ mkdir -p $GOPATH/src/k8s.io
+➜  ~ cd $GOPATH/src/k8s.io
+➜  ~ git clone https://github.com/kubernetes/kubernetes
+```
+
+### Building image
+
+```sh
+➜  ~ kind build node-image --image kindest/node:master --kube-root $GOPATH/src/k8s.io/kubernetes 
+Starting to build Kubernetes
+...
+Image build completed.
+```
+
+When the image build is complete, you can create a cluster by passing the `--image` flag.
+
+```sh
+➜  ~ kind create cluster --image kindest/node:mater
+Creating cluster "kind" ...
+ ✓ Ensuring node image (kindest/node:master) 🖼
+ ✓ Preparing nodes 📦  
+ ✓ Writing configuration 📜 
+ ✓ Starting control-plane 🕹️ 
+ ✓ Installing CNI 🔌 
+ ✓ Installing StorageClass 💾 
+Set kubectl context to "kind-kind"
+You can now use your cluster with:
+
+kubectl cluster-info --context kind-kind
+
+Have a question, bug, or feature request? Let us know! https://kind.sigs.k8s.io/#community 🙂
+```
+
+## HA cluster
+
+If you want to create a control-plane HA cluster
+then you need to create a config file and use this file to start the cluster.
+
+```sh
+➜  ~ cat << EOF | kind create cluster --config=-
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+# 3 control plane node and 1 workers
+nodes:
+- role: control-plane
+- role: control-plane
+- role: control-plane
+- role: worker
+EOF
+```
+
+Note that in an offline environment, in addition to preparing the node image,
+you also need to prepare HAProxy image in advance.
+
+Currently KIND uses `kindest/haproxy:2.1.1-alpine`,
+you can find the specific tag in the [loadbalancer source code][loadbalancer source code].
+
+
+
+
+
+
 
 [installation documentation]: https://kind.sigs.k8s.io/docs/user/quick-start#installation
 [node image]: https://kind.sigs.k8s.io/docs/design/node-image
@@ -95,3 +174,7 @@ Have a question, bug, or feature request? Let us know! https://kind.sigs.k8s.io/
 [docker save]: https://docs.docker.com/engine/reference/commandline/save/
 [docker load]: https://docs.docker.com/engine/reference/commandline/load/
 [docker tag]: https://docs.docker.com/engine/reference/commandline/tag/
+[base image]: https://kind.sigs.k8s.io/docs/design/base-image/
+[building the node image]: https://kind.sigs.k8s.io/docs/user/quick-start/#building-images
+[building the base image]: https://kind.sigs.k8s.io/docs/user/quick-start/#building-the-base-image
+[loadbalancer source code]: https://github.com/kubernetes-sigs/kind/blob/a944589ec78b53fe62b45e8890e45e8d6c078f53/pkg/cluster/internal/loadbalancer/const.go#L20
