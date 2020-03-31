@@ -15,7 +15,9 @@ This guide covers how to configure KIND cluster creation.
 
 We know this is currently a bit lacking right now and will expand it over time - PRs welcome!
 
-<!--TODO: TOC?-->
+1. [Getting Started](#getting-started)
+2. [Cluster-Wide Options](#clusterwide-options)
+3. [Per-Node Options](#pernode-options)
 
 ## Getting Started
 
@@ -67,7 +69,7 @@ networking:
 {{< /codeFromInline >}}
 
 NOTE: you may need to reconfigure your docker daemon to enable ipv6 in order
-to use this. 
+to use this.
 
 IPv6 does not work on docker for mac because port forwarding ipv6
 is not yet supported in docker for mac.
@@ -194,8 +196,8 @@ for persisting data, mounting through code etc.
 
 ### Extra Port Mappings
 
-Extra port mappings can be used to port forward to the kind nodes. This is a 
-cross-platform option to get traffic into your kind cluster. 
+Extra port mappings can be used to port forward to the kind nodes. This is a
+cross-platform option to get traffic into your kind cluster.
 
 With docker on Linux you can simply send traffic to the node IPs from the host
 without this, but to cover macOS and Windows you'll want to use these.
