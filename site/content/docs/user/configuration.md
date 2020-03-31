@@ -177,6 +177,24 @@ nodes:
   image: kindest/node:v1.16.4@sha256:b91a2c2317a000f3a783489dfb755064177dbc3a0b2f4147d50f04825d016f55
 {{< /codeFromInline >}}
 
+### Patching Kubeadm configuration
+KinD uses kubeadm configuration structures to bootstrap the cluster. You can use the ``kubeadmConfigPatches`` snippet to patch any [configuration used by kubeadm](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-config/) inside KinD.
+
+As an example, you can put kube-proxy in IPVS mode using the following example:
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+kubeadmConfigPatches:
+- |
+  apiVersion: kubeproxy.config.k8s.io/v1alpha1
+  kind: KubeProxyConfiguration
+  metadata:
+    name: config
+  mode: ipvs
+{{< /codeFromInline >}}
+
+
 
 ## Per-Node Options
 

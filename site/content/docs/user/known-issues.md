@@ -32,6 +32,7 @@ It may additionally be helpful to:
 * [Chrome OS](#chrome-os)
 * [AppArmor](#apparmor)
 * [IPv6 port forwarding](#ipv6-port-forwarding)
+* [Deploying Metrics Server inside KinD](#metrics-server-inside-kind)
 
 ## Kubectl Version Skew
 
@@ -382,4 +383,40 @@ See Previous Discussion: [kind#1326]
 [version skew]: https://kubernetes.io/docs/setup/release/version-skew-policy/#supported-version-skew
 [Quick Start]: /docs/user/quick-start
 [AppArmor]: https://en.wikipedia.org/wiki/AppArmor
+
+## Metrics Server inside KinD
+
+Metrics Server needs to reach the metrics of each kubelet node before starting. Supposing the hostname of the container running kind is ``kind-control-plane`` and its IP inside docker is ``172.17.0.2`` you can edit the metrics-server deployment to force its /etc/hosts to point to the right kubelet IPs, as the following:
+
+{{< codeFromInline lang="yaml" >}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metrics-server
+  namespace: kube-system
+  labels:
+    k8s-app: metrics-server
+spec:
+ template:
+    metadata:
+      name: metrics-server
+      labels:
+        k8s-app: metrics-server
+    spec:
+      hostAliases:
+      - ip: "172.17.0.2"
+        hostnames:
+        - "kind-control-plane"
+      containers:
+      - args:
+        - --kubelet-insecure-tls
+        [...]
+
+{{< /codeFromInline >}}
+
+To check which IP your kind-control-plane is using you can verify with ``docker inspect kind-control-plane |grep IPAddress``, remembering to change the name of the container to whatever name your control-plane is using.
+
+{{< securitygoose >}}**NOTE**: --kubelet-insecure-tls is for testing only and should never be used in production{{</ securitygoose >}}
+
+
 
