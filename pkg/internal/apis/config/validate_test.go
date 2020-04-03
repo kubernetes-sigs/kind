@@ -243,3 +243,49 @@ func TestNodeValidate(t *testing.T) {
 		})
 	}
 }
+
+func TestPortValidate(t *testing.T) {
+	cases := []struct {
+		TestName    string
+		Port        int32
+		ExpectError string
+	}{
+		{
+			TestName:    "-1 port",
+			Port:        -1,
+			ExpectError: "",
+		},
+		{
+			TestName:    "valid port",
+			Port:        10,
+			ExpectError: "",
+		},
+		{
+			TestName:    "negative port",
+			Port:        -2,
+			ExpectError: "invalid port number: -2",
+		},
+		{
+			TestName:    "extra port",
+			Port:        65536,
+			ExpectError: "invalid port number: 65536",
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc //capture loop variable
+		t.Run(tc.TestName, func(t *testing.T) {
+			t.Parallel()
+			err := validatePort(tc.Port)
+			// the error can be:
+			// - nil, in which case we should expect no errors or fail
+			if err == nil && len(tc.ExpectError) > 0 {
+				t.Errorf("Test failed, unexpected error: %s", tc.ExpectError)
+			}
+
+			if err != nil && err.Error() != tc.ExpectError {
+				t.Errorf("Test failed, error: %s expected error: %s", err, tc.ExpectError)
+			}
+		})
+	}
+}
