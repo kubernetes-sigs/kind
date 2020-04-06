@@ -164,6 +164,13 @@ func commonArgs(cluster string, cfg *config.Cluster) ([]string, error) {
 	if usernsRemap() {
 		args = append(args, "--userns=host")
 	}
+
+	// handle Docker on Btrfs or ZFS
+	// https://github.com/kubernetes-sigs/kind/issues/1416#issuecomment-606514724
+	if mountDevMapper() {
+		args = append(args, "--volume", "/dev/mapper", "/dev/mapper")
+	}
+
 	return args, nil
 }
 

@@ -36,3 +36,17 @@ func usernsRemap() bool {
 	}
 	return false
 }
+
+// mountDevMapper checks if the Docker storage driver is Btrfs or ZFS
+func mountDevMapper() bool {
+	storage := ""
+	cmd := exec.Command("docker", "info", "-f", "{{.Driver}}")
+	lines, err := exec.CombinedOutputLines(cmd)
+	if err != nil {
+		return false
+	}
+	if len(lines) > 0 {
+		storage = strings.ToLower(strings.TrimSpace(lines[0]))
+	}
+	return storage == "btrfs" || storage == "zfs"
+}
