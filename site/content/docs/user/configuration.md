@@ -66,8 +66,8 @@ networking:
   ipFamily: ipv6
 {{< /codeFromInline >}}
 
-NOTE: you may need to reconfigure your docker daemon to enable ipv6 in order
-to use this. 
+NOTE: you may need to [reconfigure your docker daemon](https://docs.docker.com/config/daemon/ipv6/) 
+to enable ipv6 in order to use this. 
 
 IPv6 does not work on docker for mac because port forwarding ipv6
 is not yet supported in docker for mac.
