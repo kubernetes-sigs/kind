@@ -203,6 +203,9 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.N
 	data.NodeAddress = nodeAddress
 	// configure the right protocol addresses
 	if cfg.Networking.IPFamily == "ipv6" {
+		if nodeAddressIPv6 == "" {
+			return "", errors.Errorf("failed to get IPV6 address; is the docker daemon configured to use IPV6 correctly?")
+		}
 		data.NodeAddress = nodeAddressIPv6
 	}
 
