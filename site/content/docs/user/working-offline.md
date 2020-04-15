@@ -121,7 +121,7 @@ Image build completed.
 When the image build is complete, you can create a cluster by passing the `--image` flag.
 
 ```sh
-➜  ~ kind create cluster --image kindest/node:mater
+➜  ~ kind create cluster --image kindest/node:master
 Creating cluster "kind" ...
  ✓ Ensuring node image (kindest/node:master) 🖼
  ✓ Preparing nodes 📦  
