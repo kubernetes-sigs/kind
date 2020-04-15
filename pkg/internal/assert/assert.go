@@ -34,6 +34,16 @@ func ExpectError(t testingDotT, expectError bool, err error) {
 	}
 }
 
+// BoolEqual will call t.Errorf if expected != result
+// t should be a *testing.T normally
+func BoolEqual(t testingDotT, expected, result bool) {
+	if expected != result {
+		t.Errorf("Result did not match!")
+		t.Errorf("Expected: %v", expected)
+		t.Errorf("But got: %v", result)
+	}
+}
+
 // StringEqual will call t.Errorf if expected != result
 // t should be a *testing.T normally
 func StringEqual(t testingDotT, expected, result string) {

@@ -18,8 +18,11 @@ package env
 
 import (
 	"bytes"
+	"io"
 	"io/ioutil"
 	"testing"
+
+	"sigs.k8s.io/kind/pkg/internal/assert"
 )
 
 func TestIsTerminal(t *testing.T) {
@@ -44,4 +47,75 @@ func TestIsTerminal(t *testing.T) {
 	// but we should maybe do this in the future.
 	// At least we know this doesn't trigger on things that are obviously not
 	// terminals
+	if !IsTerminal(&testFakeTTY{}) {
+		t.Fatalf("IsTerminal should be true for testFakeTTY")
+	}
+}
+
+func TestIsSmartTerminal(t *testing.T) {
+	cases := []struct {
+		Name    string
+		FakeEnv map[string]string
+		GOOS    string
+		Writer  io.Writer
+		IsSmart bool
+	}{
+		{
+			Name:    "tty, no env",
+			FakeEnv: map[string]string{},
+			GOOS:    "linux",
+			IsSmart: true,
+			Writer:  &testFakeTTY{},
+		},
+		{
+			Name:    "nil writer, no env",
+			FakeEnv: map[string]string{},
+			GOOS:    "linux",
+			IsSmart: false,
+		},
+		{
+			Name:    "tty, windows, no env",
+			FakeEnv: map[string]string{},
+			GOOS:    "windows",
+			IsSmart: false,
+			Writer:  &testFakeTTY{},
+		},
+		{
+			Name: "tty, windows, modern terminal env",
+			FakeEnv: map[string]string{
+				"WT_SESSION": "baz",
+			},
+			GOOS:    "windows",
+			IsSmart: true,
+			Writer:  &testFakeTTY{},
+		},
+		{
+			Name: "tty, TERM=dumb",
+			FakeEnv: map[string]string{
+				"TERM": "dumb",
+			},
+			GOOS:    "linux",
+			IsSmart: false,
+			Writer:  &testFakeTTY{},
+		},
+		{
+			Name: "tty, Travis CI",
+			FakeEnv: map[string]string{
+				"TRAVIS":                      "true",
+				"HAS_JOSH_K_SEAL_OF_APPROVAL": "true",
+			},
+			GOOS:    "linux",
+			IsSmart: false,
+			Writer:  &testFakeTTY{},
+		},
+	}
+	for _, tc := range cases {
+		tc := tc // capture tc
+		t.Run(tc.Name, func(t *testing.T) {
+			res := isSmartTerminal(tc.Writer, tc.GOOS, func(s string) string {
+				return tc.FakeEnv[s]
+			})
+			assert.BoolEqual(t, tc.IsSmart, res)
+		})
+	}
 }
