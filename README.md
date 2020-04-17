@@ -40,7 +40,7 @@ into your `$PATH`:
 On Mac & Linux:
 
 ```console
-curl -Lo ./kind "https://github.com/kubernetes-sigs/kind/releases/download/v0.7.0/kind-$(uname)-amd64"
+curl -Lo ./kind "https://kind.sigs.k8s.io/dl/v0.7.0/kind-$(uname)-amd64"
 chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
 ```
@@ -54,7 +54,7 @@ brew install kind
 On Windows:
 
 ```powershell
-curl.exe -Lo kind-windows-amd64.exe https://github.com/kubernetes-sigs/kind/releases/download/v0.7.0/kind-windows-amd64
+curl.exe -Lo kind-windows-amd64.exe https://kind.sigs.k8s.io/dl/v0.7.0/kind-windows-amd64
 Move-Item .\kind-windows-amd64.exe c:\some-dir-in-your-PATH\kind.exe
 
 # OR via Chocolatey (https://chocolatey.org/packages/kind)
