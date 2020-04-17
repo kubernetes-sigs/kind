@@ -530,6 +530,11 @@ func Config(data ConfigData) (config string, err error) {
 		return "", err
 	}
 
+	// ensure featureGates is non-nil, as we may add entries
+	if data.FeatureGates == nil {
+		data.FeatureGates = make(map[string]bool)
+	}
+
 	// assume the latest API version, then fallback if the k8s version is too low
 	templateSource := ConfigTemplateBetaV2
 	if ver.LessThan(version.MustParseSemantic("v1.12.0")) {
