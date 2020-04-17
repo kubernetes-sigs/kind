@@ -20,8 +20,8 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../..." && pwd -P)"
 cd "${REPO_ROOT}"
 
 # pass through git details from prow / image builder
-if [ -n "${PULL_BASE_REF:-}" ]; then
-  export COMMIT="${PULL_BASE_REF:?}"
+if [ -n "${PULL_BASE_SHA:-}" ]; then
+  export COMMIT="${PULL_BASE_SHA:?}"
 fi
 
 # build for all platforms
