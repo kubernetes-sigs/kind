@@ -14,6 +14,7 @@
 # limitations under the License.
 
 set -o errexit -o nounset -o pipefail
+set -x;
 
 # cd to the repo root
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
