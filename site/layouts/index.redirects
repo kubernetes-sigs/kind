@@ -2,3 +2,4 @@
 {{- range $apiVersions }}
 /{{ . }}     https://godoc.org/sigs.k8s.io/kind/pkg/apis/config/{{ . }}
 {{- end }}
+/dl/* https://storage.googleapis.com/k8s-staging-kind/:splat
