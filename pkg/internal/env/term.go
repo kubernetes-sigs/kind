@@ -45,16 +45,29 @@ func IsTerminal(w io.Writer) bool {
 // IsSmartTerminal returns true if the writer w is a terminal AND
 // we think that the terminal is smart enough to use VT escape codes etc.
 func IsSmartTerminal(w io.Writer) bool {
-	return isSmartTerminal(w, runtime.GOOS, os.Getenv)
+	return isSmartTerminal(w, runtime.GOOS, os.LookupEnv)
 }
 
-func isSmartTerminal(w io.Writer, GOOS string, getenv func(string) string) bool {
+func isSmartTerminal(w io.Writer, GOOS string, lookupEnv func(string) (string, bool)) bool {
 	// Not smart if it's not a tty
 	if !IsTerminal(w) {
 		return false
 	}
 
+	// getenv helper for when we only care about the value
+	getenv := func(e string) string {
+		v, _ := lookupEnv(e)
+		return v
+	}
+
+	// Explicit request for no ANSI escape codes
+	// https://no-color.org/
+	if _, set := lookupEnv("NO_COLOR"); set {
+		return false
+	}
+
 	// Explicitly dumb terminals are not smart
+	// https://en.wikipedia.org/wiki/Computer_terminal#Dumb_terminals
 	if getenv("TERM") == "dumb" {
 		return false
 	}
