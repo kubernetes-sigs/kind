@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/log"
 
+	"sigs.k8s.io/kind/pkg/internal/cli"
 	"sigs.k8s.io/kind/pkg/internal/runtime"
 )
 
@@ -42,6 +43,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "Lists existing kind nodes by their name",
 		Long:  "Lists existing kind nodes by their name",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cli.OverrideDefaultName(cmd.Flags())
 			return runE(logger, streams, flags)
 		},
 	}
