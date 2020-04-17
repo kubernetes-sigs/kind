@@ -5,8 +5,7 @@ steps:
 - name: gcr.io/k8s-testimages/krte:latest-master
   env:
   - PULL_BASE_REF=$_PULL_BASE_REF
-  command:
-  - hack/ci/push-latest-cli.sh
+  entrypoint: hack/ci/push-latest-cli.sh
 substitutions:
   _GIT_TAG: '12345'
   _PULL_BASE_REF: 'oops'
