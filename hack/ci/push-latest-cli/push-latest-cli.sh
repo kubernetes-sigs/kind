@@ -46,7 +46,7 @@ for f in bin/kind-*; do
   # make a tarball with this
   # TODO: eliminate e2e-k8s.sh
   base="$(basename "$f")"
-  platform="${base/kind-//}"
+  platform="${base#kind-}"
   tar \
     -czvf "bin/${platform}.tgz" \
     --transform 's#.*kind.*#kind#' \
