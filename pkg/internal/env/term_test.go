@@ -99,6 +99,15 @@ func TestIsSmartTerminal(t *testing.T) {
 			Writer:  &testFakeTTY{},
 		},
 		{
+			Name: "tty, NO_COLOR=",
+			FakeEnv: map[string]string{
+				"NO_COLOR": "",
+			},
+			GOOS:    "linux",
+			IsSmart: false,
+			Writer:  &testFakeTTY{},
+		},
+		{
 			Name: "tty, Travis CI",
 			FakeEnv: map[string]string{
 				"TRAVIS":                      "true",
@@ -112,8 +121,9 @@ func TestIsSmartTerminal(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc // capture tc
 		t.Run(tc.Name, func(t *testing.T) {
-			res := isSmartTerminal(tc.Writer, tc.GOOS, func(s string) string {
-				return tc.FakeEnv[s]
+			res := isSmartTerminal(tc.Writer, tc.GOOS, func(s string) (string, bool) {
+				k, set := tc.FakeEnv[s]
+				return k, set
 			})
 			assert.BoolEqual(t, tc.IsSmart, res)
 		})
