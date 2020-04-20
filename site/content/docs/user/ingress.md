@@ -87,31 +87,12 @@ Additional information about Contour can be found at: [projectcontour.io](https:
 
 ### Ingress NGINX
 
-Apply the [mandatory ingress-nginx components](https://kubernetes.github.io/ingress-nginx/deploy/#prerequisite-generic-deployment-command)
-
 {{< codeFromInline lang="bash" >}}
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/mandatory.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/static/provider/kind/deploy.yaml
 {{< /codeFromInline >}}
 
-and [expose the nginx service using NodePort](https://kubernetes.github.io/ingress-nginx/deploy/#bare-metal).
-
-{{< codeFromInline lang="bash" >}}
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/provider/baremetal/service-nodeport.yaml
-{{< /codeFromInline >}}
-
-Apply kind specific patches to forward the hostPorts to the
-ingress controller, set taint tolerations and
-schedule it to the custom labelled node.
-
-```json
-{{% readFile "static/examples/ingress/nginx/patch.json" %}}
-```
-
-Apply it by running:
-
-{{< codeFromInline lang="bash" >}}
-kubectl patch deployments -n ingress-nginx nginx-ingress-controller -p '{{< minify file="static/examples/ingress/nginx/patch.json" >}}'
-{{< /codeFromInline >}}
+The manifests contains kind specific patches to forward the hostPorts to the
+ingress controller, set taint tolerations and schedule it to the custom labelled node.
 
 Now the Ingress is all setup to be used.
 Refer [Using Ingress](#using-ingress) for a basic example usage.
