@@ -8,7 +8,7 @@ nodes:
     hostPort: 80
     # optional: set the bind address on the host
     # 0.0.0.0 is the current default
-    listenAddress: "127.0.0.0"
+    listenAddress: "127.0.0.1"
     # optional: set the protocol to one of TCP, UDP, SCTP.
     # TCP is the default
     protocol: TCP
