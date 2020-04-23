@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,5 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package build implements functionality to build the kind images
-package build
+package nodeimage
+
+// DefaultImage is the default name:tag for the built image
+const DefaultImage = "kindest/node:latest"
+
+// DefaultBaseImage is the default base image used
+const DefaultBaseImage = "kindest/base:v20200317-92225082"
+
+// DefaultMode is the default kubernetes build mode for the built image
+// see pkg/build/kube.Bits
+const DefaultMode = "docker"

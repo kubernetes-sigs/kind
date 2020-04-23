@@ -14,22 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package build
+package nodeimage
 
 import (
 	"runtime"
 
-	"sigs.k8s.io/kind/pkg/build/internal/kube"
+	"sigs.k8s.io/kind/pkg/build/nodeimage/internal/kube"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
-// NodeImage builds a node image using the supplied options
-func NodeImage(options ...Option) error {
+// Build builds a node image using the supplied options
+func Build(options ...Option) error {
 	// default options
 	ctx := &buildContext{
 		mode:      DefaultMode,
-		image:     DefaultNodeImage,
+		image:     DefaultImage,
 		baseImage: DefaultBaseImage,
 		logger:    log.NoopLogger{},
 		// TODO: only host arch supported. changing this will be tricky

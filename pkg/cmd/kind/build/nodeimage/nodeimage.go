@@ -19,7 +19,7 @@ package nodeimage
 import (
 	"github.com/spf13/cobra"
 
-	"sigs.k8s.io/kind/pkg/build"
+	"sigs.k8s.io/kind/pkg/build/nodeimage"
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/log"
@@ -52,7 +52,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	)
 	cmd.Flags().StringVar(
 		&flags.Image, "image",
-		build.DefaultNodeImage,
+		nodeimage.DefaultImage,
 		"name:tag of the resulting image to be built",
 	)
 	cmd.Flags().StringVar(
@@ -62,19 +62,19 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	)
 	cmd.Flags().StringVar(
 		&flags.BaseImage, "base-image",
-		build.DefaultBaseImage,
+		nodeimage.DefaultBaseImage,
 		"name:tag of the base image to use for the build",
 	)
 	return cmd
 }
 
 func runE(logger log.Logger, flags *flagpole) error {
-	if err := build.NodeImage(
-		build.WithMode(flags.BuildType),
-		build.WithImage(flags.Image),
-		build.WithBaseImage(flags.BaseImage),
-		build.WithKuberoot(flags.KubeRoot),
-		build.WithLogger(logger),
+	if err := nodeimage.Build(
+		nodeimage.WithMode(flags.BuildType),
+		nodeimage.WithImage(flags.Image),
+		nodeimage.WithBaseImage(flags.BaseImage),
+		nodeimage.WithKuberoot(flags.KubeRoot),
+		nodeimage.WithLogger(logger),
 	); err != nil {
 		return errors.Wrap(err, "error building node image")
 	}

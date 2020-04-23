@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package build
+package nodeimage
 
 /*
 The default CNI manifest and images are our own tiny kindnet

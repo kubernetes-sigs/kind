@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package build
+package nodeimage
 
 import (
 	"sigs.k8s.io/kind/pkg/exec"
@@ -23,6 +23,7 @@ import (
 type imageImporter interface {
 	Prepare() error
 	LoadCommand() exec.Cmd
+	ListImported() ([]string, error)
 	End() error
 }
 
@@ -48,6 +49,10 @@ func (c *containerdImporter) Prepare() error {
 	return nil
 }
 
+func (c *containerdImporter) End() error {
+	return c.containerCmder.Command("pkill", "containerd").Run()
+}
+
 func (c *containerdImporter) LoadCommand() exec.Cmd {
 	return c.containerCmder.Command(
 		// TODO: ideally we do not need this in the future. we have fixed at least one image
@@ -55,6 +60,6 @@ func (c *containerdImporter) LoadCommand() exec.Cmd {
 	)
 }
 
-func (c *containerdImporter) End() error {
-	return c.containerCmder.Command("pkill", "containerd").Run()
+func (c *containerdImporter) ListImported() ([]string, error) {
+	return exec.OutputLines(c.containerCmder.Command("ctr", "--namespace=k8s.io", "images", "list", "-q"))
 }
