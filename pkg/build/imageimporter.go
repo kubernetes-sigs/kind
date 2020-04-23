@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package node
+package build
 
 import (
 	"sigs.k8s.io/kind/pkg/exec"

@@ -14,8 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package node implements functionality to build the kind node image
-package node
+package build
 
 import (
 	"fmt"
@@ -23,136 +22,22 @@ import (
 	"math/rand"
 	"os"
 	"path"
-	"runtime"
 	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/version"
 
-	"sigs.k8s.io/kind/pkg/build/node/internal/container/docker"
-	"sigs.k8s.io/kind/pkg/build/node/internal/kube"
+	"sigs.k8s.io/kind/pkg/build/internal/container/docker"
+	"sigs.k8s.io/kind/pkg/build/internal/kube"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
-	"sigs.k8s.io/kind/pkg/log"
 )
 
-// DefaultImage is the default name:tag for the built image
-const DefaultImage = "kindest/node:latest"
-
-// DefaultBaseImage is the default base image used
-const DefaultBaseImage = "kindest/base:v20200317-92225082"
-
-// DefaultMode is the default kubernetes build mode for the built image
-// see pkg/build/kube.Bits
-const DefaultMode = "docker"
-
-// Option is BuildContext configuration option supplied to NewBuildContext
-type Option func(*BuildContext)
-
-// WithImage configures a NewBuildContext to tag the built image with `image`
-func WithImage(image string) Option {
-	return func(b *BuildContext) {
-		b.image = image
-	}
-}
-
-// WithBaseImage configures a NewBuildContext to use `image` as the base image
-func WithBaseImage(image string) Option {
-	return func(b *BuildContext) {
-		b.baseImage = image
-	}
-}
-
-// WithMode sets the kubernetes build mode for the build context
-func WithMode(mode string) Option {
-	return func(b *BuildContext) {
-		b.mode = mode
-	}
-}
-
-// WithKuberoot sets the path to the Kubernetes source directory (if empty, the path will be autodetected)
-func WithKuberoot(root string) Option {
-	return func(b *BuildContext) {
-		b.kubeRoot = root
-	}
-}
-
-// WithLogger sets the logger
-func WithLogger(logger log.Logger) Option {
-	return func(b *BuildContext) {
-		b.logger = logger
-	}
-}
-
-// BuildContext is used to build the kind node image, and contains
-// build configuration
-type BuildContext struct {
-	// option fields
-	mode      string
-	image     string
-	baseImage string
-	logger    log.Logger
-	// non-option fields
-	arch     string // TODO(bentheelder): this should be an option
-	kubeRoot string
-	bits     kube.Bits
-}
-
-// NewBuildContext creates a new BuildContext with default configuration,
-// overridden by the options supplied in the order that they are supplied
-func NewBuildContext(options ...Option) (ctx *BuildContext, err error) {
-	// default options
-	ctx = &BuildContext{
-		mode:      DefaultMode,
-		image:     DefaultImage,
-		baseImage: DefaultBaseImage,
-		logger:    log.NoopLogger{},
-		// TODO: only host arch supported. changing this will be tricky
-		arch: runtime.GOARCH,
-	}
-	if !supportedArch(ctx.arch) {
-		return nil, errors.Errorf("unsupported architecture %q", ctx.arch)
-	}
-	// apply user options
-	for _, option := range options {
-		option(ctx)
-	}
-	if ctx.kubeRoot == "" {
-		// lookup kuberoot unless mode == "apt",
-		// apt should not fail on finding kube root as it does not use it
-		kubeRoot := ""
-		if ctx.mode != "apt" {
-			kubeRoot, err = kube.FindSource()
-			if err != nil {
-				return nil, errors.Wrap(err, "error finding kuberoot")
-			}
-		}
-		ctx.kubeRoot = kubeRoot
-	}
-	// initialize bits
-	bits, err := kube.NewNamedBits(ctx.logger, ctx.mode, ctx.kubeRoot, ctx.arch)
-	if err != nil {
-		return nil, err
-	}
-	ctx.bits = bits
-	return ctx, nil
-}
-
-func supportedArch(arch string) bool {
-	// currently we nominally support building node images for these
-	return map[string]bool{
-		"amd64":   true,
-		"arm":     true,
-		"arm64":   true,
-		"ppc64le": true,
-	}[arch]
-}
-
 // Build builds the cluster node image, the sourcedir must be set on
-// the BuildContext
-func (c *BuildContext) Build() (err error) {
+// the buildContext
+func (c *buildContext) Build() (err error) {
 	// ensure kubernetes build is up to date first
 	c.logger.V(0).Info("Starting to build Kubernetes")
 	if err = c.bits.Build(); err != nil {
@@ -179,7 +64,7 @@ func (c *BuildContext) Build() (err error) {
 	return c.buildImage(buildDir)
 }
 
-func (c *BuildContext) populateBits(buildDir string) error {
+func (c *buildContext) populateBits(buildDir string) error {
 	// always create bits dir
 	bitsDir := path.Join(buildDir, "bits")
 	if err := os.Mkdir(bitsDir, 0777); err != nil {
@@ -200,7 +85,7 @@ func (c *BuildContext) populateBits(buildDir string) error {
 }
 
 // returns a set of image tags that will be sideloaded
-func (c *BuildContext) getBuiltImages() (sets.String, error) {
+func (c *buildContext) getBuiltImages() (sets.String, error) {
 	images := sets.NewString()
 	for _, path := range c.bits.ImagePaths() {
 		tags, err := docker.GetArchiveTags(path)
@@ -247,7 +132,7 @@ func (ic *installContext) CombinedOutputLines(command string, args ...string) ([
 	return exec.CombinedOutputLines(cmd)
 }
 
-func (c *BuildContext) buildImage(dir string) error {
+func (c *buildContext) buildImage(dir string) error {
 	// build the image, tagged as tagImageAs, using the our tempdir as the context
 	c.logger.V(0).Info("Starting image build ...")
 	// create build container
@@ -365,7 +250,7 @@ func createFile(containerCmder exec.Cmder, filePath, contents string) error {
 }
 
 // must be run after kubernetes has been installed on the node
-func (c *BuildContext) prePullImages(dir, containerID string) error {
+func (c *buildContext) prePullImages(dir, containerID string) error {
 	// first get the images we actually built
 	builtImages, err := c.getBuiltImages()
 	if err != nil {
@@ -579,7 +464,7 @@ func repositoryCorrectorForVersion(kubeVersion *version.Version, arch string) fu
 	}
 }
 
-func (c *BuildContext) createBuildContainer(buildDir string) (id string, err error) {
+func (c *buildContext) createBuildContainer(buildDir string) (id string, err error) {
 	// attempt to explicitly pull the image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
 	_, _ = docker.PullIfNotPresent(c.logger, c.baseImage, 4)
