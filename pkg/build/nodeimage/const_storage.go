@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package node
+package nodeimage
 
 /*
 The default PV driver manifest and images are provisionally rancher.io/local-path-provisioner
