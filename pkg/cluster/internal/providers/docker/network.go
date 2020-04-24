@@ -50,8 +50,11 @@ func ensureNetwork(name string, ipFamily config.ClusterIPFamily) error {
 	if string(out) == name+"\n" {
 		return nil
 	}
+	// TODO: ipv6 subnet should probably not be fixed
+	// Though maybe just require the user to handle this by creating the network
+	// as they desire before running kind ...
 	if ipFamily == config.IPv6Family {
-		return exec.Command("docker", "network", "create", "-d=bridge", "--ipv6", name).Run()
+		return exec.Command("docker", "network", "create", "-d=bridge", "--ipv6", "--subnet=fc00:db8:2::/64", name).Run()
 	}
 	return exec.Command("docker", "network", "create", "-d=bridge", name).Run()
 }
