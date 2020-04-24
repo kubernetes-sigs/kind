@@ -22,7 +22,7 @@ import (
 
 // TODO: we'll probably allow configuring this
 //
-// however currently picking a single network is equivilant to the previous
+// however currently picking a single network is equivalent to the previous
 // behavior *except* that we moved from the default bridge to a user defined
 // network because the default bridge is actually special versus any other
 // docker network and lacks the emebdded DNS
