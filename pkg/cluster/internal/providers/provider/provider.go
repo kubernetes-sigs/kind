@@ -41,6 +41,8 @@ type Provider interface {
 	DeleteNodes([]nodes.Node) error
 	// GetAPIServerEndpoint returns the host endpoint for the cluster's API server
 	GetAPIServerEndpoint(cluster string) (string, error)
+	// GetAPIServerEndpoint returns the internal network endpoint for the cluster's API server
+	GetAPIServerInternalEndpoint(cluster string) (string, error)
 	// CollectLogs will populate dir with cluster logs and other debug files
 	CollectLogs(dir string, nodes []nodes.Node) error
 }

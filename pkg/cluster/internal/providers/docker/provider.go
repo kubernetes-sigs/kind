@@ -173,6 +173,20 @@ func (p *Provider) GetAPIServerEndpoint(cluster string) (string, error) {
 	return net.JoinHostPort(parts[0], parts[1]), nil
 }
 
+// GetAPIServerInternalEndpoint is part of the providers.Provider interface
+func (p *Provider) GetAPIServerInternalEndpoint(cluster string) (string, error) {
+	// locate the node that hosts this
+	allNodes, err := p.ListNodes(cluster)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to list nodes")
+	}
+	n, err := nodeutils.APIServerEndpointNode(allNodes)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get api server endpoint")
+	}
+	return net.JoinHostPort(n.String(), fmt.Sprintf("%d", common.APIServerInternalPort)), nil
+}
+
 // node returns a new node handle for this provider
 func (p *Provider) node(name string) nodes.Node {
 	return &node{

@@ -195,6 +195,26 @@ func (p *Provider) GetAPIServerEndpoint(cluster string) (string, error) {
 	return "", errors.Errorf("unable to find apiserver endpoint information")
 }
 
+// GetAPIServerInternalEndpoint is part of the providers.Provider interface
+func (p *Provider) GetAPIServerInternalEndpoint(cluster string) (string, error) {
+	// locate the node that hosts this
+	allNodes, err := p.ListNodes(cluster)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to list nodes")
+	}
+	n, err := nodeutils.APIServerEndpointNode(allNodes)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get apiserver endpoint")
+	}
+	// TODO: check cluster IP family and return the correct IP
+	// This means IPv6 singlestack is broken on podman
+	ipv4, _, err := n.IP()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get apiserver IP")
+	}
+	return ipv4, nil
+}
+
 // node returns a new node handle for this provider
 func (p *Provider) node(name string) nodes.Node {
 	return &node{

@@ -19,8 +19,6 @@ package config
 
 import (
 	"bytes"
-	"fmt"
-	"net"
 	"strings"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
@@ -53,26 +51,10 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
-	// get the control plane endpoint, in case the cluster has an external load balancer in
-	// front of the control-plane nodes
-	controlPlaneEndpoint, controlPlaneEndpointIPv6, err := nodeutils.GetControlPlaneEndpoint(allNodes)
-	if err != nil {
-		// TODO(bentheelder): logging here
-		return err
-	}
-
-	// configure the right protocol addresses
-	if ctx.Config.Networking.IPFamily == "ipv6" {
-		controlPlaneEndpoint = controlPlaneEndpointIPv6
-	}
-
-	// TODO: clean this up and make it optional
-
-	endpointNode, err := nodeutils.APIServerEndpointNode(allNodes)
+	controlPlaneEndpoint, err := ctx.ClusterContext.GetAPIServerInternalEndpoint()
 	if err != nil {
 		return err
 	}
-	controlPlaneEndpoint = net.JoinHostPort(endpointNode.String(), fmt.Sprintf("%d", common.APIServerInternalPort))
 
 	// create kubeadm init config
 	fns := []func() error{}
