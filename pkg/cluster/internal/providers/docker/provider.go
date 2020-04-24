@@ -58,6 +58,10 @@ func (p *Provider) Provision(status *cli.Status, cluster string, cfg *config.Clu
 		return err
 	}
 
+	if err := ensureNetwork(fixedNetworkName); err != nil {
+		return errors.Wrap(err, "failed to ensure docker network")
+	}
+
 	// actually provision the cluster
 	icons := strings.Repeat("📦 ", len(cfg.Nodes))
 	status.Start(fmt.Sprintf("Preparing nodes %s", icons))
