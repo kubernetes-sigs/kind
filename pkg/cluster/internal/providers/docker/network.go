@@ -17,6 +17,8 @@ limitations under the License.
 package docker
 
 import (
+	"regexp"
+
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
@@ -34,7 +36,7 @@ const fixedNetworkName = "kind"
 func ensureNetwork(name string) error {
 	out, err := exec.Output(exec.Command(
 		"docker", "network", "ls",
-		"--filter=name=^"+name,
+		"--filter=name=^"+regexp.QuoteMeta(name)+"$",
 		"--format={{.Name}}",
 	))
 	if err != nil {
