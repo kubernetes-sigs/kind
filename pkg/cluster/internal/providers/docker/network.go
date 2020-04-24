@@ -20,6 +20,8 @@ import (
 	"regexp"
 
 	"sigs.k8s.io/kind/pkg/exec"
+
+	"sigs.k8s.io/kind/pkg/internal/apis/config"
 )
 
 // TODO: we'll probably allow configuring this
@@ -33,7 +35,9 @@ import (
 const fixedNetworkName = "kind"
 
 // ensureNetwork checks if docker network by name exists, if not it creates it
-func ensureNetwork(name string) error {
+func ensureNetwork(name string, ipFamily config.ClusterIPFamily) error {
+	// TODO: the network might already exist and not have ipv6 ... :|
+	// discussion: https://github.com/kubernetes-sigs/kind/pull/1508#discussion_r414594198
 	out, err := exec.Output(exec.Command(
 		"docker", "network", "ls",
 		"--filter=name=^"+regexp.QuoteMeta(name)+"$",
@@ -45,6 +49,9 @@ func ensureNetwork(name string) error {
 	// network already exists
 	if string(out) == name+"\n" {
 		return nil
+	}
+	if ipFamily == config.IPv6Family {
+		return exec.Command("docker", "network", "create", "-d=bridge", "--ipv6", name).Run()
 	}
 	return exec.Command("docker", "network", "create", "-d=bridge", name).Run()
 }
