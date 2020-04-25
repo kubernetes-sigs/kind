@@ -184,6 +184,7 @@ func (p *Provider) GetAPIServerInternalEndpoint(cluster string) (string, error) 
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get api server endpoint")
 	}
+	// NOTE: we're using the nodes's hostnames which are their names
 	return net.JoinHostPort(n.String(), fmt.Sprintf("%d", common.APIServerInternalPort)), nil
 }
 
