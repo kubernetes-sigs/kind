@@ -180,6 +180,10 @@ enable_network_magic(){
   cp /etc/resolv.conf /etc/resolv.conf.original
   sed -e "s/${docker_embedded_dns_ip}/${docker_host_ip}/g" /etc/resolv.conf.original >/etc/resolv.conf
 
+  # use dns to resolve hostnames with more priority than files
+  cp /etc/nsswitch.conf /etc/nsswitch.conf.original
+  sed -e "s/^hosts:.*/hosts:          dns files/" /etc/nsswitch.conf.original >/etc/nsswitch.conf
+
   # fixup IPs in manifests ...
   # TODO: ensure this supports rebooting the host w/ IPv6 clusters
   curr_ip=$(hostname --ip-address)
