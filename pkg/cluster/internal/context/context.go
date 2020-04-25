@@ -74,6 +74,11 @@ func (c *Context) GetAPIServerEndpoint() (string, error) {
 	return c.provider.GetAPIServerEndpoint(c.Name())
 }
 
+// GetAPIServerInternalEndpoint returns the cluster's internal API Server endpoint
+func (c *Context) GetAPIServerInternalEndpoint() (string, error) {
+	return c.provider.GetAPIServerInternalEndpoint(c.Name())
+}
+
 // ListNodes returns the list of container IDs for the "nodes" in the cluster
 func (c *Context) ListNodes() ([]nodes.Node, error) {
 	return c.provider.ListNodes(c.name)

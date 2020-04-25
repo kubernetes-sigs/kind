@@ -144,6 +144,33 @@ func commonArgs(cluster string, cfg *config.Cluster) ([]string, error) {
 		"--tty",    // allocate a tty for entrypoint logs
 		// label the node with the cluster ID
 		"--label", fmt.Sprintf("%s=%s", clusterLabelKey, cluster),
+		// user a user defined docker network so we get embedded DNS
+		"--net", fixedNetworkName,
+		// Docker supports the following restart modes:
+		// - no
+		// - on-failure[:max-retries]
+		// - unless-stopped
+		// - always
+		// https://docs.docker.com/engine/reference/commandline/run/#restart-policies---restart
+		//
+		// What we desire is:
+		// - restart on host / dockerd reboot
+		// - don't restart for any other reason
+		//
+		// This means:
+		// - no is out of the question ... it never restarts
+		// - always is a poor choice, we'll keep trying to restart nodes that were
+		// never going to work
+		// - unless-stopped will also retry failures indefinitely, similar to always
+		// except that it won't restart when the container is `docker stop`ed
+		// - on-failure is not great, we're only interested in restarting on
+		// reboots, not failures. *however* we can limit the number of retries
+		// *and* it forgets all state on dockerd restart and retries anyhow.
+		// - on-failure:0 is what we want .. restart on failures, except max
+		// retries is 0, so only restart on reboots.
+		// however this _actually_ means the same thing as always
+		// so the closest thing is on-failure:1, which will retry *once*
+		"--restart=on-failure:1",
 	}
 
 	// enable IPv6 if necessary

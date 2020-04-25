@@ -86,6 +86,14 @@ func OutputLines(cmd Cmd) (lines []string, err error) {
 	return lines, err
 }
 
+// Output is like os/exec's cmd.Output, but over our Cmd interface
+func Output(cmd Cmd) ([]byte, error) {
+	var buff bytes.Buffer
+	cmd.SetStdout(&buff)
+	err := cmd.Run()
+	return buff.Bytes(), err
+}
+
 // InheritOutput sets cmd's output to write to the current process's stdout and stderr
 func InheritOutput(cmd Cmd) Cmd {
 	cmd.SetStderr(os.Stderr)

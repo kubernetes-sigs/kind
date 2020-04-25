@@ -58,6 +58,10 @@ func (p *Provider) Provision(status *cli.Status, cluster string, cfg *config.Clu
 		return err
 	}
 
+	if err := ensureNetwork(fixedNetworkName, cfg.Networking.IPFamily); err != nil {
+		return errors.Wrap(err, "failed to ensure docker network")
+	}
+
 	// actually provision the cluster
 	icons := strings.Repeat("📦 ", len(cfg.Nodes))
 	status.Start(fmt.Sprintf("Preparing nodes %s", icons))
@@ -167,6 +171,21 @@ func (p *Provider) GetAPIServerEndpoint(cluster string) (string, error) {
 
 	// join host and port
 	return net.JoinHostPort(parts[0], parts[1]), nil
+}
+
+// GetAPIServerInternalEndpoint is part of the providers.Provider interface
+func (p *Provider) GetAPIServerInternalEndpoint(cluster string) (string, error) {
+	// locate the node that hosts this
+	allNodes, err := p.ListNodes(cluster)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to list nodes")
+	}
+	n, err := nodeutils.APIServerEndpointNode(allNodes)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get api server endpoint")
+	}
+	// NOTE: we're using the nodes's hostnames which are their names
+	return net.JoinHostPort(n.String(), fmt.Sprintf("%d", common.APIServerInternalPort)), nil
 }
 
 // node returns a new node handle for this provider

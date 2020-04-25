@@ -51,17 +51,9 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
-	// get the control plane endpoint, in case the cluster has an external load balancer in
-	// front of the control-plane nodes
-	controlPlaneEndpoint, controlPlaneEndpointIPv6, err := nodeutils.GetControlPlaneEndpoint(allNodes)
+	controlPlaneEndpoint, err := ctx.ClusterContext.GetAPIServerInternalEndpoint()
 	if err != nil {
-		// TODO(bentheelder): logging here
 		return err
-	}
-
-	// configure the right protocol addresses
-	if ctx.Config.Networking.IPFamily == "ipv6" {
-		controlPlaneEndpoint = controlPlaneEndpointIPv6
 	}
 
 	// create kubeadm init config

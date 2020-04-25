@@ -19,7 +19,6 @@ package nodeutils
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"path/filepath"
 	"strings"
@@ -27,29 +26,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
-
-	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider/common"
 )
-
-// GetControlPlaneEndpoint returns the control plane endpoints for IPv4 and IPv6
-// in case the cluster has an external load balancer in front of the control-plane nodes,
-// otherwise return the bootstrap node IPs
-func GetControlPlaneEndpoint(allNodes []nodes.Node) (string, string, error) {
-	node, err := APIServerEndpointNode(allNodes)
-	if err != nil {
-		return "", "", err
-	}
-
-	// gets the control plane IP addresses
-	controlPlaneIPv4, controlPlaneIPv6, err := node.IP()
-	if err != nil {
-		return "", "", errors.Wrapf(err, "failed to get IPs for node: %s", node.String())
-	}
-
-	// TODO: place this in a central constant
-	// TODO: should probably use net.JoinHostPort
-	return fmt.Sprintf("%s:%d", controlPlaneIPv4, common.APIServerInternalPort), fmt.Sprintf("[%s]:%d", controlPlaneIPv6, common.APIServerInternalPort), nil
-}
 
 // KubeVersion returns the Kubernetes version installed on the node
 func KubeVersion(n nodes.Node) (version string, err error) {
