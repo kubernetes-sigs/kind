@@ -535,6 +535,15 @@ func Config(data ConfigData) (config string, err error) {
 		data.FeatureGates = make(map[string]bool)
 	}
 
+	if ver.AtLeast(version.MustParseSemantic("v1.18.0")) {
+		// Use IP autodiscovery
+		if data.IPv6 {
+			data.NodeAddress = "::"
+		} else {
+			data.NodeAddress = ""
+		}
+	}
+
 	// assume the latest API version, then fallback if the k8s version is too low
 	templateSource := ConfigTemplateBetaV2
 	if ver.LessThan(version.MustParseSemantic("v1.12.0")) {
