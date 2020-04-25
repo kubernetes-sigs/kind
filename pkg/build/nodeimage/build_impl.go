@@ -281,7 +281,12 @@ func (c *buildContext) prePullImages(dir, containerID string) ([]string, error) 
 	requiredImages = append(requiredImages, defaultCNIImages...)
 
 	// write the default Storage manifest
-	if err := createFile(cmder, defaultStorageManifestLocation, defaultStorageManifest); err != nil {
+	// in < 1.14 we need to use beta labels
+	storageManifest := defaultStorageManifest
+	if ver.LessThan(version.MustParseSemantic("v1.14.0")) {
+		storageManifest = strings.ReplaceAll(storageManifest, "kubernetes.io/os", "beta.kubernetes.io/os")
+	}
+	if err := createFile(cmder, defaultStorageManifestLocation, storageManifest); err != nil {
 		c.logger.Errorf("Image build Failed! Failed write default Storage Manifest: %v", err)
 		return nil, err
 	}
