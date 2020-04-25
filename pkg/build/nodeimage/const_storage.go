@@ -21,7 +21,7 @@ The default PV driver manifest and images are provisionally rancher.io/local-pat
 NOTE: we have customized it in the following ways:
 - storage is under /var instead of /opt
 - debian-base is used as the helper image (k8s already ships this upstream as the base for many images) instead of busybox
-- schedule to "master" kubeadm nodes (control-plane host)
+- schedule to linux nodes
 - install as the default storage class
 */
 
@@ -87,7 +87,7 @@ spec:
         app: local-path-provisioner
     spec:
       nodeSelector:
-        node-role.kubernetes.io/master: ''
+        kubernetes.io/os: linux
       tolerations:
       - key: node-role.kubernetes.io/master
         operator: Equal
