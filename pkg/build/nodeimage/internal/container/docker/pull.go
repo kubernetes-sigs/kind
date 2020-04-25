@@ -55,8 +55,5 @@ func Pull(logger log.Logger, image string, retries int) error {
 			}
 		}
 	}
-	if err != nil {
-		logger.V(1).Infof("Failed to pull image: %q %v", image, err)
-	}
 	return err
 }

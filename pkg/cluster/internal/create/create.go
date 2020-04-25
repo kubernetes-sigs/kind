@@ -100,7 +100,6 @@ func Cluster(logger log.Logger, ctx *context.Context, opts *ClusterOptions) erro
 	// Create node containers implementing defined config Nodes
 	if err := ctx.Provider().Provision(status, ctx.Name(), opts.Config); err != nil {
 		// In case of errors nodes are deleted (except if retain is explicitly set)
-		logger.Errorf("%v", err)
 		if !opts.Retain {
 			_ = delete.Cluster(logger, ctx, opts.KubeconfigPath)
 		}
