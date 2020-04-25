@@ -181,7 +181,7 @@ enable_network_magic(){
   sed -e "s/${docker_embedded_dns_ip}/${docker_host_ip}/g" /etc/resolv.conf.original >/etc/resolv.conf
 
   # fixup IPs in manifests ...
-  # TODO: dual-stack LOL :this-is-fine:
+  # TODO: ensure this supports rebooting the host w/ IPv6 clusters
   curr_ip=$(hostname --ip-address)
   if [ -f /kind/old-ip ]; then
     old_ip=$(cat /kind/old-ip)
