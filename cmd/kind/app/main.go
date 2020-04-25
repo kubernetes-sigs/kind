@@ -79,20 +79,29 @@ func checkQuiet(args []string) bool {
 
 // logError logs the error and the root stacktrace if there is one
 func logError(logger log.Logger, err error) {
-	if cmd.ColorEnabled(logger) {
+	colorEnabled := cmd.ColorEnabled(logger)
+	if colorEnabled {
 		logger.Errorf("\x1b[31mERROR\x1b[0m: %v", err)
 	} else {
 		logger.Errorf("ERROR: %v", err)
 	}
-	// If debugging is enabled (non-zero verbosity), display more info
-	if logger.V(1).Enabled() {
-		// Display Output if the error was running a command ...
-		if err := exec.RunErrorForError(err); err != nil {
-			logger.Errorf("\nOutput:\n%s", err.Output)
+	// Display Output if the error was from running a command ...
+	if err := exec.RunErrorForError(err); err != nil {
+		if colorEnabled {
+			logger.Errorf("\x1b[31mCommand Output\x1b[0m: %s", err.Output)
+		} else {
+			logger.Errorf("\nCommand Output: %s", err.Output)
 		}
+	}
+	// TODO: stacktrace should probably be guarded by a higher level ...?
+	if logger.V(1).Enabled() {
 		// Then display stack trace if any (there should be one...)
 		if trace := errors.StackTrace(err); trace != nil {
-			logger.Errorf("\nStack Trace: %+v", trace)
+			if colorEnabled {
+				logger.Errorf("\x1b[31mStack Trace\x1b[0m: %+v", trace)
+			} else {
+				logger.Errorf("\nStack Trace: %+v", trace)
+			}
 		}
 	}
 }
