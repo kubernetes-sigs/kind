@@ -98,12 +98,6 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		cluster.CreateWithDisplayUsage(true),
 		cluster.CreateWithDisplaySalutation(true),
 	); err != nil {
-		if errs := errors.Errors(err); errs != nil {
-			for _, problem := range errs {
-				logger.Errorf("%v", problem)
-			}
-			return errors.New("aborting due to invalid configuration")
-		}
 		return errors.Wrap(err, "failed to create cluster")
 	}
 
