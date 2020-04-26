@@ -56,7 +56,8 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		SilenceErrors: true,
 		Version:       version.Version(),
 	}
-	cmd.SetOutput(streams.ErrOut)
+	cmd.SetOut(streams.Out)
+	cmd.SetErr(streams.ErrOut)
 	cmd.PersistentFlags().StringVar(
 		&flags.LogLevel,
 		"loglevel",
