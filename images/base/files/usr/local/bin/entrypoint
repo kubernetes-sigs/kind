@@ -181,13 +181,28 @@ enable_network_magic(){
   sed -e "s/${docker_embedded_dns_ip}/${docker_host_ip}/g" /etc/resolv.conf.original >/etc/resolv.conf
 
   # fixup IPs in manifests ...
-  # TODO: ensure this supports rebooting the host w/ IPv6 clusters
-  curr_ip=$(hostname --ip-address)
-  if [ -f /kind/old-ip ]; then
-    old_ip=$(cat /kind/old-ip)
-    sed -i "s#${old_ip}#${curr_ip}#" /etc/kubernetes/manifests/*.yaml /var/lib/kubelet/kubeadm-flags.env
+  curr_ipv4="$( (getent ahostsv4 $(hostname) | head -n1 | cut -d' ' -f1) || true)"
+  echo "Current ip $curr_ipv4"
+  if [ -f /kind/old-ipv4 ]; then
+      old_ipv4=$(cat /kind/old-ipv4)
+      # kubernetes manifests are only present on control-plane nodes
+      sed -i "s#${old_ipv4}#${curr_ipv4}#" /etc/kubernetes/manifests/*.yaml || true
+      # this is no longer required with autodiscovery
+      sed -i "s#${old_ipv4}#${curr_ipv4}#" /var/lib/kubelet/kubeadm-flags.env || true
   fi
-  echo -n "${curr_ip}" >/kind/old-ip
+  [[ ! -z "${curr_ipv4}" ]] && echo -n "${curr_ipv4}" >/kind/old-ipv4
+
+  curr_ipv6="$( (getent ahostsv6 $(hostname) | head -n1 | cut -d' ' -f1) || true)"
+  echo "Current ip $curr_ipv6"
+  if [ -f /kind/old-ipv6 ]; then
+      old_ipv6=$(cat /kind/old-ipv6)
+      # kubernetes manifests are only present on control-plane nodes
+      sed -i "s#${old_ipv6}#${curr_ipv6}#" /etc/kubernetes/manifests/*.yaml || true
+      # this is no longer required with autodiscovery
+      sed -i "s#${old_ipv6}#${curr_ipv6}#" /var/lib/kubelet/kubeadm-flags.env || true
+  fi
+  [[ ! -z "${curr_ipv6}" ]] && echo -n "${curr_ipv6}" >/kind/old-ipv6
+
 }
 
 # run pre-init fixups
