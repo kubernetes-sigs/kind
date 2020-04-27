@@ -187,10 +187,10 @@ func commonArgs(cluster string, cfg *config.Cluster) ([]string, error) {
 		args = append(args, "-e", fmt.Sprintf("%s=%s", key, val))
 	}
 
-	// handle hosts that have user namespace remapping enabled
-	if usernsRemap() {
-		args = append(args, "--userns=host")
-	}
+	// Nestybox: with Sysbox, KinD works inside containers using userns-remap.
+	// if usernsRemap() {
+	// 	args = append(args, "--userns=host")
+	// }
 
 	// handle Docker on Btrfs or ZFS
 	// https://github.com/kubernetes-sigs/kind/issues/1416#issuecomment-606514724
@@ -204,29 +204,23 @@ func commonArgs(cluster string, cfg *config.Cluster) ([]string, error) {
 func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, name string, args []string) ([]string, error) {
 	args = append([]string{
 		"run",
+
+		// Nestybox: use Sysbox
+		"--runtime=sysbox-runc",
+
 		"--hostname", name, // make hostname match container name
 		"--name", name, // ... and set the container name
 		// label the node with the role ID
 		"--label", fmt.Sprintf("%s=%s", nodeRoleLabelKey, node.Role),
-		// running containers in a container requires privileged
-		// NOTE: we could try to replicate this with --cap-add, and use less
-		// privileges, but this flag also changes some mounts that are necessary
-		// including some ones docker would otherwise do by default.
-		// for now this is what we want. in the future we may revisit this.
-		"--privileged",
-		"--security-opt", "seccomp=unconfined", // also ignore seccomp
-		"--security-opt", "apparmor=unconfined", // also ignore apparmor
-		// runtime temporary storage
-		"--tmpfs", "/tmp", // various things depend on working /tmp
-		"--tmpfs", "/run", // systemd wants a writable /run
-		// runtime persistent storage
-		// this ensures that E.G. pods, logs etc. are not on the container
-		// filesystem, which is not only better for performance, but allows
-		// running kind in kind for "party tricks"
-		// (please don't depend on doing this though!)
-		"--volume", "/var",
-		// some k8s things want to read /lib/modules
-		"--volume", "/lib/modules:/lib/modules:ro",
+
+		// Nestybox: with Sysbox, the following are not required.
+		//"--privileged",
+		//"--security-opt", "seccomp=unconfined", // also ignore seccomp
+		//"--security-opt", "apparmor=unconfined", // also ignore apparmor
+		//"--tmpfs", "/tmp", // various things depend on working /tmp
+		//"--tmpfs", "/run", // systemd wants a writable /run
+		//"--volume", "/var",
+		//"--volume", "/lib/modules:/lib/modules:ro",
 	},
 		args...,
 	)

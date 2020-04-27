@@ -102,10 +102,9 @@ type nodeCmd struct {
 func (c *nodeCmd) Run() error {
 	args := []string{
 		"exec",
-		// run with privileges so we can remount etc..
-		// this might not make sense in the most general sense, but it is
-		// important to many kind commands
-		"--privileged",
+
+		// Nestybox: --privileged is not required with Sysbox
+		// "--privileged",
 	}
 	if c.stdin != nil {
 		args = append(args,
