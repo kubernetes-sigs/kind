@@ -18,7 +18,9 @@ limitations under the License.
 package logs
 
 import (
+	"errors"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -32,7 +34,8 @@ import (
 )
 
 type flagpole struct {
-	Name string
+	Name      string
+	Directory string
 }
 
 // NewCommand returns a new cobra.Command for getting the cluster logs
@@ -46,10 +49,15 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Long:  "Exports logs to a tempdir or [output-dir] if specified",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cli.OverrideDefaultName(cmd.Flags())
+			// TODO: remove this once we no longer support the arg
+			if !cmd.Flags().Lookup("directory").Value.Set() {
+				flags.Dir = ""
+			}
 			return runE(logger, streams, flags, args)
 		},
 	}
 	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "the cluster context name")
+	cmd.Flags().StringVarP(&flags.Direcory, "directory", "C", "", "change to directory dir before exporting")
 	return cmd
 }
 
@@ -68,16 +76,34 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole, args []stri
 		return fmt.Errorf("unknown cluster %q", flags.Name)
 	}
 
-	// get the optional directory argument, or create a tempdir
+	// location we'll write to based on user input
 	var dir string
-	if len(args) == 0 {
+
+	// handle the directory argument
+	if flags.Directory != "" {
+		// this is the preferred path
+		if err := os.Chdir(flags.Directory); err != nil {
+			return errors.Wrap(err, "failed to change directory")
+		}
+		// this will be the default for dir once the argument is dropped
+		dir = "."
+		if len(args) != 0 {
+			cmd.FancyWarn(logger, "Ignoring args since -C / --directory was set. Please switch to the flag.")
+		}
+	} else if len(args) != 0 {
+		// support old usage if flag unset
+		dir = args[0]
+		cmd.FancyWarn(logger, "Using an argument for the export path is deprecated, please switch to -C / --directory!")
+	} else {
+		// use a tempdir if neither are set to preserve compatibility during
+		// the migration period
+		// TODO: remove this once args are no longer supported
+		cmd.FancyWarn(logger, "Please switch to using -C / --directory, in a future release the default directory will be `.` instead of a tempdir")
 		t, err := fs.TempDir("", "")
 		if err != nil {
 			return err
 		}
 		dir = t
-	} else {
-		dir = args[0]
 	}
 
 	// collect the logs

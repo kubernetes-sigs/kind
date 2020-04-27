@@ -45,3 +45,13 @@ func ColorEnabled(logger log.Logger) bool {
 	v, ok := logger.(maybeColorer)
 	return ok && v.ColorEnabled()
 }
+
+// FancyWarn writes "WARNING: "+msg to logger.Warn, coloring WARNING if
+// ColorEnabled(logger)
+func FancyWarn(logger log.Logger, msg string) {
+	if ColorEnabled(logger) {
+		logger.Warn("\x1b[93mWARNING\x1b[0m: " + msg)
+	} else {
+		logger.Warn("WARNING: " + msg)
+	}
+}

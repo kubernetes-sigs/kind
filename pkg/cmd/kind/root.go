@@ -111,11 +111,7 @@ func runE(logger log.Logger, flags *flagpole, command *cobra.Command) error {
 	maybeSetVerbosity(logger, log.Level(flags.Verbosity))
 	// warn about deprecated flag if used
 	if setLogLevel {
-		if cmd.ColorEnabled(logger) {
-			logger.Warn("\x1b[93mWARNING\x1b[0m: --loglevel is deprecated, please switch to -v and -q!")
-		} else {
-			logger.Warn("WARNING: --loglevel is deprecated, please switch to -v and -q!")
-		}
+		cmd.FancyWarn(logger, "--loglevel is deprecated, please switch to -v and -q!")
 	}
 	return nil
 }
