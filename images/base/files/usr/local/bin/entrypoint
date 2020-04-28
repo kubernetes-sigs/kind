@@ -29,7 +29,7 @@ fix_mount() {
   # busy` on `mount` command below. See more details in
   # https://github.com/moby/moby/issues/9547
   if [[ "$(stat -f -c %T /bin/mount)" == 'aufs' ]]; then
-    echo 'INFO: detected aufs, calling sync'
+    echo 'INFO: detected aufs, calling sync' >&2
     sync
   fi
 
@@ -40,7 +40,7 @@ fix_mount() {
   # and this flag also happens to make /sys rw, amongst other things
   mount -o remount,ro /sys
 
-  echo 'INFO: making mounts shared'
+  echo 'INFO: making mounts shared' >&2
   # for mount propagation
   mount --make-rshared /
 }
@@ -76,7 +76,7 @@ fix_machine_id() {
   # Deletes the machine-id embedded in the node image and generates a new one.
   # This is necessary because both kubelet and other components like weave net
   # use machine-id internally to distinguish nodes.
-  echo 'INFO: clearing and regenerating /etc/machine-id'
+  echo 'INFO: clearing and regenerating /etc/machine-id' >&2
   rm -f /etc/machine-id
   systemd-machine-id-setup
 }
@@ -85,7 +85,7 @@ fix_product_name() {
   # this is a small fix to hide the underlying hardware and fix issue #426
   # https://github.com/kubernetes-sigs/kind/issues/426
   if [[ -f /sys/class/dmi/id/product_name ]]; then
-    echo 'INFO: faking /sys/class/dmi/id/product_name to be "kind"'
+    echo 'INFO: faking /sys/class/dmi/id/product_name to be "kind"' >&2
     echo 'kind' > /kind/product_name
     mount -o ro,bind /kind/product_name /sys/class/dmi/id/product_name
   fi
@@ -101,11 +101,11 @@ fix_product_uuid() {
   # https://github.com/kubernetes-sigs/kind/issues/1027
   [[ ! -f /kind/product_uuid ]] && cat /proc/sys/kernel/random/uuid > /kind/product_uuid
   if [[ -f /sys/class/dmi/id/product_uuid ]]; then
-    echo 'INFO: faking /sys/class/dmi/id/product_uuid to be random'
+    echo 'INFO: faking /sys/class/dmi/id/product_uuid to be random' >&2
     mount -o ro,bind /kind/product_uuid /sys/class/dmi/id/product_uuid
   fi
   if [[ -f /sys/devices/virtual/dmi/id/product_uuid ]]; then
-    echo 'INFO: faking /sys/devices/virtual/dmi/id/product_uuid as well'
+    echo 'INFO: faking /sys/devices/virtual/dmi/id/product_uuid as well' >&2
     mount -o ro,bind /kind/product_uuid /sys/devices/virtual/dmi/id/product_uuid
   fi
 }
@@ -149,7 +149,7 @@ select_iptables() {
     fi
   fi
 
-  echo "INFO: setting iptables to detected mode: ${mode}"
+  echo "INFO: setting iptables to detected mode: ${mode}" >&2
   update-alternatives --set iptables "/usr/sbin/iptables-${mode}" > /dev/null
   update-alternatives --set ip6tables "/usr/sbin/ip6tables-${mode}" > /dev/null
 }
@@ -181,13 +181,43 @@ enable_network_magic(){
   sed -e "s/${docker_embedded_dns_ip}/${docker_host_ip}/g" /etc/resolv.conf.original >/etc/resolv.conf
 
   # fixup IPs in manifests ...
-  # TODO: ensure this supports rebooting the host w/ IPv6 clusters
-  curr_ip=$(hostname --ip-address)
-  if [ -f /kind/old-ip ]; then
-    old_ip=$(cat /kind/old-ip)
-    sed -i "s#${old_ip}#${curr_ip}#" /etc/kubernetes/manifests/*.yaml /var/lib/kubelet/kubeadm-flags.env
+  curr_ipv4="$( (getent ahostsv4 $(hostname) | head -n1 | cut -d' ' -f1) || true)"
+  echo "INFO: Detected IPv4 address: ${curr_ipv4}" >&2
+  if [ -f /kind/old-ipv4 ]; then
+      old_ipv4=$(cat /kind/old-ipv4)
+      echo "INFO: Detected old IPv4 address: ${old_ipv4}" >&2
+      # sanity check that we have a current address
+      if [[ -n $curr_ipv4 ]]; then
+        echo "ERROR: Have an old IPv4 address but no current IPv4 address (!)" >&2
+        exit 1
+      fi
+      # kubernetes manifests are only present on control-plane nodes
+      sed -i "s#${old_ipv4}#${curr_ipv4}#" /etc/kubernetes/manifests/*.yaml || true
+      # this is no longer required with autodiscovery
+      sed -i "s#${old_ipv4}#${curr_ipv4}#" /var/lib/kubelet/kubeadm-flags.env || true
   fi
-  echo -n "${curr_ip}" >/kind/old-ip
+  if [[ -n $curr_ipv4 ]]; then
+    echo -n "${curr_ipv4}" >/kind/old-ipv4
+  fi
+
+  # do IPv6
+  curr_ipv6="$( (getent ahostsv6 $(hostname) | head -n1 | cut -d' ' -f1) || true)"
+  echo "INFO: Detected IPv6 address: ${curr_ipv6}" >&2
+  if [ -f /kind/old-ipv6 ]; then
+      old_ipv6=$(cat /kind/old-ipv6)
+      echo "INFO: Detected old IPv6 address: ${old_ipv6}" >&2
+      # sanity check that we have a current address
+      if [[ -n $curr_ipv6 ]]; then
+        echo "ERROR: Have an old IPv6 address but no current IPv6 address (!)" >&2
+      fi
+      # kubernetes manifests are only present on control-plane nodes
+      sed -i "s#${old_ipv6}#${curr_ipv6}#" /etc/kubernetes/manifests/*.yaml || true
+      # this is no longer required with autodiscovery
+      sed -i "s#${old_ipv6}#${curr_ipv6}#" /var/lib/kubelet/kubeadm-flags.env || true
+  fi
+  if [[ -n $curr_ipv6 ]]; then
+    echo -n "${curr_ipv6}" >/kind/old-ipv6
+  fi
 }
 
 # run pre-init fixups
