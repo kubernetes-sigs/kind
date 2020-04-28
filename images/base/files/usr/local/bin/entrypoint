@@ -184,25 +184,36 @@ enable_network_magic(){
   curr_ipv4="$( (getent ahostsv4 $(hostname) | head -n1 | cut -d' ' -f1) || true)"
   echo "Current ip $curr_ipv4"
   if [ -f /kind/old-ipv4 ]; then
+      if [[ -n $curr_ipv4 ]]; then
+        echo "ERROR: Have an old IPv4 address but no current IPv4 address (!)" >&2
+        exit 1
+      fi
       old_ipv4=$(cat /kind/old-ipv4)
       # kubernetes manifests are only present on control-plane nodes
       sed -i "s#${old_ipv4}#${curr_ipv4}#" /etc/kubernetes/manifests/*.yaml || true
       # this is no longer required with autodiscovery
       sed -i "s#${old_ipv4}#${curr_ipv4}#" /var/lib/kubelet/kubeadm-flags.env || true
   fi
-  [[ ! -z "${curr_ipv4}" ]] && echo -n "${curr_ipv4}" >/kind/old-ipv4
+  if [[ -n $curr_ipv4 ]]; then
+    echo -n "${curr_ipv4}" >/kind/old-ipv4
+  fi
 
+  # do IPv6
   curr_ipv6="$( (getent ahostsv6 $(hostname) | head -n1 | cut -d' ' -f1) || true)"
   echo "Current ip $curr_ipv6"
   if [ -f /kind/old-ipv6 ]; then
+      if [[ -n $curr_ipv6 ]]; then
+        echo "ERROR: Have an old IPv6 address but no current IPv6 address (!)" >&2
+      fi
       old_ipv6=$(cat /kind/old-ipv6)
       # kubernetes manifests are only present on control-plane nodes
       sed -i "s#${old_ipv6}#${curr_ipv6}#" /etc/kubernetes/manifests/*.yaml || true
       # this is no longer required with autodiscovery
       sed -i "s#${old_ipv6}#${curr_ipv6}#" /var/lib/kubelet/kubeadm-flags.env || true
   fi
-  [[ ! -z "${curr_ipv6}" ]] && echo -n "${curr_ipv6}" >/kind/old-ipv6
-
+  if [[ -n $curr_ipv6 ]]; then
+    echo -n "${curr_ipv6}" >/kind/old-ipv6
+  fi
 }
 
 # run pre-init fixups
