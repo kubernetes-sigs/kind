@@ -18,7 +18,6 @@ limitations under the License.
 package cluster
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"time"
@@ -56,7 +55,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 			return runE(logger, streams, flags)
 		},
 	}
-	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "cluster context name")
+	cmd.Flags().StringVar(&flags.Name, "name", "", "cluster name, overrides KIND_CLUSTER_NAME, config (default kind)")
 	cmd.Flags().StringVar(&flags.Config, "config", "", "path to a kind config file")
 	cmd.Flags().StringVar(&flags.ImageName, "image", "", "node docker image to use for booting the cluster")
 	cmd.Flags().BoolVar(&flags.Retain, "retain", false, "retain nodes for debugging when cluster creation fails")
@@ -71,15 +70,6 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		runtime.GetDefault(logger),
 	)
 
-	// Check if the cluster name already exists
-	n, err := provider.ListNodes(flags.Name)
-	if err != nil {
-		return err
-	}
-	if len(n) != 0 {
-		return fmt.Errorf("node(s) already exist for a cluster with the name %q", flags.Name)
-	}
-
 	// handle config flag, we might need to read from stdin
 	withConfig, err := configOption(flags.Config, streams.In)
 	if err != nil {
@@ -87,7 +77,6 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	}
 
 	// create the cluster
-	logger.V(0).Infof("Creating cluster %q ...\n", flags.Name)
 	if err = provider.Create(
 		flags.Name,
 		withConfig,

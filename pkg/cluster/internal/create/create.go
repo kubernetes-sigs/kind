@@ -24,8 +24,8 @@ import (
 
 	"github.com/alessio/shellescape"
 
-	"sigs.k8s.io/kind/pkg/cluster/internal/context"
 	"sigs.k8s.io/kind/pkg/cluster/internal/delete"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/apis/config/encoding"
@@ -57,7 +57,8 @@ var validNameRE = regexp.MustCompile(`^[a-zA-Z0-9_.-]+$`)
 
 // ClusterOptions holds cluster creation options
 type ClusterOptions struct {
-	Config *config.Cluster
+	Config       *config.Cluster
+	NameOverride string // overrides config.Name
 	// NodeImage overrides the nodes' images in Config if non-zero
 	NodeImage      string
 	Retain         bool
@@ -71,22 +72,28 @@ type ClusterOptions struct {
 }
 
 // Cluster creates a cluster
-func Cluster(logger log.Logger, ctx *context.Context, opts *ClusterOptions) error {
+func Cluster(logger log.Logger, p provider.Provider, opts *ClusterOptions) error {
 	// default / process options (namely config)
 	if err := fixupOptions(opts); err != nil {
 		return err
 	}
 
+	// Check if the cluster name already exists
+	if err := alreadyExists(p, opts.Config.Name); err != nil {
+		return err
+	}
+
+	// TODO: move to config validation
 	// validate the name
-	if !validNameRE.MatchString(ctx.Name()) {
+	if !validNameRE.MatchString(opts.Config.Name) {
 		return errors.Errorf(
 			"'%s' is not a valid cluster name, cluster names must match `%s`",
-			ctx.Name(), validNameRE.String(),
+			opts.Config.Name, validNameRE.String(),
 		)
 	}
 	// warn if cluster name might typically be too long
-	if len(ctx.Name()) > clusterNameMax {
-		logger.Warnf("cluster name %q is probably too long, this might not work properly on some systems", ctx.Name())
+	if len(opts.Config.Name) > clusterNameMax {
+		logger.Warnf("cluster name %q is probably too long, this might not work properly on some systems", opts.Config.Name)
 	}
 
 	// then validate
@@ -97,11 +104,14 @@ func Cluster(logger log.Logger, ctx *context.Context, opts *ClusterOptions) erro
 	// setup a status object to show progress to the user
 	status := cli.StatusForLogger(logger)
 
+	// we're going to start creating now, tell the user
+	logger.V(0).Infof("Creating cluster %q ...\n", opts.Config.Name)
+
 	// Create node containers implementing defined config Nodes
-	if err := ctx.Provider().Provision(status, ctx.Name(), opts.Config); err != nil {
+	if err := p.Provision(status, opts.Config); err != nil {
 		// In case of errors nodes are deleted (except if retain is explicitly set)
 		if !opts.Retain {
-			_ = delete.Cluster(logger, ctx, opts.KubeconfigPath)
+			_ = delete.Cluster(logger, p, opts.Config.Name, opts.KubeconfigPath)
 		}
 		return err
 	}
@@ -130,11 +140,11 @@ func Cluster(logger log.Logger, ctx *context.Context, opts *ClusterOptions) erro
 	}
 
 	// run all actions
-	actionsContext := actions.NewActionContext(logger, opts.Config, ctx, status)
+	actionsContext := actions.NewActionContext(logger, status, p, opts.Config)
 	for _, action := range actionsToRun {
 		if err := action.Execute(actionsContext); err != nil {
 			if !opts.Retain {
-				_ = delete.Cluster(logger, ctx, opts.KubeconfigPath)
+				_ = delete.Cluster(logger, p, opts.Config.Name, opts.KubeconfigPath)
 			}
 			return err
 		}
@@ -145,13 +155,13 @@ func Cluster(logger log.Logger, ctx *context.Context, opts *ClusterOptions) erro
 		return nil
 	}
 
-	if err := kubeconfig.Export(ctx, opts.KubeconfigPath); err != nil {
+	if err := kubeconfig.Export(p, opts.Config.Name, opts.KubeconfigPath); err != nil {
 		return err
 	}
 
 	// optionally display usage
 	if opts.DisplayUsage {
-		logUsage(logger, ctx, opts.KubeconfigPath)
+		logUsage(logger, opts.Config.Name, opts.KubeconfigPath)
 	}
 	// optionally give the user a friendly salutation
 	if opts.DisplaySalutation {
@@ -161,9 +171,22 @@ func Cluster(logger log.Logger, ctx *context.Context, opts *ClusterOptions) erro
 	return nil
 }
 
-func logUsage(logger log.Logger, ctx *context.Context, explicitKubeconfigPath string) {
+// alreadyExists returns an error if the cluster name already exists
+// or if we had an error checking
+func alreadyExists(p provider.Provider, name string) error {
+	n, err := p.ListNodes(name)
+	if err != nil {
+		return err
+	}
+	if len(n) != 0 {
+		return errors.Errorf("node(s) already exist for a cluster with the name %q", name)
+	}
+	return nil
+}
+
+func logUsage(logger log.Logger, name, explicitKubeconfigPath string) {
 	// construct a sample command for interacting with the cluster
-	kctx := kubeconfig.ContextForCluster(ctx.Name())
+	kctx := kubeconfig.ContextForCluster(name)
 	sampleCommand := fmt.Sprintf("kubectl cluster-info --context %s", kctx)
 	if explicitKubeconfigPath != "" {
 		// explicit path, include this
@@ -194,6 +217,10 @@ func fixupOptions(opts *ClusterOptions) error {
 			return err
 		}
 		opts.Config = cfg
+	}
+
+	if opts.NameOverride != "" {
+		opts.Config.Name = opts.NameOverride
 	}
 
 	// if NodeImage was set, override the image on all nodes

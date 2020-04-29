@@ -33,10 +33,10 @@ import (
 )
 
 // planCreation creates a slice of funcs that will create the containers
-func planCreation(cluster string, cfg *config.Cluster, networkName string) (createContainerFuncs []func() error, err error) {
+func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs []func() error, err error) {
 	// we need to know all the names for NO_PROXY
 	// compute the names first before any actual node details
-	nodeNamer := common.MakeNodeNamer(cluster)
+	nodeNamer := common.MakeNodeNamer(cfg.Name)
 	names := make([]string, len(cfg.Nodes))
 	for i, node := range cfg.Nodes {
 		name := nodeNamer(string(node.Role)) // name the node
@@ -48,7 +48,7 @@ func planCreation(cluster string, cfg *config.Cluster, networkName string) (crea
 	}
 
 	// these apply to all container creation
-	genericArgs, err := commonArgs(cluster, cfg, networkName, names)
+	genericArgs, err := commonArgs(cfg.Name, cfg, networkName, names)
 	if err != nil {
 		return nil, err
 	}

@@ -52,7 +52,7 @@ type Provider struct {
 }
 
 // Provision is part of the providers.Provider interface
-func (p *Provider) Provision(status *cli.Status, cluster string, cfg *config.Cluster) (err error) {
+func (p *Provider) Provision(status *cli.Status, cfg *config.Cluster) (err error) {
 	// TODO: validate cfg
 	// ensure node images are pulled before actually provisioning
 	if err := ensureNodeImages(p.logger, status, cfg); err != nil {
@@ -76,7 +76,7 @@ func (p *Provider) Provision(status *cli.Status, cluster string, cfg *config.Clu
 	defer func() { status.End(err == nil) }()
 
 	// plan creating the containers
-	createContainerFuncs, err := planCreation(cluster, cfg, networkName)
+	createContainerFuncs, err := planCreation(cfg, networkName)
 	if err != nil {
 		return err
 	}

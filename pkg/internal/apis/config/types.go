@@ -18,6 +18,10 @@ package config
 
 // Cluster contains kind cluster configuration
 type Cluster struct {
+	// The cluster name.
+	// Optional, this will be overridden by --name / KIND_CLUSTER_NAME
+	Name string
+
 	// Nodes contains the list of nodes defined in the `kind` Cluster
 	// If unset this will default to a single control-plane node
 	// Note that if more than one control plane is specified, an external

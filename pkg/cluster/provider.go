@@ -22,9 +22,9 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/log"
 
-	internalcontext "sigs.k8s.io/kind/pkg/cluster/internal/context"
 	internalcreate "sigs.k8s.io/kind/pkg/cluster/internal/create"
 	internaldelete "sigs.k8s.io/kind/pkg/cluster/internal/delete"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeconfig"
@@ -35,6 +35,14 @@ import (
 
 // DefaultName is the default cluster name
 const DefaultName = constants.DefaultClusterName
+
+// defaultName is a helper that given a name defaults it if unset
+func defaultName(name string) string {
+	if name == "" {
+		name = DefaultName
+	}
+	return name
+}
 
 // Provider is used to perform cluster operations
 type Provider struct {
@@ -121,26 +129,24 @@ func ProviderWithPodman() ProviderOption {
 	})
 }
 
-// TODO: remove this, rename internal context to something else
-func (p *Provider) ic(name string) *internalcontext.Context {
-	return internalcontext.NewProviderContext(p.provider, name)
-}
-
 // Create provisions and starts a kubernetes-in-docker cluster
+// TODO: move name to an option to override config
 func (p *Provider) Create(name string, options ...CreateOption) error {
 	// apply options
-	opts := &internalcreate.ClusterOptions{}
+	opts := &internalcreate.ClusterOptions{
+		NameOverride: name,
+	}
 	for _, o := range options {
 		if err := o.apply(opts); err != nil {
 			return err
 		}
 	}
-	return internalcreate.Cluster(p.logger, p.ic(name), opts)
+	return internalcreate.Cluster(p.logger, p.provider, opts)
 }
 
 // Delete tears down a kubernetes-in-docker cluster
 func (p *Provider) Delete(name, explicitKubeconfigPath string) error {
-	return internaldelete.Cluster(p.logger, p.ic(name), explicitKubeconfigPath)
+	return internaldelete.Cluster(p.logger, p.provider, defaultName(name), explicitKubeconfigPath)
 }
 
 // List returns a list of clusters for which nodes exist
@@ -152,7 +158,7 @@ func (p *Provider) List() ([]string, error) {
 // If internal is true, this will contain the internal IP etc.
 // If internal is false, this will contain the host IP etc.
 func (p *Provider) KubeConfig(name string, internal bool) (string, error) {
-	return kubeconfig.Get(p.ic(name), !internal)
+	return kubeconfig.Get(p.provider, defaultName(name), !internal)
 }
 
 // ExportKubeConfig exports the KUBECONFIG for the cluster, merging
@@ -160,21 +166,31 @@ func (p *Provider) KubeConfig(name string, internal bool) (string, error) {
 // https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#config
 // where explicitPath is the --kubeconfig value.
 func (p *Provider) ExportKubeConfig(name string, explicitPath string) error {
-	return kubeconfig.Export(p.ic(name), explicitPath)
+	return kubeconfig.Export(p.provider, defaultName(name), explicitPath)
 }
 
 // ListNodes returns the list of container IDs for the "nodes" in the cluster
 func (p *Provider) ListNodes(name string) ([]nodes.Node, error) {
-	return p.ic(name).ListNodes()
+	return p.provider.ListNodes(defaultName(name))
 }
 
 // ListInternalNodes returns the list of container IDs for the "nodes" in the cluster
 // that are not external
 func (p *Provider) ListInternalNodes(name string) ([]nodes.Node, error) {
-	return p.ic(name).ListInternalNodes()
+	n, err := p.provider.ListNodes(name)
+	if err != nil {
+		return nil, err
+	}
+	return nodeutils.InternalNodes(n)
 }
 
 // CollectLogs will populate dir with cluster logs and other debug files
 func (p *Provider) CollectLogs(name, dir string) error {
-	return p.ic(name).CollectLogs(dir)
+	// TODO: should use ListNodes and Collect should handle nodes differently
+	// based on role ...
+	n, err := p.ListInternalNodes(name)
+	if err != nil {
+		return err
+	}
+	return p.provider.CollectLogs(dir, n)
 }
