@@ -19,7 +19,7 @@
 
 # start from ubuntu 19.10, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ubuntu:19.10
+FROM ubuntu:20.04
 
 # Configure containerd and runc binaries from kind-ci/containerd-nightlies repository
 # The repository contains latest stable releases and nightlies built for multiple architectures
