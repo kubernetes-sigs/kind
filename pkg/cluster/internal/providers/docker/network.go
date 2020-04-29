@@ -17,6 +17,8 @@ limitations under the License.
 package docker
 
 import (
+	"crypto/sha1"
+	"net"
 	"regexp"
 
 	"sigs.k8s.io/kind/pkg/exec"
@@ -48,8 +50,28 @@ func ensureNetwork(name string) error {
 	if string(out) == name+"\n" {
 		return nil
 	}
-	// TODO: ipv6 subnet should probably not be fixed
-	// Though maybe just require the user to handle this by creating the network
-	// as they desire before running kind ...
-	return exec.Command("docker", "network", "create", "-d=bridge", "--ipv6", "--subnet=fc00:db8:2::/64", name).Run()
+
+	// generate unique subnet per network based on the name
+	// obtained from the ULA fc00::/8 range
+	subnet := generateULASubnetFromName(name)
+
+	return exec.Command("docker", "network", "create", "-d=bridge", "--ipv6", "--subnet", subnet, name).Run()
+}
+
+// generateULASubnetFromName generate an IPv6 subnet based on the name passed as parameter
+func generateULASubnetFromName(name string) string {
+	ip := make([]byte, 16)
+	ip[0] = 0xfc
+	ip[1] = 0x00
+	h := sha1.New()
+	h.Write([]byte(name))
+	bs := h.Sum(nil)
+	for i := 2; i < 8; i++ {
+		ip[i] = bs[i]
+	}
+	subnet := &net.IPNet{
+		IP:   net.IP(ip),
+		Mask: net.CIDRMask(64, 128),
+	}
+	return subnet.String()
 }
