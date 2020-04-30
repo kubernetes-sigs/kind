@@ -366,15 +366,33 @@ kubeadmConfigPatches:
 {{< /codeFromInline >}}
 
 #### IPv6 clusters
-You can run IPv6 only clusters using `kind`, if the host that runs the docker containers support IPv6. Nowadays, all Operating Systems use to have IPv6 enabled by deafult, but you can check it in linux with the following command:
+You can run IPv6 single-stack clusters using `kind`, if the host that runs the docker containers support IPv6.
+Most operating systems / distros have IPv6 enabled by defualt, but you can check on Linux with the following command:
 
 ```sh
 sudo sysctl net.ipv6.conf.all.disable_ipv6
+```
+
+You should see:
+
+```sh
 net.ipv6.conf.all.disable_ipv6 = 0
 ```
 
-If you are using docker in Windows or Mac, you don't have to do anything, because the containers run inside a VM that already has IPv6 enabled.
+If you are using Docker on Windows or Mac, you will need to use an IPv4 port
+forward for the API Server from the host because IPv6 port forwards don't work
+on these platforms, you can do this with the following config:
 
+```yaml
+# an ipv6 cluster
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  ipFamily: ipv6
+  apiServerAddress: 127.0.0.1
+```
+
+On Linux all you need is:
 ```yaml
 # an ipv6 cluster
 kind: Cluster
