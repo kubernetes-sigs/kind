@@ -256,9 +256,6 @@ TAG=v0.1.0 make quick
 
 ### Configuring Your kind Cluster
 
-When creating your kind cluster, via `create cluster`, you can use a
-configuration file to run specific commands before or after systemd or kubeadm
-run.
 For a sample kind configuration file see [kind-example-config][kind-example-config].
 To specify a configuration file when creating a cluster, use the `--config`
 flag:
