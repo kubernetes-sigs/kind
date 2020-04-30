@@ -187,7 +187,7 @@ enable_network_magic(){
       old_ipv4=$(cat /kind/old-ipv4)
       echo "INFO: Detected old IPv4 address: ${old_ipv4}" >&2
       # sanity check that we have a current address
-      if [[ -n $curr_ipv4 ]]; then
+      if [[ -z $curr_ipv4 ]]; then
         echo "ERROR: Have an old IPv4 address but no current IPv4 address (!)" >&2
         exit 1
       fi
