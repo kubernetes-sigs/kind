@@ -366,9 +366,33 @@ kubeadmConfigPatches:
 {{< /codeFromInline >}}
 
 #### IPv6 clusters
-You can run ipv6 only clusters using `kind`, but first you need to enable ipv6 in your docker daemon by editing `/etc/docker/daemon.json` [as described here][docker enable ipv6].
-Ensure you `systemctl restart docker` to pick up the changes.
+You can run IPv6 single-stack clusters using `kind`, if the host that runs the docker containers support IPv6.
+Most operating systems / distros have IPv6 enabled by defualt, but you can check on Linux with the following command:
 
+```sh
+sudo sysctl net.ipv6.conf.all.disable_ipv6
+```
+
+You should see:
+
+```sh
+net.ipv6.conf.all.disable_ipv6 = 0
+```
+
+If you are using Docker on Windows or Mac, you will need to use an IPv4 port
+forward for the API Server from the host because IPv6 port forwards don't work
+on these platforms, you can do this with the following config:
+
+```yaml
+# an ipv6 cluster
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  ipFamily: ipv6
+  apiServerAddress: 127.0.0.1
+```
+
+On Linux all you need is:
 ```yaml
 # an ipv6 cluster
 kind: Cluster
@@ -441,5 +465,4 @@ kind, the Kubernetes cluster itself, etc.
 [Kubernetes imagePullPolicy]: https://kubernetes.io/docs/concepts/containers/images/#updating-images
 [Private Registries]: /docs/user/private-registries
 [customize control plane with kubeadm]: https://kubernetes.io/docs/setup/independent/control-plane-flags/
-[docker enable ipv6]: https://docs.docker.com/v17.09/engine/userguide/networking/default_network/ipv6/
 [access multiple clusters]: https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/
