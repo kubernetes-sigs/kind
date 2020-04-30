@@ -27,14 +27,17 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
-// TODO: we'll probably allow configuring this
+// This may be overridden by KIND_EXPERIMENTAL_DOCKER_NETWORK env,
+// experimentally...
 //
-// however currently picking a single network is equivalent to the previous
+// By default currently picking a single network is equivalent to the previous
 // behavior *except* that we moved from the default bridge to a user defined
 // network because the default bridge is actually special versus any other
 // docker network and lacks the emebdded DNS
 //
-// for now this also makes it easier for apps to join the same network
+// For now this also makes it easier for apps to join the same network, and
+// leaves users with complex networking desires to create and manage their own
+// networks.
 const fixedNetworkName = "kind"
 
 // ensureNetwork checks if docker network by name exists, if not it creates it
