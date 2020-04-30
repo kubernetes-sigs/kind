@@ -39,6 +39,7 @@ type flagpole struct {
 	LogLevel  string
 	Verbosity int32
 	Quiet     bool
+	Config    string
 }
 
 // NewCommand returns a new cobra.Command implementing the root command for kind
@@ -77,6 +78,12 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		"q",
 		false,
 		"silence all stderr output",
+	)
+	cmd.PersistentFlags().StringVar(
+		&flags.Config,
+		"config",
+		"",
+		"configuartion file to create cluster",
 	)
 	// add all top level subcommands
 	cmd.AddCommand(build.NewCommand(logger, streams))
