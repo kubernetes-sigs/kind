@@ -58,7 +58,7 @@ func (p *Provider) Provision(status *cli.Status, cluster string, cfg *config.Clu
 		return err
 	}
 
-	if err := ensureNetwork(fixedNetworkName, cfg.Networking.IPFamily); err != nil {
+	if err := ensureNetwork(fixedNetworkName); err != nil {
 		return errors.Wrap(err, "failed to ensure docker network")
 	}
 
