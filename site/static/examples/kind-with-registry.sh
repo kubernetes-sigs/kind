@@ -26,3 +26,8 @@ EOF
 
 # connect the registry to the cluster network
 docker network connect "kind" "${reg_name}"
+
+# tell https://tilt.dev to use the registry
+for node in $(kind get nodes --name "${KIND_CLUSTER_NAME}"); do
+  kubectl annotate node "${node}" "tilt.dev/registry=localhost:${reg_port}";
+done
