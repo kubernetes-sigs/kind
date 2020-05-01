@@ -19,6 +19,7 @@ package docker
 import (
 	"fmt"
 	"net"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -58,7 +59,14 @@ func (p *Provider) Provision(status *cli.Status, cluster string, cfg *config.Clu
 		return err
 	}
 
-	if err := ensureNetwork(fixedNetworkName); err != nil {
+	// ensure the pre-requesite network exists
+	networkName := fixedNetworkName
+	if n := os.Getenv("KIND_EXPERIMENTAL_DOCKER_NETWORK"); n != "" {
+		p.logger.Warn("WARNING: Overriding docker network due to KIND_EXPERIMENTAL_DOCKER_NETWORK")
+		p.logger.Warn("WARNING: Here be dragons! This is not supported currently.")
+		networkName = n
+	}
+	if err := ensureNetwork(networkName); err != nil {
 		return errors.Wrap(err, "failed to ensure docker network")
 	}
 
@@ -68,7 +76,7 @@ func (p *Provider) Provision(status *cli.Status, cluster string, cfg *config.Clu
 	defer func() { status.End(err == nil) }()
 
 	// plan creating the containers
-	createContainerFuncs, err := planCreation(cluster, cfg)
+	createContainerFuncs, err := planCreation(cluster, cfg, networkName)
 	if err != nil {
 		return err
 	}

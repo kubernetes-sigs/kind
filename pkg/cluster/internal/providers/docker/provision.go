@@ -33,10 +33,10 @@ import (
 )
 
 // planCreation creates a slice of funcs that will create the containers
-func planCreation(cluster string, cfg *config.Cluster) (createContainerFuncs []func() error, err error) {
+func planCreation(cluster string, cfg *config.Cluster, networkName string) (createContainerFuncs []func() error, err error) {
 	// these apply to all container creation
 	nodeNamer := common.MakeNodeNamer(cluster)
-	genericArgs, err := commonArgs(cluster, cfg)
+	genericArgs, err := commonArgs(cluster, cfg, networkName)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func clusterHasImplicitLoadBalancer(cfg *config.Cluster) bool {
 }
 
 // commonArgs computes static arguments that apply to all containers
-func commonArgs(cluster string, cfg *config.Cluster) ([]string, error) {
+func commonArgs(cluster string, cfg *config.Cluster, networkName string) ([]string, error) {
 	// standard arguments all nodes containers need, computed once
 	args := []string{
 		"--detach", // run the container detached
@@ -145,7 +145,7 @@ func commonArgs(cluster string, cfg *config.Cluster) ([]string, error) {
 		// label the node with the cluster ID
 		"--label", fmt.Sprintf("%s=%s", clusterLabelKey, cluster),
 		// user a user defined docker network so we get embedded DNS
-		"--net", fixedNetworkName,
+		"--net", networkName,
 		// Docker supports the following restart modes:
 		// - no
 		// - on-failure[:max-retries]
