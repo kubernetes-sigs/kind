@@ -27,7 +27,7 @@ ARG CONTAINERD_VERSION="v1.3.3-14-g449e9269"
 # Configure CNI binaries from upstream
 ARG CNI_VERSION="v0.8.5"
 # Configure crictl binary from upstream
-ARG CRICTL_VERSION="v1.17.0"
+ARG CRICTL_VERSION="v1.18.0"
 
 # copy in static files (configs, scripts)
 COPY files/ /
