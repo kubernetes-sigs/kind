@@ -18,7 +18,7 @@ This guide covers getting started with the `kind` command.
 but you will not be able to perform some of the examples in our docs without it.
 To install `kubectl` see the upstream reference here https://kubernetes.io/docs/tasks/tools/install-kubectl/
 
-You can either install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.7.0` or clone this repo 
+You can either install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.8.0` or clone this repo 
 and run `make build` from the repository.
 
 Please use the latest Go when installing KIND from source, ideally go 1.14 or greater.
@@ -37,7 +37,7 @@ into your `$PATH`.
 On macOS / Linux:
 
 {{< codeFromInline lang="bash" >}}
-curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.7.0/kind-$(uname)-amd64
+curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.8.0/kind-$(uname)-amd64
 chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
 {{< /codeFromInline >}}
@@ -51,7 +51,7 @@ brew install kind
 On Windows:
 
 {{< codeFromInline lang="powershell" >}}
-curl.exe -Lo kind-windows-amd64.exe https://kind.sigs.k8s.io/dl/v0.7.0/kind-windows-amd64
+curl.exe -Lo kind-windows-amd64.exe https://kind.sigs.k8s.io/dl/v0.8.0/kind-windows-amd64
 Move-Item .\kind-windows-amd64.exe c:\some-dir-in-your-PATH\kind.exe
 {{< /codeFromInline >}}
 
