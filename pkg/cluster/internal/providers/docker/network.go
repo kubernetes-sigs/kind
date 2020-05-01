@@ -48,27 +48,54 @@ func ensureNetwork(name string) error {
 	if err != nil {
 		return err
 	}
+	// network already exists, we're good
 	if exists {
 		return nil
 	}
 
-	// generate unique subnet per network based on the name
+	// Generate unique subnet per network based on the name
 	// obtained from the ULA fc00::/8 range
-	// make N attempts with "probing" in case we happen to collide
-	for i := int32(0); i < 3; i++ {
-		subnet := generateULASubnetFromName(name, i)
+	// Make N attempts with "probing" in case we happen to collide
+	subnet := generateULASubnetFromName(name, 0)
+	err = createNetwork(name, subnet)
+	if err == nil {
+		// Success!
+		return nil
+	}
+
+	// On the first try check if ipv6 fails entirely on this machine
+	// https://github.com/kubernetes-sigs/kind/issues/1544
+	// Otherwise if it's not a pool overlap error, fail
+	// If it is, make more attempts below
+	if isIPv6UnavailableError(err) {
+		// only one attempt, IPAM is automatic in ipv4 only
+		return createNetwork(name, "")
+	} else if isPoolOverlapError(err) {
+		// unknown error ...
+		return err
+	}
+
+	// keep trying for ipv6 subnets
+	const maxAttempts = 5
+	for attempt := int32(1); attempt < maxAttempts; attempt++ {
+		subnet := generateULASubnetFromName(name, attempt)
 		err = createNetwork(name, subnet)
 		if err == nil {
+			// success!
 			return nil
 		} else if !isPoolOverlapError(err) {
+			// unknown error ...
 			return err
 		}
 	}
 	return errors.New("exhausted attempts trying to find a non-overlapping subnet")
 }
 
-func createNetwork(name, subnet string) error {
-	return exec.Command("docker", "network", "create", "-d=bridge", "--ipv6", "--subnet", subnet, name).Run()
+func createNetwork(name, ipv6Subnet string) error {
+	if ipv6Subnet == "" {
+		return exec.Command("docker", "network", "create", "-d=bridge", name).Run()
+	}
+	return exec.Command("docker", "network", "create", "-d=bridge", "--ipv6", "--subnet", ipv6Subnet, name).Run()
 }
 
 func checkIfNetworkExists(name string) (bool, error) {
@@ -78,6 +105,11 @@ func checkIfNetworkExists(name string) (bool, error) {
 		"--format={{.Name}}",
 	))
 	return strings.HasPrefix(string(out), name), err
+}
+
+func isIPv6UnavailableError(err error) bool {
+	rerr := exec.RunErrorForError(err)
+	return rerr != nil && strings.HasPrefix(string(rerr.Output), "Error response from daemon: Cannot read IPv6 setup for bridge")
 }
 
 func isPoolOverlapError(err error) bool {
