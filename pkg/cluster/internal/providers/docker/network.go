@@ -70,7 +70,7 @@ func ensureNetwork(name string) error {
 	if isIPv6UnavailableError(err) {
 		// only one attempt, IPAM is automatic in ipv4 only
 		return createNetwork(name, "")
-	} else if isPoolOverlapError(err) {
+	} else if !isPoolOverlapError(err) {
 		// unknown error ...
 		return err
 	}
