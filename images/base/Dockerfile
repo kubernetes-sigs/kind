@@ -43,6 +43,7 @@ COPY files/ /
 # - packages needed for kubernetes components
 # - packages needed by the container runtime
 # - misc packages kind uses itself
+# - packages that provide semi-core kubernetes functionality
 # After installing packages we cleanup by:
 # - removing unwanted systemd services
 # - disabling kmsg in journald (these log entries would be confusing)
@@ -68,6 +69,7 @@ RUN echo "Ensuring scripts are executable ..." \
       conntrack iptables iproute2 ethtool socat util-linux mount ebtables udev kmod \
       libseccomp2 \
       bash ca-certificates curl rsync \
+      nfs-common \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
     && rm -f /lib/systemd/system/multi-user.target.wants/* \
     && rm -f /etc/systemd/system/*.wants/* \
