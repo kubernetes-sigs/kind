@@ -15,7 +15,7 @@
 # kind node base image
 #
 # For systemd + docker configuration used below, see the following references:
-# https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
+# https://systemd.io/CONTAINER_INTERFACE/
 
 # start from ubuntu 19.10, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
