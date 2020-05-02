@@ -115,7 +115,7 @@ RUN echo "Ensuring scripts are executable ..." \
     && sed -i /etc/nsswitch.conf -re 's#^(hosts:\s*).*#\1dns files#'
 
 # tell systemd that it is in docker (it will check for the container env)
-# https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
+# https://systemd.io/CONTAINER_INTERFACE/
 ENV container docker
 # systemd exits on SIGRTMIN+3, not SIGTERM (which re-executes it)
 # https://bugzilla.redhat.com/show_bug.cgi?id=1201657
