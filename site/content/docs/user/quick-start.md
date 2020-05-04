@@ -398,6 +398,25 @@ networking:
   ipFamily: ipv6
 ```
 
+#### Limit node resources
+You can set CPU and memory limits for your cluster nodes in the configuration file.
+
+```yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+# the control plane node
+- role: control-plane
+  constraints:
+    memory: "200m"
+    cpus: "2"
+- role: worker
+  constraints:
+    memory: "100m"
+    cpus: "1"
+```
+
+
 ### Configure kind to use a proxy
 If you are running kind in an environment that requires a proxy, you may need to configure kind to use it.
 
