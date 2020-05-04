@@ -43,6 +43,10 @@ type ConfigData struct {
 	ControlPlane bool
 	// The main IP address of the node
 	NodeAddress string
+	// The amount of CPU reserved for the system components
+	NodeCPU string
+	// The amount of memory reserved for the system components
+	NodeMemory string
 	// The Token for TLS bootstrap
 	Token string
 	// The subnet used for pods
@@ -507,6 +511,11 @@ evictionHard:
   nodefs.available: "0%"
   nodefs.inodesFree: "0%"
   imagefs.available: "0%"
+# reserve system resources in order to limit the node allocatable resources
+# https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/
+systemReserved:
+  cpu: "{{ .NodeCPU }}"
+  memory: "{{ .NodeMemory }}"
 {{if .FeatureGates}}featureGates:
 {{ range $key := .SortedFeatureGateKeys }}
   "{{ $key }}": {{ index $.FeatureGates $key }}

@@ -31,6 +31,8 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider/common"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 // Action implements action for creating the node config files
@@ -201,6 +203,26 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.N
 		data.NodeAddress = nodeAddressIPv6
 	}
 
+	// configure the resources constraints per node by reserving system resources on the kubelet
+	// node allocatable = total - node-system-reserverd
+	// https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/
+	if !configNode.Constraints.Cpus.IsZero() {
+		nodeCPUs := resource.MustParse(string(common.GetSystemCPUs()))
+		nodeCPUs.Sub(configNode.Constraints.Cpus)
+		if nodeCPUs.Sign() == 1 {
+			data.NodeCPU = nodeCPUs.String()
+		}
+	}
+
+	if !configNode.Constraints.Memory.IsZero() {
+		nodeMemory := resource.MustParse(string(common.GetSystemMemTotal()))
+		nodeMemory.Sub(configNode.Constraints.Memory)
+		if nodeMemory.Sign() == 1 {
+			data.NodeMemory = nodeMemory.String()
+		}
+
+	}
+
 	// generate the config contents
 	cf, err := kubeadm.Config(data)
 	if err != nil {
@@ -212,12 +234,6 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.N
 	patchedConfig, err := patch.KubeYAML(cf, clusterPatches, clusterJSONPatches)
 	if err != nil {
 		return "", err
-	}
-
-	// check if the node has resources constraints
-	// and patch per node kubelet if necessary
-	if configNode.Constraints != config.NodeResources{} {
-
 	}
 
 	// if needed, apply current node's patches
