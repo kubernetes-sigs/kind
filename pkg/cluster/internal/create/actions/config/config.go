@@ -214,6 +214,12 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.N
 		return "", err
 	}
 
+	// check if the node has resources constraints
+	// and patch per node kubelet if necessary
+	if configNode.Constraints != config.NodeResources{} {
+
+	}
+
 	// if needed, apply current node's patches
 	if len(configNode.KubeadmConfigPatches) > 0 || len(configNode.KubeadmConfigPatchesJSON6902) > 0 {
 		patchedConfig, err = patch.KubeYAML(patchedConfig, configNode.KubeadmConfigPatches, configNode.KubeadmConfigPatchesJSON6902)

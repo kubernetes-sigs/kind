@@ -231,13 +231,14 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		args...,
 	)
 
-	// convert mounts and port mappings to container run args
+	// convert mounts, port mappings and resource constraints to container run args
 	args = append(args, generateMountBindings(node.ExtraMounts...)...)
 	mappingArgs, err := generatePortMappings(clusterIPFamily, node.ExtraPortMappings...)
 	if err != nil {
 		return nil, err
 	}
 	args = append(args, mappingArgs...)
+	args = append(args, generateNodeConstraints(node.Constraints)...)
 
 	// finally, specify the image to run
 	return append(args, node.Image), nil
@@ -375,4 +376,22 @@ func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings .
 		args = append(args, fmt.Sprintf("--publish=%s:%d/%s", hostPortBinding, pm.ContainerPort, protocol))
 	}
 	return args, nil
+}
+
+// generateNodeConstraints converts the nodesConstraints to a list of args for docker
+// https://docs.docker.com/config/containers/resource_constraints/
+func generateNodeConstraints(resources config.NodeResources) []string {
+	var args []string
+	if resources.Cpus.Sign() > 0 {
+		args = append(args, fmt.Sprintf("--cpus=%s", resources.Cpus.String()))
+	}
+
+	if resources.Memory.Sign() > 0 {
+		args = append(args, fmt.Sprintf("--memory=%s", resources.Memory.String()))
+		// prevent a container from using swap because we want to emulate a real node
+		// https://docs.docker.com/config/containers/resource_constraints/#prevent-a-container-from-using-swap
+		args = append(args, fmt.Sprintf("--memory-swap=%s", resources.Memory.String()))
+	}
+
+	return args
 }
