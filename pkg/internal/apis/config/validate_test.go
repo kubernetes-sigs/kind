@@ -19,6 +19,8 @@ package config
 import (
 	"testing"
 
+	"k8s.io/apimachinery/pkg/api/resource"
+
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
@@ -103,6 +105,21 @@ func TestClusterValidate(t *testing.T) {
 				n.Role = "bogus"
 				c.Nodes = []Node{n, n2}
 				SetDefaultsCluster(&c)
+				return c
+			}(),
+			ExpectErrors: 1,
+		},
+		{
+			Name: "wrong resources constraints node",
+			Cluster: func() Cluster {
+				c := Cluster{}
+				SetDefaultsCluster(&c)
+				n, n2 := Node{}, Node{}
+				SetDefaultsNode(&n)
+				SetDefaultsNode(&n2)
+				n.Constraints.Cpus = resource.MustParse("-12")
+				n.Constraints.Memory = resource.MustParse("1m")
+				c.Nodes = []Node{n, n2}
 				return c
 			}(),
 			ExpectErrors: 1,
@@ -198,6 +215,24 @@ func TestNodeValidate(t *testing.T) {
 						HostPort:      8080,
 					},
 				}
+				return cfg
+			}(),
+			ExpectErrors: 1,
+		},
+		{
+			TestName: "Negative CPU constraint",
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg.Constraints.Cpus = resource.MustParse("-12")
+				return cfg
+			}(),
+			ExpectErrors: 1,
+		},
+		{
+			TestName: "Minimum value for memory constraint",
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg.Constraints.Memory = resource.MustParse("2m")
 				return cfg
 			}(),
 			ExpectErrors: 1,

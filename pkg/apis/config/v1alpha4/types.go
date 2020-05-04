@@ -16,6 +16,10 @@ limitations under the License.
 
 package v1alpha4
 
+import (
+	"k8s.io/apimachinery/pkg/api/resource"
+)
+
 // Cluster contains kind cluster configuration
 type Cluster struct {
 	TypeMeta `yaml:",inline"`
@@ -105,6 +109,9 @@ type Node struct {
 	// ExtraPortMappings describes additional port mappings for the node container
 	// binded to a host Port
 	ExtraPortMappings []PortMapping `yaml:"extraPortMappings,omitempty"`
+
+	// Constraints describes the node resources constraints
+	Constraints NodeResources `json:"constraints,omitempty"`
 
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// merge patches. The `kind` field must match the target object, and
@@ -283,3 +290,11 @@ const (
 	// PortMappingProtocolSCTP specifies SCTP protocol
 	PortMappingProtocolSCTP PortMappingProtocol = "SCTP"
 )
+
+// NodeResources represents the node resources (CPU/Memory)
+type NodeResources struct {
+	// The maximum amount of memory the node can use.
+	Memory resource.Quantity `json:"memory,omitempty"`
+	// Specify how much of the available CPU resources a node can use
+	Cpus resource.Quantity `json:"cpus,omitempty"`
+}

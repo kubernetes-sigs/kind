@@ -19,6 +19,8 @@ package config
 import (
 	"net"
 
+	"k8s.io/apimachinery/pkg/api/resource"
+
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
@@ -99,6 +101,17 @@ func (n *Node) Validate() error {
 		if err := validatePort(mapping.ContainerPort); err != nil {
 			errs = append(errs, errors.Wrapf(err, "invalid containerPort"))
 		}
+	}
+
+	// validate node resource constraints
+	if n.Constraints.Cpus.Sign() < 0 {
+		errs = append(errs, errors.New("invalid number of Cpus"))
+	}
+
+	// minimum memory size is 4m
+	minMemory := resource.MustParse("4m")
+	if n.Constraints.Memory.Sign() != 0 && n.Constraints.Memory.Cmp(minMemory) < 0 {
+		errs = append(errs, errors.New("invalid Memory Size (minimum 4m)"))
 	}
 
 	if len(errs) > 0 {

@@ -16,6 +16,10 @@ limitations under the License.
 
 package config
 
+import (
+	"k8s.io/apimachinery/pkg/api/resource"
+)
+
 // Cluster contains kind cluster configuration
 type Cluster struct {
 	// Nodes contains the list of nodes defined in the `kind` Cluster
@@ -89,6 +93,9 @@ type Node struct {
 	// KubeadmConfigPatchesJSON6902 are applied to the generated kubeadm config
 	// as patchesJson6902 to `kustomize build`
 	KubeadmConfigPatchesJSON6902 []PatchJSON6902
+
+	// Constraints describes the node resources constraints
+	Constraints NodeResources
 }
 
 // NodeRole defines possible role for nodes in a Kubernetes cluster managed by `kind`
@@ -234,3 +241,11 @@ const (
 	// PortMappingProtocolSCTP specifies SCTP protocol
 	PortMappingProtocolSCTP PortMappingProtocol = "SCTP"
 )
+
+// NodeResources represents the node resources (CPU/Memory)
+type NodeResources struct {
+	// The maximum amount of memory the node can use.
+	Memory resource.Quantity
+	// Specify how much of the available CPU resources a node can use.
+	Cpus resource.Quantity
+}
