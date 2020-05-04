@@ -238,7 +238,9 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		return nil, err
 	}
 	args = append(args, mappingArgs...)
-	args = append(args, generateNodeConstraints(node.Constraints)...)
+	if node.Constraints != nil {
+		args = append(args, generateNodeConstraints(node.Constraints)...)
+	}
 
 	// finally, specify the image to run
 	return append(args, node.Image), nil
@@ -380,7 +382,7 @@ func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings .
 
 // generateNodeConstraints converts the nodesConstraints to a list of args for docker
 // https://docs.docker.com/config/containers/resource_constraints/
-func generateNodeConstraints(resources config.NodeResources) []string {
+func generateNodeConstraints(resources *config.NodeResources) []string {
 	var args []string
 	if resources.Cpus.Sign() > 0 {
 		args = append(args, fmt.Sprintf("--cpus=%s", resources.Cpus.String()))

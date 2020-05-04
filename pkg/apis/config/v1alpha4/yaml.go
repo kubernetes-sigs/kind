@@ -19,6 +19,7 @@ package v1alpha4
 import (
 	"strings"
 
+	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
@@ -70,5 +71,25 @@ func (p *PortMapping) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 	// and copy over the fields
 	*p = PortMapping(a)
+	return nil
+}
+
+// UnmarshalYAML implements custom decoding YAML
+// https://godoc.org/gopkg.in/yaml.v3
+func (n *NodeResources) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// first unmarshal in the alias type (to avoid a recursion loop on unmarshal)
+	type NodeResourcesAlias struct {
+		Cpus   string
+		Memory string
+	}
+	var a NodeResourcesAlias
+	if err := unmarshal(&a); err != nil {
+		return err
+	}
+	// and copy over the fields
+	*n = NodeResources{
+		Cpus:   resource.MustParse(a.Cpus),
+		Memory: resource.MustParse(a.Memory),
+	}
 	return nil
 }

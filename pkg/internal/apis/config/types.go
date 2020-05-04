@@ -84,6 +84,9 @@ type Node struct {
 	// binded to a host Port
 	ExtraPortMappings []PortMapping
 
+	// Constraints describes the node resources constraints
+	Constraints *NodeResources
+
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// strategic merge patches to `kustomize build` internally
 	// https://github.com/kubernetes/community/blob/a9cf5c8f3380bb52ebe57b1e2dbdec136d8dd484/contributors/devel/sig-api-machinery/strategic-merge-patch.md
@@ -93,9 +96,6 @@ type Node struct {
 	// KubeadmConfigPatchesJSON6902 are applied to the generated kubeadm config
 	// as patchesJson6902 to `kustomize build`
 	KubeadmConfigPatchesJSON6902 []PatchJSON6902
-
-	// Constraints describes the node resources constraints
-	Constraints NodeResources
 }
 
 // NodeRole defines possible role for nodes in a Kubernetes cluster managed by `kind`

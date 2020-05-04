@@ -103,15 +103,17 @@ func (n *Node) Validate() error {
 		}
 	}
 
-	// validate node resource constraints
-	if n.Constraints.Cpus.Sign() != 1 {
-		errs = append(errs, errors.New("invalid number of Cpus"))
-	}
+	if n.Constraints != nil {
+		// validate node resource constraints
+		if n.Constraints.Cpus.Sign() != 1 {
+			errs = append(errs, errors.Errorf("invalid number of Cpus: %s", n.Constraints.Cpus.String()))
+		}
 
-	// minimum memory size is 4m
-	minMemory := resource.MustParse("4m")
-	if n.Constraints.Memory.Sign() != 1 && n.Constraints.Memory.Cmp(minMemory) < 0 {
-		errs = append(errs, errors.New("invalid Memory Size (minimum 4m)"))
+		// minimum memory size is 4m
+		minMemory := resource.MustParse("4m")
+		if n.Constraints.Memory.Sign() != 1 && n.Constraints.Memory.Cmp(minMemory) < 0 {
+			errs = append(errs, errors.Errorf("invalid Memory Size (minimum 4m): %v", n.Constraints.Memory.String()))
+		}
 	}
 
 	if len(errs) > 0 {

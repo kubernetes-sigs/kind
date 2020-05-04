@@ -206,21 +206,23 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.N
 	// configure the resources constraints per node by reserving system resources on the kubelet
 	// node allocatable = total - node-system-reserverd
 	// https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/
-	if !configNode.Constraints.Cpus.IsZero() {
-		nodeCPUs := resource.MustParse(string(common.GetSystemCPUs()))
-		nodeCPUs.Sub(configNode.Constraints.Cpus)
-		if nodeCPUs.Sign() == 1 {
-			data.NodeCPU = nodeCPUs.String()
-		}
-	}
 
-	if !configNode.Constraints.Memory.IsZero() {
-		nodeMemory := resource.MustParse(string(common.GetSystemMemTotal()))
-		nodeMemory.Sub(configNode.Constraints.Memory)
-		if nodeMemory.Sign() == 1 {
-			data.NodeMemory = nodeMemory.String()
+	if configNode.Constraints != nil {
+		if !configNode.Constraints.Cpus.IsZero() {
+			nodeCPUs := resource.MustParse(string(common.GetSystemCPUs()))
+			nodeCPUs.Sub(configNode.Constraints.Cpus)
+			if nodeCPUs.Sign() == 1 {
+				data.NodeCPU = nodeCPUs.String()
+			}
 		}
 
+		if !configNode.Constraints.Memory.IsZero() {
+			nodeMemory := resource.MustParse(string(common.GetSystemMemTotal()))
+			nodeMemory.Sub(configNode.Constraints.Memory)
+			if nodeMemory.Sign() == 1 {
+				data.NodeMemory = nodeMemory.String()
+			}
+		}
 	}
 
 	// generate the config contents

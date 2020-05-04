@@ -111,7 +111,7 @@ type Node struct {
 	ExtraPortMappings []PortMapping `yaml:"extraPortMappings,omitempty"`
 
 	// Constraints describes the node resources constraints
-	Constraints NodeResources `json:"constraints,omitempty"`
+	Constraints *NodeResources `yaml:"constraints,omitempty"`
 
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// merge patches. The `kind` field must match the target object, and

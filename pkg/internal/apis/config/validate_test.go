@@ -117,8 +117,11 @@ func TestClusterValidate(t *testing.T) {
 				n, n2 := Node{}, Node{}
 				SetDefaultsNode(&n)
 				SetDefaultsNode(&n2)
-				n.Constraints.Cpus = resource.MustParse("-12")
-				n.Constraints.Memory = resource.MustParse("1m")
+				r := NodeResources{
+					Cpus:   resource.MustParse("-12"),
+					Memory: resource.MustParse("1m"),
+				}
+				n.Constraints = &r
 				c.Nodes = []Node{n, n2}
 				return c
 			}(),
