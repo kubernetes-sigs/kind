@@ -22,6 +22,7 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/internal/apis/config"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer"
@@ -56,12 +57,6 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return nil
 	}
 
-	// obtain IP family
-	ipv6 := false
-	if ctx.Config.Networking.IPFamily == "ipv6" {
-		ipv6 = true
-	}
-
 	// otherwise notify the user
 	ctx.Status.Start("Configuring the external load balancer ⚖️")
 	defer ctx.Status.End(false)
@@ -76,23 +71,14 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 	for _, n := range controlPlaneNodes {
-		controlPlaneIPv4, controlPlaneIPv6, err := n.IP()
-		if err != nil {
-			return errors.Wrapf(err, "failed to get IP for node %s", n.String())
-		}
-		if controlPlaneIPv4 != "" && !ipv6 {
-			backendServers[n.String()] = fmt.Sprintf("%s:%d", controlPlaneIPv4, common.APIServerInternalPort)
-		}
-		if controlPlaneIPv6 != "" && ipv6 {
-			backendServers[n.String()] = fmt.Sprintf("[%s]:%d", controlPlaneIPv6, common.APIServerInternalPort)
-		}
+		backendServers[n.String()] = fmt.Sprintf("%s:%d", n.String(), common.APIServerInternalPort)
 	}
 
 	// create loadbalancer config data
 	loadbalancerConfig, err := loadbalancer.Config(&loadbalancer.ConfigData{
 		ControlPlanePort: common.APIServerInternalPort,
 		BackendServers:   backendServers,
-		IPv6:             ipv6,
+		IPv6:             ctx.Config.Networking.IPFamily == config.IPv6Family,
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to generate loadbalancer config data")
