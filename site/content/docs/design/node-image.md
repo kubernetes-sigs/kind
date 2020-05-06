@@ -16,7 +16,12 @@ nested containers, systemd, and Kubernetes components.
 This image is built on top of the ["base" image][base image].
 
 Logic for building ["node" image][node image] can be found in [`pkg/build`][build package],
-and it can be built with `kind build node-image` respectively.
+and it can be built with `kind build node-image` respectively.  Building this
+image via the `kind` command requires both the `kind` and the `kubernetes`
+projects' source to be downloaded into the `GOPATH`.  The kind source can be
+installed via the command `GO111MODULE="on" go get sigs.k8s.io/kind@v0.8.0`.  To
+install the Kubernetes source, follow the
+[Kubernetes developer documentation][kubernetes developer docs].
 
 ## Design
 
@@ -48,3 +53,4 @@ each "node" container with [kubeadm][kubeadm].
 [docker image archives]: https://docs.docker.com/engine/reference/commandline/save/
 [systemd service]: https://www.freedesktop.org/software/systemd/man/systemd.service.html
 [kubeadm]: https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm/
+[kubernetes developer docs]: https://github.com/kubernetes/kubernetes#you-have-a-working-go-environment

@@ -12,9 +12,16 @@ menu:
 The ["base" image][base image] is a small-ish Docker image for running
 nested containers, systemd, and kubernetes components.
 
-To do this we need to set up an environment that will meet the CRI 
-(currently just docker) and systemd's particular needs. Documentation for each
-step we take is inline to the image's [Dockerfile][dockerfile],
+Logic for building ["base" image][base image] can be found in
+[`pkg/build`][build package], and it can be built with `kind build base-image`,
+respectively, via the `kind build base-image` command.  However, doing so
+requires the `kind` project's source is downloaded into the `GOPATH`. This can
+be accomplished via the command
+`GO111MODULE="on" go get sigs.k8s.io/kind@v0.8.0`.
+
+To create this base image, we need to set up an environment that will meet the
+CRI (currently just docker) and systemd's particular needs. Documentation for
+each step we take is inline to the image's [Dockerfile][dockerfile],
 but essentially:
 
 - we preinstall tools / packages expected by systemd / Docker / Kubernetes other
@@ -34,4 +41,6 @@ relatively up to date packages.
 We strive to minimize the image size where possible.
 
 [base image]: https://sigs.k8s.io/kind/images/base
+[build package]: https://sigs.k8s.io/kind/pkg/build
 [dockerfile]: https://sigs.k8s.io/kind/images/base/Dockerfile
+[node image]: https://sigs.k8s.io/kind/images/node
