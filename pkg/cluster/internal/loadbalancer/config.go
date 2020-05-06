@@ -37,6 +37,9 @@ global
   log /dev/log local1 notice
   daemon
 
+resolvers docker
+  nameserver dns 127.0.0.11:53
+
 defaults
   log global
   mode tcp
@@ -45,6 +48,8 @@ defaults
   timeout connect 5000
   timeout client 50000
   timeout server 50000
+  # allow to boot despite dns don't resolve backends
+  default-server init-addr none
 
 frontend control-plane
   bind *:{{ .ControlPlanePort }}
@@ -57,7 +62,7 @@ backend kube-apiservers
   option httpchk GET /healthz
   # TODO: we should be verifying (!)
   {{range $server, $address := .BackendServers}}
-  server {{ $server }} {{ $address }} check check-ssl verify none
+  server {{ $server }} {{ $address }} check check-ssl verify none resolvers docker resolve-prefer {{ if $.IPv6 -}} ipv6 {{- else -}} ipv4 {{- end }}
   {{- end}}
 `
 
