@@ -70,6 +70,18 @@ fix_cgroup() {
       mount --bind "${subsystem}" "${subsystem}${docker_cgroup}"
     done
   fi
+  local podman_cgroup_mounts
+  podman_cgroup_mounts=$(grep /sys/fs/cgroup /proc/self/mountinfo | grep libpod_parent || true)
+  if [[ -n "${podman_cgroup_mounts}" ]]; then
+    local podman_cgroup cgroup_subsystems subsystem
+    podman_cgroup=$(echo "${podman_cgroup_mounts}" | head -n 1 | cut -d' ' -f 4)
+    cgroup_subsystems=$(echo "${podman_cgroup_mounts}" | cut -d' ' -f 5)
+    echo "${cgroup_subsystems}" |
+    while IFS= read -r subsystem; do
+      mkdir -p "${subsystem}${podman_cgroup}"
+      mount --bind "${subsystem}" "${subsystem}${podman_cgroup}"
+    done
+  fi
 }
 
 fix_machine_id() {
