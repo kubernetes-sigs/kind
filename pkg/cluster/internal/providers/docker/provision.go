@@ -179,7 +179,7 @@ func commonArgs(cluster string, cfg *config.Cluster, networkName string) ([]stri
 	}
 
 	// pass proxy environment variables
-	proxyEnv, err := getProxyEnv(cfg)
+	proxyEnv, err := getProxyEnv(cfg, networkName)
 	if err != nil {
 		return nil, errors.Wrap(err, "proxy setup error")
 	}
@@ -271,12 +271,11 @@ func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) ([]
 	return append(args, loadbalancer.Image), nil
 }
 
-func getProxyEnv(cfg *config.Cluster) (map[string]string, error) {
+func getProxyEnv(cfg *config.Cluster, networkName string) (map[string]string, error) {
 	envs := common.GetProxyEnvs(cfg)
 	// Specifically add the docker network subnets to NO_PROXY if we are using a proxy
 	if len(envs) > 0 {
-		// Docker default bridge network is named "bridge" (https://docs.docker.com/network/bridge/#use-the-default-bridge-network)
-		subnets, err := getSubnets("bridge")
+		subnets, err := getSubnets(networkName)
 		if err != nil {
 			return nil, err
 		}
