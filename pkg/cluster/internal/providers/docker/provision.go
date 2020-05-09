@@ -34,9 +34,21 @@ import (
 
 // planCreation creates a slice of funcs that will create the containers
 func planCreation(cluster string, cfg *config.Cluster, networkName string) (createContainerFuncs []func() error, err error) {
-	// these apply to all container creation
+	// we need to know all the names for NO_PROXY
+	// compute the names first before any actual node details
 	nodeNamer := common.MakeNodeNamer(cluster)
-	genericArgs, err := commonArgs(cluster, cfg, networkName)
+	names := make([]string, len(cfg.Nodes))
+	for i, node := range cfg.Nodes {
+		name := nodeNamer(string(node.Role)) // name the node
+		names[i] = name
+	}
+	haveLoadbalancer := clusterHasImplicitLoadBalancer(cfg)
+	if haveLoadbalancer {
+		names = append(names, nodeNamer(constants.ExternalLoadBalancerNodeRoleValue))
+	}
+
+	// these apply to all container creation
+	genericArgs, err := commonArgs(cluster, cfg, networkName, names)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +56,7 @@ func planCreation(cluster string, cfg *config.Cluster, networkName string) (crea
 	// only the external LB should reflect the port if we have multiple control planes
 	apiServerPort := cfg.Networking.APIServerPort
 	apiServerAddress := cfg.Networking.APIServerAddress
-	if clusterHasImplicitLoadBalancer(cfg) {
+	if haveLoadbalancer {
 		// TODO: picking ports locally is less than ideal with remote docker
 		// but this is supposed to be an implementation detail and NOT picking
 		// them breaks host reboot ...
@@ -55,7 +67,7 @@ func planCreation(cluster string, cfg *config.Cluster, networkName string) (crea
 			apiServerAddress = "::1" // only the LB needs to be non-local
 		}
 		// plan loadbalancer node
-		name := nodeNamer(constants.ExternalLoadBalancerNodeRoleValue)
+		name := names[len(names)-1]
 		createContainerFuncs = append(createContainerFuncs, func() error {
 			args, err := runArgsForLoadBalancer(cfg, name, genericArgs)
 			if err != nil {
@@ -66,19 +78,19 @@ func planCreation(cluster string, cfg *config.Cluster, networkName string) (crea
 	}
 
 	// plan normal nodes
-	for _, node := range cfg.Nodes {
-		node := node.DeepCopy()              // copy so we can modify
-		name := nodeNamer(string(node.Role)) // name the node
+	for i, node := range cfg.Nodes {
+		node := node.DeepCopy() // copy so we can modify
+		name := names[i]
 
 		// fixup relative paths, docker can only handle absolute paths
-		for i := range node.ExtraMounts {
-			hostPath := node.ExtraMounts[i].HostPath
+		for m := range node.ExtraMounts {
+			hostPath := node.ExtraMounts[m].HostPath
 			if !fs.IsAbs(hostPath) {
 				absHostPath, err := filepath.Abs(hostPath)
 				if err != nil {
 					return nil, errors.Wrapf(err, "unable to resolve absolute path for hostPath: %q", hostPath)
 				}
-				node.ExtraMounts[i].HostPath = absHostPath
+				node.ExtraMounts[m].HostPath = absHostPath
 			}
 		}
 
@@ -137,7 +149,7 @@ func clusterHasImplicitLoadBalancer(cfg *config.Cluster) bool {
 }
 
 // commonArgs computes static arguments that apply to all containers
-func commonArgs(cluster string, cfg *config.Cluster, networkName string) ([]string, error) {
+func commonArgs(cluster string, cfg *config.Cluster, networkName string, nodeNames []string) ([]string, error) {
 	// standard arguments all nodes containers need, computed once
 	args := []string{
 		"--detach", // run the container detached
@@ -179,7 +191,7 @@ func commonArgs(cluster string, cfg *config.Cluster, networkName string) ([]stri
 	}
 
 	// pass proxy environment variables
-	proxyEnv, err := getProxyEnv(cfg)
+	proxyEnv, err := getProxyEnv(cfg, networkName, nodeNames)
 	if err != nil {
 		return nil, errors.Wrap(err, "proxy setup error")
 	}
@@ -271,18 +283,20 @@ func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) ([]
 	return append(args, loadbalancer.Image), nil
 }
 
-func getProxyEnv(cfg *config.Cluster) (map[string]string, error) {
+func getProxyEnv(cfg *config.Cluster, networkName string, nodeNames []string) (map[string]string, error) {
 	envs := common.GetProxyEnvs(cfg)
 	// Specifically add the docker network subnets to NO_PROXY if we are using a proxy
 	if len(envs) > 0 {
-		// Docker default bridge network is named "bridge" (https://docs.docker.com/network/bridge/#use-the-default-bridge-network)
-		subnets, err := getSubnets("bridge")
+		subnets, err := getSubnets(networkName)
 		if err != nil {
 			return nil, err
 		}
-		noProxyList := strings.Join(append(subnets, envs[common.NOProxy]), ",")
-		envs[common.NOProxy] = noProxyList
-		envs[strings.ToLower(common.NOProxy)] = noProxyList
+
+		noProxyList := append(subnets, envs[common.NOProxy])
+		noProxyList = append(noProxyList, nodeNames...)
+		noProxyJoined := strings.Join(noProxyList, ",")
+		envs[common.NOProxy] = noProxyJoined
+		envs[strings.ToLower(common.NOProxy)] = noProxyJoined
 	}
 	return envs, nil
 }
