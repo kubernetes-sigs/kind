@@ -107,9 +107,10 @@ func (b *DockerBuildBits) build() error {
 			"KUBE_BUILD_CONFORMANCE=n",
 			// build for the host platform
 			"KUBE_BUILD_PLATFORMS=" + dockerBuildOsAndArch(b.arch),
-			// leverage in-tree-cloud-provider-free builds by default
+			// leverage in-tree-cloud-provider-free and docker-free builds by default
 			// https://github.com/kubernetes/kubernetes/pull/80353
-			"GOFLAGS=-tags=providerless",
+			// https://github.com/kubernetes/kubernetes/pull/87746
+			"GOFLAGS=-tags=providerless,dockerless",
 		},
 		os.Environ()...,
 	)
