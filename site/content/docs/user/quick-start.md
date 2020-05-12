@@ -330,36 +330,8 @@ Feature gates are a set of key=value pairs that describe alpha or experimental f
 {{< codeFromInline lang="yaml" >}}
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
-# patch the generated kubeadm config with a featuregate
-kubeadmConfigPatches:
-- |
-  kind: ClusterConfiguration
-  metadata:
-    name: config
-  apiServer:
-    extraArgs:
-      "feature-gates": "FeatureGateName=true"
-  scheduler:
-    extraArgs:
-      "feature-gates": "FeatureGateName=true"
-  controllerManager:
-    extraArgs:
-      "feature-gates": "FeatureGateName=true"
-- |
-  kind: InitConfiguration
-  metadata:
-    name: config
-  nodeRegistration:
-    kubeletExtraArgs:
-      "feature-gates": "FeatureGateName=true"
-- |
-  kind: KubeletConfiguration
-  featureGates:
-    FeatureGateName: true
-- |
-  kind: KubeProxyConfiguration
-  featureGates:
-    FeatureGateName: true
+featureGates:
+  FeatureGateName: true
 {{< /codeFromInline >}}
 
 #### IPv6 clusters
