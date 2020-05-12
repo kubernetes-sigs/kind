@@ -331,7 +331,7 @@ Feature gates are a set of key=value pairs that describe alpha or experimental f
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 featureGates:
- FeatureGateName: true
+  FeatureGateName: true
 {{< /codeFromInline >}}
 
 #### IPv6 clusters
