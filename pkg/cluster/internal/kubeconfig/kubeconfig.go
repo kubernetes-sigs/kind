@@ -20,8 +20,11 @@ package kubeconfig
 
 import (
 	"bytes"
+	"fmt"
+	"net"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/context"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider/common"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/errors"
 
@@ -89,15 +92,23 @@ func get(ctx *context.Context, external bool) (*kubeconfig.Config, error) {
 		return nil, errors.Wrap(err, "failed to get cluster internal kubeconfig")
 	}
 
-	// if we're doing external we need to override the server endpoint
-	server := ""
+	var endpoint string
 	if external {
-		endpoint, err := ctx.GetAPIServerEndpoint()
+		endpoint, err = ctx.GetAPIServerEndpoint()
 		if err != nil {
 			return nil, err
 		}
-		server = "https://" + endpoint
+	} else {
+		// TODO: make it independent of the IP protocol
+		// hardcoded to IPv4 because --internal is a flag used to get access
+		// from outside of the cluster and docker does not have IPv6 only support
+		host, _, err := node.IP()
+		if err != nil {
+			return nil, err
+		}
+		endpoint = net.JoinHostPort(host, fmt.Sprintf("%d", common.APIServerInternalPort))
 	}
+	server := "https://" + endpoint
 
 	// actually encode
 	return kubeconfig.KINDFromRawKubeadm(buff.String(), ctx.Name(), server)
