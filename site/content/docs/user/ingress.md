@@ -93,7 +93,15 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/mast
 The manifests contains kind specific patches to forward the hostPorts to the
 ingress controller, set taint tolerations and schedule it to the custom labelled node.
 
-Now the Ingress is all setup to be used.
+Now the Ingress is all setup. Wait until is ready to process requests running:
+
+{{< codeFromInline lang="bash" >}}
+kubectl wait --namespace ingress-nginx \
+  --for=condition=ready pod \
+  --selector=app.kubernetes.io/component=controller \
+  --timeout=90s
+{{< /codeFromInline >}}
+
 Refer [Using Ingress](#using-ingress) for a basic example usage.
 
 ## Using Ingress
