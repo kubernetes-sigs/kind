@@ -174,6 +174,9 @@ type Networking struct {
 	// If DisableDefaultCNI is true, kind will not install the default CNI setup.
 	// Instead the user should install their own CNI after creating the cluster.
 	DisableDefaultCNI bool `yaml:"disableDefaultCNI,omitempty"`
+	// KubeProxyMode defines if kube-proxy should operate in iptables or ipvs mode
+	// Defaults to 'iptables' mode
+	KubeProxyMode ProxyMode `yaml:"kubeProxyMode,omitempty"`
 }
 
 // ClusterIPFamily defines cluster network IP family
@@ -184,6 +187,16 @@ const (
 	IPv4Family ClusterIPFamily = "ipv4"
 	// IPv6Family sets ClusterIPFamily to ipv6
 	IPv6Family ClusterIPFamily = "ipv6"
+)
+
+// ProxyMode defines a proxy mode for kube-proxy
+type ProxyMode string
+
+const (
+	// IPTablesMode sets ProxyMode to iptables
+	IPTablesMode ProxyMode = "iptables"
+	// IPVSMode sets ProxyMode to iptables
+	IPVSMode ProxyMode = "ipvs"
 )
 
 // PatchJSON6902 represents an inline kustomize json 6902 patch
