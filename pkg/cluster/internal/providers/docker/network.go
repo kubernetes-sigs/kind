@@ -93,9 +93,13 @@ func ensureNetwork(name string) error {
 
 func createNetwork(name, ipv6Subnet string) error {
 	if ipv6Subnet == "" {
-		return exec.Command("docker", "network", "create", "-d=bridge", name).Run()
+		return exec.Command("docker", "network", "create", "-d=bridge",
+			"-o", "com.docker.network.bridge.enable_ip_masquerade=true",
+			name).Run()
 	}
-	return exec.Command("docker", "network", "create", "-d=bridge", "--ipv6", "--subnet", ipv6Subnet, name).Run()
+	return exec.Command("docker", "network", "create", "-d=bridge",
+		"-o", "com.docker.network.bridge.enable_ip_masquerade=true",
+		"--ipv6", "--subnet", ipv6Subnet, name).Run()
 }
 
 func checkIfNetworkExists(name string) (bool, error) {
