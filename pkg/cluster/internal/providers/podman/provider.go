@@ -143,7 +143,15 @@ func (p *Provider) DeleteNodes(n []nodes.Node) error {
 	if err := exec.Command(command, args...).Run(); err != nil {
 		return errors.Wrap(err, "failed to delete nodes")
 	}
-	return nil
+	var nodeVolumes []string
+	for _, node := range n {
+		volume, err := getVolume(node.String())
+		if err != nil {
+			return err
+		}
+		nodeVolumes = append(nodeVolumes, volume)
+	}
+	return deleteVolumes(nodeVolumes)
 }
 
 // GetAPIServerEndpoint is part of the providers.Provider interface
