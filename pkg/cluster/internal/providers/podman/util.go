@@ -17,6 +17,7 @@ limitations under the License.
 package podman
 
 import (
+	"fmt"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/version"
@@ -57,4 +58,46 @@ func ensureMinVersion() error {
 		return errors.Errorf("podman version %q is too old, please upgrade to %q or later", v, minSupportedVersion)
 	}
 	return nil
+}
+
+// createAnonymousVolume creates a new anonymous volume
+// with the specified label=true
+// returns the name of the volume created
+func createAnonymousVolume(label string) (string, error) {
+	cmd := exec.Command("podman",
+		"volume",
+		"create",
+		// podman only support filter on key during list
+		// so we use the unique id as key
+		"--label", fmt.Sprintf("%s=true", label))
+	name, err := exec.Output(cmd)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSuffix(string(name), "\n"), nil
+}
+
+// getVolume gets the volume name filtered on specified label
+func getVolume(label string) (string, error) {
+	cmd := exec.Command("podman",
+		"volume",
+		"ls",
+		"--filter", fmt.Sprintf("label=%s", label),
+		"--quiet")
+	name, err := exec.Output(cmd)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSuffix(string(name), "\n"), nil
+}
+
+func deleteVolumes(names []string) error {
+	args := []string{
+		"volume",
+		"rm",
+		"--force",
+	}
+	args = append(args, names...)
+	cmd := exec.Command("podman", args...)
+	return cmd.Run()
 }

@@ -162,6 +162,11 @@ func commonArgs(cfg *config.Cluster) ([]string, error) {
 }
 
 func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, name string, args []string) ([]string, error) {
+	volume, err := createAnonymousVolume(name)
+	if err != nil {
+		return nil, err
+	}
+
 	args = append([]string{
 		"run",
 		"--hostname", name, // make hostname match container name
@@ -184,7 +189,11 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		// filesystem, which is not only better for performance, but allows
 		// running kind in kind for "party tricks"
 		// (please don't depend on doing this though!)
-		"--volume", "/var",
+		// also enable default docker volume options
+		// suid: SUID applications on the volume will be able to change their privilege
+		// exec: executables on the volume will be able to executed within the container
+		// dev: devices on the volume will be able to be used by processes within the container
+		"--volume", fmt.Sprintf("%s:/var:suid,exec,dev", volume),
 		// some k8s things want to read /lib/modules
 		"--volume", "/lib/modules:/lib/modules:ro",
 	},
