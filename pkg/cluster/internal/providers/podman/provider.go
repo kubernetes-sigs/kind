@@ -220,7 +220,8 @@ func (p *Provider) GetAPIServerInternalEndpoint(cluster string) (string, error) 
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get apiserver IP")
 	}
-	return ipv4, nil
+	return net.JoinHostPort(ipv4, fmt.Sprintf("%d", common.APIServerInternalPort)), nil
+
 }
 
 // node returns a new node handle for this provider
