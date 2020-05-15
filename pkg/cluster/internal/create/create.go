@@ -53,7 +53,7 @@ const (
 // and suffix this name, we can relax it a little
 // see NewContext() for usage
 // https://godoc.org/github.com/docker/docker/daemon/names#pkg-constants
-var validNameRE = regexp.MustCompile(`^[a-zA-Z0-9_.-]+$`)
+var validNameRE = regexp.MustCompile(`^[a-z0-9_.-]+$`)
 
 // ClusterOptions holds cluster creation options
 type ClusterOptions struct {
