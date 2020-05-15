@@ -24,6 +24,7 @@ import (
 func Convertv1alpha4(in *v1alpha4.Cluster) *Cluster {
 	in = in.DeepCopy() // deep copy first to avoid touching the original
 	out := &Cluster{
+		Name:                            in.Name,
 		Nodes:                           make([]Node, len(in.Nodes)),
 		FeatureGates:                    in.FeatureGates,
 		KubeadmConfigPatches:            in.KubeadmConfigPatches,

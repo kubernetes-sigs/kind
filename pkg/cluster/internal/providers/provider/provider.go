@@ -28,7 +28,7 @@ import (
 type Provider interface {
 	// Provision should create and start the nodes, just short of
 	// actually starting up Kubernetes, based on the given cluster config
-	Provision(status *cli.Status, cluster string, cfg *config.Cluster) error
+	Provision(status *cli.Status, cfg *config.Cluster) error
 	// ListClusters discovers the clusters that currently have resources
 	// under this providers
 	ListClusters() ([]string, error)

@@ -20,26 +20,25 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/log"
 
-	"sigs.k8s.io/kind/pkg/cluster/internal/context"
-	// TODO: we shouldn't need to import this here
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeconfig"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider"
 )
 
 // Cluster deletes the cluster identified by ctx
 // explicitKubeconfigPath is --kubeconfig, following the rules from
 // https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands
-func Cluster(logger log.Logger, c *context.Context, explicitKubeconfigPath string) error {
-	n, err := c.ListNodes()
+func Cluster(logger log.Logger, p provider.Provider, name, explicitKubeconfigPath string) error {
+	n, err := p.ListNodes(name)
 	if err != nil {
 		return errors.Wrap(err, "error listing nodes")
 	}
 
-	kerr := kubeconfig.Remove(c.Name(), explicitKubeconfigPath)
+	kerr := kubeconfig.Remove(name, explicitKubeconfigPath)
 	if kerr != nil {
 		logger.Errorf("failed to update kubeconfig: %v", kerr)
 	}
 
-	err = c.Provider().DeleteNodes(n)
+	err = p.DeleteNodes(n)
 	if err != nil {
 		return err
 	}

@@ -21,19 +21,19 @@ package kubeconfig
 import (
 	"bytes"
 
-	"sigs.k8s.io/kind/pkg/cluster/internal/context"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/errors"
 
 	// this package has slightly more generic kubeconfig helpers
 	// and minimal dependencies on the rest of kind
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeconfig/internal/kubeconfig"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider"
 )
 
 // Export exports the kubeconfig given the cluster context and a path to write it to
 // This will always be an external kubeconfig
-func Export(ctx *context.Context, explicitPath string) error {
-	cfg, err := get(ctx, true)
+func Export(p provider.Provider, name, explicitPath string) error {
+	cfg, err := get(p, name, true)
 	if err != nil {
 		return err
 	}
@@ -50,8 +50,8 @@ func Remove(clusterName, explicitPath string) error {
 
 // Get returns the kubeconfig for the cluster
 // external controls if the internal IP address is used or the host endpoint
-func Get(ctx *context.Context, external bool) (string, error) {
-	cfg, err := get(ctx, external)
+func Get(p provider.Provider, name string, external bool) (string, error) {
+	cfg, err := get(p, name, external)
 	if err != nil {
 		return "", err
 	}
@@ -68,9 +68,9 @@ func ContextForCluster(kindClusterName string) string {
 	return kubeconfig.KINDClusterKey(kindClusterName)
 }
 
-func get(ctx *context.Context, external bool) (*kubeconfig.Config, error) {
+func get(p provider.Provider, name string, external bool) (*kubeconfig.Config, error) {
 	// find a control plane node to get the kubeadm config from
-	n, err := ctx.ListNodes()
+	n, err := p.ListNodes(name)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func get(ctx *context.Context, external bool) (*kubeconfig.Config, error) {
 	// if we're doing external we need to override the server endpoint
 	server := ""
 	if external {
-		endpoint, err := ctx.GetAPIServerEndpoint()
+		endpoint, err := p.GetAPIServerEndpoint(name)
 		if err != nil {
 			return nil, err
 		}
@@ -100,5 +100,5 @@ func get(ctx *context.Context, external bool) (*kubeconfig.Config, error) {
 	}
 
 	// actually encode
-	return kubeconfig.KINDFromRawKubeadm(buff.String(), ctx.Name(), server)
+	return kubeconfig.KINDFromRawKubeadm(buff.String(), name, server)
 }

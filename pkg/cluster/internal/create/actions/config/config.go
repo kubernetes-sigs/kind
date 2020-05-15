@@ -51,7 +51,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
-	controlPlaneEndpoint, err := ctx.ClusterContext.GetAPIServerInternalEndpoint()
+	controlPlaneEndpoint, err := ctx.Provider.GetAPIServerInternalEndpoint(ctx.Config.Name)
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	fns := []func() error{}
 
 	configData := kubeadm.ConfigData{
-		ClusterName:          ctx.ClusterContext.Name(),
+		ClusterName:          ctx.Config.Name,
 		ControlPlaneEndpoint: controlPlaneEndpoint,
 		APIBindPort:          common.APIServerInternalPort,
 		APIServerAddress:     ctx.Config.Networking.APIServerAddress,

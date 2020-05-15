@@ -38,46 +38,6 @@ func TestLoadCurrent(t *testing.T) {
 			ExpectError: false,
 		},
 		{
-			TestName:    "v1alpha3 invalid kind",
-			Path:        "./testdata/v1alpha3/invalid-kind.yaml",
-			ExpectError: true,
-		},
-		{
-			TestName:    "v1alpha3 minimal",
-			Path:        "./testdata/v1alpha3/valid-minimal.yaml",
-			ExpectError: false,
-		},
-		{
-			TestName:    "v1alpha3 config with 2 nodes",
-			Path:        "./testdata/v1alpha3/valid-minimal-two-nodes.yaml",
-			ExpectError: false,
-		},
-		{
-			TestName:    "v1alpha3 full HA",
-			Path:        "./testdata/v1alpha3/valid-full-ha.yaml",
-			ExpectError: false,
-		},
-		{
-			TestName:    "v1alpha3 many fields set",
-			Path:        "./testdata/v1alpha3/valid-many-fields.yaml",
-			ExpectError: false,
-		},
-		{
-			TestName:    "v1alpha3 config with patches",
-			Path:        "./testdata/v1alpha3/valid-kind-patches.yaml",
-			ExpectError: false,
-		},
-		{
-			TestName:    "v1alpha3 non-existent field",
-			Path:        "./testdata/v1alpha3/invalid-bogus-field.yaml",
-			ExpectError: true,
-		},
-		{
-			TestName:    "v1alpha3 bad indentation",
-			Path:        "./testdata/v1alpha3/invalid-bad-indent.yaml",
-			ExpectError: true,
-		},
-		{
 			TestName:    "v1alpha4 minimal",
 			Path:        "./testdata/v1alpha4/valid-minimal.yaml",
 			ExpectError: false,
