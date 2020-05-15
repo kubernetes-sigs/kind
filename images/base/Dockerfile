@@ -70,6 +70,7 @@ RUN echo "Ensuring scripts are executable ..." \
       libseccomp2 \
       bash ca-certificates curl rsync \
       nfs-common \
+      nscd \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
     && rm -f /lib/systemd/system/multi-user.target.wants/* \
     && rm -f /etc/systemd/system/*.wants/* \
@@ -112,7 +113,9 @@ RUN echo "Ensuring scripts are executable ..." \
  && echo "Adjusting systemd-tmpfiles timer" \
     && sed -i /usr/lib/systemd/system/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#' \
  && echo "Modifying /etc/nsswitch.conf to prefer hosts" \
-    && sed -i /etc/nsswitch.conf -re 's#^(hosts:\s*).*#\1dns files#'
+    && sed -i /etc/nsswitch.conf -re 's#^(hosts:\s*).*#\1dns files#' \
+ && echo "Enabling DNS caching" \
+    && systemctl enable nscd
 
 # tell systemd that it is in docker (it will check for the container env)
 # https://systemd.io/CONTAINER_INTERFACE/

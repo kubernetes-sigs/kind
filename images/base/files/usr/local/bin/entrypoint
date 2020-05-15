@@ -81,6 +81,14 @@ fix_machine_id() {
   systemd-machine-id-setup
 }
 
+fix_nscd_dir() {
+  # nscd creates the folder /var/run/nscd at install time so he can create a
+  # socket /var/run/nscd/socket. Because we are mounting /var/run as a tmpfs
+  # the folder does not exists and nscd fails to start.
+  echo 'INFO: ensuring /var/run/nscd exists ' >&2
+  mkdir -p /var/run/nscd
+}
+
 fix_product_name() {
   # this is a small fix to hide the underlying hardware and fix issue #426
   # https://github.com/kubernetes-sigs/kind/issues/426
@@ -225,6 +233,7 @@ fix_kmsg
 fix_mount
 fix_cgroup
 fix_machine_id
+fix_nscd_dir
 fix_product_name
 fix_product_uuid
 configure_proxy
