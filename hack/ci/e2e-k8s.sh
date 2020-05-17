@@ -114,6 +114,8 @@ create_cluster() {
     ;;
   esac
 
+KUBE_PROXY_MODE="ipvs"
+
   # create the config file
   cat <<EOF > "${ARTIFACTS}/kind-config.yaml"
 # config for 1 control plane node and 2 workers (necessary for conformance)
