@@ -86,6 +86,16 @@ func TestClusterValidate(t *testing.T) {
 			ExpectErrors: 1,
 		},
 		{
+			Name: "bogus kubeProxyMode",
+			Cluster: func() Cluster {
+				c := Cluster{}
+				SetDefaultsCluster(&c)
+				c.Networking.KubeProxyMode = "notiptables"
+				return c
+			}(),
+			ExpectErrors: 1,
+		},
+		{
 			Name: "missing control-plane",
 			Cluster: func() Cluster {
 				c := Cluster{}

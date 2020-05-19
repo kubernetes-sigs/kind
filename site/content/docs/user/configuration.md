@@ -134,6 +134,18 @@ networking:
 {{< /codeFromInline >}}
 
 
+#### kube-proxy mode
+
+You can configure the kube-proxy mode that will be used, between iptables and ipvs. By
+default iptables is used
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  kubeProxyMode: "ipvs"
+{{< /codeFromInline >}}
+
 ### Nodes
 The `kind: Cluster` object has a `nodes` field containing a list of `node`
 objects. If unset this defaults to:
