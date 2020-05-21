@@ -45,6 +45,11 @@ func (c *Cluster) Validate() error {
 		errs = append(errs, errors.Wrapf(err, "invalid serviceSubnet"))
 	}
 
+	// KubeProxyMode should be iptables or ipvs
+	if c.Networking.KubeProxyMode != IPTablesMode && c.Networking.KubeProxyMode != IPVSMode {
+		errs = append(errs, errors.Errorf("invalid kubeProxyMode: %s", c.Networking.KubeProxyMode))
+	}
+
 	// validate nodes
 	numByRole := make(map[NodeRole]int32)
 	// All nodes in the config should be valid

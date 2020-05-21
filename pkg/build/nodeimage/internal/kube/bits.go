@@ -56,7 +56,6 @@ type InstallContext interface {
 
 // NewNamedBits returns a new Bits by named implementation
 // currently this includes:
-// "apt" -> NewAptBits(kubeRoot)
 // "bazel" -> NewBazelBuildBits(kubeRoot)
 // "docker" or "make" -> NewDockerBuildBits(kubeRoot)
 func NewNamedBits(logger log.Logger, name, kubeRoot, arch string) (bits Bits, err error) {

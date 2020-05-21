@@ -77,6 +77,10 @@ func SetDefaultsCluster(obj *Cluster) {
 			obj.Networking.ServiceSubnet = "fd00:10:96::/112"
 		}
 	}
+	// default the KubeProxyMode using iptables as it's already the default
+	if obj.Networking.KubeProxyMode == "" {
+		obj.Networking.KubeProxyMode = IPTablesMode
+	}
 }
 
 // SetDefaultsNode sets uninitialized fields to their default value.

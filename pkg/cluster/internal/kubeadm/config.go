@@ -45,6 +45,8 @@ type ConfigData struct {
 	NodeAddress string
 	// The Token for TLS bootstrap
 	Token string
+	// KubeProxyMode defines the kube-proxy mode between iptables or ipvs
+	KubeProxyMode string
 	// The subnet used for pods
 	PodSubnet string
 	// The subnet used for services
@@ -288,6 +290,7 @@ apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
 metadata:
   name: config
+mode: "{{ .KubeProxyMode }}"
 {{if .FeatureGates}}featureGates:
 {{ range $key := .SortedFeatureGateKeys }}
   "{{ $key }}": {{$.FeatureGates $key }}
@@ -402,6 +405,7 @@ apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
 metadata:
   name: config
+mode: "{{ .KubeProxyMode }}"
 {{if .FeatureGates}}featureGates:
 {{ range $key := .SortedFeatureGateKeys }}
   "{{ $key }}": {{ index $.FeatureGates $key }}
@@ -516,6 +520,7 @@ apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
 metadata:
   name: config
+mode: "{{ .KubeProxyMode }}"
 {{if .FeatureGates}}featureGates:
 {{ range $key := .SortedFeatureGateKeys }}
   "{{ $key }}": {{ index $.FeatureGates $key }}

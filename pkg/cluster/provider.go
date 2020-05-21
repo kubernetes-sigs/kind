@@ -17,7 +17,6 @@ limitations under the License.
 package cluster
 
 import (
-	"os/exec"
 	"sort"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
@@ -70,11 +69,11 @@ func NewProvider(options ...ProviderOption) *Provider {
 	}
 
 	if p.provider == nil {
-		// auto-detect based on what is available in path
+		// auto-detect based on each package IsAvailable() function
 		// default to docker for backwards compatibility
-		if path, err := exec.LookPath("docker"); err == nil && path != "" {
+		if docker.IsAvailable() {
 			p.provider = docker.NewProvider(p.logger)
-		} else if path, err := exec.LookPath("podman"); err == nil && path != "" {
+		} else if podman.IsAvailable() {
 			p.provider = podman.NewProvider(p.logger)
 		} else {
 			p.provider = docker.NewProvider(p.logger)

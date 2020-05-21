@@ -60,9 +60,10 @@ func (p *Provider) Provision(status *cli.Status, cfg *config.Cluster) (err error
 		return err
 	}
 
-	// kind doesn't currently work with podman rootless, surface a warning
+	// kind doesn't work with podman rootless, surface an error
 	if os.Geteuid() != 0 {
-		p.logger.Warn("podman provider may not work properly in rootless mode")
+		p.logger.Errorf("podman provider does not work properly in rootless mode")
+		os.Exit(1)
 	}
 
 	// TODO: validate cfg

@@ -26,6 +26,16 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
+// IsAvailable checks if podman is available in the system
+func IsAvailable() bool {
+	cmd := exec.Command("podman", "-v")
+	lines, err := exec.OutputLines(cmd)
+	if err != nil || len(lines) != 1 {
+		return false
+	}
+	return strings.HasPrefix(lines[0], "podman version")
+}
+
 func getPodmanVersion() (*version.Version, error) {
 	cmd := exec.Command("podman", "--version")
 	lines, err := exec.CombinedOutputLines(cmd)
