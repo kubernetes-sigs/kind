@@ -37,7 +37,7 @@ install_kind() {
 main() {
   # create temp dir and setup cleanup
   TMP_DIR=$(mktemp -d)
-  trap cleanup EXIT
+  trap cleanup INT TERM EXIT
 
   # install kind
   install_kind

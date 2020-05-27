@@ -205,7 +205,7 @@ run_tests() {
 main() {
   # create temp dir and setup cleanup
   TMP_DIR=$(mktemp -d)
-  trap cleanup EXIT
+  trap cleanup INT TERM EXIT
 
   # ensure artifacts (results) directory exists when not in CI
   export ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
