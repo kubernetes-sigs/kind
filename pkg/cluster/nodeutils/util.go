@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"path/filepath"
+	"path"
 	"strings"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
@@ -45,9 +45,9 @@ func KubeVersion(n nodes.Node) (version string, err error) {
 // WriteFile writes content to dest on the node
 func WriteFile(n nodes.Node, dest, content string) error {
 	// create destination directory
-	err := n.Command("mkdir", "-p", filepath.Dir(dest)).Run()
+	err := n.Command("mkdir", "-p", path.Dir(dest)).Run()
 	if err != nil {
-		return errors.Wrapf(err, "failed to create directory %s", dest)
+		return errors.Wrapf(err, "failed to create directory %s", path.Dir(dest))
 	}
 
 	return n.Command("cp", "/dev/stdin", dest).SetStdin(strings.NewReader(content)).Run()
@@ -56,9 +56,9 @@ func WriteFile(n nodes.Node, dest, content string) error {
 // CopyNodeToNode copies file from a to b
 func CopyNodeToNode(a, b nodes.Node, file string) error {
 	// create destination directory
-	err := b.Command("mkdir", "-p", filepath.Dir(file)).Run()
+	err := b.Command("mkdir", "-p", path.Dir(file)).Run()
 	if err != nil {
-		return errors.Wrapf(err, "failed to create directory %q", filepath.Dir(file))
+		return errors.Wrapf(err, "failed to create directory %q", path.Dir(file))
 	}
 
 	// TODO: experiment with streaming instead to avoid the copy
