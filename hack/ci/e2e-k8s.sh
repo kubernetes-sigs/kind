@@ -25,7 +25,9 @@ set -o errexit -o nounset -o xtrace
 # BUILD_TYPE: bazel or make
 # GA_ONLY: true  - limit to GA APIs/features as much as possible
 #          false - (default) APIs and features left at defaults
-# 
+# EXTRA_MOUNTS: optional host path mounts to be attached to each node in the
+#               format: "HOST_PATH:CONTAINER_PATH,..."
+#
 
 # our exit handler (trap)
 cleanup() {
@@ -72,6 +74,15 @@ build() {
   make all WHAT='cmd/kubectl test/e2e/e2e.test vendor/github.com/onsi/ginkgo/ginkgo'
 }
 
+# echo extraMounts for the provided parameter
+add_extra_mounts() {
+    if [ -n "$1" ]; then
+        printf "\n  extraMounts:\n"
+        echo "$1" |
+            sed -r "s;(\w*):(\w*)?,?;  - hostPath: \1\n    containerPath: /\2\n;g"
+    fi
+}
+
 # up a cluster with kind
 create_cluster() {
 
@@ -114,6 +125,8 @@ create_cluster() {
     ;;
   esac
 
+  EXTRA_MOUNTS="${EXTRA_MOUNTS:-}"
+
   # create the config file
   cat <<EOF > "${ARTIFACTS}/kind-config.yaml"
 # config for 1 control plane node and 2 workers (necessary for conformance)
@@ -122,9 +135,9 @@ apiVersion: kind.x-k8s.io/v1alpha4
 networking:
   ipFamily: ${IP_FAMILY:-ipv4}
 nodes:
-- role: control-plane
-- role: worker
-- role: worker
+- role: control-plane $(add_extra_mounts "$EXTRA_MOUNTS")
+- role: worker $(add_extra_mounts "$EXTRA_MOUNTS")
+- role: worker $(add_extra_mounts "$EXTRA_MOUNTS")
 featureGates: ${feature_gates}
 kubeadmConfigPatches:
 - |
