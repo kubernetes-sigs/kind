@@ -27,8 +27,12 @@ set -o errexit -o nounset -o xtrace
 #          false - (default) APIs and features left at defaults
 # 
 
-# our exit handler (trap)
+# cleanup logic for cleanup on exit
+CLEANED_UP=false
 cleanup() {
+  if [ "$CLEANED_UP" = "true" ]; then
+    return
+  fi
   # KIND_CREATE_ATTEMPTED is true once we: kind create
   if [ "${KIND_CREATE_ATTEMPTED:-}" = true ]; then
     kind "export" logs "${ARTIFACTS}/logs" || true
@@ -36,8 +40,20 @@ cleanup() {
   fi
   rm -f _output/bin/e2e.test || true
   # remove our tempdir, this needs to be last, or it will prevent kind delete
-  [ -n "${TMP_DIR:-}" ] && rm -rf "${TMP_DIR:?}"
+  if [ -n "${TMP_DIR:-}" ]; then
+    rm -rf "${TMP_DIR:?}"
+  fi
+  CLEANED_UP=true
 }
+
+# setup signal handlers
+signal_handler() {
+  if [ -n "${GINKGO_PID:-}" ]; then
+    kill -TERM "$GINKGO_PID" || true
+  fi
+  cleanup
+}
+trap signal_handler INT TERM
 
 # build kubernetes / node image, e2e binaries, with bazel
 build_with_bazel() {
@@ -196,16 +212,21 @@ run_tests() {
   export KUBE_CONTAINER_RUNTIME=remote
   export KUBE_CONTAINER_RUNTIME_ENDPOINT=unix:///run/containerd/containerd.sock
   export KUBE_CONTAINER_RUNTIME_NAME=containerd
+  # ginkgo can take forever to exit, so we run it in the background and save the
+  # PID, bash will not run traps while waiting on a process, but it will while
+  # running a builtin like `wait`, saving the PID also allows us to forward the
+  # interrupt
   ./hack/ginkgo-e2e.sh \
     '--provider=skeleton' "--num-nodes=${NUM_NODES}" \
     "--ginkgo.focus=${FOCUS}" "--ginkgo.skip=${SKIP}" \
-    "--report-dir=${ARTIFACTS}" '--disable-log-dump=true'
+    "--report-dir=${ARTIFACTS}" '--disable-log-dump=true' &
+  GINKGO_PID=$!
+  wait "$GINKGO_PID"
 }
 
 main() {
   # create temp dir and setup cleanup
   TMP_DIR=$(mktemp -d)
-  trap cleanup INT TERM EXIT
 
   # ensure artifacts (results) directory exists when not in CI
   export ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
@@ -238,6 +259,8 @@ main() {
 
   # create the cluster and run tests
   create_cluster && run_tests
+
+  cleanup
 }
 
 main
