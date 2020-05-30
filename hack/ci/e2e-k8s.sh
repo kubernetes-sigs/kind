@@ -258,9 +258,11 @@ main() {
   fi
 
   # create the cluster and run tests
-  create_cluster && run_tests
-
-  cleanup
+  res=0
+  create_cluster || res=$?
+  run_tests || res=$?
+  cleanup || res=$?
+  exit $res
 }
 
 main
