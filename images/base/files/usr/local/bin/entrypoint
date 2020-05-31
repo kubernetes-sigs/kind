@@ -150,8 +150,10 @@ select_iptables() {
   fi
 
   echo "INFO: setting iptables to detected mode: ${mode}" >&2
+  if [ -x /usr/bin/update-alternatives ]; then
   update-alternatives --set iptables "/usr/sbin/iptables-${mode}" > /dev/null
   update-alternatives --set ip6tables "/usr/sbin/ip6tables-${mode}" > /dev/null
+  fi
 }
 
 enable_network_magic(){
