@@ -25,7 +25,7 @@ import (
 // WriteMerged writes a kind kubeconfig (see KINDFromRawKubeadm) into configPath
 // merging with the existing contents if any and setting the current context to
 // the kind config's current context.
-func WriteMerged(kindConfig *Config, explicitConfigPath string) error {
+func WriteMerged(kindConfig *Config, explicitConfigPath string, updateKubeContext bool) error {
 	// figure out what filepath we should use
 	configPath := pathForMerge(explicitConfigPath, os.Getenv)
 
@@ -44,7 +44,7 @@ func WriteMerged(kindConfig *Config, explicitConfigPath string) error {
 	}
 
 	// merge with kind kubeconfig
-	if err := merge(existing, kindConfig); err != nil {
+	if err := merge(existing, kindConfig, updateKubeContext); err != nil {
 		return err
 	}
 
@@ -53,7 +53,7 @@ func WriteMerged(kindConfig *Config, explicitConfigPath string) error {
 }
 
 // merge kind config into an existing config
-func merge(existing, kind *Config) error {
+func merge(existing, kind *Config, updateKubeContext bool) error {
 	// verify assumptions about kubeadm / kind kubeconfigs
 	if err := checkKubeadmExpectations(kind); err != nil {
 		return err
@@ -95,8 +95,10 @@ func merge(existing, kind *Config) error {
 		existing.Contexts = append(existing.Contexts, kind.Contexts[0])
 	}
 
-	// set the current context
-	existing.CurrentContext = kind.CurrentContext
+	if updateKubeContext {
+		// set the current context
+		existing.CurrentContext = kind.CurrentContext
+	}
 
 	// TODO: We should not need this, but it allows broken clients that depend
 	// on apiVersion and kind to work. Notably the upstream javascript client.

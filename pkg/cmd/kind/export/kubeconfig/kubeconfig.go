@@ -66,7 +66,7 @@ func runE(logger log.Logger, flags *flagpole) error {
 		cluster.ProviderWithLogger(logger),
 		runtime.GetDefault(logger),
 	)
-	if err := provider.ExportKubeConfig(flags.Name, flags.Kubeconfig); err != nil {
+	if err := provider.ExportKubeConfig(flags.Name, flags.Kubeconfig, true); err != nil {
 		return err
 	}
 	// TODO: get kind-name from a method? OTOH we probably want to keep this

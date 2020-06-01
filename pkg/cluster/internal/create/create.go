@@ -155,7 +155,7 @@ func Cluster(logger log.Logger, p provider.Provider, opts *ClusterOptions) error
 		return nil
 	}
 
-	if err := kubeconfig.Export(p, opts.Config.Name, opts.KubeconfigPath); err != nil {
+	if err := kubeconfig.Export(p, opts.Config.Name, opts.KubeconfigPath, true); err != nil {
 		return err
 	}
 

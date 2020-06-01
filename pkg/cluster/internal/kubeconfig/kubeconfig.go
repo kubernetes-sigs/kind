@@ -32,12 +32,12 @@ import (
 
 // Export exports the kubeconfig given the cluster context and a path to write it to
 // This will always be an external kubeconfig
-func Export(p provider.Provider, name, explicitPath string) error {
+func Export(p provider.Provider, name, explicitPath string, updateKubeContext bool) error {
 	cfg, err := get(p, name, true)
 	if err != nil {
 		return err
 	}
-	return kubeconfig.WriteMerged(cfg, explicitPath)
+	return kubeconfig.WriteMerged(cfg, explicitPath, updateKubeContext)
 }
 
 // Remove removes clusterName from the kubeconfig paths detected based on

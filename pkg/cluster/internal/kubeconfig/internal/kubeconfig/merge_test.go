@@ -214,7 +214,7 @@ func TestMerge(t *testing.T) {
 		tc := tc
 		t.Run(tc.Name, func(t *testing.T) {
 			t.Parallel()
-			err := merge(tc.Existing, tc.Kind)
+			err := merge(tc.Existing, tc.Kind, true)
 			assert.ExpectError(t, tc.ExpectError, err)
 			if !tc.ExpectError && !reflect.DeepEqual(tc.Existing, tc.Expected) {
 				t.Errorf("Merged Config did not equal Expected")
@@ -304,7 +304,7 @@ users:
 		},
 	}
 	// ensure that we can write this merged config
-	if err := WriteMerged(kindConfig, existingConfigPath); err != nil {
+	if err := WriteMerged(kindConfig, existingConfigPath, true); err != nil {
 		t.Fatalf("Failed to write merged kubeconfig: %v", err)
 	}
 
@@ -360,7 +360,7 @@ func testWriteMergedBogusConfig(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	err = WriteMerged(&Config{}, filepath.Join(dir, "bogus"))
+	err = WriteMerged(&Config{}, filepath.Join(dir, "bogus"), true)
 	assert.ExpectError(t, true, err)
 }
 
@@ -411,7 +411,7 @@ func testWriteMergedNoExistingFile(t *testing.T) {
 	}
 
 	nonExistentPath := filepath.Join(dir, "bogus", "extra-bogus")
-	err = WriteMerged(kindConfig, nonExistentPath)
+	err = WriteMerged(kindConfig, nonExistentPath, true)
 	assert.ExpectError(t, false, err)
 
 	// ensure the output matches expected
