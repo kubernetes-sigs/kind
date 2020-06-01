@@ -164,8 +164,17 @@ func (p *Provider) KubeConfig(name string, internal bool) (string, error) {
 // it into the selected file, following the rules from
 // https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#config
 // where explicitPath is the --kubeconfig value.
-func (p *Provider) ExportKubeConfig(name string, explicitPath string, updateKubeContext bool) error {
-	return kubeconfig.Export(p.provider, defaultName(name), explicitPath, updateKubeContext)
+func (p *Provider) ExportKubeConfig(name string, explicitPath string) error {
+	return kubeconfig.Export(p.provider, defaultName(name), explicitPath)
+}
+
+// SaveKubeConfig exports the KUBECONFIG for the cluster, merging
+// it into the selected file, following the rules from
+// https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#config
+// where explicitPath is the --kubeconfig value.
+// Unlike ExportKubeConfig, this function gives you the option of *not* updating the kube context.
+func (p *Provider) SaveKubeConfig(name string, explicitPath string, updateKubeContext bool) error {
+	return kubeconfig.Save(p.provider, defaultName(name), explicitPath, updateKubeContext)
 }
 
 // ListNodes returns the list of container IDs for the "nodes" in the cluster
