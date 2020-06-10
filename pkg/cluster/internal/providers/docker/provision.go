@@ -294,6 +294,9 @@ func getProxyEnv(cfg *config.Cluster, networkName string, nodeNames []string) (m
 
 		noProxyList := append(subnets, envs[common.NOProxy])
 		noProxyList = append(noProxyList, nodeNames...)
+		// Add .svc explicitly to no_proxy to allow in cluster
+		// pod and service dns resolution
+		noProxyList = append(noProxyList, ".svc")
 		noProxyJoined := strings.Join(noProxyList, ",")
 		envs[common.NOProxy] = noProxyJoined
 		envs[strings.ToLower(common.NOProxy)] = noProxyJoined
