@@ -23,7 +23,7 @@ FROM ubuntu:20.04
 
 # Configure containerd and runc binaries from kind-ci/containerd-nightlies repository
 # The repository contains latest stable releases and nightlies built for multiple architectures
-ARG CONTAINERD_VERSION="v1.3.3-14-g449e9269"
+ARG CONTAINERD_VERSION="v1.4.0-beta.1-26-g834665d9"
 # Configure CNI binaries from upstream
 ARG CNI_VERSION="v0.8.6"
 # Configure crictl binary from upstream
@@ -67,7 +67,7 @@ RUN echo "Ensuring scripts are executable ..." \
     && DEBIAN_FRONTEND=noninteractive clean-install \
       systemd \
       conntrack iptables iproute2 ethtool socat util-linux mount ebtables udev kmod \
-      libseccomp2 \
+      libseccomp2 pigz \
       bash ca-certificates curl rsync \
       nfs-common \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
@@ -89,6 +89,7 @@ RUN echo "Ensuring scripts are executable ..." \
     && curl -sSL --retry 5 --output /usr/local/sbin/runc "${CONTAINERD_BASE_URL}/runc.${ARCH}" \
     && chmod 755 /usr/local/sbin/runc \
     && containerd --version \
+    && runc --version \
     && systemctl enable containerd \
  && echo "Installing crictl ..." \
     && curl -fSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz" | tar xzC /usr/local/bin \
