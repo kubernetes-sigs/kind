@@ -89,6 +89,7 @@ RUN echo "Ensuring scripts are executable ..." \
     && curl -sSL --retry 5 --output /usr/local/sbin/runc "${CONTAINERD_BASE_URL}/runc.${ARCH}" \
     && chmod 755 /usr/local/sbin/runc \
     && containerd --version \
+    && runc --version \
     && systemctl enable containerd \
  && echo "Installing crictl ..." \
     && curl -fSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz" | tar xzC /usr/local/bin \
