@@ -67,7 +67,7 @@ RUN echo "Ensuring scripts are executable ..." \
     && DEBIAN_FRONTEND=noninteractive clean-install \
       systemd \
       conntrack iptables iproute2 ethtool socat util-linux mount ebtables udev kmod \
-      libseccomp2 \
+      libseccomp2 pigz \
       bash ca-certificates curl rsync \
       nfs-common \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
