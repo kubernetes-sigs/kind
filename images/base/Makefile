@@ -6,8 +6,9 @@ export DOCKER_CLI_EXPERIMENTAL=enabled
 # build with buildx
 PLATFORMS?=linux/amd64,linux/arm64
 OUTPUT=
+PROGRESS=auto
 build: ensure-buildx
-	docker buildx build --platform=${PLATFORMS} $(OUTPUT) -t ${IMAGE} --pull .
+	docker buildx build --platform=${PLATFORMS} $(OUTPUT) --progress=$(PROGRESS) -t ${IMAGE} --pull .
 
 # push the cross built image
 push: OUTPUT=--push
