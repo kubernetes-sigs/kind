@@ -110,8 +110,7 @@ create_cluster() {
       echo "GA_ONLY=true is only supported on versions >= v1.18, got ${KUBE_VERSION}"
       exit 1
       ;;
-    v1.1[8-9].*)
-      # TODO(liggitt): drop this exception for 1.19 once the CSR API and feature are promoted to GA in 1.19
+    v1.18.*)
       echo "Limiting to GA APIs and features (plus certificates.k8s.io/v1beta1 and RotateKubeletClientCertificate) for ${KUBE_VERSION}"
       feature_gates='{"AllAlpha":false,"AllBeta":false,"RotateKubeletClientCertificate":true}'
       runtime_config='api/alpha=false,api/beta=false,certificates.k8s.io/v1beta1=true'
