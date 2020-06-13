@@ -218,3 +218,54 @@ You may also want to see the [Ingress Guide].
 
 
 [Ingress Guide]: ./../ingress
+
+### Kubeadm Config Patches
+
+KIND uses [`kubeadm`](./../../design/principles/#leverage-existing-tooling) 
+to configure cluster nodes.
+Formally  KIND runs `kubeadm init` on the first control-plane node 
+which can be customized by using the kubeadm
+[InitConfiguration](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init/#config-file) 
+([spec](https://godoc.org/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta2#InitConfiguration))
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "my-label=true"
+{{< /codeFromInline >}}
+
+On every additional node configured in the KIND cluster, 
+worker or control-plane (in HA mode),
+KIND runs `kubeadm join` which can be configured using the 
+[JoinConfiguration](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-join/#config-file)
+([spec](https://godoc.org/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta2#JoinConfiguration))
+
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+- role: worker
+- role: worker
+  kubeadmConfigPatches:
+  - |
+    kind: JoinConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "my-label2=true"
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: JoinConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "my-label3=true"
+{{< /codeFromInline >}}
