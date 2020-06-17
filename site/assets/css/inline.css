@@ -229,7 +229,7 @@ table.includecode thead th {
 }
 
 table.includecode thead th button {
-  background: blue;
+  background: #326be5;
   border: 1px solid white;
   color: white;
   font-weight: bold;
