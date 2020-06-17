@@ -167,7 +167,7 @@ body {
 }
 
 /* consistent link color */
-a { color: #1f28f0; }
+a { color: #326be5; }
 
 /* ensure images don't go off the page */
 #content img { max-width: 100%; }
@@ -235,6 +235,7 @@ table.includecode thead th button {
   color: white;
   font-weight: bold;
   margin: .25em;
+  cursor: pointer;
 }
 
 table.includecode pre {
