@@ -32,6 +32,7 @@ It may additionally be helpful to:
 * [Chrome OS](#chrome-os)
 * [AppArmor](#apparmor)
 * [IPv6 port forwarding](#ipv6-port-forwarding)
+* [Fedora 32 Firewalld](#fedora32-firewalld)
 
 ## Kubectl Version Skew
 
@@ -358,6 +359,21 @@ your workloads inside the cluster via the nodes IPv6 addresses.
 
 See Previous Discussion: [kind#1326]
 
+## Fedora32 Firewalld
+
+On Fedora 32 [firewalld] moved to nftables backend by default.
+This seems to be incompatible with Docker, leading to KIND cluster nodes not
+being able to reach each other.
+
+You can work around this by changing the `FirewallBackend` in the `/etc/firewalld/firewalld.conf ` file from `nftables` to `iptables` and restarting docker.
+
+```console
+sed -i /etc/firewalld/firewalld.conf 's/FirewallBackend=.*/FirewallBackend=iptables/'
+systemctl restart docker
+```
+
+See [#1547 (comment)](https://github.com/kubernetes-sigs/kind/issues/1547#issuecomment-623756313)
+
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new
 [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
@@ -382,4 +398,4 @@ See Previous Discussion: [kind#1326]
 [version skew]: https://kubernetes.io/docs/setup/release/version-skew-policy/#supported-version-skew
 [Quick Start]: /docs/user/quick-start
 [AppArmor]: https://en.wikipedia.org/wiki/AppArmor
-
+[firewalld]: https://firewalld.org/
