@@ -47,10 +47,9 @@ body {
 }
 
 #content, .footer {
-  padding-left: .2em;
   margin: 0 auto;
-  padding: 0 4px;
-  width: calc(100% - 8px);
+  padding: 0 1em;
+  width: calc(100% - 2em);
   max-width: 50em;
 }
 
