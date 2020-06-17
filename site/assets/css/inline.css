@@ -101,6 +101,35 @@ body {
   vertical-align: middle;
 }
 
+#noticebar{
+  padding: 2em;
+}
+#noticebar>* {
+  max-width: 50em;
+  margin-left: auto;
+  margin-right: auto;
+  margin-block-end: 0;
+  margin-block-start: 0;
+}
+
+#noticebar.black {
+  color: white;
+  background: black;
+}
+#noticebar.black a {
+  color: white;
+}
+#navbar.black {
+  color: white;
+  background: black;
+}
+#navbar.black>#sidebar-toggle {
+  color: white;
+}
+#navbar.black>#github {
+  filter: invert(1);
+}
+
 #sidebar {
   height: 100%;
   position: fixed;
