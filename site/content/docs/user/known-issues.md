@@ -20,7 +20,6 @@ It may additionally be helpful to:
 * [kubectl version skew](#kubectl-version-skew)
 * [Older Docker Installations](#older-docker-installations)
 * [Docker Installed With Snap](#docker-installed-with-snap)
-* [Failing to apply overlay network](#failing-to-apply-overlay-network)
 * [Failure to build node image](#failure-to-build-node-image)
 * [Failing to properly start cluster](#failing-to-properly-start-cluster)
 * [Pod errors due to "too many open files"](#pod-errors-due-to-too-many-open-files)
@@ -95,42 +94,6 @@ on using temp directories (`kind build ...`).
 Currently a workaround for this is setting the `TEMPDIR` environment variable to
 a directory snap does have access to when working with kind.
 This can for example be some directory under `$HOME`.
-
-## Failing to apply overlay network
-There are two known causes for problems while applying the overlay network
-while building a kind cluster:
-
-* Host machine is behind a proxy
-* Usage of Docker version 18.09
-
-If you see something like the following error message:
-```
- ✗ [kind-1-control-plane] Starting Kubernetes (this may take a minute) ☸
-FATA[07:20:43] Failed to create cluster: failed to apply overlay network: exit status 1
-```
-
-or the following, when setting the `loglevel` flag to debug,
-```
-DEBU[16:26:53] Running: /usr/bin/docker [docker exec --privileged kind-1-control-plane /bin/sh -c kubectl apply --kubeconfig=/etc/kubernetes/admin.conf -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version --kubeconfig=/etc/kubernetes/admin.conf | base64 | tr -d '\n')"]
-ERRO[16:28:25] failed to apply overlay network: exit status 1 ) ☸
- ✗ [control-plane] Starting Kubernetes (this may take a minute) ☸
-ERRO[16:28:25] failed to apply overlay network: exit status 1
-DEBU[16:28:25] Running: /usr/bin/docker [docker ps -q -a --no-trunc --filter label=io.k8s.sigs.kind.cluster --format {{.Names}}\t{{.Label "io.k8s.sigs.kind.cluster"}} --filter label=io.k8s.sigs.kind.cluster=1]
-DEBU[16:28:25] Running: /usr/bin/docker [docker rm -f -v kind-1-control-plane]
-⠈⠁ [control-plane] Pre-loading images 🐋 Error: failed to create cluster: failed to apply overlay network: exit status 1
-```
-
-The issue may be due to your host machine being behind a proxy, such as in
-[kind#136][kind#136].
-We are currently looking into ways of mitigating this issue by preloading CNI
-artifacts, see [kind#200][kind#200].
-Another possible solution is to enable kind nodes to use a proxy when
-downloading images, see [kind#270][kind#270].
-
-The last known case for this issue comes from the host machine 
-[using Docker 18.09 in kind#136][kind#136-docker]. 
-In this case, a known solution is to upgrade to any Docker version greater than or
-equal to Docker 18.09.1.
 
 
 ## Failure to build node image
