@@ -235,6 +235,7 @@ table.includecode thead th button {
   color: white;
   font-weight: bold;
   margin: .25em;
+  cursor: pointer;
 }
 
 table.includecode pre {
