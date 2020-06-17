@@ -19,7 +19,6 @@ It may additionally be helpful to:
 ## Contents
 * [kubectl version skew](#kubectl-version-skew)
 * [Older Docker Installations](#older-docker-installations)
-* [Docker on Btrfs or ZFS](#docker-on-btrfs-or-zfs)
 * [Docker Installed With Snap](#docker-installed-with-snap)
 * [Failing to apply overlay network](#failing-to-apply-overlay-network)
 * [Failure to build node image](#failure-to-build-node-image)
@@ -81,31 +80,6 @@ And possibly other old versions of Docker.
 With these versions you must use Kubernetes >= 1.14, or more ideally upgrade Docker instead.
 
 kind is tested with a recent stable `docker-ce` release.
-
-## Docker on Btrfs or ZFS
-
-`kind` cannot run properly if containers on your machine / host are backed by a
-[Btrfs](https://en.wikipedia.org/wiki/Btrfs) or [ZFS](https://en.wikipedia.org/wiki/ZFS)
-filesystem.
-
-This should only be relevant on Linux, on which you can check with:
-
-{{< codeFromInline lang="bash" >}}
-docker info | grep -i storage
-{{< /codeFromInline >}}
-
-As a workaround, you'll need to ensure that the storage driver is one that works.
-Docker's default of `overlay2` is a good choice, but `aufs` should also work.
-
-You can set the storage driver with the following configuration in `/etc/docker/daemon.json`:
-
-```
-{
-  "storage-driver": "overlay2"
-}
-```
-
-After restarting the Docker daemon you should see that Docker is now using the `overlay2` storage driver instead of `btrfs`.
 
 
 **NOTE**: You'll need to make sure the backing filesystem is not btrfs / ZFS as well,
