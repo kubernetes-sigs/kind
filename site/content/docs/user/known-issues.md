@@ -80,11 +80,6 @@ With these versions you must use Kubernetes >= 1.14, or more ideally upgrade Doc
 
 kind is tested with a recent stable `docker-ce` release.
 
-
-**NOTE**: You'll need to make sure the backing filesystem is not btrfs / ZFS as well,
-which may require creating a partition on your host disk with a suitable filesystem and ensuring Docker's
-data root is on this (by default `/var/lib/docker`). Ext4 is a reasonable choice.
-
 ## Docker Installed with Snap
 
 If you installed Docker with [snap], it is likely that `docker` commands do not
@@ -196,14 +191,6 @@ at the kubelet logs, which may have something like the following:
 Dec 07 00:37:53 kind-1-control-plane kubelet[688]: I1207 00:37:53.229561     688 eviction_manager.go:340] eviction manager: must evict pod(s) to reclaim ephemeral-storage
 Dec 07 00:37:53 kind-1-control-plane kubelet[688]: E1207 00:37:53.229638     688 eviction_manager.go:351] eviction manager: eviction thresholds have been met, but no pods are active to evict
 ```
-
-If on the other hand you are running kind on a btrfs partition and your logs
-show something like the following:
-```
-F0103 17:42:41.470269 3804 kubelet.go:1359] Failed to start ContainerManager failed to get rootfs info: failed to get device for dir "/ var/lib/kubelet": could not find device with major: 0, minor: 67 in cached partitions map
-```
-
-This problem seems to be related to a [bug in Docker][moby#9939].
 
 ## Pod errors due to "too many open files"
 
