@@ -23,7 +23,7 @@ It may additionally be helpful to:
 * [Docker Installed With Snap](#docker-installed-with-snap)
 * [Failing to apply overlay network](#failing-to-apply-overlay-network)
 * [Failure to build node image](#failure-to-build-node-image)
-* [Failing to properly start cluster](#failure-to-properly-start-cluster)
+* [Failing to properly start cluster](#failing-to-properly-start-cluster)
 * [Pod errors due to "too many open files"](#pod-errors-due-to-too-many-open-files)
 * [Docker permission denied](#docker-permission-denied)
 * [Windows Containers](#windows-containers)
