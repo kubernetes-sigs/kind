@@ -17,20 +17,20 @@ It may additionally be helpful to:
 - reach out and ask for help in [#kind] on the [kubernetes slack]
 
 ## Contents
-* [kubectl version skew](#kubectl-version-skew)
-* [Older Docker Installations](#older-docker-installations)
-* [Docker Installed With Snap](#docker-installed-with-snap)
-* [Failure to build node image](#failure-to-build-node-image)
-* [Failing to properly start cluster](#failing-to-properly-start-cluster)
-* [Pod errors due to "too many open files"](#pod-errors-due-to-too-many-open-files)
-* [Docker permission denied](#docker-permission-denied)
-* [Windows Containers](#windows-containers)
-* [Non-AMD64 Architectures](#nonamd64-architectures)
-* [Unable to pull images](#unable-to-pull-images)
-* [Chrome OS](#chrome-os)
-* [AppArmor](#apparmor)
-* [IPv6 port forwarding](#ipv6-port-forwarding)
-* [Fedora 32 Firewalld](#fedora32-firewalld)
+* [Kubectl Version Skew](#kubectl-version-skew) (Kubernetes limits supported version skew)
+* [Older Docker Installations](#older-docker-installations) (untested, known to have bugs)
+* [Docker Installed With Snap](#docker-installed-with-snap) (snap filesystem restrictions problematic)
+* [Failure to Build Node Image](#failure-to-build-node-image) (usually need to increase resources)
+* [Failing to Properly Start Cluster](#failing-to-properly-start-cluster) (various causes)
+* [Pod Errors Due to "too many open files"](#pod-errors-due-to-too-many-open-files) (likely [inotify] limits which are not namespaced)
+* [Docker Permission Denied](#docker-permission-denied) (ensure you have permission to use docker)
+* [Windows Containers](#windows-containers) (unsupported / infeasible)
+* [Non-AMD64 Architectures](#nonamd64-architectures) (images not pre-built yet)
+* [Unable to Pull Images](#unable-to-pull-images) (various)
+* [Chrome OS](#chrome-os) (unsupported)
+* [AppArmor](#apparmor) (may break things, consider disabling)
+* [IPv6 Port Forwarding](#ipv6-port-forwarding) (docker doesn't seem to implement this correctly)
+* [Fedora 32 Firewalld](#fedora32-firewalld) (nftables + docker broken, switch to iptables)
 
 ## Kubectl Version Skew
 
@@ -336,3 +336,4 @@ See [#1547 (comment)](https://github.com/kubernetes-sigs/kind/issues/1547#issuec
 [Quick Start]: /docs/user/quick-start
 [AppArmor]: https://en.wikipedia.org/wiki/AppArmor
 [firewalld]: https://firewalld.org/
+[inotify]: https://en.wikipedia.org/wiki/Inotify
