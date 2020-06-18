@@ -13,7 +13,6 @@
 # limitations under the License.
 
 # standard haproxy image + minimal config so the container will not exit
-ARG ARCH="amd64"
 ARG BASE="haproxy:2.1.1-alpine"
-FROM ${ARCH}/${BASE}
+FROM ${BASE}
 COPY haproxy.cfg /usr/local/etc/haproxy/haproxy.cfg
