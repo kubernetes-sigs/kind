@@ -149,24 +149,22 @@ EOF
 }
 
 select_iptables() {
-  # based on: https://github.com/kubernetes/kubernetes/blob/ffe93b3979486feb41a0f85191bdd189cbd56ccc/build/debian-iptables/iptables-wrapper
-  local mode=nft
-  num_legacy_lines=$( (iptables-legacy-save || true; ip6tables-legacy-save || true) 2>/dev/null | grep '^-' | wc -l || true)
-  if [ "${num_legacy_lines}" -ge 10 ]; then
-    mode=legacy
-  else
-    num_nft_lines=$( (timeout 5 sh -c "iptables-nft-save; ip6tables-nft-save" || true) 2>/dev/null | grep '^-' | wc -l || true)
-    if [ "${num_legacy_lines}" -ge "${num_nft_lines}" ]; then
-      mode=legacy
-    fi
-  fi
+# iptables-nft has some advantages over iptables-legacy
+# per example, it does not need external locking
+# so we default to nft if present for k8s usage
+if command -v iptables-nft > /dev/null 2>&1; then
+  echo "INFO: setting iptables to nft mode" >&2
+  update-alternatives --set iptables "/usr/sbin/iptables-nft" > /dev/null
+fi
 
-  echo "INFO: setting iptables to detected mode: ${mode}" >&2
-  update-alternatives --set iptables "/usr/sbin/iptables-${mode}" > /dev/null
-  update-alternatives --set ip6tables "/usr/sbin/ip6tables-${mode}" > /dev/null
+if command -v ip6tables-nft > /dev/null 2>&1; then
+  echo "INFO: setting ip6tables to nft mode" >&2
+  update-alternatives --set ip6tables "/usr/sbin/ip6tables-nft" > /dev/null
+fi
+
 }
 
-enable_network_magic(){
+enable_network_magic() {
   # well-known docker embedded DNS is at 127.0.0.11:53
   local docker_embedded_dns_ip='127.0.0.11'
 
@@ -177,8 +175,21 @@ enable_network_magic(){
     docker_host_ip=$(ip -4 route show default | cut -d' ' -f3)
   fi
 
+  # network magic use the same iptables version that is used by docker
+  # based on: https://github.com/kubernetes/kubernetes/blob/ffe93b3979486feb41a0f85191bdd189cbd56ccc/build/debian-iptables/iptables-wrapper
+  local mode=nft
+  num_legacy_lines=$( (iptables-legacy-save | grep DOCKER || true; ip6tables-legacy-save | grep DOCKER || true) 2>/dev/null | grep '^-' | wc -l || true)
+  if [ "${num_legacy_lines}" -ge 5 ]; then
+    mode=legacy
+  else
+    num_nft_lines=$( (timeout 5 sh -c "iptables-nft-save; ip6tables-nft-save" || true) 2>/dev/null | grep '^-' | wc -l || true)
+    if [ "${num_legacy_lines}" -ge "${num_nft_lines}" ]; then
+      mode=legacy
+    fi
+  fi
+
   # patch docker's iptables rules to switch out the DNS IP
-  iptables-save \
+  iptables-${mode}-save \
     | sed \
       `# switch docker DNS DNAT rules to our chosen IP` \
       -e "s/-d ${docker_embedded_dns_ip}/-d ${docker_host_ip}/g" \
@@ -186,7 +197,7 @@ enable_network_magic(){
       -e 's/-A OUTPUT \(.*\) -j DOCKER_OUTPUT/\0\n-A PREROUTING \1 -j DOCKER_OUTPUT/' \
       `# switch docker DNS SNAT rules rules to our chosen IP` \
       -e "s/--to-source :53/--to-source ${docker_host_ip}:53/g"\
-    | iptables-restore
+    | iptables-${mode}-restore
 
   # now we can ensure that DNS is configured to use our IP
   cp /etc/resolv.conf /etc/resolv.conf.original
@@ -240,8 +251,8 @@ fix_machine_id
 fix_product_name
 fix_product_uuid
 configure_proxy
-select_iptables
 enable_network_magic
+select_iptables
 
 # we want the command (expected to be systemd) to be PID1, so exec to it
 exec "$@"
