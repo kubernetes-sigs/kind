@@ -4,7 +4,7 @@ IMAGE?=kindest/kindnetd:$(TAG)
 export DOCKER_CLI_EXPERIMENTAL=enabled
 
 # build with buildx
-PLATFORMS?=linux/amd64,linux/arm64,linux/arm,linux/ppc64le
+PLATFORMS?=linux/amd64,linux/arm64,linux/ppc64le
 OUTPUT=
 PROGRESS=auto
 build: ensure-buildx

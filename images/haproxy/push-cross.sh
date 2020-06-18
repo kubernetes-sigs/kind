@@ -34,7 +34,6 @@ BASE="haproxy:${TAG}"
 # tag arch, manifest architecture, variant
 ARCHES=(
   "amd64,amd64,"
-  "arm32v6,arm,v6"
   "arm64v8,arm64,v8"
   "ppc64le,ppc64le,"
 )
