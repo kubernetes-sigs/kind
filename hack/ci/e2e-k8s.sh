@@ -244,11 +244,13 @@ main() {
   BUILD_TYPE="${BUILD_TYPE:-bazel}"
 
   # build kubernetes
-  if [ "${BUILD_TYPE:-}" = "bazel" ]; then
-    build_with_bazel
-  else
-    build
-  fi
+  #if [ "${BUILD_TYPE:-}" = "bazel" ]; then
+  #  build_with_bazel
+  #else
+  #  build
+  #fi
+  echo "WARNING: building without bazel due to CI breakage / ignoring BUILD_TYPE"
+  build
 
   # in CI attempt to release some memory after building
   if [ -n "${KUBETEST_IN_DOCKER:-}" ]; then
