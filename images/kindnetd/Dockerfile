@@ -12,7 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG GOARCH=amd64
-FROM gcr.io/google-containers/debian-iptables-${GOARCH}:v12.0.1
-COPY --chown=root:root kindnetd /bin/kindnetd
+# first stage build kindnetd binary
+# NOTE: tentatively follow upstream kubernetes go version based on k8s in go.mod
+FROM golang:1.13
+WORKDIR /go/src
+# make deps fetching cachable
+COPY go.mod go.sum .
+RUN go mod download
+# build
+COPY . .
+RUN CGO_ENABLED=0 go build -o ./kindnetd ./cmd/kindnetd
+
+# build real kindnetd image
+FROM gcr.io/google-containers/debian-iptables:v12.0.1
+COPY --from=0 --chown=root:root ./go/src/kindnetd /bin/kindnetd
 CMD ["/bin/kindnetd"]
