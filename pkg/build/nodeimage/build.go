@@ -74,7 +74,6 @@ func supportedArch(arch string) bool {
 		return false
 	// currently we nominally support building node images for these
 	case "amd64":
-	case "arm":
 	case "arm64":
 	case "ppc64le":
 	}

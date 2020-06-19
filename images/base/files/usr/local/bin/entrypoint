@@ -19,11 +19,11 @@ set -o nounset
 set -o pipefail
 
 fix_mount() {
-  echo 'INFO: ensuring we can execute /bin/mount even with userns-remap' 
+  echo 'INFO: ensuring we can execute mount/umount even with userns-remap' 
   # necessary only when userns-remap is enabled on the host, but harmless
   # The binary /bin/mount should be owned by root and have the setuid bit
-  chown root:root /bin/mount
-  chmod -s /bin/mount
+  chown root:root "$(which mount)" "$(which umount)"
+  chmod -s "$(which mount)" "$(which umount)"
 
   # This is a workaround to an AUFS bug that might cause `Text file
   # busy` on `mount` command below. See more details in

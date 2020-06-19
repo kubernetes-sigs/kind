@@ -269,3 +269,5 @@ nodes:
       kubeletExtraArgs:
         node-labels: "my-label3=true"
 {{< /codeFromInline >}}
+
+[YAML]: https://yaml.org/
