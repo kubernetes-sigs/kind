@@ -250,7 +250,7 @@ main() {
   #  build
   #fi
   echo "WARNING: building without bazel due to CI breakage / ignoring BUILD_TYPE"
-  build
+  time build
 
   # in CI attempt to release some memory after building
   if [ -n "${KUBETEST_IN_DOCKER:-}" ]; then
@@ -260,8 +260,8 @@ main() {
 
   # create the cluster and run tests
   res=0
-  create_cluster || res=$?
-  run_tests || res=$?
+  time create_cluster || res=$?
+  time run_tests || res=$?
   cleanup || res=$?
   exit $res
 }

@@ -40,7 +40,7 @@ main() {
   trap cleanup INT TERM EXIT
 
   # install kind
-  install_kind
+  time install_kind
 
   # build kubernetes / e2e test
   "${REPO_ROOT}/hack/ci/e2e-k8s.sh"
