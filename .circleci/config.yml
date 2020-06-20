@@ -1,0 +1,14 @@
+jobs:
+  macOS-integration:
+    macos:
+      xcode: 11.5.0
+    steps:
+    - run:
+        name: docker
+        command: docker version
+
+workflows:
+  version: 2
+  test:
+   jobs:
+   - macOS-integration
