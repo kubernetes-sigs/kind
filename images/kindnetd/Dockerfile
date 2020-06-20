@@ -24,6 +24,6 @@ COPY . .
 RUN CGO_ENABLED=0 go build -o ./kindnetd ./cmd/kindnetd
 
 # build real kindnetd image
-FROM gcr.io/google-containers/debian-iptables:v12.0.1
+FROM us.gcr.io/k8s-artifacts-prod/build-image/debian-iptables:v12.1.0
 COPY --from=0 --chown=root:root ./go/src/kindnetd /bin/kindnetd
 CMD ["/bin/kindnetd"]
