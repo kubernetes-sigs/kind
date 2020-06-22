@@ -151,22 +151,10 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 	for _, selectedNode := range selectedNodes {
 		selectedNode := selectedNode // capture loop variable
 		fns = append(fns, func() error {
-			return loadImage(imageTarPath, selectedNode)
+			return nodeutils.LoadImageFromTarFile(selectedNode, imageTarPath)
 		})
 	}
 	return errors.UntilErrorConcurrent(fns)
-}
-
-// TODO: we should consider having a cluster method to load images
-
-// loads an image tarball onto a node
-func loadImage(imageTarName string, node nodes.Node) error {
-	f, err := os.Open(imageTarName)
-	if err != nil {
-		return errors.Wrap(err, "failed to open image")
-	}
-	defer f.Close()
-	return nodeutils.LoadImageArchive(node, f)
 }
 
 // save saves image to dest, as in `docker save`

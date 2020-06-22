@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"os"
 	"path"
 	"strings"
 
@@ -81,6 +82,16 @@ func LoadImageArchive(n nodes.Node, image io.Reader) error {
 		return errors.Wrap(err, "failed to load image")
 	}
 	return nil
+}
+
+// LoadImageFromTarFile loads an image tarball onto a node
+func LoadImageFromTarFile(n nodes.Node, imageTarName string) error {
+	f, err := os.Open(imageTarName)
+	if err != nil {
+		return errors.Wrap(err, "failed to open image")
+	}
+	defer f.Close()
+	return LoadImageArchive(n, f)
 }
 
 // ImageID returns ID of image on the node with the given image name if present
