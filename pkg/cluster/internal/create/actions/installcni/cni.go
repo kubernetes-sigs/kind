@@ -74,8 +74,10 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		var out bytes.Buffer
 		err = t.Execute(&out, &struct {
 			PodSubnet string
+			Mtu       int32
 		}{
 			PodSubnet: ctx.Config.Networking.PodSubnet,
+			Mtu:       ctx.Config.Networking.Mtu,
 		})
 		if err != nil {
 			return errors.Wrap(err, "failed to execute CNI manifest template")

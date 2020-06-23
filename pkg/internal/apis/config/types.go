@@ -136,6 +136,8 @@ type Networking struct {
 	DisableDefaultCNI bool
 	// KubeProxyMode defines if kube-proxy should operate in iptables or ipvs mode
 	KubeProxyMode ProxyMode
+	//MTU defines the MTU for the CNI of the nodes if the user needs to set them
+	MTU int32
 }
 
 // ClusterIPFamily defines cluster network IP family

@@ -105,6 +105,8 @@ spec:
               fieldPath: status.podIP
         - name: POD_SUBNET
           value: {{ .PodSubnet }}
+	- name: MTU
+	  value: {{ .Mtu }}
         volumeMounts:
         - name: cni-cfg
           mountPath: /etc/cni/net.d

@@ -181,6 +181,8 @@ type Networking struct {
 	// KubeProxyMode defines if kube-proxy should operate in iptables or ipvs mode
 	// Defaults to 'iptables' mode
 	KubeProxyMode ProxyMode `yaml:"kubeProxyMode,omitempty"`
+	// MTU is the mtu value the ptp CNI plugin will use, if specified
+	MTU int32 `yaml:"mtu,omitempty"`
 }
 
 // ClusterIPFamily defines cluster network IP family

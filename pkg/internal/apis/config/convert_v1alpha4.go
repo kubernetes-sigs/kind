@@ -83,6 +83,7 @@ func convertv1alpha4Networking(in *v1alpha4.Networking, out *Networking) {
 	out.KubeProxyMode = ProxyMode(in.KubeProxyMode)
 	out.ServiceSubnet = in.ServiceSubnet
 	out.DisableDefaultCNI = in.DisableDefaultCNI
+	out.MTU = in.MTU
 }
 
 func convertv1alpha4Mount(in *v1alpha4.Mount, out *Mount) {
