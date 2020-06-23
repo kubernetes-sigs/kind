@@ -34,23 +34,26 @@ import (
 type CNIConfigInputs struct {
 	PodCIDR      string
 	DefaultRoute string
-	MTU          string
+	Mtu          string
 }
 
 // ComputeCNIConfigInputs computes the template inputs for CNIConfigWriter
 func ComputeCNIConfigInputs(node corev1.Node) CNIConfigInputs {
 	podCIDR := node.Spec.PodCIDR
 	defaultRoute := "0.0.0.0/0"
-	defaultMtu := "1480"
+	mtu := os.Getenv("MTU")
 
 	if net.IsIPv6CIDRString(podCIDR) {
 		defaultRoute = "::/0"
 	}
-	return CNIConfigInputs{
+	config := CNIConfigInputs{
 		PodCIDR:      podCIDR,
 		DefaultRoute: defaultRoute,
-		MTU:          defaultMtu,
 	}
+	if mtu != "" {
+		config.Mtu = mtu
+	}
+	return config
 }
 
 // cniConfigPath is where kindnetd will write the computed CNI config
@@ -79,8 +82,10 @@ const cniConfigTemplate = `
 				}
 			]
 		]
-		},
+		}
+		{{if .Mtu}},
 		"mtu": "{{ .Mtu }}"
+		{{end}}
 	},
 	{
 		"type": "portmap",
