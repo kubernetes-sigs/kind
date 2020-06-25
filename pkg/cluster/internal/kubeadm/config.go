@@ -467,7 +467,7 @@ localAPIEndpoint:
   advertiseAddress: "{{ .NodeAddress }}"
   bindPort: {{.APIBindPort}}
 nodeRegistration:
-  criSocket: "/run/containerd/containerd.sock"
+  criSocket: "unix:///run/containerd/containerd.sock"
   kubeletExtraArgs:
     fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
@@ -484,7 +484,7 @@ controlPlane:
     bindPort: {{.APIBindPort}}
 {{- end }}
 nodeRegistration:
-  criSocket: "/run/containerd/containerd.sock"
+  criSocket: "unix:///run/containerd/containerd.sock"
   kubeletExtraArgs:
     fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
