@@ -41,11 +41,14 @@ version = 2
 [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.test-handler]
   runtime_type = "io.containerd.runc.v2"
 
-# ensure the sandbox image matches kubeadm
-# TODO: probably we should instead just use the containerd default
-# Implementing the pod sandbox is a CRI implementation detail ..
 [plugins."io.containerd.grpc.v1.cri"]
+  # ensure the sandbox image matches kubeadm
+  # TODO: probably we should instead just use the containerd default
+  # Implementing the pod sandbox is a CRI implementation detail ...
   sandbox_image = "{{.SandboxImage}}"
+  # allow hugepages controller to be missing
+  # see https://github.com/containerd/cri/pull/1501
+  tolerate_missing_hugepages_controller = true
 `
 
 func getContainerdConfig(data containerdConfigTemplateData) (string, error) {
