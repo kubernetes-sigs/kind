@@ -17,21 +17,20 @@ It may additionally be helpful to:
 - reach out and ask for help in [#kind] on the [kubernetes slack]
 
 ## Contents
-* [kubectl version skew](#kubectl-version-skew)
-* [Older Docker Installations](#older-docker-installations)
-* [Docker on Btrfs or ZFS](#docker-on-btrfs-or-zfs)
-* [Docker Installed With Snap](#docker-installed-with-snap)
-* [Failing to apply overlay network](#failing-to-apply-overlay-network)
-* [Failure to build node image](#failure-to-build-node-image)
-* [Failing to properly start cluster](#failure-to-properly-start-cluster)
-* [Pod errors due to "too many open files"](#pod-errors-due-to-too-many-open-files)
-* [Docker permission denied](#docker-permission-denied)
-* [Windows Containers](#windows-containers)
-* [Non-AMD64 Architectures](#nonamd64-architectures)
-* [Unable to pull images](#unable-to-pull-images)
-* [Chrome OS](#chrome-os)
-* [AppArmor](#apparmor)
-* [IPv6 port forwarding](#ipv6-port-forwarding)
+* [Kubectl Version Skew](#kubectl-version-skew) (Kubernetes limits supported version skew)
+* [Older Docker Installations](#older-docker-installations) (untested, known to have bugs)
+* [Docker Installed With Snap](#docker-installed-with-snap) (snap filesystem restrictions problematic)
+* [Failure to Build Node Image](#failure-to-build-node-image) (usually need to increase resources)
+* [Failing to Properly Start Cluster](#failing-to-properly-start-cluster) (various causes)
+* [Pod Errors Due to "too many open files"](#pod-errors-due-to-too-many-open-files) (likely [inotify] limits which are not namespaced)
+* [Docker Permission Denied](#docker-permission-denied) (ensure you have permission to use docker)
+* [Windows Containers](#windows-containers) (unsupported / infeasible)
+* [Non-AMD64 Architectures](#nonamd64-architectures) (images not pre-built yet)
+* [Unable to Pull Images](#unable-to-pull-images) (various)
+* [Chrome OS](#chrome-os) (unsupported)
+* [AppArmor](#apparmor) (may break things, consider disabling)
+* [IPv6 Port Forwarding](#ipv6-port-forwarding) (docker doesn't seem to implement this correctly)
+* [Fedora 32 Firewalld](#fedora32-firewalld) (nftables + docker broken, switch to iptables)
 
 ## Kubectl Version Skew
 
@@ -81,36 +80,6 @@ With these versions you must use Kubernetes >= 1.14, or more ideally upgrade Doc
 
 kind is tested with a recent stable `docker-ce` release.
 
-## Docker on Btrfs or ZFS
-
-`kind` cannot run properly if containers on your machine / host are backed by a
-[Btrfs](https://en.wikipedia.org/wiki/Btrfs) or [ZFS](https://en.wikipedia.org/wiki/ZFS)
-filesystem.
-
-This should only be relevant on Linux, on which you can check with:
-
-{{< codeFromInline lang="bash" >}}
-docker info | grep -i storage
-{{< /codeFromInline >}}
-
-As a workaround, you'll need to ensure that the storage driver is one that works.
-Docker's default of `overlay2` is a good choice, but `aufs` should also work.
-
-You can set the storage driver with the following configuration in `/etc/docker/daemon.json`:
-
-```
-{
-  "storage-driver": "overlay2"
-}
-```
-
-After restarting the Docker daemon you should see that Docker is now using the `overlay2` storage driver instead of `btrfs`.
-
-
-**NOTE**: You'll need to make sure the backing filesystem is not btrfs / ZFS as well,
-which may require creating a partition on your host disk with a suitable filesystem and ensuring Docker's
-data root is on this (by default `/var/lib/docker`). Ext4 is a reasonable choice.
-
 ## Docker Installed with Snap
 
 If you installed Docker with [snap], it is likely that `docker` commands do not
@@ -120,42 +89,6 @@ on using temp directories (`kind build ...`).
 Currently a workaround for this is setting the `TEMPDIR` environment variable to
 a directory snap does have access to when working with kind.
 This can for example be some directory under `$HOME`.
-
-## Failing to apply overlay network
-There are two known causes for problems while applying the overlay network
-while building a kind cluster:
-
-* Host machine is behind a proxy
-* Usage of Docker version 18.09
-
-If you see something like the following error message:
-```
- ✗ [kind-1-control-plane] Starting Kubernetes (this may take a minute) ☸
-FATA[07:20:43] Failed to create cluster: failed to apply overlay network: exit status 1
-```
-
-or the following, when setting the `loglevel` flag to debug,
-```
-DEBU[16:26:53] Running: /usr/bin/docker [docker exec --privileged kind-1-control-plane /bin/sh -c kubectl apply --kubeconfig=/etc/kubernetes/admin.conf -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version --kubeconfig=/etc/kubernetes/admin.conf | base64 | tr -d '\n')"]
-ERRO[16:28:25] failed to apply overlay network: exit status 1 ) ☸
- ✗ [control-plane] Starting Kubernetes (this may take a minute) ☸
-ERRO[16:28:25] failed to apply overlay network: exit status 1
-DEBU[16:28:25] Running: /usr/bin/docker [docker ps -q -a --no-trunc --filter label=io.k8s.sigs.kind.cluster --format {{.Names}}\t{{.Label "io.k8s.sigs.kind.cluster"}} --filter label=io.k8s.sigs.kind.cluster=1]
-DEBU[16:28:25] Running: /usr/bin/docker [docker rm -f -v kind-1-control-plane]
-⠈⠁ [control-plane] Pre-loading images 🐋 Error: failed to create cluster: failed to apply overlay network: exit status 1
-```
-
-The issue may be due to your host machine being behind a proxy, such as in
-[kind#136][kind#136].
-We are currently looking into ways of mitigating this issue by preloading CNI
-artifacts, see [kind#200][kind#200].
-Another possible solution is to enable kind nodes to use a proxy when
-downloading images, see [kind#270][kind#270].
-
-The last known case for this issue comes from the host machine 
-[using Docker 18.09 in kind#136][kind#136-docker]. 
-In this case, a known solution is to upgrade to any Docker version greater than or
-equal to Docker 18.09.1.
 
 
 ## Failure to build node image
@@ -259,14 +192,6 @@ Dec 07 00:37:53 kind-1-control-plane kubelet[688]: I1207 00:37:53.229561     688
 Dec 07 00:37:53 kind-1-control-plane kubelet[688]: E1207 00:37:53.229638     688 eviction_manager.go:351] eviction manager: eviction thresholds have been met, but no pods are active to evict
 ```
 
-If on the other hand you are running kind on a btrfs partition and your logs
-show something like the following:
-```
-F0103 17:42:41.470269 3804 kubelet.go:1359] Failed to start ContainerManager failed to get rootfs info: failed to get device for dir "/ var/lib/kubelet": could not find device with major: 0, minor: 67 in cached partitions map
-```
-
-This problem seems to be related to a [bug in Docker][moby#9939].
-
 ## Pod errors due to "too many open files"
 
 This may be caused by running out of [inotify](https://linux.die.net/man/7/inotify) resources. Resource limits are defined by `fs.inotify.max_user_watches` and `fs.inotify.max_user_instances` system variables. For example, in Ubuntu these default to 8192 and 128 respectively, which is not enough to create a cluster with many nodes.
@@ -358,6 +283,21 @@ your workloads inside the cluster via the nodes IPv6 addresses.
 
 See Previous Discussion: [kind#1326]
 
+## Fedora32 Firewalld
+
+On Fedora 32 [firewalld] moved to nftables backend by default.
+This seems to be incompatible with Docker, leading to KIND cluster nodes not
+being able to reach each other.
+
+You can work around this by changing the `FirewallBackend` in the `/etc/firewalld/firewalld.conf ` file from `nftables` to `iptables` and restarting docker.
+
+```console
+sed -i /etc/firewalld/firewalld.conf 's/FirewallBackend=.*/FirewallBackend=iptables/'
+systemctl restart docker
+```
+
+See [#1547 (comment)](https://github.com/kubernetes-sigs/kind/issues/1547#issuecomment-623756313)
+
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new
 [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
@@ -382,4 +322,5 @@ See Previous Discussion: [kind#1326]
 [version skew]: https://kubernetes.io/docs/setup/release/version-skew-policy/#supported-version-skew
 [Quick Start]: /docs/user/quick-start
 [AppArmor]: https://en.wikipedia.org/wiki/AppArmor
-
+[firewalld]: https://firewalld.org/
+[inotify]: https://en.wikipedia.org/wiki/Inotify

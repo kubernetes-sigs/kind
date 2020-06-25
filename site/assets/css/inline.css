@@ -47,10 +47,9 @@ body {
 }
 
 #content, .footer {
-  padding-left: .2em;
   margin: 0 auto;
-  padding: 0 4px;
-  width: calc(100% - 8px);
+  padding: 0 1em;
+  width: calc(100% - 2em);
   max-width: 50em;
 }
 
@@ -101,6 +100,35 @@ body {
   vertical-align: middle;
 }
 
+#noticebar{
+  padding: 2em;
+}
+#noticebar>* {
+  max-width: 50em;
+  margin-left: auto;
+  margin-right: auto;
+  margin-block-end: 0;
+  margin-block-start: 0;
+}
+
+#noticebar.black {
+  color: white;
+  background: black;
+}
+#noticebar.black a {
+  color: white;
+}
+#navbar.black {
+  color: white;
+  background: black;
+}
+#navbar.black>#sidebar-toggle {
+  color: white;
+}
+#navbar.black>#github {
+  filter: invert(1);
+}
+
 #sidebar {
   height: 100%;
   position: fixed;
@@ -138,7 +166,7 @@ body {
 }
 
 /* consistent link color */
-a { color: #1f28f0; }
+a { color: #326be5; }
 
 /* ensure images don't go off the page */
 #content img { max-width: 100%; }
@@ -201,11 +229,12 @@ table.includecode thead th {
 }
 
 table.includecode thead th button {
-  background: blue;
+  background: #326be5;
   border: 1px solid white;
   color: white;
   font-weight: bold;
   margin: .25em;
+  cursor: pointer;
 }
 
 table.includecode pre {

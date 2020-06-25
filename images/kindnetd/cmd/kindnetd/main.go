@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -97,7 +98,7 @@ func main() {
 		var nodes *corev1.NodeList
 		var err error
 		for i := 0; i < 5; i++ {
-			nodes, err = clientset.CoreV1().Nodes().List(metav1.ListOptions{})
+			nodes, err = clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 			if err == nil {
 				break
 			}
