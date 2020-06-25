@@ -70,9 +70,15 @@ func main() {
 		))
 	}
 
+	mtu, err := computeBridgeMTU()
+	klog.Infof("setting mtu %d for CNI \n", mtu)
+	if err != nil {
+		klog.Infof("Failed to get MTU size from interface eth0, using kernel default MTU size error:%v", err)
+	}
 	// used to track if the cni config inputs changed and write the config
 	cniConfigWriter := &CNIConfigWriter{
 		path: cniConfigPath,
+		mtu:  mtu,
 	}
 
 	// enforce ip masquerade rules

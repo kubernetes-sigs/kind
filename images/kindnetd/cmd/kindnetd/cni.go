@@ -18,6 +18,7 @@ package main
 
 import (
 	"io"
+	stdnet "net"
 	"os"
 	"reflect"
 	"text/template"
@@ -34,12 +35,14 @@ import (
 type CNIConfigInputs struct {
 	PodCIDR      string
 	DefaultRoute string
+	Mtu          int
 }
 
 // ComputeCNIConfigInputs computes the template inputs for CNIConfigWriter
 func ComputeCNIConfigInputs(node corev1.Node) CNIConfigInputs {
 	podCIDR := node.Spec.PodCIDR
 	defaultRoute := "0.0.0.0/0"
+
 	if net.IsIPv6CIDRString(podCIDR) {
 		defaultRoute = "::/0"
 	}
@@ -47,6 +50,21 @@ func ComputeCNIConfigInputs(node corev1.Node) CNIConfigInputs {
 		PodCIDR:      podCIDR,
 		DefaultRoute: defaultRoute,
 	}
+}
+
+//computeBridgeMTU finds the mtu for the eth0 interface
+//otherwise it defults to ptp default behavior of being set by kernel
+func computeBridgeMTU() (int, error) {
+	interfaces, err := stdnet.Interfaces()
+	if err != nil {
+		return 0, err
+	}
+	for _, inter := range interfaces {
+		if inter.Name == "eth0" {
+			return inter.MTU, nil
+		}
+	}
+	return 0, errors.New("Found no eth0 device")
 }
 
 // cniConfigPath is where kindnetd will write the computed CNI config
@@ -76,6 +94,9 @@ const cniConfigTemplate = `
 			]
 		]
 		}
+		{{if .Mtu}},
+		"mtu": {{ .Mtu }}
+		{{end}}
 	},
 	{
 		"type": "portmap",
@@ -92,10 +113,12 @@ const cniConfigTemplate = `
 type CNIConfigWriter struct {
 	path       string
 	lastInputs CNIConfigInputs
+	mtu        int
 }
 
 // Write will write the config based on
 func (c *CNIConfigWriter) Write(inputs CNIConfigInputs) error {
+	inputs.Mtu = c.mtu
 	if reflect.DeepEqual(inputs, c.lastInputs) {
 		return nil
 	}
