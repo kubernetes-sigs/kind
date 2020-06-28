@@ -64,6 +64,26 @@ func TestExpectError(t *testing.T) {
 	})
 }
 
+func TestBoolEqual(t *testing.T) {
+	t.Parallel()
+	t.Run("not equal", func(t *testing.T) {
+		t.Parallel()
+		var f fakeT
+		BoolEqual(&f, true, false)
+		if int(f) == 0 {
+			t.Fatalf("Expected t.Errorf to be called but it was not")
+		}
+	})
+	t.Run("equal", func(t *testing.T) {
+		t.Parallel()
+		var f fakeT
+		BoolEqual(&f, true, true)
+		if int(f) != 0 {
+			t.Fatalf("Expected t.Errorf not to be called but it was")
+		}
+	})
+}
+
 func TestStringEqual(t *testing.T) {
 	t.Parallel()
 	t.Run("not equal", func(t *testing.T) {
