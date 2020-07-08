@@ -20,7 +20,7 @@ package nodeimage
 The default CNI manifest and images are our own tiny kindnet
 */
 
-var defaultCNIImages = []string{"kindest/kindnetd:v20200619-15f5b3ab"}
+var defaultCNIImages = []string{"kindest/kindnetd:v20200707-3aec2c7e"}
 
 const defaultCNIManifest = `
 # kindnetd networking manifest
@@ -93,7 +93,7 @@ spec:
       serviceAccountName: kindnet
       containers:
       - name: kindnet-cni
-        image: kindest/kindnetd:v20200619-15f5b3ab
+        image: kindest/kindnetd:v20200707-3aec2c7e
         env:
         - name: HOST_IP
           valueFrom:
