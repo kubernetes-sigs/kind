@@ -158,8 +158,7 @@ EOF
 Note that in an offline environment, in addition to preparing the node image,
 you also need to prepare HAProxy image in advance.
 
-Currently KIND uses `kindest/haproxy:2.1.1-alpine`,
-you can find the specific tag in the [loadbalancer source code][loadbalancer source code].
+You can find the specific tag currently in use at [loadbalancer source code][loadbalancer source code].
 
 
 
@@ -177,4 +176,4 @@ you can find the specific tag in the [loadbalancer source code][loadbalancer sou
 [base image]: https://kind.sigs.k8s.io/docs/design/base-image/
 [building the node image]: https://kind.sigs.k8s.io/docs/user/quick-start/#building-images
 [building the base image]: https://kind.sigs.k8s.io/docs/user/quick-start/#building-the-base-image
-[loadbalancer source code]: https://github.com/kubernetes-sigs/kind/blob/a944589ec78b53fe62b45e8890e45e8d6c078f53/pkg/cluster/internal/loadbalancer/const.go#L20
+[loadbalancer source code]: https://github.com/kubernetes-sigs/kind/blob/master/pkg/cluster/internal/loadbalancer/const.go#L20
