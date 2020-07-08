@@ -295,6 +295,8 @@ mode: "{{ .KubeProxyMode }}"
 {{ range $key := .SortedFeatureGateKeys }}
   "{{ $key }}": {{$.FeatureGates $key }}
 {{end}}{{end}}
+iptables:
+  minSyncPeriod: 1s
 `
 
 // ConfigTemplateBetaV1 is the kubadm config template for API version v1beta1
@@ -410,6 +412,8 @@ mode: "{{ .KubeProxyMode }}"
 {{ range $key := .SortedFeatureGateKeys }}
   "{{ $key }}": {{ index $.FeatureGates $key }}
 {{end}}{{end}}
+iptables:
+  minSyncPeriod: 1s
 `
 
 // ConfigTemplateBetaV2 is the kubadm config template for API version v1beta2
@@ -525,6 +529,8 @@ mode: "{{ .KubeProxyMode }}"
 {{ range $key := .SortedFeatureGateKeys }}
   "{{ $key }}": {{ index $.FeatureGates $key }}
 {{end}}{{end}}
+iptables:
+  minSyncPeriod: 1s
 `
 
 // Config returns a kubeadm config generated from config data, in particular

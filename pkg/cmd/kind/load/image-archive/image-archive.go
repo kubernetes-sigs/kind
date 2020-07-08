@@ -49,7 +49,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 			}
 			return nil
 		},
-		Use:   "image-archive",
+		Use:   "image-archive <IMAGE.tar>",
 		Short: "Loads docker image from archive into nodes",
 		Long:  "Loads docker image from archive into all or specified nodes by name",
 		RunE: func(cmd *cobra.Command, args []string) error {
