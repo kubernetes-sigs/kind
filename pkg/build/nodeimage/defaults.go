@@ -20,7 +20,7 @@ package nodeimage
 const DefaultImage = "kindest/node:latest"
 
 // DefaultBaseImage is the default base image used
-const DefaultBaseImage = "kindest/base:v20200707-e647846b"
+const DefaultBaseImage = "kindest/base:v20200709-8b878ace"
 
 // DefaultMode is the default kubernetes build mode for the built image
 // see pkg/build/kube.Bits
