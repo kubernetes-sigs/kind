@@ -34,7 +34,7 @@ Stable releases are generally recommended for CI usage in particular.
 To install, download the binary for your platform from "Assets" and place this
 into your `$PATH`.
 
-On macOS / Linux:
+On Linux:
 
 {{< codeFromInline lang="bash" >}}
 curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.8.1/kind-$(uname)-amd64
@@ -42,10 +42,13 @@ chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
 {{< /codeFromInline >}}
 
-On Mac / Linux via Homebrew:
-
+On Mac (homebrew): 
 {{< codeFromInline lang="bash" >}}
-brew install kind
+   brew install kind
+{{< /codeFromInline >}}
+or
+{{< codeFromInline lang="bash" >}}
+curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.8.1/kind-darwin-amd64
 {{< /codeFromInline >}}
 
 On Windows:
