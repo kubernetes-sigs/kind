@@ -353,7 +353,7 @@ func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings .
 		if strings.HasSuffix(hostPortBinding, ":0") {
 			hostPortBinding = strings.TrimSuffix(hostPortBinding, "0")
 		}
-		args = append(args, fmt.Sprintf("--publish=%s:%d/%s", hostPortBinding, pm.ContainerPort, protocol))
+		args = append(args, fmt.Sprintf("--publish=%s:%d/%s", hostPortBinding, pm.ContainerPort, strings.ToLower(protocol)))
 	}
 	return args, nil
 }
