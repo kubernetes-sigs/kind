@@ -38,7 +38,11 @@ fix_mount() {
   # https://systemd.io/CONTAINER_INTERFACE/
   # however, we need other things from `docker run --privileged` ...
   # and this flag also happens to make /sys rw, amongst other things
+  #
+  # EACCES on rootless is negligible.
+  set +o errexit
   mount -o remount,ro /sys
+  set -o errexit
 
   echo 'INFO: making mounts shared' >&2
   # for mount propagation
