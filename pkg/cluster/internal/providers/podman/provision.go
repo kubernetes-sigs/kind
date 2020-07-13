@@ -179,8 +179,6 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		// including some ones podman would otherwise do by default.
 		// for now this is what we want. in the future we may revisit this.
 		"--privileged",
-		"--security-opt", "seccomp=unconfined", // also ignore seccomp
-		"--security-opt", "apparmor=unconfined", // also ignore apparmor
 		// runtime temporary storage
 		"--tmpfs", "/tmp", // various things depend on working /tmp
 		"--tmpfs", "/run", // systemd wants a writable /run
