@@ -25,7 +25,7 @@ FROM ubuntu:20.04
 # The repository contains latest stable releases and nightlies built for multiple architectures
 ARG CONTAINERD_VERSION="v1.4.0-beta.1-85-g334f567e"
 # Configure CNI binaries from upstream
-ARG CNI_VERSION="v0.8.6"
+ARG CNI_VERSION="v0.8.6-13-g877602d"
 # Configure crictl binary from upstream
 ARG CRICTL_VERSION="v1.18.0"
 
@@ -96,7 +96,7 @@ RUN echo "Ensuring scripts are executable ..." \
  && echo "Installing CNI binaries ..." \
     && export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
     && export CNI_TARBALL="${CNI_VERSION}/cni-plugins-linux-${ARCH}-${CNI_VERSION}.tgz" \
-    && export CNI_URL="https://github.com/containernetworking/plugins/releases/download/${CNI_TARBALL}" \
+    && export CNI_URL="https://github.com/aojea/plugins/releases/download/${CNI_TARBALL}" \
     && curl -sSL --retry 5 --output /tmp/cni.tgz "${CNI_URL}" \
     && mkdir -p /opt/cni/bin \
     && tar -C /opt/cni/bin -xzf /tmp/cni.tgz \
