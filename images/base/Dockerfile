@@ -70,6 +70,7 @@ RUN echo "Ensuring scripts are executable ..." \
       libseccomp2 pigz \
       bash ca-certificates curl rsync \
       nfs-common \
+      jq \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
     && rm -f /lib/systemd/system/multi-user.target.wants/* \
     && rm -f /etc/systemd/system/*.wants/* \

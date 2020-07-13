@@ -24,7 +24,9 @@ import (
 )
 
 type containerdConfigTemplateData struct {
-	SandboxImage string
+	SandboxImage        string
+	DefaultRuntimeName  string
+	RestrictOOMScoreAdj bool
 }
 
 const containerdConfigTemplate = `# explicitly use v2 config format
@@ -32,9 +34,14 @@ version = 2
 
 # set default runtime handler to v2, which has a per-pod shim
 [plugins."io.containerd.grpc.v1.cri".containerd]
-  default_runtime_name = "runc"
+  default_runtime_name = "{{.DefaultRuntimeName}}"
 [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
   runtime_type = "io.containerd.runc.v2"
+
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.ociwrapper]
+  runtime_type = "io.containerd.runc.v2"
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.ociwrapper.options]
+  BinaryName = "ociwrapper"
 
 # Setup a runtime with the magic name ("test-handler") used for Kubernetes
 # runtime class tests ...
@@ -49,6 +56,8 @@ version = 2
   # allow hugepages controller to be missing
   # see https://github.com/containerd/cri/pull/1501
   tolerate_missing_hugepages_controller = true
+  # restrict_oom_score_adj is required if we are running in UserNS (i.e. Rootless Docker/Podman),
+  restrict_oom_score_adj = {{.RestrictOOMScoreAdj}}
 `
 
 func getContainerdConfig(data containerdConfigTemplateData) (string, error) {

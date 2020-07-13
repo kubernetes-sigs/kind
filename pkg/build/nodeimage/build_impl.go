@@ -187,13 +187,26 @@ func (c *buildContext) buildImage(dir string) error {
 		return errors.New("failed to find imported pause image")
 	}
 	containerdConfig, err := getContainerdConfig(containerdConfigTemplateData{
-		SandboxImage: pauseImage,
+		SandboxImage:       pauseImage,
+		DefaultRuntimeName: "runc",
 	})
 	if err != nil {
 		return err
 	}
 	const containerdConfigPath = "/etc/containerd/config.toml"
 	if err := createFile(cmder, containerdConfigPath, containerdConfig); err != nil {
+		return err
+	}
+	containerdRootlessConfig, err := getContainerdConfig(containerdConfigTemplateData{
+		SandboxImage:        pauseImage,
+		DefaultRuntimeName:  "ociwrapper",
+		RestrictOOMScoreAdj: true,
+	})
+	if err != nil {
+		return err
+	}
+	const containerdRootlessConfigPath = "/etc/containerd/config-rootless.toml"
+	if err := createFile(cmder, containerdRootlessConfigPath, containerdRootlessConfig); err != nil {
 		return err
 	}
 

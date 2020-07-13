@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+# A wrapper script to remove .linux.resources.devices, which are meaningless in userns.
+# Needs jq.
+#
+# Workaround until we get proper fixes in containerd and runc
+set -eu -o pipefail
+RUNTIME="runc"
+
+if egrep -q "0[[:space:]]+0[[:space:]]+4294967295" /proc/self/uid_map; then
+	# we are not in userns, no need to patch the config
+	exec $RUNTIME "$@"
+	exit $?
+fi
+
+bundle="."
+bundle_flag=""
+# FIXME: support `--bundle=STRING` as well
+for f in $@; do
+	if [[ -n $bundle_flag ]]; then
+		bundle=$f
+		break
+	else
+		case $f in
+		-b | --bundle)
+			bundle_flag=$f
+			;;
+		esac
+	fi
+done
+
+if [ -f $bundle/config.json ]; then
+    q="del(.linux.resources.devices) | del(.linux.devices)"
+	tmp=$(mktemp -d ociwrapper.XXXXXXXX)
+	jq "$q" <$bundle/config.json >$tmp/config.json
+	mv $tmp/config.json $bundle/config.json
+	rm -rf $tmp
+fi
+
+exec $RUNTIME "$@"

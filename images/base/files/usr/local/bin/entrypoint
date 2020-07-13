@@ -236,6 +236,13 @@ enable_network_magic(){
   fi
 }
 
+select_containerd_config_toml() {
+  if ! egrep -q "0[[:space:]]+0[[:space:]]+4294967295" /proc/1/uid_map; then
+    echo "INFO: Detected rootless provider. Overriding /etc/containerd/config.toml with /etc/containerd/config-rootless.toml" >&2
+    cp -f /etc/containerd/config-rootless.toml /etc/containerd/config.toml
+  fi
+}
+
 # run pre-init fixups
 fix_kmsg
 fix_mount
@@ -246,6 +253,7 @@ fix_product_uuid
 configure_proxy
 select_iptables
 enable_network_magic
+select_containerd_config_toml
 
 # we want the command (expected to be systemd) to be PID1, so exec to it
 exec "$@"
