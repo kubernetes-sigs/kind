@@ -111,9 +111,7 @@ RUN echo "Ensuring scripts are executable ..." \
  && echo "Ensuring /etc/kubernetes/manifests" \
     && mkdir -p /etc/kubernetes/manifests \
  && echo "Adjusting systemd-tmpfiles timer" \
-    && sed -i /usr/lib/systemd/system/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#' \
- && echo "Modifying /etc/nsswitch.conf to prefer hosts" \
-    && sed -i /etc/nsswitch.conf -re 's#^(hosts:\s*).*#\1dns files#'
+    && sed -i /usr/lib/systemd/system/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#'
 
 # tell systemd that it is in docker (it will check for the container env)
 # https://systemd.io/CONTAINER_INTERFACE/
