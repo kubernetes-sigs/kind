@@ -182,20 +182,45 @@ func (p *Provider) GetAPIServerEndpoint(cluster string) (string, error) {
 		return "", errors.Errorf("network details should only be one line, got %d lines", len(lines))
 	}
 
-	// portMapping maps to the standard CNI portmapping capability
+	// portMapping19 maps to the standard CNI portmapping capability used in podman 1.9
 	// see: https://github.com/containernetworking/cni/blob/spec-v0.4.0/CONVENTIONS.md
-	type portMapping struct {
+	type portMapping19 struct {
 		HostPort      int32  `json:"hostPort"`
 		ContainerPort int32  `json:"containerPort"`
 		Protocol      string `json:"protocol"`
 		HostIP        string `json:"hostIP"`
 	}
+	// portMapping20 maps to the podman 2.0 portmap type
+	// see: https://github.com/containers/podman/blob/05988fc74fc25f2ad2256d6e011dfb7ad0b9a4eb/libpod/define/container_inspect.go#L134-L143
+	type portMapping20 struct {
+		HostPort string `json:"HostPort"`
+		HostIP   string `json:"HostIp"`
+	}
 
-	var portMappings []portMapping
-	if err := json.Unmarshal([]byte(lines[0]), &portMappings); err != nil {
+	portMappings20 := make(map[string][]portMapping20)
+	if err := json.Unmarshal([]byte(lines[0]), &portMappings20); err == nil {
+		for k, v := range portMappings20 {
+			protocol := "tcp"
+			parts := strings.Split(k, "/")
+			if len(parts) == 2 {
+				protocol = strings.ToLower(parts[1])
+			}
+			containerPort, err := strconv.Atoi(parts[0])
+			if err != nil {
+				return "", err
+			}
+			for _, pm := range v {
+				if containerPort == common.APIServerInternalPort && protocol == "tcp" {
+					return net.JoinHostPort(pm.HostIP, pm.HostPort), nil
+				}
+			}
+		}
+	}
+	var portMappings19 []portMapping19
+	if err := json.Unmarshal([]byte(lines[0]), &portMappings19); err != nil {
 		return "", errors.Errorf("invalid network details: %v", err)
 	}
-	for _, pm := range portMappings {
+	for _, pm := range portMappings19 {
 		if pm.ContainerPort == common.APIServerInternalPort && pm.Protocol == "tcp" {
 			return net.JoinHostPort(pm.HostIP, strconv.Itoa(int(pm.HostPort))), nil
 		}
