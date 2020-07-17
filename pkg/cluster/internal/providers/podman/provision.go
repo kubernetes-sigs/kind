@@ -193,7 +193,9 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		// suid: SUID applications on the volume will be able to change their privilege
 		// exec: executables on the volume will be able to executed within the container
 		// dev: devices on the volume will be able to be used by processes within the container
-		"--volume", fmt.Sprintf("%s:/var:suid,exec,dev", volume),
+		"--volume", fmt.Sprintf("%s:/var/lib/containerd:suid,exec,dev", volume),
+		"--volume", fmt.Sprintf("%s:/var/lib/kubelet:suid,exec,dev", volume),
+		"--volume", fmt.Sprintf("%s:/var/log:suid,exec,dev", volume),
 		// some k8s things want to read /lib/modules
 		"--volume", "/lib/modules:/lib/modules:ro",
 	},
