@@ -23,9 +23,10 @@ FROM ubuntu:20.04
 
 # Configure containerd and runc binaries from kind-ci/containerd-nightlies repository
 # The repository contains latest stable releases and nightlies built for multiple architectures
-ARG CONTAINERD_VERSION="v1.4.0-beta.1-85-g334f567e"
-# Configure CNI binaries from upstream
-ARG CNI_VERSION="v0.8.6-13-g877602d"
+ARG CONTAINERD_VERSION="v1.4.0-beta.2-21-ge818fe27"
+# Configure CNI binaries
+# TODO: switch back to upstream binaries at next release
+ARG CNI_VERSION="v0.8.6-14-g6eb8e31"
 # Configure crictl binary from upstream
 ARG CRICTL_VERSION="v1.18.0"
 
@@ -96,7 +97,7 @@ RUN echo "Ensuring scripts are executable ..." \
  && echo "Installing CNI binaries ..." \
     && export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
     && export CNI_TARBALL="${CNI_VERSION}/cni-plugins-linux-${ARCH}-${CNI_VERSION}.tgz" \
-    && export CNI_URL="https://github.com/aojea/plugins/releases/download/${CNI_TARBALL}" \
+    && export CNI_URL="https://github.com/bentheelder/containernetworking-plugins/releases/download/${CNI_TARBALL}" \
     && curl -sSL --retry 5 --output /tmp/cni.tgz "${CNI_URL}" \
     && mkdir -p /opt/cni/bin \
     && tar -C /opt/cni/bin -xzf /tmp/cni.tgz \
