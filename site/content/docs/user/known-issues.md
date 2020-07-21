@@ -289,11 +289,11 @@ On Fedora 32 [firewalld] moved to nftables backend by default.
 This seems to be incompatible with Docker, leading to KIND cluster nodes not
 being able to reach each other.
 
-You can work around this by changing the `FirewallBackend` in the `/etc/firewalld/firewalld.conf ` file from `nftables` to `iptables` and restarting docker.
+You can work around this by changing the `FirewallBackend` in the `/etc/firewalld/firewalld.conf ` file from `nftables` to `iptables` and restarting firewalld.
 
 ```console
 sed -i /etc/firewalld/firewalld.conf 's/FirewallBackend=.*/FirewallBackend=iptables/'
-systemctl restart docker
+systemctl restart firewalld
 ```
 
 See [#1547 (comment)](https://github.com/kubernetes-sigs/kind/issues/1547#issuecomment-623756313)
