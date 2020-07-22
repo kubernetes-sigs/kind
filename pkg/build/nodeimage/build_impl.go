@@ -238,17 +238,23 @@ func (c *buildContext) prePullImages(dir, containerID string) ([]string, error) 
 		return nil, errors.New("invalid kubernetes version file")
 	}
 
-	// before Kubernetes v1.12.0 kubeadm requires arch specific images, instead
-	// later releases use manifest list images
-	// at node boot time we retag our images to handle this where necessary,
-	// so we virtually re-tag them here.
+	// parse version for comparison
 	ver, err := version.ParseSemantic(rawVersion[0])
 	if err != nil {
 		return nil, err
 	}
 
-	// get image tag fixing function for this version
-	fixRepository := repositoryCorrectorForVersion(ver, c.arch)
+	// For kubernetes v1.15+ (actually 1.16 alpha versions) we may need to
+	// drop the arch suffix from images to get the expected image
+	archSuffix := "-" + c.arch
+	fixRepository := func(repository string) string {
+		if strings.HasSuffix(repository, archSuffix) {
+			fixed := strings.TrimSuffix(repository, archSuffix)
+			fmt.Println("fixed: " + repository + " -> " + fixed)
+			repository = fixed
+		}
+		return repository
+	}
 
 	// correct set of built tags using the same logic we will use to rewrite
 	// the tags as we load the archives
