@@ -17,11 +17,8 @@ limitations under the License.
 package nodeimage
 
 import (
-	"fmt"
 	"path"
 	"strings"
-
-	"k8s.io/apimachinery/pkg/util/version"
 
 	"sigs.k8s.io/kind/pkg/exec"
 )
@@ -41,35 +38,6 @@ func createFile(containerCmder exec.Cmder, filePath, contents string) error {
 	).SetStdin(
 		strings.NewReader(contents),
 	).Run()
-}
-
-func repositoryCorrectorForVersion(kubeVersion *version.Version, arch string) func(string) string {
-	archSuffix := "-" + arch
-
-	// For kubernetes v1.15+ (actually 1.16 alpha versions) we may need to
-	// drop the arch suffix from images to get the expected image
-	// for < v1.12 we need to do the opposite.
-	// We can accomplish this by just handling < 1.12 & >= 1.12 as we won't
-	// touch images that match the expectation in either case ...
-	if kubeVersion.LessThan(version.MustParseSemantic("v1.12.0")) {
-		return func(repository string) string {
-			if !strings.HasSuffix(repository, archSuffix) {
-				fixed := repository + archSuffix
-				fmt.Println("fixed: " + repository + " -> " + fixed)
-				repository = fixed
-			}
-			return repository
-		}
-	}
-
-	return func(repository string) string {
-		if strings.HasSuffix(repository, archSuffix) {
-			fixed := strings.TrimSuffix(repository, archSuffix)
-			fmt.Println("fixed: " + repository + " -> " + fixed)
-			repository = fixed
-		}
-		return repository
-	}
 }
 
 func findSandboxImage(images []string) string {
