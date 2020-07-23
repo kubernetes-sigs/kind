@@ -69,6 +69,9 @@ type Cluster struct {
 	// in the order listed.
 	// These should be YAML or JSON formatting RFC 6902 JSON patches
 	ContainerdConfigPatchesJSON6902 []string
+
+	// CgroupRoot specifies the cgroup root for kubelet to use.
+	CgroupRoot string
 }
 
 // Node contains settings for a node in the `kind` Cluster.

@@ -84,6 +84,9 @@ func SetDefaultsCluster(obj *Cluster) {
 	if obj.Networking.KubeProxyMode == "" {
 		obj.Networking.KubeProxyMode = IPTablesMode
 	}
+
+	// set the default cgroup root
+	obj.CgroupRoot = "/kubelet"
 }
 
 // SetDefaultsNode sets uninitialized fields to their default value.
