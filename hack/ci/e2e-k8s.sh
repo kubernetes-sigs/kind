@@ -129,6 +129,9 @@ create_cluster() {
     ;;
   esac
 
+# Default Log level for all components in test clusters
+KIND_CLUSTER_LOG_LEVEL=${KIND_CLUSTER_LOG_LEVEL:-4}
+
   # create the config file
   cat <<EOF > "${ARTIFACTS}/kind-config.yaml"
 # config for 1 control plane node and 2 workers (necessary for conformance)
@@ -149,6 +152,23 @@ kubeadmConfigPatches:
   apiServer:
     extraArgs:
       "runtime-config": "${runtime_config}"
+      "v": "${KIND_CLUSTER_LOG_LEVEL}"
+  controllerManager:
+    extraArgs:
+      "v": "${KIND_CLUSTER_LOG_LEVEL}"
+  scheduler:
+    extraArgs:
+      "v": "${KIND_CLUSTER_LOG_LEVEL}"
+  ---
+  kind: InitConfiguration
+  nodeRegistration:
+    kubeletExtraArgs:
+      "v": "${KIND_CLUSTER_LOG_LEVEL}"
+  ---
+  kind: JoinConfiguration
+  nodeRegistration:
+    kubeletExtraArgs:
+      "v": "${KIND_CLUSTER_LOG_LEVEL}"
 EOF
   # NOTE: must match the number of workers above
   NUM_NODES=2
@@ -161,6 +181,10 @@ EOF
     --wait=1m \
     -v=3 \
     "--config=${ARTIFACTS}/kind-config.yaml"
+
+  # Patch kube-proxy to set the verbosity level
+  kubectl patch -n kube-system daemonset/kube-proxy \
+    --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--v='${KIND_CLUSTER_LOG_LEVEL}'" }]'
 }
 
 # run e2es with ginkgo-e2e.sh
