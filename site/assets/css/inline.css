@@ -138,6 +138,7 @@ body {
   border-right: 1px solid rgba(0, 0, 0, 0.1);
   background-color: #fafafa;
   z-index: 99999;
+  overflow-y: auto;
 }
 .sidebar-collapsed #sidebar {
   display: none;
