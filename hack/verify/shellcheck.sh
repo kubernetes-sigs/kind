@@ -24,7 +24,7 @@ REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "${REPO_ROOT}"
 
 # upstream shellcheck latest stable image as of January 10th, 2019
-SHELLCHECK_IMAGE="koalaman/shellcheck:v0.7.1"
+SHELLCHECK_IMAGE='koalaman/shellcheck:v0.7.1'
 
 # Find all shell scripts excluding:
 # - Anything git-ignored - No need to lint untracked files.
@@ -43,12 +43,15 @@ SHELLCHECK_OPTIONS=(
   # allow following sourced files that are not specified in the command,
   # we need this because we specify one file at at time in order to trivially
   # detect which files are failing
-  "--external-sources"
+  '--external-sources'
   # disabled lint codes
   # 2330 - disabled due to https://github.com/koalaman/shellcheck/issues/1162
-  "--exclude=2230"
+  '--exclude=2230'
+  # 2126 - disabled because grep -c exits error when there are zero matches,
+  # unlike grep | wc -l
+  '--exclude=2126'
   # set colorized output
-  "--color=auto"
+  '--color=auto'
 )
 
 # actually shellcheck
