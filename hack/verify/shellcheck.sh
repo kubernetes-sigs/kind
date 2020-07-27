@@ -28,12 +28,13 @@ SHELLCHECK_IMAGE='koalaman/shellcheck:v0.7.1'
 
 # Find all shell scripts excluding:
 # - Anything git-ignored - No need to lint untracked files.
-# - ./_* - No need to lint output directories.
 # - ./.git/* - Ignore anything in the git object store.
+# - ./vendor/* - Ignore vendored contents.
+# - ./bin/* - No need to lint output directories.
 all_shell_scripts=()
 while IFS=$'\n' read -r script;
   do git check-ignore -q "$script" || all_shell_scripts+=("$script");
-done < <(grep -irl '#!.*sh' . --exclude-dir={'./bin/*','./.git/*'})
+done < <(grep -irl '#!.*sh' . | grep -Ev '^(\./\.git/)|(\./vendor/)|(\./bin/)')
 
 # common arguments we'll pass to shellcheck
 SHELLCHECK_OPTIONS=(
