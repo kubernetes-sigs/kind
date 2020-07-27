@@ -193,7 +193,7 @@ enable_network_magic(){
   sed -e "s/${docker_embedded_dns_ip}/${docker_host_ip}/g" /etc/resolv.conf.original >/etc/resolv.conf
 
   # fixup IPs in manifests ...
-  curr_ipv4="$( (getent ahostsv4 $(hostname) | head -n1 | cut -d' ' -f1) || true)"
+  curr_ipv4="$( (getent ahostsv4 "$(hostname)" | head -n1 | cut -d' ' -f1) || true)"
   echo "INFO: Detected IPv4 address: ${curr_ipv4}" >&2
   if [ -f /kind/old-ipv4 ]; then
       old_ipv4=$(cat /kind/old-ipv4)
@@ -213,7 +213,7 @@ enable_network_magic(){
   fi
 
   # do IPv6
-  curr_ipv6="$( (getent ahostsv6 $(hostname) | head -n1 | cut -d' ' -f1) || true)"
+  curr_ipv6="$( (getent ahostsv6 "$(hostname)" | head -n1 | cut -d' ' -f1) || true)"
   echo "INFO: Detected IPv6 address: ${curr_ipv6}" >&2
   if [ -f /kind/old-ipv6 ]; then
       old_ipv6=$(cat /kind/old-ipv6)
