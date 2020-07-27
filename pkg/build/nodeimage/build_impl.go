@@ -148,24 +148,6 @@ func (c *buildContext) buildImage(dir string) error {
 		return err
 	}
 
-	// setup kubelet systemd
-	// create the kubelet service
-	kubeletService := path.Join(ic.BasePath(), "systemd/kubelet.service")
-	if err := createFile(cmder, kubeletService, kubeletServiceContents); err != nil {
-		return errors.Wrap(err, "failed to create kubelet service file")
-	}
-
-	// enable the kubelet service
-	if err := cmder.Command("systemctl", "enable", kubeletService).Run(); err != nil {
-		return errors.Wrap(err, "failed to enable kubelet service")
-	}
-
-	// setup the kubelet dropin
-	const kubeletDropin = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
-	if err := createFile(cmder, kubeletDropin, kubeadm10conf); err != nil {
-		return errors.Wrap(err, "failed to configure kubelet service")
-	}
-
 	// ensure we don't fail if swap is enabled on the host
 	if err = execInBuild("/bin/sh", "-c",
 		`echo "KUBELET_EXTRA_ARGS=--fail-swap-on=false" >> /etc/default/kubelet`,

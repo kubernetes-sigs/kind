@@ -1,0 +1,15 @@
+# slightly modified from:
+# https://github.com/kubernetes/kubernetes/blob/ba8fcafaf8c502a454acd86b728c857932555315/build/debs/kubelet.service
+[Unit]
+Description=kubelet: The Kubernetes Node Agent
+Documentation=http://kubernetes.io/docs/
+
+[Service]
+ExecStart=/usr/bin/kubelet
+Restart=always
+StartLimitInterval=0
+# NOTE: kind deviates from upstream here with a lower RestartSecuse
+RestartSec=1s
+
+[Install]
+WantedBy=multi-user.target
