@@ -53,6 +53,6 @@ SHELLCHECK_OPTIONS=(
 
 # actually shellcheck
 docker run \
-  --rm -it -v "${REPO_ROOT}:${REPO_ROOT}" -w "${REPO_ROOT}" \
+  --rm -t -v "${REPO_ROOT}:${REPO_ROOT}" -w "${REPO_ROOT}" \
   "${SHELLCHECK_IMAGE}" \
   "${SHELLCHECK_OPTIONS[@]}" "${all_shell_scripts[@]}"
