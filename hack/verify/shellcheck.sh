@@ -33,7 +33,7 @@ SHELLCHECK_IMAGE='koalaman/shellcheck:v0.7.1'
 all_shell_scripts=()
 while IFS=$'\n' read -r script;
   do git check-ignore -q "$script" || all_shell_scripts+=("$script");
-done < <(grep -irl '#!.*sh' . --exclude-dir={./bin\*,./.git\*})
+done < <(grep -irl '#!.*sh' . --exclude-dir={'./bin/*','./.git/*'})
 
 # common arguments we'll pass to shellcheck
 SHELLCHECK_OPTIONS=(
