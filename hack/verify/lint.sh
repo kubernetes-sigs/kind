@@ -32,7 +32,8 @@ LINTS=(
   # additional lints
   golint gofmt misspell gochecknoinits unparam scopelint gosec
 )
-ENABLE=$(sed 's/ /,/g' <<< "${LINTS[@]}")
+LINTS_JOINED="$(IFS=','; echo "${LINTS[*]}")"
+
 # first for the repo in general
 SOURCE_DIR="${REPO_ROOT}" hack/go_container.sh \
-  /out/golangci-lint --disable-all --enable="${ENABLE}" --timeout=2m run .
+  /out/golangci-lint --disable-all --enable="${LINTS_JOINED}" --timeout=2m run .

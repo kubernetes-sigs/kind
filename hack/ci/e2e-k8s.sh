@@ -92,9 +92,9 @@ build() {
 create_cluster() {
 
   # JSON map injected into featureGates config
-  local feature_gates
+  feature_gates="{}"
   # --runtime-config argument value passed to the API server
-  local runtime_config
+  runtime_config=""
 
   case "${GA_ONLY:-false}" in
   false)

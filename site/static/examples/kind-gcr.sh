@@ -24,7 +24,7 @@ for node in $(kind get nodes --name "${KIND_CLUSTER_NAME}"); do
   # copy the config to where kubelet will look
   docker cp "${DOCKER_CONFIG}/config.json" "${node_name}:/var/lib/kubelet/config.json"
   # restart kubelet to pick up the config
-  docker exec ${node_name} systemctl restart kubelet.service
+  docker exec "${node_name}" systemctl restart kubelet.service
 done
 
 echo "Done!"
