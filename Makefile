@@ -70,7 +70,10 @@ unit:
 lint:
 	hack/verify/lint.sh
 
+shellcheck:
+	hack/verify/shellcheck.sh
+
 # unit test alias
 test: unit
 
-.PHONY: all kind build install clean-cache clean-output clean unit test lint
+.PHONY: all kind build install clean-cache clean-output clean unit test lint shellcheck

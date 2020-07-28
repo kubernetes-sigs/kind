@@ -184,7 +184,7 @@ EOF
 
   # Patch kube-proxy to set the verbosity level
   kubectl patch -n kube-system daemonset/kube-proxy \
-    --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--v='${KIND_CLUSTER_LOG_LEVEL}'" }]'
+    --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--v='"${KIND_CLUSTER_LOG_LEVEL}"'" }]'
 }
 
 # run e2es with ginkgo-e2e.sh
