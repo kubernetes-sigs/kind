@@ -30,10 +30,10 @@ LINTS=(
   deadcode errcheck gosimple govet ineffassign staticcheck \
   structcheck typecheck unused varcheck \
   # additional lints
-  golint gofmt misspell gochecknoinits unparam scopelint gosec
+  golint gofmt misspell gochecknoinits unparam scopelint
 )
 LINTS_JOINED="$(IFS=','; echo "${LINTS[*]}")"
 
 # first for the repo in general
 SOURCE_DIR="${REPO_ROOT}" hack/go_container.sh \
-  /out/golangci-lint --disable-all --enable="${LINTS_JOINED}" --timeout=2m run .
+  /out/golangci-lint --disable-all --enable="${LINTS_JOINED}" --timeout=2m run ./...

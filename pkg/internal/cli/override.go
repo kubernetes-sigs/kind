@@ -12,7 +12,7 @@ import (
 func OverrideDefaultName(fs *pflag.FlagSet) {
 	if !fs.Changed("name") {
 		if name := os.Getenv("KIND_CLUSTER_NAME"); name != "" {
-			fs.Set("name", name)
+			_ = fs.Set("name", name)
 		}
 	}
 }
