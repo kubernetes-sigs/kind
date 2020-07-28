@@ -45,4 +45,8 @@ type Provider interface {
 	GetAPIServerInternalEndpoint(cluster string) (string, error)
 	// CollectLogs will populate dir with cluster logs and other debug files
 	CollectLogs(dir string, nodes []nodes.Node) error
+	// SaveImage saves image to dest, as in `docker save`
+	SaveImage(image, dest string) error
+	// ImageID return the Id of the container image
+	ImageID(containerNameOrID string) (string, error)
 }

@@ -253,3 +253,24 @@ func (p *Provider) CollectLogs(dir string, nodes []nodes.Node) error {
 	errs = append(errs, errors.AggregateConcurrent(fns))
 	return errors.NewAggregate(errs)
 }
+
+// SaveImage saves image to dest, as in `docker save`
+func (p *Provider) SaveImage(image, dest string) error {
+	return exec.Command("docker", "save", "-o", dest, image).Run()
+}
+
+// ImageID return the Id of the container image
+func (p *Provider) ImageID(containerNameOrID string) (string, error) {
+	cmd := exec.Command("docker", "image", "inspect",
+		"-f", "{{ .Id }}",
+		containerNameOrID, // ... against the container
+	)
+	lines, err := exec.CombinedOutputLines(cmd)
+	if err != nil {
+		return "", err
+	}
+	if len(lines) != 1 {
+		return "", errors.Errorf("Docker image ID should only be one line, got %d lines", len(lines))
+	}
+	return lines[0], nil
+}

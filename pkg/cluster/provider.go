@@ -193,3 +193,13 @@ func (p *Provider) CollectLogs(name, dir string) error {
 	}
 	return p.provider.CollectLogs(dir, n)
 }
+
+// SaveImage saves image to dest, as in `docker save`
+func (p *Provider) SaveImage(image, dest string) error {
+	return p.provider.SaveImage(image, dest)
+}
+
+// ImageID return the Id of the container image
+func (p *Provider) ImageID(containerNameOrID string) (string, error) {
+	return p.provider.ImageID(containerNameOrID)
+}
