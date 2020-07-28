@@ -128,8 +128,8 @@ func generateULASubnetFromName(name string, attempt int32) string {
 	ip[0] = 0xfc
 	ip[1] = 0x00
 	h := sha1.New()
-	h.Write([]byte(name))
-	binary.Write(h, binary.LittleEndian, attempt)
+	_, _ = h.Write([]byte(name))
+	_ = binary.Write(h, binary.LittleEndian, attempt)
 	bs := h.Sum(nil)
 	for i := 2; i < 8; i++ {
 		ip[i] = bs[i]
