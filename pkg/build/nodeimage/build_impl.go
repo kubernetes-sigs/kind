@@ -148,14 +148,6 @@ func (c *buildContext) buildImage(dir string) error {
 		return err
 	}
 
-	// ensure we don't fail if swap is enabled on the host
-	if err = execInBuild("/bin/sh", "-c",
-		`echo "KUBELET_EXTRA_ARGS=--fail-swap-on=false" >> /etc/default/kubelet`,
-	); err != nil {
-		c.logger.Errorf("Image build Failed! Failed to add kubelet extra args: %v", err)
-		return err
-	}
-
 	// pre-pull images that were not part of the build
 	images, err := c.prePullImages(dir, containerID)
 	if err != nil {
