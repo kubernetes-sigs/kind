@@ -146,11 +146,11 @@ func (p *Provider) DeleteNodes(n []nodes.Node) error {
 	}
 	var nodeVolumes []string
 	for _, node := range n {
-		volume, err := getVolume(node.String())
+		volumes, err := getVolumes(node.String())
 		if err != nil {
 			return err
 		}
-		nodeVolumes = append(nodeVolumes, volume)
+		nodeVolumes = append(nodeVolumes, volumes...)
 	}
 	return deleteVolumes(nodeVolumes)
 }
