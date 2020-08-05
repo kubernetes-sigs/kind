@@ -57,13 +57,13 @@ for f in bin/kind-*; do
     "hack/ci/e2e-k8s.sh"
   
   # copy everything up to each version
-  for version in $VERSIONS; do
+  for version in "${VERSIONS[@]}"; do
     gsutil cp -P "bin/${platform}.tgz" "gs://${BUCKET}/${version}/${platform}.tgz"
     gsutil cp -P "$f" "gs://${BUCKET}/${version}/${base}"
   done
 done
 
 # upload the e2e script so kubernetes CI can consume it
-for version in $VERSIONS; do
+for version in "${VERSIONS[@]}"; do
   gsutil cp -P hack/ci/e2e-k8s.sh "gs://${BUCKET}/${version}/e2e-k8s.sh"
 done
