@@ -87,18 +87,22 @@ func createAnonymousVolume(label string) (string, error) {
 	return strings.TrimSuffix(string(name), "\n"), nil
 }
 
-// getVolume gets the volume name filtered on specified label
-func getVolume(label string) (string, error) {
+// getVolumes gets volume names filtered on specified label
+func getVolumes(label string) ([]string, error) {
 	cmd := exec.Command("podman",
 		"volume",
 		"ls",
 		"--filter", fmt.Sprintf("label=%s", label),
 		"--quiet")
-	name, err := exec.Output(cmd)
+	// `output` from the above command is names of all volumes each followed by `\n`.
+	output, err := exec.Output(cmd)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return strings.TrimSuffix(string(name), "\n"), nil
+	// Trim away the last `\n`.
+	trimmedOutput := strings.TrimSuffix(string(output), "\n")
+	// Get names of all volumes by splitting via `\n`.
+	return strings.Split(string(trimmedOutput), "\n"), nil
 }
 
 func deleteVolumes(names []string) error {
