@@ -95,4 +95,4 @@ lint:
 shellcheck:
 	hack/make-rules/verify/shellcheck.sh
 #################################################################################
-.PHONY: all kind build install clean unit test lint shellcheck
+.PHONY: all kind build install unit clean update generate gofmt verify lint shellcheck
