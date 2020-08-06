@@ -73,9 +73,9 @@ unit:
 ################################################################################
 # ================================= Cleanup ====================================
 # standard cleanup target
+# TODO: remove the vendor part in the future. We no longer populate vendor
 clean:
 	rm -rf $(OUT_DIR)/
-	# TODO: remove this in the future. We no longer populat vendor
 	rm -rf $(REPO_ROOT)/vendor/
 ################################################################################
 # ============================== Auto-Update ===================================
