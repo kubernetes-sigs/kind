@@ -20,7 +20,7 @@ set -o nounset
 set -o pipefail
 
 # cd to the repo root
-REPO_ROOT=$(git rev-parse --show-toplevel)
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
 cd "${REPO_ROOT}"
 
 # upstream shellcheck latest stable image as of January 10th, 2019

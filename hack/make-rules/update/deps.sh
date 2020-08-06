@@ -1,5 +1,4 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 # Copyright 2018 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,11 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# script to run gofmt over our code (not vendor)
+# Runs go mod tidy, go mod vendor, and then prunes vendor
+#
+# Usage:
+#   deps.sh
 set -o errexit -o nounset -o pipefail
 
 # cd to the repo root
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
 cd "${REPO_ROOT}"
 
-hack/go_container.sh sh -c "find . -name '*.go' -type f -print0 | xargs -0 gofmt -s -w"
+# tidy all modules
+hack/go_container.sh go mod tidy
+SOURCE_DIR="${REPO_ROOT}/hack/tools" hack/go_container.sh go mod tidy
+SOURCE_DIR="${REPO_ROOT}/images/kindnetd" hack/go_container.sh go mod tidy

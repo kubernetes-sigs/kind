@@ -17,7 +17,7 @@
 set -o errexit -o nounset -o pipefail
 
 # cd to the repo root
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
 cd "${REPO_ROOT}"
 
 # build the generators using the tools module
@@ -51,4 +51,4 @@ bin/deepcopy-gen -i ./pkg/apis/config/v1alpha4 -O zz_generated.deepcopy --go-hea
 # set module mode back, return to repo root and gofmt to ensure we format generated code
 export GO111MODULE="on"
 cd "${REPO_ROOT}"
-hack/update/gofmt.sh
+make gofmt
