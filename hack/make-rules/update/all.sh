@@ -20,6 +20,6 @@ set -o errexit -o nounset -o pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
 cd "${REPO_ROOT}"
 
-hack/update/deps.sh
-hack/update/generated.sh
-hack/update/gofmt.sh
+hack/make-rules/update/deps.sh
+hack/make-rules/update/generated.sh
+hack/make-rules/update/gofmt.sh
