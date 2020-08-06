@@ -54,7 +54,7 @@ main() {
 
   # run generated code update script
   cd "${TMP_REPO}"
-  REPO_ROOT="${TMP_REPO}" hack/make-rules/update/generated.sh
+  REPO_ROOT="${TMP_REPO}" make generate
 
   # make sure the temp repo has no changes relative to the real repo
   diff=$(diff -Nupr \
@@ -68,7 +68,7 @@ main() {
     echo "" >&2
     echo "${diff}" >&2
     echo "" >&2
-    echo "please run hack/make-rules/update/generated.sh" >&2
+    echo "please run make generate" >&2
     exit 1
   fi
 }
