@@ -34,7 +34,9 @@ COMMIT?=$(shell git rev-parse HEAD 2>/dev/null)
 PATH:=$(shell . hack/build/setup-go.sh && echo "$${PATH}")
 # go1.9+ can autodetect GOROOT, but if some other tool sets it ...
 GOROOT:=
-export PATH GOROOT
+# enable modules
+GO111MODULE=on
+export PATH GOROOT GO111MODULE
 # work around broken PATH export
 SHELL:=env PATH=$(PATH) $(SHELL)
 ################################################################################

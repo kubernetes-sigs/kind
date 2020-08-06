@@ -27,3 +27,6 @@ if ! ([ -n "${FORCE_HOST_GO:-}" ] || \
     # eval because the output of this is shell to set PATH etc.
     eval "$(hack/third_party/gimme/gimme "${GO_VERSION}" 2>/dev/null)"
 fi
+
+# force go modules
+export GO111MODULE=on
