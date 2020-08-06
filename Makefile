@@ -38,42 +38,53 @@ DOCKER?=$(shell which docker || which podman || echo "docker")
 export DOCKER
 # standard "make" target -> builds
 all: build
-
+################################################################################
+# ================================= Building ===================================
 # builds kind in a container, outputs to $(OUT_DIR)
 kind:
 	hack/go_container.sh go build -v -o /out/$(KIND_BINARY_NAME) -ldflags "$(LD_FLAGS)"
-
 # alias for building kind
 build: kind
-
 # use: make install INSTALL_DIR=/usr/local/bin
 install: build
 	$(INSTALL) -d $(INSTALL_DIR)
 	$(INSTALL) $(OUT_DIR)/$(KIND_BINARY_NAME) $(INSTALL_DIR)/$(KIND_BINARY_NAME)
-
-# cleans the cache volume
-clean-cache:
-	$(DOCKER) volume rm -f kind-build-cache >/dev/null
-
-# cleans the output directory
-clean-output:
-	rm -rf $(OUT_DIR)/
-
-# standard cleanup target
-clean: clean-output clean-cache
-
+################################################################################
+# ================================= Testing ====================================
 # unit tests (hermetic)
 unit:
 	hack/ci/unit.sh
-
+################################################################################
+# ================================= Cleanup ====================================
+# cleans the cache volume
+clean-cache:
+	$(DOCKER) volume rm -f kind-build-cache >/dev/null
+# cleans the output directory
+clean-output:
+	rm -rf $(OUT_DIR)/
+# standard cleanup target
+clean: clean-output clean-cache
+################################################################################
+# ============================== Auto-Update ===================================
+# update generated code, gofmt, etc.
+update:
+	hack/make-rules/update/all.sh
+# update generated code
+generate:
+	hack/make-rules/update/generated.sh
+# gofmt
+gofmt:
+	hack/make-rules/update/gofmt.sh
+################################################################################
+# ================================== Linting ===================================
+# run linters, ensure generated code, etc.
+verify:
+	hack/make-rules/verify/all.sh
 # code linters
 lint:
-	hack/verify/lint.sh
-
+	hack/make-rules/verify/lint.sh
+# shell linter
 shellcheck:
-	hack/verify/shellcheck.sh
-
-# unit test alias
-test: unit
-
+	hack/make-rules/verify/shellcheck.sh
+#################################################################################
 .PHONY: all kind build install clean-cache clean-output clean unit test lint shellcheck
