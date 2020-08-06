@@ -51,4 +51,4 @@ bin/deepcopy-gen -i ./pkg/apis/config/v1alpha4 -O zz_generated.deepcopy --go-hea
 # set module mode back, return to repo root and gofmt to ensure we format generated code
 export GO111MODULE="on"
 cd "${REPO_ROOT}"
-hack/update/gofmt.sh
+make gofmt
