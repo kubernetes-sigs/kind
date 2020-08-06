@@ -30,9 +30,8 @@ COMMIT?=$(shell git rev-parse HEAD 2>/dev/null)
 ################################################################################
 # ========================= Setup Go With Gimme ================================
 # go version to use for build etc.
-GO_VERSION?=$(shell cat ./.go-version)
 # setup correct go version with gimme
-PATH:=$(shell eval "$$(hack/third_party/gimme/gimme $(GO_VERSION))" && echo "$${PATH}")
+PATH:=$(shell . hack/build/setup-go.sh && echo "$${PATH}")
 export PATH
 # work around broken PATH export
 SHELL:=env PATH=$(PATH) $(SHELL)
