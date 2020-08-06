@@ -22,15 +22,15 @@ cd "${REPO_ROOT}"
 
 # build the generators using the tools module
 cd "hack/tools"
-"${REPO_ROOT}/hack/go_container.sh" go build -o /out/deepcopy-gen k8s.io/code-generator/cmd/deepcopy-gen
+go build -o "${REPO_ROOT}"/bin/deepcopy-gen k8s.io/code-generator/cmd/deepcopy-gen
 # go back to the root
 cd "${REPO_ROOT}"
 
 # turn off module mode before running the generators
 # https://github.com/kubernetes/code-generator/issues/69
 # we also need to populate vendor
-hack/go_container.sh go mod tidy
-hack/go_container.sh go mod vendor
+go mod tidy
+go mod vendor
 export GO111MODULE="off"
 
 # fake being in a gopath

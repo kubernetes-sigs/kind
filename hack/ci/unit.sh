@@ -21,19 +21,19 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 cd "${REPO_ROOT}"
 
 # build gotestsum
-SOURCE_DIR="${REPO_ROOT}/hack/tools" GOOS=linux hack/go_container.sh \
-  go build -o /out/gotestsum gotest.tools/gotestsum
+cd 'hack/tools'
+go build -o "${REPO_ROOT}"/bin/gotestsum gotest.tools/gotestsum
+cd "${REPO_ROOT}"
 
 # run unit tests with coverage enabled and junit output
-GOOS=linux hack/go_container.sh \
-  /out/gotestsum --junitfile=/out/junit.xml -- \
+"${REPO_ROOT}"/bin/gotestsum --junitfile=/out/junit.xml -- \
     -coverprofile=/out/unit.cov -covermode count -coverpkg sigs.k8s.io/kind/... ./...
 
 # filter out generated files
 sed '/zz_generated/d' bin/unit.cov > bin/filtered.cov
 
 # generate cover html
-hack/go_container.sh go tool cover -html=/out/filtered.cov -o /out/filtered.html
+go tool cover -html=bin/filtered.cov -o bin/filtered.html
 
 # if we are in CI, copy to the artifact upload location
 if [[ -n "${ARTIFACTS:-}" ]]; then

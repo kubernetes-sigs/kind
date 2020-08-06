@@ -21,8 +21,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
 cd "${REPO_ROOT}"
 
 # build golangci-lint
-SOURCE_DIR="${REPO_ROOT}/hack/tools" GOOS="linux" hack/go_container.sh \
-  go build -o /out/golangci-lint github.com/golangci/golangci-lint/cmd/golangci-lint
+go build -o ./bin/golangci-lint github.com/golangci/golangci-lint/cmd/golangci-lint
 
 # run golangci-lint
 LINTS=(
@@ -35,5 +34,4 @@ LINTS=(
 LINTS_JOINED="$(IFS=','; echo "${LINTS[*]}")"
 
 # first for the repo in general
-SOURCE_DIR="${REPO_ROOT}" hack/go_container.sh \
-  /out/golangci-lint --disable-all --enable="${LINTS_JOINED}" --timeout=2m run ./...
+./bin/golangci-lint --disable-all --enable="${LINTS_JOINED}" --timeout=2m run ./...

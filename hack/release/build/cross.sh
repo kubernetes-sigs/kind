@@ -23,11 +23,6 @@ cd "${REPO_ROOT}"
 # controls the number of concurrent builds
 PARALLELISM=${PARALLELISM:-6}
 
-# trivial go_container.sh command to ensure the volumes are setup
-# before we start running many containers in parallel
-# https://github.com/kubernetes-sigs/kind/issues/974
-hack/go_container.sh go version
-
 echo "Building in parallel for:"
 # What we do here:
 # - use xargs to build in parallel (-P) while collecting a combined exit code

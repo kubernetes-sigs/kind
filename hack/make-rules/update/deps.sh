@@ -24,6 +24,10 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
 cd "${REPO_ROOT}"
 
 # tidy all modules
-hack/go_container.sh go mod tidy
-SOURCE_DIR="${REPO_ROOT}/hack/tools" hack/go_container.sh go mod tidy
-SOURCE_DIR="${REPO_ROOT}/images/kindnetd" hack/go_container.sh go mod tidy
+go mod tidy
+
+cd "${REPO_ROOT}/hack/tools"
+go mod tidy
+
+cd "${REPO_ROOT}/images/kindnetd"
+go mod tidy
