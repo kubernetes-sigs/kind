@@ -32,7 +32,9 @@ COMMIT?=$(shell git rev-parse HEAD 2>/dev/null)
 # go version to use for build etc.
 # setup correct go version with gimme
 PATH:=$(shell . hack/build/setup-go.sh && echo "$${PATH}")
-export PATH
+# go1.9+ can autodetect GOROOT, but if some other tool sets it ...
+GOROOT:=
+export PATH GOROOT
 # work around broken PATH export
 SHELL:=env PATH=$(PATH) $(SHELL)
 ################################################################################
