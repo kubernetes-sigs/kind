@@ -75,6 +75,8 @@ unit:
 # standard cleanup target
 clean:
 	rm -rf $(OUT_DIR)/
+	# TODO: remove this in the future. We no longer populat vendor
+	rm -rf $(REPO_ROOT)/vendor/
 ################################################################################
 # ============================== Auto-Update ===================================
 # update generated code, gofmt, etc.

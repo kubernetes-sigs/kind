@@ -30,19 +30,6 @@ cd "${REPO_ROOT}"
 # turn off module mode before running the generators
 # https://github.com/kubernetes/code-generator/issues/69
 # we also need to populate vendor
-go mod tidy
-go mod vendor
-export GO111MODULE="off"
-
-# fake being in a gopath
-FAKE_GOPATH="$(mktemp -d)"
-trap 'rm -rf ${FAKE_GOPATH}' EXIT
-
-FAKE_REPOPATH="${FAKE_GOPATH}/src/sigs.k8s.io/kind"
-mkdir -p "$(dirname "${FAKE_REPOPATH}")" && ln -s "${REPO_ROOT}" "${FAKE_REPOPATH}"
-
-export GOPATH="${FAKE_GOPATH}"
-cd "${FAKE_REPOPATH}"
 
 # run the generators
 bin/deepcopy-gen -i ./pkg/internal/apis/config/ -O zz_generated.deepcopy --go-header-file hack/tools/boilerplate.go.txt
@@ -50,6 +37,4 @@ bin/deepcopy-gen -i ./pkg/apis/config/v1alpha4 -O zz_generated.deepcopy --go-hea
 
 
 # set module mode back, return to repo root and gofmt to ensure we format generated code
-export GO111MODULE="on"
-cd "${REPO_ROOT}"
 make gofmt
