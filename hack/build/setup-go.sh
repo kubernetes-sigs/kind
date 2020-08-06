@@ -25,5 +25,5 @@ GO_VERSION="${GO_VERSION:-"$(cat .go-version)"}"
 if ! ([ -n "${FORCE_HOST_GO:-}" ] || \
       (command -v go >/dev/null && [ "$(go version | cut -d' ' -f3)" = "go${GO_VERSION}" ])); then
     # eval because the output of this is shell to set PATH etc.
-    eval "$(hack/third_party/gimme/gimme "${GO_VERSION}")"
+    eval "$(hack/third_party/gimme/gimme "${GO_VERSION}" 2>/dev/null)"
 fi
