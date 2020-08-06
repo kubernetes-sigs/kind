@@ -16,12 +16,15 @@
 # script to run linters
 set -o errexit -o nounset -o pipefail
 
-# cd to the repo root
+# cd to the repo root and setup go
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
 cd "${REPO_ROOT}"
+source hack/build/setup-go.sh
 
 # build golangci-lint
-go build -o ./bin/golangci-lint github.com/golangci/golangci-lint/cmd/golangci-lint
+cd "${REPO_ROOT}/hack/tools"
+go build -o "${REPO_ROOT}/bin/golangci-lint" github.com/golangci/golangci-lint/cmd/golangci-lint
+cd "${REPO_ROOT}"
 
 # run golangci-lint
 LINTS=(

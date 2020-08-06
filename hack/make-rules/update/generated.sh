@@ -16,13 +16,14 @@
 # 'go generate's kind, using tools from vendor (go-bindata)
 set -o errexit -o nounset -o pipefail
 
-# cd to the repo root
+# cd to the repo root and setup go
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
 cd "${REPO_ROOT}"
+source hack/build/setup-go.sh
 
 # build the generators using the tools module
-cd "hack/tools"
-go build -o "${REPO_ROOT}"/bin/deepcopy-gen k8s.io/code-generator/cmd/deepcopy-gen
+cd "${REPO_ROOT}/hack/tools"
+go build -o "${REPO_ROOT}/bin/deepcopy-gen" k8s.io/code-generator/cmd/deepcopy-gen
 # go back to the root
 cd "${REPO_ROOT}"
 

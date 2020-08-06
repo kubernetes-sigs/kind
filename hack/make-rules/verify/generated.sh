@@ -15,9 +15,10 @@
 
 set -o errexit -o nounset -o pipefail
 
-# cd to the repo root
+# cd to the repo root and setup go
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
 cd "${REPO_ROOT}"
+source hack/build/setup-go.sh
 
 # place to stick temp binaries
 BINDIR="${REPO_ROOT}/bin"
