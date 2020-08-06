@@ -18,7 +18,7 @@ This guide covers getting started with the `kind` command.
 but you will not be able to perform some of the examples in our docs without it.
 To install `kubectl` see the upstream reference here https://kubernetes.io/docs/tasks/tools/install-kubectl/
 
-You can either install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.8.1` or clone this repo 
+You can either install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.8.1` or clone this repo
 and run `make build` from the repository.
 
 Please use the latest Go when installing KIND from source, ideally go 1.14 or greater.
@@ -42,7 +42,7 @@ chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
 {{< /codeFromInline >}}
 
-On Mac (homebrew): 
+On Mac (homebrew):
 {{< codeFromInline lang="bash" >}}
    brew install kind
 {{< /codeFromInline >}}
@@ -72,7 +72,7 @@ This will bootstrap a Kubernetes cluster using a pre-built
 [node image][node image] - you can find it on docker hub
 [`kindest/node`][kindest/node].
 If you desire to build the node image yourself see the
-[building image](#building-images) section.
+[building image][building images] section.
 To specify another image use the `--image` flag.
 
 By default, the cluster will be given the name `kind`.
@@ -140,7 +140,7 @@ context name `kind` and delete that cluster.
 Docker images can be loaded into your cluster nodes with:
 `kind load docker-image my-custom-image`
 
-**Note**: If using a named cluster you will need to specify the name of the 
+**Note**: If using a named cluster you will need to specify the name of the
 cluster you wish to load the image into:
 `kind load docker-image my-custom-image --name kind-2`
 
@@ -177,85 +177,7 @@ See [Kubernetes imagePullPolicy][Kubernetes imagePullPolicy] for more informatio
 
 See also: [Using kind with Private Registries][Private Registries].
 
-## Building Images
-
-> Note: If you're using Docker Desktop, be sure to read [Settings for Docker Desktop](#settings-for-docker-desktop) first.
-
-kind runs a local Kubernetes cluster by using Docker containers as "nodes".
-kind uses the [`node-image`][node image] to run Kubernetes artifacts, such
-as `kubeadm` or `kubelet`.
-The `node-image` in turn is built off the [`base-image`][base image], which
-installs all the dependencies needed for Docker and Kubernetes to run in a
-container.
-
-See [building the base image](#building-the-base-image) for more advanced information.
-
-Currently, kind supports two different ways to build a `node-image`
-if you have the [Kubernetes][kubernetes] source in your host machine
-(`$GOPATH/src/k8s.io/kubernetes`), by using `docker` or `bazel`.
-To specify the build type use the flag `--type`.
-Note however that using `--type=bazel` on Windows or MacOS will not work
-currently due to Kubelet using [CGO] which requires GCC/glibc for linux.
-A workaround may be enabled in the future.
-
-kind will default to using the build type `docker` if none is specified.
-
-```
-kind build node-image --type bazel
-```
-
-Similarly as for the base-image command, you can specify the name and tag of
-the resulting node image using the flag `--image`.
-
-If you previously changed the name and tag of the base image, you can use here
-the flag `--base-image` to specify the name and tag you used.
-
-
-### Settings for Docker Desktop
-
-If you are building Kubernetes (for example - `kind build node-image`) on MacOS or Windows then you need a minimum of 6GB of RAM 
-dedicated to the virtual machine (VM) running the Docker engine. 8GB is recommended.
-
-To change the resource limits for the Docker on Mac, you'll need to open the
-**Preferences** menu.  
-<img src="/docs/user/images/docker-pref-1.png"/>
-
-Now, go to the **Advanced** settings page, and change the
-settings there, see [changing Docker's resource limits][Docker resource lims].  
-<img src="/docs/user/images/docker-pref-2.png" alt="Setting 8Gb of memory in Docker for Mac" />
-
-
-To change the resource limits for the Docker on Windows, you'll need to right-click the Moby
-icon on the taskbar, and choose "Settings". If you see "Switch to Linux Containers", then you'll need
-to do that first before opening "Settings"
-
-<img src="/docs/user/images/docker-pref-1-win.png"/>
-
-Now, go to the **Advanced** settings page, and change the
-settings there, see [changing Docker's resource limits][Docker resource lims].  
-
-<img src="/docs/user/images/docker-pref-build-win.png" alt="Setting 8Gb of memory in Docker for Windows" />
-
-
-You may also try removing any unused data left by the Docker engine - e.g.,
-`docker system prune`.
-
 ## Advanced
-
-### Building The Base Image
-
-To build the `base-image` we use the `make quick` command in `images/base` directory:
-```
-make quick
-```
-
-By default, the base image will be tagged as `kindest/base:$(date +v%Y%m%d)-$(git describe --always --dirty)` format.
-If you want to change this, you can set `TAG` environment variable.
-
-```
-TAG=v0.1.0 make quick
-```
-
 
 ### Configuring Your kind Cluster
 
@@ -400,7 +322,7 @@ As you can see, kind placed all the logs for the cluster `kind` in a
 temporary directory. If you want to specify a location then simply add the path
 to the directory after the command:
 ```
-kind export logs ./somedir  
+kind export logs ./somedir
 Exported logs to: ./somedir
 ```
 
@@ -417,23 +339,17 @@ The structure of the logs will look more or less like this:
     ├── kubernetes-version.txt
     └── pods/
 ```
-The logs contain information about the Docker host, the containers running 
+The logs contain information about the Docker host, the containers running
 kind, the Kubernetes cluster itself, etc.
 
-[go-supported]: https://golang.org/doc/devel/release.html#policy
 [known issues]: /docs/user/known-issues
+[building images]: /docs/user/node-images
 [releases]: https://github.com/kubernetes-sigs/kind/releases
 [node image]: /docs/design/node-image
-[base image]: /docs/design/base-image
 [kind-example-config]: https://raw.githubusercontent.com/kubernetes-sigs/kind/master/site/content/docs/user/kind-example-config.yaml
-[pkg/build/base/base.go]: https://github.com/kubernetes-sigs/kind/tree/master/pkg/build/base/base.go
-[kubernetes]: https://github.com/kubernetes/kubernetes
 [kindest/node]: https://hub.docker.com/r/kindest/node/
 [kubectl]: https://kubernetes.io/docs/reference/kubectl/overview/
-[Docker resource lims]: https://docs.docker.com/docker-for-mac/#advanced
-[install docker]: https://docs.docker.com/install/
 [proxy environment variables]: https://docs.docker.com/network/proxy/#use-environment-variables
-[CGO]: https://golang.org/cmd/cgo/
 [Kubernetes imagePullPolicy]: https://kubernetes.io/docs/concepts/containers/images/#updating-images
 [Private Registries]: /docs/user/private-registries
 [customize control plane with kubeadm]: https://kubernetes.io/docs/setup/independent/control-plane-flags/
