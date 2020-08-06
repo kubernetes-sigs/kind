@@ -18,7 +18,7 @@
 set -o errexit -o nounset -o pipefail
 
 # cd to the repo root
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
 cd "${REPO_ROOT}"
 
 hack/go_container.sh sh -c "find . -name '*.go' -type f -print0 | xargs -0 gofmt -s -w"

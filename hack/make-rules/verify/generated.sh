@@ -16,7 +16,7 @@
 set -o errexit -o nounset -o pipefail
 
 # cd to the repo root
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
 cd "${REPO_ROOT}"
 
 # place to stick temp binaries
@@ -54,7 +54,7 @@ main() {
 
   # run generated code update script
   cd "${TMP_REPO}"
-  REPO_ROOT="${TMP_REPO}" hack/update/generated.sh
+  REPO_ROOT="${TMP_REPO}" hack/make-rules/update/generated.sh
 
   # make sure the temp repo has no changes relative to the real repo
   diff=$(diff -Nupr \
@@ -68,7 +68,7 @@ main() {
     echo "" >&2
     echo "${diff}" >&2
     echo "" >&2
-    echo "please run hack/update/generated.sh" >&2
+    echo "please run hack/make-rules/update/generated.sh" >&2
     exit 1
   fi
 }
