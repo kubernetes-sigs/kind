@@ -8,3 +8,6 @@ approvers:
   - amwat
   - aojea
   - BenTheElder
+
+labels:
+  - area/provider/podman
