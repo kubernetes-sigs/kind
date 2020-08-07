@@ -16,17 +16,13 @@
 # simple script to build binaries for release
 set -o errexit -o nounset -o pipefail
 
-# cd to the repo root
+# cd to the repo root and setup go
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
 cd "${REPO_ROOT}"
+source hack/build/setup-go.sh
 
 # controls the number of concurrent builds
 PARALLELISM=${PARALLELISM:-6}
-
-# trivial go_container.sh command to ensure the volumes are setup
-# before we start running many containers in parallel
-# https://github.com/kubernetes-sigs/kind/issues/974
-hack/go_container.sh go version
 
 echo "Building in parallel for:"
 # What we do here:

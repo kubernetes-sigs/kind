@@ -16,26 +16,27 @@
 # script to run unit tests, with coverage enabled and junit xml output
 set -o errexit -o nounset -o pipefail
 
-# cd to the repo root
+# cd to the repo root and setup go
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 cd "${REPO_ROOT}"
+source hack/build/setup-go.sh
 
 # build gotestsum
-SOURCE_DIR="${REPO_ROOT}/hack/tools" GOOS=linux hack/go_container.sh \
-  go build -o /out/gotestsum gotest.tools/gotestsum
+cd 'hack/tools'
+go build -o "${REPO_ROOT}/bin/gotestsum" gotest.tools/gotestsum
+cd "${REPO_ROOT}"
 
 # run unit tests with coverage enabled and junit output
-GOOS=linux hack/go_container.sh \
-  /out/gotestsum --junitfile=/out/junit.xml -- \
-    -coverprofile=/out/unit.cov -covermode count -coverpkg sigs.k8s.io/kind/... ./...
+"${REPO_ROOT}/bin/gotestsum" --junitfile="${REPO_ROOT}/bin/junit.xml" -- \
+    -coverprofile="${REPO_ROOT}/bin/unit.cov" -covermode count -coverpkg sigs.k8s.io/kind/... ./...
 
 # filter out generated files
-sed '/zz_generated/d' bin/unit.cov > bin/filtered.cov
+sed '/zz_generated/d' "${REPO_ROOT}/bin/unit.cov" > "${REPO_ROOT}/bin/filtered.cov"
 
 # generate cover html
-hack/go_container.sh go tool cover -html=/out/filtered.cov -o /out/filtered.html
+go tool cover -html="${REPO_ROOT}/bin/filtered.cov" -o "${REPO_ROOT}/bin/filtered.html"
 
 # if we are in CI, copy to the artifact upload location
 if [[ -n "${ARTIFACTS:-}" ]]; then
-  cp bin/junit.xml bin/filtered.cov bin/filtered.html "${ARTIFACTS:?}/"
+  cp bin/junit.xml "${REPO_ROOT}/bin/filtered.cov" "${REPO_ROOT}/bin/filtered.html" "${ARTIFACTS:?}/"
 fi

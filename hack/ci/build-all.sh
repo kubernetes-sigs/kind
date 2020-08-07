@@ -27,4 +27,4 @@ hack/release/build/cross.sh
 
 # build kindnetd
 cd "${REPO_ROOT}/images/kindnetd"
-GOOS=linux "${REPO_ROOT}/hack/go_container.sh" go build -v -o /out/kindnetd ./cmd/kindnetd
+make build
