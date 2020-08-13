@@ -17,7 +17,6 @@ limitations under the License.
 package kube
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -65,37 +64,6 @@ func (b *DockerBuildBits) Build() error {
 		return err
 	}
 
-	// the PR that added `make quick-release-images` added this script,
-	// we can use it's presence to detect if that target exists
-	// TODO(bentheelder): drop support for building without this once we've
-	// dropped older releases or gotten support for `make quick-release-images`
-	// back ported to them ...
-	// https://github.com/kubernetes/kubernetes/commit/037fabd842df48d0b45904b219643ca46a4ae607
-	releaseImagesSH := filepath.Join(
-		b.kubeRoot, "build", "release-images.sh",
-	)
-	// if we can't find the script, use the non `make quick-release-images` build
-	if _, err := os.Stat(releaseImagesSH); err != nil {
-		if err := b.buildBash(); err != nil {
-			return err
-		}
-	} else {
-		// otherwise leverage `make quick-release-images`
-		if err := b.build(); err != nil {
-			return err
-		}
-	}
-
-	// capture version info
-	return buildVersionFile(b.logger, b.kubeRoot)
-}
-
-func dockerBuildOsAndArch(arch string) string {
-	return "linux/" + arch
-}
-
-// binary and image build when we have `make quick-release-images` support
-func (b *DockerBuildBits) build() error {
 	// we will pass through the environment variables, prepending defaults
 	// NOTE: if env are specified multiple times the last one wins
 	env := append(
@@ -135,71 +103,13 @@ func (b *DockerBuildBits) build() error {
 	if err := cmd.Run(); err != nil {
 		return errors.Wrap(err, "failed to build images")
 	}
-	return nil
+
+	// capture version info
+	return buildVersionFile(b.logger, b.kubeRoot)
 }
 
-// binary and image build when we don't have `make quick-release-images` support
-func (b *DockerBuildBits) buildBash() error {
-	// build binaries
-	what := []string{
-		// binaries we use directly
-		"cmd/kubeadm",
-		"cmd/kubectl",
-		"cmd/kubelet",
-		// docker image wrapped binaries
-		"cmd/cloud-controller-manager",
-		"cmd/kube-apiserver",
-		"cmd/kube-controller-manager",
-		"cmd/kube-scheduler",
-		"cmd/kube-proxy",
-		// we don't need this one, but the image build wraps it...
-		"vendor/k8s.io/kube-aggregator",
-	}
-	cmd := exec.Command(
-		"build/run.sh", "make", "all",
-		"WHAT="+strings.Join(what, " "), "KUBE_BUILD_PLATFORMS="+dockerBuildOsAndArch(b.arch),
-	)
-	// ensure the build isn't especially noisy..., inherit existing env
-	cmd.SetEnv(
-		append(
-			[]string{"KUBE_VERBOSE=0"},
-			os.Environ()...,
-		)...,
-	)
-	exec.InheritOutput(cmd)
-	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "failed to build binaries")
-	}
-
-	// mimic `make quick-release` internals, clear previous images
-	if err := os.RemoveAll(filepath.Join(
-		".", "_output", "release-images", b.arch,
-	)); err != nil {
-		return errors.Wrap(err, "failed to remove old release-images")
-	}
-
-	// build images
-	buildImages := []string{
-		"source build/common.sh;",
-		"source hack/lib/version.sh;",
-		"source build/lib/release.sh;",
-		"kube::version::get_version_vars;",
-		fmt.Sprintf(`kube::release::create_docker_images_for_server "${LOCAL_OUTPUT_ROOT}/dockerized/bin/%s" "%s"`,
-			dockerBuildOsAndArch(b.arch), b.arch),
-	}
-	cmd = exec.Command("bash", "-c", strings.Join(buildImages, " "))
-	cmd.SetEnv(
-		append(
-			[]string{"KUBE_BUILD_HYPERKUBE=n"},
-			os.Environ()...,
-		)...,
-	)
-	exec.InheritOutput(cmd)
-	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "failed to build images")
-	}
-
-	return nil
+func dockerBuildOsAndArch(arch string) string {
+	return "linux/" + arch
 }
 
 // Paths implements Bits.Paths
