@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/version"
 
 	"sigs.k8s.io/kind/pkg/build/nodeimage/internal/container/docker"
+	"sigs.k8s.io/kind/pkg/build/nodeimage/internal/kube"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
@@ -39,73 +40,26 @@ import (
 func (c *buildContext) Build() (err error) {
 	// ensure kubernetes build is up to date first
 	c.logger.V(0).Info("Starting to build Kubernetes")
-	if err = c.bits.Build(); err != nil {
+	bits, err := c.builder.Build()
+	if err != nil {
 		c.logger.Errorf("Failed to build Kubernetes: %v", err)
 		return errors.Wrap(err, "failed to build kubernetes")
 	}
 	c.logger.V(0).Info("Finished building Kubernetes")
 
-	// create tempdir to build the image in
-	buildDir, err := fs.TempDir("", "kind-node-image")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(buildDir)
-
-	c.logger.V(0).Infof("Building node image in: %s", buildDir)
-
-	// populate the kubernetes artifacts first
-	if err := c.populateBits(buildDir); err != nil {
-		return err
-	}
-
 	// then the perform the actual docker image build
-	return c.buildImage(buildDir)
+	c.logger.V(0).Info("Building node image ...")
+	return c.buildImage(bits)
 }
 
-func (c *buildContext) populateBits(buildDir string) error {
-	// always create bits dir
-	bitsDir := path.Join(buildDir, "bits")
-	if err := os.Mkdir(bitsDir, 0777); err != nil {
-		return errors.Wrap(err, "failed to make bits dir")
-	}
-	// copy all bits from their source path to where we will COPY them into
-	// the dockerfile, see images/node/Dockerfile
-	bitPaths := c.bits.Paths()
-	for src, dest := range bitPaths {
-		realDest := path.Join(bitsDir, dest)
-		// NOTE: we use copy not copyfile because copy ensures the dest dir
-		if err := fs.Copy(src, realDest); err != nil {
-			return errors.Wrap(err, "failed to copy build artifact")
-		}
-	}
-
-	return nil
-}
-
-// returns a set of image tags that will be sideloaded
-func (c *buildContext) getBuiltImages() (sets.String, error) {
-	images := sets.NewString()
-	for _, path := range c.bits.ImagePaths() {
-		tags, err := docker.GetArchiveTags(path)
-		if err != nil {
-			return nil, err
-		}
-		images.Insert(tags...)
-	}
-	return images, nil
-}
-
-func (c *buildContext) buildImage(dir string) error {
-	// build the image, tagged as tagImageAs, using the our tempdir as the context
-	c.logger.V(0).Info("Starting image build ...")
+func (c *buildContext) buildImage(bits kube.Bits) error {
 	// create build container
 	// NOTE: we are using docker run + docker commit so we can install
 	// debians without permanently copying them into the image.
 	// if docker gets proper squash support, we can rm them instead
 	// This also allows the KubeBit implementations to perform programmatic
 	// install in the image
-	containerID, err := c.createBuildContainer(dir)
+	containerID, err := c.createBuildContainer()
 	cmder := docker.ContainerCmder(containerID)
 
 	// ensure we will delete it
@@ -133,23 +87,34 @@ func (c *buildContext) buildImage(dir string) error {
 	}
 
 	// copy artifacts in
-	if err = execInBuild("rsync", "-r", "/build/bits/", "/kind/"); err != nil {
-		c.logger.Errorf("Image build Failed! Failed to sync bits: %v", err)
+	for _, binary := range bits.BinaryPaths() {
+		// TODO: probably should be /usr/local/bin, but the existing kublet
+		// service file expects /usr/bin/kubelet
+		nodePath := "/usr/bin/" + path.Base(binary)
+		if err := exec.Command("docker", "cp", binary, containerID+":"+nodePath).Run(); err != nil {
+			return err
+		}
+		if err := execInBuild("chmod", "+x", nodePath); err != nil {
+			return err
+		}
+	}
+
+	// write version
+	// TODO: support grabbing version from a binary instead
+	if err := createFile(cmder, "/kind/version", bits.Version()); err != nil {
 		return err
 	}
 
-	// install the kube bits
-	ic := &installContext{
-		basePath:    "/kind/",
-		containerID: containerID,
-	}
-	if err = c.bits.Install(ic); err != nil {
-		c.logger.Errorf("Image build Failed! Failed to install Kubernetes: %v", err)
+	dir, err := fs.TempDir("", "kind-build")
+	if err != nil {
 		return err
 	}
+	defer func() {
+		_ = os.RemoveAll(dir)
+	}()
 
 	// pre-pull images that were not part of the build
-	images, err := c.prePullImages(dir, containerID)
+	images, err := c.prePullImages(bits, dir, containerID)
 	if err != nil {
 		c.logger.Errorf("Image build Failed! Failed to pull Images: %v", err)
 		return err
@@ -188,10 +153,23 @@ func (c *buildContext) buildImage(dir string) error {
 	return nil
 }
 
+// returns a set of image tags that will be sideloaded
+func (c *buildContext) getBuiltImages(bits kube.Bits) (sets.String, error) {
+	images := sets.NewString()
+	for _, path := range bits.ImagePaths() {
+		tags, err := docker.GetArchiveTags(path)
+		if err != nil {
+			return nil, err
+		}
+		images.Insert(tags...)
+	}
+	return images, nil
+}
+
 // must be run after kubernetes has been installed on the node
-func (c *buildContext) prePullImages(dir, containerID string) ([]string, error) {
+func (c *buildContext) prePullImages(bits kube.Bits, dir, containerID string) ([]string, error) {
 	// first get the images we actually built
-	builtImages, err := c.getBuiltImages()
+	builtImages, err := c.getBuiltImages(bits)
 	if err != nil {
 		c.logger.Errorf("Image build Failed! Failed to get built images: %v", err)
 		return nil, err
@@ -339,7 +317,7 @@ func (c *buildContext) prePullImages(dir, containerID string) ([]string, error) 
 			return importer.LoadCommand().SetStdout(os.Stdout).SetStderr(os.Stdout).SetStdin(f).Run()
 		})
 	}
-	for _, image := range c.bits.ImagePaths() {
+	for _, image := range bits.ImagePaths() {
 		image := image // capture loop var
 		loadFns = append(loadFns, func() error {
 			f, err := os.Open(image)
@@ -367,7 +345,7 @@ func (c *buildContext) prePullImages(dir, containerID string) ([]string, error) 
 	return importer.ListImported()
 }
 
-func (c *buildContext) createBuildContainer(buildDir string) (id string, err error) {
+func (c *buildContext) createBuildContainer() (id string, err error) {
 	// attempt to explicitly pull the image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
 	_, _ = docker.PullIfNotPresent(c.logger, c.baseImage, 4)
@@ -379,7 +357,6 @@ func (c *buildContext) createBuildContainer(buildDir string) (id string, err err
 		c.baseImage,
 		[]string{
 			"-d", // make the client exit while the container continues to run
-			"-v", fmt.Sprintf("%s:/build", buildDir),
 			// the container should hang forever so we can exec in it
 			"--entrypoint=sleep",
 			"--name=" + id,

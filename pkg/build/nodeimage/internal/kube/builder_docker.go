@@ -18,7 +18,6 @@ package kube
 
 import (
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -29,19 +28,19 @@ import (
 
 // TODO(bentheelder): plumb through arch
 
-// DockerBuildBits implements Bits for a local docker-ized make / bash build
-type DockerBuildBits struct {
+// dockerBuilder implements Bits for a local docker-ized make / bash build
+type dockerBuilder struct {
 	kubeRoot string
 	arch     string
 	logger   log.Logger
 }
 
-var _ Bits = &DockerBuildBits{}
+var _ Builder = &dockerBuilder{}
 
-// NewDockerBuildBits returns a new Bits backed by the docker-ized build,
+// NewDockerBuilder returns a new Bits backed by the docker-ized build,
 // given kubeRoot, the path to the kubernetes source directory
-func NewDockerBuildBits(logger log.Logger, kubeRoot, arch string) (bits Bits, err error) {
-	return &DockerBuildBits{
+func NewDockerBuilder(logger log.Logger, kubeRoot, arch string) (Builder, error) {
+	return &dockerBuilder{
 		kubeRoot: kubeRoot,
 		arch:     arch,
 		logger:   logger,
@@ -49,11 +48,11 @@ func NewDockerBuildBits(logger log.Logger, kubeRoot, arch string) (bits Bits, er
 }
 
 // Build implements Bits.Build
-func (b *DockerBuildBits) Build() error {
+func (b *dockerBuilder) Build() (Bits, error) {
 	// cd to k8s source
 	cwd, err := os.Getwd()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// make sure we cd back when done
 	defer func() {
@@ -61,7 +60,7 @@ func (b *DockerBuildBits) Build() error {
 		_ = os.Chdir(cwd)
 	}()
 	if err := os.Chdir(b.kubeRoot); err != nil {
-		return err
+		return nil, err
 	}
 
 	// we will pass through the environment variables, prepending defaults
@@ -94,66 +93,45 @@ func (b *DockerBuildBits) Build() error {
 	).SetEnv(env...)
 	exec.InheritOutput(cmd)
 	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "failed to build binaries")
+		return nil, errors.Wrap(err, "failed to build binaries")
 	}
 
 	// build images
 	cmd = exec.Command("make", "quick-release-images").SetEnv(env...)
 	exec.InheritOutput(cmd)
 	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "failed to build images")
+		return nil, errors.Wrap(err, "failed to build images")
 	}
 
 	// capture version info
-	return buildVersionFile(b.logger, b.kubeRoot)
+	version, err := sourceVersion(b.kubeRoot)
+	if err != nil {
+		return nil, err
+	}
+
+	binDir := filepath.Join(b.kubeRoot,
+		"_output", "dockerized", "bin", "linux", b.arch,
+	)
+	imageDir := filepath.Join(b.kubeRoot,
+		"_output", "release-images", b.arch,
+	)
+
+	return &bits{
+		binaryPaths: []string{
+			filepath.Join(binDir, "kubeadm"),
+			filepath.Join(binDir, "kubelet"),
+			filepath.Join(binDir, "kubectl"),
+		},
+		imagePaths: []string{
+			filepath.Join(imageDir, "kube-apiserver.tar"),
+			filepath.Join(imageDir, "kube-controller-manager.tar"),
+			filepath.Join(imageDir, "kube-scheduler.tar"),
+			filepath.Join(imageDir, "kube-proxy.tar"),
+		},
+		version: version,
+	}, nil
 }
 
 func dockerBuildOsAndArch(arch string) string {
 	return "linux/" + arch
-}
-
-// Paths implements Bits.Paths
-func (b *DockerBuildBits) Paths() map[string]string {
-	binDir := filepath.Join(b.kubeRoot,
-		"_output", "dockerized", "bin", "linux", b.arch,
-	)
-	return map[string]string{
-		// binaries (hyperkube)
-		filepath.Join(binDir, "kubeadm"): "bin/kubeadm",
-		filepath.Join(binDir, "kubelet"): "bin/kubelet",
-		filepath.Join(binDir, "kubectl"): "bin/kubectl",
-		// version file
-		filepath.Join(b.kubeRoot, "_output", "git_version"): "version",
-	}
-}
-
-// ImagePaths implements Bits.ImagePaths
-func (b *DockerBuildBits) ImagePaths() []string {
-	imageDir := filepath.Join(b.kubeRoot,
-		"_output", "release-images", b.arch,
-	)
-	return []string{
-		filepath.Join(imageDir, "kube-apiserver.tar"),
-		filepath.Join(imageDir, "kube-controller-manager.tar"),
-		filepath.Join(imageDir, "kube-scheduler.tar"),
-		filepath.Join(imageDir, "kube-proxy.tar"),
-	}
-}
-
-// Install implements Bits.Install
-func (b *DockerBuildBits) Install(install InstallContext) error {
-	kindBinDir := path.Join(install.BasePath(), "bin")
-
-	// symlink the kubernetes binaries into $PATH
-	binaries := []string{"kubeadm", "kubelet", "kubectl"}
-	for _, binary := range binaries {
-		if err := install.Run("ln", "-s",
-			path.Join(kindBinDir, binary),
-			path.Join("/usr/bin/", binary),
-		); err != nil {
-			return errors.Wrap(err, "failed to symlink binaries")
-		}
-	}
-
-	return nil
 }
