@@ -19,11 +19,11 @@
 
 # start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ubuntu:20.04
+FROM ubuntu:20.10
 
 # Configure containerd and runc binaries from kind-ci/containerd-nightlies repository
 # The repository contains latest stable releases and nightlies built for multiple architectures
-ARG CONTAINERD_VERSION="v1.4.0-beta.2-43-gd184a0a3"
+ARG CONTAINERD_VERSION="v1.4.0-rc.1-4-g43366250"
 # Configure CNI binaries
 # TODO: switch back to upstream binaries at next release
 ARG CNI_VERSION="v0.8.6-14-g6eb8e31"
