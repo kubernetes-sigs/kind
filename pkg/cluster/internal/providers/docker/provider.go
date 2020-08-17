@@ -157,15 +157,37 @@ func (p *Provider) GetAPIServerEndpoint(cluster string) (string, error) {
 		return "", errors.Wrap(err, "failed to get api server endpoint")
 	}
 
-	// retrieve the specific port mapping using docker inspect
+	// if the 'desktop.docker.io/ports/<PORT>/tcp' label is present,
+	// defer to its value for the api server endpoint
+	//
+	// For example:
+	// "Labels": {
+	// 	"desktop.docker.io/ports/6443/tcp": "10.0.1.7:6443",
+	// }
 	cmd := exec.Command(
+		"docker", "inspect",
+		"--format", fmt.Sprintf(
+			"{{ index .Config.Labels \"desktop.docker.io/ports/%d/tcp\" }}", common.APIServerInternalPort,
+		),
+		n.String(),
+	)
+	lines, err := exec.OutputLines(cmd)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to get api server port")
+	}
+	if len(lines) == 1 && lines[0] != "" {
+		return lines[0], nil
+	}
+
+	// else, retrieve the specific port mapping via NetworkSettings.Ports
+	cmd = exec.Command(
 		"docker", "inspect",
 		"--format", fmt.Sprintf(
 			"{{ with (index (index .NetworkSettings.Ports \"%d/tcp\") 0) }}{{ printf \"%%s\t%%s\" .HostIp .HostPort }}{{ end }}", common.APIServerInternalPort,
 		),
 		n.String(),
 	)
-	lines, err := exec.OutputLines(cmd)
+	lines, err = exec.OutputLines(cmd)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get api server port")
 	}
