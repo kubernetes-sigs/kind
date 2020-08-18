@@ -140,6 +140,14 @@ scheduler:
 networking:
   podSubnet: "{{ .PodSubnet }}"
   serviceSubnet: "{{ .ServiceSubnet }}"
+etcd:
+  # TODO: external etcd / HA ..?
+  local:
+    extraArgs:
+      # this matches GCE
+      # https://github.com/kubernetes/kubernetes/commit/ca99cbca02542ae63e72f5be84d23078e7422f85
+      # https://github.com/kubernetes/kubernetes/issues/94029
+      "quota-backend-bytes": "4294967296"
 ---
 apiVersion: kubeadm.k8s.io/v1beta1
 kind: InitConfiguration
@@ -257,6 +265,14 @@ scheduler:
 networking:
   podSubnet: "{{ .PodSubnet }}"
   serviceSubnet: "{{ .ServiceSubnet }}"
+etcd:
+  # TODO: external etcd / HA ..?
+  local:
+    extraArgs:
+      # this matches GCE
+      # https://github.com/kubernetes/kubernetes/commit/ca99cbca02542ae63e72f5be84d23078e7422f85
+      # https://github.com/kubernetes/kubernetes/issues/94029
+      "quota-backend-bytes": "4294967296"
 ---
 apiVersion: kubeadm.k8s.io/v1beta2
 kind: InitConfiguration
