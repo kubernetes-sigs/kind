@@ -17,7 +17,7 @@
 # For systemd + docker configuration used below, see the following references:
 # https://systemd.io/CONTAINER_INTERFACE/
 
-# start from ubuntu 20.04, this image is reasonably small as a starting point
+# start from ubuntu 20.10, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ubuntu:20.10
 
