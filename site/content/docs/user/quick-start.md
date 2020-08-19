@@ -23,11 +23,15 @@ and run `make build` from the repository.
 
 Please use the latest Go when installing KIND from source, ideally go 1.14 or greater.
 
-This will put `kind` in `$(go env GOPATH)/bin`. You may need to add that directory to your `$PATH` as
+`go get` will put `kind` in `$(go env GOPATH)/bin`. You may need to add that directory to your `$PATH` as
 shown [here](https://golang.org/doc/code.html#GOPATH) if you encounter the error
 `kind: command not found` after installation.
 
-Without installing Go, kind can be built reproducibly with docker using `make build`.
+**NOTE**: `go get` should not be run from a Go [modules] enabled project directory,
+as go get inside a modules enabled project updates dependencies / behaves differently. Try for example `cd $HOME` first.
+
+Without installing Go, kind can be built reproducibly with docker using `make build`,
+the binary will be in `bin/kind`.
 
 Stable binaries are also available on the [releases] page.
 Stable releases are generally recommended for CI usage in particular.
