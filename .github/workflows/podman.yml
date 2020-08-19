@@ -1,0 +1,100 @@
+name: Podman
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+
+  podman:
+    name: Podman
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        ipFamily: [ipv4, ipv6]
+        deployment: [singleNode, multiNode]
+        exclude:
+          # exclude IPv6
+          - ipFamily: ipv6
+    env:
+      JOB_NAME: "podman-${{ matrix.deployment }}-${{ matrix.ipFamily }}"
+      KIND_EXPERIMENTAL_PROVIDER: "podman"
+      IP_FAMILY: ${{ matrix.ipFamily }}
+    steps:
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Verify
+      run: make verify
+
+    - name: Install kind
+      run: sudo make install INSTALL_DIR=/usr/local/bin
+
+    - name: Install podman
+      run: |
+        . /etc/os-release
+        echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/ /" | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
+        curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/Release.key | sudo apt-key add -
+        sudo apt-get update -qq
+        sudo apt-get -qq -y install podman
+        # Install network
+        sudo mkdir -p /etc/cni/net.d
+        curl -qsSL https://raw.githubusercontent.com/containers/libpod/master/cni/87-podman-bridge.conflist | sudo tee /etc/cni/net.d/87-podman-bridge.conf
+        curl -qsSL https://github.com/containernetworking/plugins/releases/download/v0.8.6/cni-plugins-linux-amd64-v0.8.6.tgz --output /tmp/cni.tgz
+        sudo mkdir -p /usr/libexec/cni
+        sudo tar -C /usr/libexec/cni -xvzf /tmp/cni.tgz
+
+    - name: Create single node cluster
+      if: ${{ matrix.deployment == 'singleNode' }}
+      run: |
+        cat <<EOF | sudo KIND_EXPERIMENTAL_PROVIDER=podman kind create cluster -v7 --wait 1m --retain --config=-
+        kind: Cluster
+        apiVersion: kind.x-k8s.io/v1alpha4
+        networking:
+          ipFamily: ${IP_FAMILY}
+        EOF
+
+    - name: Create multi node cluster
+      if: ${{ matrix.deployment == 'multiNode' }}
+      run: |
+        cat <<EOF | sudo KIND_EXPERIMENTAL_PROVIDER=podman kind create cluster -v7 --wait 1m --retain --config=-
+        kind: Cluster
+        apiVersion: kind.x-k8s.io/v1alpha4
+        networking:
+          ipFamily: ${IP_FAMILY}
+        nodes:
+        - role: control-plane
+        - role: control-plane
+        - role: control-plane
+        - role: worker
+        - role: worker
+        EOF
+
+      # TODO: implement this
+    - name: Load docker image
+      run: sudo KIND_EXPERIMENTAL_PROVIDER=podman kind load docker-image busybox:2
+      continue-on-error: true
+
+    - name: Export logs
+      if: always()
+      run: |
+        mkdir -p /tmp/kind/logs
+        sudo KIND_EXPERIMENTAL_PROVIDER=podman kind export logs /tmp/kind/logs
+        sudo chown -R $USER:$USER /tmp/kind/logs
+
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: kind-logs-${{ env.JOB_NAME }}-${{ github.run_id }}
+        path: /tmp/kind/logs
+
+    - name: Delete cluster
+      run: sudo KIND_EXPERIMENTAL_PROVIDER=podman kind delete cluster
