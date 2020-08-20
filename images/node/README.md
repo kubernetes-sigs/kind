@@ -1,6 +1,6 @@
 ## images/node
 
-See: [`pkg/build/node/node.go`][pkg/build/node/node.go], this
+See: [`/pkg/build/nodeimage/build_impl.go`][/pkg/build/nodeimage/build_impl.go], this
 image is built programmatically with docker run / exec / commit for performance
 reasons with large artifacts.
 
@@ -11,5 +11,5 @@ Roughly this image is [the base image](./../base), with the addition of:
 
 See [`node-image`][node-image.md] for more design details.
 
-[pkg/build/node/node.go]: ./../../pkg/build/node/node.go
+[/pkg/build/nodeimage/build_impl.go]: ./../../pkg/build/nodeimage/build_impl.go
 [node-image.md]: https://kind.sigs.k8s.io/docs/design/node-image
