@@ -80,10 +80,10 @@ RUN echo "Ensuring scripts are executable ..." \
     && rm -f /lib/systemd/system/basic.target.wants/* \
     && echo "ReadKMsg=no" >> /etc/systemd/journald.conf \
     && ln -s "$(which systemd)" /sbin/init \
+    && export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
  && echo "Enabling kubelet ... " \
     && systemctl enable kubelet.service \
  && echo "Installing containerd ..." \
-    && export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
     && export CONTAINERD_BASE_URL="https://github.com/kind-ci/containerd-nightlies/releases/download/containerd-${CONTAINERD_VERSION#v}" \
     && curl -sSL --retry 5 --output /tmp/containerd.tgz "${CONTAINERD_BASE_URL}/containerd-${CONTAINERD_VERSION#v}.linux-${ARCH}.tar.gz" \
     && tar -C /usr/local -xzvf /tmp/containerd.tgz \
@@ -95,14 +95,16 @@ RUN echo "Ensuring scripts are executable ..." \
     && runc --version \
     && systemctl enable containerd \
  && echo "Installing crictl ..." \
-    && curl -fSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz" | tar xzC /usr/local/bin \
+    && export CRICTL_URL="https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz" \
+    && curl -sSL --retry 5 --output /tmp/crictl.tgz "${CRICTL_URL}" \
+    && tar -C /usr/local/bin -xzvf /tmp/crictl.tgz \
+    && rm -rf /tmp/crictl.tgz \
  && echo "Installing CNI binaries ..." \
-    && export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
     && export CNI_TARBALL="${CNI_VERSION}/cni-plugins-linux-${ARCH}-${CNI_VERSION}.tgz" \
     && export CNI_URL="https://github.com/bentheelder/containernetworking-plugins/releases/download/${CNI_TARBALL}" \
     && curl -sSL --retry 5 --output /tmp/cni.tgz "${CNI_URL}" \
     && mkdir -p /opt/cni/bin \
-    && tar -C /opt/cni/bin -xzf /tmp/cni.tgz \
+    && tar -C /opt/cni/bin -xzvf /tmp/cni.tgz \
     && rm -rf /tmp/cni.tgz \
     && find /opt/cni/bin -type f -not \( \
          -iname host-local \
