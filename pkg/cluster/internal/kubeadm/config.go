@@ -158,6 +158,7 @@ nodeRegistration:
   kubeletExtraArgs:
     fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
+    provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
 ---
 # no-op entry that exists solely so it can be patched
 apiVersion: kubeadm.k8s.io/v1beta1
@@ -175,6 +176,7 @@ nodeRegistration:
   kubeletExtraArgs:
     fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
+    provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
 discovery:
   bootstrapToken:
     apiServerEndpoint: "{{ .ControlPlaneEndpoint }}"
@@ -275,6 +277,7 @@ nodeRegistration:
   kubeletExtraArgs:
     fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
+    provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
 ---
 # no-op entry that exists solely so it can be patched
 apiVersion: kubeadm.k8s.io/v1beta2
@@ -292,6 +295,7 @@ nodeRegistration:
   kubeletExtraArgs:
     fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
+    provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
 discovery:
   bootstrapToken:
     apiServerEndpoint: "{{ .ControlPlaneEndpoint }}"
