@@ -39,21 +39,34 @@ type ConfigData struct {
 	APIBindPort int
 	// The API server external listen IP (which we will port forward)
 	APIServerAddress string
+
+	// this should really be used for the --provider-id flag
+	// ideally cluster config should not depend on the node backend otherwise ...
+	NodeProvider string
+
 	// ControlPlane flag specifies the node belongs to the control plane
 	ControlPlane bool
 	// The main IP address of the node
 	NodeAddress string
+	// The name for the node (not the address)
+	NodeName string
+
 	// The Token for TLS bootstrap
 	Token string
+
 	// KubeProxyMode defines the kube-proxy mode between iptables or ipvs
 	KubeProxyMode string
 	// The subnet used for pods
 	PodSubnet string
 	// The subnet used for services
 	ServiceSubnet string
-	// IPv4 values take precedence over IPv6 by default, if true set IPv6 default values
-	IPv6         bool
+
+	// Kubernetes FeatureGates
 	FeatureGates map[string]bool
+
+	// IPv4 values take precedence over IPv6 by default, if true set IPv6 default values
+	IPv6 bool
+
 	// DerivedConfigData is populated by Derive()
 	// These auto-generated fields are available to Config templates,
 	// but not meant to be set by hand
@@ -158,6 +171,7 @@ nodeRegistration:
   kubeletExtraArgs:
     fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
+    provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
 ---
 # no-op entry that exists solely so it can be patched
 apiVersion: kubeadm.k8s.io/v1beta1
@@ -175,6 +189,7 @@ nodeRegistration:
   kubeletExtraArgs:
     fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
+    provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
 discovery:
   bootstrapToken:
     apiServerEndpoint: "{{ .ControlPlaneEndpoint }}"
@@ -275,6 +290,7 @@ nodeRegistration:
   kubeletExtraArgs:
     fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
+    provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
 ---
 # no-op entry that exists solely so it can be patched
 apiVersion: kubeadm.k8s.io/v1beta2
@@ -292,6 +308,7 @@ nodeRegistration:
   kubeletExtraArgs:
     fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
+    provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
 discovery:
   bootstrapToken:
     apiServerEndpoint: "{{ .ControlPlaneEndpoint }}"
