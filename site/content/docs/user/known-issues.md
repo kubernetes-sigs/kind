@@ -298,6 +298,10 @@ systemctl restart firewalld
 
 See [#1547 (comment)](https://github.com/kubernetes-sigs/kind/issues/1547#issuecomment-623756313)
 
+## Fedora32 and Docker
+
+The situation with Docker on Fedora is not ideal. See Fedora Magazine article ["Fedora and Docker"](https://fedoramagazine.org/docker-and-fedora-32/) for information regarding workarounds for cgroups, firewalld, and installing docker.
+
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new
 [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
