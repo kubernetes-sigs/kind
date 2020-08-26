@@ -25,8 +25,7 @@ FROM ubuntu:20.10
 # The repository contains latest stable releases and nightlies built for multiple architectures
 ARG CONTAINERD_VERSION="v1.4.0"
 # Configure CNI binaries
-# TODO: switch back to upstream binaries at next release
-ARG CNI_VERSION="v0.8.6-14-g6eb8e31"
+ARG CNI_VERSION="v0.8.7"
 # Configure crictl binary from upstream
 ARG CRICTL_VERSION="v1.18.0"
 
@@ -101,7 +100,7 @@ RUN echo "Ensuring scripts are executable ..." \
     && rm -rf /tmp/crictl.tgz \
  && echo "Installing CNI binaries ..." \
     && export CNI_TARBALL="${CNI_VERSION}/cni-plugins-linux-${ARCH}-${CNI_VERSION}.tgz" \
-    && export CNI_URL="https://github.com/bentheelder/containernetworking-plugins/releases/download/${CNI_TARBALL}" \
+    && export CNI_URL="https://github.com/containernetworking/plugins/releases/download/${CNI_TARBALL}" \
     && curl -sSL --retry 5 --output /tmp/cni.tgz "${CNI_URL}" \
     && mkdir -p /opt/cni/bin \
     && tar -C /opt/cni/bin -xzvf /tmp/cni.tgz \
