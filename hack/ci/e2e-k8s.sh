@@ -144,7 +144,7 @@ nodes:
 - role: worker
 - role: worker
 featureGates: ${feature_gates}
-${runtime_config}
+runtimeConfig: ${runtime_config}
 kubeadmConfigPatches:
 - |
   kind: ClusterConfiguration
