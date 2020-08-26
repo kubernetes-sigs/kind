@@ -155,7 +155,17 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 		return nil
 	}
 
-	if err := kubeconfig.Export(p, opts.Config.Name, opts.KubeconfigPath); err != nil {
+	// try exporting kubeconfig with backoff for locking failures
+	// TODO: factor out into a public errors API w/ backoff handling?
+	// for now this is easier than coming up with a good API
+	var err error
+	for _, b := range []time.Duration{time.Millisecond, time.Millisecond * 50, time.Millisecond * 100} {
+		if err = kubeconfig.Export(p, opts.Config.Name, opts.KubeconfigPath); err == nil {
+			break
+		}
+		time.Sleep(b)
+	}
+	if err != nil {
 		return err
 	}
 
