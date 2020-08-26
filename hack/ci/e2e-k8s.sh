@@ -99,7 +99,7 @@ create_cluster() {
   case "${GA_ONLY:-false}" in
   false)
     feature_gates="{}"
-    runtime_config=""
+    runtime_config="{}"
     ;;
 
   true)
@@ -113,12 +113,12 @@ create_cluster() {
     v1.18.*)
       echo "Limiting to GA APIs and features (plus certificates.k8s.io/v1beta1 and RotateKubeletClientCertificate) for ${KUBE_VERSION}"
       feature_gates='{"AllAlpha":false,"AllBeta":false,"RotateKubeletClientCertificate":true}'
-      runtime_config='api/alpha=false,api/beta=false,certificates.k8s.io/v1beta1=true'
+      runtime_config='{"api/alpha":"false", "api/beta":"false", "certificates.k8s.io/v1beta1":"true"}'
       ;;
     *)
       echo "Limiting to GA APIs and features for ${KUBE_VERSION}"
       feature_gates='{"AllAlpha":false,"AllBeta":false}'
-      runtime_config='api/alpha=false,api/beta=false'
+      runtime_config='{"api/alpha":"false", "api/beta":"false"}'
       ;;
     esac
     ;;
@@ -144,7 +144,7 @@ nodes:
 - role: worker
 - role: worker
 featureGates: ${feature_gates}
-runtimeConfig: ${runtime_config}
+${runtime_config}
 kubeadmConfigPatches:
 - |
   kind: ClusterConfiguration
