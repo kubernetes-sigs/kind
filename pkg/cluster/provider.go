@@ -27,9 +27,9 @@ import (
 	internalcreate "sigs.k8s.io/kind/pkg/cluster/internal/create"
 	internaldelete "sigs.k8s.io/kind/pkg/cluster/internal/delete"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeconfig"
+	internalproviders "sigs.k8s.io/kind/pkg/cluster/internal/providers"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/docker"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/podman"
-	internalprovider "sigs.k8s.io/kind/pkg/cluster/internal/providers/provider"
 )
 
 // DefaultName is the default cluster name
@@ -45,7 +45,7 @@ func defaultName(name string) string {
 
 // Provider is used to perform cluster operations
 type Provider struct {
-	provider internalprovider.Provider
+	provider internalproviders.Provider
 	logger   log.Logger
 }
 
