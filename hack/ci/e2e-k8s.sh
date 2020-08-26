@@ -144,6 +144,7 @@ nodes:
 - role: worker
 - role: worker
 featureGates: ${feature_gates}
+runtimeConfig: ${runtime_config}
 kubeadmConfigPatches:
 - |
   kind: ClusterConfiguration
@@ -151,7 +152,6 @@ kubeadmConfigPatches:
     name: config
   apiServer:
     extraArgs:
-      "runtime-config": "${runtime_config}"
       "v": "${KIND_CLUSTER_LOG_LEVEL}"
   controllerManager:
     extraArgs:

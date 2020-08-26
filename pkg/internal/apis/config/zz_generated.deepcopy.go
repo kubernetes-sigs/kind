@@ -38,6 +38,13 @@ func (in *Cluster) DeepCopyInto(out *Cluster) {
 			(*out)[key] = val
 		}
 	}
+	if in.RuntimeConfig != nil {
+		in, out := &in.RuntimeConfig, &out.RuntimeConfig
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	if in.KubeadmConfigPatches != nil {
 		in, out := &in.KubeadmConfigPatches, &out.KubeadmConfigPatches
 		*out = make([]string, len(*in))

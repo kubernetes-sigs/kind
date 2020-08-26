@@ -64,6 +64,9 @@ type ConfigData struct {
 	// Kubernetes FeatureGates
 	FeatureGates map[string]bool
 
+	// Kubernetes API Server RuntimeConfig
+	RuntimeConfig map[string]string
+
 	// IPv4 values take precedence over IPv6 by default, if true set IPv6 default values
 	IPv6 bool
 
@@ -82,6 +85,8 @@ type DerivedConfigData struct {
 	SortedFeatureGateKeys []string
 	// FeatureGatesString is of the form `Foo=true,Baz=false`
 	FeatureGatesString string
+	// RuntimeConfigString is of the form `Foo=true,Baz=false`
+	RuntimeConfigString string
 }
 
 // Derive automatically derives DockerStableTag if not specified
@@ -105,6 +110,23 @@ func (c *ConfigData) Derive() {
 		featureGates = append(featureGates, fmt.Sprintf("%s=%t", k, v))
 	}
 	c.FeatureGatesString = strings.Join(featureGates, ",")
+
+	// create a sorted key=value,... string of RuntimeConfig
+	// first get sorted list of FeatureGate keys
+	runtimeConfigKeys := make([]string, 0, len(c.RuntimeConfig))
+	for k := range c.RuntimeConfig {
+		runtimeConfigKeys = append(runtimeConfigKeys, k)
+	}
+	sort.Strings(featureGateKeys)
+	// stringify
+	var runtimeConfig []string
+	for _, k := range runtimeConfigKeys {
+		v := c.RuntimeConfig[k]
+		// TODO: do we need to quote / escape these in the future?
+		// Currently runtime config is in practice booleans, no special characters
+		runtimeConfig = append(runtimeConfig, fmt.Sprintf("%s=%s", k, v))
+	}
+	c.RuntimeConfigString = strings.Join(runtimeConfig, ",")
 }
 
 // See docs for these APIs at:
@@ -126,8 +148,9 @@ controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServer:
   certSANs: [localhost, "{{.APIServerAddress}}"]
-{{ if .FeatureGates }}
   extraArgs:
+    "runtime-config": "{{ .RuntimeConfigString }}"
+{{ if .FeatureGates }}
     "feature-gates": "{{ .FeatureGatesString }}"
 {{ end}}
 controllerManager:
@@ -245,10 +268,11 @@ controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServer:
   certSANs: [localhost, "{{.APIServerAddress}}"]
-{{ if .FeatureGates }}
   extraArgs:
+    "runtime-config": "{{ .RuntimeConfigString }}"
+{{ if .FeatureGates }}
     "feature-gates": "{{ .FeatureGatesString }}"
-{{ end }}
+{{ end}}
 controllerManager:
   extraArgs:
 {{ if .FeatureGates }}
