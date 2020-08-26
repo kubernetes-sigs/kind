@@ -25,7 +25,7 @@ import (
 	"github.com/alessio/shellescape"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/delete"
-	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/apis/config/encoding"
@@ -72,7 +72,7 @@ type ClusterOptions struct {
 }
 
 // Cluster creates a cluster
-func Cluster(logger log.Logger, p provider.Provider, opts *ClusterOptions) error {
+func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) error {
 	// default / process options (namely config)
 	if err := fixupOptions(opts); err != nil {
 		return err
@@ -173,7 +173,7 @@ func Cluster(logger log.Logger, p provider.Provider, opts *ClusterOptions) error
 
 // alreadyExists returns an error if the cluster name already exists
 // or if we had an error checking
-func alreadyExists(p provider.Provider, name string) error {
+func alreadyExists(p providers.Provider, name string) error {
 	n, err := p.ListNodes(name)
 	if err != nil {
 		return err

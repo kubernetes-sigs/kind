@@ -34,28 +34,35 @@ import (
 	"sigs.k8s.io/kind/pkg/log"
 
 	internallogs "sigs.k8s.io/kind/pkg/cluster/internal/logs"
-	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider"
-	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider/common"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers/common"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/cli"
 )
 
 // NewProvider returns a new provider based on executing `podman ...`
-func NewProvider(logger log.Logger) provider.Provider {
+func NewProvider(logger log.Logger) providers.Provider {
 	logger.Warn("enabling experimental podman provider")
-	return &Provider{
+	return &provider{
 		logger: logger,
 	}
 }
 
 // Provider implements provider.Provider
 // see NewProvider
-type Provider struct {
+type provider struct {
 	logger log.Logger
 }
 
+// String implements fmt.Stringer
+// NOTE: the value of this should not currently be relied upon for anything!
+// This is only used for setting the Node's providerID
+func (p *provider) String() string {
+	return "podman"
+}
+
 // Provision is part of the providers.Provider interface
-func (p *Provider) Provision(status *cli.Status, cfg *config.Cluster) (err error) {
+func (p *provider) Provision(status *cli.Status, cfg *config.Cluster) (err error) {
 	if err := ensureMinVersion(); err != nil {
 		return err
 	}
@@ -88,7 +95,7 @@ func (p *Provider) Provision(status *cli.Status, cfg *config.Cluster) (err error
 }
 
 // ListClusters is part of the providers.Provider interface
-func (p *Provider) ListClusters() ([]string, error) {
+func (p *provider) ListClusters() ([]string, error) {
 	cmd := exec.Command("podman",
 		"ps",
 		"-a", // show stopped nodes
@@ -105,7 +112,7 @@ func (p *Provider) ListClusters() ([]string, error) {
 }
 
 // ListNodes is part of the providers.Provider interface
-func (p *Provider) ListNodes(cluster string) ([]nodes.Node, error) {
+func (p *provider) ListNodes(cluster string) ([]nodes.Node, error) {
 	cmd := exec.Command("podman",
 		"ps",
 		"-a", // show stopped nodes
@@ -127,7 +134,7 @@ func (p *Provider) ListNodes(cluster string) ([]nodes.Node, error) {
 }
 
 // DeleteNodes is part of the providers.Provider interface
-func (p *Provider) DeleteNodes(n []nodes.Node) error {
+func (p *provider) DeleteNodes(n []nodes.Node) error {
 	if len(n) == 0 {
 		return nil
 	}
@@ -156,7 +163,7 @@ func (p *Provider) DeleteNodes(n []nodes.Node) error {
 }
 
 // GetAPIServerEndpoint is part of the providers.Provider interface
-func (p *Provider) GetAPIServerEndpoint(cluster string) (string, error) {
+func (p *provider) GetAPIServerEndpoint(cluster string) (string, error) {
 	// locate the node that hosts this
 	allNodes, err := p.ListNodes(cluster)
 	if err != nil {
@@ -230,7 +237,7 @@ func (p *Provider) GetAPIServerEndpoint(cluster string) (string, error) {
 }
 
 // GetAPIServerInternalEndpoint is part of the providers.Provider interface
-func (p *Provider) GetAPIServerInternalEndpoint(cluster string) (string, error) {
+func (p *provider) GetAPIServerInternalEndpoint(cluster string) (string, error) {
 	// locate the node that hosts this
 	allNodes, err := p.ListNodes(cluster)
 	if err != nil {
@@ -251,14 +258,14 @@ func (p *Provider) GetAPIServerInternalEndpoint(cluster string) (string, error) 
 }
 
 // node returns a new node handle for this provider
-func (p *Provider) node(name string) nodes.Node {
+func (p *provider) node(name string) nodes.Node {
 	return &node{
 		name: name,
 	}
 }
 
 // CollectLogs will populate dir with cluster logs and other debug files
-func (p *Provider) CollectLogs(dir string, nodes []nodes.Node) error {
+func (p *provider) CollectLogs(dir string, nodes []nodes.Node) error {
 	execToPathFn := func(cmd exec.Cmd, path string) func() error {
 		return func() error {
 			f, err := common.FileOnHost(path)

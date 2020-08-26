@@ -19,6 +19,7 @@ package config
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
@@ -28,8 +29,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
 	"sigs.k8s.io/kind/pkg/cluster/internal/patch"
-	"sigs.k8s.io/kind/pkg/cluster/internal/providers/podman"
-	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider/common"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers/common"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 )
@@ -60,16 +60,8 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	// create kubeadm init config
 	fns := []func() error{}
 
-	// TODO(bentheelder): settle on a better abstraction for this
-	// While we don't want much code aware of the provider name,
-	// we do want to surface it in the node providerID field
-	providerName := "docker"
-	if _, ok := ctx.Provider.(*podman.Provider); ok {
-		providerName = "podman"
-	}
-
 	configData := kubeadm.ConfigData{
-		NodeProvider:         providerName,
+		NodeProvider:         fmt.Sprintf("%s", ctx.Provider),
 		ClusterName:          ctx.Config.Name,
 		ControlPlaneEndpoint: controlPlaneEndpoint,
 		APIBindPort:          common.APIServerInternalPort,

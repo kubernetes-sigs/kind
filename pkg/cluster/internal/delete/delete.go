@@ -21,13 +21,13 @@ import (
 	"sigs.k8s.io/kind/pkg/log"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeconfig"
-	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers"
 )
 
 // Cluster deletes the cluster identified by ctx
 // explicitKubeconfigPath is --kubeconfig, following the rules from
 // https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands
-func Cluster(logger log.Logger, p provider.Provider, name, explicitKubeconfigPath string) error {
+func Cluster(logger log.Logger, p providers.Provider, name, explicitKubeconfigPath string) error {
 	n, err := p.ListNodes(name)
 	if err != nil {
 		return errors.Wrap(err, "error listing nodes")

@@ -27,12 +27,12 @@ import (
 	// this package has slightly more generic kubeconfig helpers
 	// and minimal dependencies on the rest of kind
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeconfig/internal/kubeconfig"
-	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers"
 )
 
 // Export exports the kubeconfig given the cluster context and a path to write it to
 // This will always be an external kubeconfig
-func Export(p provider.Provider, name, explicitPath string) error {
+func Export(p providers.Provider, name, explicitPath string) error {
 	cfg, err := get(p, name, true)
 	if err != nil {
 		return err
@@ -50,7 +50,7 @@ func Remove(clusterName, explicitPath string) error {
 
 // Get returns the kubeconfig for the cluster
 // external controls if the internal IP address is used or the host endpoint
-func Get(p provider.Provider, name string, external bool) (string, error) {
+func Get(p providers.Provider, name string, external bool) (string, error) {
 	cfg, err := get(p, name, external)
 	if err != nil {
 		return "", err
@@ -68,7 +68,7 @@ func ContextForCluster(kindClusterName string) string {
 	return kubeconfig.KINDClusterKey(kindClusterName)
 }
 
-func get(p provider.Provider, name string, external bool) (*kubeconfig.Config, error) {
+func get(p providers.Provider, name string, external bool) (*kubeconfig.Config, error) {
 	// find a control plane node to get the kubeadm config from
 	n, err := p.ListNodes(name)
 	if err != nil {

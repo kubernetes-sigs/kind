@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/kind/pkg/fs"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer"
-	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider/common"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers/common"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 )
 

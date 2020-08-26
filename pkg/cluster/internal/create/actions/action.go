@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/kind/pkg/internal/cli"
 	"sigs.k8s.io/kind/pkg/log"
 
-	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers"
 )
 
 // Action defines a step of bringing up a kind cluster after initial node
@@ -38,7 +38,7 @@ type ActionContext struct {
 	Logger   log.Logger
 	Status   *cli.Status
 	Config   *config.Cluster
-	Provider provider.Provider
+	Provider providers.Provider
 	cache    *cachedData
 }
 
@@ -46,7 +46,7 @@ type ActionContext struct {
 func NewActionContext(
 	logger log.Logger,
 	status *cli.Status,
-	provider provider.Provider,
+	provider providers.Provider,
 	cfg *config.Cluster,
 ) *ActionContext {
 	return &ActionContext{
