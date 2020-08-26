@@ -16,6 +16,12 @@ limitations under the License.
 
 package config
 
+/*
+NOTE: unlike the public types these should not have serialization tags and
+should stay 100% internal. These are used to pass around the processed public
+config for internal usage.
+*/
+
 // Cluster contains kind cluster configuration
 type Cluster struct {
 	// The cluster name.
@@ -38,6 +44,11 @@ type Cluster struct {
 	//
 	// https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/
 	FeatureGates map[string]bool
+
+	// RuntimeConfig Keys and values are translated into --runtime-config values for kube-apiserver, separated by commas.
+	//
+	// Use this to enable alpha APIs.
+	RuntimeConfig map[string]string
 
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// strategic merge patches to `kustomize build` internally

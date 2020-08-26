@@ -41,6 +41,11 @@ type Cluster struct {
 	// https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/
 	FeatureGates map[string]bool `yaml:"featureGates,omitempty"`
 
+	// RuntimeConfig Keys and values are translated into --runtime-config values for kube-apiserver, separated by commas.
+	//
+	// Use this to enable alpha APIs.
+	RuntimeConfig map[string]string `yaml:"runtimeConfig,omitempty"`
+
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// merge patches. The `kind` field must match the target object, and
 	// if `apiVersion` is specified it will only be applied to matching objects.
