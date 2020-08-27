@@ -18,6 +18,23 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+configure_containerd() {
+  # we need to switch to the 'native' snapshotter on zfs
+  if [[ "$(stat -f -c %T /kind)" == 'zfs' ]]; then
+    sed -i 's/snapshotter = "overlayfs"/snapshotter = "native"/' /etc/containerd/config.toml
+  fi
+}
+
+configure_proxy() {
+  # ensure all processes receive the proxy settings by default
+  # https://www.freedesktop.org/software/systemd/man/systemd-system.conf.html
+  mkdir -p /etc/systemd/system.conf.d/
+  cat <<EOF >/etc/systemd/system.conf.d/proxy-default-environment.conf
+[Manager]
+DefaultEnvironment="HTTP_PROXY=${HTTP_PROXY:-}" "HTTPS_PROXY=${HTTPS_PROXY:-}" "NO_PROXY=${NO_PROXY:-}"
+EOF
+}
+
 fix_mount() {
   echo 'INFO: ensuring we can execute mount/umount even with userns-remap' 
   # necessary only when userns-remap is enabled on the host, but harmless
@@ -28,7 +45,7 @@ fix_mount() {
   # This is a workaround to an AUFS bug that might cause `Text file
   # busy` on `mount` command below. See more details in
   # https://github.com/moby/moby/issues/9547
-  if [[ "$(stat -f -c %T /bin/mount)" == 'aufs' ]]; then
+  if [[ "$(stat -f -c %T "$(which mount)")" == 'aufs' ]]; then
     echo 'INFO: detected aufs, calling sync' >&2
     sync
   fi
@@ -138,16 +155,6 @@ fix_kmsg() {
   fi
 }
 
-configure_proxy() {
-  # ensure all processes receive the proxy settings by default
-  # https://www.freedesktop.org/software/systemd/man/systemd-system.conf.html
-  mkdir -p /etc/systemd/system.conf.d/
-  cat <<EOF >/etc/systemd/system.conf.d/proxy-default-environment.conf
-[Manager]
-DefaultEnvironment="HTTP_PROXY=${HTTP_PROXY:-}" "HTTPS_PROXY=${HTTPS_PROXY:-}" "NO_PROXY=${NO_PROXY:-}"
-EOF
-}
-
 select_iptables() {
   # based on: https://github.com/kubernetes/kubernetes/blob/ffe93b3979486feb41a0f85191bdd189cbd56ccc/build/debian-iptables/iptables-wrapper
   local mode=nft
@@ -233,13 +240,15 @@ enable_network_magic(){
 }
 
 # run pre-init fixups
+# NOTE: it's important that we do configure* first in this order to avoid races
+configure_containerd
+configure_proxy
 fix_kmsg
 fix_mount
 fix_cgroup
 fix_machine_id
 fix_product_name
 fix_product_uuid
-configure_proxy
 select_iptables
 enable_network_magic
 

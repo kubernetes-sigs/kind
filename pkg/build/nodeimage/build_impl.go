@@ -114,25 +114,8 @@ func (c *buildContext) buildImage(bits kube.Bits) error {
 	}()
 
 	// pre-pull images that were not part of the build
-	images, err := c.prePullImages(bits, dir, containerID)
-	if err != nil {
+	if _, err = c.prePullImages(bits, dir, containerID); err != nil {
 		c.logger.Errorf("Image build Failed! Failed to pull Images: %v", err)
-		return err
-	}
-
-	// find the pause image and inject containerd config
-	pauseImage := findSandboxImage(images)
-	if pauseImage == "" {
-		return errors.New("failed to find imported pause image")
-	}
-	containerdConfig, err := getContainerdConfig(containerdConfigTemplateData{
-		SandboxImage: pauseImage,
-	})
-	if err != nil {
-		return err
-	}
-	const containerdConfigPath = "/etc/containerd/config.toml"
-	if err := createFile(cmder, containerdConfigPath, containerdConfig); err != nil {
 		return err
 	}
 
@@ -229,6 +212,24 @@ func (c *buildContext) prePullImages(bits kube.Bits, dir, containerID string) ([
 	if err != nil {
 		return nil, err
 	}
+
+	// replace pause image with our own
+	config, err := exec.Output(cmder.Command("cat", "/etc/containerd/config.toml"))
+	if err != nil {
+		return nil, err
+	}
+	pauseImage, err := findSandboxImage(string(config))
+	if err != nil {
+		return nil, err
+	}
+	n := 0
+	for _, image := range requiredImages {
+		if !strings.Contains(image, "pause") {
+			requiredImages[n] = image
+			n++
+		}
+	}
+	requiredImages = append(requiredImages[:n], pauseImage)
 
 	// write the default CNI manifest
 	if err := createFile(cmder, defaultCNIManifestLocation, defaultCNIManifest); err != nil {
