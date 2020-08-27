@@ -38,7 +38,8 @@ GOROOT:=
 GO111MODULE=on
 export PATH GOROOT GO111MODULE
 # work around broken PATH export
-SHELL:=env PATH="$(PATH)" $(SHELL)
+SPACE:= $(empty) $(empty)
+SHELL:=env PATH=$(subst $(SPACE),\$(SPACE),$(PATH)) $(SHELL)
 ################################################################################
 # ============================== OPTIONS =======================================
 # install tool
