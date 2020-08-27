@@ -94,7 +94,7 @@ create_cluster() {
   # JSON map injected into featureGates config
   feature_gates="{}"
   # --runtime-config argument value passed to the API server
-  runtime_config=""
+  runtime_config="{}"
 
   case "${GA_ONLY:-false}" in
   false)
@@ -129,8 +129,8 @@ create_cluster() {
     ;;
   esac
 
-# Default Log level for all components in test clusters
-KIND_CLUSTER_LOG_LEVEL=${KIND_CLUSTER_LOG_LEVEL:-4}
+  # Default Log level for all components in test clusters
+  KIND_CLUSTER_LOG_LEVEL=${KIND_CLUSTER_LOG_LEVEL:-4}
 
   # create the config file
   cat <<EOF > "${ARTIFACTS}/kind-config.yaml"
