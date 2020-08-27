@@ -117,7 +117,7 @@ func (c *ConfigData) Derive() {
 	for k := range c.RuntimeConfig {
 		runtimeConfigKeys = append(runtimeConfigKeys, k)
 	}
-	sort.Strings(featureGateKeys)
+	sort.Strings(runtimeConfigKeys)
 	// stringify
 	var runtimeConfig []string
 	for _, k := range runtimeConfigKeys {

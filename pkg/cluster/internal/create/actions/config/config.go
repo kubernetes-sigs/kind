@@ -73,6 +73,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		ControlPlane:         true,
 		IPv6:                 ctx.Config.Networking.IPFamily == "ipv6",
 		FeatureGates:         ctx.Config.FeatureGates,
+		RuntimeConfig:        ctx.Config.RuntimeConfig,
 	}
 
 	kubeadmConfigPlusPatches := func(node nodes.Node, data kubeadm.ConfigData) func() error {
