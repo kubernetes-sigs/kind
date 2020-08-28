@@ -97,6 +97,9 @@ func (c *buildContext) buildImage(bits kube.Bits) error {
 		if err := execInBuild("chmod", "+x", nodePath); err != nil {
 			return err
 		}
+		if err := execInBuild("chown", "root:root", nodePath); err != nil {
+			return err
+		}
 	}
 
 	// write version
