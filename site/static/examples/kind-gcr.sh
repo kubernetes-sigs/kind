@@ -15,7 +15,7 @@ echo "Creating a temporary config.json"
 # created on supported system. With credsStore missing, "docker login"
 # will store the password in the config.json file.
 # https://docs.docker.com/engine/reference/commandline/login/#credentials-store
-cat <<EOF > /var/folders/1g/zx664t193xq9_bdmng9f50k800dbxr/T/tmp.htq9tIZy/config.json
+cat <<EOF >"${DOCKER_CONFIG}/config.json"
 {
  "auths": { "gcr.io": {} }
 }
