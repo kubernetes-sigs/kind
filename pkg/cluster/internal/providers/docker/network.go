@@ -99,7 +99,7 @@ func ensureNetwork(name string) error {
 }
 
 func createNetworkNoDuplicates(name, ipv6Subnet string) error {
-	if err := createNetwork(name, ipv6Subnet); err != nil {
+	if err := createNetwork(name, ipv6Subnet); err != nil && !isNetworkAlreadyExistsError(err) {
 		return err
 	}
 	_, err := removeDuplicateNetworks(name)
@@ -196,6 +196,11 @@ func isIPv6UnavailableError(err error) bool {
 func isPoolOverlapError(err error) bool {
 	rerr := exec.RunErrorForError(err)
 	return rerr != nil && strings.HasPrefix(string(rerr.Output), "Error response from daemon: Pool overlaps with other one on this address space")
+}
+
+func isNetworkAlreadyExistsError(err error) bool {
+	rerr := exec.RunErrorForError(err)
+	return rerr != nil && strings.HasPrefix(string(rerr.Output), "Error response from daemon: network with name") && strings.HasSuffix(string(rerr.Output), "already exists")
 }
 
 func deleteNetworks(networks ...string) error {
