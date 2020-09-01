@@ -17,13 +17,18 @@ limitations under the License.
 package docker
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"encoding/binary"
-	"errors"
+	"encoding/json"
+	"io"
 	"net"
 	"regexp"
+	"sort"
 	"strings"
+	"time"
 
+	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
@@ -42,13 +47,15 @@ const fixedNetworkName = "kind"
 
 // ensureNetwork checks if docker network by name exists, if not it creates it
 func ensureNetwork(name string) error {
-	// TODO: the network might already exist and not have ipv6 ... :|
-	// discussion: https://github.com/kubernetes-sigs/kind/pull/1508#discussion_r414594198
-	exists, err := checkIfNetworkExists(name)
+	// check if network exists already and remove any duplicate networks
+	exists, err := removeDuplicateNetworks(name)
 	if err != nil {
 		return err
 	}
+
 	// network already exists, we're good
+	// TODO: the network might already exist and not have ipv6 ... :|
+	// discussion: https://github.com/kubernetes-sigs/kind/pull/1508#discussion_r414594198
 	if exists {
 		return nil
 	}
@@ -57,7 +64,7 @@ func ensureNetwork(name string) error {
 	// obtained from the ULA fc00::/8 range
 	// Make N attempts with "probing" in case we happen to collide
 	subnet := generateULASubnetFromName(name, 0)
-	err = createNetwork(name, subnet)
+	err = createNetworkNoDuplicates(name, subnet)
 	if err == nil {
 		// Success!
 		return nil
@@ -69,7 +76,7 @@ func ensureNetwork(name string) error {
 	// If it is, make more attempts below
 	if isIPv6UnavailableError(err) {
 		// only one attempt, IPAM is automatic in ipv4 only
-		return createNetwork(name, "")
+		return createNetworkNoDuplicates(name, "")
 	} else if !isPoolOverlapError(err) {
 		// unknown error ...
 		return err
@@ -79,7 +86,7 @@ func ensureNetwork(name string) error {
 	const maxAttempts = 5
 	for attempt := int32(1); attempt < maxAttempts; attempt++ {
 		subnet := generateULASubnetFromName(name, attempt)
-		err = createNetwork(name, subnet)
+		err = createNetworkNoDuplicates(name, subnet)
 		if err == nil {
 			// success!
 			return nil
@@ -91,6 +98,27 @@ func ensureNetwork(name string) error {
 	return errors.New("exhausted attempts trying to find a non-overlapping subnet")
 }
 
+func createNetworkNoDuplicates(name, ipv6Subnet string) error {
+	if err := createNetwork(name, ipv6Subnet); err != nil {
+		return err
+	}
+	_, err := removeDuplicateNetworks(name)
+	return err
+}
+
+func removeDuplicateNetworks(name string) (bool, error) {
+	networks, err := sortedNetworksWithName(name)
+	if err != nil {
+		return false, err
+	}
+	if len(networks) > 1 {
+		if err := deleteNetworks(networks[1:]...); err != nil {
+			return false, err
+		}
+	}
+	return len(networks) > 0, nil
+}
+
 func createNetwork(name, ipv6Subnet string) error {
 	if ipv6Subnet == "" {
 		return exec.Command("docker", "network", "create", "-d=bridge",
@@ -100,6 +128,53 @@ func createNetwork(name, ipv6Subnet string) error {
 	return exec.Command("docker", "network", "create", "-d=bridge",
 		"-o", "com.docker.network.bridge.enable_ip_masquerade=true",
 		"--ipv6", "--subnet", ipv6Subnet, name).Run()
+}
+
+func sortedNetworksWithName(name string) ([]string, error) {
+	// list all networks by this name
+	out, err := exec.Output(exec.Command(
+		"docker", "network", "ls",
+		"--filter=name=^"+regexp.QuoteMeta(name)+"$",
+		"--format={{json .}}",
+	))
+	if err != nil {
+		return nil, err
+	}
+
+	// parse
+	type networkLSEntry struct {
+		CreatedAt goDefaultTime `json:"CreatedAt"`
+		ID        string        `json:"ID"`
+	}
+
+	networks := []networkLSEntry{}
+	decoder := json.NewDecoder(bytes.NewReader(out))
+	for {
+		var network networkLSEntry
+		err := decoder.Decode(&network)
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return nil, errors.Wrap(err, "failed to decode networks list")
+		}
+		networks = append(networks, network)
+	}
+
+	// deterministically sort networks
+	// NOTE: THIS PART IS IMPORTANT!
+	sort.Slice(networks, func(i, j int) bool {
+		if time.Time(networks[i].CreatedAt).Before(time.Time(networks[j].CreatedAt)) {
+			return true
+		}
+		return networks[i].ID < networks[j].ID
+	})
+
+	// return network IDs
+	ids := make([]string, 0, len(networks))
+	for i := range networks {
+		ids = append(ids, networks[i].ID)
+	}
+	return ids, nil
 }
 
 func checkIfNetworkExists(name string) (bool, error) {
@@ -119,6 +194,11 @@ func isIPv6UnavailableError(err error) bool {
 func isPoolOverlapError(err error) bool {
 	rerr := exec.RunErrorForError(err)
 	return rerr != nil && strings.HasPrefix(string(rerr.Output), "Error response from daemon: Pool overlaps with other one on this address space")
+}
+
+func deleteNetworks(networks ...string) error {
+	println("DELETING NETWORKS")
+	return exec.Command("docker", append([]string{"network", "rm"}, networks...)...).Run()
 }
 
 // generateULASubnetFromName generate an IPv6 subnet based on the
