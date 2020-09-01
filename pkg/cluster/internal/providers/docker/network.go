@@ -162,6 +162,8 @@ func sortedNetworksWithName(name string) ([]string, error) {
 
 	// deterministically sort networks
 	// NOTE: THIS PART IS IMPORTANT!
+	// TODO(fixme): we should be sorting on active usage first!
+	// unfortunately this is only available in docker network inspect
 	sort.Slice(networks, func(i, j int) bool {
 		if time.Time(networks[i].CreatedAt).Before(time.Time(networks[j].CreatedAt)) {
 			return true
