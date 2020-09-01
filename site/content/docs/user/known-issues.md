@@ -297,6 +297,7 @@ systemctl restart firewalld
 ```
 
 See [#1547 (comment)](https://github.com/kubernetes-sigs/kind/issues/1547#issuecomment-623756313)
+and [Docker and Fedora 32 article](https://fedoramagazine.org/docker-and-fedora-32/)
 
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new
