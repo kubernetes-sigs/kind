@@ -23,8 +23,8 @@ set -o pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
 cd "${REPO_ROOT}"
 
-# upstream shellcheck latest stable image as of January 10th, 2019
-SHELLCHECK_IMAGE='koalaman/shellcheck:v0.7.1'
+# upstream shellcheck latest stable image
+SHELLCHECK_IMAGE='koalaman/shellcheck:stable'
 
 # Find all shell scripts excluding:
 # - Anything git-ignored - No need to lint untracked files.
