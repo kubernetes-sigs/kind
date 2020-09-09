@@ -17,10 +17,12 @@ limitations under the License.
 package kube
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/log"
 )
@@ -81,41 +83,30 @@ func (b *bazelBuilder) Build() (Bits, error) {
 		return nil, err
 	}
 
-	// https://docs.bazel.build/versions/master/output_directories.html
-	binDir := filepath.Join(b.kubeRoot, "bazel-bin")
-	buildDir := filepath.Join(binDir, "build")
-	bazelGoosGoarch := fmt.Sprintf("linux_%s", b.arch)
-
-	// helpers to get the binary paths which may or may not be "pure" (no cgo)
-	// Except for kubelet, these are pure in Kubernetes 1.14+
-	// kubelet is at bazel-bin/cmd/kubelet/kubelet since 1.14+
-	// TODO: do we care about building 1.13 from source once we add support
-	// for building from release binaries?
-	// https://github.com/kubernetes/kubernetes/pull/73930
-	strippedCommandPath := func(command string) string {
-		return filepath.Join(
-			binDir, "cmd", command,
-			fmt.Sprintf("%s_stripped", bazelGoosGoarch), command,
-		)
-	}
-	commandPathPureOrNot := func(command string) string {
-		strippedPath := strippedCommandPath(command)
-		pureStrippedPath := filepath.Join(
-			binDir, "cmd", command,
-			fmt.Sprintf("%s_pure_stripped", bazelGoosGoarch), command,
-		)
-		// if the new path doesn't exist, do the old path
-		if _, err := os.Stat(pureStrippedPath); os.IsNotExist(err) {
-			return strippedPath
+	kubeletPath, err := findGoBinary("//cmd/kubelet:kubelet")
+	if err != nil {
+		// This rule was previously aliased. To handle older versions of k/k, we
+		// manual dereference of the alias created here:
+		//
+		// https://github.com/kubernetes/kubernetes/blob/b56d0acaf5bead31bd17d3b88d4a167fcbac7866/build/go.bzl#L45
+		kubeletPath, err = findGoBinary("//cmd/kubelet:_kubelet-cgo")
+		if err != nil {
+			return nil, errors.Wrap(err, "could not find kubelet")
 		}
-		return pureStrippedPath
 	}
-	//
-	kubeletPath := filepath.Join(binDir, "cmd", "kubelet", "kubelet")
-	oldKubeletPath := strippedCommandPath("kubelet")
-	if _, err := os.Stat(kubeletPath); os.IsNotExist(err) {
-		kubeletPath = oldKubeletPath
+
+	kubeadmPath, err := findGoBinary("//cmd/kubeadm:kubeadm")
+	if err != nil {
+		return nil, errors.Wrap(err, "could not find kubeadm")
 	}
+
+	kubectlPath, err := findGoBinary("//cmd/kubectl:kubectl")
+	if err != nil {
+		return nil, errors.Wrap(err, "could not find kubectl")
+	}
+
+	// https://docs.bazel.build/versions/master/output_directories.html
+	buildDir := filepath.Join(b.kubeRoot, "bazel-bin/build")
 
 	// return the paths
 	return &bits{
@@ -127,9 +118,65 @@ func (b *bazelBuilder) Build() (Bits, error) {
 		},
 		binaryPaths: []string{
 			kubeletPath,
-			commandPathPureOrNot("kubeadm"),
-			commandPathPureOrNot("kubectl"),
+			kubeadmPath,
+			kubectlPath,
 		},
 		version: version,
 	}, nil
+}
+
+func findGoBinary(label string) (string, error) {
+	// This output of bazel aquery --output=jsonproto is an ActionGraphContainer
+	// as defined in:
+	//
+	// https://cs.opensource.google/bazel/bazel/+/master:src/main/protobuf/analysis.proto
+	type (
+		Action struct {
+			Mnemonic  string   `json:"mnemonic"`
+			OutputIDs []string `json:"outputIds"`
+		}
+		Artifact struct {
+			ID       string `json:"id"`
+			ExecPath string `json:"execPath"`
+		}
+		ActionGraphContainer struct {
+			Artifacts []Artifact `json:"artifacts"`
+			Actions   []Action   `json:"actions"`
+		}
+	)
+
+	cmd := exec.Command("bazel", "aquery", "--output=jsonproto", label)
+	exec.InheritOutput(cmd)
+
+	actionBytes, err := exec.Output(cmd)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to query action graph")
+	}
+	var agc ActionGraphContainer
+	if err := json.Unmarshal(actionBytes, &agc); err != nil {
+		return "", errors.Wrap(err, "failed to unpack action graph container")
+	}
+
+	var linkActions []Action
+	for _, action := range agc.Actions {
+		if action.Mnemonic == "GoLink" {
+			linkActions = append(linkActions, action)
+		}
+	}
+	if len(linkActions) != 1 {
+		return "", fmt.Errorf("unexpected number of link actions %d, wanted 1", len(linkActions))
+	}
+	linkAction := linkActions[0]
+	if len(linkAction.OutputIDs) != 1 {
+		return "", fmt.Errorf("unexpected number of link action outputs %d, wanted 1", len(linkAction.OutputIDs))
+	}
+	outputID := linkAction.OutputIDs[0]
+
+	for _, artifact := range agc.Artifacts {
+		if artifact.ID == outputID {
+			return artifact.ExecPath, nil
+		}
+	}
+	// We really should never get here
+	return "", fmt.Errorf("could not find artifact corresponding to output id %q", outputID)
 }
