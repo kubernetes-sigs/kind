@@ -58,11 +58,11 @@ func Build(options ...Option) error {
 	}
 
 	// initialize bits
-	bits, err := kube.NewNamedBits(ctx.logger, ctx.mode, ctx.kubeRoot, ctx.arch)
+	builder, err := kube.NewNamedBuilder(ctx.logger, ctx.mode, ctx.kubeRoot, ctx.arch)
 	if err != nil {
 		return err
 	}
-	ctx.bits = bits
+	ctx.builder = builder
 
 	// do the actual build
 	return ctx.Build()
@@ -91,5 +91,5 @@ type buildContext struct {
 	// non-option fields
 	arch     string // TODO(bentheelder): this should be an option
 	kubeRoot string
-	bits     kube.Bits
+	builder  kube.Builder
 }

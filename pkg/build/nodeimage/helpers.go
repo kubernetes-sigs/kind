@@ -18,8 +18,10 @@ package nodeimage
 
 import (
 	"path"
+	"regexp"
 	"strings"
 
+	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
@@ -40,13 +42,10 @@ func createFile(containerCmder exec.Cmder, filePath, contents string) error {
 	).Run()
 }
 
-func findSandboxImage(images []string) string {
-	for _, image := range images {
-		// yep this seems legit
-		// https://github.com/kubernetes-sigs/kind/issues/1471#issuecomment-617579803
-		if strings.Contains(image, "pause") {
-			return image
-		}
+func findSandboxImage(config string) (string, error) {
+	match := regexp.MustCompile(`sandbox_image\s+=\s+"([^\n]+)"`).FindStringSubmatch(config)
+	if len(match) < 2 {
+		return "", errors.New("failed to parse sandbox_image from config")
 	}
-	return ""
+	return match[1], nil
 }

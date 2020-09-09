@@ -27,7 +27,7 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer"
-	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider/common"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers/common"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 )
 
@@ -162,7 +162,9 @@ func commonArgs(cfg *config.Cluster) ([]string, error) {
 }
 
 func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, name string, args []string) ([]string, error) {
-	volume, err := createAnonymousVolume(name)
+	// Pre-create anonymous volumes to enable specifying mount options
+	// during container run time
+	varVolume, err := createAnonymousVolume(name)
 	if err != nil {
 		return nil, err
 	}
@@ -191,9 +193,7 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		// suid: SUID applications on the volume will be able to change their privilege
 		// exec: executables on the volume will be able to executed within the container
 		// dev: devices on the volume will be able to be used by processes within the container
-		"--volume", fmt.Sprintf("%s:/var/lib/containerd:suid,exec,dev", volume),
-		"--volume", fmt.Sprintf("%s:/var/lib/kubelet:suid,exec,dev", volume),
-		"--volume", fmt.Sprintf("%s:/var/log:suid,exec,dev", volume),
+		"--volume", fmt.Sprintf("%s:/var:suid,exec,dev", varVolume),
 		// some k8s things want to read /lib/modules
 		"--volume", "/lib/modules:/lib/modules:ro",
 	},

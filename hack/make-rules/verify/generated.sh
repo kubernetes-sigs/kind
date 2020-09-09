@@ -15,9 +15,10 @@
 
 set -o errexit -o nounset -o pipefail
 
-# cd to the repo root
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
+# cd to the repo root and setup go
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
 cd "${REPO_ROOT}"
+source hack/build/setup-go.sh
 
 # place to stick temp binaries
 BINDIR="${REPO_ROOT}/bin"
@@ -54,7 +55,7 @@ main() {
 
   # run generated code update script
   cd "${TMP_REPO}"
-  REPO_ROOT="${TMP_REPO}" hack/update/generated.sh
+  REPO_ROOT="${TMP_REPO}" make generate
 
   # make sure the temp repo has no changes relative to the real repo
   diff=$(diff -Nupr \
@@ -68,7 +69,7 @@ main() {
     echo "" >&2
     echo "${diff}" >&2
     echo "" >&2
-    echo "please run hack/update/generated.sh" >&2
+    echo "please run make generate" >&2
     exit 1
   fi
 }

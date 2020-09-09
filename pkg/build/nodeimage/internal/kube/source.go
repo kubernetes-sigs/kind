@@ -17,9 +17,14 @@ limitations under the License.
 package kube
 
 import (
+	"fmt"
 	"go/build"
+	"strings"
+
+	"github.com/alessio/shellescape"
 
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/exec"
 )
 
 // ImportPath is the canonical import path for the kubernetes root package
@@ -41,4 +46,39 @@ func FindSource() (root string, err error) {
 func maybeKubeDir(dir string) bool {
 	// TODO(bentheelder): consider adding other sanity checks
 	return dir != ""
+}
+
+// sourceVersion the kubernetes git version based on hack/print-workspace-status.sh
+// the raw version is also returned
+func sourceVersion(kubeRoot string) (string, error) {
+	// get the version output
+	cmd := exec.Command(
+		"sh", "-c",
+		fmt.Sprintf(
+			"cd %s && hack/print-workspace-status.sh",
+			shellescape.Quote(kubeRoot),
+		),
+	)
+	output, err := exec.CombinedOutputLines(cmd)
+	if err != nil {
+		return "", err
+	}
+
+	// parse it, and populate it into _output/git_version
+	version := ""
+	for _, line := range output {
+		parts := strings.SplitN(line, " ", 2)
+		if len(parts) != 2 {
+			return "", errors.Errorf("could not parse kubernetes version: %q", strings.Join(output, "\n"))
+		}
+		if parts[0] == "gitVersion" {
+			version = parts[1]
+			return version, nil
+		}
+	}
+	if version == "" {
+		return "", errors.Errorf("could not obtain kubernetes version: %q", strings.Join(output, "\n"))
+
+	}
+	return "", errors.Errorf("could not find kubernetes version in output: %q", strings.Join(output, "\n"))
 }

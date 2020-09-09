@@ -16,65 +16,39 @@ limitations under the License.
 
 package kube
 
-import (
-	"sigs.k8s.io/kind/pkg/errors"
-	"sigs.k8s.io/kind/pkg/log"
-)
-
 // Bits provides the locations of Kubernetes Binaries / Images
 // needed on the cluster nodes
 // Implementations should be registered with RegisterNamedBits
 type Bits interface {
-	// Build returns any errors encountered while building it Kubernetes.
-	// Some implementations (upstream binaries) may use this step to obtain
-	// an existing build instead
-	Build() error
-	// Paths returns a map of path on host machine to desired path in the image
-	// These paths will be populated in the image relative to some base path,
-	// obtainable by NodeInstall.BasePath()
-	Paths() map[string]string
+	// BinaryPaths returns a list of paths to binaries on the host machine that
+	// should be added to PATH in the Node image
+	BinaryPaths() []string
 	// ImagePaths returns a list of paths to image archives to be loaded into
 	// the Node
 	ImagePaths() []string
-	// Install should install the built sources on the node, assuming paths
-	// have been populated
-	// TODO(bentheelder): eliminate install, make install file-copies only,
-	// support cross-building
-	Install(InstallContext) error
+	// Version
+	Version() string
 }
 
-// InstallContext should be implemented by users of Bits
-// to allow installing the bits in a Docker image
-type InstallContext interface {
-	// Returns the base path Paths() were populated relative to
-	BasePath() string
-	// Run execs (cmd, ...args) in the build container and returns error
-	Run(string, ...string) error
-	// CombinedOutputLines is like Run but returns the output lines
-	CombinedOutputLines(string, ...string) ([]string, error)
+// shared real bits implementation for now
+
+type bits struct {
+	// computed at build time
+	binaryPaths []string
+	imagePaths  []string
+	version     string
 }
 
-// NewNamedBits returns a new Bits by named implementation
-// currently this includes:
-// "bazel" -> NewBazelBuildBits(kubeRoot)
-// "docker" or "make" -> NewDockerBuildBits(kubeRoot)
-func NewNamedBits(logger log.Logger, name, kubeRoot, arch string) (bits Bits, err error) {
-	fn, err := nameToImpl(name)
-	if err != nil {
-		return nil, err
-	}
-	return fn(logger, kubeRoot, arch)
+var _ Bits = &bits{}
+
+func (b *bits) BinaryPaths() []string {
+	return b.binaryPaths
 }
 
-func nameToImpl(name string) (func(log.Logger, string, string) (Bits, error), error) {
-	switch name {
-	case "bazel":
-		return NewBazelBuildBits, nil
-	case "docker":
-		return NewDockerBuildBits, nil
-	case "make":
-		return NewDockerBuildBits, nil
-	default:
-	}
-	return nil, errors.Errorf("no Bits implementation with name: %s", name)
+func (b *bits) ImagePaths() []string {
+	return b.imagePaths
+}
+
+func (b *bits) Version() string {
+	return b.version
 }

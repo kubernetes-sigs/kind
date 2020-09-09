@@ -16,7 +16,7 @@
 set -o errexit -o nounset -o pipefail
 
 # cd to the repo root
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
 cd "${REPO_ROOT}"
 
 # exit code, if a script fails we'll set this to 1
@@ -26,19 +26,19 @@ res=0
 
 if [[ "${VERIFY_LINT:-true}" == "true" ]]; then
   echo "verifying lints ..."
-  hack/verify/lint.sh || res=1
+  hack/make-rules/verify/lint.sh || res=1
   cd "${REPO_ROOT}"
 fi
 
 if [[ "${VERIFY_GENERATED:-true}" == "true" ]]; then
   echo "verifying generated ..."
-  hack/verify/generated.sh || res=1
+  hack/make-rules/verify/generated.sh || res=1
   cd "${REPO_ROOT}"
 fi
 
 if [[ "${VERIFY_SHELLCHECK:-true}" == "true" ]]; then
   echo "verifying shellcheck ..."
-  hack/verify/shellcheck.sh || res=1
+  hack/make-rules/verify/shellcheck.sh || res=1
   cd "${REPO_ROOT}"
 fi
 

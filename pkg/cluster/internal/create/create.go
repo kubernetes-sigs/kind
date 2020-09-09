@@ -25,7 +25,7 @@ import (
 	"github.com/alessio/shellescape"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/delete"
-	"sigs.k8s.io/kind/pkg/cluster/internal/providers/provider"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/apis/config/encoding"
@@ -72,7 +72,7 @@ type ClusterOptions struct {
 }
 
 // Cluster creates a cluster
-func Cluster(logger log.Logger, p provider.Provider, opts *ClusterOptions) error {
+func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) error {
 	// default / process options (namely config)
 	if err := fixupOptions(opts); err != nil {
 		return err
@@ -155,7 +155,17 @@ func Cluster(logger log.Logger, p provider.Provider, opts *ClusterOptions) error
 		return nil
 	}
 
-	if err := kubeconfig.Export(p, opts.Config.Name, opts.KubeconfigPath); err != nil {
+	// try exporting kubeconfig with backoff for locking failures
+	// TODO: factor out into a public errors API w/ backoff handling?
+	// for now this is easier than coming up with a good API
+	var err error
+	for _, b := range []time.Duration{0, time.Millisecond, time.Millisecond * 50, time.Millisecond * 100} {
+		time.Sleep(b)
+		if err = kubeconfig.Export(p, opts.Config.Name, opts.KubeconfigPath); err == nil {
+			break
+		}
+	}
+	if err != nil {
 		return err
 	}
 
@@ -173,7 +183,7 @@ func Cluster(logger log.Logger, p provider.Provider, opts *ClusterOptions) error
 
 // alreadyExists returns an error if the cluster name already exists
 // or if we had an error checking
-func alreadyExists(p provider.Provider, name string) error {
+func alreadyExists(p providers.Provider, name string) error {
 	n, err := p.ListNodes(name)
 	if err != nil {
 		return err

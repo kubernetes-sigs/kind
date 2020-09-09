@@ -17,16 +17,15 @@
 # For systemd + docker configuration used below, see the following references:
 # https://systemd.io/CONTAINER_INTERFACE/
 
-# start from ubuntu 20.04, this image is reasonably small as a starting point
+# start from ubuntu 20.10, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ubuntu:20.04
+FROM ubuntu:20.10
 
 # Configure containerd and runc binaries from kind-ci/containerd-nightlies repository
 # The repository contains latest stable releases and nightlies built for multiple architectures
-ARG CONTAINERD_VERSION="v1.4.0-beta.2-43-gd184a0a3"
+ARG CONTAINERD_VERSION="v1.4.0"
 # Configure CNI binaries
-# TODO: switch back to upstream binaries at next release
-ARG CNI_VERSION="v0.8.6-14-g6eb8e31"
+ARG CNI_VERSION="v0.8.7"
 # Configure crictl binary from upstream
 ARG CRICTL_VERSION="v1.18.0"
 
@@ -80,10 +79,10 @@ RUN echo "Ensuring scripts are executable ..." \
     && rm -f /lib/systemd/system/basic.target.wants/* \
     && echo "ReadKMsg=no" >> /etc/systemd/journald.conf \
     && ln -s "$(which systemd)" /sbin/init \
+    && export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
  && echo "Enabling kubelet ... " \
     && systemctl enable kubelet.service \
  && echo "Installing containerd ..." \
-    && export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
     && export CONTAINERD_BASE_URL="https://github.com/kind-ci/containerd-nightlies/releases/download/containerd-${CONTAINERD_VERSION#v}" \
     && curl -sSL --retry 5 --output /tmp/containerd.tgz "${CONTAINERD_BASE_URL}/containerd-${CONTAINERD_VERSION#v}.linux-${ARCH}.tar.gz" \
     && tar -C /usr/local -xzvf /tmp/containerd.tgz \
@@ -95,14 +94,16 @@ RUN echo "Ensuring scripts are executable ..." \
     && runc --version \
     && systemctl enable containerd \
  && echo "Installing crictl ..." \
-    && curl -fSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz" | tar xzC /usr/local/bin \
+    && export CRICTL_URL="https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz" \
+    && curl -sSL --retry 5 --output /tmp/crictl.tgz "${CRICTL_URL}" \
+    && tar -C /usr/local/bin -xzvf /tmp/crictl.tgz \
+    && rm -rf /tmp/crictl.tgz \
  && echo "Installing CNI binaries ..." \
-    && export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') \
     && export CNI_TARBALL="${CNI_VERSION}/cni-plugins-linux-${ARCH}-${CNI_VERSION}.tgz" \
-    && export CNI_URL="https://github.com/bentheelder/containernetworking-plugins/releases/download/${CNI_TARBALL}" \
+    && export CNI_URL="https://github.com/containernetworking/plugins/releases/download/${CNI_TARBALL}" \
     && curl -sSL --retry 5 --output /tmp/cni.tgz "${CNI_URL}" \
     && mkdir -p /opt/cni/bin \
-    && tar -C /opt/cni/bin -xzf /tmp/cni.tgz \
+    && tar -C /opt/cni/bin -xzvf /tmp/cni.tgz \
     && rm -rf /tmp/cni.tgz \
     && find /opt/cni/bin -type f -not \( \
          -iname host-local \

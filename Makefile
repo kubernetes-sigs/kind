@@ -13,67 +13,92 @@
 # limitations under the License.
 
 # Old-skool build tools.
-# Simple makefile to build kind quickly and reproducibly in a container..
-# Only requires docker on the host
+# Simple makefile to build kind quickly and reproducibly
 #
 # Common uses:
 # - installing kind: `make install INSTALL_DIR=$HOME/go/bin`
 # - building: `make build`
 # - cleaning up and starting over: `make clean`
-
-# get the repo root and output path, go_container.sh respects these
+#
+################################################################################
+# ========================== Capture Environment ===============================
+# get the repo root and output path
 REPO_ROOT:=${CURDIR}
 OUT_DIR=$(REPO_ROOT)/bin
-INSTALL?=install
-# make install will place binaries here
-# the default path attempts to mimic go install
-INSTALL_DIR?=$(shell hack/build/goinstalldir.sh)
-# record the source commit in the binary
+# record the source commit in the binary, overridable
 COMMIT?=$(shell git rev-parse HEAD 2>/dev/null)
-LD_FLAGS:=-X sigs.k8s.io/kind/pkg/cmd/kind/version.GitCommit=$(COMMIT)
+################################################################################
+# ========================= Setup Go With Gimme ================================
+# go version to use for build etc.
+# setup correct go version with gimme
+PATH:=$(shell . hack/build/setup-go.sh && echo "$${PATH}")
+# go1.9+ can autodetect GOROOT, but if some other tool sets it ...
+GOROOT:=
+# enable modules
+GO111MODULE=on
+export PATH GOROOT GO111MODULE
+# work around broken PATH export
+SPACE:=$(subst ,, )
+SHELL:=env PATH=$(subst $(SPACE),\$(SPACE),$(PATH)) $(SHELL)
+################################################################################
+# ============================== OPTIONS =======================================
+# install tool
+INSTALL?=install
+# install will place binaries here, by default attempts to mimic go install
+INSTALL_DIR?=$(shell hack/build/goinstalldir.sh)
 # the output binary name, overridden when cross compiling
 KIND_BINARY_NAME?=kind
-# the container cli to use e.g. docker,podman
-DOCKER?=$(shell which docker || which podman || echo "docker")
-export DOCKER
+# build flags for the kind binary
+# - reproducible builds: -trimpath and -ldlflags=-buildid=
+# - smaller binaries: -w (trim debugger data, but not panics)
+# - metadata: -X=... to bake in git commit
+KIND_BUILD_FLAGS?=-trimpath -ldflags="-buildid= -w -X=sigs.k8s.io/kind/pkg/cmd/kind/version.GitCommit=$(COMMIT)"
+################################################################################
+# ================================= Building ===================================
 # standard "make" target -> builds
 all: build
-
 # builds kind in a container, outputs to $(OUT_DIR)
 kind:
-	hack/go_container.sh go build -v -o /out/$(KIND_BINARY_NAME) -ldflags "$(LD_FLAGS)"
-
+	go build -v -o $(OUT_DIR)/$(KIND_BINARY_NAME) $(KIND_BUILD_FLAGS)
 # alias for building kind
 build: kind
-
 # use: make install INSTALL_DIR=/usr/local/bin
 install: build
 	$(INSTALL) -d $(INSTALL_DIR)
 	$(INSTALL) $(OUT_DIR)/$(KIND_BINARY_NAME) $(INSTALL_DIR)/$(KIND_BINARY_NAME)
-
-# cleans the cache volume
-clean-cache:
-	$(DOCKER) volume rm -f kind-build-cache >/dev/null
-
-# cleans the output directory
-clean-output:
-	rm -rf $(OUT_DIR)/
-
-# standard cleanup target
-clean: clean-output clean-cache
-
+################################################################################
+# ================================= Testing ====================================
 # unit tests (hermetic)
 unit:
-	hack/ci/unit.sh
-
+	hack/make-rules/unit.sh
+################################################################################
+# ================================= Cleanup ====================================
+# standard cleanup target
+# TODO: remove the vendor part in the future. We no longer populate vendor
+clean:
+	rm -rf $(OUT_DIR)/
+	rm -rf $(REPO_ROOT)/vendor/
+################################################################################
+# ============================== Auto-Update ===================================
+# update generated code, gofmt, etc.
+update:
+	hack/make-rules/update/all.sh
+# update generated code
+generate:
+	hack/make-rules/update/generated.sh
+# gofmt
+gofmt:
+	hack/make-rules/update/gofmt.sh
+################################################################################
+# ================================== Linting ===================================
+# run linters, ensure generated code, etc.
+verify:
+	hack/make-rules/verify/all.sh
 # code linters
 lint:
-	hack/verify/lint.sh
-
+	hack/make-rules/verify/lint.sh
+# shell linter
 shellcheck:
-	hack/verify/shellcheck.sh
-
-# unit test alias
-test: unit
-
-.PHONY: all kind build install clean-cache clean-output clean unit test lint shellcheck
+	hack/make-rules/verify/shellcheck.sh
+#################################################################################
+.PHONY: all kind build install unit clean update generate gofmt verify lint shellcheck

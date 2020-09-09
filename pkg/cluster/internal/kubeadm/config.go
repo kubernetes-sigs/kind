@@ -39,21 +39,37 @@ type ConfigData struct {
 	APIBindPort int
 	// The API server external listen IP (which we will port forward)
 	APIServerAddress string
+
+	// this should really be used for the --provider-id flag
+	// ideally cluster config should not depend on the node backend otherwise ...
+	NodeProvider string
+
 	// ControlPlane flag specifies the node belongs to the control plane
 	ControlPlane bool
 	// The main IP address of the node
 	NodeAddress string
+	// The name for the node (not the address)
+	NodeName string
+
 	// The Token for TLS bootstrap
 	Token string
+
 	// KubeProxyMode defines the kube-proxy mode between iptables or ipvs
 	KubeProxyMode string
 	// The subnet used for pods
 	PodSubnet string
 	// The subnet used for services
 	ServiceSubnet string
-	// IPv4 values take precedence over IPv6 by default, if true set IPv6 default values
-	IPv6         bool
+
+	// Kubernetes FeatureGates
 	FeatureGates map[string]bool
+
+	// Kubernetes API Server RuntimeConfig
+	RuntimeConfig map[string]string
+
+	// IPv4 values take precedence over IPv6 by default, if true set IPv6 default values
+	IPv6 bool
+
 	// DerivedConfigData is populated by Derive()
 	// These auto-generated fields are available to Config templates,
 	// but not meant to be set by hand
@@ -69,6 +85,8 @@ type DerivedConfigData struct {
 	SortedFeatureGateKeys []string
 	// FeatureGatesString is of the form `Foo=true,Baz=false`
 	FeatureGatesString string
+	// RuntimeConfigString is of the form `Foo=true,Baz=false`
+	RuntimeConfigString string
 }
 
 // Derive automatically derives DockerStableTag if not specified
@@ -92,6 +110,23 @@ func (c *ConfigData) Derive() {
 		featureGates = append(featureGates, fmt.Sprintf("%s=%t", k, v))
 	}
 	c.FeatureGatesString = strings.Join(featureGates, ",")
+
+	// create a sorted key=value,... string of RuntimeConfig
+	// first get sorted list of FeatureGate keys
+	runtimeConfigKeys := make([]string, 0, len(c.RuntimeConfig))
+	for k := range c.RuntimeConfig {
+		runtimeConfigKeys = append(runtimeConfigKeys, k)
+	}
+	sort.Strings(runtimeConfigKeys)
+	// stringify
+	var runtimeConfig []string
+	for _, k := range runtimeConfigKeys {
+		v := c.RuntimeConfig[k]
+		// TODO: do we need to quote / escape these in the future?
+		// Currently runtime config is in practice booleans, no special characters
+		runtimeConfig = append(runtimeConfig, fmt.Sprintf("%s=%s", k, v))
+	}
+	c.RuntimeConfigString = strings.Join(runtimeConfig, ",")
 }
 
 // See docs for these APIs at:
@@ -113,8 +148,9 @@ controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServer:
   certSANs: [localhost, "{{.APIServerAddress}}"]
-{{ if .FeatureGates }}
   extraArgs:
+    "runtime-config": "{{ .RuntimeConfigString }}"
+{{ if .FeatureGates }}
     "feature-gates": "{{ .FeatureGatesString }}"
 {{ end}}
 controllerManager:
@@ -158,6 +194,7 @@ nodeRegistration:
   kubeletExtraArgs:
     fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
+    provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
 ---
 # no-op entry that exists solely so it can be patched
 apiVersion: kubeadm.k8s.io/v1beta1
@@ -175,6 +212,7 @@ nodeRegistration:
   kubeletExtraArgs:
     fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
+    provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
 discovery:
   bootstrapToken:
     apiServerEndpoint: "{{ .ControlPlaneEndpoint }}"
@@ -230,10 +268,11 @@ controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # to the cluster after rewriting the kubeconfig to point to localhost
 apiServer:
   certSANs: [localhost, "{{.APIServerAddress}}"]
-{{ if .FeatureGates }}
   extraArgs:
+    "runtime-config": "{{ .RuntimeConfigString }}"
+{{ if .FeatureGates }}
     "feature-gates": "{{ .FeatureGatesString }}"
-{{ end }}
+{{ end}}
 controllerManager:
   extraArgs:
 {{ if .FeatureGates }}
@@ -275,6 +314,7 @@ nodeRegistration:
   kubeletExtraArgs:
     fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
+    provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
 ---
 # no-op entry that exists solely so it can be patched
 apiVersion: kubeadm.k8s.io/v1beta2
@@ -292,6 +332,7 @@ nodeRegistration:
   kubeletExtraArgs:
     fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
+    provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
 discovery:
   bootstrapToken:
     apiServerEndpoint: "{{ .ControlPlaneEndpoint }}"

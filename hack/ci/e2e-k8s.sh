@@ -94,12 +94,12 @@ create_cluster() {
   # JSON map injected into featureGates config
   feature_gates="{}"
   # --runtime-config argument value passed to the API server
-  runtime_config=""
+  runtime_config="{}"
 
   case "${GA_ONLY:-false}" in
   false)
     feature_gates="{}"
-    runtime_config=""
+    runtime_config="{}"
     ;;
 
   true)
@@ -113,12 +113,12 @@ create_cluster() {
     v1.18.*)
       echo "Limiting to GA APIs and features (plus certificates.k8s.io/v1beta1 and RotateKubeletClientCertificate) for ${KUBE_VERSION}"
       feature_gates='{"AllAlpha":false,"AllBeta":false,"RotateKubeletClientCertificate":true}'
-      runtime_config='api/alpha=false,api/beta=false,certificates.k8s.io/v1beta1=true'
+      runtime_config='{"api/alpha":"false", "api/beta":"false", "certificates.k8s.io/v1beta1":"true"}'
       ;;
     *)
       echo "Limiting to GA APIs and features for ${KUBE_VERSION}"
       feature_gates='{"AllAlpha":false,"AllBeta":false}'
-      runtime_config='api/alpha=false,api/beta=false'
+      runtime_config='{"api/alpha":"false", "api/beta":"false"}'
       ;;
     esac
     ;;
@@ -129,8 +129,8 @@ create_cluster() {
     ;;
   esac
 
-# Default Log level for all components in test clusters
-KIND_CLUSTER_LOG_LEVEL=${KIND_CLUSTER_LOG_LEVEL:-4}
+  # Default Log level for all components in test clusters
+  KIND_CLUSTER_LOG_LEVEL=${KIND_CLUSTER_LOG_LEVEL:-4}
 
   # create the config file
   cat <<EOF > "${ARTIFACTS}/kind-config.yaml"
@@ -144,6 +144,7 @@ nodes:
 - role: worker
 - role: worker
 featureGates: ${feature_gates}
+runtimeConfig: ${runtime_config}
 kubeadmConfigPatches:
 - |
   kind: ClusterConfiguration
@@ -151,7 +152,6 @@ kubeadmConfigPatches:
     name: config
   apiServer:
     extraArgs:
-      "runtime-config": "${runtime_config}"
       "v": "${KIND_CLUSTER_LOG_LEVEL}"
   controllerManager:
     extraArgs:
