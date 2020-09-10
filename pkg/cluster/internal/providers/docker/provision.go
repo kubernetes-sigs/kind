@@ -19,6 +19,7 @@ package docker
 import (
 	"fmt"
 	"net"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -26,6 +27,7 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
+	"sigs.k8s.io/kind/pkg/log"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/common"
@@ -33,7 +35,7 @@ import (
 )
 
 // planCreation creates a slice of funcs that will create the containers
-func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs []func() error, err error) {
+func planCreation(logger log.Logger, cfg *config.Cluster, networkName string) (createContainerFuncs []func() error, err error) {
 	// we need to know all the names for NO_PROXY
 	// compute the names first before any actual node details
 	nodeNamer := common.MakeNodeNamer(cfg.Name)
@@ -105,7 +107,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 						ContainerPort: common.APIServerInternalPort,
 					},
 				)
-				args, err := runArgsForNode(node, cfg.Networking.IPFamily, name, genericArgs)
+				args, err := runArgsForNode(logger, node, cfg.Networking.IPFamily, name, genericArgs)
 				if err != nil {
 					return err
 				}
@@ -113,7 +115,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 			})
 		case config.WorkerRole:
 			createContainerFuncs = append(createContainerFuncs, func() error {
-				args, err := runArgsForNode(node, cfg.Networking.IPFamily, name, genericArgs)
+				args, err := runArgsForNode(logger, node, cfg.Networking.IPFamily, name, genericArgs)
 				if err != nil {
 					return err
 				}
@@ -213,7 +215,13 @@ func commonArgs(cluster string, cfg *config.Cluster, networkName string, nodeNam
 	return args, nil
 }
 
-func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, name string, args []string) ([]string, error) {
+func runArgsForNode(logger log.Logger, node *config.Node, clusterIPFamily config.ClusterIPFamily, name string, args []string) ([]string, error) {
+	varVolume := "type=volume,target=/var"
+	if n := os.Getenv("KIND_EXPERIMENTAL_DOCKER_VOLUME_OPTIONS"); n != "" {
+		logger.Warn("WARNING: Overriding docker volume options for /var due to KIND_EXPERIMENTAL_DOCKER_VOLUME_OPTIONS")
+		logger.Warn("WARNING: Here be dragons! This is not supported currently.")
+		varVolume += "," + n
+	}
 	args = append([]string{
 		"run",
 		"--hostname", name, // make hostname match container name
@@ -236,7 +244,7 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		// filesystem, which is not only better for performance, but allows
 		// running kind in kind for "party tricks"
 		// (please don't depend on doing this though!)
-		"--mount", "type=volume,target=/var",
+		"--mount", varVolume,
 		// some k8s things want to read /lib/modules
 		"--volume", "/lib/modules:/lib/modules:ro",
 	},
