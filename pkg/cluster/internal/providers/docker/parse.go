@@ -20,8 +20,21 @@ import (
 	"time"
 )
 
+// rfce3339NanoTime allows us to parse time.Time objects formatted
+// as JSON strings in RFC3339Nano
+type rfc3339NanoTime time.Time
+
+func (r *rfc3339NanoTime) UnmarshalJSON(p []byte) error {
+	t, err := time.Parse(`"`+time.RFC3339Nano+`"`, string(p))
+	if err != nil {
+		return err
+	}
+	*r = rfc3339NanoTime(t)
+	return nil
+}
+
 /*
-Docker CLI outputs time.Time objects with the default string format
+Docker sometimes CLI outputs time.Time objects with the default string format
 This is going to be a huge pain if go actually makes good on their threat
 that this format is not stable
 

@@ -154,32 +154,35 @@ func createNetwork(name, ipv6Subnet string) error {
 
 func sortedNetworksWithName(name string) ([]string, error) {
 	// list all networks by this name
-	out, err := exec.Output(exec.Command(
+	lsOut, err := exec.Output(exec.Command(
 		"docker", "network", "ls",
 		"--filter=name=^"+regexp.QuoteMeta(name)+"$",
-		"--format={{json .}}",
+		"--format={{.ID}}", // output as unambiguous IDs
 	))
 	if err != nil {
 		return nil, err
 	}
 
-	// parse
-	type networkLSEntry struct {
-		CreatedAt goDefaultTime `json:"CreatedAt"`
-		ID        string        `json:"ID"`
+	// now inspect each
+	ids := strings.Split(strings.TrimSuffix(string(lsOut), "\n"), "\n")
+	inspectOut, err := exec.Output(exec.Command("docker", append([]string{"network", "inspect"}, ids...)...))
+	// NOTE: a network could be deleted between the ls and inspect calls, that's fine
+	if err != nil && !isOnlyErrorNoSuchNetwork(err) {
+		return nil, err
 	}
 
-	networks := []networkLSEntry{}
-	decoder := json.NewDecoder(bytes.NewReader(out))
-	for {
-		var network networkLSEntry
-		err := decoder.Decode(&network)
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return nil, errors.Wrap(err, "failed to decode networks list")
-		}
-		networks = append(networks, network)
+	// parse
+	type networkInspectEntry struct {
+		Created rfc3339NanoTime `json:"Created"`
+		ID      string          `json:"Id"`
+		// NOTE: we don't care about the contents here but we need to parse
+		// how many entries exist in the containers map
+		Containers map[string]map[string]string `json:"Containers"`
+	}
+
+	networks := []networkInspectEntry{}
+	if err := json.Unmarshal(inspectOut, &networks); err != nil {
+		return nil, errors.Wrap(err, "failed to decode networks list")
 	}
 
 	// deterministically sort networks
@@ -187,18 +190,21 @@ func sortedNetworksWithName(name string) ([]string, error) {
 	// TODO(fixme): we should be sorting on active usage first!
 	// unfortunately this is only available in docker network inspect
 	sort.Slice(networks, func(i, j int) bool {
-		if time.Time(networks[i].CreatedAt).Before(time.Time(networks[j].CreatedAt)) {
+		if len(networks[i].Containers) < len(networks[j].Containers) {
+			return true
+		}
+		if time.Time(networks[i].Created).Before(time.Time(networks[j].Created)) {
 			return true
 		}
 		return networks[i].ID < networks[j].ID
 	})
 
 	// return network IDs
-	ids := make([]string, 0, len(networks))
+	sortedIDs := make([]string, 0, len(networks))
 	for i := range networks {
-		ids = append(ids, networks[i].ID)
+		sortedIDs = append(sortedIDs, networks[i].ID)
 	}
-	return ids, nil
+	return sortedIDs, nil
 }
 
 func checkIfNetworkExists(name string) (bool, error) {
