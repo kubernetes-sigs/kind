@@ -67,16 +67,16 @@ build_with_bazel() {
   # make sure we have e2e requirements
   bazel build //cmd/kubectl //test/e2e:e2e.test //vendor/github.com/onsi/ginkgo/ginkgo
 
+  kubectl_path="$(bazel aquery 'mnemonic("GoLink", //cmd/kubectl)' \
+      | grep '^  Outputs: \[.*\]$' \
+      | sed 's/^  Outputs: \[\(.*\)\]$/\1/')"
+  kubectl_path="$(bazel info workspace)/${kubectl_path}"
+
   # free up memory by terminating bazel
   bazel shutdown || true
   pkill ^bazel || true
 
-  # ensure the e2e script will find our binaries ...
-  # https://github.com/kubernetes/kubernetes/issues/68306
-  # TODO: remove this, it was fixed in 1.13+
-  mkdir -p '_output/bin/'
-  cp 'bazel-bin/test/e2e/e2e.test' '_output/bin/'
-  PATH="$(dirname "$(find "${PWD}/bazel-bin/" -name kubectl -type f)"):${PATH}"
+  PATH="$(dirname "${kubectl_path}"):${PATH}"
   export PATH
 }
 
