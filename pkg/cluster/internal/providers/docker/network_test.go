@@ -35,7 +35,7 @@ func TestIntegrationEnsureNetworkConcurrent(t *testing.T) {
 
 	// cleanup
 	cleanup := func() {
-		exec.Command("docker", "network", "rm", testNetworkName).Run()
+		_ = exec.Command("docker", "network", "rm", testNetworkName).Run()
 	}
 	cleanup()
 	defer cleanup()
