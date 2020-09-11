@@ -26,7 +26,6 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"time"
 
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
@@ -173,8 +172,7 @@ func sortedNetworksWithName(name string) ([]string, error) {
 
 	// parse
 	type networkInspectEntry struct {
-		Created rfc3339NanoTime `json:"Created"`
-		ID      string          `json:"Id"`
+		ID string `json:"Id"`
 		// NOTE: we don't care about the contents here but we need to parse
 		// how many entries exist in the containers map
 		Containers map[string]map[string]string `json:"Containers"`
@@ -187,13 +185,8 @@ func sortedNetworksWithName(name string) ([]string, error) {
 
 	// deterministically sort networks
 	// NOTE: THIS PART IS IMPORTANT!
-	// TODO(fixme): we should be sorting on active usage first!
-	// unfortunately this is only available in docker network inspect
 	sort.Slice(networks, func(i, j int) bool {
 		if len(networks[i].Containers) < len(networks[j].Containers) {
-			return true
-		}
-		if time.Time(networks[i].Created).Before(time.Time(networks[j].Created)) {
 			return true
 		}
 		return networks[i].ID < networks[j].ID
