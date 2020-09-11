@@ -77,7 +77,18 @@ func ensureNetwork(name string) error {
 	if isIPv6UnavailableError(err) {
 		// only one attempt, IPAM is automatic in ipv4 only
 		return createNetworkNoDuplicates(name, "")
-	} else if !isPoolOverlapError(err) {
+	} else if isPoolOverlapError(err) {
+		// pool overlap suggests perhaps another process created the network
+		// check if network exists already and remove any duplicate networks
+		exists, err := checkIfNetworkExists(name)
+		if err != nil {
+			return err
+		}
+		if exists {
+			return nil
+		}
+		// otherwise we'll start trying with different subnets
+	} else {
 		// unknown error ...
 		return err
 	}
@@ -90,7 +101,18 @@ func ensureNetwork(name string) error {
 		if err == nil {
 			// success!
 			return nil
-		} else if !isPoolOverlapError(err) {
+		} else if isPoolOverlapError(err) {
+			// pool overlap suggests perhaps another process created the network
+			// check if network exists already and remove any duplicate networks
+			exists, err := checkIfNetworkExists(name)
+			if err != nil {
+				return err
+			}
+			if exists {
+				return nil
+			}
+			// otherwise we'll try again
+		} else {
 			// unknown error ...
 			return err
 		}
@@ -112,7 +134,7 @@ func removeDuplicateNetworks(name string) (bool, error) {
 		return false, err
 	}
 	if len(networks) > 1 {
-		if err := deleteNetworks(networks[1:]...); err != nil {
+		if err := deleteNetworks(networks[1:]...); err != nil && !isOnlyErrorNoSuchNetwork(err) {
 			return false, err
 		}
 	}
@@ -200,11 +222,41 @@ func isPoolOverlapError(err error) bool {
 
 func isNetworkAlreadyExistsError(err error) bool {
 	rerr := exec.RunErrorForError(err)
-	return rerr != nil && strings.HasPrefix(string(rerr.Output), "Error response from daemon: network with name") && strings.HasSuffix(string(rerr.Output), "already exists")
+	return rerr != nil && strings.HasPrefix(string(rerr.Output), "Error response from daemon: network with name") && strings.Contains(string(rerr.Output), "already exists")
+}
+
+// returns true if:
+// - err is nil
+// - err only contains no such network errors
+func isOnlyErrorNoSuchNetwork(err error) bool {
+	rerr := exec.RunErrorForError(err)
+	if rerr == nil {
+		return false
+	}
+	// check all lines of output from errored command
+	b := bytes.NewBuffer(rerr.Output)
+	for {
+		l, err := b.ReadBytes('\n')
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return false
+		}
+		// if the line begins with Eror: No such network: it's fine
+		s := string(l)
+		if strings.HasPrefix(s, "Error: No such network:") {
+			continue
+		}
+		// other errors are not fine
+		if strings.HasPrefix(s, "Error: ") {
+			return false
+		}
+		// other line contents should just be network references
+	}
+	return true
 }
 
 func deleteNetworks(networks ...string) error {
-	println("DELETING NETWORKS")
 	return exec.Command("docker", append([]string{"network", "rm"}, networks...)...).Run()
 }
 
