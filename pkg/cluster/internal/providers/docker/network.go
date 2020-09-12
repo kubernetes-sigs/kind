@@ -76,7 +76,8 @@ func ensureNetwork(name string) error {
 	if isIPv6UnavailableError(err) {
 		// only one attempt, IPAM is automatic in ipv4 only
 		return createNetworkNoDuplicates(name, "")
-	} else if isPoolOverlapError(err) {
+	}
+	if isPoolOverlapError(err) {
 		// pool overlap suggests perhaps another process created the network
 		// check if network exists already and remove any duplicate networks
 		exists, err := checkIfNetworkExists(name)
@@ -100,7 +101,8 @@ func ensureNetwork(name string) error {
 		if err == nil {
 			// success!
 			return nil
-		} else if isPoolOverlapError(err) {
+		}
+		if isPoolOverlapError(err) {
 			// pool overlap suggests perhaps another process created the network
 			// check if network exists already and remove any duplicate networks
 			exists, err := checkIfNetworkExists(name)
@@ -111,10 +113,10 @@ func ensureNetwork(name string) error {
 				return nil
 			}
 			// otherwise we'll try again
-		} else {
-			// unknown error ...
-			return err
+			continue
 		}
+		// unknown error ...
+		return err
 	}
 	return errors.New("exhausted attempts trying to find a non-overlapping subnet")
 }
@@ -152,7 +154,65 @@ func createNetwork(name, ipv6Subnet string) error {
 }
 
 func sortedNetworksWithName(name string) ([]string, error) {
-	// list all networks by this name
+	// query which networks exist with the name
+	ids, err := networksWithName(name)
+	if err != nil {
+		return nil, err
+	}
+	// we can skip sorting if there are less than 2
+	if len(ids) < 2 {
+		return ids, nil
+	}
+	// inspect them to get more detail for sorting
+	networks, err := inspectNetworks(ids)
+	if err != nil {
+		return nil, err
+	}
+	// deterministically sort networks
+	// NOTE: THIS PART IS IMPORTANT!
+	sortNetworkInspectEntries(networks)
+	// return network IDs
+	sortedIDs := make([]string, 0, len(networks))
+	for i := range networks {
+		sortedIDs = append(sortedIDs, networks[i].ID)
+	}
+	return sortedIDs, nil
+}
+
+func sortNetworkInspectEntries(networks []networkInspectEntry) {
+	sort.Slice(networks, func(i, j int) bool {
+		// we want networks with active containers first
+		if len(networks[i].Containers) > len(networks[j].Containers) {
+			return true
+		}
+		return networks[i].ID < networks[j].ID
+	})
+}
+
+func inspectNetworks(networkIDs []string) ([]networkInspectEntry, error) {
+	inspectOut, err := exec.Output(exec.Command("docker", append([]string{"network", "inspect"}, networkIDs...)...))
+	// NOTE: the caller can detect if the network isn't present in the output anyhow
+	// we don't want to fail on this here.
+	if err != nil && !isOnlyErrorNoSuchNetwork(err) {
+		return nil, err
+	}
+	// parse
+	networks := []networkInspectEntry{}
+	if err := json.Unmarshal(inspectOut, &networks); err != nil {
+		return nil, errors.Wrap(err, "failed to decode networks list")
+	}
+	return networks, nil
+}
+
+type networkInspectEntry struct {
+	ID string `json:"Id"`
+	// NOTE: we don't care about the contents here but we need to parse
+	// how many entries exist in the containers map
+	Containers map[string]map[string]string `json:"Containers"`
+}
+
+// networksWithName returns a list of network IDs for networks with this name
+func networksWithName(name string) ([]string, error) {
 	lsOut, err := exec.Output(exec.Command(
 		"docker", "network", "ls",
 		"--filter=name=^"+regexp.QuoteMeta(name)+"$",
@@ -161,43 +221,11 @@ func sortedNetworksWithName(name string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	// now inspect each
-	ids := strings.Split(strings.TrimSuffix(string(lsOut), "\n"), "\n")
-	inspectOut, err := exec.Output(exec.Command("docker", append([]string{"network", "inspect"}, ids...)...))
-	// NOTE: a network could be deleted between the ls and inspect calls, that's fine
-	if err != nil && !isOnlyErrorNoSuchNetwork(err) {
-		return nil, err
+	cleaned := strings.TrimSuffix(string(lsOut), "\n")
+	if cleaned == "" { // avoid returning []string{""}
+		return nil, nil
 	}
-
-	// parse
-	type networkInspectEntry struct {
-		ID string `json:"Id"`
-		// NOTE: we don't care about the contents here but we need to parse
-		// how many entries exist in the containers map
-		Containers map[string]map[string]string `json:"Containers"`
-	}
-
-	networks := []networkInspectEntry{}
-	if err := json.Unmarshal(inspectOut, &networks); err != nil {
-		return nil, errors.Wrap(err, "failed to decode networks list")
-	}
-
-	// deterministically sort networks
-	// NOTE: THIS PART IS IMPORTANT!
-	sort.Slice(networks, func(i, j int) bool {
-		if len(networks[i].Containers) < len(networks[j].Containers) {
-			return true
-		}
-		return networks[i].ID < networks[j].ID
-	})
-
-	// return network IDs
-	sortedIDs := make([]string, 0, len(networks))
-	for i := range networks {
-		sortedIDs = append(sortedIDs, networks[i].ID)
-	}
-	return sortedIDs, nil
+	return strings.Split(cleaned, "\n"), nil
 }
 
 func checkIfNetworkExists(name string) (bool, error) {
