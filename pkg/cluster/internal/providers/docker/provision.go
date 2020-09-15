@@ -310,7 +310,7 @@ func getProxyEnv(cfg *config.Cluster, networkName string, nodeNames []string) (m
 func getSubnets(networkName string) ([]string, error) {
 	format := `{{range (index (index . "IPAM") "Config")}}{{index . "Subnet"}} {{end}}`
 	cmd := exec.Command("docker", "network", "inspect", "-f", format, networkName)
-	lines, err := exec.CombinedOutputLines(cmd)
+	lines, err := exec.OutputLines(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get subnets")
 	}

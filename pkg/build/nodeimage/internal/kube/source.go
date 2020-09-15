@@ -59,7 +59,7 @@ func sourceVersion(kubeRoot string) (string, error) {
 			shellescape.Quote(kubeRoot),
 		),
 	)
-	output, err := exec.CombinedOutputLines(cmd)
+	output, err := exec.OutputLines(cmd)
 	if err != nil {
 		return "", err
 	}
