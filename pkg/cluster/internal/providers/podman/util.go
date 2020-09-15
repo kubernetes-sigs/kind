@@ -38,7 +38,7 @@ func IsAvailable() bool {
 
 func getPodmanVersion() (*version.Version, error) {
 	cmd := exec.Command("podman", "--version")
-	lines, err := exec.CombinedOutputLines(cmd)
+	lines, err := exec.OutputLines(cmd)
 	if err != nil {
 		return nil, err
 	}

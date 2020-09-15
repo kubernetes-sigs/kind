@@ -180,7 +180,7 @@ func imageID(containerNameOrID string) (string, error) {
 		"-f", "{{ .Id }}",
 		containerNameOrID, // ... against the container
 	)
-	lines, err := exec.CombinedOutputLines(cmd)
+	lines, err := exec.OutputLines(cmd)
 	if err != nil {
 		return "", err
 	}

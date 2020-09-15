@@ -32,7 +32,7 @@ import (
 func KubeVersion(n nodes.Node) (version string, err error) {
 	// grab kubernetes version from the node image
 	cmd := n.Command("cat", "/kind/version")
-	lines, err := exec.CombinedOutputLines(cmd)
+	lines, err := exec.OutputLines(cmd)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get file")
 	}

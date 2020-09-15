@@ -93,7 +93,7 @@ func waitForReady(node nodes.Node, until time.Time) bool {
 			// to true.
 			"-o=jsonpath='{.items..status.conditions[-1:].status}'",
 		)
-		lines, err := exec.CombinedOutputLines(cmd)
+		lines, err := exec.OutputLines(cmd)
 		if err != nil {
 			return false
 		}

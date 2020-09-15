@@ -166,7 +166,7 @@ func (c *buildContext) prePullImages(bits kube.Bits, dir, containerID string) ([
 
 	// get the Kubernetes version we installed on the node
 	// we need this to ask kubeadm what images we need
-	rawVersion, err := exec.CombinedOutputLines(cmder.Command("cat", kubernetesVersionLocation))
+	rawVersion, err := exec.OutputLines(cmder.Command("cat", kubernetesVersionLocation))
 	if err != nil {
 		c.logger.Errorf("Image build Failed! Failed to get Kubernetes version: %v", err)
 		return nil, err
