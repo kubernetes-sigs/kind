@@ -20,6 +20,7 @@ package kind
 import (
 	"io"
 	"io/ioutil"
+	"sigs.k8s.io/kind/pkg/cmd/kind/config"
 
 	"github.com/spf13/cobra"
 
@@ -87,6 +88,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd.AddCommand(get.NewCommand(logger, streams))
 	cmd.AddCommand(version.NewCommand(logger, streams))
 	cmd.AddCommand(load.NewCommand(logger, streams))
+	cmd.AddCommand(config.NewCommand(logger, streams))
 	return cmd
 }
 
