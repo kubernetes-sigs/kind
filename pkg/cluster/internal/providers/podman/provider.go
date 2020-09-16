@@ -278,7 +278,6 @@ func (p *provider) CollectLogs(dir string, nodes []nodes.Node) error {
 	}
 	// construct a slice of methods to collect logs
 	fns := []func() error{
-		// TODO(bentheelder): record the kind version here as well
 		// record info about the host podman
 		execToPathFn(
 			exec.Command("podman", "info"),
