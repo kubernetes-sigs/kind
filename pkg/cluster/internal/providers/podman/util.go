@@ -102,7 +102,7 @@ func getVolumes(label string) ([]string, error) {
 	// Trim away the last `\n`.
 	trimmedOutput := strings.TrimSuffix(string(output), "\n")
 	// Get names of all volumes by splitting via `\n`.
-	return strings.Split(string(trimmedOutput), "\n"), nil
+	return strings.Split(trimmedOutput, "\n"), nil
 }
 
 func deleteVolumes(names []string) error {

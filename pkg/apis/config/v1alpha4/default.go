@@ -43,14 +43,14 @@ func SetDefaultsCluster(obj *Cluster) {
 	// and [::1]:randomPort on ipv6
 	if obj.Networking.APIServerAddress == "" {
 		obj.Networking.APIServerAddress = "127.0.0.1"
-		if obj.Networking.IPFamily == "ipv6" {
+		if obj.Networking.IPFamily == IPv6Family {
 			obj.Networking.APIServerAddress = "::1"
 		}
 	}
 	// default the pod CIDR
 	if obj.Networking.PodSubnet == "" {
 		obj.Networking.PodSubnet = "10.244.0.0/16"
-		if obj.Networking.IPFamily == "ipv6" {
+		if obj.Networking.IPFamily == IPv6Family {
 			obj.Networking.PodSubnet = "fd00:10:244::/64"
 		}
 	}
@@ -60,7 +60,7 @@ func SetDefaultsCluster(obj *Cluster) {
 	// we allocate a /16 subnet that allows 65535 services (current Kubernetes tested limit is O(10k) services)
 	if obj.Networking.ServiceSubnet == "" {
 		obj.Networking.ServiceSubnet = "10.96.0.0/16"
-		if obj.Networking.IPFamily == "ipv6" {
+		if obj.Networking.IPFamily == IPv6Family {
 			obj.Networking.ServiceSubnet = "fd00:10:96::/112"
 		}
 	}
