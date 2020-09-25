@@ -47,8 +47,9 @@ mv ./kind /some-dir-in-your-PATH/kind
 {{< /codeFromInline >}}
 
 On Mac (homebrew): 
+
 {{< codeFromInline lang="bash" >}}
-   brew install kind
+brew install kind
 {{< /codeFromInline >}}
 or
 {{< codeFromInline lang="bash" >}}
