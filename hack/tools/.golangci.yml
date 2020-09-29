@@ -1,0 +1,27 @@
+run:
+  timeout: 2m
+
+linters:
+  disable-all: true
+  enable:
+    # default golangci-lint lints
+    - deadcode
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - structcheck
+    - typecheck
+    - unused
+    - varcheck
+
+    # additional lints
+    - gochecknoinits
+    - gofmt
+    - golint
+    - misspell
+    - scopelint
+    - unparam
+
+linters-settings:

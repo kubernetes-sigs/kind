@@ -39,7 +39,7 @@ done < <(grep -irl '#!.*sh' . | grep -Ev '^(\./\.git/)|(\./vendor/)|(\./bin/)')
 # common arguments we'll pass to shellcheck
 SHELLCHECK_OPTIONS=(
   # allow following sourced files that are not specified in the command,
-  # we need this because we specify one file at at time in order to trivially
+  # we need this because we specify one file at a time in order to trivially
   # detect which files are failing
   '--external-sources'
   # disabled lint codes

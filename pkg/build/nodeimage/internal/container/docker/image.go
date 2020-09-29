@@ -70,7 +70,7 @@ func ImageInspect(containerNameOrID, format string) ([]string, error) {
 		containerNameOrID, // ... against the container
 	)
 
-	return exec.CombinedOutputLines(cmd)
+	return exec.OutputLines(cmd)
 }
 
 // ImageID return the Id of the container image

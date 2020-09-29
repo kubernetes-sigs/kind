@@ -35,7 +35,7 @@ func IsAvailable() bool {
 // usernsRemap checks if userns-remap is enabled in dockerd
 func usernsRemap() bool {
 	cmd := exec.Command("docker", "info", "--format", "'{{json .SecurityOptions}}'")
-	lines, err := exec.CombinedOutputLines(cmd)
+	lines, err := exec.OutputLines(cmd)
 	if err != nil {
 		return false
 	}
@@ -51,7 +51,7 @@ func usernsRemap() bool {
 func mountDevMapper() bool {
 	storage := ""
 	cmd := exec.Command("docker", "info", "-f", "{{.Driver}}")
-	lines, err := exec.CombinedOutputLines(cmd)
+	lines, err := exec.OutputLines(cmd)
 	if err != nil {
 		return false
 	}

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,8 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package defaults contains cross-api-version configuration defaults
-package defaults
+package integration
 
-// Image is the default for the Config.Image field, aka the default node image.
-const Image = "kindest/node:v1.19.1@sha256:98cf5288864662e37115e362b23e4369c8c4a408f99cbc06e58ac30ddc721600"
+import "testing"
+
+// *testing.T methods used by assert
+type testingDotT interface {
+	Skip(args ...interface{})
+}
+
+// MaybeSkip skips if integration tests should be skipped
+// currently this is when testing.Short() is true
+// This should be called at the beginning of an integration test
+func MaybeSkip(t testingDotT) {
+	if testing.Short() {
+		t.Skip("Skipping integration test due to -short")
+	}
+}
