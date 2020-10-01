@@ -1,4 +1,4 @@
-This tooling is used for our auomated builds.
+This tooling is used for our automated builds.
 
 These are meant to be consumed *only* by The Kubernetes Project's CI for 
 testing Kubernetes.

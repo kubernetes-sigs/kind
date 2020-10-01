@@ -1,1 +1,1 @@
-This directory contains temporary tooling used to make releasing kind easier.h
+This directory contains temporary tooling used to make releasing kind easier.

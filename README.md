@@ -1,4 +1,4 @@
-<p align="center"><img alt="kind" src="./logo/logo.png" width="300x" /></p>
+<p align="center"><img alt="kind" src="./logo/logo.png" width="300px" /></p>
 
 # Please see [Our Documentation](https://kind.sigs.k8s.io/docs/user/quick-start/) for more in-depth installation etc.
 
