@@ -1,7 +1,7 @@
 ---
 name: Question
 about: Ask a question about using kind
-labels: triage/support
+labels: kind/support
 
 ---
 
