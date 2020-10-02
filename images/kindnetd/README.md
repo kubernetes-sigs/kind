@@ -1,6 +1,6 @@
 # kindnetd
 
-`kindnetd` is a simple networking daemon with the following responsibilites:
+`kindnetd` is a simple networking daemon with the following responsibilities:
 
 - IP masquerade (of traffic leaving the nodes that is headed out of the cluster)
 - Ensuring netlink routes to pod CIDRs via the host node IP for each
