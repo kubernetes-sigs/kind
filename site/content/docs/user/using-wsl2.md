@@ -63,6 +63,26 @@ Install Docker with WSL2 backend here: https://docs.docker.com/docker-for-window
 
 Now, move on to the [Quick Start](/docs/user/quick-start) to set up your cluster with kind.
 
+## Accessing a Kubernetes Service running in WSL2
+
+1. prepare cluster config with exported node port
+    {{< codeFromInline lang="yaml" >}}
+# cluster-config.yml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  extraPortMappings:
+  - containerPort: 30000
+    hostPort: 30000
+    protocol: TCP
+{{< /codeFromInline >}}
+
+1. create cluster `kind create cluster --config=cluster-config.yml`
+1. create deployment `kubectl create deployment nginx --image=nginx --port=80`
+1. create service `kubectl create service nodeport nginx --tcp=80:80 --node-port=30000`
+1. access service `curl localhost:30000`
+
 ## Helpful Tips for WSL2
 
 - If you want to shutdown the WSL2 instance to save memory or "reboot", open an admin PowerShell prompt and run `wsl <distro> --shutdown`. Closing a WSL2 window doesn't shut it down automatically.
