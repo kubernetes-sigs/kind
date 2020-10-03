@@ -48,6 +48,8 @@ func RemoveKIND(kindClusterName string, explicitPath string) error {
 				if err := write(existing, configPath); err != nil {
 					return err
 				}
+			} else {
+				return errors.New("Cluster not found")
 			}
 
 			return nil
