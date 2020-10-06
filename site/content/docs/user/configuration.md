@@ -294,3 +294,22 @@ nodes:
 
 [YAML]: https://yaml.org/
 [feature gates]: https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/
+
+### Extra Arguments
+
+Extra arguments can optionally be used augment the default behavior of the container runtime that provisions cluster nodes.
+
+NOTE: Extra Arguments are specifc to the underlying container management system. They are *not* necessarily portable between container management systems (IE: docker vs podman), and may not be supported at all in future releases. Use this configuration option with care, and as a last resort only.
+
+For example, the following configuration is valid for docker, and will expose all GPUs devices present to the cluster node, as well as adjust the limit on open file handles.
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  extraArguments:
+  - --gpus
+  - all
+  - --ulimit
+  - nofile=8192:8192
+{{< /codeFromInline >}}

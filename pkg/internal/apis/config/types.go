@@ -104,6 +104,9 @@ type Node struct {
 	// KubeadmConfigPatchesJSON6902 are applied to the generated kubeadm config
 	// as patchesJson6902 to `kustomize build`
 	KubeadmConfigPatchesJSON6902 []PatchJSON6902
+
+	// ExtraArguments allow for custom options to be passed to the provider
+	ExtraArguments []string
 }
 
 // NodeRole defines possible role for nodes in a Kubernetes cluster managed by `kind`

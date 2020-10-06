@@ -209,6 +209,8 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 	}
 	args = append(args, mappingArgs...)
 
+	args = append(args, node.ExtraArguments...)
+
 	// finally, specify the image to run
 	_, image := sanitizeImage(node.Image)
 	return append(args, image), nil
