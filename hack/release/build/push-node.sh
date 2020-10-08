@@ -16,7 +16,7 @@
 set -o errexit -o nounset -o pipefail
 
 # cd to the repo root
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." &> /dev/null && pwd -P)"
 cd "${REPO_ROOT}"
 
 # ensure we have up to date kind
