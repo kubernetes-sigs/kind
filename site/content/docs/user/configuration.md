@@ -48,6 +48,34 @@ The following high level options are available.
 
 NOTE: not all options are documented yet!  We will fix this with time, PRs welcome!
 
+### Feature Gates
+
+Kubernetes [feature gates] can be enabled cluster-wide across all Kubernetes
+components with the following config:
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+featureGates:
+  # any feature gate can be enabled here with "Name": true
+  # or disabled here with "Name": false
+  # not all feature gates are tested, however
+  "CSIMigration": true
+{{< /codeFromInline >}}
+
+### Runtime Config
+
+Kubernetes API server runtime-config can be toggled using the `runtimeConfig`
+key, which maps to the `--runtime-config` [kube-apiserver flag](https://kubernetes.io/docs/reference/command-line-tools-reference/kube-apiserver/).
+This may be used to e.g. disable beta / alpha APIs.
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+runtimeConfig:
+  "api/alpha": "false"
+{{< /codeFromInline >}}
+
 ### Networking
 
 Multiple details of the cluster's networking can be customized under the
@@ -271,3 +299,4 @@ nodes:
 {{< /codeFromInline >}}
 
 [YAML]: https://yaml.org/
+[feature gates]: https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/
