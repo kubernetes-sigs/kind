@@ -53,7 +53,7 @@ body {
   max-width: 50em;
 }
 
-#content { 
+#content {
   /* clear navbar */
   padding-top: 1em;
   /* push down footer */
@@ -254,20 +254,20 @@ table.includecode pre {
 
 /* page footer*/
 .footer { text-align: center; }
-.footer>* { 
+.footer>* {
   font-size: .6em;
   line-height: 1;
 }
 
 /* heading anchors */
-.hanchor { 
+.hanchor {
   font-size: 100%;
   visibility: hidden;
   font-size: .5em;
   vertical-align: middle;
   text-decoration: none !important;
 }
-h1:hover a, h2:hover a, h3:hover a, h4:hover a { 
+h1:hover a, h2:hover a, h3:hover a, h4:hover a {
   visibility: visible;
 }
 
@@ -276,6 +276,9 @@ h1:hover a, h2:hover a, h3:hover a, h4:hover a {
 }
 #content ul ul {
   padding-left: 1em;
+}
+#sidebar ul {
+  margin-bottom: 1em;
 }
 #sidebar ul ul {
   padding-left: 1.25em;
