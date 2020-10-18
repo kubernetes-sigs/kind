@@ -1,5 +1,7 @@
+{{ if not (eq .Site.Title .Params.title) }}
 <h1>{{ .Params.title }}</h1>
 
+{{ end }}
 {{ if .Params.toc }}
 <aside>
     {{.TableOfContents}}
