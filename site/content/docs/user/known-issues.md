@@ -6,7 +6,6 @@ menu:
     identifier: "known-issues"
     weight: 2
 ---
-# Known Issues
 
 Having problems with kind? This guide is covers some known problems and solutions / workarounds.
 

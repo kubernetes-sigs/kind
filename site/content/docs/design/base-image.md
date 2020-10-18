@@ -5,7 +5,6 @@ menu:
     parent: "design"
     identifier: "base-image"
 ---
-# The Base Image
 
 **NOTE**: This may not completely cover the current implementation.
 

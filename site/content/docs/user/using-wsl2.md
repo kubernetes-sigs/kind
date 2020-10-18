@@ -6,7 +6,6 @@ menu:
     identifier: "using-wsl2"
     weight: 3
 ---
-# Using WSL2
 
 Kind can run using Windows Subsystem for Linux 2 (WSL2) on Windows 10 May 2020 Update (build 19041). All the tools needed to build or run kind work in WSL2, but some extra steps are needed to switch to WSL2. This page covers these steps in brief but also links to the official documentation if you would like more details.
 

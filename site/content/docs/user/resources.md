@@ -7,8 +7,6 @@ menu:
     weight: 4
 ---
 
-# Additional Resources
-
 Here are some additional resources for learning about KIND and how to use it.
 
 ## KubeCon Talks
