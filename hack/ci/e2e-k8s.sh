@@ -131,8 +131,20 @@ create_cluster() {
 
   # Default Log level for all components in test clusters
   KIND_CLUSTER_LOG_LEVEL=${KIND_CLUSTER_LOG_LEVEL:-4}
+  # create the audit/ folder and policy
+  mkdir -p "${ARTIFACTS}/audit"
+  cat <<EOF > "${ARTIFACTS}/audit/policy.yaml"
+# audit-policy.yaml
 
-  # create the config file
+apiVersion: audit.k8s.io/v1beta1
+kind: Policy
+rules:
+  - level: Metadata
+    stages:
+      - ResponseComplete
+EOF
+
+  # create the config file that uses the audit policy
   cat <<EOF > "${ARTIFACTS}/kind-config.yaml"
 # config for 1 control plane node and 2 workers (necessary for conformance)
 kind: Cluster
@@ -142,6 +154,10 @@ networking:
   kubeProxyMode: ${KUBE_PROXY_MODE:-iptables}
 nodes:
 - role: control-plane
+  extraMounts:
+  - hostPath: ${ARTIFACTS}/audit
+    containerPath: /var/audit
+    readOnly: False
 - role: worker
 - role: worker
 featureGates: ${feature_gates}
@@ -154,6 +170,8 @@ kubeadmConfigPatches:
   apiServer:
     extraArgs:
       "v": "${KIND_CLUSTER_LOG_LEVEL}"
+      "audit-policy-file": "/var/audit/policy.yaml"
+      "audit-log-path": "/var/audit/audit.log"
   controllerManager:
     extraArgs:
       "v": "${KIND_CLUSTER_LOG_LEVEL}"
@@ -176,12 +194,15 @@ EOF
   # actually create the cluster
   # TODO(BenTheElder): settle on verbosity for this script
   KIND_CREATE_ATTEMPTED=true
+  # ./audit/ is be relative to where kind is run
+  pushd ${ARTIFACTS}
   kind create cluster \
     --image=kindest/node:latest \
     --retain \
     --wait=1m \
-    -v=3 \
+    -v=4 \
     "--config=${ARTIFACTS}/kind-config.yaml"
+  popd
 
   # Patch kube-proxy to set the verbosity level
   kubectl patch -n kube-system daemonset/kube-proxy \
@@ -249,6 +270,7 @@ run_tests() {
 }
 
 main() {
+  echo `pwd`
   # create temp dir and setup cleanup
   TMP_DIR=$(mktemp -d)
 
