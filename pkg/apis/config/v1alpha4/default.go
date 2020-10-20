@@ -51,7 +51,9 @@ func SetDefaultsCluster(obj *Cluster) {
 	if obj.Networking.PodSubnet == "" {
 		obj.Networking.PodSubnet = "10.244.0.0/16"
 		if obj.Networking.IPFamily == "ipv6" {
-			obj.Networking.PodSubnet = "fd00:10:244::/64"
+			// node-mask cidr default is /64 so we need a larger subnet, we use /56 following best practices
+			// xref: https://www.ripe.net/publications/docs/ripe-690#4--size-of-end-user-prefix-assignment---48---56-or-something-else-
+			obj.Networking.PodSubnet = "fd00:10:244::/56"
 		}
 	}
 	// default the service CIDR using a different subnet than kubeadm default
