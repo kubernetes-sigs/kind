@@ -171,7 +171,7 @@ kubeadmConfigPatches:
     extraArgs:
       "v": "${KIND_CLUSTER_LOG_LEVEL}"
       "audit-policy-file": "/etc/kubernetes/pki/audit/policy.yaml"
-      "audit-log-path": "/etc/kubernetes/pki/audit.log"
+      "audit-log-path": "/etc/kubernetes/pki/audit/audit.log"
   controllerManager:
     extraArgs:
       "v": "${KIND_CLUSTER_LOG_LEVEL}"
