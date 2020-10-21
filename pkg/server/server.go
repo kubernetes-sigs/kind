@@ -77,12 +77,15 @@ func handlerClusterList(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if err != nil {
-		json.NewEncoder(w).Encode(map[string]string{"msg": fmt.Sprintf("list cluster failed, %", err.Error())})
-		_logger.V(0).Infof("delete cluster failed, %", err.Error())
+		if err = json.NewEncoder(w).Encode(map[string]string{"msg": fmt.Sprintf("list cluster failed, %s", err.Error())}); err == nil {
+			_logger.V(0).Infof("delete cluster failed, %", err.Error())
+		}
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]interface{}{"clusters": clusters})
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{"clusters": clusters}); err == nil {
+		_logger.V(0).Infof("list cluster successful!")
+	}
 
 }
 
@@ -93,7 +96,7 @@ func handlerClusterDelete(w http.ResponseWriter, r *http.Request) {
 	name := vars["name"]
 	w.Header().Set("Content-Type", "application/json")
 	if err := provider.Delete(name, ""); err != nil {
-		if err = json.NewEncoder(w).Encode(map[string]string{"msg": fmt.Sprintf("delete %s cluster failed, %", name, err.Error())}); err == nil {
+		if err = json.NewEncoder(w).Encode(map[string]string{"msg": fmt.Sprintf("delete %s cluster failed, %s", name, err.Error())}); err == nil {
 			_logger.V(0).Infof("delete %s cluster failed, %", name, err.Error())
 		}
 		return
