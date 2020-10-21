@@ -41,7 +41,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Long:  "run kind as REST API Server",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cli.OverrideDefaultName(cmd.Flags())
-			return runE(logger, streams, flags)
+			return runE(logger, flags)
 		},
 	}
 	cmd.Flags().StringVar(&flags.Address, "Host", "127.0.0.1", "server listen port, config (default 127.0.0.1)")
@@ -50,7 +50,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
+func runE(logger log.Logger, flags *flagpole) error {
 	server.APIServerStart(logger, flags.Address, flags.Port)
 	return nil
 }

@@ -37,7 +37,7 @@ var _logger log.Logger
 var provider *cluster.Provider
 
 //initProvider build default provider struct
-func initProvider(logger log.Logger) {
+func initProvider() {
 
 	provider = cluster.NewProvider(
 		cluster.ProviderWithLogger(_logger),
@@ -93,13 +93,15 @@ func handlerClusterDelete(w http.ResponseWriter, r *http.Request) {
 	name := vars["name"]
 	w.Header().Set("Content-Type", "application/json")
 	if err := provider.Delete(name, ""); err != nil {
-		json.NewEncoder(w).Encode(map[string]string{"msg": fmt.Sprintf("delete %s cluster failed, %", name, err.Error())})
-		_logger.V(0).Infof("delete %s cluster failed, %", name, err.Error())
+		if err = json.NewEncoder(w).Encode(map[string]string{"msg": fmt.Sprintf("delete %s cluster failed, %", name, err.Error())}); err == nil {
+			_logger.V(0).Infof("delete %s cluster failed, %", name, err.Error())
+		}
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]string{"msg": fmt.Sprintf("delete %s cluster successful", name)})
-	_logger.V(0).Infof("delete %s cluster successful!", name)
+	if err := json.NewEncoder(w).Encode(map[string]string{"msg": fmt.Sprintf("delete %s cluster successful", name)}); err == nil {
+		_logger.V(0).Infof("delete %s cluster successful!", name)
+	}
 
 }
 
@@ -128,8 +130,7 @@ func handlerClusterCreate(w http.ResponseWriter, r *http.Request) {
 		_logger.Error(err.Error())
 	}
 
-	err = json.NewEncoder(w).Encode(map[string]string{"msg": fmt.Sprintf("creating %s cluster.....", name)})
-	if err != nil {
+	if err = json.NewEncoder(w).Encode(map[string]string{"msg": fmt.Sprintf("creating %s cluster.....", name)}); err != nil {
 		_logger.Error(err.Error())
 	}
 
@@ -140,7 +141,7 @@ func APIServerStart(logger log.Logger, address, port string) {
 
 	_logger = logger
 
-	initProvider(logger)
+	initProvider()
 
 	r := mux.NewRouter()
 	r.HandleFunc("/api/v1/cluster/{name}", handlerClusterCreate).Methods("POST")
