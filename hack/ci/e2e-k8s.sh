@@ -156,7 +156,7 @@ nodes:
 - role: control-plane
   extraMounts:
   - hostPath: ${ARTIFACTS}/audit
-    containerPath: /var/audit
+    containerPath: /etc/kubernetes/pki/audit
     readOnly: False
 - role: worker
 - role: worker
@@ -170,8 +170,8 @@ kubeadmConfigPatches:
   apiServer:
     extraArgs:
       "v": "${KIND_CLUSTER_LOG_LEVEL}"
-      "audit-policy-file": "/var/audit/policy.yaml"
-      "audit-log-path": "/var/audit/audit.log"
+      "audit-policy-file": "/etc/kubernetes/pki/audit/policy.yaml"
+      "audit-log-path": "/etc/kubernetes/pki/audit.log"
   controllerManager:
     extraArgs:
       "v": "${KIND_CLUSTER_LOG_LEVEL}"
