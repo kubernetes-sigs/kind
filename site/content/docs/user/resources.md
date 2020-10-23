@@ -74,7 +74,7 @@ https://projectcontour.io/kindly-running-contour/
 
 ### Local Ingress Domains for your Kind Cluster
 
-- OSX: https://mjpitz.com/blog/2020/10/21/local-ingress-domains-kind/
+https://mjpitz.com/blog/2020/10/21/local-ingress-domains-kind/
 
 [@krzyzacy]: https://github.com/krzyzacy
 [kind-ci/examples]: https://github.com/kind-ci/examples
