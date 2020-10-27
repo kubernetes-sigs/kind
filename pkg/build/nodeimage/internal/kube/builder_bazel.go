@@ -117,9 +117,9 @@ func (b *bazelBuilder) Build() (Bits, error) {
 			filepath.Join(buildDir, "kube-proxy.tar"),
 		},
 		binaryPaths: []string{
-			kubeletPath,
-			kubeadmPath,
-			kubectlPath,
+			filepath.Join(b.kubeRoot, kubeletPath),
+			filepath.Join(b.kubeRoot, kubeadmPath),
+			filepath.Join(b.kubeRoot, kubectlPath),
 		},
 		version: version,
 	}, nil
