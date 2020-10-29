@@ -64,15 +64,18 @@ func SetDefaultsCluster(obj *Cluster) {
 	if obj.Networking.PodSubnet == "" {
 		obj.Networking.PodSubnet = "10.244.0.0/16"
 		if obj.Networking.IPFamily == "ipv6" {
-			obj.Networking.PodSubnet = "fd00:10:244::/64"
+			// node-mask cidr default is /64 so we need a larger subnet, we use /56 following best practices
+			// xref: https://www.ripe.net/publications/docs/ripe-690#4--size-of-end-user-prefix-assignment---48---56-or-something-else-
+			obj.Networking.PodSubnet = "fd00:10:244::/56"
 		}
 	}
 
 	// default the service CIDR using the kubeadm default
 	// https://github.com/kubernetes/kubernetes/blob/746404f82a28e55e0b76ffa7e40306fb88eb3317/cmd/kubeadm/app/apis/kubeadm/v1beta2/defaults.go#L32
-	// Note: kubeadm is doing it already but this simplifies kind's logic
+	// Note: kubeadm is using a /12 subnet, that may allocate a 2^20 bitmap in etcd
+	// we allocate a /16 subnet that allows 65535 services (current Kubernetes tested limit is O(10k) services)
 	if obj.Networking.ServiceSubnet == "" {
-		obj.Networking.ServiceSubnet = "10.96.0.0/12"
+		obj.Networking.ServiceSubnet = "10.96.0.0/16"
 		if obj.Networking.IPFamily == "ipv6" {
 			obj.Networking.ServiceSubnet = "fd00:10:96::/112"
 		}

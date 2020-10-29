@@ -6,6 +6,7 @@ menu:
     identifier: "resources"
     weight: 4
 ---
+
 # Additional Resources
 
 Here are some additional resources for learning about KIND and how to use it.
@@ -71,6 +72,9 @@ https://mauilion.dev/posts/kind-k8s-testing/
 
 https://projectcontour.io/kindly-running-contour/
 
+### Local Ingress Domains for your Kind Cluster
+
+https://mjpitz.com/blog/2020/10/21/local-ingress-domains-kind/
 
 [@krzyzacy]: https://github.com/krzyzacy
 [kind-ci/examples]: https://github.com/kind-ci/examples
