@@ -79,7 +79,7 @@ nodes:
 {{< /codeFromInline >}}
 
 1. create cluster `kind create cluster --config=cluster-config.yml`
-1. create deployment `kubectl create deployment nginx --image=nginx --port=80`
+1. create deployment `kubectl create deployment nginx --image=nginx`
 1. create service `kubectl create service nodeport nginx --tcp=80:80 --node-port=30000`
 1. access service `curl localhost:30000`
 
