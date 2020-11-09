@@ -151,11 +151,12 @@ context name `kind` and delete that cluster.
 ## Loading an Image Into Your Cluster
 
 Docker images can be loaded into your cluster nodes with:
-`kind load docker-image my-custom-image`
 
-> **NOTE**: If using a named cluster you will need to specify the name of the 
-cluster you wish to load the image into:
-`kind load docker-image my-custom-image --name kind-2`
+`kind load docker-image my-custom-image-0 my-custom-image-1`
+
+**Note**: If using a named cluster you will need to specify the name of the 
+cluster you wish to load the images into:
+`kind load docker-image my-custom-image-0 my-custom-image-1 --name kind-2`
 
 Additionally, image archives can be loaded with:
 `kind load image-archive /my-image-archive.tar`

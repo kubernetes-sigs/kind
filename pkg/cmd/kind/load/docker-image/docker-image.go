@@ -48,13 +48,13 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
-				return errors.New("name of image is required")
+				return errors.New("a list of image names is required")
 			}
 			return nil
 		},
-		Use:   "docker-image <IMAGE>",
-		Short: "Loads docker image from host into nodes",
-		Long:  "Loads docker image from host into all or specified nodes by name",
+		Use:   "docker-image <IMAGE> [IMAGE...]",
+		Short: "Loads docker images from host into nodes",
+		Long:  "Loads docker images from host into all or specified nodes by name",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cli.OverrideDefaultName(cmd.Flags())
 			return runE(logger, flags, args)
@@ -82,10 +82,14 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 	)
 
 	// Check that the image exists locally and gets its ID, if not return error
-	imageName := args[0]
-	imageID, err := imageID(imageName)
-	if err != nil {
-		return fmt.Errorf("image: %q not present locally", imageName)
+	imageNames := args
+	var imageIDs []string
+	for _, imageName := range imageNames {
+		imageID, err := imageID(imageName)
+		if err != nil {
+			return fmt.Errorf("image: %q not present locally", imageName)
+		}
+		imageIDs = append(imageIDs, imageID)
 	}
 
 	// Check if the cluster nodes exist
@@ -121,37 +125,40 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 
 	// pick only the nodes that don't have the image
 	selectedNodes := []nodes.Node{}
-	for _, node := range candidateNodes {
-		id, err := nodeutils.ImageID(node, imageName)
-		if err != nil || id != imageID {
-			selectedNodes = append(selectedNodes, node)
-			logger.V(0).Infof("Image: %q with ID %q not yet present on node %q, loading...", imageName, imageID, node.String())
+	fns := []func() error{}
+	for i, imageName := range imageNames {
+		imageID := imageIDs[i]
+		for _, node := range candidateNodes {
+			id, err := nodeutils.ImageID(node, imageName)
+			if err != nil || id != imageID {
+				selectedNodes = append(selectedNodes, node)
+				logger.V(0).Infof("Image: %q with ID %q not yet present on node %q, loading...", imageName, imageID, node.String())
+			}
+		}
+		if len(selectedNodes) == 0 {
+			logger.V(0).Infof("Image: %q with ID %q found to be already present on all nodes.", imageName, imageID)
+			continue
 		}
 	}
 
-	if len(selectedNodes) == 0 {
-		return nil
-	}
-
-	// Save the image into a tar
-	dir, err := fs.TempDir("", "image-tar")
+	// Setup the tar path where the images will be saved
+	dir, err := fs.TempDir("", "images-tar")
 	if err != nil {
 		return errors.Wrap(err, "failed to create tempdir")
 	}
 	defer os.RemoveAll(dir)
-	imageTarPath := filepath.Join(dir, "image.tar")
-
-	err = save(imageName, imageTarPath)
+	imagesTarPath := filepath.Join(dir, "images.tar")
+	// Save the images into a tar
+	err = save(imageNames, imagesTarPath)
 	if err != nil {
 		return err
 	}
 
-	// Load the image on the selected nodes
-	fns := []func() error{}
+	// Load the images on the selected nodes
 	for _, selectedNode := range selectedNodes {
 		selectedNode := selectedNode // capture loop variable
 		fns = append(fns, func() error {
-			return loadImage(imageTarPath, selectedNode)
+			return loadImage(imagesTarPath, selectedNode)
 		})
 	}
 	return errors.UntilErrorConcurrent(fns)
@@ -169,9 +176,10 @@ func loadImage(imageTarName string, node nodes.Node) error {
 	return nodeutils.LoadImageArchive(node, f)
 }
 
-// save saves image to dest, as in `docker save`
-func save(image, dest string) error {
-	return exec.Command("docker", "save", "-o", dest, image).Run()
+// save saves images to dest, as in `docker save`
+func save(images []string, dest string) error {
+	commandArgs := append([]string{"save", "-o", dest}, images...)
+	return exec.Command("docker", commandArgs...).Run()
 }
 
 // imageID return the Id of the container image
