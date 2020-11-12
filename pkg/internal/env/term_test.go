@@ -117,6 +117,15 @@ func TestIsSmartTerminal(t *testing.T) {
 			IsSmart: false,
 			Writer:  &testFakeTTY{},
 		},
+		{
+			Name: "tty, TERM=st-256color",
+			FakeEnv: map[string]string{
+				"TERM": "st-256color",
+			},
+			GOOS:    "linux",
+			IsSmart: false,
+			Writer:  &testFakeTTY{},
+		},
 	}
 	for _, tc := range cases {
 		tc := tc // capture tc
