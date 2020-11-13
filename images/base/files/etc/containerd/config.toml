@@ -18,3 +18,5 @@ version = 2
   # allow hugepages controller to be missing
   # see https://github.com/containerd/cri/pull/1501
   tolerate_missing_hugepages_controller = true
+  # explicitly use default snapshotter so we can sed it in entrypoint
+  snapshotter = "overlayfs"
