@@ -141,7 +141,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 				}
 				patched, err := patch.TOML(buff.String(), ctx.Config.ContainerdConfigPatches, ctx.Config.ContainerdConfigPatchesJSON6902)
 				if err != nil {
-					return errors.Wrap(err, "failed to patch contianerd config")
+					return errors.Wrap(err, "failed to patch containerd config")
 				}
 				if err := nodeutils.WriteFile(node, containerdConfigPath, patched); err != nil {
 					return errors.Wrap(err, "failed to write patched containerd config")

@@ -68,7 +68,13 @@ func isSmartTerminal(w io.Writer, GOOS string, lookupEnv func(string) (string, b
 
 	// Explicitly dumb terminals are not smart
 	// https://en.wikipedia.org/wiki/Computer_terminal#Dumb_terminals
-	if getenv("TERM") == "dumb" {
+	term := getenv("TERM")
+	if term == "dumb" {
+		return false
+	}
+	// st has some bug 🤷‍♂️
+	// https://github.com/kubernetes-sigs/kind/issues/1892
+	if term == "st-256color" {
 		return false
 	}
 
