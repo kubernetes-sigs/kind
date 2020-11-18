@@ -5,8 +5,8 @@ menu:
     parent: "user"
     identifier: "user-quick-start"
     weight: 1
+toc: true
 ---
-# Quick Start
 
 This guide covers getting started with the `kind` command.
 

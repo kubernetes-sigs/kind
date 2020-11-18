@@ -6,7 +6,6 @@ menu:
     identifier: "user-local-registry"
     weight: 3
 ---
-# Local Registry
 
 With kind v0.6.0 there is a new config feature `containerdConfigPatches` that can
 be leveraged to configure insecure registries.

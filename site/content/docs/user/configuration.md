@@ -5,17 +5,12 @@ menu:
     parent: "user"
     identifier: "user-configuration"
     weight: 3
+toc: true
 ---
-
-<h1>⚠️ This page is a stub! We're working on it! ⚠️ </h1>
-
-# Configuration
 
 This guide covers how to configure KIND cluster creation.
 
 We know this is currently a bit lacking right now and will expand it over time - PRs welcome!
-
-<!--TODO: TOC?-->
 
 ## Getting Started
 

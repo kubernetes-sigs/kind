@@ -1,5 +1,5 @@
 <head>
-  <title>{{ .Site.Title }}</title>
+  <title>{{ .Site.Title }}{{ if and .Params.title (not (eq .Site.Title .Params.Title)) }} – {{ .Params.title }}{{ end }}</title>
   {{ partialCached "inlinecss.html" . }}
   {{ partialCached "inlinescript.html" . }}
   <meta name="viewport" content="width=device-width, initial-scale=1">

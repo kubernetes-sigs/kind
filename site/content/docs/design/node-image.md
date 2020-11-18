@@ -5,8 +5,6 @@ menu:
     parent: "design"
     identifier: "node-image"
 ---
-# The Node Image
-
 
 **NOTE**: This may not completely cover the current implementation.
 
