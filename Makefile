@@ -36,7 +36,9 @@ PATH:=$(shell . hack/build/setup-go.sh && echo "$${PATH}")
 GOROOT:=
 # enable modules
 GO111MODULE=on
-export PATH GOROOT GO111MODULE
+# disable CGO by default for static binaries
+CGO_ENABLED=0
+export PATH GOROOT GO111MODULE CGO_ENABLED
 # work around broken PATH export
 SPACE:=$(subst ,, )
 SHELL:=env PATH=$(subst $(SPACE),\$(SPACE),$(PATH)) $(SHELL)
