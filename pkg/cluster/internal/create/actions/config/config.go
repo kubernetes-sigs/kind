@@ -90,15 +90,42 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		}
 	}
 
+	// Populate the list of control-plane node labels and the list of worker node labels respectively.
+	// controlPlaneLabels is an array of maps (labels, read from config) associated with all the control-plane nodes.
+	// workerLabels is an array of maps (labels, read from config) associated with all the worker nodes.
+	controlPlaneLabels := []map[string]string{}
+	workerLabels := []map[string]string{}
+	for _, node := range ctx.Config.Nodes {
+		if node.Role == config.ControlPlaneRole {
+			controlPlaneLabels = append(controlPlaneLabels, node.Labels)
+		} else if node.Role == config.WorkerRole {
+			workerLabels = append(workerLabels, node.Labels)
+		} else {
+			continue
+		}
+	}
+
+	// hashMapLabelsToCommaSeparatedLabels converts labels in hashmap form to labels in a comma-separated string form like "key1=value1,key2=value2"
+	hashMapLabelsToCommaSeparatedLabels := func(labels map[string]string) string {
+		output := ""
+		for key, value := range labels {
+			output += fmt.Sprintf("%s=%s,", key, value)
+		}
+		return strings.TrimSuffix(output, ",") // remove the last character (comma) in the output string
+	}
+
 	// create the kubeadm join configuration for control plane nodes
 	controlPlanes, err := nodeutils.ControlPlaneNodes(allNodes)
 	if err != nil {
 		return err
 	}
 
-	for _, node := range controlPlanes {
+	for i, node := range controlPlanes {
 		node := node             // capture loop variable
 		configData := configData // copy config data
+		if len(controlPlaneLabels[i]) > 0 {
+			configData.NodeLabels = hashMapLabelsToCommaSeparatedLabels(controlPlaneLabels[i]) // updating the config with the respective labels to be written over the current control-plane node in consideration
+		}
 		fns = append(fns, kubeadmConfigPlusPatches(node, configData))
 	}
 
@@ -109,10 +136,13 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	}
 	if len(workers) > 0 {
 		// create the workers concurrently
-		for _, node := range workers {
+		for i, node := range workers {
 			node := node             // capture loop variable
 			configData := configData // copy config data
 			configData.ControlPlane = false
+			if len(workerLabels[i]) > 0 {
+				configData.NodeLabels = hashMapLabelsToCommaSeparatedLabels(workerLabels[i]) // updating the config with the respective labels to be written over the current worker node in consideration
+			}
 			fns = append(fns, kubeadmConfigPlusPatches(node, configData))
 		}
 	}
