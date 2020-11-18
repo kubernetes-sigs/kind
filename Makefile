@@ -70,7 +70,13 @@ install: build
 # ================================= Testing ====================================
 # unit tests (hermetic)
 unit:
-	hack/make-rules/unit.sh
+	MODE=unit hack/make-rules/test.sh
+# integration tests
+integration:
+	MODE=integration hack/make-rules/test.sh
+# all tests
+test:
+	hack/make-rules/test.sh
 ################################################################################
 # ================================= Cleanup ====================================
 # standard cleanup target

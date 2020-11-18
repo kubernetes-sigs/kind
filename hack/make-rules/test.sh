@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# script to run unit tests, with coverage enabled and junit xml output
+# script to run unit / integration tests, with coverage enabled and junit xml output
 set -o errexit -o nounset -o pipefail
 
 # cd to the repo root and setup go
@@ -21,22 +21,41 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 cd "${REPO_ROOT}"
 source hack/build/setup-go.sh
 
+# set to 'unit' or 'integration' to run a subset
+MODE="${MODE:-all}"
+
 # build gotestsum
 cd 'hack/tools'
 go build -o "${REPO_ROOT}/bin/gotestsum" gotest.tools/gotestsum
 cd "${REPO_ROOT}"
 
+go_test_opts=(
+  "-coverprofile=${REPO_ROOT}/bin/${MODE}.cov"
+  '-covermode' 'count'
+  '-coverpkg' 'sigs.k8s.io/kind/...'
+)
+if [[ "${MODE}" = 'unit' ]]; then
+  go_test_opts+=('-short' '-tags=nointegration')
+elif [[ "${MODE}" = 'integration' ]]; then
+  go_test_opts+=('-run' '^TestIntegration')
+fi
+
 # run unit tests with coverage enabled and junit output
-"${REPO_ROOT}/bin/gotestsum" --junitfile="${REPO_ROOT}/bin/junit.xml" -- \
-    -coverprofile="${REPO_ROOT}/bin/unit.cov" -covermode count -coverpkg sigs.k8s.io/kind/... ./...
+(
+  set -x; 
+  "${REPO_ROOT}/bin/gotestsum" --junitfile="${REPO_ROOT}/bin/${MODE}-junit.xml" \
+    -- "${go_test_opts[@]}" './...'
+)
 
 # filter out generated files
-sed '/zz_generated/d' "${REPO_ROOT}/bin/unit.cov" > "${REPO_ROOT}/bin/filtered.cov"
+sed '/zz_generated/d' "${REPO_ROOT}/bin/${MODE}.cov" > "${REPO_ROOT}/bin/${MODE}-filtered.cov"
 
 # generate cover html
-go tool cover -html="${REPO_ROOT}/bin/filtered.cov" -o "${REPO_ROOT}/bin/filtered.html"
+go tool cover -html="${REPO_ROOT}/bin/${MODE}-filtered.cov" -o "${REPO_ROOT}/bin/${MODE}-filtered.html"
 
 # if we are in CI, copy to the artifact upload location
 if [[ -n "${ARTIFACTS:-}" ]]; then
-  cp bin/junit.xml "${REPO_ROOT}/bin/filtered.cov" "${REPO_ROOT}/bin/filtered.html" "${ARTIFACTS:?}/"
+  cp "bin/${MODE}-junit.xml" "${ARTIFACTS:?}/junit.xml"
+  cp "${REPO_ROOT}/bin/${MODE}-filtered.cov" "${ARTIFACTS:?}/filtered.cov"
+  cp "${REPO_ROOT}/bin/${MODE}-filtered.html" "${ARTIFACTS:?}/filtered.html"
 fi
