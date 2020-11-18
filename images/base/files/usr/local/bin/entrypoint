@@ -18,10 +18,96 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+# If /proc/self/uid_map 4294967295 mappings, we are in the initial user namespace, i.e. the host.
+# Otherwise we are in a non-initial user namespace.
+# https://github.com/opencontainers/runc/blob/v1.0.0-rc92/libcontainer/system/linux.go#L109-L118
+userns=""
+if grep -Eqv "0[[:space:]]+0[[:space:]]+4294967295" /proc/self/uid_map; then
+  userns="1"
+  echo 'INFO: running in a user namespace (experimental)'
+fi
+
+validate_userns() {
+  if [[ -z "${userns}" ]]; then
+    return
+  fi
+
+  local nofile_hard
+  nofile_hard="$(ulimit -Hn)"
+  local nofile_hard_expected="64000"
+  if [[ "${nofile_hard}" -lt "${nofile_hard_expected}" ]]; then
+    echo "WARN: UserNS: expected RLIMIT_NOFILE to be at least ${nofile_hard_expected}, got ${nofile_hard}" >&2
+  fi
+
+  if [[ ! -f "/sys/fs/cgroup/cgroup.controllers" ]]; then
+    echo "ERROR: UserNS: cgroup v2 needs to be enabled" >&2
+    exit 1
+  fi
+  for f in cpu memory pids; do
+    if ! grep -qw $f /sys/fs/cgroup/cgroup.controllers; then
+      echo "ERROR: UserNS: $f controller needs to be delegated" >&2
+    exit 1
+    fi
+  done
+}
+
+fake_file_with_content(){
+  local path="$1"
+  local content="$2"
+  local base="/run/fake"
+  local fake_path="${base}/${path}"
+  mkdir -p "$(dirname "${fake_path}")"
+  echo "INFO: UserNS: faking ${path} to be \"${content}\" (writable)"
+  echo "${content}" > "${fake_path}"
+  mount --bind "${fake_path}" "${path}"
+}
+
+fake_sysctl() {
+  local key="$1"
+  local key_slash
+  # shellcheck disable=SC2001
+  key_slash="$(echo "${key}" | sed -e s@\\.@/@g)"
+  local path="/proc/sys/${key_slash}"
+  if [[ -f "${path}" ]]; then
+    local content
+    content="$(cat "${path}")"
+    fake_file_with_content "${path}" "${content}"
+  fi
+}
+
 configure_containerd() {
   # we need to switch to the 'native' snapshotter on zfs
   if [[ "$(stat -f -c %T /kind)" == 'zfs' ]]; then
     sed -i 's/snapshotter = "overlayfs"/snapshotter = "native"/' /etc/containerd/config.toml
+  fi
+
+  # userns (rootless) configs
+  if [[ -n "$userns" ]]; then
+    # Adjust oomScoreAdj
+    sed -i 's/restrict_oom_score_adj = false/restrict_oom_score_adj = true/' /etc/containerd/config.toml
+
+    # mounting overlayfs inside userns requires patching kernel.
+    # Ubuntu kernel is patched by default.
+    # Debian kernel is patched by default as well, but Debian needs `sudo modprobe overlay permit_mounts_in_userns=1`.
+    local tmp
+    tmp=$(mktemp -d)
+    mkdir -p "${tmp}"/{l,u,w,m}
+    if mount -t overlay overlay -o "lowerdir=${tmp}/l,upperdir=${tmp}/u,workdir=${tmp}/w" "${tmp}/m"; then
+      umount "${tmp}/m"
+    else
+      echo 'INFO: UserNS: this kernel does not support mounting overlayfs inside userns. Disabling overlayfs'
+      sed -i 's/snapshotter = "overlayfs"/snapshotter = "native"/' /etc/containerd/config.toml
+    fi
+    rm -rf "${tmp}"
+
+    # To run vanilla kubelet inside UserNS, we need to fake several unwritable sysctl to be writable.
+    # Workaround until https://github.com/kubernetes/kubernetes/pull/92863 gets merged in the upstream.
+    fake_sysctl "vm.overcommit_memory"
+    fake_sysctl "vm.panic_on_oom"
+    fake_sysctl "kernel.panic"
+    fake_sysctl "kernel.panic_on_oops"
+    fake_sysctl "kernel.keys.root_maxkeys"
+    fake_sysctl "kernel.keys.root_maxbytes"
   fi
 }
 
@@ -50,12 +136,16 @@ fix_mount() {
     sync
   fi
 
-  echo 'INFO: remounting /sys read-only'
-  # systemd-in-a-container should have read only /sys
-  # https://systemd.io/CONTAINER_INTERFACE/
-  # however, we need other things from `docker run --privileged` ...
-  # and this flag also happens to make /sys rw, amongst other things
-  mount -o remount,ro /sys
+  if [[ -z "${userns}" ]]; then
+    echo 'INFO: remounting /sys read-only'
+    # systemd-in-a-container should have read only /sys
+    # https://systemd.io/CONTAINER_INTERFACE/
+    # however, we need other things from `docker run --privileged` ...
+    # and this flag also happens to make /sys rw, amongst other things
+    #
+    # This step is skipped when running inside UserNS, because it fails with EACCES.
+    mount -o remount,ro /sys
+  fi
 
   echo 'INFO: making mounts shared' >&2
   # for mount propagation
@@ -212,6 +302,13 @@ fix_kmsg() {
     else
       echo 'WARN: /dev/kmsg does not exist, nor does /dev/console!' >&2
     fi
+  elif [[ -n "${userns}" ]]; then
+    if [[ -f "/proc/sys/kernel/dmesg_restrict" ]]; then
+      if [[ "$(cat /proc/sys/kernel/dmesg_restrict)" = "1" ]]; then
+        echo 'WARN: UserNS: /dev/kmsg is not readable, faking with /dev/null (hint: set sysctl value "kernel.dmesg_restrict" to 0)' >&2
+        mount --bind /dev/null /dev/kmsg
+      fi
+    fi
   fi
 }
 
@@ -298,6 +395,9 @@ enable_network_magic(){
     echo -n "${curr_ipv6}" >/kind/old-ipv6
   fi
 }
+
+# validate state
+validate_userns
 
 # run pre-init fixups
 # NOTE: it's important that we do configure* first in this order to avoid races

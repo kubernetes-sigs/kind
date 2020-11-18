@@ -48,6 +48,11 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Writing configuration 📜")
 	defer ctx.Status.End(false)
 
+	providerInfo, err := ctx.Provider.Info()
+	if err != nil {
+		return err
+	}
+
 	allNodes, err := ctx.Nodes()
 	if err != nil {
 		return err
@@ -76,6 +81,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		IPv6:                 ctx.Config.Networking.IPFamily == "ipv6",
 		FeatureGates:         ctx.Config.FeatureGates,
 		RuntimeConfig:        ctx.Config.RuntimeConfig,
+		RootlessProvider:     providerInfo.Rootless,
 	}
 
 	kubeadmConfigPlusPatches := func(node nodes.Node, data kubeadm.ConfigData) func() error {
