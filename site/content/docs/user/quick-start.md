@@ -344,7 +344,7 @@ featureGates:
 
 #### IPv6 clusters
 You can run IPv6 single-stack clusters using `kind`, if the host that runs the docker containers support IPv6.
-Most operating systems / distros have IPv6 enabled by defualt, but you can check on Linux with the following command:
+Most operating systems / distros have IPv6 enabled by default, but you can check on Linux with the following command:
 
 ```sh
 sudo sysctl net.ipv6.conf.all.disable_ipv6
@@ -388,7 +388,7 @@ You can configure kind to use a proxy using one or more of the following [enviro
 * `NO_PROXY` or `no_proxy`
 
 **Note**: If you set a proxy it would be used for all the connection requests.
-It's important that you define what addresses doesn't need to be proxied with the NO_PROXY variable, typically you should avoid to proxy your docker network range `NO_PROXY=172.17.0.0/16`
+It's important that you define what addresses don't need to be proxied with the NO_PROXY variable, typically you should avoid to proxy your docker network range `NO_PROXY=172.17.0.0/16`
 
 ### Exporting Cluster Logs
 kind has the ability to export all kind related logs for you to explore.
