@@ -32,10 +32,10 @@ import (
 )
 
 // planCreation creates a slice of funcs that will create the containers
-func planCreation(cfg *config.Cluster) (createContainerFuncs []func() error, err error) {
+func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs []func() error, err error) {
 	// these apply to all container creation
 	nodeNamer := common.MakeNodeNamer(cfg.Name)
-	genericArgs, err := commonArgs(cfg)
+	genericArgs, err := commonArgs(cfg, networkName)
 	if err != nil {
 		return nil, err
 	}
@@ -135,11 +135,12 @@ func clusterHasImplicitLoadBalancer(cfg *config.Cluster) bool {
 }
 
 // commonArgs computes static arguments that apply to all containers
-func commonArgs(cfg *config.Cluster) ([]string, error) {
+func commonArgs(cfg *config.Cluster, networkName string) ([]string, error) {
 	// standard arguments all nodes containers need, computed once
 	args := []string{
-		"--detach", // run the container detached
-		"--tty",    // allocate a tty for entrypoint logs
+		"--detach",           // run the container detached
+		"--tty",              // allocate a tty for entrypoint logs
+		"--net", networkName, // attach to its own network
 		// label the node with the cluster ID
 		"--label", fmt.Sprintf("%s=%s", clusterLabelKey, cfg.Name),
 	}
