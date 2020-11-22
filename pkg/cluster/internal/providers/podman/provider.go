@@ -79,13 +79,24 @@ func (p *provider) Provision(status *cli.Status, cfg *config.Cluster) (err error
 		return err
 	}
 
+	// ensure the pre-requesite network exists
+	networkName := fixedNetworkName
+	if n := os.Getenv("KIND_EXPERIMENTAL_PODMAN_NETWORK"); n != "" {
+		p.logger.Warn("WARNING: Overriding podman network due to KIND_EXPERIMENTAL_PODMAN_NETWORK")
+		p.logger.Warn("WARNING: Here be dragons! This is not supported currently.")
+		networkName = n
+	}
+	if err := ensureNetwork(networkName); err != nil {
+		return errors.Wrap(err, "failed to ensure podman network")
+	}
+
 	// actually provision the cluster
 	icons := strings.Repeat("📦 ", len(cfg.Nodes))
 	status.Start(fmt.Sprintf("Preparing nodes %s", icons))
 	defer func() { status.End(err == nil) }()
 
 	// plan creating the containers
-	createContainerFuncs, err := planCreation(cfg)
+	createContainerFuncs, err := planCreation(cfg, networkName)
 	if err != nil {
 		return err
 	}
@@ -247,14 +258,8 @@ func (p *provider) GetAPIServerInternalEndpoint(cluster string) (string, error) 
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get apiserver endpoint")
 	}
-	// TODO: check cluster IP family and return the correct IP
-	// This means IPv6 singlestack is broken on podman
-	ipv4, _, err := n.IP()
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get apiserver IP")
-	}
-	return net.JoinHostPort(ipv4, fmt.Sprintf("%d", common.APIServerInternalPort)), nil
-
+	// NOTE: we're using the nodes's hostnames which are their names
+	return net.JoinHostPort(n.String(), fmt.Sprintf("%d", common.APIServerInternalPort)), nil
 }
 
 // node returns a new node handle for this provider
