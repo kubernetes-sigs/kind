@@ -24,6 +24,8 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/log"
+
+	"k8s.io/apimachinery/pkg/util/version"
 )
 
 // TODO(bentheelder): plumb through arch
@@ -63,6 +65,26 @@ func (b *dockerBuilder) Build() (Bits, error) {
 		return nil, err
 	}
 
+	// capture version info
+	sourceVersionRaw, err := sourceVersion(b.kubeRoot)
+	if err != nil {
+		return nil, err
+	}
+
+	// check for version specific workarounds
+	ver, err := version.ParseSemantic(sourceVersionRaw)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse source version")
+	}
+	// leverage in-tree-cloud-provider-free builds by default
+	// https://github.com/kubernetes/kubernetes/pull/80353
+	// leverage dockershim free builds by default
+	// https://github.com/kubernetes/kubernetes/pull/87746
+	goflags := "GOFLAGS=-tags=providerless,dockerless"
+	if ver.LessThan(version.MustParseSemantic("v1.19.0")) {
+		goflags = "GOFLAGS=-tags=providerless"
+	}
+
 	// we will pass through the environment variables, prepending defaults
 	// NOTE: if env are specified multiple times the last one wins
 	env := append(
@@ -74,9 +96,8 @@ func (b *dockerBuilder) Build() (Bits, error) {
 			"KUBE_BUILD_CONFORMANCE=n",
 			// build for the host platform
 			"KUBE_BUILD_PLATFORMS=" + dockerBuildOsAndArch(b.arch),
-			// leverage in-tree-cloud-provider-free builds by default
-			// https://github.com/kubernetes/kubernetes/pull/80353
-			"GOFLAGS=-tags=providerless",
+			// pass goflags
+			goflags,
 		},
 		os.Environ()...,
 	)
@@ -103,12 +124,6 @@ func (b *dockerBuilder) Build() (Bits, error) {
 		return nil, errors.Wrap(err, "failed to build images")
 	}
 
-	// capture version info
-	version, err := sourceVersion(b.kubeRoot)
-	if err != nil {
-		return nil, err
-	}
-
 	binDir := filepath.Join(b.kubeRoot,
 		"_output", "dockerized", "bin", "linux", b.arch,
 	)
@@ -128,7 +143,7 @@ func (b *dockerBuilder) Build() (Bits, error) {
 			filepath.Join(imageDir, "kube-scheduler.tar"),
 			filepath.Join(imageDir, "kube-proxy.tar"),
 		},
-		version: version,
+		version: sourceVersionRaw,
 	}, nil
 }
 

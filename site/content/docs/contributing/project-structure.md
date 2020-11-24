@@ -5,7 +5,6 @@ menu:
     parent: "contributing"
     identifier: "project-structure"
 ---
-# Project Structure
 
 🚧 This is a work-in-progress 🚧
 

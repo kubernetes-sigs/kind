@@ -36,7 +36,9 @@ PATH:=$(shell . hack/build/setup-go.sh && echo "$${PATH}")
 GOROOT:=
 # enable modules
 GO111MODULE=on
-export PATH GOROOT GO111MODULE
+# disable CGO by default for static binaries
+CGO_ENABLED=0
+export PATH GOROOT GO111MODULE CGO_ENABLED
 # work around broken PATH export
 SPACE:=$(subst ,, )
 SHELL:=env PATH=$(subst $(SPACE),\$(SPACE),$(PATH)) $(SHELL)
@@ -70,7 +72,13 @@ install: build
 # ================================= Testing ====================================
 # unit tests (hermetic)
 unit:
-	hack/make-rules/unit.sh
+	MODE=unit hack/make-rules/test.sh
+# integration tests
+integration:
+	MODE=integration hack/make-rules/test.sh
+# all tests
+test:
+	hack/make-rules/test.sh
 ################################################################################
 # ================================= Cleanup ====================================
 # standard cleanup target

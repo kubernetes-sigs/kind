@@ -7,8 +7,6 @@ menu:
     weight: 3
 ---
 
-# Ingress
-
 This guide covers setting up [ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/)
 on a kind cluster.
 

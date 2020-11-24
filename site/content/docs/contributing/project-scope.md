@@ -6,7 +6,6 @@ menu:
     identifier: "project-scope"
     weight: 2
 ---
-# Project Scope
 
 This document outlines some scoping and major priorities for kind.
 

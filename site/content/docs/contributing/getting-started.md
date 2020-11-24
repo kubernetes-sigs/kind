@@ -6,7 +6,6 @@ menu:
     identifier: "getting started"
     weight: 1
 ---
-# Getting Started
 
 Welcome! This guide covers how to get started contributing to kind.
 

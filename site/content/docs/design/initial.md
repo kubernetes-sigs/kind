@@ -1,12 +1,11 @@
 ---
-title: "Initial"
+title: "Initial design"
 menu:
   main:
     parent: "design"
     identifier: "design-initial"
     weight: 2
 ---
-# Design
 
 This document covers some of the initial design for `kind`.
 

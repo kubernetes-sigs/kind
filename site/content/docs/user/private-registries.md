@@ -6,7 +6,6 @@ menu:
     identifier: "user-private-registries"
     weight: 3
 ---
-# Private Registries
 
 Some users may want to test applications on kind that require pulling images
 from authenticated private registries, there are multiple ways to do this.
