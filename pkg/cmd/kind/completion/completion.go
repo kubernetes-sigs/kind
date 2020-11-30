@@ -54,8 +54,8 @@ This depends on the bash-completion binary.  Example installation instructions:
 # or if zsh-completion is installed via homebrew
     % kind completion zsh > "${fpath[1]}/_kind"
 # or if you use oh-my-zsh (needs zsh-completions plugin)
-	% mkdir ~/.oh-my-zsh/completions/
-	% kind completion zsh > ~/.oh-my-zsh/completions/_kind
+	% mkdir $ZSH/completions/
+	% kind completion zsh > $ZSH/completions/_kind
 
 # for fish users
 	% kind completion fish > ~/.config/fish/completions/kind.fish
