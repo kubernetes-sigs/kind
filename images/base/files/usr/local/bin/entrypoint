@@ -109,9 +109,7 @@ fix_cgroup() {
     while IFS= read -r subsystem; do
       mkdir -p "${subsystem}${docker_cgroup}"
       mount --bind "${subsystem}" "${subsystem}${docker_cgroup}"
-      # shellcheck disable=SC2153
-      # CGROUP_ROOT is set in environment
-      mount_kubelet_cgroup_root "${CGROUP_ROOT}" "${subsystem}"
+      mount_kubelet_cgroup_root "/kubelet" "${subsystem}"
     done
   fi
   local podman_cgroup_mounts
@@ -124,7 +122,7 @@ fix_cgroup() {
     while IFS= read -r subsystem; do
       mkdir -p "${subsystem}${podman_cgroup}"
       mount --bind "${subsystem}" "${subsystem}${podman_cgroup}"
-      mount_kubelet_cgroup_root "${CGROUP_ROOT}" "${subsystem}"
+      mount_kubelet_cgroup_root "/kubelet" "${subsystem}"
     done
   fi
 }

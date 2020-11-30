@@ -159,8 +159,6 @@ func commonArgs(cfg *config.Cluster, networkName string) ([]string, error) {
 		args = append(args, "-e", fmt.Sprintf("%s=%s", key, val))
 	}
 
-	args = append(args, "-e", fmt.Sprintf("CGROUP_ROOT=%s", cfg.CgroupRoot))
-
 	return args, nil
 }
 

@@ -199,8 +199,6 @@ func commonArgs(cluster string, cfg *config.Cluster, networkName string, nodeNam
 		args = append(args, "-e", fmt.Sprintf("%s=%s", key, val))
 	}
 
-	args = append(args, "-e", fmt.Sprintf("CGROUP_ROOT=%s", cfg.CgroupRoot))
-
 	// handle hosts that have user namespace remapping enabled
 	if usernsRemap() {
 		args = append(args, "--userns=host")
