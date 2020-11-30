@@ -71,7 +71,7 @@ type ConfigData struct {
 	IPv6 bool
 
 	// CgroupRoot specifies the cgroup root to configure the kubelet to use
-	CgroupRoot   string
+	CgroupRoot string
 
 	// DerivedConfigData is populated by Derive()
 	// These auto-generated fields are available to Config templates,

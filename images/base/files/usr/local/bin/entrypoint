@@ -66,7 +66,7 @@ mount_kubelet_cgroup_root() {
   cgroup_root=$1
   subsystem=$2
 
-  if [ ! -z ${cgroup_root} ]; then
+  if [ -n "${cgroup_root}" ]; then
     # This is because we set Kubelet's cgroup-root to `/kubelet` by
     # default. We have to do that because otherwise, it'll collide
     # with the cgroups used by the Kubelet running on the host if we
@@ -109,6 +109,8 @@ fix_cgroup() {
     while IFS= read -r subsystem; do
       mkdir -p "${subsystem}${docker_cgroup}"
       mount --bind "${subsystem}" "${subsystem}${docker_cgroup}"
+      # shellcheck disable=SC2153
+      # CGROUP_ROOT is set in environment
       mount_kubelet_cgroup_root "${CGROUP_ROOT}" "${subsystem}"
     done
   fi
