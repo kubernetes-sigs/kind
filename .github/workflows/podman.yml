@@ -16,6 +16,8 @@ jobs:
       matrix:
         ipFamily: [ipv4, ipv6]
         deployment: [singleNode, multiNode]
+        exclude:
+          - ipFamily: ipv6
     env:
       JOB_NAME: "podman-${{ matrix.deployment }}-${{ matrix.ipFamily }}"
       KIND_EXPERIMENTAL_PROVIDER: "podman"
