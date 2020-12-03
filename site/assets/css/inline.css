@@ -101,31 +101,45 @@ body {
 }
 
 #noticebar{
-  padding: 2em;
+  padding: 1.5em;
+  padding-top: 2em;
+  padding-bottom: 1em;
+  margin-bottom: -1.5em;
 }
 #noticebar>* {
-  max-width: 50em;
+  max-width: 50rem;
   margin-left: auto;
   margin-right: auto;
   margin-block-end: 0;
-  margin-block-start: 0;
+  margin-block-start: 0.25em;
 }
 
 #noticebar.black {
   color: white;
   background: black;
 }
-#noticebar.black a {
-  color: white;
-}
 #navbar.black {
   color: white;
   background: black;
 }
-#navbar.black>#sidebar-toggle {
+#noticebar.docker-blue {
+  background: #44a2f1;
   color: white;
 }
-#navbar.black>#github {
+#navbar.docker-blue {
+  background: #44a2f1;
+  color: white;
+}
+/* invert colors on different background */
+.black a, .docker-blue a {
+  color: white;
+}
+#navbar.black>#sidebar-toggle,
+#navbar.docker-blue>#sidebar-toggle {
+  color: white;
+}
+#navbar.black>#github,
+#navbar.docker-blue>#github {
   filter: invert(1);
 }
 
@@ -168,6 +182,14 @@ body {
 
 /* consistent link color */
 a { color: #326be5; }
+
+p {
+  margin-block-start: .5em;
+}
+h1, h2, h3, h4, h5 {
+  margin-block-start: 1rem;
+  margin-block-end: .25rem;
+}
 
 /* ensure images don't go off the page */
 #content img { max-width: 100%; }
@@ -271,17 +293,54 @@ h1:hover a, h2:hover a, h3:hover a, h4:hover a {
   visibility: visible;
 }
 
+#content #TableOfContents ul {
+  margin-block-start: 0;
+  margin-block-end: 0;
+}
 #content ul {
   padding-left: 1.75em;
+  margin-block-start: .5em;
+  margin-block-end: .5em;
 }
 #content ul ul {
   padding-left: 1em;
+  margin-block-start: 0;
 }
 #sidebar ul {
   margin-bottom: 1em;
 }
 #sidebar ul ul {
   padding-left: 1.25em;
+}
+
+.page-description {
+  border-left-color: black;
+  background: #3b4d56;
+  color: white;
+  font-size: 1.2em;
+  line-height: 1.4em;
+  margin-block-start: 0;
+  margin-block-end: 0;
+}
+.page-description a {
+  color: #0bd8ec;
+}
+.page-description code {
+  color: black;
+}
+
+blockquote {
+  border-left: .5rem solid #326ce4;
+  background: #c9e6ff;
+  color: black;
+  padding: 1em 1.5em;
+  margin-inline-start: 0;
+  margin-inline-end: 0;
+}
+
+blockquote p {
+  margin-block-start: 0.75em;
+  margin-block-end: 0.75em;
 }
 
 /* style video embeds to be full-width in content */

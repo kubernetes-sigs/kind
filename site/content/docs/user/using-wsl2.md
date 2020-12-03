@@ -5,9 +5,11 @@ menu:
     parent: "user"
     identifier: "using-wsl2"
     weight: 3
+description: |-
+  Kind can run using Windows Subsystem for Linux 2 (WSL2) on Windows 10 May 2020 Update (build 19041). 
+  
+  All the tools needed to build or run kind work in WSL2, but some extra steps are needed to switch to WSL2. This page covers these steps in brief but also links to the official documentation if you would like more details.
 ---
-
-Kind can run using Windows Subsystem for Linux 2 (WSL2) on Windows 10 May 2020 Update (build 19041). All the tools needed to build or run kind work in WSL2, but some extra steps are needed to switch to WSL2. This page covers these steps in brief but also links to the official documentation if you would like more details.
 
 ## Getting Windows 10
 
@@ -15,7 +17,7 @@ Download latest ISO at https://www.microsoft.com/en-us/software-download/windows
 
 ### Installing on a virtual machine
 
-> Note: this currently only works with Intel processors. The Hyper-V hypervisor used by WSL2 cannot run underneath another hypervisor on AMD processors.
+> **NOTE**: this currently only works with Intel processors. The Hyper-V hypervisor used by WSL2 cannot run underneath another hypervisor on AMD processors.
 
 Required Settings
 

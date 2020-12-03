@@ -5,14 +5,13 @@ menu:
     parent: "user"
     identifier: "working-offline"
     weight: 3
+description: |-
+  This guide covers how to work with KIND in an offline / airgapped environment.
+
+  You you should first [install kind][installation documentation] before continuing.
+
+  [installation documentation]: https://kind.sigs.k8s.io/docs/user/quick-start#installation
 ---
-
-Some users may work in an offline environment,
-let's talk about how to create a cluster using kind in this environment.
-
-You can first prepare the necessary environment according to the [installation documentation][installation documentation].
-
-
 ## Using a pre-built [node image][node image]
 
 KIND provides some pre-built images,

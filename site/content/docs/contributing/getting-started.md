@@ -5,9 +5,9 @@ menu:
     parent: "contributing"
     identifier: "getting started"
     weight: 1
+toc: true
+description: Welcome! This guide covers how to get started contributing to kind.
 ---
-
-Welcome! This guide covers how to get started contributing to kind.
 
 ## 1. Read the Kubernetes community guidelines
 
