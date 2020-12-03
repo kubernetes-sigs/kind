@@ -138,12 +138,23 @@ inner markdown content. Usage: `{{</* securitygoose */>}} Notice markdown conten
 
 ## CI
 
-// TODO
+The KIND project runs in / on Kubernetes' Custom CI, "[prow]" (prow.k8s.io).
+This is both true for CI in the KIND repo, and in the Kubernetes repo where kind
+is used to test Kubernetes.
 
-TLDR:
-- prow.k8s.io
-- https://git.k8s.io/test-infra/config/jobs/kubernetes-sigs/kind
-- github actions for podman
+It's important to note that we run larger, slower Kubernetes e2e tests in the kind
+repo to mimic what we run in the Kubernetes repo. This is because Kubernetes tests
+with kind at HEAD to have the latest fixes for running bleeding edge Kubernetes.
+We ensure that the tests continue to work in the kind repo before merging any code changes.
+
+We also have some limited usage experiments with [GitHub Actions], currently
+only for testing `podman` support in kind.
+
+### Configuration
+
+Our repo's prow configuration is at https://git.k8s.io/test-infra/config/jobs/kubernetes-sigs/kind
+
+GitHub actions are configured in `.github/workflows` in the kind repo.
 
 [gimme]: https://github.com/travis-ci/gimme
 [shellcheck]: https://shellcheck.net
@@ -151,3 +162,5 @@ TLDR:
 [go-version]: https://sigs.k8s.io/kind/.go-version
 [quick start]: docs/user/quick-start/
 [hugo]: https://gohugo.io
+[prow]: https://git.k8s.io/test-infra/
+[GitHub Actions]: https://github.com/features/actions
