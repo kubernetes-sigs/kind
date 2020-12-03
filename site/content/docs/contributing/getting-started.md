@@ -9,17 +9,38 @@ toc: true
 description: Welcome! This guide covers how to get started contributing to kind.
 ---
 
-## 1. Read the Kubernetes community guidelines
+## 1. Familiarize Yourself With Contributing to Kubernetes Projects
+### Read the Kubernetes Community Guidelines
 
 Make sure to read you read the [Kubernetes community guidelines][community].
 In specific, read through the [Kubernetes contributor guidelines][contributor].
 
-Additionally, note that kind is developed on [GitHub][github] and will require
+Additionally, note that 
+
+### Setup GitHub Account
+
+Kubernetes and kind are developed on [GitHub][github] and will require
 an account to contribute.
+
+### Sign CNCF CLA
+
+The Kubernetes project requires the [CNCF][CNCF] [CLA][CNCF-cla] be signed against
+your GitHub account for all contributions in all subprojects.
+
+You'll need to get the CLA signed to contribute.
+
+### Check The Kubernetes Contributor Guides
+
+You may come back to this later, but we highly recommend reading these:
+
+- [Kubernetes Contributor Guide](https://git.k8s.io/community/contributors/guide) 
+  - Main contributor documentation, or you can just jump directly to the [contributing section](https://git.k8s.io/community/contributors/guide#contributing)
+- [Contributor Cheat Sheet](https://git.k8s.io/community/contributors/guide/contributor-cheatsheet)
+   - Common resources for existing developers
 
 ## 2. Install Tools
 
-### Install git
+### Install Git
 
 Our source code is managed with [`git`][git], to develop locally you
 will need to install `git`.
@@ -30,33 +51,6 @@ the following command:
 ```
 git --version
 ```
-
-### Install Hugo
-
-If you wish to contribute to the documentation, it is recommended but not 
-required to install [hugo], which we use to develop this site.
-
-Please see: https://gohugo.io/getting-started/installing/
-
-
-### Install Go
-
-To work on kind's codebase you will need [Go][golang].
-
-Install or upgrade [Go using the instructions for your operating system][golang].
-You can check if Go is in your system with the following command:
-
-```
-go version
-```
-
-Preferably Go `1.13` or greater should be installed. 
-
-Correct automatic formatting of the source with `gofmt` requires at least
-`1.11.0`.
-
-Working with Go [modules] (which we use for dependency management) requires at
-least `1.11.4` due to checksum bugs in lower versions.
 
 ### Install Docker
 
@@ -73,10 +67,22 @@ docker --version
 ```
 This documentation is written using Docker version 18.09.2.
 
+### Install Go (optional)
+
+KIND is written in [Go][golang], however our makefiles automatically ensure the
+correct version of go when building or testing.
+
+You may still wish to install go on your machine to make it easier to integrate
+into your editor etc. You can find the version of go we're currently using to develop kind in the [`.go-version`][go-version] file in the kind repo.
+
+Install or upgrade [Go using the instructions for your operating system][golang].
+You can check if Go is in your system with the following command:
+
 ## 3. Read The Docs 
 
 The [design principles], [1.0 roadmap], [project structure], and [initial design]
-may be helpful to review before contributing.
+may be helpful to review before contributing. These docs cover some of the project
+philosphy and direction.
 
 ## 4. Reaching Out
 
@@ -85,22 +91,27 @@ if there is any existing discussion or work related to your interests.
 
 If you do not see anything, please [file a new issue][file an issue].
 
+> **NOTE**: _Please_ file an enhancement / [feature request issue][fr-issue] to discuss features before filing a PR (ideally even before writing any code), we have a lot to consider with respect to our
+> existing users and future support when accepting any new feature.
+> To streamline the process, please reach out and discuss the concept and design
+> / approach ASAP so the maintainers and community can get involved early.
+
 Please reach out for bugs, feature requests, and other issues!  
 The maintainers of this project are reachable via:
 
-- [Kubernetes Slack] in the [#kind] channel
-- [filing an issue][file an issue]
-- The Kubernetes [SIG-Testing Mailing List]
+- [Kubernetes Slack] in the [#kind] channel (most active, along with the community)
+- The issue tracker by [filing an issue][file an issue]
+- The Kubernetes [SIG-Testing][SIG-Testing] [Mailing List][SIG-Testing Mailing List]
 
 Current maintainers are [@BenTheElder] and [@munnerz] - feel free to
-reach out if you have any questions!
+reach out directly if you have any questions!
 
 See also: the Kubernetes [community page].
 
 [git]: https://git-scm.com/
 [hugo]: https://gohugo.io
 [issues]: https://github.com/kubernetes-sigs/kind/issues
-[file an issue]: https://github.com/kubernetes-sigs/kind/issues/new
+[file an issue]: https://github.com/kubernetes-sigs/kind/issues/new/choose
 [design principles]: /docs/design/principles
 [1.0 roadmap]: /docs/contributing/1.0-roadmap
 [project scope]: /docs/contributing/project-scope
@@ -119,3 +130,7 @@ See also: the Kubernetes [community page].
 [community page]: http://kubernetes.io/community/
 [modules]: https://github.com/golang/go/wiki/Modules
 [SIG-Testing Mailing List]: https://groups.google.com/forum/#!forum/kubernetes-sig-testing
+[CNCF-cla]: https://git.k8s.io/community/CLA.md
+[fr-issue]: https://github.com/kubernetes-sigs/kind/issues/new?labels=kind%2Ffeature&template=enhancement.md
+[SIG-Testing]: https://github.com/kubernetes/community/blob/master/sig-testing/README.md
+[go-version]: https://sigs.k8s.io/kind/.go-version
