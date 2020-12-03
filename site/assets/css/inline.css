@@ -58,6 +58,7 @@ body {
   color: white;
   padding: 1em;
   margin-top: 1em;
+  border-top: .1em solid rgba(0, 0, 0, 0.1);
 }
 #footer a {
   color: white;
@@ -81,10 +82,10 @@ body {
   top: 0;
   width: calc(100% - 240px);
   padding: 2px 0;
-  margin-left: 1px;
+  margin-left: .1em;
   /*background-color: #326ce5;*/
   background-color: white;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: .1em solid rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
   z-index: 99999;
@@ -121,6 +122,7 @@ body {
   padding-top: 2em;
   padding-bottom: 1em;
   margin-bottom: -1.5em;
+  border-bottom: .1em solid rgba(0, 0, 0, 0.1);
 }
 #noticebar>* {
   max-width: 46rem;
@@ -165,7 +167,7 @@ body {
   display: flex;
   flex-direction: column;
   width: 240px;
-  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  border-right: .1em solid rgba(0, 0, 0, 0.1);
   background-color: #fafafa;
   z-index: 99999;
   overflow-y: auto;
@@ -244,7 +246,7 @@ table.includecode {
   width: 100%;
   table-layout: fixed;
   background: #f3f4f4;
-  border: 1px solid black;
+  border: .15em solid black;
   border-spacing: 0;
 }
 
@@ -258,7 +260,7 @@ table.includecode thead th a {
 }
 
 table.includecode thead th {
-  border-bottom: 1px solid black;
+  border-bottom: .1em solid black;
   font-weight: normal;
   font-size: .9em;
 }
