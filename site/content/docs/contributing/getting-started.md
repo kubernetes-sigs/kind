@@ -92,21 +92,30 @@ philosphy and direction.
 Issues are tracked on GitHub. Please check [the issue tracker][issues] to see
 if there is any existing discussion or work related to your interests.
 
+In particular, if you're just getting started, you may want to look for issues
+labeled <a href="https://github.com/kubernetes-sigs/kind/labels/good%20first%20issue" class="gh-label" style="background: #7057ff; color: white">good first issue</a> or <a href="https://github.com/kubernetes-sigs/kind/labels/help%20wanted" class="gh-label" style="background: #006b75; color: white">help wanted</a> which are standard labels in the Kubernetes
+project.
+The <a href="https://github.com/kubernetes-sigs/kind/labels/help%20wanted" class="gh-label" style="background: #006b75; color: white">help wanted</a> label marks issues we're actively seeking help with while <a href="https://github.com/kubernetes-sigs/kind/labels/good%20first%20issue" class="gh-label" style="background: #7057ff; color: white">good first issue</a> is additionally applied to a subset of issues we think will be particularly good for newcomers.
+
+If you're interested in working on any of these, leave a comment to let us know!
+
 If you do not see anything, please [file a new issue][file an issue].
 
 > **NOTE**: _Please_ file an enhancement / [feature request issue][fr-issue] to discuss features before filing a PR (ideally even before writing any code), we have a lot to consider with respect to our
 > existing users and future support when accepting any new feature.
+>
 > To streamline the process, please reach out and discuss the concept and design
 > / approach ASAP so the maintainers and community can get involved early.
 
-Please reach out for bugs, feature requests, and other issues!  
+Also -- Please reach out in general for bugs, feature requests, and other issues!  
+
 The maintainers of this project are reachable via:
 
 - [Kubernetes Slack] in the [#kind] channel (most active, along with the community)
 - The issue tracker by [filing an issue][file an issue]
 - The Kubernetes [SIG-Testing][SIG-Testing] [Mailing List][SIG-Testing Mailing List]
 
-Current maintainers are [@BenTheElder] and [@munnerz] - feel free to
+Current maintainers are [@BenTheElder] and [@munnerz] -- feel free to
 reach out directly if you have any questions!
 
 See also: the Kubernetes [community page].
@@ -118,8 +127,8 @@ contributor guides, signed the CLA ... now what?
 
 If you're planning to contribute code changes, you'll want to read the [development guide] next.
 
-If you plan to contribute documentation changes, you'll specifically want to see
-the [documentation section] of the development guide.
+If you're looking to contribute documentation improvements, first: Thank you! 🎉🤗
+You'll specifically want to see the [documentation section] of the development guide.
 
 [git]: https://git-scm.com/
 [hugo]: https://gohugo.io
@@ -143,6 +152,7 @@ the [documentation section] of the development guide.
 [community page]: http://kubernetes.io/community/
 [modules]: https://github.com/golang/go/wiki/Modules
 [SIG-Testing Mailing List]: https://groups.google.com/forum/#!forum/kubernetes-sig-testing
+[CNCF]: https://www.cncf.io/
 [CNCF-cla]: https://git.k8s.io/community/CLA.md
 [fr-issue]: https://github.com/kubernetes-sigs/kind/issues/new?labels=kind%2Ffeature&template=enhancement.md
 [SIG-Testing]: https://github.com/kubernetes/community/blob/master/sig-testing/README.md
