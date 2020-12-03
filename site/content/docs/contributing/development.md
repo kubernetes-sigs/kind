@@ -7,9 +7,9 @@ menu:
     weight: 3
 toc: true
 description: |-
-  🚧  This page is a work-in-progress  🚧
+  🚧  This is a work-in-progress  🚧
 
-  This page is intended to provide an introduction to developing kind. 
+  This page is intended to provide contributors with an introduction to developing the kind project. 
 ---
 
 ## Overview
@@ -75,7 +75,7 @@ Like other targets, these targets automatically manage the correct [`.go-version
 
 ### E2E Testing
 
-Coming soon ...
+🚧 More here coming soon ... 🚧
 
 TLDR: `hack/ci/e2e.sh` will run e2e tests against your local Kubernetes checkout.
 
@@ -101,7 +101,7 @@ Lints include:
 
 Our docs are built with [hugo] just like [kubernetes.io](https://kubernetes.io).
 We provide a makefile for development that uses hugo in docker so you don't need
-to install anything further, just `make -C site serve`.
+to install anything further, just [install docker](#install-docker).
 
 Markdown content is under `site/content/` with a structure mirroring this site.
 
@@ -112,12 +112,15 @@ pull request. A build preview will be created by netlify which you can browse by
 clicking the "details" link next to the `deploy/netlify` status at the bottom of
 your pull request on GitHub.
 
-These are also predictable as `https://deploy-preview-$PR_NUMBER--k8s-kind.netlify.app/`, just replace `$PR_NUMBER` with the nuber of your Pull Request.
+These are also predictable as `https://deploy-preview-$PR_NUMBER--k8s-kind.netlify.app/`, just replace `$PR_NUMBER` with the number of your Pull Request.
+
+For more involved site / documentation development, you can run `make -C site serve` from the kind repo to run a local instance of the documentation, browsable at [http://localhost:1313](http://localhost:1313). As mentioned previously, do this you'll need to [install docker](#install-docker).
 
 This site has a custom hugo theme under `site/layouts` & `site/assets`. It's
 mostly relatively simple but it has a few extra features:
-- The theme layout takes a `description` parameter in page frontmatter
-- We have a few useful but simple shortcodes
+- The theme layout takes a `description` parameter in page [front matter]
+  - This renders the blockquote you see just below the page title, on this page wth the text `This page is intended to provide contributors with an introduction to developing the kind project.`
+- We have a few useful but simple custom shortcodes
 
 ### Shortcodes
 
@@ -164,3 +167,4 @@ GitHub actions are configured in `.github/workflows` in the kind repo.
 [hugo]: https://gohugo.io
 [prow]: https://git.k8s.io/test-infra/
 [GitHub Actions]: https://github.com/features/actions
+[front matter]: https://gohugo.io/content-management/front-matter/
