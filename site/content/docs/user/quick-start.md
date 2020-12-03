@@ -15,9 +15,9 @@ description: |-
 ---
 ## Installation
 
-**NOTE**: `kind` does not require [`kubectl`](https://kubernetes.io/docs/reference/kubectl/overview/),
-but you will not be able to perform some of the examples in our docs without it.
-To install `kubectl` see the upstream reference here https://kubernetes.io/docs/tasks/tools/install-kubectl/
+> **NOTE**: `kind` does not require [`kubectl`](https://kubernetes.io/docs/reference/kubectl/overview/),
+> but you will not be able to perform some of the examples in our docs without it.
+> To install `kubectl` see the upstream reference here https://kubernetes.io/docs/tasks/tools/install-kubectl/
 
 You can either install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.9.0` or clone this repo 
 and run `make build` from the repository.
@@ -28,8 +28,8 @@ Please use the latest Go when installing KIND from source, ideally go 1.14 or gr
 shown [here](https://golang.org/doc/code.html#GOPATH) if you encounter the error
 `kind: command not found` after installation.
 
-**NOTE**: `go get` should not be run from a Go [modules] enabled project directory,
-as go get inside a modules enabled project updates dependencies / behaves differently. Try for example `cd $HOME` first.
+> **NOTE**: `go get` should not be run from a Go [modules] enabled project directory,
+> as go get inside a modules enabled project updates dependencies / behaves differently. Try for example `cd $HOME` first.
 
 Without installing Go, kind can be built reproducibly with docker using `make build`,
 the binary will be in `bin/kind`.
@@ -146,7 +146,7 @@ context name `kind` and delete that cluster.
 Docker images can be loaded into your cluster nodes with:
 `kind load docker-image my-custom-image`
 
-**Note**: If using a named cluster you will need to specify the name of the 
+> **NOTE**: If using a named cluster you will need to specify the name of the 
 cluster you wish to load the image into:
 `kind load docker-image my-custom-image --name kind-2`
 
@@ -160,32 +160,32 @@ kind load docker-image my-custom-image:unique-tag
 kubectl apply -f my-manifest-using-my-image:unique-tag
 ```
 
-**Note**: You can get a list of images present on a cluster node by
+> **NOTE**: You can get a list of images present on a cluster node by
 using `docker exec`:
-```
-docker exec -it my-node-name crictl images
-```
-Where `my-node-name` is the name of the Docker container.
+> ```
+> docker exec -it my-node-name crictl images
+> ```
+> Where `my-node-name` is the name of the Docker container (e.g. `kind-control-plane`).
 
-**Note**: The Kubernetes default pull policy is `IfNotPresent` unless
-the image tag is `:latest` in which case the default policy is `Always`.
+> **NOTE**: The Kubernetes default pull policy is `IfNotPresent` unless
+the image tag is `:latest` or omitted (and implicitly `:latest`) in which case the default policy is `Always`.
 `IfNotPresent` causes the Kubelet to skip pulling an image if it already exists.
-If you want those images loaded into node to work as expected, please:
-
-- don't use a `:latest` tag
-
-and / or:
-
-- specify `imagePullPolicy: IfNotPresent` or `imagePullPolicy: Never` on your container(s).
-
-See [Kubernetes imagePullPolicy][Kubernetes imagePullPolicy] for more information.
+> If you want those images loaded into node to work as expected, please:
+>
+> - don't use a `:latest` tag
+>
+> and / or:
+>
+> - specify `imagePullPolicy: IfNotPresent` or `imagePullPolicy: Never` on your container(s).
+>
+> See [Kubernetes imagePullPolicy][Kubernetes imagePullPolicy] for more information.
 
 
 See also: [Using kind with Private Registries][Private Registries].
 
 ## Building Images
 
-> Note: If you're using Docker Desktop, be sure to read [Settings for Docker Desktop](#settings-for-docker-desktop) first.
+> **NOTE**: If you're using Docker Desktop, be sure to read [Settings for Docker Desktop](#settings-for-docker-desktop) first.
 
 kind runs a local Kubernetes cluster by using Docker containers as "nodes".
 kind uses the [`node-image`][node image] to run Kubernetes artifacts, such
@@ -388,8 +388,8 @@ You can configure kind to use a proxy using one or more of the following [enviro
 * `HTTPS_PROXY` or `https_proxy`
 * `NO_PROXY` or `no_proxy`
 
-**Note**: If you set a proxy it would be used for all the connection requests.
-It's important that you define what addresses don't need to be proxied with the NO_PROXY variable, typically you should avoid to proxy your docker network range `NO_PROXY=172.17.0.0/16`
+> **NOTE**: If you set a proxy it would be passed along to everything in the kind nodes. `kind` will automatically append certain addresses into `NO_PROXY` before passing it to the nodes so that Kubernetes components connect to each other directly, but you may need to configure
+> additional addresses depending on your usage.
 
 ### Exporting Cluster Logs
 kind has the ability to export all kind related logs for you to explore.

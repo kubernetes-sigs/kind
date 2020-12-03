@@ -6,7 +6,7 @@ menu:
     identifier: "base-image"
 ---
 
-**NOTE**: This may not completely cover the current implementation.
+> **NOTE**: This may not completely cover the current implementation.
 
 The ["base" image][base image] is a small-ish Docker image for running
 nested containers, systemd, and kubernetes components.
