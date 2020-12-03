@@ -370,6 +370,21 @@ blockquote p {
   height: 100%;
 }
 
+/* mock github labels */
+.gh-label {
+  /* mimic github */
+  display: inline-block;
+  padding: 0 7px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  border: 1px solid transparent;
+  border-radius: 2em;
+  background: #bfd4f2;
+  /* additional styling to allow using on a tags */
+  text-decoration: none;
+}
+
 /* mobile */
 @media (max-width: 50em) {
   #content {
