@@ -194,8 +194,6 @@ The `node-image` in turn is built off the [`base-image`][base image], which
 installs all the dependencies needed for Docker and Kubernetes to run in a
 container.
 
-See [building the base image](#building-the-base-image) for more advanced information.
-
 Currently, kind supports two different ways to build a `node-image`
 if you have the [Kubernetes][kubernetes] source in your host machine
 (`$GOPATH/src/k8s.io/kubernetes`), by using `docker` or `bazel`.
@@ -209,12 +207,6 @@ kind will default to using the build type `docker` if none is specified.
 ```
 kind build node-image --type bazel
 ```
-
-Similarly as for the base-image command, you can specify the name and tag of
-the resulting node image using the flag `--image`.
-
-If you previously changed the name and tag of the base image, you can use here
-the flag `--base-image` to specify the name and tag you used.
 
 
 ### Settings for Docker Desktop
@@ -247,20 +239,6 @@ You may also try removing any unused data left by the Docker engine - e.g.,
 `docker system prune`.
 
 ## Advanced
-
-### Building The Base Image
-
-To build the `base-image` we use the `make quick` command in `images/base` directory:
-```
-make quick
-```
-
-By default, the base image will be tagged as `kindest/base:$(date +v%Y%m%d)-$(git describe --always --dirty)` format.
-If you want to change this, you can set `TAG` environment variable.
-
-```
-TAG=v0.1.0 make quick
-```
 
 
 ### Configuring Your kind Cluster
@@ -432,7 +410,6 @@ kind, the Kubernetes cluster itself, etc.
 [node image]: /docs/design/node-image
 [base image]: /docs/design/base-image
 [kind-example-config]: https://raw.githubusercontent.com/kubernetes-sigs/kind/master/site/content/docs/user/kind-example-config.yaml
-[pkg/build/base/base.go]: https://github.com/kubernetes-sigs/kind/tree/master/pkg/build/base/base.go
 [kubernetes]: https://github.com/kubernetes/kubernetes
 [kindest/node]: https://hub.docker.com/r/kindest/node/
 [kubectl]: https://kubernetes.io/docs/reference/kubectl/overview/

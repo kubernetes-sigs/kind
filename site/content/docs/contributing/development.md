@@ -33,7 +33,24 @@ Like other targets, this target automatically manages the correct [`.go-version`
 
 ### Building The Base Image
 
-// TODO
+> **NOTE**: Most development should not require changes to the base image, however if your changes do, here's how to build and test it.
+
+To build the "base image" for development use the `make quick` command in `images/base` directory: `make -C images/base quick`
+
+By default, the base image will be tagged as `kindest/base:$(date +v%Y%m%d)-$(git describe --always --dirty)` format.
+If you want to change this, you can set `TAG` environment variable.
+
+`TAG=v0.1.0 make -C images/base quick`
+
+For "production" base images one of the maintainers will run `make -C images/base push` which cross-compiles for all architectures and pushes to the registry.
+
+You generally don't need to cross build during development, and currently the cross
+build *must* be pushed instead of loaded locally, due to limitations in `docker buildx` (TODO: link to upstream issue).
+
+To test out your changes take the image you built with `make quick` and use it
+as the `--base-image` flag when running `kind build node-image` / building node images. You can then create a cluster with this node image (`kind create cluster --image=kindest/node:latest`)
+
+For "Production" base image updates one of the maintainers will bump `DefaultBaseImage` in `pkg/build/nodeimage/defaults.go` to point to the newly pushed image.
 
 ### Building Node Images
 
