@@ -75,11 +75,16 @@ choco install kind
 Creating a Kubernetes cluster is as simple as `kind create cluster`.
 
 This will bootstrap a Kubernetes cluster using a pre-built
-[node image][node image] - you can find it on docker hub
-[`kindest/node`][kindest/node].
-If you desire to build the node image yourself see the
-[building image](#building-images) section.
-To specify another image use the `--image` flag.
+[node image][node image]. Prebuilt images are hosted at[`kindest/node`][kindest/node], but to find images suitable for a given release currently you should check the [release notes] for your given kind version (check with `kind version`) where
+you'll find a complete listing of images created for a kind release. 
+
+To specify another image use the `--image` flag -- `kind create cluster --image=...`.
+
+Using a different image allows you to change the Kubernetes version of the created
+cluster.
+
+If you desire to build the node image yourself with a custom version see the
+[building images](#building-images) section.
 
 By default, the cluster will be given the name `kind`.
 Use the `--name` flag to assign the cluster a different context name.
@@ -88,6 +93,8 @@ If you want the `create cluster` command to block until the control plane
 reaches a ready status, you can use the `--wait` flag and specify a timeout.
 To use `--wait` you must specify the units of the time to wait. For example, to
 wait for 30 seconds, do `--wait 30s`, for 5 minutes do `--wait 5m`, etc.
+
+More usage can be discovered with `kind create cluster --help`.
 
 ## Interacting With Your Cluster
 
@@ -421,3 +428,4 @@ kind, the Kubernetes cluster itself, etc.
 [Private Registries]: /docs/user/private-registries
 [customize control plane with kubeadm]: https://kubernetes.io/docs/setup/independent/control-plane-flags/
 [access multiple clusters]: https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/
+[release notes]: https://github.com/kubernetes-sigs/kind/releases
