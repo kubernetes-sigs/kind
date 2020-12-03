@@ -6,7 +6,7 @@ menu:
     identifier: "known-issues"
     weight: 2
 description: |-
-  Having problems with kind? This guide is covers some known problems and solutions / workarounds.
+  Having problems with kind? This guide covers some known problems and solutions / workarounds.
 
   It may additionally be helpful to:
 

@@ -17,7 +17,7 @@ description: |-
 
 > **NOTE**: `kind` does not require [`kubectl`](https://kubernetes.io/docs/reference/kubectl/overview/),
 > but you will not be able to perform some of the examples in our docs without it.
-> To install `kubectl` see the upstream reference here https://kubernetes.io/docs/tasks/tools/install-kubectl/
+> To install `kubectl` see the upstream [kubectl installation docs](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
 
 You can either install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.9.0` or clone this repo 
 and run `make build` from the repository.
