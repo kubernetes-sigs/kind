@@ -6,7 +6,10 @@ menu:
     identifier: "getting started"
     weight: 1
 toc: true
-description: Welcome! This guide covers how to get started contributing to kind.
+description: |-
+  Welcome! 👋 
+  
+  This guide covers how to start contributing to kind 😄
 ---
 
 ## 1. Familiarize Yourself With Contributing to Kubernetes Projects
