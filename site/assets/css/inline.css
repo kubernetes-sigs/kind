@@ -96,7 +96,7 @@ body {
 }
 #navbar-title>a {
   font-weight: bold;
-  font-size: 20px;
+  font-size: 1.2em;
   padding: 0 4px;
   vertical-align: middle;
 }
@@ -106,7 +106,7 @@ body {
 #sidebar-toggle {
   color: black;
   cursor: pointer;
-  padding: 1px .5em;
+  padding: .1em .5em;
   padding-bottom: 0;
   user-select: none;
 }
