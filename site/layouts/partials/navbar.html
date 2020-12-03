@@ -2,7 +2,7 @@
   <span id="sidebar-toggle" onclick="toggleSidebar()">&#9776;</span><span id="navbar-title"><a href="{{.Site.BaseURL}}">kind</a></span><span id="github"><a href="https://github.com/kubernetes-sigs/kind/"><img alt="github" title="github" src="{{ "third_party/GitHub-Mark-120px-plus.png" | relURL }}"></a></span>
 </div>
 <div id="noticebar" class="docker-blue">
-  <h2>Dockershim <a href="https://github.com/kubernetes/kubernetes/pull/94624">deprecation</a> does NOT impact kind.&nbsp;&nbsp;🐳</h2>
+  <h2>Dockershim <a href="https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.20.md#deprecation">deprecation</a> does NOT impact kind.&nbsp;&nbsp;🐳</h2>
   <p>If you already use kind you've actually been testing your workloads on containerd!</p>
   <p>While kind uses docker or podman on your host, it uses CRI / <a href="https://containerd.io/">containerd</a> "inside" the nodes and does <strong>not</strong> use <a href="https://kubernetes.io/dockershim">dockershim</a>.</p>
   <p>Carry on and be KiND! ❤️</p>
