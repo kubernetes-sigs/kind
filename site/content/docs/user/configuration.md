@@ -6,12 +6,11 @@ menu:
     identifier: "user-configuration"
     weight: 3
 toc: true
+description: |-
+  This guide covers how to configure KIND cluster creation.
+  
+  We know this is currently a bit lacking and will expand it over time - PRs welcome!
 ---
-
-This guide covers how to configure KIND cluster creation.
-
-We know this is currently a bit lacking right now and will expand it over time - PRs welcome!
-
 ## Getting Started
 
 To configure kind cluster creation, you will need to create a [YAML] config file.

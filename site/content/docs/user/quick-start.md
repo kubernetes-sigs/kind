@@ -6,12 +6,13 @@ menu:
     identifier: "user-quick-start"
     weight: 1
 toc: true
+description: |-
+  This guide covers getting started with the `kind` command.
+
+  **If you are having problems please see the [known issues] guide.**
+
+  [known issues]: /docs/user/known-issues
 ---
-
-This guide covers getting started with the `kind` command.
-
-**If you are having problems please see the [known issues] guide.**
-
 ## Installation
 
 **NOTE**: `kind` does not require [`kubectl`](https://kubernetes.io/docs/reference/kubectl/overview/),

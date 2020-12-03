@@ -5,10 +5,10 @@ menu:
     parent: "user"
     identifier: "resources"
     weight: 4
+toc: true
+description: |-
+  This page contains additional resources for learning about KIND and how to use it.
 ---
-
-Here are some additional resources for learning about KIND and how to use it.
-
 ## KubeCon Talks
 
 The authors have given the following talks relating to KIND:

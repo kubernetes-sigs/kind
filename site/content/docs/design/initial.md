@@ -5,16 +5,18 @@ menu:
     parent: "design"
     identifier: "design-initial"
     weight: 2
+description: |-
+  This document covers some of the initial design for `kind`.
+
+  **NOTE**: Some of this is out of date relative to what is currently implemented.
+  This mostly exists for historical purposes, the [the original proposal][original proposal]
+  covers some more details.
+
+  Going forward the [design principles] may be more relevant.
+
+  [original proposal]: https://docs.google.com/document/d/1VL0shYfKl7goy5Zj4Rghpixbye4M8zs_N2gWoQTSKh0/
+  [design principles]: /docs/design/principles
 ---
-
-This document covers some of the initial design for `kind`.
-
-**NOTE**: Some of this is out of date relative to what is currently implemented.
-This mostly exists for historical purposes, the [the original proposal][original proposal]
-covers some more details.
-
-Going forward the [design principles] may be more relevant.
-
 ## Overview
 
 `kind` or **k**ubernetes **in** **d**ocker is a suite of tooling for local 

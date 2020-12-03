@@ -5,12 +5,15 @@ menu:
     parent: "contributing"
     identifier: "project-scope"
     weight: 2
+toc: true
+description: |-
+  This document outlines some scoping and major priorities for kind.
+
+  See also: the [1.0 roadmap], and the [1.0 tracking milestone].
+
+  [1.0 roadmap]: /docs/contributing/1.0-roadmap
+  [1.0 tracking milestone]: https://github.com/kubernetes-sigs/kind/milestone/2
 ---
-
-This document outlines some scoping and major priorities for kind.
-
-See also: the [1.0 roadmap], and the [1.0 tracking milestone].
-
 ## Priorities (from greatest to least)
 
 ### P-1: Bootstrapping the kind Project Itself
@@ -103,7 +106,7 @@ Possibly supporting various things that we cannot reasonably test today includin
 
 Several of these make sense but are not possible with the current tooling and will require a reasonable amount of design and thought to do well. Some of them may not be solve-able in a good way, but are at least technologically feasible to explore.
 
-### Out of Scope
+## Out of Scope
 ---
 
 Some things we can likely never cover in a reasonable way:

@@ -5,12 +5,12 @@ menu:
     parent: "user"
     identifier: "user-local-registry"
     weight: 3
+description: |-
+  This guide covers how to configure KIND with a local container image registry.
+
+  In the future this will be replaced by [a built-in feature](https://github.com/kubernetes-sigs/kind/issues/1213), and this guide will
+  cover usage instead.
 ---
-
-With kind v0.6.0 there is a new config feature `containerdConfigPatches` that can
-be leveraged to configure insecure registries.
-The following recipe leverages this to enable a local registry.
-
 ## Create A Cluster And Registry
 
 The following shell script will create a local docker registry and a kind cluster

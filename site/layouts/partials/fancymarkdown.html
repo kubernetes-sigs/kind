@@ -2,9 +2,13 @@
 <h1>{{ .Params.title }}</h1>
 
 {{ end }}
+{{ if .Params.description }}
+<blockquote class="page-description">{{ .Params.description | markdownify }}</blockquote>
+{{end}}
 {{ if .Params.toc }}
+<h2 id="contents">Contents<a href="#contents" class="hanchor" arialabel="Anchor"> 🔗︎</a></h2>
 <aside>
-    {{.TableOfContents}}
+{{.TableOfContents}}
 </aside>
 
 {{ end }}

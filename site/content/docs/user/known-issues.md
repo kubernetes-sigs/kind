@@ -5,15 +5,22 @@ menu:
     parent: "user"
     identifier: "known-issues"
     weight: 2
+description: |-
+  Having problems with kind? This guide is covers some known problems and solutions / workarounds.
+
+  It may additionally be helpful to:
+
+  - check our [issue tracker]
+  - [file an issue][file an issue] (if there isn't one already)
+  - reach out and ask for help in [#kind] on the [kubernetes slack]
+
+  [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
+  [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new
+  [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
+  [kubernetes slack]: http://slack.k8s.io/
 ---
 
-Having problems with kind? This guide is covers some known problems and solutions / workarounds.
 
-It may additionally be helpful to:
-
-- check our [issue tracker]
-- [file an issue][file an issue] (if there isn't one already)
-- reach out and ask for help in [#kind] on the [kubernetes slack]
 
 ## Contents
 * [Kubectl Version Skew](#kubectl-version-skew) (Kubernetes limits supported version skew)
