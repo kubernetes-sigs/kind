@@ -123,17 +123,17 @@ mostly relatively simple but it has a few extra features:
 
 [Shortcodes](https://gohugo.io/content-management/shortcodes/) are a hugo feature, the kind docs use the following custom shortcodes:
 
-1. `absUrl` - When you need an absolute URL e.g. for `kubectl apply -f $URL`, this
+1. `absUrl` -- When you need an absolute URL e.g. for `kubectl apply -f $URL`, this
 shortcode converts an input URL to absolute. Usage: `{{</* absURL absURL */>}}`
 
-1. `securitygoose` - This is a special shortcode for fun security notices. It wraps
+1. `securitygoose` -- This is a special shortcode for fun security notices. It wraps
 inner markdown content. Usage: `{{</* securitygoose */>}} Notice markdown content here {{</*/ securitygoose */>}}`
 
-1. `codeFromFile` - Creates a nice codeblock with a copy button from a file. Usage: `{{</* codeFromFile file="static/examples/config-with-mounts.yaml" lang="yaml" */>}}`
+1. `codeFromFile` -- Creates a nice codeblock with a copy button from a file. Usage: `{{</* codeFromFile file="static/examples/config-with-mounts.yaml" lang="yaml" */>}}`
 
-1. `codeFromInline` - Creates a nice codeblock with a copy button from an inline code snippet. Usage: `{{</* codeFromInline lang="go" */>}} func main() {{</*/ codeFromInline */>}}`
+1. `codeFromInline` -- Creates a nice codeblock with a copy button from an inline code snippet. Usage: `{{</* codeFromInline lang="go" */>}} func main() {{</*/ codeFromInline */>}}`
 
-1. `readFile` is used to inline file contents. Usage: `{{%/* readFile "static/examples/ingress/contour/patch.json" */%}}`
+1. `readFile` -- is used to inline file contents. Usage: `{{%/* readFile "static/examples/ingress/contour/patch.json" */%}}`
 
 
 ## CI
