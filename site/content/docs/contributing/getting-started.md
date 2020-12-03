@@ -8,7 +8,7 @@ menu:
 toc: true
 description: |-
   Welcome! 👋 
-  
+
   This guide covers how to start contributing to kind 😄
 ---
 
@@ -83,7 +83,7 @@ You can check if Go is in your system with the following command:
 
 ## 3. Read The Docs 
 
-The [design principles], [1.0 roadmap], [project structure], and [initial design]
+The [design principles], [1.0 roadmap], and [initial design]
 may be helpful to review before contributing. These docs cover some of the project
 philosphy and direction.
 
@@ -111,6 +111,16 @@ reach out directly if you have any questions!
 
 See also: the Kubernetes [community page].
 
+## 5. Next Steps
+
+Okay, so you've gotten your development environment setup, you've read all the
+contributor guides, signed the CLA ... now what?
+
+If you're planning to contribute code changes, you'll want to read the [development guide] next.
+
+If you plan to contribute documentation changes, you'll specifically want to see
+the [documentation section] of the development guide.
+
 [git]: https://git-scm.com/
 [hugo]: https://gohugo.io
 [issues]: https://github.com/kubernetes-sigs/kind/issues
@@ -137,3 +147,5 @@ See also: the Kubernetes [community page].
 [fr-issue]: https://github.com/kubernetes-sigs/kind/issues/new?labels=kind%2Ffeature&template=enhancement.md
 [SIG-Testing]: https://github.com/kubernetes/community/blob/master/sig-testing/README.md
 [go-version]: https://sigs.k8s.io/kind/.go-version
+[development guide]: /docs/contributing/development
+[documentation section]: /docs/contributing/development#documentation
