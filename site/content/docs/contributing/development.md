@@ -54,7 +54,7 @@ For "Production" base image updates one of the maintainers will bump `DefaultBas
 
 ### Building Node Images
 
-// TODO: See quick-start
+See: ["building images"](/user/quick-start/#building-images) in the user [quick start].
 
 ## Updating Generated Code
 
@@ -99,13 +99,27 @@ Lints include:
 
 ## Documentation
 
-// TODO
+Our docs are built with [hugo] just like [kubernetes.io](https://kubernetes.io).
+We provide a makefile for development that uses hugo in docker so you don't need
+to install anything further, just `make -C site serve`.
 
-TLDR:
-- basically you can run a development instance locally with `make -C site serve`.
-- the site is built with hugo, the makefile only requires `docker` though
-- we have a custom template under `site/layouts` & `site/assets`
-- our custom theme has a few useful but simple shortcodes
+Markdown content is under `site/content/` with a structure mirroring this site.
+
+Static files are under `site/static` (e.g. images are under `site/static/images/`).
+
+For simple content changes you can also just edit the markdown sources and send a
+pull request. A build preview will be created by netlify which you can browse by
+clicking the "details" link next to the `deploy/netlify` status at the bottom of
+your pull request on GitHub.
+
+These are also predictable as `https://deploy-preview-$PR_NUMBER--k8s-kind.netlify.app/`, just replace `$PR_NUMBER` with the nuber of your Pull Request.
+
+This site has a custom hugo theme under `site/layouts` & `site/assets`. It's
+mostly relatively simple but it has a few extra features:
+- The theme layout takes a `description` parameter in page frontmatter
+- We have a few useful but simple shortcodes
+  - // TODO: document these
+
 
 ## CI
 
@@ -120,3 +134,5 @@ TLDR:
 [shellcheck]: https://shellcheck.net
 [golangci-lint]: https://github.com/golangci/golangci-lint
 [go-version]: https://sigs.k8s.io/kind/.go-version
+[quick start]: docs/user/quick-start/
+[hugo]: https://gohugo.io
