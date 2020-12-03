@@ -269,11 +269,12 @@ table.includecode thead th {
 
 table.includecode thead th button {
   background: #326be5;
-  border: 1px solid white;
+  border: .25em solid white;
   color: white;
   font-weight: bold;
   margin: .25em;
   cursor: pointer;
+  padding: .1em .5em;
 }
 
 table.includecode pre {
