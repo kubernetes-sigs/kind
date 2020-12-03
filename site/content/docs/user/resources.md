@@ -7,8 +7,37 @@ menu:
     weight: 4
 toc: true
 description: |-
-  This page contains additional resources for learning about KIND and how to use it.
+  This page contains references to additional external resources for learning about KIND and how to use it.
 ---
+## Using KIND in CI
+
+The [kind-ci/examples] project is a work-in-progress project to give working
+examples of using KIND in various continuous integration environments / platforms.
+
+## Tutorials and Guides
+
+Here are a useful external guides / tutorials covering things not yet covered in our docs:
+
+<!--please do not insert every single guide on the internet here-->
+<!--ideally many of these guides will eventually have upstream equivalents on this site-->
+<!--in the meantime, content that is not covered upstream in particular can be very helpful here-->
+
+### How to use KIND with MetallLB
+
+https://mauilion.dev/posts/kind-metallb/
+
+### How to Test a Kubernetes PR with KIND
+
+https://mauilion.dev/posts/kind-k8s-testing/
+
+### Using Contour Ingress with KIND
+
+https://projectcontour.io/kindly-running-contour/
+
+### Local Ingress Domains for your Kind Cluster
+
+https://mjpitz.com/blog/2020/10/21/local-ingress-domains-kind/
+
 ## KubeCon Talks
 
 The authors have given the following talks relating to KIND:
@@ -45,34 +74,6 @@ it on Kubernetes's Kubernetes-based CI infrastructure.
 
 {{< youtube id="pz0lpl6h-Gc" class="video-wrapper" >}}
 
-## Using KIND in CI
-
-The [kind-ci/examples] project is a work-in-progress project to give working
-examples of using KIND in various continuous integration environments / platforms.
-
-## Tutorials and Guides
-
-Here are a useful external guides / tutorials covering things not yet covered in our docs:
-
-<!--please do not insert every single guide on the internet here-->
-<!--ideally many of these guides will eventually have upstream equivalents on this site-->
-<!--in the meantime, content that is not covered upstream in particular can be very helpful here-->
-
-### How to use KIND with MetallLB
-
-https://mauilion.dev/posts/kind-metallb/
-
-### How to Test a Kubernetes PR with KIND
-
-https://mauilion.dev/posts/kind-k8s-testing/
-
-### Using Contour Ingress with KIND
-
-https://projectcontour.io/kindly-running-contour/
-
-### Local Ingress Domains for your Kind Cluster
-
-https://mjpitz.com/blog/2020/10/21/local-ingress-domains-kind/
 
 [@krzyzacy]: https://github.com/krzyzacy
 [kind-ci/examples]: https://github.com/kind-ci/examples
