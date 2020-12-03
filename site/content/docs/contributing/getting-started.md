@@ -152,6 +152,7 @@ You'll specifically want to see the [documentation section] of the development g
 [community page]: http://kubernetes.io/community/
 [modules]: https://github.com/golang/go/wiki/Modules
 [SIG-Testing Mailing List]: https://groups.google.com/forum/#!forum/kubernetes-sig-testing
+[CNCF]: https://www.cncf.io/
 [CNCF-cla]: https://git.k8s.io/community/CLA.md
 [fr-issue]: https://github.com/kubernetes-sigs/kind/issues/new?labels=kind%2Ffeature&template=enhancement.md
 [SIG-Testing]: https://github.com/kubernetes/community/blob/master/sig-testing/README.md
