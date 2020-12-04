@@ -54,7 +54,7 @@ For "Production" base image updates one of the maintainers will bump `DefaultBas
 
 ### Building Node Images
 
-See: ["building images"](/user/quick-start/#building-images) in the user [quick start].
+See: ["building images"](/docs/user/quick-start/#building-images) in the user [quick start].
 
 ## Updating Generated Code
 
@@ -163,7 +163,7 @@ GitHub actions are configured in `.github/workflows` in the kind repo.
 [shellcheck]: https://shellcheck.net
 [golangci-lint]: https://github.com/golangci/golangci-lint
 [go-version]: https://sigs.k8s.io/kind/.go-version
-[quick start]: docs/user/quick-start/
+[quick start]: /docs/user/quick-start/
 [hugo]: https://gohugo.io
 [prow]: https://git.k8s.io/test-infra/
 [GitHub Actions]: https://github.com/features/actions
