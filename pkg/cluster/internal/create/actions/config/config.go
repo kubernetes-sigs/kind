@@ -20,6 +20,7 @@ package config
 import (
 	"bytes"
 	"fmt"
+	"net"
 	"strings"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
@@ -60,8 +61,9 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	// create kubeadm init config
 	fns := []func() error{}
 
+	provider := fmt.Sprintf("%s", ctx.Provider)
 	configData := kubeadm.ConfigData{
-		NodeProvider:         fmt.Sprintf("%s", ctx.Provider),
+		NodeProvider:         provider,
 		ClusterName:          ctx.Config.Name,
 		ControlPlaneEndpoint: controlPlaneEndpoint,
 		APIBindPort:          common.APIServerInternalPort,
@@ -79,7 +81,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	kubeadmConfigPlusPatches := func(node nodes.Node, data kubeadm.ConfigData) func() error {
 		return func() error {
 			data.NodeName = node.String()
-			kubeadmConfig, err := getKubeadmConfig(ctx.Config, data, node)
+			kubeadmConfig, err := getKubeadmConfig(ctx.Config, data, node, provider)
 			if err != nil {
 				// TODO(bentheelder): logging here
 				return errors.Wrap(err, "failed to generate kubeadm config content")
@@ -166,7 +168,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 
 // getKubeadmConfig generates the kubeadm config contents for the cluster
 // by running data through the template and applying patches as needed.
-func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.Node) (path string, err error) {
+func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.Node, provider string) (path string, err error) {
 	kubeVersion, err := nodeutils.KubeVersion(node)
 	if err != nil {
 		// TODO(bentheelder): logging here
@@ -200,8 +202,8 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.N
 	data.NodeAddress = nodeAddress
 	// configure the right protocol addresses
 	if cfg.Networking.IPFamily == "ipv6" {
-		if nodeAddressIPv6 == "" {
-			return "", errors.Errorf("failed to get IPV6 address; is the container provider (docker,podman) configured to use IPV6 correctly?")
+		if ip := net.ParseIP(nodeAddressIPv6); ip.To16() == nil {
+			return "", errors.Errorf("failed to get IPv6 address for node %s; is %s configured to use IPv6 correctly?", node.String(), provider)
 		}
 		data.NodeAddress = nodeAddressIPv6
 	}
