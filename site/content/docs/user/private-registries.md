@@ -87,3 +87,26 @@ See Google's [upstream docs][keyFileAuthentication] on key file authentication f
 [loading an image]: /docs/user/quick-start/#loading-an-image-into-your-cluster
 [using a private registry]: https://kubernetes.io/docs/concepts/containers/images/#using-a-private-registry
 [GCR]: https://cloud.google.com/container-registry/
+
+#### Use a Certificate
+
+If you have a registry authenticated with certificates, and both certificates and keys
+reside on your host folder, it is possible to mount and use them into the `containerd` plugin
+patching the default configuration, like in the example:
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    # This option mounts the host docker registry folder into
+    # the control-plane node, allowing containerd to access them. 
+    extraMounts:
+      - containerPath: /etc/docker/certs.d/registry.dev.example.com
+        hostPath: /etc/docker/certs.d/registry.dev.example.com
+containerdConfigPatches:
+  - |-
+    [plugins."io.containerd.grpc.v1.cri".registry.configs."registry.dev.example.com".tls]
+      cert_file = "/etc/docker/certs.d/registry.dev.example.com/ba_client.cert"
+      key_file  = "/etc/docker/certs.d/registry.dev.example.com/ba_client.key"
+{{< /codeFromInline >}}
