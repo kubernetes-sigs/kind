@@ -19,7 +19,6 @@ package create
 import (
 	"fmt"
 	"math/rand"
-	"regexp"
 	"time"
 
 	"github.com/alessio/shellescape"
@@ -49,12 +48,6 @@ const (
 	clusterNameMax = 50
 )
 
-// similar to valid docker container names, but since we will prefix
-// and suffix this name, we can relax it a little
-// see NewContext() for usage
-// https://godoc.org/github.com/docker/docker/daemon/names#pkg-constants
-var validNameRE = regexp.MustCompile(`^[a-z0-9_.-]+$`)
-
 // ClusterOptions holds cluster creation options
 type ClusterOptions struct {
 	Config       *config.Cluster
@@ -83,14 +76,6 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 		return err
 	}
 
-	// TODO: move to config validation
-	// validate the name
-	if !validNameRE.MatchString(opts.Config.Name) {
-		return errors.Errorf(
-			"'%s' is not a valid cluster name, cluster names must match `%s`",
-			opts.Config.Name, validNameRE.String(),
-		)
-	}
 	// warn if cluster name might typically be too long
 	if len(opts.Config.Name) > clusterNameMax {
 		logger.Warnf("cluster name %q is probably too long, this might not work properly on some systems", opts.Config.Name)

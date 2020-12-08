@@ -18,14 +18,27 @@ package config
 
 import (
 	"net"
+	"regexp"
 
 	"sigs.k8s.io/kind/pkg/errors"
 )
+
+// similar to valid docker container names, but since we will prefix
+// and suffix this name, we can relax it a little
+// see NewContext() for usage
+// https://godoc.org/github.com/docker/docker/daemon/names#pkg-constants
+var validNameRE = regexp.MustCompile(`^[a-z0-9_.-]+$`)
 
 // Validate returns a ConfigErrors with an entry for each problem
 // with the config, or nil if there are none
 func (c *Cluster) Validate() error {
 	errs := []error{}
+
+	// validate the name
+	if !validNameRE.MatchString(c.Name) {
+		errs = append(errs, errors.Errorf("'%s' is not a valid cluster name, cluster names must match `%s`",
+			c.Name, validNameRE.String()))
+	}
 
 	// the api server port only needs checking if we aren't picking a random one
 	// at runtime
