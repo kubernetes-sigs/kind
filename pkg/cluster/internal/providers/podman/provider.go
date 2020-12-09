@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/version"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
@@ -79,13 +80,24 @@ func (p *provider) Provision(status *cli.Status, cfg *config.Cluster) (err error
 		return err
 	}
 
+	// ensure the pre-requesite network exists
+	networkName := fixedNetworkName
+	if n := os.Getenv("KIND_EXPERIMENTAL_PODMAN_NETWORK"); n != "" {
+		p.logger.Warn("WARNING: Overriding podman network due to KIND_EXPERIMENTAL_PODMAN_NETWORK")
+		p.logger.Warn("WARNING: Here be dragons! This is not supported currently.")
+		networkName = n
+	}
+	if err := ensureNetwork(networkName); err != nil {
+		return errors.Wrap(err, "failed to ensure podman network")
+	}
+
 	// actually provision the cluster
 	icons := strings.Repeat("📦 ", len(cfg.Nodes))
 	status.Start(fmt.Sprintf("Preparing nodes %s", icons))
 	defer func() { status.End(err == nil) }()
 
 	// plan creating the containers
-	createContainerFuncs, err := planCreation(cfg)
+	createContainerFuncs, err := planCreation(cfg, networkName)
 	if err != nil {
 		return err
 	}
@@ -174,13 +186,79 @@ func (p *provider) GetAPIServerEndpoint(cluster string) (string, error) {
 		return "", errors.Wrap(err, "failed to get api server endpoint")
 	}
 
-	// retrieve the specific port mapping using podman inspect
+	// TODO: get rid of this once podman settles on how to get the port mapping using podman inspect
+	// This is only used to get the Kubeconfig server field
+	v, err := getPodmanVersion()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to check podman version")
+	}
+	if v.LessThan(version.MustParseSemantic("2.2.0")) {
+		cmd := exec.Command(
+			"podman", "inspect",
+			"--format",
+			"{{ json .NetworkSettings.Ports }}",
+			n.String(),
+		)
+		lines, err := exec.OutputLines(cmd)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to get api server port")
+		}
+		if len(lines) != 1 {
+			return "", errors.Errorf("network details should only be one line, got %d lines", len(lines))
+		}
+
+		// portMapping19 maps to the standard CNI portmapping capability used in podman 1.9
+		// see: https://github.com/containernetworking/cni/blob/spec-v0.4.0/CONVENTIONS.md
+		type portMapping19 struct {
+			HostPort      int32  `json:"hostPort"`
+			ContainerPort int32  `json:"containerPort"`
+			Protocol      string `json:"protocol"`
+			HostIP        string `json:"hostIP"`
+		}
+		// portMapping20 maps to the podman 2.0 portmap type
+		// see: https://github.com/containers/podman/blob/05988fc74fc25f2ad2256d6e011dfb7ad0b9a4eb/libpod/define/container_inspect.go#L134-L143
+		type portMapping20 struct {
+			HostPort string `json:"HostPort"`
+			HostIP   string `json:"HostIp"`
+		}
+
+		portMappings20 := make(map[string][]portMapping20)
+		if err := json.Unmarshal([]byte(lines[0]), &portMappings20); err == nil {
+			for k, v := range portMappings20 {
+				protocol := "tcp"
+				parts := strings.Split(k, "/")
+				if len(parts) == 2 {
+					protocol = strings.ToLower(parts[1])
+				}
+				containerPort, err := strconv.Atoi(parts[0])
+				if err != nil {
+					return "", err
+				}
+				for _, pm := range v {
+					if containerPort == common.APIServerInternalPort && protocol == "tcp" {
+						return net.JoinHostPort(pm.HostIP, pm.HostPort), nil
+					}
+				}
+			}
+		}
+		var portMappings19 []portMapping19
+		if err := json.Unmarshal([]byte(lines[0]), &portMappings19); err != nil {
+			return "", errors.Errorf("invalid network details: %v", err)
+		}
+		for _, pm := range portMappings19 {
+			if pm.ContainerPort == common.APIServerInternalPort && pm.Protocol == "tcp" {
+				return net.JoinHostPort(pm.HostIP, strconv.Itoa(int(pm.HostPort))), nil
+			}
+		}
+	}
+	// TODO: hack until https://github.com/containers/podman/issues/8444 is resolved
 	cmd := exec.Command(
 		"podman", "inspect",
 		"--format",
-		"{{ json .NetworkSettings.Ports }}",
+		"{{range .NetworkSettings.Ports }}{{range .}}{{.HostIP}}/{{.HostPort}}{{end}}{{end}}",
 		n.String(),
 	)
+
 	lines, err := exec.OutputLines(cmd)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get api server port")
@@ -188,52 +266,18 @@ func (p *provider) GetAPIServerEndpoint(cluster string) (string, error) {
 	if len(lines) != 1 {
 		return "", errors.Errorf("network details should only be one line, got %d lines", len(lines))
 	}
-
-	// portMapping19 maps to the standard CNI portmapping capability used in podman 1.9
-	// see: https://github.com/containernetworking/cni/blob/spec-v0.4.0/CONVENTIONS.md
-	type portMapping19 struct {
-		HostPort      int32  `json:"hostPort"`
-		ContainerPort int32  `json:"containerPort"`
-		Protocol      string `json:"protocol"`
-		HostIP        string `json:"hostIP"`
+	// output is in the format IP/Port
+	parts := strings.Split(strings.TrimSpace(lines[0]), "/")
+	if len(parts) != 2 {
+		return "", errors.Errorf("network details should be in the format IP/Port, received: %s", parts)
 	}
-	// portMapping20 maps to the podman 2.0 portmap type
-	// see: https://github.com/containers/podman/blob/05988fc74fc25f2ad2256d6e011dfb7ad0b9a4eb/libpod/define/container_inspect.go#L134-L143
-	type portMapping20 struct {
-		HostPort string `json:"HostPort"`
-		HostIP   string `json:"HostIp"`
+	host := parts[0]
+	port, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return "", errors.Errorf("network port not an integer: %v", err)
 	}
 
-	portMappings20 := make(map[string][]portMapping20)
-	if err := json.Unmarshal([]byte(lines[0]), &portMappings20); err == nil {
-		for k, v := range portMappings20 {
-			protocol := "tcp"
-			parts := strings.Split(k, "/")
-			if len(parts) == 2 {
-				protocol = strings.ToLower(parts[1])
-			}
-			containerPort, err := strconv.Atoi(parts[0])
-			if err != nil {
-				return "", err
-			}
-			for _, pm := range v {
-				if containerPort == common.APIServerInternalPort && protocol == "tcp" {
-					return net.JoinHostPort(pm.HostIP, pm.HostPort), nil
-				}
-			}
-		}
-	}
-	var portMappings19 []portMapping19
-	if err := json.Unmarshal([]byte(lines[0]), &portMappings19); err != nil {
-		return "", errors.Errorf("invalid network details: %v", err)
-	}
-	for _, pm := range portMappings19 {
-		if pm.ContainerPort == common.APIServerInternalPort && pm.Protocol == "tcp" {
-			return net.JoinHostPort(pm.HostIP, strconv.Itoa(int(pm.HostPort))), nil
-		}
-	}
-
-	return "", errors.Errorf("unable to find apiserver endpoint information")
+	return net.JoinHostPort(host, strconv.Itoa(port)), nil
 }
 
 // GetAPIServerInternalEndpoint is part of the providers.Provider interface
@@ -247,14 +291,8 @@ func (p *provider) GetAPIServerInternalEndpoint(cluster string) (string, error) 
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get apiserver endpoint")
 	}
-	// TODO: check cluster IP family and return the correct IP
-	// This means IPv6 singlestack is broken on podman
-	ipv4, _, err := n.IP()
-	if err != nil {
-		return "", errors.Wrap(err, "failed to get apiserver IP")
-	}
-	return net.JoinHostPort(ipv4, fmt.Sprintf("%d", common.APIServerInternalPort)), nil
-
+	// NOTE: we're using the nodes's hostnames which are their names
+	return net.JoinHostPort(n.String(), fmt.Sprintf("%d", common.APIServerInternalPort)), nil
 }
 
 // node returns a new node handle for this provider

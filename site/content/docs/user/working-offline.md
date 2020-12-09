@@ -5,14 +5,13 @@ menu:
     parent: "user"
     identifier: "working-offline"
     weight: 3
+description: |-
+  This guide covers how to work with KIND in an offline / airgapped environment.
+
+  You you should first [install kind][installation documentation] before continuing.
+
+  [installation documentation]: https://kind.sigs.k8s.io/docs/user/quick-start#installation
 ---
-
-Some users may work in an offline environment,
-let's talk about how to create a cluster using kind in this environment.
-
-You can first prepare the necessary environment according to the [installation documentation][installation documentation].
-
-
 ## Using a pre-built [node image][node image]
 
 KIND provides some pre-built images,
@@ -95,8 +94,7 @@ Please note that during the image building process, you need to download many de
 It is recommended that you build at least once online to ensure that these dependencies are downloaded to your local.
 See [building the node image][building the node image] for more detail.
 
-The node-image in turn is built off the [base image][base image],
-See [building the base image][building the base image] for more advanced information.
+The node-image in turn is built off the [base image][base image].
 
 ### Prepare Kubernetes source code
 
@@ -174,5 +172,4 @@ You can find the specific tag currently in use at [loadbalancer source code][loa
 [docker tag]: https://docs.docker.com/engine/reference/commandline/tag/
 [base image]: https://kind.sigs.k8s.io/docs/design/base-image/
 [building the node image]: https://kind.sigs.k8s.io/docs/user/quick-start/#building-images
-[building the base image]: https://kind.sigs.k8s.io/docs/user/quick-start/#building-the-base-image
 [loadbalancer source code]: https://github.com/kubernetes-sigs/kind/blob/master/pkg/cluster/internal/loadbalancer/const.go#L20

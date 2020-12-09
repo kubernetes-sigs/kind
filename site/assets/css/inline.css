@@ -46,11 +46,28 @@ body {
   margin-left: 0;
 }
 
-#content, .footer {
+#content, #footer-content {
   margin: 0 auto;
   padding: 0 1em;
   width: calc(100% - 2em);
-  max-width: 50em;
+  max-width: 40em;
+}
+
+#footer {
+  background: #44a2f1;
+  color: white;
+  padding: 1em;
+  margin-top: 1em;
+  border-top: .1em solid rgba(0, 0, 0, 0.1);
+}
+#footer a {
+  color: white;
+}
+/* page footer*/
+.footer { text-align: center; }
+.footer>* {
+  font-size: .8em;
+  line-height: 1.4;
 }
 
 #content {
@@ -65,10 +82,10 @@ body {
   top: 0;
   width: calc(100% - 240px);
   padding: 2px 0;
-  margin-left: 1px;
+  margin-left: .1em;
   /*background-color: #326ce5;*/
   background-color: white;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: .1em solid rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
   z-index: 99999;
@@ -79,7 +96,7 @@ body {
 }
 #navbar-title>a {
   font-weight: bold;
-  font-size: 20px;
+  font-size: 1.2em;
   padding: 0 4px;
   vertical-align: middle;
 }
@@ -89,7 +106,7 @@ body {
 #sidebar-toggle {
   color: black;
   cursor: pointer;
-  padding: 1px .5em;
+  padding: .1em .5em;
   padding-bottom: 0;
   user-select: none;
 }
@@ -101,31 +118,46 @@ body {
 }
 
 #noticebar{
-  padding: 2em;
+  padding: 1.5em;
+  padding-top: 2em;
+  padding-bottom: 1em;
+  margin-bottom: -1.5em;
+  border-bottom: .1em solid rgba(0, 0, 0, 0.1);
 }
 #noticebar>* {
-  max-width: 50em;
+  max-width: 46rem;
   margin-left: auto;
   margin-right: auto;
   margin-block-end: 0;
-  margin-block-start: 0;
+  margin-block-start: 0.25em;
 }
 
 #noticebar.black {
   color: white;
   background: black;
 }
-#noticebar.black a {
-  color: white;
-}
 #navbar.black {
   color: white;
   background: black;
 }
-#navbar.black>#sidebar-toggle {
+#noticebar.docker-blue {
+  background: #44a2f1;
   color: white;
 }
-#navbar.black>#github {
+#navbar.docker-blue {
+  background: #44a2f1;
+  color: white;
+}
+/* invert colors on different background */
+.black a, .docker-blue a {
+  color: white;
+}
+#navbar.black>#sidebar-toggle,
+#navbar.docker-blue>#sidebar-toggle {
+  color: white;
+}
+#navbar.black>#github,
+#navbar.docker-blue>#github {
   filter: invert(1);
 }
 
@@ -135,7 +167,7 @@ body {
   display: flex;
   flex-direction: column;
   width: 240px;
-  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  border-right: .1em solid rgba(0, 0, 0, 0.1);
   background-color: #fafafa;
   z-index: 99999;
   overflow-y: auto;
@@ -168,6 +200,14 @@ body {
 
 /* consistent link color */
 a { color: #326be5; }
+
+p {
+  margin-block-start: .5em;
+}
+h1, h2, h3, h4, h5 {
+  margin-block-start: 1rem;
+  margin-block-end: .25rem;
+}
 
 /* ensure images don't go off the page */
 #content img { max-width: 100%; }
@@ -206,7 +246,7 @@ table.includecode {
   width: 100%;
   table-layout: fixed;
   background: #f3f4f4;
-  border: 1px solid black;
+  border: .15em solid black;
   border-spacing: 0;
 }
 
@@ -220,7 +260,7 @@ table.includecode thead th a {
 }
 
 table.includecode thead th {
-  border-bottom: 1px solid black;
+  border-bottom: .1em solid black;
   font-weight: normal;
   font-size: .9em;
 }
@@ -231,11 +271,12 @@ table.includecode thead th {
 
 table.includecode thead th button {
   background: #326be5;
-  border: 1px solid white;
+  border: .25em solid white;
   color: white;
   font-weight: bold;
   margin: .25em;
   cursor: pointer;
+  padding: .1em .5em;
 }
 
 table.includecode pre {
@@ -252,13 +293,6 @@ table.includecode pre {
  left: 0;
 }
 
-/* page footer*/
-.footer { text-align: center; }
-.footer>* {
-  font-size: .6em;
-  line-height: 1;
-}
-
 /* heading anchors */
 .hanchor {
   font-size: 100%;
@@ -271,17 +305,54 @@ h1:hover a, h2:hover a, h3:hover a, h4:hover a {
   visibility: visible;
 }
 
+#content #TableOfContents ul {
+  margin-block-start: 0;
+  margin-block-end: 0;
+}
 #content ul {
   padding-left: 1.75em;
+  margin-block-start: .5em;
+  margin-block-end: .5em;
 }
 #content ul ul {
   padding-left: 1em;
+  margin-block-start: 0;
 }
 #sidebar ul {
   margin-bottom: 1em;
 }
 #sidebar ul ul {
   padding-left: 1.25em;
+}
+
+.page-description {
+  border-left-color: black;
+  background: #3b4d56;
+  color: white;
+  font-size: 1.2em;
+  line-height: 1.4em;
+  margin-block-start: 0;
+  margin-block-end: 0;
+}
+.page-description a {
+  color: #0bd8ec;
+}
+.page-description code {
+  color: black;
+}
+
+blockquote {
+  border-left: .5rem solid #326ce4;
+  background: #c9e6ff;
+  color: black;
+  padding: 1em 1.5em;
+  margin-inline-start: 0;
+  margin-inline-end: 0;
+}
+
+blockquote p {
+  margin-block-start: 0.75em;
+  margin-block-end: 0.75em;
 }
 
 /* style video embeds to be full-width in content */
@@ -297,6 +368,21 @@ h1:hover a, h2:hover a, h3:hover a, h4:hover a {
   left: 0;
   width: 100%;
   height: 100%;
+}
+
+/* mock github labels */
+.gh-label {
+  /* mimic github */
+  display: inline-block;
+  padding: 0 7px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  border: 1px solid transparent;
+  border-radius: 2em;
+  background: #bfd4f2;
+  /* additional styling to allow using on a tags */
+  text-decoration: none;
 }
 
 /* mobile */

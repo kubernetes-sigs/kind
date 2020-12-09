@@ -62,6 +62,30 @@ fix_mount() {
   mount --make-rshared /
 }
 
+mount_kubelet_cgroup_root() {
+  cgroup_root=$1
+  subsystem=$2
+
+  if [ -n "${cgroup_root}" ]; then
+    # This is because we set Kubelet's cgroup-root to `/kubelet` by
+    # default. We have to do that because otherwise, it'll collide
+    # with the cgroups used by the Kubelet running on the host if we
+    # run kind cluster within a Kubernetes pod, resulting in random
+    # processes to be killed.
+    mkdir -p "${subsystem}/${cgroup_root}"
+    if [ "${subsystem}" == "/sys/fs/cgroup/cpuset" ]; then
+      # This is needed. Otherwise, assigning process to the cgroup
+      # (or any nested cgroup) would result in ENOSPC.
+      cat "${subsystem}/cpuset.cpus" > "${subsystem}/${cgroup_root}/cpuset.cpus"
+      cat "${subsystem}/cpuset.mems" > "${subsystem}/${cgroup_root}/cpuset.mems"
+    fi
+    # We need to perform a self bind mount here because otherwise,
+    # systemd might delete the cgroup unintentionally before the
+    # kubelet starts.
+    mount --bind "${subsystem}/${cgroup_root}" "${subsystem}/${cgroup_root}"
+  fi
+}
+
 fix_cgroup() {
   echo 'INFO: fix cgroup mounts for all subsystems'
   # For each cgroup subsystem, Docker does a bind mount from the current
@@ -85,10 +109,11 @@ fix_cgroup() {
     while IFS= read -r subsystem; do
       mkdir -p "${subsystem}${docker_cgroup}"
       mount --bind "${subsystem}" "${subsystem}${docker_cgroup}"
+      mount_kubelet_cgroup_root "/kubelet" "${subsystem}"
     done
   fi
   local podman_cgroup_mounts
-  podman_cgroup_mounts=$(grep /sys/fs/cgroup /proc/self/mountinfo | grep libpod_parent || true)
+  podman_cgroup_mounts=$(grep /sys/fs/cgroup /proc/self/mountinfo | grep libpod || true)
   if [[ -n "${podman_cgroup_mounts}" ]]; then
     local podman_cgroup cgroup_subsystems subsystem
     podman_cgroup=$(echo "${podman_cgroup_mounts}" | head -n 1 | cut -d' ' -f 4)
@@ -97,6 +122,7 @@ fix_cgroup() {
     while IFS= read -r subsystem; do
       mkdir -p "${subsystem}${podman_cgroup}"
       mount --bind "${subsystem}" "${subsystem}${podman_cgroup}"
+      mount_kubelet_cgroup_root "/kubelet" "${subsystem}"
     done
   fi
 }

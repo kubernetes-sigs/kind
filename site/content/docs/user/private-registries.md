@@ -5,12 +5,13 @@ menu:
     parent: "user"
     identifier: "user-private-registries"
     weight: 3
+toc: true
+description: |-
+  This guide discusses how to use kind with image registries that
+  require authentication.
+
+  There are multiple ways to do this, which we try to cover here.
 ---
-
-Some users may want to test applications on kind that require pulling images
-from authenticated private registries, there are multiple ways to do this.
-
-
 ## Use ImagePullSecrets
 
 Kubernetes supports configuring pods to use `imagePullSecrets` for pulling
@@ -30,12 +31,12 @@ image(s) and then load them to the nodes you can avoid needing to authenticate
 on the nodes.
 
 
-# Add Credentials to the Nodes
+## Add Credentials to the Nodes
 
 Generally the upstream docs for [using a private registry] apply, with kind
 there are two options for this.
 
-## Mount a Config File to Each Node
+### Mount a Config File to Each Node
 
 If you pre-create a docker config.json containing credential(s) on the host
 you can mount it to each kind node.
@@ -52,7 +53,7 @@ nodes:
     hostPath: /path/to/my/secret.json
 {{< /codeFromInline >}}
 
-### Use an Access Token
+#### Use an Access Token
 
 A credential can be programmatically added to the nodes at runtime.
 
@@ -63,7 +64,7 @@ using Access Tokens:
 
 {{< codeFromFile file="static/examples/kind-gcr.sh" >}}
 
-### Use a Service Account
+#### Use a Service Account
 
 Access tokens are short lived, so you may prefer to use a Service Account and keyfile instead.
 First, either download the key from the console or generate one with gcloud:

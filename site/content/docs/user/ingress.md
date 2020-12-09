@@ -5,11 +5,9 @@ menu:
     parent: "user"
     identifier: "user-ingress"
     weight: 3
+description: |-
+  This guide covers setting up [ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) on a kind cluster.
 ---
-
-This guide covers setting up [ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/)
-on a kind cluster.
-
 ## Setting Up An Ingress Controller
 
 We can leverage KIND's `extraPortMapping` config option when
