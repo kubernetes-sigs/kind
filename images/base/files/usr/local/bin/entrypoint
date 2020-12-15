@@ -62,32 +62,34 @@ fix_mount() {
   mount --make-rshared /
 }
 
+# helper used by fix_cgroup
 mount_kubelet_cgroup_root() {
-  cgroup_root=$1
-  subsystem=$2
-
-  if [ -n "${cgroup_root}" ]; then
-    # This is because we set Kubelet's cgroup-root to `/kubelet` by
-    # default. We have to do that because otherwise, it'll collide
-    # with the cgroups used by the Kubelet running on the host if we
-    # run kind cluster within a Kubernetes pod, resulting in random
-    # processes to be killed.
-    mkdir -p "${subsystem}/${cgroup_root}"
-    if [ "${subsystem}" == "/sys/fs/cgroup/cpuset" ]; then
-      # This is needed. Otherwise, assigning process to the cgroup
-      # (or any nested cgroup) would result in ENOSPC.
-      cat "${subsystem}/cpuset.cpus" > "${subsystem}/${cgroup_root}/cpuset.cpus"
-      cat "${subsystem}/cpuset.mems" > "${subsystem}/${cgroup_root}/cpuset.mems"
-    fi
-    # We need to perform a self bind mount here because otherwise,
-    # systemd might delete the cgroup unintentionally before the
-    # kubelet starts.
-    mount --bind "${subsystem}/${cgroup_root}" "${subsystem}/${cgroup_root}"
+  local cgroup_root=$1
+  local subsystem=$2
+  if [ -z "${cgroup_root}" ]; then
+    return 0
   fi
+  mkdir -p "${subsystem}/${cgroup_root}"
+  if [ "${subsystem}" == "/sys/fs/cgroup/cpuset" ]; then
+    # This is needed. Otherwise, assigning process to the cgroup
+    # (or any nested cgroup) would result in ENOSPC.
+    cat "${subsystem}/cpuset.cpus" > "${subsystem}/${cgroup_root}/cpuset.cpus"
+    cat "${subsystem}/cpuset.mems" > "${subsystem}/${cgroup_root}/cpuset.mems"
+  fi
+  # We need to perform a self bind mount here because otherwise,
+  # systemd might delete the cgroup unintentionally before the
+  # kubelet starts.
+  mount --bind "${subsystem}/${cgroup_root}" "${subsystem}/${cgroup_root}"
 }
 
 fix_cgroup() {
   echo 'INFO: fix cgroup mounts for all subsystems'
+  # see: https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration
+  # capture initial state before 
+  local current_cgroup
+  current_cgroup=$(grep systemd /proc/self/cgroup | cut -d: -f3)
+  local cgroup_subsystems
+  cgroup_subsystems=$(findmnt -lun -o source,target -t cgroup | grep "${current_cgroup}" | awk '{print $2}')
   # For each cgroup subsystem, Docker does a bind mount from the current
   # cgroup to the root of the cgroup subsystem. For instance:
   #   /sys/fs/cgroup/memory/docker/<cid> -> /sys/fs/cgroup/memory
@@ -109,7 +111,6 @@ fix_cgroup() {
     while IFS= read -r subsystem; do
       mkdir -p "${subsystem}${docker_cgroup}"
       mount --bind "${subsystem}" "${subsystem}${docker_cgroup}"
-      mount_kubelet_cgroup_root "/kubelet" "${subsystem}"
     done
   fi
   local podman_cgroup_mounts
@@ -122,9 +123,17 @@ fix_cgroup() {
     while IFS= read -r subsystem; do
       mkdir -p "${subsystem}${podman_cgroup}"
       mount --bind "${subsystem}" "${subsystem}${podman_cgroup}"
-      mount_kubelet_cgroup_root "/kubelet" "${subsystem}"
     done
   fi
+  # kubelet will try to manage cgroups / pods that are not owned by it when
+  # "nesting" clusters, unless we instruct it to use a different cgroup root.
+  # We do this, and when doing so we must fixup this alternative root
+  # currently this is hardcoded to be /kubelet
+  mount --make-rprivate /sys/fs/cgroup
+  echo "${cgroup_subsystems}" |
+  while IFS= read -r subsystem; do
+    mount_kubelet_cgroup_root "/kubelet" "${subsystem}"
+  done
 }
 
 fix_machine_id() {
