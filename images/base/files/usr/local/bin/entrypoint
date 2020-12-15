@@ -125,6 +125,24 @@ fix_cgroup() {
       mount_kubelet_cgroup_root "/kubelet" "${subsystem}"
     done
   fi
+  if [[ -z "${docker_cgroup_mounts}" ]] || [[ -z "${podman_cgroup_mounts}" ]]; then
+    while read -r subsystem; do
+      mount_kubelet_cgroup_root "/kubelet" "${subsystem}"
+    done <<EOF
+/sys/fs/cgroup/systemd
+/sys/fs/cgroup/cpu,cpuacct
+/sys/fs/cgroup/net_cls,net_prio
+/sys/fs/cgroup/cpuset
+/sys/fs/cgroup/hugetlb
+/sys/fs/cgroup/freezer
+/sys/fs/cgroup/blkio
+/sys/fs/cgroup/perf_event
+/sys/fs/cgroup/memory
+/sys/fs/cgroup/devices
+/sys/fs/cgroup/pids
+EOF
+  fi
+
 }
 
 fix_machine_id() {
