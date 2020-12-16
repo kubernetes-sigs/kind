@@ -1,0 +1,86 @@
+name: Compatibility
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  images:
+    name: Node Images
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
+      - name: Verify
+        run: make verify
+
+      - name: Install kind from current repository
+        run: sudo make install INSTALL_DIR=/usr/local/bin
+
+      - name: Checkout Kubernetes
+        uses: actions/checkout@v2
+        with:
+          path: src/k8s.io/kubernetes
+          repository: kubernetes/kubernetes
+          ref: v1.20.0
+
+      - name: Install kubectl
+        run: |
+          curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+          chmod +x ./kubectl
+          sudo mv ./kubectl /usr/local/bin/kubectl
+
+      - name: Build kind node image from current repository
+        run: |
+          KUBE_PATH="${{ github.workspace }}/src/k8s.io/kubernetes"
+          kind build node-image --kube-root ${KUBE_PATH} --image node:test -v7
+
+      - name: Create cluster from current repository
+        run: |
+          kind create cluster --name kind-pr --wait 1m --image node:test -v7 --retain
+
+      - name: Create cluster with last stable version
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.9.0/kind-linux-amd64
+          chmod +x ./kind
+          cat <<EOF | ./kind create cluster -v7 --wait 1m --image node:test --retain --config=-
+          kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          kubeadmConfigPatches:
+          - |
+            kind: InitConfiguration
+            nodeRegistration:
+              kubeletExtraArgs:
+                "v": "4"
+          EOF
+
+      - name: Get Cluster status
+        run: |
+          # wait network is ready
+          kubectl wait --for=condition=ready pods --namespace=kube-system -l k8s-app=kube-dns
+          kubectl get nodes -o wide
+          kubectl get pods -A
+
+      - name: Load docker image
+        run: ./kind load docker-image busybox:2
+
+      - name: Export logs
+        if: ${{ always() }}
+        run: |
+          mkdir -p /tmp/kind/logs
+          sudo kind export logs /tmp/kind/logs
+          sudo chown -R $USER:$USER /tmp/kind/logs
+
+      - name: Upload logs
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: kind-logs-${{ github.run_id }}
+          path: /tmp/kind/logs
+
+      - name: Delete cluster
+        run: kind delete cluster
