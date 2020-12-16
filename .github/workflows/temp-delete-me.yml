@@ -37,11 +37,11 @@ jobs:
       - name: Build kind node image from current repository
         run: |
           KUBE_PATH="${{ github.workspace }}/src/k8s.io/kubernetes"
-          kind build node-image --kube-root ${KUBE_PATH} --image node:test -v7
+          /usr/local/bin/kind build node-image --kube-root ${KUBE_PATH} --image node:test -v7
 
       - name: Create cluster from current repository
         run: |
-          kind create cluster --name kind-pr --wait 1m --image node:test -v7 --retain
+          /usr/local/bin/kind create cluster --name kind-pr --wait 1m --image node:test -v7 --retain
 
       - name: Create cluster with last stable version
         run: |
