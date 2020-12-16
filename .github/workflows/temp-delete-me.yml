@@ -10,7 +10,7 @@ jobs:
   images:
     name: Node Images
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 100
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
@@ -40,6 +40,9 @@ jobs:
         run: |
           KUBE_PATH="${{ github.workspace }}/src/k8s.io/kubernetes"
           /usr/local/bin/kind build node-image --kube-root ${KUBE_PATH} --image node:test -v7
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
       - name: Create cluster from current repository
         run: |
