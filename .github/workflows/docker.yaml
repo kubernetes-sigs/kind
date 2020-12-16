@@ -29,7 +29,9 @@ jobs:
         run: make verify
 
       - name: Install kind
-        run: sudo make install INSTALL_DIR=/usr/local/bin
+        run: |
+          sudo make install INSTALL_DIR=/usr/local/bin
+          /usr/local/bin/kind version
 
       - name: Install kubectl
         run: |
@@ -45,7 +47,7 @@ jobs:
       - name: Create single node cluster
         if: ${{ matrix.deployment == 'singleNode' }}
         run: |
-          cat <<EOF | kind create cluster -v7 --wait 1m --retain --config=-
+          cat <<EOF | /usr/local/bin/kind create cluster -v7 --wait 1m --retain --config=-
           kind: Cluster
           apiVersion: kind.x-k8s.io/v1alpha4
           networking:
@@ -55,7 +57,7 @@ jobs:
       - name: Create multi node cluster
         if: ${{ matrix.deployment == 'multiNode' }}
         run: |
-          cat <<EOF | sudo kind create cluster -v7 --wait 1m --retain --config=-
+          cat <<EOF | sudo /usr/local/bin/kind create cluster -v7 --wait 1m --retain --config=-
           kind: Cluster
           apiVersion: kind.x-k8s.io/v1alpha4
           networking:
@@ -74,14 +76,14 @@ jobs:
           sudo kubectl get pods -A
 
       - name: Load docker image
-        run: kind load docker-image busybox:2
+        run: /usr/local/bin/kind load docker-image busybox:2
         continue-on-error: true
 
       - name: Export logs
         if: always()
         run: |
           mkdir -p /tmp/kind/logs
-          sudo kind export logs /tmp/kind/logs
+          sudo /usr/local/bin/kind export logs /tmp/kind/logs
           sudo chown -R $USER:$USER /tmp/kind/logs
 
       - name: Upload logs
@@ -92,4 +94,4 @@ jobs:
           path: /tmp/kind/logs
 
       - name: Delete cluster
-        run: kind delete cluster
+        run: /usr/local/bin/kind delete cluster

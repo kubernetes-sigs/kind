@@ -19,7 +19,9 @@ jobs:
         run: make verify
 
       - name: Install kind from current repository
-        run: sudo make install INSTALL_DIR=/usr/local/bin
+        run: |
+          sudo make install INSTALL_DIR=/usr/local/bin
+          /usr/local/bin/kind version
 
       - name: Checkout Kubernetes
         uses: actions/checkout@v2
