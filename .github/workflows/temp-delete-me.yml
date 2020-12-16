@@ -73,8 +73,10 @@ jobs:
       - name: Export logs
         if: ${{ always() }}
         run: |
-          mkdir -p /tmp/kind/logs
-          sudo kind export logs /tmp/kind/logs
+          mkdir -p /tmp/kind/logs/kind
+          mkdir -p /tmp/kind/logs/kind-pr
+          sudo /usr/local/bin/kind export logs --name=kind-pr /tmp/kind/logs/kind-pr
+          sudo ./kind export logs /tmp/kind/logs/kind
           sudo chown -R $USER:$USER /tmp/kind/logs
 
       - name: Upload logs
