@@ -196,7 +196,7 @@ func (p *provider) GetAPIServerEndpoint(cluster string) (string, error) {
 		cmd := exec.Command(
 			"podman", "inspect",
 			"--format",
-			"{{ json .NetworkSettings.Ports }}",
+			"json {{ .NetworkSettings.Ports }}",
 			n.String(),
 		)
 		lines, err := exec.OutputLines(cmd)
