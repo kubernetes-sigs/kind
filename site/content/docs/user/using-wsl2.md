@@ -86,6 +86,6 @@ nodes:
 
 ## Helpful Tips for WSL2
 
-- If you want to shutdown the WSL2 instance to save memory or "reboot", open an admin PowerShell prompt and run `wsl <distro> --shutdown`. Closing a WSL2 window doesn't shut it down automatically.
+- If you want to terminate the WSL2 instance to save memory or "reboot", open an admin PowerShell prompt and run `wsl --terminate <distro>`. Closing a WSL2 window doesn't shut it down automatically.
 - You can check the status of all installed distros with `wsl --list --verbose`.
 - If you had a distro installed with WSL1, you can convert it to WSL2 with `wsl --set-version <distro> 2`
