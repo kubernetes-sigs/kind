@@ -1,0 +1,37 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: foo-app
+  labels:
+    app: http-echo
+spec:
+  containers:
+  - name: foo-app
+    image: hashicorp/http-echo:0.2.3
+    args:
+    - "-text=foo"
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: bar-app
+  labels:
+    app: http-echo
+spec:
+  containers:
+  - name: bar-app
+    image: hashicorp/http-echo:0.2.3
+    args:
+    - "-text=bar"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: foo-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: http-echo
+  ports:
+  # Default port used by the image
+  - port: 5678
