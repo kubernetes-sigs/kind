@@ -33,7 +33,7 @@ import (
 // By default currently picking a single network is equivalent to the previous
 // behavior *except* that we moved from the default bridge to a user defined
 // network because the default bridge is actually special versus any other
-// docker network and lacks the emebdded DNS
+// docker network and lacks the embedded DNS
 //
 // For now this also makes it easier for apps to join the same network, and
 // leaves users with complex networking desires to create and manage their own
