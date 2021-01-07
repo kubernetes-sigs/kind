@@ -55,7 +55,7 @@ COPY files/ /
 # Next we download and extract crictl and CNI plugin binaries from upstream.
 #
 # Next we ensure the /etc/kubernetes/manifests directory exists. Normally
-# a kubeadm debain / rpm package would ensure that this exists but we install
+# a kubeadm debian / rpm package would ensure that this exists but we install
 # freshly built binaries directly when we build the node image.
 #
 # Finally we adjust tempfiles cleanup to be 1 minute after "boot" instead of 15m
