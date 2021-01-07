@@ -80,7 +80,7 @@ func (p *provider) Provision(status *cli.Status, cfg *config.Cluster) (err error
 		return err
 	}
 
-	// ensure the pre-requesite network exists
+	// ensure the pre-requisite network exists
 	networkName := fixedNetworkName
 	if n := os.Getenv("KIND_EXPERIMENTAL_PODMAN_NETWORK"); n != "" {
 		p.logger.Warn("WARNING: Overriding podman network due to KIND_EXPERIMENTAL_PODMAN_NETWORK")
