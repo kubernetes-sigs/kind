@@ -51,7 +51,7 @@ INSTALL_DIR?=$(shell hack/build/goinstalldir.sh)
 # the output binary name, overridden when cross compiling
 KIND_BINARY_NAME?=kind
 # build flags for the kind binary
-# - reproducible builds: -trimpath and -ldlflags=-buildid=
+# - reproducible builds: -trimpath and -ldflags=-buildid=
 # - smaller binaries: -w (trim debugger data, but not panics)
 # - metadata: -X=... to bake in git commit
 KIND_BUILD_FLAGS?=-trimpath -ldflags="-buildid= -w -X=sigs.k8s.io/kind/pkg/cmd/kind/version.GitCommit=$(COMMIT)"
