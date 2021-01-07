@@ -88,7 +88,7 @@ func (c *buildContext) buildImage(bits kube.Bits) error {
 
 	// copy artifacts in
 	for _, binary := range bits.BinaryPaths() {
-		// TODO: probably should be /usr/local/bin, but the existing kublet
+		// TODO: probably should be /usr/local/bin, but the existing kubelet
 		// service file expects /usr/bin/kubelet
 		nodePath := "/usr/bin/" + path.Base(binary)
 		if err := exec.Command("docker", "cp", binary, containerID+":"+nodePath).Run(); err != nil {
