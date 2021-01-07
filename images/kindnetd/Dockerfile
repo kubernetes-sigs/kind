@@ -16,7 +16,7 @@
 # NOTE: tentatively follow upstream kubernetes go version based on k8s in go.mod
 FROM golang:1.13
 WORKDIR /go/src
-# make deps fetching cachable
+# make deps fetching cacheable
 COPY go.mod go.sum .
 RUN go mod download
 # build
