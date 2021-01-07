@@ -28,7 +28,7 @@ func TestEncodeRoundtrip(t *testing.T) {
 	const aConfig = `apiVersion: v1
 clusters:
 - cluster:
-    certificate-authority-data: definitlyacert
+    certificate-authority-data: definitelyacert
     server: https://192.168.9.4:6443
   name: kind-kind
 contexts:
