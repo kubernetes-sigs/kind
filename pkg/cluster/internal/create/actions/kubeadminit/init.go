@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 )
 
-// kubeadmInitAction implements action for executing the kubadm init
+// kubeadmInitAction implements action for executing the kubeadm init
 // and a set of default post init operations like e.g. install the
 // CNI network plugin.
 type action struct{}

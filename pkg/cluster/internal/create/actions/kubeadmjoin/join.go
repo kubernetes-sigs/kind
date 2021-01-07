@@ -115,7 +115,7 @@ func joinWorkers(
 	return nil
 }
 
-// runKubeadmJoin executes kubadm join command
+// runKubeadmJoin executes kubeadm join command
 func runKubeadmJoin(logger log.Logger, node nodes.Node) error {
 	// run kubeadm join
 	// TODO(bentheelder): this should be using the config file
