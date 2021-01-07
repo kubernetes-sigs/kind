@@ -85,7 +85,7 @@ You can check if Go is in your system with the following command:
 
 The [design principles], [1.0 roadmap], and [initial design]
 may be helpful to review before contributing. These docs cover some of the project
-philosphy and direction.
+philosophy and direction.
 
 ## 4. Reaching Out
 
