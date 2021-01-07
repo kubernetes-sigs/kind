@@ -46,7 +46,7 @@ func Encode(cfg *Config) ([]byte, error) {
 }
 
 // normYaml round trips yaml bytes through sigs.k8s.io/yaml to normalize them
-// versus other kuberernetes ecosystem yaml output
+// versus other kubernetes ecosystem yaml output
 func normYaml(y []byte) ([]byte, error) {
 	var unstructured interface{}
 	if err := kubeyaml.Unmarshal(y, &unstructured); err != nil {
