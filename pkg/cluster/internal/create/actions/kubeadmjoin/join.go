@@ -32,7 +32,7 @@ import (
 )
 
 // Action implements action for creating the kubeadm join
-// and deployng it on the bootrap control-plane node.
+// and deployng it on the bootstrap control-plane node.
 type Action struct{}
 
 // NewAction returns a new action for creating the kubeadm jion
