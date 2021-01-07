@@ -55,7 +55,7 @@ func (c *buildContext) Build() (err error) {
 func (c *buildContext) buildImage(bits kube.Bits) error {
 	// create build container
 	// NOTE: we are using docker run + docker commit so we can install
-	// debians without permanently copying them into the image.
+	// debian packages without permanently copying them into the image.
 	// if docker gets proper squash support, we can rm them instead
 	// This also allows the KubeBit implementations to perform programmatic
 	// install in the image
