@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package installstorage implements the an action to isntall a default
+// Package installstorage implements the an action to install a default
 // storageclass
 package installstorage
 

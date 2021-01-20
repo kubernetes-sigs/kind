@@ -53,7 +53,7 @@ func ComputeCNIConfigInputs(node corev1.Node) CNIConfigInputs {
 }
 
 //computeBridgeMTU finds the mtu for the eth0 interface
-//otherwise it defults to ptp default behavior of being set by kernel
+//otherwise it defaults to ptp default behavior of being set by kernel
 func computeBridgeMTU() (int, error) {
 	interfaces, err := stdnet.Interfaces()
 	if err != nil {

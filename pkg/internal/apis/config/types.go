@@ -184,7 +184,7 @@ type PatchJSON6902 struct {
 // This is a close copy of the upstream cri Mount type
 // see: k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2
 // It additionally serializes the "propagation" field with the string enum
-// names on disk as opposed to the int32 values, and the serlialzed field names
+// names on disk as opposed to the int32 values, and the serialized field names
 // have been made closer to core/v1 VolumeMount field names
 // In yaml this looks like:
 //  containerPath: /foo

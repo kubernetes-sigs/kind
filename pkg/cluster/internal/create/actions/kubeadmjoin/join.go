@@ -32,7 +32,7 @@ import (
 )
 
 // Action implements action for creating the kubeadm join
-// and deployng it on the bootrap control-plane node.
+// and deploying it on the bootstrap control-plane node.
 type Action struct{}
 
 // NewAction returns a new action for creating the kubeadm jion
@@ -115,7 +115,7 @@ func joinWorkers(
 	return nil
 }
 
-// runKubeadmJoin executes kubadm join command
+// runKubeadmJoin executes kubeadm join command
 func runKubeadmJoin(logger log.Logger, node nodes.Node) error {
 	// run kubeadm join
 	// TODO(bentheelder): this should be using the config file

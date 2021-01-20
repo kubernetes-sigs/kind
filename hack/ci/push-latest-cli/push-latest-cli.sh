@@ -27,7 +27,7 @@ else
   COMMIT="$(git rev-parse HEAD 2>/dev/null)"
   export COMMIT
 fi
-# short commmit is currently 8 characters
+# short commit is currently 8 characters
 SHORT_COMMIT="${COMMIT:0:8}"
 
 # we upload here

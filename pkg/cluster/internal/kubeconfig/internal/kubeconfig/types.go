@@ -30,11 +30,11 @@ We've forked them to:
 // Other fields are handled as unstructured data purely read for writing back
 // to disk via the OtherFields field
 type Config struct {
-	// Clusters is a map of referencable names to cluster configs
+	// Clusters is a map of referenceable names to cluster configs
 	Clusters []NamedCluster `yaml:"clusters,omitempty"`
-	// Users is a map of referencable names to user configs
+	// Users is a map of referenceable names to user configs
 	Users []NamedUser `yaml:"users,omitempty"`
-	// Contexts is a map of referencable names to context configs
+	// Contexts is a map of referenceable names to context configs
 	Contexts []NamedContext `yaml:"contexts,omitempty"`
 	// CurrentContext is the name of the context that you would like to use by default
 	CurrentContext string `yaml:"current-context,omitempty"`

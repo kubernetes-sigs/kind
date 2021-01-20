@@ -104,7 +104,7 @@ func waitForReady(node nodes.Node, until time.Time) bool {
 		status := strings.Fields(lines[0])
 		for _, s := range status {
 			// Check node status. If node is ready then this will be 'True',
-			// 'False' or 'Unkown' otherwise.
+			// 'False' or 'Unknown' otherwise.
 			if !strings.Contains(s, "True") {
 				return false
 			}

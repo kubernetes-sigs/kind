@@ -29,7 +29,7 @@ func TestGetProxyEnvs(t *testing.T) {
 	cfg := &config.Cluster{}
 	config.SetDefaultsCluster(cfg)
 	envs := GetProxyEnvs(cfg)
-	// GetProxyEnvs should always reutrn a valid map
+	// GetProxyEnvs should always return a valid map
 	if envs == nil {
 		t.Errorf("GetProxyEnvs returned nil but should not")
 	}

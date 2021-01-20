@@ -54,7 +54,7 @@ type Cluster struct {
 	//
 	// https://tools.ietf.org/html/rfc7386
 	//
-	// The cluster-level patches are appied before the node-level patches.
+	// The cluster-level patches are applied before the node-level patches.
 	KubeadmConfigPatches []string `yaml:"kubeadmConfigPatches,omitempty"`
 
 	// KubeadmConfigPatchesJSON6902 are applied to the generated kubeadm config
@@ -69,7 +69,7 @@ type Cluster struct {
 	//
 	// https://tools.ietf.org/html/rfc6902
 	//
-	// The cluster-level patches are appied before the node-level patches.
+	// The cluster-level patches are applied before the node-level patches.
 	KubeadmConfigPatchesJSON6902 []PatchJSON6902 `yaml:"kubeadmConfigPatchesJSON6902,omitempty"`
 
 	// ContainerdConfigPatches are applied to every node's containerd config
@@ -228,7 +228,7 @@ https://github.com/kubernetes/kubernetes/blob/063e7ff358fdc8b0916e6f39beedc0d025
 // This is a close copy of the upstream cri Mount type
 // see: k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2
 // It additionally serializes the "propagation" field with the string enum
-// names on disk as opposed to the int32 values, and the serlialzed field names
+// names on disk as opposed to the int32 values, and the serialized field names
 // have been made closer to core/v1 VolumeMount field names
 // In yaml this looks like:
 //  containerPath: /foo
