@@ -85,7 +85,7 @@ mount_kubelet_cgroup_root() {
 fix_cgroup() {
   echo 'INFO: fix cgroup mounts for all subsystems'
   # see: https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration
-  # capture initial state before 
+  # capture initial state before modifying
   local current_cgroup
   current_cgroup=$(grep systemd /proc/self/cgroup | cut -d: -f3)
   local cgroup_subsystems
