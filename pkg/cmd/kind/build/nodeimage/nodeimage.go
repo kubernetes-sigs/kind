@@ -26,11 +26,12 @@ import (
 )
 
 type flagpole struct {
-	Source    string
-	BuildType string
-	Image     string
-	BaseImage string
-	KubeRoot  string
+	Source     string
+	BuildType  string
+	Image      string
+	BaseImage  string
+	KubeRoot   string
+	ReleaseURL string
 }
 
 // NewCommand returns a new cobra.Command for building the node image
@@ -48,7 +49,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	}
 	cmd.Flags().StringVar(
 		&flags.BuildType, "type",
-		"docker", "build type, one of [bazel, docker]",
+		"docker", "build type, one of [bazel, docker, release]",
 	)
 	cmd.Flags().StringVar(
 		&flags.Image, "image",
@@ -56,9 +57,14 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		"name:tag of the resulting image to be built",
 	)
 	cmd.Flags().StringVar(
+		&flags.ReleaseURL, "release-url",
+		"",
+		"A Kubernetes release URL to fetch binaries and container image tars from. Only used with the release type. Ex: https://dl.k8s.io/v1.20.0",
+	)
+	cmd.Flags().StringVar(
 		&flags.KubeRoot, "kube-root",
 		"",
-		"path to the Kubernetes source directory (if empty, the path is autodetected)",
+		"path to the Kubernetes source directory (if empty, the path is autodetected). Used with bazel and docker types",
 	)
 	cmd.Flags().StringVar(
 		&flags.BaseImage, "base-image",
@@ -74,6 +80,7 @@ func runE(logger log.Logger, flags *flagpole) error {
 		nodeimage.WithImage(flags.Image),
 		nodeimage.WithBaseImage(flags.BaseImage),
 		nodeimage.WithKuberoot(flags.KubeRoot),
+		nodeimage.WithReleaseURL(flags.ReleaseURL),
 		nodeimage.WithLogger(logger),
 	); err != nil {
 		return errors.Wrap(err, "error building node image")

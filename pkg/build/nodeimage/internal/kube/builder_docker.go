@@ -41,7 +41,7 @@ var _ Builder = &dockerBuilder{}
 
 // NewDockerBuilder returns a new Bits backed by the docker-ized build,
 // given kubeRoot, the path to the kubernetes source directory
-func NewDockerBuilder(logger log.Logger, kubeRoot, arch string) (Builder, error) {
+func NewDockerBuilder(logger log.Logger, kubeRoot, releaseUrl, arch string) (Builder, error) {
 	return &dockerBuilder{
 		kubeRoot: kubeRoot,
 		arch:     arch,

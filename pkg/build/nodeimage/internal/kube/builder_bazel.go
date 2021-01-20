@@ -38,7 +38,7 @@ var _ Builder = &bazelBuilder{}
 
 // NewBazelBuilder returns a new Builder backed by bazel build,
 // given kubeRoot, the path to the kubernetes source directory
-func NewBazelBuilder(logger log.Logger, kubeRoot, arch string) (Builder, error) {
+func NewBazelBuilder(logger log.Logger, kubeRoot, releaseUrl, arch string) (Builder, error) {
 	return &bazelBuilder{
 		kubeRoot: kubeRoot,
 		arch:     arch,

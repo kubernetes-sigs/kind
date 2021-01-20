@@ -63,6 +63,14 @@ func WithKuberoot(root string) Option {
 	})
 }
 
+// WithReleaseURL sets the release URL to fetch the necessary binaries and image tars from
+func WithReleaseURL(releaseUrl string) Option {
+	return optionAdapter(func(b *buildContext) error {
+		b.releaseUrl = releaseUrl
+		return nil
+	})
+}
+
 // WithLogger sets the logger
 func WithLogger(logger log.Logger) Option {
 	return optionAdapter(func(b *buildContext) error {

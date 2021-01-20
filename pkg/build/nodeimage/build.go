@@ -17,6 +17,7 @@ limitations under the License.
 package nodeimage
 
 import (
+	"net/url"
 	"runtime"
 
 	"sigs.k8s.io/kind/pkg/build/nodeimage/internal/kube"
@@ -49,16 +50,26 @@ func Build(options ...Option) error {
 	}
 
 	// locate sources if no kubernetes source was specified
-	if ctx.kubeRoot == "" {
+	if ctx.kubeRoot == "" && ctx.mode != "release" {
 		kubeRoot, err := kube.FindSource()
 		if err != nil {
 			return errors.Wrap(err, "error finding kuberoot")
 		}
 		ctx.kubeRoot = kubeRoot
 	}
+	// basic url sanitization
+	if ctx.mode == "release" {
+		if ctx.releaseUrl == "" {
+			return errors.Errorf("A value for release-url is required for --type=release")
+		}
+		_, err := url.Parse(ctx.releaseUrl)
+		if err != nil {
+			return errors.Wrap(err, "error parsing release-url")
+		}
+	}
 
 	// initialize bits
-	builder, err := kube.NewNamedBuilder(ctx.logger, ctx.mode, ctx.kubeRoot, ctx.arch)
+	builder, err := kube.NewNamedBuilder(ctx.logger, ctx.mode, ctx.kubeRoot, ctx.releaseUrl, ctx.arch)
 	if err != nil {
 		return err
 	}
@@ -84,10 +95,11 @@ func supportedArch(arch string) bool {
 // build configuration
 type buildContext struct {
 	// option fields
-	mode      string
-	image     string
-	baseImage string
-	logger    log.Logger
+	mode       string
+	image      string
+	baseImage  string
+	logger     log.Logger
+	releaseUrl string
 	// non-option fields
 	arch     string // TODO(bentheelder): this should be an option
 	kubeRoot string

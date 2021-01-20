@@ -34,16 +34,18 @@ type Builder interface {
 // currently this includes:
 // "bazel" -> NewBazelBuilder(kubeRoot)
 // "docker" or "make" -> NewDockerBuilder(kubeRoot)
-func NewNamedBuilder(logger log.Logger, name, kubeRoot, arch string) (Builder, error) {
+func NewNamedBuilder(logger log.Logger, name, kubeRoot, releaseUrl, arch string) (Builder, error) {
 	fn, err := nameToImpl(name)
 	if err != nil {
 		return nil, err
 	}
-	return fn(logger, kubeRoot, arch)
+	return fn(logger, kubeRoot, releaseUrl, arch)
 }
 
-func nameToImpl(name string) (func(log.Logger, string, string) (Builder, error), error) {
+func nameToImpl(name string) (func(log.Logger, string, string, string) (Builder, error), error) {
 	switch name {
+	case "release":
+		return NewReleaseBuilder, nil
 	case "bazel":
 		return NewBazelBuilder, nil
 	// TODO: docker builder should be as-dockerized as possible, make builder
