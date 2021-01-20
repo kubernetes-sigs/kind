@@ -83,6 +83,26 @@ mount_kubelet_cgroup_root() {
 }
 
 fix_cgroup() {
+  if [[ -f "/sys/fs/cgroup/cgroup.controllers" ]]; then
+    echo 'INFO: detected cgroup v2'
+    # Both Docker and Podman enable CgroupNS on cgroup v2 hosts by default.
+    #
+    # So mostly we do not need to mess around with the cgroup path stuff,
+    # however, we still need to create the "/kubelet" cgroup at least.
+    # (Otherwise kubelet fails with `cgroup-root ["kubelet"] doesn't exist` error, see #1969)
+    #
+    # The "/kubelet" cgroup is created in ExecStartPre of the kubeadm service.
+    #
+    # [FAQ: Why not create "/kubelet" cgroup here?]
+    # We can't create the cgroup with controllers here, because /sys/fs/cgroup/cgroup.subtree_control is empty.
+    # And yet we can't write controllers to /sys/fs/cgroup/cgroup.subtree_control by ourselves either, because
+    # /sys/fs/cgroup/cgroup.procs is not empty at this moment.
+    #
+    # After switching from this entrypoint script to systemd, systemd evacuates the processes in the root
+    # group to "/init.scope" group, so we can write the root subtree_control and create "/kubelet" cgroup.
+    return
+  fi
+  echo 'INFO: detected cgroup v1'
   echo 'INFO: fix cgroup mounts for all subsystems'
   # see: https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration
   # capture initial state before modifying
