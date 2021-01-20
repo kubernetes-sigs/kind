@@ -304,6 +304,11 @@ This can be useful if using `NodePort` services or daemonsets exposing host port
 
 Note: binding the `listenAddress` to `127.0.0.1` may affect your ability to access the service.
 
+You may want to see the [Ingress Guide] and [LoadBalancer Guide].
+
+[Ingress Guide]: ./../ingress
+[LoadBalancer Guide]: ./../loadbalancer
+
 #### Setting Kubernetes version
 You can also set a specific Kubernetes version by setting the `node`'s container image. You can find available image tags on the [releases page](https://github.com/kubernetes-sigs/kind/releases). Please use the `sha256` shasum for your desired kubernetes version, as seen in this example:
 
