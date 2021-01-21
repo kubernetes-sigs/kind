@@ -1,0 +1,59 @@
+name: Cgroup v2
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  docker:
+    name: Cgroup v2
+    # nested virtualization is only available on macOS hosts
+    runs-on: macos-10.15
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [docker, podman]
+    env:
+      KIND_EXPERIMENTAL_PROVIDER: "${{ matrix.provider }}"
+      HELPER: "./hack/ci/vagrant-helper.sh"
+      JOB_NAME: "cgroup2-${{ matrix.provider }}"
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Boot Fedora
+        run: |
+          ln -sf ./hack/ci/Vagrantfile ./Vagrantfile
+          vagrant up
+
+      - name: Show provider info
+        run: |
+          "$HELPER" "$KIND_EXPERIMENTAL_PROVIDER" info
+          "$HELPER" "$KIND_EXPERIMENTAL_PROVIDER" version
+
+      - name: Create a cluster
+        run: |
+          "$HELPER" kind create cluster -v7 --wait 1m --retain
+
+      - name: Get Cluster status
+        run: |
+          "$HELPER" kubectl wait --for=condition=ready pods --namespace=kube-system -l k8s-app=kube-dns
+          "$HELPER" kubectl get nodes -o wide
+          "$HELPER" kubectl get pods -A
+
+      - name: Export logs
+        if: always()
+        run: |
+          "$HELPER" kind export logs /tmp/kind/logs
+          mkdir -p /tmp/kind/logs
+          "$HELPER" tar cC /tmp/kind/logs . | tar xC /tmp/kind/logs
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: kind-logs-${{ env.JOB_NAME }}-${{ github.run_id }}
+          path: /tmp/kind/logs
