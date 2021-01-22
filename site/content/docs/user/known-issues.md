@@ -37,6 +37,7 @@ description: |-
 * [AppArmor](#apparmor) (may break things, consider disabling)
 * [IPv6 Port Forwarding](#ipv6-port-forwarding) (docker doesn't seem to implement this correctly)
 * [Fedora 32 Firewalld](#fedora32-firewalld) (nftables + docker broken, switch to iptables)
+* [Couldn't find an alternative telinit implementation to spawn](#docker-init-daemon-config)
 
 ## Kubectl Version Skew
 
@@ -227,6 +228,12 @@ open /home/user/.docker/config.json: permission denied
 To fix this problem, either follow the docker's docs [manage docker as a non root user][manage docker as a non root user],
 or try to use `sudo` before your commands (if you get `command not found` please check [this comment about sudo with kind][sudo with kind]).
 
+
+## Docker init daemon config
+
+Please make sure that when you use `kind`, do not have `"init": true` in your `/etc/docker/daemon.json` because that will
+causes `/sbin/init` to show the following cryptic message *Couldn't find an alternative telinit implementation to spawn*.
+This has to to with `/sbin/init` not running as process id 1. 
 ## Windows Containers
 
 [Docker Desktop for Windows][docker desktop for windows] supports running both Linux (the default) and Windows Docker containers.
