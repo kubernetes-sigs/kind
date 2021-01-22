@@ -100,7 +100,7 @@ The maintainers of this project are reachable via:
 - [filing an issue] against this repo
 - The Kubernetes [SIG-Testing Mailing List]
 
-Current maintainers are [@BenTheElder] and [@munnerz] - feel free to
+Current maintainers are [@BenTheElder], [@munnerz], [@aojea], and [@amwat] - feel free to
 reach out if you have any questions!
 
 Pull Requests are very welcome!  
@@ -150,6 +150,8 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [install docker]: https://docs.docker.com/install/
 [@BenTheElder]: https://github.com/BenTheElder
 [@munnerz]: https://github.com/munnerz
+[@aojea]: https://github.com/aojea
+[@amwat]: https://github.com/amwat
 [contributor guide]: https://kind.sigs.k8s.io/docs/contributing/getting-started
 [releases]: https://github.com/kubernetes-sigs/kind/releases
 [install guide]: https://kind.sigs.k8s.io/docs/user/quick-start/#installation
