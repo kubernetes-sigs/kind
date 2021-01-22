@@ -115,7 +115,7 @@ The maintainers of this project are reachable via:
 - The issue tracker by [filing an issue][file an issue]
 - The Kubernetes [SIG-Testing][SIG-Testing] [Mailing List][SIG-Testing Mailing List]
 
-Current maintainers are [@BenTheElder] and [@munnerz] -- feel free to
+Current maintainers are [@BenTheElder], [@munnerz], [@aojea], and [@amwat] -- feel free to
 reach out directly if you have any questions!
 
 See also: the Kubernetes [community page].
@@ -149,6 +149,8 @@ You'll specifically want to see the [documentation section] of the development g
 [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
 [@BenTheElder]: https://github.com/BenTheElder
 [@munnerz]: https://github.com/munnerz
+[@aojea]: https://github.com/aojea
+[@amwat]: https://github.com/amwat
 [community page]: http://kubernetes.io/community/
 [modules]: https://github.com/golang/go/wiki/Modules
 [SIG-Testing Mailing List]: https://groups.google.com/forum/#!forum/kubernetes-sig-testing
