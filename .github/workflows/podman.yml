@@ -29,9 +29,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verify
-        run: make verify
-
       - name: Install kind
         run: sudo make install INSTALL_DIR=/usr/local/bin
 

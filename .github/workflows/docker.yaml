@@ -23,9 +23,6 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
 
-      - name: Verify
-        run: make verify
-
       - name: Install kind
         run: sudo make install INSTALL_DIR=/usr/local/bin
 
