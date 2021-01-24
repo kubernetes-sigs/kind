@@ -83,7 +83,7 @@ See also: our own [contributor guide] and the Kubernetes [community page].
 - kind supports building Kubernetes release builds from source
   - support for make / bash / docker, or bazel, in addition to pre-published builds
 - kind supports Linux, macOS and Windows
-- kind is a [CNCF certified conformant Kubernetes installer](https://landscape.cncf.io/selected=kind)
+- kind is a [CNCF certified conformant Kubernetes installer](https://landscape.cncf.io/?selected=kind)
 
 ### Code of conduct
 
