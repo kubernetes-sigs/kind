@@ -34,4 +34,4 @@ fi
 PREVIOUS=$(git describe --abbrev=0 --tags "$(git rev-list --tags --skip=1 --max-count=1)")
 CURRENT=$(git describe --abbrev=0 --tags)
 grep -Flr "${PREVIOUS}" site | xargs ${SED} -i "s/${PREVIOUS}/${CURRENT}/g"
-echo "Updated documenation from ${PREVIOUS} to ${CURRENT}"
+echo "Updated documentation from ${PREVIOUS} to ${CURRENT}"
