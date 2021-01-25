@@ -97,6 +97,9 @@ generate:
 # gofmt
 gofmt:
 	hack/make-rules/update/gofmt.sh
+# update documentation site
+site:
+	hack/make-rules/update/site.sh
 ################################################################################
 # ================================== Linting ===================================
 # run linters, ensure generated code, etc.
@@ -109,4 +112,4 @@ lint:
 shellcheck:
 	hack/make-rules/verify/shellcheck.sh
 #################################################################################
-.PHONY: all kind build install unit clean update generate gofmt verify lint shellcheck
+.PHONY: all kind build install unit clean update generate gofmt site verify lint shellcheck
