@@ -19,6 +19,8 @@
 # EG: create.sh 0.3.0 0.4.0
 set -o errexit -o nounset -o pipefail
 
+UPSTREAM='https://github.com/kubernetes-sigs/kind.git'
+
 # cd to the repo root
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 cd "${REPO_ROOT}"
@@ -74,8 +76,9 @@ make_commit "v${2}-alpha"
 
 # print follow-up instructions
 echo ""
-echo "Created commits for ${1} and ${2}, you should now:"
-echo " - File a PR with these commits"
+echo "Created commits for v${1} and v${2}, you should now:"
+echo " - git push"
+echo " - File a PR with these pushed commits"
 echo " - Merge the PR"
-echo " - git push upstream ${1}"
-echo " - create a GitHub release from ${1}"
+echo " - git push ${UPSTREAM} v${1}"
+echo " - Create a GitHub release from the pushed tag v${1}"
