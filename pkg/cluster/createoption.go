@@ -124,3 +124,11 @@ func CreateWithDisplaySalutation(displaySalutation bool) CreateOption {
 		return nil
 	})
 }
+
+// CreateWithLBConfigTemplate enables overriding the loadbalancer config
+func CreateWithLBConfigTemplate(lbConfigOverridePath string) CreateOption {
+	return createOptionAdapter(func(o *internalcreate.ClusterOptions) error {
+		o.LbConfigOverridePath = lbConfigOverridePath
+		return nil
+	})
+}

@@ -67,8 +67,9 @@ type ClusterOptions struct {
 	// see https://github.com/kubernetes-sigs/kind/issues/324
 	StopBeforeSettingUpKubernetes bool // if false kind should setup kubernetes after creating nodes
 	// Options to control output
-	DisplayUsage      bool
-	DisplaySalutation bool
+	DisplayUsage         bool
+	DisplaySalutation    bool
+	LbConfigOverridePath string
 }
 
 // Cluster creates a cluster
@@ -141,6 +142,7 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 
 	// run all actions
 	actionsContext := actions.NewActionContext(logger, status, p, opts.Config)
+	actionsContext.LbConfigOverridePath = opts.LbConfigOverridePath
 	for _, action := range actionsToRun {
 		if err := action.Execute(actionsContext); err != nil {
 			if !opts.Retain {

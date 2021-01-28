@@ -76,9 +76,10 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 
 	// create loadbalancer config data
 	loadbalancerConfig, err := loadbalancer.Config(&loadbalancer.ConfigData{
-		ControlPlanePort: common.APIServerInternalPort,
-		BackendServers:   backendServers,
-		IPv6:             ctx.Config.Networking.IPFamily == config.IPv6Family,
+		ControlPlanePort:     common.APIServerInternalPort,
+		BackendServers:       backendServers,
+		IPv6:                 ctx.Config.Networking.IPFamily == config.IPv6Family,
+		LbConfigOverridePath: ctx.LbConfigOverridePath,
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to generate loadbalancer config data")

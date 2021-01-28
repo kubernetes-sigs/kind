@@ -18,6 +18,7 @@ package loadbalancer
 
 import (
 	"bytes"
+	"io/ioutil"
 	"text/template"
 
 	"sigs.k8s.io/kind/pkg/errors"
@@ -25,9 +26,10 @@ import (
 
 // ConfigData is supplied to the loadbalancer config template
 type ConfigData struct {
-	ControlPlanePort int
-	BackendServers   map[string]string
-	IPv6             bool
+	ControlPlanePort     int
+	BackendServers       map[string]string
+	IPv6                 bool
+	LbConfigOverridePath string
 }
 
 // DefaultConfigTemplate is the loadbalancer config template
@@ -69,7 +71,16 @@ backend kube-apiservers
 // Config returns a kubeadm config generated from config data, in particular
 // the kubernetes version
 func Config(data *ConfigData) (config string, err error) {
-	t, err := template.New("loadbalancer-config").Parse(DefaultConfigTemplate)
+	cfgTemplate := DefaultConfigTemplate
+	if data.LbConfigOverridePath != "" {
+		b, err := ioutil.ReadFile(data.LbConfigOverridePath)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to read loadbalancer-config-path: "+data.LbConfigOverridePath)
+		}
+		cfgTemplate = string(b)
+	}
+
+	t, err := template.New("loadbalancer-config").Parse(cfgTemplate)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse config template")
 	}

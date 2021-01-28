@@ -35,11 +35,12 @@ type Action interface {
 
 // ActionContext is data supplied to all actions
 type ActionContext struct {
-	Logger   log.Logger
-	Status   *cli.Status
-	Config   *config.Cluster
-	Provider providers.Provider
-	cache    *cachedData
+	Logger               log.Logger
+	Status               *cli.Status
+	Config               *config.Cluster
+	Provider             providers.Provider
+	cache                *cachedData
+	LbConfigOverridePath string
 }
 
 // NewActionContext returns a new ActionContext
