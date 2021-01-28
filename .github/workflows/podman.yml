@@ -93,8 +93,9 @@ jobs:
 
         # TODO: implement this
       - name: Load docker image
-        run: sudo KIND_EXPERIMENTAL_PROVIDER=podman kind load docker-image busybox:2
-        continue-on-error: true
+        run: |
+          podman pull busybox
+          podman save busybox | sudo KIND_EXPERIMENTAL_PROVIDER=podman kind load image-archive -
 
       - name: Export logs
         if: always()

@@ -18,7 +18,9 @@ limitations under the License.
 package load
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -49,9 +51,9 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 			}
 			return nil
 		},
-		Use:   "image-archive <IMAGE.tar>",
-		Short: "Loads docker image from archive into nodes",
-		Long:  "Loads docker image from archive into all or specified nodes by name",
+		Use:   "image-archive <IMAGE.tar| - >",
+		Short: "Loads docker/podman image from archive or STDIN into nodes",
+		Long:  "Loads docker/podman image from archive or STDIN into all or specified nodes by name",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cli.OverrideDefaultName(cmd.Flags())
 			return runE(logger, flags, args)
@@ -78,9 +80,17 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 		runtime.GetDefault(logger),
 	)
 
-	// Check if file exists
+	// Check if file exists or image is being piped to stdin
 	imageTarPath := args[0]
-	if _, err := os.Stat(imageTarPath); err != nil {
+	if imageTarPath == "-" {
+		stat, err := os.Stdin.Stat()
+		if err != nil {
+			return err
+		}
+		if (stat.Mode() & os.ModeCharDevice) != 0 {
+			return fmt.Errorf("stdin is from terminal")
+		}
+	} else if _, err := os.Stat(imageTarPath); err != nil {
 		return err
 	}
 
@@ -128,10 +138,15 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 
 // loads an image tarball onto a node
 func loadImage(imageTarName string, node nodes.Node) error {
-	f, err := os.Open(imageTarName)
-	if err != nil {
-		return errors.Wrap(err, "failed to open image")
+	var f io.Reader
+	if imageTarName == "-" {
+		f = bufio.NewReader(os.Stdin)
+	} else {
+		f, err := os.Open(imageTarName)
+		if err != nil {
+			return errors.Wrap(err, "failed to open image")
+		}
+		defer f.Close()
 	}
-	defer f.Close()
 	return nodeutils.LoadImageArchive(node, f)
 }
