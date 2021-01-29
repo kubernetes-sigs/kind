@@ -75,6 +75,29 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to init node with kubeadm")
 	}
 
+	// copy the certs to the loadbalancer node so it can do L7 loadbalancing
+	loadBalancerNode, err := nodeutils.ExternalLoadBalancerNode(allNodes)
+	if err != nil {
+		return err
+	}
+	if loadBalancerNode != nil {
+		for _, file := range []string{
+			"/etc/kubernetes/pki/apiserver.crt", "/etc/kubernetes/pki/apiserver.key",
+		} {
+			if err := nodeutils.CopyNodeToNode(node, loadBalancerNode, file); err != nil {
+				return errors.Wrap(err, "failed to copy certs to loadbalancer node")
+			}
+		}
+		if err := loadBalancerNode.Command("sh", "-c",
+			"cat /etc/kubernetes/pki/apiserver.crt /etc/kubernetes/pki/apiserver.key > /etc/kubernetes/pki/apiserver.pem",
+		).Run(); err != nil {
+			return errors.Wrap(err, "failed to create .pem file on loadbalancer node")
+		}
+		if err := loadBalancerNode.Command("kill", "-s", "HUP", "1").Run(); err != nil {
+			return errors.Wrap(err, "failed to reload loadbalancer")
+		}
+	}
+
 	// copy some files to the other control plane nodes
 	otherControlPlanes, err := nodeutils.SecondaryControlPlaneNodes(allNodes)
 	if err != nil {
