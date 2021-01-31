@@ -91,6 +91,31 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to apply overlay network")
 	}
 
+	// To avoid for kubelet waiting for container runtime network ready,
+	// here add a cni placeholder file to the control node to just tell the
+	// container runtime network ready.
+	// at least 30 seconds faster for control node to be ready status.
+	// see https://github.com/kubernetes-sigs/kind/issues/2036.
+
+	cniConflistPlaceHolder := `
+		{
+			"cniVersion": "0.3.0",
+			"name": "kindnet",
+			"plugins": [
+				{
+					"type": "portmap"
+				}
+			]
+		}
+	`
+	cniConflistPlaceHolderFile := "/etc/cni/net.d/kindnet.conflist"
+	// is needed to do this for all ControlPlaneNodes?
+	if err := node.Command(
+		"tee", cniConflistPlaceHolderFile,
+	).SetStdin(strings.NewReader(cniConflistPlaceHolder)).Run(); err != nil {
+		return errors.Wrap(err, "failed to write CNI placeholder file")
+	}
+
 	// mark success
 	ctx.Status.End(true)
 	return nil
