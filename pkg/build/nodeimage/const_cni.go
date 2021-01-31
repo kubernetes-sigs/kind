@@ -22,9 +22,11 @@ The default CNI manifest and images are our own tiny kindnet
 
 var defaultCNIImages = []string{"kindest/kindnetd:v20210119-d5ef916d"}
 
+// TODO: migrate to fully patching and deprecate the template
 const defaultCNIManifest = `
 # kindnetd networking manifest
 # would you kindly template this file
+# would you kindly patch this file
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
