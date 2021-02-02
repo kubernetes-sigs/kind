@@ -45,5 +45,6 @@ export GOOS=darwin GOARCH=amd64
 export GOOS=linux GOARCH=amd64
 export GOOS=linux GOARCH=arm64
 export GOOS=linux GOARCH=ppc64le
+export GOOS=linux GOARCH=mips64le
 EOF
 )
