@@ -45,18 +45,15 @@ for ARCH in "${ARCHITECTURES[@]}"; do
 done
 
 echo
-# TODO (micahhausler): Once kind-ci/containerd-nightlies adds .sha256sum files, just fetch those
 for ARCH in "${ARCHITECTURES[@]}"; do
-    RUNC_URL="${CONTAINERD_BASE_URL}/runc.${ARCH}"
-    curl -sSL --retry 5 --output "/tmp/runc.${ARCH}" "${RUNC_URL}"
-    SHASUM=$(sha256sum "/tmp/runc.${ARCH}" | awk '{print $1}')
+    RUNC_URL="${CONTAINERD_BASE_URL}/runc.${ARCH}.sha256sum"
+    SHASUM=$(curl -sSL --retry 5 "${RUNC_URL}" | awk '{print $1}')
     ARCH_UPPER=$(echo "$ARCH" | tr '[:lower:]' '[:upper:]')
     echo "ARG RUNC_${ARCH_UPPER}_SHA256SUM=${SHASUM}"
-    rm "/tmp/runc.${ARCH}"
 done
 
 echo
-# TODO (micahhausler): Once https://github.com/kubernetes-sigs/cri-tools/issues/716 is resolved, just fetch the sha256
+# TODO (micahhausler): Once we upgrade to a release with the fix for https://github.com/kubernetes-sigs/cri-tools/issues/716 (1.21.0?), just fetch the sha256
 for ARCH in "${ARCHITECTURES[@]}"; do
     CRICTL_URL="https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz"
     curl -sSL --retry 5 --output "/tmp/crictl.${ARCH}.tgz" "${CRICTL_URL}"
