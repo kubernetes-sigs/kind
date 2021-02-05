@@ -15,25 +15,30 @@
 
 set -o errexit -o nounset -o pipefail
 
-CONTAINERD_VERSION="1.4.0-106-gce4439a8"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
+cd "${REPO_ROOT}"
 
+# get the versions from the dockerfile
+CONTAINERD_VERSION="$(sed -n 's/ARG CONTAINERD_VERSION="\(.*\)"/\1/p' ./images/base/Dockerfile)"
+CNI_PLUGINS_VERSION="$(sed -n 's/ARG CNI_PLUGINS_VERSION="\(.*\)"/\1/p' ./images/base/Dockerfile)"
+CRICTL_VERSION="$(sed -n 's/ARG CRICTL_VERSION="\(.*\)"/\1/p' ./images/base/Dockerfile)"
+
+# darwin is great
+SED="sed"
+if which gsed &>/dev/null; then
+  SED="gsed"
+fi
+if ! (${SED} --version 2>&1 | grep -q GNU); then
+  echo "!!! GNU sed is required.  If on OS X, use 'brew install gnu-sed'." >&2
+  exit 1
+fi
+
+# TODO: dry this out as well
 ARCHITECTURES=(
     "amd64"
     "arm64"
     "ppc64le"
 )
-
-CONTAINERD_DEFAULT_VERSION="1.4.0-106-gce4439a8"
-read -r -p "What version of containerd? (defaults to $CONTAINERD_DEFAULT_VERSION) " CONTAINERD_VERSION
-CONTAINERD_VERSION=${CONTAINERD_VERSION:-${CONTAINERD_DEFAULT_VERSION}}
-
-CNI_DEFAULT_VERSION="v0.9.0"
-read -r -p "What version of CNI? (defaults to $CNI_DEFAULT_VERSION) " CNI_VERSION
-CNI_VERSION=${CNI_VERSION:-${CNI_DEFAULT_VERSION}}
-
-CRICTL_DEFAULT_VERSION="v1.19.0"
-read -r -p "What version of crictl: (defaults to $CRICTL_DEFAULT_VERSION) " CRICTL_VERSION
-CRICTL_VERSION=${CRICTL_VERSION:-${CRICTL_DEFAULT_VERSION}}
 
 echo
 CONTAINERD_BASE_URL="https://github.com/kind-ci/containerd-nightlies/releases/download/containerd-${CONTAINERD_VERSION}"
@@ -42,6 +47,7 @@ for ARCH in "${ARCHITECTURES[@]}"; do
     SHASUM=$(curl -sSL --retry 5 "${CONTAINERD_URL}" | awk '{print $1}')
     ARCH_UPPER=$(echo "$ARCH" | tr '[:lower:]' '[:upper:]')
     echo "ARG CONTAINERD_${ARCH_UPPER}_SHA256SUM=${SHASUM}"
+    $SED -i 's/ARG CONTAINERD_'"${ARCH_UPPER}"'_SHA256SUM=.*/ARG CONTAINERD_'"${ARCH_UPPER}"'_SHA256SUM="'"${SHASUM}"'"/' ./images/base/Dockerfile
 done
 
 echo
@@ -50,6 +56,7 @@ for ARCH in "${ARCHITECTURES[@]}"; do
     SHASUM=$(curl -sSL --retry 5 "${RUNC_URL}" | awk '{print $1}')
     ARCH_UPPER=$(echo "$ARCH" | tr '[:lower:]' '[:upper:]')
     echo "ARG RUNC_${ARCH_UPPER}_SHA256SUM=${SHASUM}"
+    $SED -i 's/ARG RUNC_'"${ARCH_UPPER}"'_SHA256SUM=.*/ARG RUNC_'"${ARCH_UPPER}"'_SHA256SUM="'"${SHASUM}"'"/' ./images/base/Dockerfile
 done
 
 echo
@@ -57,17 +64,19 @@ echo
 for ARCH in "${ARCHITECTURES[@]}"; do
     CRICTL_URL="https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz"
     curl -sSL --retry 5 --output "/tmp/crictl.${ARCH}.tgz" "${CRICTL_URL}"
-    SHASUM=$(sha256sum "/tmp/crictl.${ARCH}.tgz" | awk '{print $1}')
+    SHASUM=$(shasum -a 256 "/tmp/crictl.${ARCH}.tgz" | awk '{print $1}')
     ARCH_UPPER=$(echo "$ARCH" | tr '[:lower:]' '[:upper:]')
     echo "ARG CRICTL_${ARCH_UPPER}_SHA256SUM=${SHASUM}"
+    $SED -i 's/ARG CRICTL_'"${ARCH_UPPER}"'_SHA256SUM=.*/ARG CRICTL_'"${ARCH_UPPER}"'_SHA256SUM="'"${SHASUM}"'"/' ./images/base/Dockerfile
     rm "/tmp/crictl.${ARCH}.tgz"
 done
 
 echo
 for ARCH in "${ARCHITECTURES[@]}"; do
-    CNI_TARBALL="${CNI_VERSION}/cni-plugins-linux-${ARCH}-${CNI_VERSION}.tgz"
+    CNI_TARBALL="${CNI_PLUGINS_VERSION}/cni-plugins-linux-${ARCH}-${CNI_PLUGINS_VERSION}.tgz"
     CNI_URL="https://github.com/containernetworking/plugins/releases/download/${CNI_TARBALL}"
     SHASUM=$(curl -sSL --retry 5 "${CNI_URL}.sha256" | awk '{print $1}')
     ARCH_UPPER=$(echo "$ARCH" | tr '[:lower:]' '[:upper:]')
-    echo "ARG CNI_${ARCH_UPPER}_SHA256SUM=${SHASUM}"
+    echo "ARG CNI_PLUGINS_${ARCH_UPPER}_SHA256SUM=${SHASUM}"
+    $SED -i 's/ARG CNI_PLUGINS_'"${ARCH_UPPER}"'_SHA256SUM=.*/ARG CNI_PLUGINS_'"${ARCH_UPPER}"'_SHA256SUM="'"${SHASUM}"'"/' ./images/base/Dockerfile
 done

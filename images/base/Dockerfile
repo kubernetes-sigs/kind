@@ -47,13 +47,13 @@ ARG CRICTL_AMD64_SHA256SUM=87d8ef70b61f2fe3d8b4a48f6f712fd798c6e293ed3723c1e4bbb
 ARG CRICTL_ARM64_SHA256SUM=ec040d14ca03e8e4e504a85dae5353e04b5d9d8aea3df68699258992c0eb8d88
 ARG CRICTL_PPC64LE_SHA256SUM=72107c58960ee9405829c3366dbfcd86f163a990ea2102f3ed63a709096bc7ba
 
-# Configure CNI binaries
-ARG CNI_VERSION="v0.9.0"
-ARG CNI_TARBALL="${CNI_VERSION}/cni-plugins-linux-${TARGETARCH}-${CNI_VERSION}.tgz"
-ARG CNI_URL="https://github.com/containernetworking/plugins/releases/download/${CNI_TARBALL}"
-ARG CNI_AMD64_SHA256SUM=58a58d389895ba9f9bbd3ef330f186c0bb7484136d0bfb9b50152eed55d9ec24
-ARG CNI_ARM64_SHA256SUM=49bdf1d3c852a831964aea8c9d12340b36107ee756d8328403905ff599abc6f5
-ARG CNI_PPC64LE_SHA256SUM=d37829b5eeca0c941b4478203c75c6cc26d9cfc1d6c8bb451c0008e0c02a025f
+# Configure CNI binaries from upstream
+ARG CNI_PLUGINS_VERSION="v0.9.0"
+ARG CNI_PLUGINS_TARBALL="${CNI_PLUGINS_VERSION}/cni-plugins-linux-${TARGETARCH}-${CNI_PLUGINS_VERSION}.tgz"
+ARG CNI_PLUGINS_URL="https://github.com/containernetworking/plugins/releases/download/${CNI_PLUGINS_TARBALL}"
+ARG CNI_PLUGINS_AMD64_SHA256SUM=58a58d389895ba9f9bbd3ef330f186c0bb7484136d0bfb9b50152eed55d9ec24
+ARG CNI_PLUGINS_ARM64_SHA256SUM=49bdf1d3c852a831964aea8c9d12340b36107ee756d8328403905ff599abc6f5
+ARG CNI_PLUGINS_PPC64LE_SHA256SUM=d37829b5eeca0c941b4478203c75c6cc26d9cfc1d6c8bb451c0008e0c02a025f
 
 # copy in static files (configs, scripts)
 COPY files/ /
@@ -136,11 +136,11 @@ RUN echo "Ensuring scripts are executable ..." \
     && rm -f /tmp/crictl.sha256 \
     && tar -C /usr/local/bin -xzvf /tmp/crictl.${TARGETARCH}.tgz \
     && rm -rf /tmp/crictl.${TARGETARCH}.tgz \
- && echo "Installing CNI binaries ..." \
-    && curl -sSL --retry 5 --output /tmp/cni.${TARGETARCH}.tgz "${CNI_URL}" \
-    && echo "${CNI_AMD64_SHA256SUM}  /tmp/cni.amd64.tgz" | tee /tmp/cni.sha256 \
-    && echo "${CNI_ARM64_SHA256SUM}  /tmp/cni.arm64.tgz" | tee -a /tmp/cni.sha256 \
-    && echo "${CNI_PPC64LE_SHA256SUM}  /tmp/cni.ppc64le.tgz" | tee -a /tmp/cni.sha256 \
+ && echo "Installing CNI plugin binaries ..." \
+    && curl -sSL --retry 5 --output /tmp/cni.${TARGETARCH}.tgz "${CNI_PLUGINS_URL}" \
+    && echo "${CNI_PLUGINS_AMD64_SHA256SUM}  /tmp/cni.amd64.tgz" | tee /tmp/cni.sha256 \
+    && echo "${CNI_PLUGINS_ARM64_SHA256SUM}  /tmp/cni.arm64.tgz" | tee -a /tmp/cni.sha256 \
+    && echo "${CNI_PLUGINS_PPC64LE_SHA256SUM}  /tmp/cni.ppc64le.tgz" | tee -a /tmp/cni.sha256 \
     && sha256sum --ignore-missing -c /tmp/cni.sha256 \
     && rm -f /tmp/cni.sha256 \
     && mkdir -p /opt/cni/bin \
