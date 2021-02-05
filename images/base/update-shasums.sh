@@ -23,6 +23,13 @@ CONTAINERD_VERSION="$(sed -n 's/ARG CONTAINERD_VERSION="\(.*\)"/\1/p' ./images/b
 CNI_PLUGINS_VERSION="$(sed -n 's/ARG CNI_PLUGINS_VERSION="\(.*\)"/\1/p' ./images/base/Dockerfile)"
 CRICTL_VERSION="$(sed -n 's/ARG CRICTL_VERSION="\(.*\)"/\1/p' ./images/base/Dockerfile)"
 
+# setup cleanup trap, create portable tempdir
+cleanup(){
+    rm -rf "${TMP:?}"
+}
+trap 'cleanup' EXIT
+TMP="$(mktemp -d)"
+
 # darwin is great
 SED="sed"
 if which gsed &>/dev/null; then
@@ -63,12 +70,12 @@ echo
 # TODO (micahhausler): Once we upgrade to a release with the fix for https://github.com/kubernetes-sigs/cri-tools/issues/716 (1.21.0?), just fetch the sha256
 for ARCH in "${ARCHITECTURES[@]}"; do
     CRICTL_URL="https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz"
-    curl -sSL --retry 5 --output "/tmp/crictl.${ARCH}.tgz" "${CRICTL_URL}"
-    SHASUM=$(shasum -a 256 "/tmp/crictl.${ARCH}.tgz" | awk '{print $1}')
+    curl -sSL --retry 5 --output "${TMP}/crictl.${ARCH}.tgz" "${CRICTL_URL}"
+    SHASUM=$(shasum -a 256 "${TMP}/crictl.${ARCH}.tgz" | awk '{print $1}')
     ARCH_UPPER=$(echo "$ARCH" | tr '[:lower:]' '[:upper:]')
     echo "ARG CRICTL_${ARCH_UPPER}_SHA256SUM=${SHASUM}"
     $SED -i 's/ARG CRICTL_'"${ARCH_UPPER}"'_SHA256SUM=.*/ARG CRICTL_'"${ARCH_UPPER}"'_SHA256SUM="'"${SHASUM}"'"/' ./images/base/Dockerfile
-    rm "/tmp/crictl.${ARCH}.tgz"
+    rm "${TMP}/crictl.${ARCH}.tgz"
 done
 
 echo
