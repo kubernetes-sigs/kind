@@ -27,7 +27,8 @@ jobs:
       - name: Boot Fedora
         run: |
           ln -sf ./hack/ci/Vagrantfile ./Vagrantfile
-          vagrant up
+          # Retry if it fails (download.fedoraproject.org returns 404 sometimes)
+          vagrant up || vagrant up
 
       - name: Show provider info
         run: |
