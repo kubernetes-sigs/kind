@@ -143,6 +143,8 @@ func commonArgs(cfg *config.Cluster, networkName string) ([]string, error) {
 		"--net", networkName, // attach to its own network
 		// label the node with the cluster ID
 		"--label", fmt.Sprintf("%s=%s", clusterLabelKey, cfg.Name),
+		// specify container implementation to systemd
+		"-e", "container=podman",
 	}
 
 	// enable IPv6 if necessary
