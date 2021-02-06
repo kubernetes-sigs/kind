@@ -22,7 +22,7 @@ jobs:
       JOB_NAME: "podman-${{ matrix.deployment }}-${{ matrix.ipFamily }}"
       KIND_EXPERIMENTAL_PROVIDER: "podman"
       IP_FAMILY: ${{ matrix.ipFamily }}
-      PODMAN_VERSION: "stable"
+      PODMAN_VERSION: "unstable"
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
@@ -49,13 +49,14 @@ jobs:
           echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/${PODMAN_VERSION}/xUbuntu_${VERSION_ID}/ /" | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
           curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/${PODMAN_VERSION}/xUbuntu_${VERSION_ID}/Release.key | sudo apt-key add -
           sudo apt-get update -qq
-          sudo apt-get -qq -y install podman
+          sudo apt-get -qq -y -o Dpkg::Options::="--force-overwrite" install podman
           # Install network
           sudo mkdir -p /etc/cni/net.d
           curl -qsSL https://raw.githubusercontent.com/containers/libpod/master/cni/87-podman-bridge.conflist | sudo tee /etc/cni/net.d/87-podman-bridge.conf
           curl -qsSL https://github.com/containernetworking/plugins/releases/download/v0.8.6/cni-plugins-linux-amd64-v0.8.6.tgz --output /tmp/cni.tgz
           sudo mkdir -p /usr/libexec/cni
           sudo tar -C /usr/libexec/cni -xvzf /tmp/cni.tgz
+          podman version
 
       - name: Create single node cluster
         if: ${{ matrix.deployment == 'singleNode' }}
