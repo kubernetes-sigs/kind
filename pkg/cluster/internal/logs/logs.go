@@ -84,11 +84,11 @@ func untar(logger log.Logger, r io.Reader, dir string) (err error) {
 				return err
 			}
 			n, err := io.Copy(wf, tr)
-			if closeErr := wf.Close(); closeErr != nil && err == nil {
-				err = closeErr
-			}
 			if err != nil {
 				return errors.Errorf("error writing to %s: %v", abs, err)
+			}
+			if err := wf.Close(); err != nil {
+				return errors.Errorf("error closing file %s: %v", abs, err)
 			}
 			if n != f.Size {
 				return errors.Errorf("only wrote %d bytes to %s; expected %d", n, abs, f.Size)
