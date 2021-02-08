@@ -231,9 +231,10 @@ or try to use `sudo` before your commands (if you get `command not found` please
 
 ## Docker init daemon config
 
-Please make sure that when you use `kind`, do not have `"init": true` in your `/etc/docker/daemon.json` because that will
-causes `/sbin/init` to show the following cryptic message *Couldn't find an alternative telinit implementation to spawn*.
-This has to to with `/sbin/init` not running as process id 1. 
+Please make sure that when you use `kind`, you can't have `"init": true` in your `/etc/docker/daemon.json` because that will
+cause `/sbin/init` to show the following cryptic message *Couldn't find an alternative telinit implementation to spawn*.
+This has to to with `/sbin/init` not running as process id 1.
+
 ## Windows Containers
 
 [Docker Desktop for Windows][docker desktop for windows] supports running both Linux (the default) and Windows Docker containers.
