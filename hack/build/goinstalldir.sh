@@ -35,7 +35,7 @@ fi
 
 # check if GOBIN is set anyhow
 if [ -n "${GOBIN}" ]; then
-  echo "GOBIN"
+  echo "${GOBIN}"
   exit 0
 fi
 
