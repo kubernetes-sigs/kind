@@ -6,12 +6,18 @@ version = 2
 [proxy_plugins."fuse-overlayfs"]
   type = "snapshot"
   address = "/run/containerd-fuse-overlayfs.sock"
+# stargz is used for lazy pulling
+[proxy_plugins.stargz]
+  type = "snapshot"
+  address = "/run/containerd-stargz-grpc/containerd-stargz-grpc.sock"
 
 [plugins."io.containerd.grpc.v1.cri".containerd]
   # save disk space when using a single snapshotter
   discard_unpacked_layers = true
   # explicitly use default snapshotter so we can sed it in entrypoint
   snapshotter = "overlayfs"
+  # pass additional snapshotter labels to remote snapshotter
+  disable_snapshot_annotations = false
   # explicit default here, as we're configuring it below
   default_runtime_name = "runc"
 [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]

@@ -67,6 +67,15 @@ ARG CONTAINERD_FUSE_OVERLAYFS_ARM64_SHA256SUM="68ef0896f3d5c0af73ad3d13b1b9a27f9
 ARG CONTAINERD_FUSE_OVERLAYFS_PPC64LE_SHA256SUM="49679827fa2b46dd28899bdc53c2926e83f42d305ad7ee31aeaf50dbb774a840"
 ARG CONTAINERD_FUSE_OVERLAYFS_S390X_SHA256SUM="ed74e26de3215a62154b47be67953a25a15e02f7a8550408fec541d6799bc7ad"
 
+# Configure stargz-snapshotter binary from upstream
+ARG STARGZ_SNAPSHOTTER_VERSION="v0.11.1"
+ARG STARGZ_SNAPSHOTTER_BASE_URL="https://github.com/containerd/stargz-snapshotter/releases/download/${STARGZ_SNAPSHOTTER_VERSION}"
+ARG STARGZ_SNAPSHOTTER_URL="${STARGZ_SNAPSHOTTER_BASE_URL}/stargz-snapshotter-${STARGZ_SNAPSHOTTER_VERSION}-linux-${TARGETARCH}.tar.gz"
+ARG STARGZ_SNAPSHOTTER_AMD64_SHA256SUM="f958a77b9cc639620af78208b34213fbd17fe28699708a7d3a9c7862025a7a4c"
+ARG STARGZ_SNAPSHOTTER_ARM64_SHA256SUM="37559fc5b62757ae148efed1070c319ad0323aae91a1d83edce1e157644e29ea"
+ARG STARGZ_SNAPSHOTTER_PPC64LE_SHA256SUM="5a8641b1cae0b3096a6104e4831e7ae5a4ed9d7f293bf45f13e9c5f3c048af9e"
+ARG STARGZ_SNAPSHOTTER_S390X_SHA256SUM="ca0a166e3475d3e9e0880e3018a39d68a77de6f21523d9a95eeb31bdbec7c715"
+
 # copy in static files
 # all scripts are 0755 (rwx r-x r-x)
 COPY --chmod=0755 files/usr/local/bin/* /usr/local/bin/
@@ -74,6 +83,7 @@ COPY --chmod=0755 files/usr/local/bin/* /usr/local/bin/
 # all configs are 0644 (rw- r-- r--)
 COPY --chmod=0644 files/etc/* /etc/
 COPY --chmod=0644 files/etc/containerd/* /etc/containerd/
+COPY --chmod=0644 files/etc/containerd-stargz-grpc/* /etc/containerd-stargz-grpc/
 COPY --chmod=0644 files/etc/default/* /etc/default/
 COPY --chmod=0644 files/etc/sysctl.d/* /etc/sysctl.d/
 COPY --chmod=0644 files/etc/systemd/system/* /etc/systemd/system/
@@ -115,7 +125,7 @@ RUN echo "Installing Packages ..." \
       conntrack iptables iproute2 ethtool socat util-linux mount ebtables kmod \
       libseccomp2 pigz \
       bash ca-certificates curl rsync \
-      nfs-common fuse-overlayfs \
+      nfs-common fuse-overlayfs fuse3 \
       jq \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
     && rm -f /lib/systemd/system/multi-user.target.wants/* \
@@ -197,6 +207,18 @@ RUN echo "Installing containerd-fuse-overlayfs ..." \
     && rm -f /tmp/containerd-fuse-overlayfs.sha256 \
     && tar -C /usr/local/bin -xzvf /tmp/containerd-fuse-overlayfs.${TARGETARCH}.tgz \
     && rm -rf /tmp/containerd-fuse-overlayfs.${TARGETARCH}.tgz
+
+RUN echo "Installing stargz-snapshotter ..." \
+    && curl -sSL --retry 5 --output /tmp/stargz-snapshotter.${TARGETARCH}.tgz "${STARGZ_SNAPSHOTTER_URL}" \
+    && echo "${STARGZ_SNAPSHOTTER_AMD64_SHA256SUM}  /tmp/stargz-snapshotter.amd64.tgz" | tee /tmp/stargz-snapshotter.sha256 \
+    && echo "${STARGZ_SNAPSHOTTER_ARM64_SHA256SUM}  /tmp/stargz-snapshotter.arm64.tgz" | tee -a /tmp/stargz-snapshotter.sha256 \
+    && echo "${STARGZ_SNAPSHOTTER_PPC64LE_SHA256SUM}  /tmp/stargz-snapshotter.ppc64le.tgz" | tee -a /tmp/stargz-snapshotter.sha256 \
+    && echo "${STARGZ_SNAPSHOTTER_S390X_SHA256SUM}  /tmp/stargz-snapshotter.s390x.tgz" | tee -a /tmp/stargz-snapshotter.sha256 \
+    && sha256sum --ignore-missing -c /tmp/stargz-snapshotter.sha256 \
+    && rm -f /tmp/stargz-snapshotter.sha256 \
+    && tar -C /usr/local/bin/ -xzvf /tmp/stargz-snapshotter.${TARGETARCH}.tgz containerd-stargz-grpc \
+    && rm -f /tmp/stargz-snapshotter.${TARGETARCH}.tgz \
+    && containerd-stargz-grpc --version
 
 RUN echo "Ensuring /etc/kubernetes/manifests" \
     && mkdir -p /etc/kubernetes/manifests

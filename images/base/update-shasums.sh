@@ -23,6 +23,7 @@ CONTAINERD_VERSION="$(sed -n 's/ARG CONTAINERD_VERSION="\(.*\)"/\1/p' ./images/b
 CNI_PLUGINS_VERSION="$(sed -n 's/ARG CNI_PLUGINS_VERSION="\(.*\)"/\1/p' ./images/base/Dockerfile)"
 CRICTL_VERSION="$(sed -n 's/ARG CRICTL_VERSION="\(.*\)"/\1/p' ./images/base/Dockerfile)"
 CONTAINERD_FUSE_OVERLAYFS_VERSION="$(sed -n 's/ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="\(.*\)"/\1/p' ./images/base/Dockerfile)"
+STARGZ_SNAPSHOTTER_VERSION="$(sed -n 's/ARG STARGZ_SNAPSHOTTER_VERSION="\(.*\)"/\1/p' ./images/base/Dockerfile)"
 
 # darwin is great
 SED="sed"
@@ -88,4 +89,14 @@ for ARCH in "${ARCHITECTURES[@]}"; do
     ARCH_UPPER=$(echo "$ARCH" | tr '[:lower:]' '[:upper:]')
     echo "ARG CONTAINERD_FUSE_OVERLAYFS_${ARCH_UPPER}_SHA256SUM=${SHASUM}"
     $SED -i 's/ARG CONTAINERD_FUSE_OVERLAYFS_'"${ARCH_UPPER}"'_SHA256SUM=.*/ARG CONTAINERD_FUSE_OVERLAYFS_'"${ARCH_UPPER}"'_SHA256SUM="'"${SHASUM}"'"/' ./images/base/Dockerfile
+done
+
+echo
+STARGZ_SNAPSHOTTER_BASE_URL="https://github.com/containerd/stargz-snapshotter/releases/download/${STARGZ_SNAPSHOTTER_VERSION}"
+for ARCH in "${ARCHITECTURES[@]}"; do
+    STARGZ_SNAPSHOTTER_URL="${STARGZ_SNAPSHOTTER_BASE_URL}/stargz-snapshotter-${STARGZ_SNAPSHOTTER_VERSION}-linux-${ARCH}.tar.gz.sha256sum"
+    SHASUM=$(curl -sSL --retry 5 "${STARGZ_SNAPSHOTTER_URL}" | awk '{print $1}')
+    ARCH_UPPER=$(echo "$ARCH" | tr '[:lower:]' '[:upper:]')
+    echo "ARG STARGZ_SNAPSHOTTER_${ARCH_UPPER}_SHA256SUM=${SHASUM}"
+    $SED -i 's/ARG STARGZ_SNAPSHOTTER_'"${ARCH_UPPER}"'_SHA256SUM=.*/ARG STARGZ_SNAPSHOTTER_'"${ARCH_UPPER}"'_SHA256SUM="'"${SHASUM}"'"/' ./images/base/Dockerfile
 done

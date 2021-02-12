@@ -113,6 +113,13 @@ configure_containerd() {
     if [[ "$snapshotter" = "fuse-overlayfs" ]]; then
       echo 'INFO: enabling containerd-fuse-overlayfs service'
       systemctl enable containerd-fuse-overlayfs
+    elif [[ "$snapshotter" = "stargz" ]]; then
+      echo 'INFO: enabling stargz-snapshotter service'
+      # start stargz-snapshotter service and allow it to proxy CRI image service
+      # so that the snapshotter can handle registry auth for snapshots
+      sed -i -E 's|KUBELET_EXTRA_ARGS=(.*)|KUBELET_EXTRA_ARGS=\1 --image-service-endpoint=unix:///run/containerd-stargz-grpc/containerd-stargz-grpc.sock|' /etc/default/kubelet
+      echo "image-endpoint: unix:///run/containerd-stargz-grpc/containerd-stargz-grpc.sock" >> /etc/crictl.yaml
+      systemctl enable stargz-snapshotter
     fi
   fi
 }

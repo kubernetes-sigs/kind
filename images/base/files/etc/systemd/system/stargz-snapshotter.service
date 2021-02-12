@@ -1,0 +1,13 @@
+[Unit]
+Description=Stargz Snapshotter
+PartOf=containerd.service
+
+[Service]
+Environment=HOME=/root
+ExecStart=/usr/local/bin/containerd-stargz-grpc --config=/etc/containerd-stargz-grpc/config.toml
+Type=notify
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target

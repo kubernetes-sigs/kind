@@ -1,0 +1,3 @@
+[cri_keychain]
+enable_keychain = true
+image_service_path = "/run/containerd/containerd.sock"
