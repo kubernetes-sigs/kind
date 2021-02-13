@@ -18,6 +18,7 @@ package logs
 
 import (
 	"archive/tar"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -43,7 +44,7 @@ func DumpDir(logger log.Logger, node nodes.Node, nodeDir, hostDir string) (err e
 		// Fatal errors will return exit code 2.
 		// http://man7.org/linux/man-pages/man1/tar.1.html#RETURN_VALUE
 		fmt.Sprintf(
-			`tar --hard-dereference -C %s -chf - . || (r=$?; [ $r -eq 1 ] || exit $r)`,
+			`tar --hard-dereference -C %s -zchf - . || (r=$?; [ $r -eq 1 ] || exit $r)`,
 			shellescape.Quote(path.Clean(nodeDir)+"/"),
 		),
 	)
@@ -58,7 +59,12 @@ func DumpDir(logger log.Logger, node nodes.Node, nodeDir, hostDir string) (err e
 
 // untar reads the tar file from r and writes it into dir.
 func untar(logger log.Logger, r io.Reader, dir string) (err error) {
-	tr := tar.NewReader(r)
+	uncompressedStream, err := gzip.NewReader(r)
+	if err != nil {
+		return errors.Wrapf(err, "gzip reading error: %v", err)
+	}
+
+	tr := tar.NewReader(uncompressedStream)
 	for {
 		f, err := tr.Next()
 
