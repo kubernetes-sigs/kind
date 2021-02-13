@@ -46,12 +46,6 @@ jobs:
       - name: Setup podman
         run: |
           podman version
-          # Install network
-          sudo mkdir -p /etc/cni/net.d
-          curl -qsSL https://raw.githubusercontent.com/containers/libpod/master/cni/87-podman-bridge.conflist | sudo tee /etc/cni/net.d/87-podman-bridge.conf
-          curl -qsSL https://github.com/containernetworking/plugins/releases/download/v0.8.6/cni-plugins-linux-amd64-v0.8.6.tgz --output /tmp/cni.tgz
-          sudo mkdir -p /usr/libexec/cni
-          sudo tar -C /usr/libexec/cni -xvzf /tmp/cni.tgz
 
       - name: Create single node cluster
         if: ${{ matrix.deployment == 'singleNode' }}
