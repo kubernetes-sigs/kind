@@ -43,13 +43,9 @@ jobs:
           sudo sysctl -w net.ipv6.conf.all.forwarding=1
           sudo sysctl -w net.ipv4.ip_forward=1
 
-      - name: Install podman
+      - name: Setup podman
         run: |
-          . /etc/os-release
-          echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/${PODMAN_VERSION}/xUbuntu_${VERSION_ID}/ /" | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
-          curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/${PODMAN_VERSION}/xUbuntu_${VERSION_ID}/Release.key | sudo apt-key add -
-          sudo apt-get update -qq
-          sudo apt-get -qq -y install podman
+          podman version
           # Install network
           sudo mkdir -p /etc/cni/net.d
           curl -qsSL https://raw.githubusercontent.com/containers/libpod/master/cni/87-podman-bridge.conflist | sudo tee /etc/cni/net.d/87-podman-bridge.conf
