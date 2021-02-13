@@ -22,6 +22,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
+	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/log"
 
 	internalcreate "sigs.k8s.io/kind/pkg/cluster/internal/create"
@@ -68,18 +69,52 @@ func NewProvider(options ...ProviderOption) *Provider {
 		}
 	}
 
+	// ensure a provider if none was set
+	// NOTE: depends on logger being set (see sorting above)
 	if p.provider == nil {
-		// auto-detect based on each package IsAvailable() function
-		// default to docker for backwards compatibility
-		if docker.IsAvailable() {
-			p.provider = docker.NewProvider(p.logger)
-		} else if podman.IsAvailable() {
-			p.provider = podman.NewProvider(p.logger)
-		} else {
-			p.provider = docker.NewProvider(p.logger)
+		// DetectNodeProvider does not fallback to allow callers to determine
+		// this behavior
+		// However for compatibility if the caller of NewProvider supplied no
+		// option and we autodetect internally, we default to the docker provider
+		// for fallback, to avoid a breaking change for now.
+		// This may change in the future.
+		// TODO: consider breaking this API for earlier errors.
+		providerOpt, _ := DetectNodeProvider()
+		if providerOpt == nil {
+			providerOpt = ProviderWithDocker()
 		}
+		providerOpt.apply(p)
 	}
 	return p
+}
+
+// NoNodeProviderDetectedError indicates that we could not autolocate an available
+// NodeProvider backend on the host
+var NoNodeProviderDetectedError = errors.NewWithoutStack("failed to detect any supported node provider")
+
+// DetectNodeProvider allows callers to autodetect the node provider
+// *without* fallback to the default.
+//
+// Pass the returned ProviderOption to NewProvider to pass the auto-detect Docker
+// or Podman option explicitly (in the future there will be more options)
+//
+// NOTE: The kind *cli* also checks `KIND_EXPERIMENTAL_PROVIDER` for "podman" or
+// "docker" currently and does not auto-detect / respects this if set.
+//
+// This will be replaced with some other mechanism in the future (likely when
+// podman support is GA), in the meantime though your tool may wish to match this.
+//
+// In the future when this is not considered experimental,
+// that logic will be in a public API as well.
+func DetectNodeProvider() (ProviderOption, error) {
+	// auto-detect based on each node provider's IsAvailable() function
+	if docker.IsAvailable() {
+		return ProviderWithDocker(), nil
+	}
+	if podman.IsAvailable() {
+		return ProviderWithPodman(), nil
+	}
+	return nil, errors.WithStack(NoNodeProviderDetectedError)
 }
 
 // ProviderOption is an option for configuring a provider
