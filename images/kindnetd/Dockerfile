@@ -17,7 +17,7 @@
 FROM golang:1.13
 WORKDIR /go/src
 # make deps fetching cacheable
-COPY go.mod go.sum .
+COPY go.mod go.sum ./
 RUN go mod download
 # build
 COPY . .
