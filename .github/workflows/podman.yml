@@ -46,6 +46,9 @@ jobs:
       - name: Setup podman
         run: |
           podman version
+          # podman requires dnsmasq for custom networks
+          # https://github.com/actions/virtual-environments/issues/2708
+          sudo apt-get -y install dnsmasq
 
       - name: Create single node cluster
         if: ${{ matrix.deployment == 'singleNode' }}
