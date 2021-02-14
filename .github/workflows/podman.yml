@@ -9,7 +9,7 @@ on:
 jobs:
   podman:
     name: Podman
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
