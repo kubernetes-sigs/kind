@@ -50,6 +50,10 @@ jobs:
           # https://github.com/actions/virtual-environments/issues/2708
           sudo apt-get -y install dnsmasq
 
+      - name: Setup runc as runtime to temporary fix #2085
+        run: |
+          echo -e "[engine]\nruntime = \"runc\"" | sudo tee /etc/containers/containers.conf
+
       - name: Create single node cluster
         if: ${{ matrix.deployment == 'singleNode' }}
         run: |
