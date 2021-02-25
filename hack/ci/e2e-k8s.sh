@@ -264,10 +264,6 @@ main() {
   # debug kind version
   kind version
 
-  # default to bazel
-  # TODO(bentheelder): remove this line once we've updated CI to explicitly choose
-  BUILD_TYPE="${BUILD_TYPE:-bazel}"
-
   # build kubernetes
   if [ "${BUILD_TYPE:-}" = "bazel" ]; then
     build_with_bazel
