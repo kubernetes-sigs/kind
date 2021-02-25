@@ -38,7 +38,7 @@ type action struct {
 
 // NewAction returns a new action for kubeadm init
 func NewAction(cfg *config.Cluster) actions.Action {
-	return &action{skipKubeProxy: cfg.Networking.KubeProxyMode == config.NoneMode}
+	return &action{skipKubeProxy: cfg.Networking.KubeProxyMode == config.NoneProxyMode}
 }
 
 // Execute runs the action

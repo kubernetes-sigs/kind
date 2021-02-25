@@ -68,7 +68,7 @@ func SetDefaultsCluster(obj *Cluster) {
 	}
 	// default the KubeProxyMode using iptables as it's already the default
 	if obj.Networking.KubeProxyMode == "" {
-		obj.Networking.KubeProxyMode = IPTablesMode
+		obj.Networking.KubeProxyMode = IPTablesProxyMode
 	}
 }
 
