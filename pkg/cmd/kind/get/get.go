@@ -18,6 +18,8 @@ limitations under the License.
 package get
 
 import (
+	"errors"
+
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cmd"
@@ -35,6 +37,13 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Use:   "get",
 		Short: "Gets one of [clusters, nodes, kubeconfig]",
 		Long:  "Gets one of [clusters, nodes, kubeconfig]",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			err := cmd.Help()
+			if err != nil {
+				return err
+			}
+			return errors.New("Subcommand is required")
+		},
 	}
 	// add subcommands
 	cmd.AddCommand(clusters.NewCommand(logger, streams))

@@ -18,6 +18,8 @@ limitations under the License.
 package completion
 
 import (
+	"errors"
+
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cmd"
@@ -34,6 +36,13 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Use:   "completion",
 		Short: "Output shell completion code for the specified shell (bash, zsh or fish)",
 		Long:  longDescription,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			err := cmd.Help()
+			if err != nil {
+				return err
+			}
+			return errors.New("Subcommand is required")
+		},
 	}
 	cmd.AddCommand(zsh.NewCommand(logger, streams))
 	cmd.AddCommand(bash.NewCommand(logger, streams))
