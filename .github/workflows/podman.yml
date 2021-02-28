@@ -48,6 +48,7 @@ jobs:
           podman version
           # podman requires dnsmasq for custom networks
           # https://github.com/actions/virtual-environments/issues/2708
+          sudo apt-get update
           sudo apt-get -y install dnsmasq
 
       - name: Setup runc as runtime to temporary fix #2085
