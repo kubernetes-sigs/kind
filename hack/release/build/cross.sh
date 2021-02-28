@@ -42,6 +42,7 @@ else
 fi < <(cat <<EOF | tr '\n' '\0'
 export GOOS=windows GOARCH=amd64
 export GOOS=darwin GOARCH=amd64
+export GOOS=darwin GOARCH=arm64
 export GOOS=linux GOARCH=amd64
 export GOOS=linux GOARCH=arm64
 export GOOS=linux GOARCH=ppc64le
