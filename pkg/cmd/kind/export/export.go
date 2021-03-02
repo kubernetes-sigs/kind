@@ -18,6 +18,8 @@ limitations under the License.
 package export
 
 import (
+	"errors"
+
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cmd"
@@ -34,6 +36,13 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Use:   "export",
 		Short: "Exports one of [kubeconfig, logs]",
 		Long:  "Exports one of [kubeconfig, logs]",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			err := cmd.Help()
+			if err != nil {
+				return err
+			}
+			return errors.New("Subcommand is required")
+		},
 	}
 	// add subcommands
 	cmd.AddCommand(logs.NewCommand(logger, streams))

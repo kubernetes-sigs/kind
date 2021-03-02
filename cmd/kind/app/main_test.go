@@ -18,6 +18,8 @@ package app
 
 import (
 	"testing"
+
+	"sigs.k8s.io/kind/pkg/cmd"
 )
 
 func TestCheckQuiet(t *testing.T) {
@@ -74,6 +76,62 @@ func TestCheckQuiet(t *testing.T) {
 			result := checkQuiet(tc.Args)
 			if result != tc.ExpectQuiet {
 				t.Fatalf("fooo")
+			}
+		})
+	}
+}
+
+func Test_CommandErrReturn(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		Name       string
+		Command    string
+		Subcommand string
+	}{
+		{
+			Name:       "misspelled subcommand for build",
+			Command:    "build",
+			Subcommand: "nod-image",
+		},
+		{
+			Name:       "misspelled subcommand for completion",
+			Command:    "completion",
+			Subcommand: "zzsh",
+		},
+		{
+			Name:       "misspelled subcommand for create",
+			Command:    "create",
+			Subcommand: "clunster",
+		},
+		{
+			Name:       "misspelled subcommand for delete",
+			Command:    "delete",
+			Subcommand: "clust",
+		},
+		{
+			Name:       "misspelled subcommand for export",
+			Command:    "export",
+			Subcommand: "kubecfg",
+		},
+		{
+			Name:       "misspelled subcommand for get",
+			Command:    "get",
+			Subcommand: "nods",
+		},
+		{
+			Name:       "misspelled subcommand for load",
+			Command:    "load",
+			Subcommand: "dokker-image",
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+			err := Run(cmd.NewLogger(), cmd.StandardIOStreams(), []string{tc.Command, tc.Subcommand})
+			if err == nil {
+				t.Errorf("Subcommand should raise an error if not called with correct params")
 			}
 		})
 	}
