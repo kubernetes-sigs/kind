@@ -42,6 +42,20 @@ The following high level options are available.
 
 NOTE: not all options are documented yet!  We will fix this with time, PRs welcome!
 
+### Name Your Cluster
+
+You can give your cluster a name by specifying it in your config:
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: app-1-cluster
+{{< /codeFromInline >}}
+
+This name will be used unless you invoke `kind create cluster` with the `--name`
+option as well (for example `kind create cluster --config=config.yml --name other`),
+in which case `other` will be used since CLI args take precedence.
+
 ### Feature Gates
 
 Kubernetes [feature gates] can be enabled cluster-wide across all Kubernetes
