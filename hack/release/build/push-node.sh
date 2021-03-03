@@ -28,6 +28,12 @@ TAG="${DATE}-$(git describe --always --dirty)"
 
 # build
 KUBEROOT="${KUBEROOT:-${GOPATH}/src/k8s.io/kubernetes}"
+
+GOFLAGS="${GOFLAGS:-}"
+if [ -z "${GOFLAGS}" ]; then
+    # TODO: add dockerless when 1.19 or greater
+    GOFLAGS="-tags=providerless"
+fi
 set -x
 "${REPO_ROOT}/bin/kind" build node-image --image="kindest/node:${TAG}" --kube-root="${KUBEROOT}"
 
