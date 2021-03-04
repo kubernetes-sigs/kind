@@ -265,11 +265,11 @@ main() {
   kind version
 
   # build kubernetes
-  if [ "${BUILD_TYPE:-}" = "bazel" ]; then
-    build_with_bazel
-  else
+  #if [ "${BUILD_TYPE:-}" = "bazel" ]; then
+  #  build_with_bazel
+  #else
     build
-  fi
+  #fi
 
   # in CI attempt to release some memory after building
   if [ -n "${KUBETEST_IN_DOCKER:-}" ]; then
