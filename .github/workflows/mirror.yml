@@ -1,0 +1,24 @@
+name: Mirror
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  release:
+    types: [published]
+
+  
+jobs:
+  mirror:
+    name: Mirror images
+    runs-on: ubuntu-20.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Mirror docker images to Github Registry
+        run: |
+          skopeo sync --src docker --dest docker docker.io/kindest/node ghcr.io/kind-ci
+
+      - name: Mirror docker images to quay.io
+        run: |
+          skopeo sync --src docker --dest docker docker.io/kindest/node quay.io/kind
+
