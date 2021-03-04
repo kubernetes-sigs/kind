@@ -202,10 +202,10 @@ const (
 type ProxyMode string
 
 const (
-	// IPTablesMode sets ProxyMode to iptables
-	IPTablesMode ProxyMode = "iptables"
-	// IPVSMode sets ProxyMode to iptables
-	IPVSMode ProxyMode = "ipvs"
+	// IPTablesProxyMode sets ProxyMode to iptables
+	IPTablesProxyMode ProxyMode = "iptables"
+	// IPVSProxyMode sets ProxyMode to iptables
+	IPVSProxyMode ProxyMode = "ipvs"
 )
 
 // PatchJSON6902 represents an inline kustomize json 6902 patch

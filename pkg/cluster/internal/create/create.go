@@ -108,7 +108,7 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 	}
 	if !opts.StopBeforeSettingUpKubernetes {
 		actionsToRun = append(actionsToRun,
-			kubeadminit.NewAction(), // run kubeadm init
+			kubeadminit.NewAction(opts.Config), // run kubeadm init
 		)
 		// this step might be skipped, but is next after init
 		if !opts.Config.Networking.DisableDefaultCNI {

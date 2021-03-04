@@ -168,6 +168,8 @@ networking:
   kubeProxyMode: "ipvs"
 {{< /codeFromInline >}}
 
+To disable kube-proxy, set the mode to `"none"`.
+
 ### Nodes
 The `kind: Cluster` object has a `nodes` field containing a list of `node`
 objects. If unset this defaults to:

@@ -245,6 +245,7 @@ evictionHard:
 {{ range $key := .SortedFeatureGateKeys }}
   "{{ $key }}": {{$.FeatureGates $key }}
 {{end}}{{end}}
+{{if ne .KubeProxyMode "None"}}
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
@@ -257,6 +258,7 @@ mode: "{{ .KubeProxyMode }}"
 {{end}}{{end}}
 iptables:
   minSyncPeriod: 1s
+{{end}}
 `
 
 // ConfigTemplateBetaV2 is the kubeadm config template for API version v1beta2
@@ -370,6 +372,7 @@ evictionHard:
 {{ range $key := .SortedFeatureGateKeys }}
   "{{ $key }}": {{ index $.FeatureGates $key }}
 {{end}}{{end}}
+{{if ne .KubeProxyMode "None"}}
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
@@ -382,6 +385,7 @@ mode: "{{ .KubeProxyMode }}"
 {{end}}{{end}}
 iptables:
   minSyncPeriod: 1s
+{{end}}
 `
 
 // Config returns a kubeadm config generated from config data, in particular

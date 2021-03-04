@@ -26,16 +26,19 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
+	"sigs.k8s.io/kind/pkg/internal/apis/config"
 )
 
 // kubeadmInitAction implements action for executing the kubeadm init
 // and a set of default post init operations like e.g. install the
 // CNI network plugin.
-type action struct{}
+type action struct {
+	skipKubeProxy bool
+}
 
 // NewAction returns a new action for kubeadm init
-func NewAction() actions.Action {
-	return &action{}
+func NewAction(cfg *config.Cluster) actions.Action {
+	return &action{skipKubeProxy: cfg.Networking.KubeProxyMode == config.NoneProxyMode}
 }
 
 // Execute runs the action
@@ -56,13 +59,18 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
+	// skip preflight checks, as these have undesirable side effects
+	// and don't tell us much. requires kubeadm 1.13+
+	skipPhases := "preflight"
+	if a.skipKubeProxy {
+		skipPhases += ",addon/kube-proxy"
+	}
+
 	// run kubeadm
 	cmd := node.Command(
 		// init because this is the control plane node
 		"kubeadm", "init",
-		// skip preflight checks, as these have undesirable side effects
-		// and don't tell us much. requires kubeadm 1.13+
-		"--skip-phases=preflight",
+		"--skip-phases="+skipPhases,
 		// specify our generated config file
 		"--config=/kind/kubeadm.conf",
 		"--skip-token-print",
