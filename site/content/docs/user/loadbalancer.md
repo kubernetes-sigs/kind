@@ -19,8 +19,8 @@ description: |-
     [installation docs]: https://metallb.universe.tf/installation/
     [configuration docs]: https://metallb.universe.tf/configuration/
 
-    [Ingress Guide]: ./../ingress
-    [Configuration Guide]: ./../configuration#extra-port-mappings
+    [Ingress Guide]: /docs/user/ingress
+    [Configuration Guide]: /docs/user/configuration#extra-port-mappings
 
 ---
 
