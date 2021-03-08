@@ -309,11 +309,11 @@ spec:
     app: foo
 {{< /codeFromInline >}}
 
-[Ingress Guide]: ./../ingress
+[Ingress Guide]: /docs/user/ingress
 
 ### Kubeadm Config Patches
 
-KIND uses [`kubeadm`](./../../design/principles/#leverage-existing-tooling) 
+KIND uses [`kubeadm`](/docs/design/principles/#leverage-existing-tooling) 
 to configure cluster nodes.
 Formally  KIND runs `kubeadm init` on the first control-plane node 
 which can be customized by using the kubeadm
