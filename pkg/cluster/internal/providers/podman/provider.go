@@ -68,12 +68,6 @@ func (p *provider) Provision(status *cli.Status, cfg *config.Cluster) (err error
 		return err
 	}
 
-	// kind doesn't work with podman rootless, surface an error
-	if os.Geteuid() != 0 {
-		p.logger.Errorf("podman provider does not work properly in rootless mode")
-		os.Exit(1)
-	}
-
 	// TODO: validate cfg
 	// ensure node images are pulled before actually provisioning
 	if err := ensureNodeImages(p.logger, status, cfg); err != nil {
@@ -349,4 +343,12 @@ func (p *provider) CollectLogs(dir string, nodes []nodes.Node) error {
 	// run and collect up all errors
 	errs = append(errs, errors.AggregateConcurrent(fns))
 	return errors.NewAggregate(errs)
+}
+
+// Info returns the provider info.
+func (p *provider) Info() (*providers.ProviderInfo, error) {
+	info := &providers.ProviderInfo{
+		Rootless: os.Geteuid() != 0,
+	}
+	return info, nil
 }

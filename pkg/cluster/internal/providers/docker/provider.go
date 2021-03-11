@@ -17,6 +17,8 @@ limitations under the License.
 package docker
 
 import (
+	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -280,4 +282,34 @@ func (p *provider) CollectLogs(dir string, nodes []nodes.Node) error {
 	// run and collect up all errors
 	errs = append(errs, errors.AggregateConcurrent(fns))
 	return errors.NewAggregate(errs)
+}
+
+// Info returns the provider info.
+func (p *provider) Info() (*providers.ProviderInfo, error) {
+	cmd := exec.Command("docker", "info", "--format", "{{json .SecurityOptions}}")
+	out, err := exec.Output(cmd)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get docker info")
+	}
+	var securityOptions []string
+	if err := json.Unmarshal(out, &securityOptions); err != nil {
+		return nil, err
+	}
+	var info providers.ProviderInfo
+	for _, o := range securityOptions {
+		// o is like "name=seccomp,profile=default", or "name=rootless",
+		csvReader := csv.NewReader(strings.NewReader(o))
+		sliceSlice, err := csvReader.ReadAll()
+		if err != nil {
+			return nil, err
+		}
+		for _, f := range sliceSlice {
+			for _, ff := range f {
+				if ff == "name=rootless" {
+					info.Rootless = true
+				}
+			}
+		}
+	}
+	return &info, nil
 }

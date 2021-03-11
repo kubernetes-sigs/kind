@@ -74,6 +74,10 @@ type ConfigData struct {
 	// These auto-generated fields are available to Config templates,
 	// but not meant to be set by hand
 	DerivedConfigData
+
+	// Provider is running with rootless mode, so kube-proxy needs to be configured
+	// not to fail on sysctl error.
+	RootlessProvider bool
 }
 
 // DerivedConfigData fields are automatically derived by
@@ -385,7 +389,14 @@ mode: "{{ .KubeProxyMode }}"
 {{end}}{{end}}
 iptables:
   minSyncPeriod: 1s
-{{end}}
+{{if .RootlessProvider}}conntrack:
+# Skip setting sysctl value "net.netfilter.nf_conntrack_max"
+  maxPerCore: 0
+# Skip setting "net.netfilter.nf_conntrack_tcp_timeout_established"
+  tcpEstablishedTimeout: 0s
+# Skip setting "net.netfilter.nf_conntrack_tcp_timeout_close"
+  tcpCloseWaitTimeout: 0s
+{{end}}{{end}}
 `
 
 // Config returns a kubeadm config generated from config data, in particular
@@ -404,6 +415,9 @@ func Config(data ConfigData) (config string, err error) {
 	// assume the latest API version, then fallback if the k8s version is too low
 	templateSource := ConfigTemplateBetaV2
 	if ver.LessThan(version.MustParseSemantic("v1.15.0")) {
+		if data.RootlessProvider {
+			return "", errors.Errorf("version %q is not compatible with rootless provider", ver)
+		}
 		templateSource = ConfigTemplateBetaV1
 	}
 

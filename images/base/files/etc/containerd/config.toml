@@ -20,3 +20,5 @@ version = 2
   tolerate_missing_hugepages_controller = true
   # explicitly use default snapshotter so we can sed it in entrypoint
   snapshotter = "overlayfs"
+  # restrict_oom_score_adj needs to be true when running inside UserNS (rootless)
+  restrict_oom_score_adj = false
