@@ -24,6 +24,8 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/log"
+
+	"k8s.io/apimachinery/pkg/util/version"
 )
 
 // TODO(bentheelder): plumb through arch
@@ -69,6 +71,11 @@ func (b *dockerBuilder) Build() (Bits, error) {
 		return nil, err
 	}
 
+	kubeVersion, err := version.ParseSemantic(sourceVersionRaw)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse source version")
+	}
+
 	// we will pass through the environment variables, prepending defaults
 	// NOTE: if env are specified multiple times the last one wins
 	env := append(
@@ -83,27 +90,33 @@ func (b *dockerBuilder) Build() (Bits, error) {
 		},
 		os.Environ()...,
 	)
-	// build binaries
+	// binaries we want to build
 	what := []string{
 		// binaries we use directly
 		"cmd/kubeadm",
 		"cmd/kubectl",
 		"cmd/kubelet",
 	}
-	cmd := exec.Command(
-		"build/run.sh",
-		"make", "all", "WHAT="+strings.Join(what, " "),
-	).SetEnv(env...)
-	exec.InheritOutput(cmd)
-	if err := cmd.Run(); err != nil {
-		return nil, errors.Wrap(err, "failed to build binaries")
-	}
 
-	// build images
-	cmd = exec.Command("make", "quick-release-images").SetEnv(env...)
+	// build images + binaries (binaries only on 1.21+)
+	cmd := exec.Command("make", "quick-release-images", "KUBE_EXTRA_WHAT="+strings.Join(what, " ")).SetEnv(env...)
 	exec.InheritOutput(cmd)
 	if err := cmd.Run(); err != nil {
 		return nil, errors.Wrap(err, "failed to build images")
+	}
+
+	// KUBE_EXTRA_WHAT added in this commit
+	// https://github.com/kubernetes/kubernetes/commit/35061acc28a666569fdd4d1c8a7693e3c01e14be
+	if kubeVersion.LessThan(version.MustParseSemantic("v1.21.0-beta.1.153+35061acc28a666")) {
+		// on older versions we still need to build binaries separately
+		cmd = exec.Command(
+			"build/run.sh",
+			"make", "all", "WHAT="+strings.Join(what, " "),
+		).SetEnv(env...)
+		exec.InheritOutput(cmd)
+		if err := cmd.Run(); err != nil {
+			return nil, errors.Wrap(err, "failed to build binaries")
+		}
 	}
 
 	binDir := filepath.Join(b.kubeRoot,
