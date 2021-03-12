@@ -161,6 +161,12 @@ func commonArgs(cfg *config.Cluster, networkName string) ([]string, error) {
 		args = append(args, "-e", fmt.Sprintf("%s=%s", key, val))
 	}
 
+	// handle Podman on Btrfs or ZFS same as we do with Docker
+	// https://github.com/kubernetes-sigs/kind/issues/1416#issuecomment-606514724
+	if mountDevMapper() {
+		args = append(args, "--volume", "/dev/mapper:/dev/mapper")
+	}
+
 	return args, nil
 }
 
