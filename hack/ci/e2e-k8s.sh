@@ -90,6 +90,8 @@ build() {
 
 # up a cluster with kind
 create_cluster() {
+  # set KUBELET_LOG_FORMAT=structured to enable structured logging in kubelet
+  KUBELET_LOG_FORMAT="${KUBELET_LOG_FORMAT:-text}"
 
   # JSON map injected into featureGates config
   feature_gates="{}"
@@ -165,11 +167,13 @@ kubeadmConfigPatches:
   nodeRegistration:
     kubeletExtraArgs:
       "v": "${KIND_CLUSTER_LOG_LEVEL}"
+      "logging-format": "${KUBELET_LOG_FORMAT}"
   ---
   kind: JoinConfiguration
   nodeRegistration:
     kubeletExtraArgs:
       "v": "${KIND_CLUSTER_LOG_LEVEL}"
+      "logging-format": "${KUBELET_LOG_FORMAT}"
 EOF
   # NOTE: must match the number of workers above
   NUM_NODES=2
