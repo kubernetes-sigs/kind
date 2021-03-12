@@ -36,6 +36,18 @@ To use this config, place the contents in a file `config.yaml` and then run
 
 You can also include a full file path like `kind create cluster --config=/foo/bar/config.yaml`.
 
+### A Note On CLI Parameters and Configuration Files
+
+Unless otherwise noted, parameters passed to the CLI take precedence over their
+equivalents in a config file. For example, if you invoke:
+
+{{< codeFromInline lang="bash" >}}
+kind create cluster --name my-cluster
+{{< /codeFromInline >}}
+
+The name `my-cluster` will be used regardless of the presence of that value in
+your config file.
+
 ## Cluster-Wide Options
 
 The following high level options are available.
@@ -51,10 +63,6 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 name: app-1-cluster
 {{< /codeFromInline >}}
-
-This name will be used unless you invoke `kind create cluster` with the `--name`
-option as well (for example `kind create cluster --config=config.yml --name other`),
-in which case `other` will be used since CLI args take precedence.
 
 ### Feature Gates
 
