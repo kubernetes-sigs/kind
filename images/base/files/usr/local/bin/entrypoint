@@ -86,17 +86,19 @@ configure_containerd() {
     # Adjust oomScoreAdj
     sed -i 's/restrict_oom_score_adj = false/restrict_oom_score_adj = true/' /etc/containerd/config.toml
 
-    # mounting overlayfs inside userns requires patching kernel.
-    # Ubuntu kernel is patched by default.
-    # Debian kernel is patched by default as well, but Debian needs `sudo modprobe overlay permit_mounts_in_userns=1`.
+    # mounting overlayfs inside userns requires kernel >= 5.11.
+    # Older kernel requires patching.
+    # Ubuntu kernel (since circa 2015) is patched by default.
+    # Debian kernel (since Debian 10) is patched by default as well, but Debian needs `sudo modprobe overlay permit_mounts_in_userns=1`.
     local tmp
     tmp=$(mktemp -d)
     mkdir -p "${tmp}"/{l,u,w,m}
     if mount -t overlay overlay -o "lowerdir=${tmp}/l,upperdir=${tmp}/u,workdir=${tmp}/w" "${tmp}/m"; then
       umount "${tmp}/m"
     else
-      echo 'INFO: UserNS: this kernel does not support mounting overlayfs inside userns. Disabling overlayfs'
-      sed -i 's/snapshotter = "overlayfs"/snapshotter = "native"/' /etc/containerd/config.toml
+      echo 'INFO: UserNS: this kernel does not support mounting overlayfs inside userns. Switching from overlayfs to fuse-overlayfs'
+      systemctl enable containerd-fuse-overlayfs
+      sed -i 's/snapshotter = "overlayfs"/snapshotter = "fuse-overlayfs"/' /etc/containerd/config.toml
     fi
     rm -rf "${tmp}"
 
