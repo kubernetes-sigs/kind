@@ -4,6 +4,8 @@ version = 2
 [plugins."io.containerd.grpc.v1.cri".containerd]
   # save disk space when using a single snapshotter
   discard_unpacked_layers = true
+  # explicitly use default snapshotter so we can sed it in entrypoint
+  snapshotter = "overlayfs"
   # explicit default here, as we're configuring it below
   default_runtime_name = "runc"
 [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
@@ -21,7 +23,5 @@ version = 2
   # allow hugepages controller to be missing
   # see https://github.com/containerd/cri/pull/1501
   tolerate_missing_hugepages_controller = true
-  # explicitly use default snapshotter so we can sed it in entrypoint
-  snapshotter = "overlayfs"
   # restrict_oom_score_adj needs to be true when running inside UserNS (rootless)
   restrict_oom_score_adj = false
