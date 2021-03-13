@@ -76,29 +76,15 @@ fake_sysctl() {
 }
 
 configure_containerd() {
-  # we need to switch to the 'native' snapshotter on zfs
-  if [[ "$(stat -f -c %T /kind)" == 'zfs' ]]; then
-    sed -i 's/snapshotter = "overlayfs"/snapshotter = "native"/' /etc/containerd/config.toml
-  fi
-
-  # userns (rootless) configs
+  local snapshotter=${KIND_EXPERIMENTAL_CONTAINERD_SNAPSHOTTER:-}
   if [[ -n "$userns" ]]; then
+    # userns (rootless) configs
+
     # Adjust oomScoreAdj
     sed -i 's/restrict_oom_score_adj = false/restrict_oom_score_adj = true/' /etc/containerd/config.toml
 
-    # mounting overlayfs inside userns requires patching kernel.
-    # Ubuntu kernel is patched by default.
-    # Debian kernel is patched by default as well, but Debian needs `sudo modprobe overlay permit_mounts_in_userns=1`.
-    local tmp
-    tmp=$(mktemp -d)
-    mkdir -p "${tmp}"/{l,u,w,m}
-    if mount -t overlay overlay -o "lowerdir=${tmp}/l,upperdir=${tmp}/u,workdir=${tmp}/w" "${tmp}/m"; then
-      umount "${tmp}/m"
-    else
-      echo 'INFO: UserNS: this kernel does not support mounting overlayfs inside userns. Disabling overlayfs'
-      sed -i 's/snapshotter = "overlayfs"/snapshotter = "native"/' /etc/containerd/config.toml
-    fi
-    rm -rf "${tmp}"
+    # Use fuse-overlayfs by default: https://github.com/kubernetes-sigs/kind/issues/2275
+    snapshotter="fuse-overlayfs"
 
     # To run vanilla kubelet inside UserNS, we need to fake several unwritable sysctl to be writable.
     # Workaround until https://github.com/kubernetes/kubernetes/pull/92863 gets merged in the upstream.
@@ -108,6 +94,19 @@ configure_containerd() {
     fake_sysctl "kernel.panic_on_oops"
     fake_sysctl "kernel.keys.root_maxkeys"
     fake_sysctl "kernel.keys.root_maxbytes"
+  else
+    # we need to switch to the 'native' snapshotter on zfs
+    if [[ "$(stat -f -c %T /kind)" == 'zfs' ]]; then
+      snapshotter="native"
+    fi
+  fi
+  if [[ -n "$snapshotter" ]]; then
+    echo "INFO: changing snapshotter from \"overlayfs\" to \"$snapshotter\""
+    sed -i "s/snapshotter = \"overlayfs\"/snapshotter = \"$snapshotter\"/" /etc/containerd/config.toml
+    if [[ "$snapshotter" = "fuse-overlayfs" ]]; then
+      echo 'INFO: enabling containerd-fuse-overlayfs service'
+      systemctl enable containerd-fuse-overlayfs
+    fi
   fi
 }
 

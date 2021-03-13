@@ -55,6 +55,14 @@ ARG CNI_PLUGINS_AMD64_SHA256SUM="962100bbc4baeaaa5748cdbfce941f756b1531c2eadb290
 ARG CNI_PLUGINS_ARM64_SHA256SUM="ef17764ffd6cdcb16d76401bac1db6acc050c9b088f1be5efa0e094ea3b01df0"
 ARG CNI_PLUGINS_PPC64LE_SHA256SUM="5bd3c82ef248e5c6cc388f25545aa5a7d318778e5f9bc0a31475361bb27acefe"
 
+# Configure containerd-fuse-overlayfs snapshotter binary from upstream
+ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="1.0.2"
+ARG CONTAINERD_FUSE_OVERLAYFS_TARBALL="v${CONTAINERD_FUSE_OVERLAYFS_VERSION}/containerd-fuse-overlayfs-${CONTAINERD_FUSE_OVERLAYFS_VERSION}-linux-${TARGETARCH}.tar.gz"
+ARG CONTAINERD_FUSE_OVERLAYFS_URL="https://github.com/containerd/fuse-overlayfs-snapshotter/releases/download/${CONTAINERD_FUSE_OVERLAYFS_TARBALL}"
+ARG CONTAINERD_FUSE_OVERLAYFS_AMD64_SHA256SUM="1f1e69f71b5ea568e93e40059af1b02a377ac0966d2acd27e4cce388a27af218"
+ARG CONTAINERD_FUSE_OVERLAYFS_ARM64_SHA256SUM="7ade1a44d880b3fb8eaa3c5ff7d3890a43b777d06ec80439c9a51ae35626c83c"
+ARG CONTAINERD_FUSE_OVERLAYFS_PPC64LE_SHA256SUM="eaf9bdd3de4514546945ea93119acea2b7bfa55ced43766e20adabddd5d20978"
+
 # copy in static files
 # all scripts are 0755: http://www.filepermissions.com/file-permission/0755
 COPY --chmod=0755 files/usr/local/bin/* /usr/local/bin/
@@ -102,7 +110,7 @@ RUN echo "Installing Packages ..." \
       conntrack iptables iproute2 ethtool socat util-linux mount ebtables udev kmod \
       libseccomp2 pigz \
       bash ca-certificates curl rsync \
-      nfs-common \
+      nfs-common fuse-overlayfs \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
     && rm -f /lib/systemd/system/multi-user.target.wants/* \
     && rm -f /etc/systemd/system/*.wants/* \
@@ -160,6 +168,15 @@ RUN echo "Installing Packages ..." \
          -o -iname loopback \
       \) \
       -delete \
+ && echo "Installing containerd-fuse-overlayfs ..." \
+    && curl -sSL --retry 5 --output /tmp/containerd-fuse-overlayfs.${TARGETARCH}.tgz "${CONTAINERD_FUSE_OVERLAYFS_URL}" \
+    && echo "${CONTAINERD_FUSE_OVERLAYFS_AMD64_SHA256SUM}  /tmp/containerd-fuse-overlayfs.amd64.tgz" | tee /tmp/containerd-fuse-overlayfs.sha256 \
+    && echo "${CONTAINERD_FUSE_OVERLAYFS_ARM64_SHA256SUM}  /tmp/containerd-fuse-overlayfs.arm64.tgz" | tee -a /tmp/containerd-fuse-overlayfs.sha256 \
+    && echo "${CONTAINERD_FUSE_OVERLAYFS_PPC64LE_SHA256SUM}  /tmp/containerd-fuse-overlayfs.ppc64le.tgz" | tee -a /tmp/containerd-fuse-overlayfs.sha256 \
+    && sha256sum --ignore-missing -c /tmp/containerd-fuse-overlayfs.sha256 \
+    && rm -f /tmp/containerd-fuse-overlayfs.sha256 \
+    && tar -C /usr/local/bin -xzvf /tmp/containerd-fuse-overlayfs.${TARGETARCH}.tgz \
+    && rm -rf /tmp/containerd-fuse-overlayfs.${TARGETARCH}.tgz \
  && echo "Ensuring /etc/kubernetes/manifests" \
     && mkdir -p /etc/kubernetes/manifests \
  && echo "Adjusting systemd-tmpfiles timer" \

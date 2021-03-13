@@ -1,0 +1,12 @@
+[Unit]
+Description=containerd fuse-overlayfs snapshotter
+PartOf=containerd.service
+
+[Service]
+ExecStart=/usr/local/bin/containerd-fuse-overlayfs-grpc /run/containerd-fuse-overlayfs.sock /var/lib/containerd-fuse-overlayfs
+Type=notify
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target
