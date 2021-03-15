@@ -70,6 +70,9 @@ type ConfigData struct {
 	// IPv4 values take precedence over IPv6 by default, if true set IPv6 default values
 	IPv6 bool
 
+	// Labels are the labels, in the format "key1=val1,key2=val2", with which the respective node will be labeled
+	NodeLabels string
+
 	// DerivedConfigData is populated by Derive()
 	// These auto-generated fields are available to Config templates,
 	// but not meant to be set by hand
@@ -326,6 +329,7 @@ nodeRegistration:
     fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
     provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
+    node-labels: "{{ .NodeLabels }}"
 ---
 # no-op entry that exists solely so it can be patched
 apiVersion: kubeadm.k8s.io/v1beta2
@@ -344,6 +348,7 @@ nodeRegistration:
     fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
     provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
+    node-labels: "{{ .NodeLabels }}"
 discovery:
   bootstrapToken:
     apiServerEndpoint: "{{ .ControlPlaneEndpoint }}"

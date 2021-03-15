@@ -104,6 +104,9 @@ type Node struct {
 	// If unset a default image will be used, see defaults.Image
 	Image string `yaml:"image,omitempty"`
 
+	// Labels are the labels with which the respective node will be labeled
+	Labels map[string]string `yaml:"labels,omitempty"`
+
 	/* Advanced fields */
 
 	// TODO: cri-like types should be inline instead
