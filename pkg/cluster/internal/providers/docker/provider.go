@@ -51,6 +51,7 @@ func NewProvider(logger log.Logger) providers.Provider {
 // see NewProvider
 type provider struct {
 	logger log.Logger
+	info   *providers.ProviderInfo
 }
 
 // String implements fmt.Stringer
@@ -285,18 +286,47 @@ func (p *provider) CollectLogs(dir string, nodes []nodes.Node) error {
 }
 
 // Info returns the provider info.
+// The info is cached on the first time of the execution.
 func (p *provider) Info() (*providers.ProviderInfo, error) {
-	cmd := exec.Command("docker", "info", "--format", "{{json .SecurityOptions}}")
+	var err error
+	if p.info == nil {
+		p.info, err = info()
+	}
+	return p.info, err
+}
+
+// dockerInfo corresponds to `docker info --format '{{json .}}'`
+type dockerInfo struct {
+	CgroupDriver    string   `json:"CgroupDriver"`  // "systemd", "cgroupfs", "none"
+	CgroupVersion   string   `json:"CgroupVersion"` // e.g. "2"
+	MemoryLimit     bool     `json:"MemoryLimit"`
+	PidsLimit       bool     `json:"PidsLimit"`
+	CPUShares       bool     `json:"CPUShares"`
+	SecurityOptions []string `json:"SecurityOptions"`
+}
+
+func info() (*providers.ProviderInfo, error) {
+	cmd := exec.Command("docker", "info", "--format", "{{json .}}")
 	out, err := exec.Output(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get docker info")
 	}
-	var securityOptions []string
-	if err := json.Unmarshal(out, &securityOptions); err != nil {
+	var dInfo dockerInfo
+	if err := json.Unmarshal(out, &dInfo); err != nil {
 		return nil, err
 	}
-	var info providers.ProviderInfo
-	for _, o := range securityOptions {
+	info := providers.ProviderInfo{
+		Cgroup2: dInfo.CgroupVersion == "2",
+	}
+	// When CgroupDriver == "none", the MemoryLimit/PidsLimit/CPUShares
+	// values are meaningless and need to be considered false.
+	// https://github.com/moby/moby/issues/42151
+	if dInfo.CgroupDriver != "none" {
+		info.SupportsMemoryLimit = dInfo.MemoryLimit
+		info.SupportsPidsLimit = dInfo.PidsLimit
+		info.SupportsCPUShares = dInfo.CPUShares
+	}
+	for _, o := range dInfo.SecurityOptions {
 		// o is like "name=seccomp,profile=default", or "name=rootless",
 		csvReader := csv.NewReader(strings.NewReader(o))
 		sliceSlice, err := csvReader.ReadAll()

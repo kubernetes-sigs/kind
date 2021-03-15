@@ -19,6 +19,7 @@ package podman
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -53,6 +54,7 @@ func NewProvider(logger log.Logger) providers.Provider {
 // see NewProvider
 type provider struct {
 	logger log.Logger
+	info   *providers.ProviderInfo
 }
 
 // String implements fmt.Stringer
@@ -354,9 +356,47 @@ func (p *provider) CollectLogs(dir string, nodes []nodes.Node) error {
 }
 
 // Info returns the provider info.
+// The info is cached on the first time of the execution.
 func (p *provider) Info() (*providers.ProviderInfo, error) {
-	info := &providers.ProviderInfo{
-		Rootless: os.Geteuid() != 0,
+	if p.info == nil {
+		p.info = info(p.logger)
 	}
-	return info, nil
+	return p.info, nil
+}
+
+func info(logger log.Logger) *providers.ProviderInfo {
+	euid := os.Geteuid()
+	info := &providers.ProviderInfo{
+		Rootless: euid != 0,
+	}
+	if _, err := os.Stat("/sys/fs/cgroup/cgroup.controllers"); err == nil {
+		info.Cgroup2 = true
+		// Unlike `docker info`, `podman info` does not print available cgroup controllers.
+		// So we parse "cgroup.subtree_control" file by ourselves.
+		subtreeControl := "/sys/fs/cgroup/cgroup.subtree_control"
+		if info.Rootless {
+			// Change subtreeControl to the path of the systemd user-instance.
+			// Non-systemd hosts are not supported.
+			subtreeControl = fmt.Sprintf("/sys/fs/cgroup/user.slice/user-%d.slice/user@%d.service/cgroup.subtree_control", euid, euid)
+		}
+		if subtreeControlBytes, err := ioutil.ReadFile(subtreeControl); err != nil {
+			logger.Warnf("failed to read %q: %+v", subtreeControl, err)
+		} else {
+			for _, controllerName := range strings.Fields(string(subtreeControlBytes)) {
+				switch controllerName {
+				case "cpu":
+					info.SupportsCPUShares = true
+				case "memory":
+					info.SupportsMemoryLimit = true
+				case "pids":
+					info.SupportsPidsLimit = true
+				}
+			}
+		}
+	} else if !info.Rootless {
+		info.SupportsCPUShares = true
+		info.SupportsMemoryLimit = true
+		info.SupportsPidsLimit = true
+	}
+	return info
 }
