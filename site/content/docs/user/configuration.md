@@ -36,6 +36,9 @@ To use this config, place the contents in a file `config.yaml` and then run
 
 You can also include a full file path like `kind create cluster --config=/foo/bar/config.yaml`.
 
+The structure of the `Cluster` type is defined by a Go struct, which is described
+[here](https://pkg.go.dev/sigs.k8s.io/kind/pkg/apis/config/v1alpha4#Cluster).
+
 ### A Note On CLI Parameters and Configuration Files
 
 Unless otherwise noted, parameters passed to the CLI take precedence over their
