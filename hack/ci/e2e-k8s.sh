@@ -22,7 +22,6 @@ set -o errexit -o nounset -o xtrace
 # Settings:
 # SKIP: ginkgo skip regex
 # FOCUS: ginkgo focus regex
-# BUILD_TYPE: bazel or make
 # GA_ONLY: true  - limit to GA APIs/features as much as possible
 #          false - (default) APIs and features left at defaults
 # 
@@ -54,31 +53,6 @@ signal_handler() {
   cleanup
 }
 trap signal_handler INT TERM
-
-# build kubernetes / node image, e2e binaries, with bazel
-build_with_bazel() {
-  # possibly enable bazel build caching before building kubernetes
-  if [ "${BAZEL_REMOTE_CACHE_ENABLED:-false}" = "true" ]; then
-    create_bazel_cache_rcs.sh || true
-  fi
-
-  # build the node image w/ kubernetes
-  kind build node-image --type=bazel -v 1
-  # make sure we have e2e requirements
-  bazel build //cmd/kubectl //test/e2e:e2e.test //vendor/github.com/onsi/ginkgo/ginkgo
-
-  kubectl_path="$(bazel aquery 'mnemonic("GoLink", //cmd/kubectl)' \
-      | grep '^  Outputs: \[.*\]$' \
-      | sed 's/^  Outputs: \[\(.*\)\]$/\1/')"
-  kubectl_path="$(bazel info workspace)/${kubectl_path}"
-
-  # free up memory by terminating bazel
-  bazel shutdown || true
-  pkill ^bazel || true
-
-  PATH="$(dirname "${kubectl_path}"):${PATH}"
-  export PATH
-}
 
 # build kubernetes / node image, e2e binaries
 build() {
@@ -269,12 +243,7 @@ main() {
   kind version
 
   # build kubernetes
-  #if [ "${BUILD_TYPE:-}" = "bazel" ]; then
-  #  build_with_bazel
-  #else
-    build
-  #fi
-
+  build
   # in CI attempt to release some memory after building
   if [ -n "${KUBETEST_IN_DOCKER:-}" ]; then
     sync || true
