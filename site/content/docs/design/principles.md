@@ -115,6 +115,6 @@ Automated usage should be considered for all features.
 [k8s.io/apimachinery]: https://github.com/kubernetes/apimachinery
 [Kubernetes Deprecation Policy]: https://kubernetes.io/docs/reference/using-api/deprecation-policy/
 [API Conventions]: https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md
-[pkg/cluster]: https://github.com/kubernetes-sigs/kind/tree/master/pkg/cluster
+[pkg/cluster]: https://github.com/kubernetes-sigs/kind/tree/main/pkg/cluster
 [k8s.io/utils]: https://github.com/kubernetes/utils
 [k8s.io/code-generator]: https://github.com/kubernetes/code-generator
