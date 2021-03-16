@@ -254,6 +254,11 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 	}
 	args = append(args, mappingArgs...)
 
+	switch node.Role {
+	case config.ControlPlaneRole:
+		args = append(args, "-e", "KUBECONFIG=/etc/kubernetes/admin.conf")
+	}
+
 	// finally, specify the image to run
 	return append(args, node.Image), nil
 }
