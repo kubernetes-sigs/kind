@@ -20,7 +20,7 @@ set -o errexit -o nounset -o pipefail
 
 # options for where the cache is stored
 BUCKET="${BUCKET:-bentheelder-kind-ci-builds}"
-BRANCH="${BRANCH:-master}"
+BRANCH="${BRANCH:-main}"
 CACHE_SUFFIX="${CACHE_SUFFIX:-"ci-cache/${BRANCH}/gocache.tar"}"
 CACHE_URL="https://storage.googleapis.com/${BUCKET}/${CACHE_SUFFIX}"
 CACHE_GS="gs://${BUCKET}/${CACHE_SUFFIX}"

@@ -422,7 +422,7 @@ kind, the Kubernetes cluster itself, etc.
 [releases]: https://github.com/kubernetes-sigs/kind/releases
 [node image]: /docs/design/node-image
 [base image]: /docs/design/base-image
-[kind-example-config]: https://raw.githubusercontent.com/kubernetes-sigs/kind/master/site/content/docs/user/kind-example-config.yaml
+[kind-example-config]: https://raw.githubusercontent.com/kubernetes-sigs/kind/main/site/content/docs/user/kind-example-config.yaml
 [kubernetes]: https://github.com/kubernetes/kubernetes
 [kindest/node]: https://hub.docker.com/r/kindest/node/
 [kubectl]: https://kubernetes.io/docs/reference/kubectl/overview/

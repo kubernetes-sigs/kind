@@ -109,7 +109,7 @@ You can clone Kubernetes source code.
 ### Building image
 
 ```sh
-➜  ~ kind build node-image --image kindest/node:master --kube-root $GOPATH/src/k8s.io/kubernetes 
+➜  ~ kind build node-image --image kindest/node:main --kube-root $GOPATH/src/k8s.io/kubernetes 
 Starting to build Kubernetes
 ...
 Image build completed.
@@ -118,9 +118,9 @@ Image build completed.
 When the image build is complete, you can create a cluster by passing the `--image` flag.
 
 ```sh
-➜  ~ kind create cluster --image kindest/node:master
+➜  ~ kind create cluster --image kindest/node:main
 Creating cluster "kind" ...
- ✓ Ensuring node image (kindest/node:master) 🖼
+ ✓ Ensuring node image (kindest/node:main) 🖼
  ✓ Preparing nodes 📦  
  ✓ Writing configuration 📜 
  ✓ Starting control-plane 🕹️ 
@@ -172,4 +172,4 @@ You can find the specific tag currently in use at [loadbalancer source code][loa
 [docker tag]: https://docs.docker.com/engine/reference/commandline/tag/
 [base image]: https://kind.sigs.k8s.io/docs/design/base-image/
 [building the node image]: https://kind.sigs.k8s.io/docs/user/quick-start/#building-images
-[loadbalancer source code]: https://github.com/kubernetes-sigs/kind/blob/master/pkg/cluster/internal/loadbalancer/const.go#L20
+[loadbalancer source code]: https://github.com/kubernetes-sigs/kind/blob/main/pkg/cluster/internal/loadbalancer/const.go#L20
