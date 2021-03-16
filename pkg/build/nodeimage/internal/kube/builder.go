@@ -16,11 +16,6 @@ limitations under the License.
 
 package kube
 
-import (
-	"sigs.k8s.io/kind/pkg/errors"
-	"sigs.k8s.io/kind/pkg/log"
-)
-
 // Builder represents and implementation of building Kubernetes
 // building may constitute downloading a release
 type Builder interface {
@@ -28,31 +23,4 @@ type Builder interface {
 	// Some implementations (upstream binaries) may use this step to obtain
 	// an existing build instead
 	Build() (Bits, error)
-}
-
-// NewNamedBuilder returns a new Builder by named implementation
-// currently this includes:
-// "bazel" -> NewBazelBuilder(kubeRoot)
-// "docker" or "make" -> NewDockerBuilder(kubeRoot)
-func NewNamedBuilder(logger log.Logger, name, kubeRoot, arch string) (Builder, error) {
-	fn, err := nameToImpl(name)
-	if err != nil {
-		return nil, err
-	}
-	return fn(logger, kubeRoot, arch)
-}
-
-func nameToImpl(name string) (func(log.Logger, string, string) (Builder, error), error) {
-	switch name {
-	case "bazel":
-		return NewBazelBuilder, nil
-	// TODO: docker builder should be as-dockerized as possible, make builder
-	// should use host go etc.
-	case "docker":
-		return NewDockerBuilder, nil
-	case "make":
-		return NewDockerBuilder, nil
-	default:
-	}
-	return nil, errors.Errorf("no Bits implementation with name: %s", name)
 }

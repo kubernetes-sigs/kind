@@ -28,7 +28,6 @@ import (
 func Build(options ...Option) error {
 	// default options
 	ctx := &buildContext{
-		mode:      DefaultMode,
 		image:     DefaultImage,
 		baseImage: DefaultBaseImage,
 		logger:    log.NoopLogger{},
@@ -58,7 +57,7 @@ func Build(options ...Option) error {
 	}
 
 	// initialize bits
-	builder, err := kube.NewNamedBuilder(ctx.logger, ctx.mode, ctx.kubeRoot, ctx.arch)
+	builder, err := kube.NewDockerBuilder(ctx.logger, ctx.kubeRoot, ctx.arch)
 	if err != nil {
 		return err
 	}
@@ -84,7 +83,6 @@ func supportedArch(arch string) bool {
 // build configuration
 type buildContext struct {
 	// option fields
-	mode      string
 	image     string
 	baseImage string
 	logger    log.Logger

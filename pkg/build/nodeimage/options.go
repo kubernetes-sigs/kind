@@ -47,14 +47,6 @@ func WithBaseImage(image string) Option {
 	})
 }
 
-// WithMode sets the kubernetes build mode
-func WithMode(mode string) Option {
-	return optionAdapter(func(b *buildContext) error {
-		b.mode = mode
-		return nil
-	})
-}
-
 // WithKuberoot sets the path to the Kubernetes source directory (if empty, the path will be autodetected)
 func WithKuberoot(root string) Option {
 	return optionAdapter(func(b *buildContext) error {

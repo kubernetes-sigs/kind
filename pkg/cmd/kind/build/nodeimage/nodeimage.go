@@ -43,6 +43,9 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "Build the node image",
 		Long:  "Build the node image which contains Kubernetes build artifacts and other kind requirements",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if cmd.Flags().Lookup("type").Changed {
+				return errors.New("--type is no longer supported, please remove this flag")
+			}
 			return runE(logger, flags)
 		},
 	}
@@ -70,7 +73,6 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 
 func runE(logger log.Logger, flags *flagpole) error {
 	if err := nodeimage.Build(
-		nodeimage.WithMode(flags.BuildType),
 		nodeimage.WithImage(flags.Image),
 		nodeimage.WithBaseImage(flags.BaseImage),
 		nodeimage.WithKuberoot(flags.KubeRoot),
