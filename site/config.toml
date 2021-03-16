@@ -66,6 +66,9 @@ baseName = "_redirects"
 [outputs]
 home = ["HTML", "REDIRECTS"]
 
+[params]
+stable = "v0.10.0"
+
 # privacy settings
 [privacy]
   [privacy.youtube]
