@@ -32,7 +32,7 @@ description: |-
 * [Pod Errors Due to "too many open files"](#pod-errors-due-to-too-many-open-files) (likely [inotify] limits which are not namespaced)
 * [Docker Permission Denied](#docker-permission-denied) (ensure you have permission to use docker)
 * [Windows Containers](#windows-containers) (unsupported / infeasible)
-* [Non-AMD64 Architectures](#nonamd64-architectures) (images not pre-built yet)
+* [Non-AMD64 Architectures](#non-amd64-architectures) (images not pre-built yet)
 * [Unable to Pull Images](#unable-to-pull-images) (various)
 * [Chrome OS](#chrome-os) (unsupported)
 * [AppArmor](#apparmor) (may break things, consider disabling)
@@ -200,7 +200,7 @@ Dec 07 00:37:53 kind-1-control-plane kubelet[688]: I1207 00:37:53.229561     688
 Dec 07 00:37:53 kind-1-control-plane kubelet[688]: E1207 00:37:53.229638     688 eviction_manager.go:351] eviction manager: eviction thresholds have been met, but no pods are active to evict
 ```
 ## Failure to Create Cluster with Cgroups v2
-Host OS'es running Cgroups v2 are only supported for Kubernetes versions >= 1.19.
+Support for Cgroups v2 was introduced in Kubernetes 1.19 (see [release notes](https://v1-19.docs.kubernetes.io/docs/setup/release/notes/)). Accordingly, only Kubernetes versions >= 1.19 are supported on hosts using Cgroups v2.
 
 You can verify that you are hitting this issue by exporting the logs (`kind export logs`) and looking
 at the kubelet logs, which may have something like the following:
