@@ -55,8 +55,17 @@ ARG CNI_PLUGINS_AMD64_SHA256SUM="962100bbc4baeaaa5748cdbfce941f756b1531c2eadb290
 ARG CNI_PLUGINS_ARM64_SHA256SUM="ef17764ffd6cdcb16d76401bac1db6acc050c9b088f1be5efa0e094ea3b01df0"
 ARG CNI_PLUGINS_PPC64LE_SHA256SUM="5bd3c82ef248e5c6cc388f25545aa5a7d318778e5f9bc0a31475361bb27acefe"
 
-# copy in static files (configs, scripts)
-COPY files/ /
+# copy in static files
+# all scripts are 0755: http://www.filepermissions.com/file-permission/0755
+COPY --chmod=0755 files/usr/local/bin/* /usr/local/bin/
+
+# all configs are 0644: http://www.filepermissions.com/file-permission/0644
+COPY --chmod=0644 files/etc/* /etc/
+COPY --chmod=0644 files/etc/containerd/* /etc/containerd/
+COPY --chmod=0644 files/etc/default/* /etc/default/
+COPY --chmod=0644 files/etc/sysctl.d/* /etc/sysctl.d/
+COPY --chmod=0644 files/etc/systemd/system/* /etc/systemd/system/
+COPY --chmod=0644 files/etc/systemd/system/kubelet.service.d/* /etc/systemd/system/kubelet.service.d/
 
 # Install dependencies, first from apt, then from release tarballs.
 # NOTE: we use one RUN to minimize layers.
@@ -87,9 +96,7 @@ COPY files/ /
 # Finally we adjust tempfiles cleanup to be 1 minute after "boot" instead of 15m
 # This is plenty after we've done initial setup for a node, but before we are
 # likely to try to export logs etc.
-RUN echo "Ensuring scripts are executable ..." \
-    && chmod +x /usr/local/bin/clean-install /usr/local/bin/entrypoint \
- && echo "Installing Packages ..." \
+RUN echo "Installing Packages ..." \
     && DEBIAN_FRONTEND=noninteractive clean-install \
       systemd \
       conntrack iptables iproute2 ethtool socat util-linux mount ebtables udev kmod \
