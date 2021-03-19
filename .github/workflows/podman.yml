@@ -59,6 +59,15 @@ jobs:
           apiVersion: kind.x-k8s.io/v1alpha4
           networking:
             ipFamily: ${IP_FAMILY}
+          nodes:
+          - role: control-plane
+            extraPortMappings:
+            - containerPort: 80
+              hostPort: 80
+              listenAddress: 0.0.0.0
+            - containerPort: 443
+              hostPort: 443
+              listenAddress: 0.0.0.0
           EOF
 
       - name: Create multi node cluster
