@@ -79,7 +79,9 @@ create_cluster() {
       exit 1
       ;;
     *)
-      kubelet_extra_args="${kubelet_extra_args}$(printf '\n')      \"logging-format\": \"${KUBELET_LOG_FORMAT}\""
+      # NOTE: the indendation on the next line is meaningful!
+      kubelet_extra_args="${kubelet_extra_args}
+      \"logging-format\": \"${KUBELET_LOG_FORMAT}\""
       ;;
     esac
   fi
