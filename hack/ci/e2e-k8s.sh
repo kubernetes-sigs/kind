@@ -64,8 +64,25 @@ build() {
 
 # up a cluster with kind
 create_cluster() {
-  # set KUBELET_LOG_FORMAT=structured to enable structured logging in kubelet
-  KUBELET_LOG_FORMAT="${KUBELET_LOG_FORMAT:-text}"
+  # Grab the version of the cluster we're about to start
+  KUBE_VERSION="$(docker run --rm --entrypoint=cat "kindest/node:latest" /kind/version)"
+
+  # Default Log level for all components in test clusters
+  KIND_CLUSTER_LOG_LEVEL=${KIND_CLUSTER_LOG_LEVEL:-4}
+
+  # potentially enable --logging-format
+  kubelet_extra_args="      \"v\": \"${KIND_CLUSTER_LOG_LEVEL}\""
+  if [ -n "${KUBELET_LOG_FORMAT:-}" ]; then
+    case "${KUBE_VERSION}" in
+     v1.1[0-8].*)
+      echo "KUBELET_LOG_FORMAT is only supported on versions >= v1.19, got ${KUBE_VERSION}"
+      exit 1
+      ;;
+    *)
+      kubelet_extra_args="${kubelet_extra_args}\n      \"logging-format\": \"${KUBELET_LOG_FORMAT}\""
+      ;;
+    esac
+  fi
 
   # JSON map injected into featureGates config
   feature_gates="{}"
@@ -77,10 +94,7 @@ create_cluster() {
     feature_gates="{}"
     runtime_config="{}"
     ;;
-
   true)
-    # Grab the version of the cluster we're about to start
-    KUBE_VERSION="$(docker run --rm --entrypoint=cat "kindest/node:latest" /kind/version)"
     case "${KUBE_VERSION}" in
     v1.1[0-7].*)
       echo "GA_ONLY=true is only supported on versions >= v1.18, got ${KUBE_VERSION}"
@@ -98,15 +112,11 @@ create_cluster() {
       ;;
     esac
     ;;
-
   *)
     echo "\$GA_ONLY set to '${GA_ONLY}'; supported values are true and false (default)"
     exit 1
     ;;
   esac
-
-  # Default Log level for all components in test clusters
-  KIND_CLUSTER_LOG_LEVEL=${KIND_CLUSTER_LOG_LEVEL:-4}
 
   # create the config file
   cat <<EOF > "${ARTIFACTS}/kind-config.yaml"
@@ -140,14 +150,12 @@ kubeadmConfigPatches:
   kind: InitConfiguration
   nodeRegistration:
     kubeletExtraArgs:
-      "v": "${KIND_CLUSTER_LOG_LEVEL}"
-      "logging-format": "${KUBELET_LOG_FORMAT}"
+${kubelet_extra_args}
   ---
   kind: JoinConfiguration
   nodeRegistration:
     kubeletExtraArgs:
-      "v": "${KIND_CLUSTER_LOG_LEVEL}"
-      "logging-format": "${KUBELET_LOG_FORMAT}"
+${kubelet_extra_args}
 EOF
   # NOTE: must match the number of workers above
   NUM_NODES=2

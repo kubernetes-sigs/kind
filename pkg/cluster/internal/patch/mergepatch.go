@@ -30,7 +30,16 @@ type mergePatch struct {
 
 func parseMergePatches(rawPatches []string) ([]mergePatch, error) {
 	patches := []mergePatch{}
+	// split document streams before trying to parse them
+	splitRawPatches := make([]string, 0, len(rawPatches))
 	for _, raw := range rawPatches {
+		splitRaw, err := splitYAMLDocuments(raw)
+		if err != nil {
+			return nil, err
+		}
+		splitRawPatches = append(splitRawPatches, splitRaw...)
+	}
+	for _, raw := range splitRawPatches {
 		matchInfo, err := parseYAMLMatchInfo(raw)
 		if err != nil {
 			return nil, errors.WithStack(err)

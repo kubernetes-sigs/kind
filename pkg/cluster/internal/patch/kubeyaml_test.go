@@ -54,7 +54,7 @@ func TestKubeYAML(t *testing.T) {
 			ExpectOutput: normalKubeadmConfigTrivialPatched,
 		},
 		{
-			Name:            "kubeadm config one merg-patch, one 6902 patch",
+			Name:            "kubeadm config one merge-patch, one 6902 patch",
 			ToPatch:         normalKubeadmConfig,
 			Patches:         []string{trivialPatch},
 			PatchesJSON6902: []config.PatchJSON6902{trivialPatch6902},
@@ -238,6 +238,12 @@ apiVersion: kubeadm.k8s.io/v1beta2
 scheduler:
   extraArgs:
    some-extra-arg: the-arg
+----
+kind: InitConfiguration
+nodeRegistration:
+  kubeletExtraArgs:
+    "v": "4"
+    "logging-format": "json"
 `
 
 const normalKubeadmConfigTrivialPatched = `apiServer:
@@ -274,7 +280,9 @@ nodeRegistration:
   criSocket: /run/containerd/containerd.sock
   kubeletExtraArgs:
     fail-swap-on: "false"
+    logging-format: json
     node-ip: 192.168.9.6
+    v: "4"
 ---
 apiVersion: kubeadm.k8s.io/v1beta2
 controlPlane:
@@ -356,7 +364,9 @@ nodeRegistration:
   criSocket: /run/containerd/containerd.sock
   kubeletExtraArgs:
     fail-swap-on: "false"
+    logging-format: json
     node-ip: 192.168.9.6
+    v: "4"
 ---
 apiVersion: kubeadm.k8s.io/v1beta2
 controlPlane:
