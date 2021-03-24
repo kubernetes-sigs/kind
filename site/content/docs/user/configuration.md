@@ -358,12 +358,26 @@ nodes:
         node-labels: "my-label=true"
 {{< /codeFromInline >}}
 
+Besides, the kubeadm `ClusterConfiguration` object exposes the field extraArgs that can override the default flags passed to control plane components such as the APIServer, ControllerManager and Scheduler. For KIND, we could override these configurations by adding the [ClusterConfiguration](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-config/)([spec](https://pkg.go.dev/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta2#ClusterConfiguration)):
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: ClusterConfiguration
+    apiServer:
+        extraArgs:
+          enable-admission-plugins: NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook
+{{< /codeFromInline >}}
+
 On every additional node configured in the KIND cluster, 
 worker or control-plane (in HA mode),
 KIND runs `kubeadm join` which can be configured using the 
 [JoinConfiguration](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-join/#config-file)
 ([spec](https://godoc.org/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta2#JoinConfiguration))
-
 
 {{< codeFromInline lang="yaml" >}}
 kind: Cluster
