@@ -66,6 +66,11 @@ type ClusterOptions struct {
 
 // Cluster creates a cluster
 func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) error {
+	// validate provider first
+	if err := validateProvider(p); err != nil {
+		return err
+	}
+
 	// default / process options (namely config)
 	if err := fixupOptions(opts); err != nil {
 		return err
@@ -232,5 +237,21 @@ func fixupOptions(opts *ClusterOptions) error {
 	// may be constructed in memory rather than from disk)
 	config.SetDefaultsCluster(opts.Config)
 
+	return nil
+}
+
+func validateProvider(p providers.Provider) error {
+	info, err := p.Info()
+	if err != nil {
+		return err
+	}
+	if info.Rootless {
+		if !info.Cgroup2 {
+			return errors.New("running kind with rootless provider requires cgroup v2, see https://kind.sigs.k8s.io/docs/user/rootless/")
+		}
+		if !info.SupportsMemoryLimit || !info.SupportsPidsLimit || !info.SupportsCPUShares {
+			return errors.New("running kind with rootless provider requires setting systemd property \"Delegate=yes\", see https://kind.sigs.k8s.io/docs/user/rootless/")
+		}
+	}
 	return nil
 }

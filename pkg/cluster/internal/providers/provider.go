@@ -51,5 +51,9 @@ type Provider interface {
 
 // ProviderInfo is the info of the provider
 type ProviderInfo struct {
-	Rootless bool
+	Rootless            bool
+	Cgroup2             bool
+	SupportsMemoryLimit bool
+	SupportsPidsLimit   bool
+	SupportsCPUShares   bool
 }
