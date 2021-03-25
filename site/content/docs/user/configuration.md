@@ -358,7 +358,7 @@ nodes:
         node-labels: "my-label=true"
 {{< /codeFromInline >}}
 
-Besides, the kubeadm `ClusterConfiguration` object exposes the field extraArgs that can override the default flags passed to control plane components such as the APIServer, ControllerManager and Scheduler. For KIND, we could override these configurations by adding the [ClusterConfiguration](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-config/)([spec](https://pkg.go.dev/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta2#ClusterConfiguration)):
+Besides, there are four configuration types available during `kubeadm init`: `InitConfiguration`, `ClusterConfiguration`, `KubeProxyConfiguration`, `KubeletConfiguration`. For example, we could override the apiserver flags by using the kubeadm [ClusterConfiguration](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/control-plane-flags/)([spec](https://pkg.go.dev/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta2#ClusterConfiguration)):
 
 {{< codeFromInline lang="yaml" >}}
 kind: Cluster
