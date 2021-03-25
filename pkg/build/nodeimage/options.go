@@ -62,3 +62,10 @@ func WithLogger(logger log.Logger) Option {
 		return nil
 	})
 }
+
+func WithAdditionalImagesToPull(images []string) Option {
+	return optionAdapter(func(b *buildContext) error {
+		b.additionalImagesToPull = images
+		return nil
+	})
+}

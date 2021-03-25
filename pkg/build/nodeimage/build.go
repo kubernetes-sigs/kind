@@ -83,9 +83,10 @@ func supportedArch(arch string) bool {
 // build configuration
 type buildContext struct {
 	// option fields
-	image     string
-	baseImage string
-	logger    log.Logger
+	image                  string
+	baseImage              string
+	logger                 log.Logger
+	additionalImagesToPull []string
 	// non-option fields
 	arch     string // TODO(bentheelder): this should be an option
 	kubeRoot string

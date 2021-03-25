@@ -26,11 +26,12 @@ import (
 )
 
 type flagpole struct {
-	Source    string
-	BuildType string
-	Image     string
-	BaseImage string
-	KubeRoot  string
+	Source                 string
+	BuildType              string
+	Image                  string
+	BaseImage              string
+	KubeRoot               string
+	AdditionalImagesToPull []string
 }
 
 // NewCommand returns a new cobra.Command for building the node image
@@ -68,6 +69,11 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		nodeimage.DefaultBaseImage,
 		"name:tag of the base image to use for the build",
 	)
+	cmd.Flags().StringSliceVar(
+		&flags.AdditionalImagesToPull, "additional-images",
+		[]string{},
+		"list of additional images to pull",
+	)
 	return cmd
 }
 
@@ -77,6 +83,7 @@ func runE(logger log.Logger, flags *flagpole) error {
 		nodeimage.WithBaseImage(flags.BaseImage),
 		nodeimage.WithKuberoot(flags.KubeRoot),
 		nodeimage.WithLogger(logger),
+		nodeimage.WithAdditionalImagesToPull(flags.AdditionalImagesToPull),
 	); err != nil {
 		return errors.Wrap(err, "error building node image")
 	}

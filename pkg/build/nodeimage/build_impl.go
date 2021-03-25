@@ -255,6 +255,9 @@ func (c *buildContext) prePullImages(bits kube.Bits, dir, containerID string) ([
 	// all builds should install the default storage driver images currently
 	requiredImages = append(requiredImages, defaultStorageImages...)
 
+	// include additional images passed in by the user
+	requiredImages = append(requiredImages, c.additionalImagesToPull...)
+
 	// Create "images" subdir.
 	imagesDir := path.Join(dir, "bits", "images")
 	if err := os.MkdirAll(imagesDir, 0777); err != nil {
