@@ -17,7 +17,12 @@ limitations under the License.
 package cluster
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"sort"
+
+	"sigs.k8s.io/kind/pkg/cmd/kind/version"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
@@ -226,5 +231,18 @@ func (p *Provider) CollectLogs(name, dir string) error {
 	if err != nil {
 		return err
 	}
+	// ensure directory
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return errors.Wrap(err, "failed to create logs directory")
+	}
+	// write kind version
+	if err := ioutil.WriteFile(
+		filepath.Join(dir, "kind-version.txt"),
+		[]byte(version.DisplayVersion()),
+		0666, // match os.Create
+	); err != nil {
+		return errors.Wrap(err, "failed to write kind-version.txt")
+	}
+	// collect and write cluster logs
 	return p.provider.CollectLogs(dir, n)
 }
