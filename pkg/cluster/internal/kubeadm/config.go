@@ -46,7 +46,7 @@ type ConfigData struct {
 
 	// ControlPlane flag specifies the node belongs to the control plane
 	ControlPlane bool
-	// The main IP address of the node
+	// The IP address or comma separated list IP addresses of of the node
 	NodeAddress string
 	// The name for the node (not the address)
 	NodeName string
@@ -86,6 +86,8 @@ type ConfigData struct {
 // DerivedConfigData fields are automatically derived by
 // ConfigData.Derive if they are not specified / zero valued
 type DerivedConfigData struct {
+	// AdvertiseAddress is the first address in NodeAddress
+	AdvertiseAddress string
 	// DockerStableTag is automatically derived from KubernetesVersion
 	DockerStableTag string
 	// SortedFeatureGateKeys allows us to iterate FeatureGates deterministically
@@ -98,6 +100,9 @@ type DerivedConfigData struct {
 
 // Derive automatically derives DockerStableTag if not specified
 func (c *ConfigData) Derive() {
+	// get the first address to use it as the API advertised address
+	c.AdvertiseAddress = strings.Split(c.NodeAddress, ",")[0]
+
 	if c.DockerStableTag == "" {
 		c.DockerStableTag = strings.Replace(c.KubernetesVersion, "+", "_", -1)
 	}
@@ -194,7 +199,7 @@ bootstrapTokens:
 # we use a well know port for making the API server discoverable inside docker network. 
 # from the host machine such port will be accessible via a random local port instead.
 localAPIEndpoint:
-  advertiseAddress: "{{ .NodeAddress }}"
+  advertiseAddress: "{{ .AdvertiseAddress }}"
   bindPort: {{.APIBindPort}}
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
@@ -211,7 +216,7 @@ metadata:
 {{ if .ControlPlane -}}
 controlPlane:
   localAPIEndpoint:
-    advertiseAddress: "{{ .NodeAddress }}"
+    advertiseAddress: "{{ .AdvertiseAddress }}"
     bindPort: {{.APIBindPort}}
 {{- end }}
 nodeRegistration:
@@ -321,7 +326,7 @@ bootstrapTokens:
 # we use a well know port for making the API server discoverable inside docker network. 
 # from the host machine such port will be accessible via a random local port instead.
 localAPIEndpoint:
-  advertiseAddress: "{{ .NodeAddress }}"
+  advertiseAddress: "{{ .AdvertiseAddress }}"
   bindPort: {{.APIBindPort}}
 nodeRegistration:
   criSocket: "unix:///run/containerd/containerd.sock"
@@ -339,7 +344,7 @@ metadata:
 {{ if .ControlPlane -}}
 controlPlane:
   localAPIEndpoint:
-    advertiseAddress: "{{ .NodeAddress }}"
+    advertiseAddress: "{{ .AdvertiseAddress }}"
     bindPort: {{.APIBindPort}}
 {{- end }}
 nodeRegistration:

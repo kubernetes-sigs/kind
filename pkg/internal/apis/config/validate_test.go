@@ -96,6 +96,87 @@ func TestClusterValidate(t *testing.T) {
 			ExpectErrors: 1,
 		},
 		{
+			Name: "bogus serviceSubnet",
+			Cluster: func() Cluster {
+				c := Cluster{}
+				SetDefaultsCluster(&c)
+				c.Networking.ServiceSubnet = "aa"
+				return c
+			}(),
+			ExpectErrors: 1,
+		},
+		{
+			Name: "invalid number of podSubnet",
+			Cluster: func() Cluster {
+				c := Cluster{}
+				SetDefaultsCluster(&c)
+				c.Networking.PodSubnet = "192.168.0.2/24,2.2.2.0/24"
+				return c
+			}(),
+			ExpectErrors: 1,
+		},
+		{
+			Name: "valid dual stack podSubnet and serviceSubnet",
+			Cluster: func() Cluster {
+				c := Cluster{}
+				SetDefaultsCluster(&c)
+				c.Networking.PodSubnet = "192.168.0.2/24,fd00:1::/25"
+				c.Networking.ServiceSubnet = "192.168.0.2/24,fd00:1::/25"
+				c.Networking.IPFamily = DualStackFamily
+				return c
+			}(),
+			ExpectErrors: 0,
+		},
+		{
+			Name: "invalid dual stack podSubnet and multiple serviceSubnet",
+			Cluster: func() Cluster {
+				c := Cluster{}
+				SetDefaultsCluster(&c)
+				c.Networking.PodSubnet = "192.168.0.2/24,fd00:1::/25"
+				c.Networking.ServiceSubnet = "192.168.0.2/24,fd00:1::/25,10.0.0.0/16"
+				c.Networking.IPFamily = DualStackFamily
+				return c
+			}(),
+			ExpectErrors: 1,
+		},
+		{
+			Name: "valid dual stack podSubnet and single stack serviceSubnet",
+			Cluster: func() Cluster {
+				c := Cluster{}
+				SetDefaultsCluster(&c)
+				c.Networking.PodSubnet = "192.168.0.2/24,fd00:1::/25"
+				c.Networking.ServiceSubnet = "192.168.0.2/24"
+				c.Networking.IPFamily = DualStackFamily
+				return c
+			}(),
+			ExpectErrors: 0,
+		},
+		{
+			Name: "valid dual stack serviceSubnet and single stack podSubnet",
+			Cluster: func() Cluster {
+				c := Cluster{}
+				SetDefaultsCluster(&c)
+				c.Networking.PodSubnet = "192.168.0.2/24"
+				c.Networking.ServiceSubnet = "192.168.0.2/24,fd00:1::/25"
+				c.Networking.IPFamily = DualStackFamily
+				return c
+			}(),
+			ExpectErrors: 0,
+		},
+
+		{
+			Name: "bad dual stack podSubnet and serviceSubnet",
+			Cluster: func() Cluster {
+				c := Cluster{}
+				SetDefaultsCluster(&c)
+				c.Networking.PodSubnet = "192.168.0.2/24,2.2.2.0/25"
+				c.Networking.ServiceSubnet = "192.168.0.2/24,2.2.2.0/25"
+				c.Networking.IPFamily = DualStackFamily
+				return c
+			}(),
+			ExpectErrors: 2,
+		},
+		{
 			Name: "missing control-plane",
 			Cluster: func() Cluster {
 				c := Cluster{}

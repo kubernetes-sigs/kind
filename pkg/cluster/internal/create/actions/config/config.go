@@ -78,7 +78,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		KubeProxyMode:        string(ctx.Config.Networking.KubeProxyMode),
 		ServiceSubnet:        ctx.Config.Networking.ServiceSubnet,
 		ControlPlane:         true,
-		IPv6:                 ctx.Config.Networking.IPFamily == "ipv6",
+		IPv6:                 ctx.Config.Networking.IPFamily == config.IPv6Family,
 		FeatureGates:         ctx.Config.FeatureGates,
 		RuntimeConfig:        ctx.Config.RuntimeConfig,
 		RootlessProvider:     providerInfo.Rootless,
@@ -237,11 +237,14 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.N
 
 	data.NodeAddress = nodeAddress
 	// configure the right protocol addresses
-	if cfg.Networking.IPFamily == "ipv6" {
+	if cfg.Networking.IPFamily == config.IPv6Family || cfg.Networking.IPFamily == config.DualStackFamily {
 		if ip := net.ParseIP(nodeAddressIPv6); ip.To16() == nil {
 			return "", errors.Errorf("failed to get IPv6 address for node %s; is %s configured to use IPv6 correctly?", node.String(), provider)
 		}
 		data.NodeAddress = nodeAddressIPv6
+		if cfg.Networking.IPFamily == config.DualStackFamily {
+			data.NodeAddress = fmt.Sprintf("%s,%s", nodeAddress, nodeAddressIPv6)
+		}
 	}
 
 	// generate the config contents
