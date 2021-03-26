@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/cmd/kind/version"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 )
@@ -23,24 +22,9 @@ func CollectLogs(n nodes.Node, dir string) error {
 			return cmd.SetStdout(f).SetStderr(f).Run()
 		}
 	}
-	writeToPathFn := func(s string, path string) func() error {
-		return func() error {
-			f, err := FileOnHost(path)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
-			_, err = f.WriteString(s)
-			return err
-		}
-	}
 
 	return errors.AggregateConcurrent([]func() error{
 		// record info about the node container
-		writeToPathFn(
-			version.DisplayVersion(),
-			filepath.Join(dir, "kind-version.txt"),
-		),
 		execToPathFn(
 			n.Command("cat", "/kind/version"),
 			"kubernetes-version.txt",
