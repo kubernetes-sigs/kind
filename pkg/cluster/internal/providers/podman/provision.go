@@ -51,7 +51,8 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 		// For now remote podman + multi control plane is not supported
 		apiServerPort = 0              // replaced with random ports
 		apiServerAddress = "127.0.0.1" // only the LB needs to be non-local
-		if clusterIsIPv6(cfg) {
+		// only for IPv6 only clusters
+		if cfg.Networking.IPFamily == config.IPv6Family {
 			apiServerAddress = "::1" // only the LB needs to be non-local
 		}
 		// plan loadbalancer node
@@ -120,7 +121,7 @@ func createContainer(args []string) error {
 }
 
 func clusterIsIPv6(cfg *config.Cluster) bool {
-	return cfg.Networking.IPFamily == "ipv6"
+	return cfg.Networking.IPFamily == config.IPv6Family || cfg.Networking.IPFamily == config.DualStackFamily
 }
 
 func clusterHasImplicitLoadBalancer(cfg *config.Cluster) bool {

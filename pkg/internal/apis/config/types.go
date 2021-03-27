@@ -160,6 +160,8 @@ const (
 	IPv4Family ClusterIPFamily = "ipv4"
 	// IPv6Family sets ClusterIPFamily to ipv6
 	IPv6Family ClusterIPFamily = "ipv6"
+	// DualStackFamily sets ClusterIPFamily to dual
+	DualStackFamily ClusterIPFamily = "dual"
 )
 
 // ProxyMode defines a proxy mode for kube-proxy

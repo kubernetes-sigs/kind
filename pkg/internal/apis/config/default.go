@@ -48,14 +48,14 @@ func SetDefaultsCluster(obj *Cluster) {
 		SetDefaultsNode(a)
 	}
 	if obj.Networking.IPFamily == "" {
-		obj.Networking.IPFamily = "ipv4"
+		obj.Networking.IPFamily = IPv4Family
 	}
 
 	// default to listening on 127.0.0.1:randomPort on ipv4
 	// and [::1]:randomPort on ipv6
 	if obj.Networking.APIServerAddress == "" {
 		obj.Networking.APIServerAddress = "127.0.0.1"
-		if obj.Networking.IPFamily == "ipv6" {
+		if obj.Networking.IPFamily == IPv6Family {
 			obj.Networking.APIServerAddress = "::1"
 		}
 	}
@@ -63,10 +63,13 @@ func SetDefaultsCluster(obj *Cluster) {
 	// default the pod CIDR
 	if obj.Networking.PodSubnet == "" {
 		obj.Networking.PodSubnet = "10.244.0.0/16"
-		if obj.Networking.IPFamily == "ipv6" {
+		if obj.Networking.IPFamily == IPv6Family {
 			// node-mask cidr default is /64 so we need a larger subnet, we use /56 following best practices
 			// xref: https://www.ripe.net/publications/docs/ripe-690#4--size-of-end-user-prefix-assignment---48---56-or-something-else-
 			obj.Networking.PodSubnet = "fd00:10:244::/56"
+		}
+		if obj.Networking.IPFamily == DualStackFamily {
+			obj.Networking.PodSubnet = "10.244.0.0/16,fd00:10:244::/56"
 		}
 	}
 
@@ -76,8 +79,11 @@ func SetDefaultsCluster(obj *Cluster) {
 	// we allocate a /16 subnet that allows 65535 services (current Kubernetes tested limit is O(10k) services)
 	if obj.Networking.ServiceSubnet == "" {
 		obj.Networking.ServiceSubnet = "10.96.0.0/16"
-		if obj.Networking.IPFamily == "ipv6" {
+		if obj.Networking.IPFamily == IPv6Family {
 			obj.Networking.ServiceSubnet = "fd00:10:96::/112"
+		}
+		if obj.Networking.IPFamily == DualStackFamily {
+			obj.Networking.ServiceSubnet = "10.96.0.0/16,fd00:10:96::/112"
 		}
 	}
 	// default the KubeProxyMode using iptables as it's already the default
