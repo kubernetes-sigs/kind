@@ -337,7 +337,8 @@ enable_network_magic(){
   # first we need to detect an IP to use for reaching the docker host
   local docker_host_ip
   docker_host_ip="$( (getent ahostsv4 'host.docker.internal' | head -n1 | cut -d' ' -f1) || true)"
-  if [[ -z "${docker_host_ip}" ]]; then
+  # if the ip doesn't exist or is a loopback address use the default gateway
+  if [[ -z "${docker_host_ip}" ]] || [[ $docker_host_ip =~ ^127\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     docker_host_ip=$(ip -4 route show default | cut -d' ' -f3)
   fi
 
