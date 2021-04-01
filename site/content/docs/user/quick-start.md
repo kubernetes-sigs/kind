@@ -334,53 +334,6 @@ featureGates:
   FeatureGateName: true
 {{< /codeFromInline >}}
 
-#### IPv6 clusters
-You can run IPv6 single-stack clusters using `kind`, if the host that runs the docker containers support IPv6.
-Most operating systems / distros have IPv6 enabled by default, but you can check on Linux with the following command:
-
-```sh
-sudo sysctl net.ipv6.conf.all.disable_ipv6
-```
-
-You should see:
-
-```sh
-net.ipv6.conf.all.disable_ipv6 = 0
-```
-
-If you are using Docker on Windows or Mac, you will need to use an IPv4 port
-forward for the API Server from the host because IPv6 port forwards don't work
-on these platforms, you can do this with the following config:
-
-```yaml
-# an ipv6 cluster
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-networking:
-  ipFamily: ipv6
-  apiServerAddress: 127.0.0.1
-```
-
-On Linux all you need is:
-```yaml
-# an ipv6 cluster
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-networking:
-  ipFamily: ipv6
-```
-
-#### Dual Stack clusters
-You can run dual stack clusters using `kind`, on kubernetes versions +1.20.
-
-```yaml
-# a dual-stack cluster
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-networking:
-  ipFamily: dual
-```
-
 ### Configure kind to use a proxy
 If you are running kind in an environment that requires a proxy, you may need to configure kind to use it.
 
