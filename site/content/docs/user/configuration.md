@@ -102,9 +102,35 @@ Multiple details of the cluster's networking can be customized under the
 
 #### IP Family
 
-KIND has limited support for IPv6 (and soon dual-stack!) clusters, you can switch
-from the default of IPv4 by setting:
+KIND has support for IPv4, IPv6 and dual-stack clusters, you can switch from the default of IPv4 by setting:
 
+##### IPv6 clusters
+You can run IPv6 single-stack clusters using `kind`, if the host that runs the docker containers support IPv6.
+Most operating systems / distros have IPv6 enabled by default, but you can check on Linux with the following command:
+
+```sh
+sudo sysctl net.ipv6.conf.all.disable_ipv6
+```
+
+You should see:
+
+```sh
+net.ipv6.conf.all.disable_ipv6 = 0
+```
+
+If you are using Docker on Windows or Mac, you will need to use an IPv4 port
+forward for the API Server from the host because IPv6 port forwards don't work
+on these platforms, you can do this with the following config:
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  ipFamily: ipv6
+  apiServerAddress: 127.0.0.1
+{{< /codeFromInline >}}
+
+On Linux all you need is:
 
 {{< codeFromInline lang="yaml" >}}
 kind: Cluster
@@ -113,11 +139,15 @@ networking:
   ipFamily: ipv6
 {{< /codeFromInline >}}
 
-NOTE: you may need to [reconfigure your docker daemon](https://docs.docker.com/config/daemon/ipv6/) 
-to enable ipv6 in order to use this. 
+##### Dual Stack clusters
+You can run dual stack clusters using `kind` 0.11+, on kubernetes versions 1.20+.
 
-IPv6 does not work on docker for mac because port forwarding ipv6
-is not yet supported in docker for mac.
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  ipFamily: dual
+{{< /codeFromInline >}}
 
 #### API Server
 
