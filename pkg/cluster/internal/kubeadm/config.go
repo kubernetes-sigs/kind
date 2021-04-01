@@ -25,6 +25,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/version"
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/internal/apis/config"
 )
 
 // ConfigData is supplied to the kubeadm config template, with values populated
@@ -67,8 +68,8 @@ type ConfigData struct {
 	// Kubernetes API Server RuntimeConfig
 	RuntimeConfig map[string]string
 
-	// IPv4 values take precedence over IPv6 by default, if true set IPv6 default values
-	IPv6 bool
+	// IPFamily of the cluster, it can be IPv4, IPv6 or DualStack
+	IPFamily config.ClusterIPFamily
 
 	// Labels are the labels, in the format "key1=val1,key2=val2", with which the respective node will be labeled
 	NodeLabels string
@@ -96,6 +97,10 @@ type DerivedConfigData struct {
 	FeatureGatesString string
 	// RuntimeConfigString is of the form `Foo=true,Baz=false`
 	RuntimeConfigString string
+	// KubeadmFeatureGates contains Kubeadm only feature gates
+	KubeadmFeatureGates map[string]bool
+	// IPv4 values take precedence over IPv6 by default, if true set IPv6 default values
+	IPv6 bool
 }
 
 // Derive automatically derives DockerStableTag if not specified
@@ -106,6 +111,9 @@ func (c *ConfigData) Derive() {
 	if c.DockerStableTag == "" {
 		c.DockerStableTag = strings.Replace(c.KubernetesVersion, "+", "_", -1)
 	}
+
+	// get the IP addresses family for defaulting components
+	c.IPv6 = c.IPFamily == config.IPv6Family
 
 	// get sorted list of FeatureGate keys
 	featureGateKeys := make([]string, 0, len(c.FeatureGates))
@@ -281,6 +289,10 @@ metadata:
   name: config
 kubernetesVersion: {{.KubernetesVersion}}
 clusterName: "{{.ClusterName}}"
+{{ if .KubeadmFeatureGates}}featureGates:
+{{ range $key, $value := .KubeadmFeatureGates }}
+  "{{ $key }}": {{ $value }}
+{{end}}{{end}}
 controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # on docker for mac we have to expose the api server via port forward,
 # so we need to ensure the cert is valid for localhost so we can talk
@@ -438,6 +450,17 @@ func Config(data ConfigData) (config string, err error) {
 
 	// derive any automatic fields if not supplied
 	data.Derive()
+
+	// Kubeadm has its own feature-gate for dual stack
+	// we need to enable it for Kubernetes version 1.20 only
+	// dual-stack is only supported in 1.20+
+	// TODO: remove this when 1.20 is EOL or we no longer support
+	// dual-stack for 1.20 in KIND
+	if ver.LessThan(version.MustParseSemantic("v1.21.0")) &&
+		ver.AtLeast(version.MustParseSemantic("v1.20.0")) {
+		data.KubeadmFeatureGates = make(map[string]bool)
+		data.KubeadmFeatureGates["IPv6DualStack"] = true
+	}
 
 	// execute the template
 	var buff bytes.Buffer

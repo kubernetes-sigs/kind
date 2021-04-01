@@ -78,7 +78,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		KubeProxyMode:        string(ctx.Config.Networking.KubeProxyMode),
 		ServiceSubnet:        ctx.Config.Networking.ServiceSubnet,
 		ControlPlane:         true,
-		IPv6:                 ctx.Config.Networking.IPFamily == config.IPv6Family,
+		IPFamily:             ctx.Config.Networking.IPFamily,
 		FeatureGates:         ctx.Config.FeatureGates,
 		RuntimeConfig:        ctx.Config.RuntimeConfig,
 		RootlessProvider:     providerInfo.Rootless,
