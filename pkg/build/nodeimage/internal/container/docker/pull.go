@@ -23,33 +23,17 @@ import (
 	"sigs.k8s.io/kind/pkg/log"
 )
 
-// PullIfNotPresent will pull an image if it is not present locally
-// retrying up to retries times
-// it returns true if it attempted to pull, and any errors from pulling
-func PullIfNotPresent(logger log.Logger, image string, retries int) (pulled bool, err error) {
-	// TODO(bentheelder): switch most (all) of the logging here to debug level
-	// once we have configurable log levels
-	// if this did not return an error, then the image exists locally
-	cmd := exec.Command("docker", "inspect", "--type=image", image)
-	if err := cmd.Run(); err == nil {
-		logger.V(1).Infof("Image: %s present locally", image)
-		return false, nil
-	}
-	// otherwise try to pull it
-	return true, Pull(logger, image, retries)
-}
-
 // Pull pulls an image, retrying up to retries times
-func Pull(logger log.Logger, image string, retries int) error {
-	logger.V(1).Infof("Pulling image: %s ...", image)
-	err := exec.Command("docker", "pull", image).Run()
+func Pull(logger log.Logger, image string, platform string, retries int) error {
+	logger.V(1).Infof("Pulling image: %s for platform %s ...", image, platform)
+	err := exec.Command("docker", "pull", "--platform="+platform, image).Run()
 	// retry pulling up to retries times if necessary
 	if err != nil {
 		for i := 0; i < retries; i++ {
 			time.Sleep(time.Second * time.Duration(i+1))
 			logger.V(1).Infof("Trying again to pull image: %q ... %v", image, err)
 			// TODO(bentheelder): add some backoff / sleep?
-			err = exec.Command("docker", "pull", image).Run()
+			err = exec.Command("docker", "pull", "--platform="+platform, image).Run()
 			if err == nil {
 				break
 			}

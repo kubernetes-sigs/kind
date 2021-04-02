@@ -33,7 +33,21 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
+	"sigs.k8s.io/kind/pkg/log"
 )
+
+// buildContext is used to build the kind node image, and contains
+// build configuration
+type buildContext struct {
+	// option fields
+	image     string
+	baseImage string
+	logger    log.Logger
+	arch      string
+	kubeRoot  string
+	// non-option fields
+	builder kube.Builder
+}
 
 // Build builds the cluster node image, the sourcedir must be set on
 // the buildContext
@@ -188,7 +202,7 @@ func (c *buildContext) prePullImages(bits kube.Bits, dir, containerID string) ([
 	fixRepository := func(repository string) string {
 		if strings.HasSuffix(repository, archSuffix) {
 			fixed := strings.TrimSuffix(repository, archSuffix)
-			fmt.Println("fixed: " + repository + " -> " + fixed)
+			c.logger.V(1).Info("fixed: " + repository + " -> " + fixed)
 			repository = fixed
 		}
 		return repository
@@ -206,7 +220,7 @@ func (c *buildContext) prePullImages(bits kube.Bits, dir, containerID string) ([
 		fixedImages.Insert(registry + ":" + tag)
 	}
 	builtImages = fixedImages
-	c.logger.V(0).Info("Detected built images: " + strings.Join(builtImages.List(), ", "))
+	c.logger.V(1).Info("Detected built images: " + strings.Join(builtImages.List(), ", "))
 
 	// gets the list of images required by kubeadm
 	requiredImages, err := exec.OutputLines(cmder.Command(
@@ -262,38 +276,6 @@ func (c *buildContext) prePullImages(bits kube.Bits, dir, containerID string) ([
 		return nil, errors.Wrap(err, "failed to make images dir")
 	}
 
-	fns := []func() error{}
-	pulledImages := make(chan string, len(requiredImages))
-	for i, image := range requiredImages {
-		i, image := i, image // https://golang.org/doc/faq#closures_and_goroutines
-		fns = append(fns, func() error {
-			if !builtImages.Has(image) {
-				fmt.Printf("Pulling: %s\n", image)
-				err := docker.Pull(c.logger, image, 2)
-				if err != nil {
-					c.logger.Warnf("Failed to pull %s with error: %v", image, err)
-				}
-				// TODO(bentheelder): generate a friendlier name
-				pullName := fmt.Sprintf("%d.tar", i)
-				pullTo := path.Join(imagesDir, pullName)
-				err = docker.Save(image, pullTo)
-				if err != nil {
-					return err
-				}
-				pulledImages <- pullTo
-			}
-			return nil
-		})
-	}
-	if err := errors.AggregateConcurrent(fns); err != nil {
-		return nil, err
-	}
-	close(pulledImages)
-	pulled := []string{}
-	for image := range pulledImages {
-		pulled = append(pulled, image)
-	}
-
 	// setup image importer
 	importer := newContainerdImporter(cmder)
 	if err := importer.Prepare(); err != nil {
@@ -308,19 +290,28 @@ func (c *buildContext) prePullImages(bits kube.Bits, dir, containerID string) ([
 		}
 	}()
 
-	// create a plan of image loading
-	loadFns := []func() error{}
-	for _, image := range pulled {
-		image := image // capture loop var
-		loadFns = append(loadFns, func() error {
-			f, err := os.Open(image)
-			if err != nil {
-				return err
+	fns := []func() error{}
+	for _, image := range requiredImages {
+		image := image // https://golang.org/doc/faq#closures_and_goroutines
+		fns = append(fns, func() error {
+			if !builtImages.Has(image) {
+				err := importer.Pull(image, dockerBuildOsAndArch(c.arch))
+				if err != nil {
+					c.logger.Warnf("Failed to pull %s with error: %v", image, err)
+					runE := exec.RunErrorForError(err)
+					c.logger.Warn(string(runE.Output))
+				}
+				// TODO(bentheelder): generate a friendlier name
 			}
-			defer f.Close()
-			return importer.LoadCommand().SetStdout(os.Stdout).SetStderr(os.Stdout).SetStdin(f).Run()
+			return nil
 		})
 	}
+	if err := errors.AggregateConcurrent(fns); err != nil {
+		return nil, err
+	}
+
+	// create a plan of image loading
+	loadFns := []func() error{}
 	for _, image := range bits.ImagePaths() {
 		image := image // capture loop var
 		loadFns = append(loadFns, func() error {
@@ -332,7 +323,7 @@ func (c *buildContext) prePullImages(bits kube.Bits, dir, containerID string) ([
 			//return importer.LoadCommand().SetStdout(os.Stdout).SetStderr(os.Stderr).SetStdin(f).Run()
 			// we will rewrite / correct the tags as we load the image
 			if err := exec.RunWithStdinWriter(importer.LoadCommand().SetStdout(os.Stdout).SetStderr(os.Stdout), func(w io.Writer) error {
-				return docker.EditArchiveRepositories(f, w, fixRepository)
+				return docker.EditArchive(f, w, fixRepository, c.arch)
 			}); err != nil {
 				return err
 			}
@@ -352,7 +343,7 @@ func (c *buildContext) prePullImages(bits kube.Bits, dir, containerID string) ([
 func (c *buildContext) createBuildContainer() (id string, err error) {
 	// attempt to explicitly pull the image if it doesn't exist locally
 	// we don't care if this errors, we'll still try to run which also pulls
-	_, _ = docker.PullIfNotPresent(c.logger, c.baseImage, 4)
+	_ = docker.Pull(c.logger, c.baseImage, dockerBuildOsAndArch(c.arch), 4)
 	// this should be good enough: a specific prefix, the current unix time,
 	// and a little random bits in case we have multiple builds simultaneously
 	random := rand.New(rand.NewSource(time.Now().UnixNano())).Int31()
@@ -364,6 +355,7 @@ func (c *buildContext) createBuildContainer() (id string, err error) {
 			// the container should hang forever so we can exec in it
 			"--entrypoint=sleep",
 			"--name=" + id,
+			"--platform=" + dockerBuildOsAndArch(c.arch),
 		},
 		[]string{
 			"infinity", // sleep infinitely to keep the container around
@@ -373,4 +365,8 @@ func (c *buildContext) createBuildContainer() (id string, err error) {
 		return id, errors.Wrap(err, "failed to create build container")
 	}
 	return id, nil
+}
+
+func dockerBuildOsAndArch(arch string) string {
+	return "linux/" + arch
 }
