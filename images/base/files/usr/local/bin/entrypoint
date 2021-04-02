@@ -229,7 +229,7 @@ fix_cgroup() {
   cgroup_mounts=$(grep -E -o '/[[:alnum:]].* /sys/fs/cgroup.*.*cgroup' /proc/self/mountinfo || true)
   if [[ -n "${cgroup_mounts}" ]]; then
     local mount_root
-    mount_root=$(echo "${cgroup_mounts}" | head -n 1 | cut -d' ' -f1)
+    mount_root=$(head -n 1 <<<"${cgroup_mounts}" | cut -d' ' -f1)
     for mount_point in $(echo "${cgroup_mounts}" | cut -d' ' -f 2); do
       # bind mount each mount_point to mount_point + mount_root
       # mount --bind /sys/fs/cgroup/cpu /sys/fs/cgroup/cpu/docker/fb07bb6daf7730a3cb14fc7ff3e345d1e47423756ce54409e66e01911bab2160
@@ -336,7 +336,7 @@ enable_network_magic(){
 
   # first we need to detect an IP to use for reaching the docker host
   local docker_host_ip
-  docker_host_ip="$( (getent ahostsv4 'host.docker.internal' | head -n1 | cut -d' ' -f1) || true)"
+  docker_host_ip="$( (head -n1 <(getent ahostsv4 'host.docker.internal') | cut -d' ' -f1) || true)"
   # if the ip doesn't exist or is a loopback address use the default gateway
   if [[ -z "${docker_host_ip}" ]] || [[ $docker_host_ip =~ ^127\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     docker_host_ip=$(ip -4 route show default | cut -d' ' -f3)
@@ -358,7 +358,7 @@ enable_network_magic(){
   sed -e "s/${docker_embedded_dns_ip}/${docker_host_ip}/g" /etc/resolv.conf.original >/etc/resolv.conf
 
   # fixup IPs in manifests ...
-  curr_ipv4="$( (getent ahostsv4 "$(hostname)" | head -n1 | cut -d' ' -f1) || true)"
+  curr_ipv4="$( (head -n1 <(getent ahostsv4 "$(hostname)") | cut -d' ' -f1) || true)"
   echo "INFO: Detected IPv4 address: ${curr_ipv4}" >&2
   if [ -f /kind/old-ipv4 ]; then
       old_ipv4=$(cat /kind/old-ipv4)
@@ -378,7 +378,7 @@ enable_network_magic(){
   fi
 
   # do IPv6
-  curr_ipv6="$( (getent ahostsv6 "$(hostname)" | head -n1 | cut -d' ' -f1) || true)"
+  curr_ipv6="$( (head -n1 <(getent ahostsv6 "$(hostname)") | cut -d' ' -f1) || true)"
   echo "INFO: Detected IPv6 address: ${curr_ipv6}" >&2
   if [ -f /kind/old-ipv6 ]; then
       old_ipv6=$(cat /kind/old-ipv6)
