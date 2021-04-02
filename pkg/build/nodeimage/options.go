@@ -62,3 +62,13 @@ func WithLogger(logger log.Logger) Option {
 		return nil
 	})
 }
+
+// WithArch sets the architecture to build for
+func WithArch(arch string) Option {
+	return optionAdapter(func(b *buildContext) error {
+		if arch != "" {
+			b.arch = arch
+		}
+		return nil
+	})
+}
