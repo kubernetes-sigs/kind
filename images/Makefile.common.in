@@ -27,7 +27,7 @@ push: build
 # for sanity checking before doing a cross build push
 # cross builds cannot be imported locally at the moment
 # https://github.com/docker/buildx/issues/59
-quick: PLATFORMS=linux/amd64
+quick: PLATFORMS=linux/arm64
 quick: OUTPUT=--load
 quick: build
 
