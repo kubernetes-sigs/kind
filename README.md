@@ -113,7 +113,7 @@ See also: our own [contributor guide] and the Kubernetes [community page].
 
 ### Contributor Over Time
 
-![image](https://user-images.githubusercontent.com/2106987/113733857-68a68c80-972d-11eb-9f09-f218673dfe6a.png)
+![contributor-over-time](https://user-images.githubusercontent.com/2106987/113733857-68a68c80-972d-11eb-9f09-f218673dfe6a.png)
 
 ## Why kind?
 
