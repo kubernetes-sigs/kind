@@ -35,6 +35,13 @@ cleanup() {
   # KIND_CREATE_ATTEMPTED is true once we: kind create
   if [ "${KIND_CREATE_ATTEMPTED:-}" = true ]; then
     kind "export" logs "${ARTIFACTS}/logs" || true
+    # get prometheus URL from the Service (servicePort = 8080)
+    CLUSTER_IP=$(kubectl get svc prometheus-service -n monitoring -o jsonpath="{.spec.clusterIP}")
+    # create a snapshot of the db
+    docker exec kind-control-plane curl -XPOST http://"${CLUSTER_IP}":8080/api/v1/admin/tsdb/snapshot
+    # get the prometheus database
+    POD_NAME=$(kubectl -n monitoring get pods -o jsonpath='{.items[0].metadata.name}')
+    kubectl -n monitoring exec "${POD_NAME}" -- tar cvf - /prometheus/snapshots > "${ARTIFACTS}/prometheus.tar"
     kind delete cluster || true
   fi
   rm -f _output/bin/e2e.test || true
@@ -145,6 +152,7 @@ kubeadmConfigPatches:
   controllerManager:
     extraArgs:
       "v": "${KIND_CLUSTER_LOG_LEVEL}"
+      "bind-address": "0.0.0.0"
   scheduler:
     extraArgs:
       "v": "${KIND_CLUSTER_LOG_LEVEL}"
@@ -174,6 +182,213 @@ EOF
   # Patch kube-proxy to set the verbosity level
   kubectl patch -n kube-system daemonset/kube-proxy \
     --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--v='"${KIND_CLUSTER_LOG_LEVEL}"'" }]'
+}
+
+# install monitoring so we can get metrics
+install_monitoring() {
+  # Get the current config
+  original_kube_proxy=$(kubectl get -oyaml -n=kube-system configmap/kube-proxy)
+  echo "Original kube-proxy config:"
+  echo "${original_kube_proxy}"
+  # Patch it
+  fixed_kube_proxy=$(
+      printf '%s' "${original_kube_proxy}" | sed \
+          's/\(.*metricsBindAddress:\)\( .*\)/\1 "0.0.0.0:10249"/' \
+      )
+  echo "Patched kube-proxy config:"
+  echo "${fixed_kube_proxy}"
+  printf '%s' "${fixed_kube_proxy}" | kubectl apply -f -
+  # restart kube-proxy
+  kubectl -n kube-system rollout restart ds kube-proxy
+
+  cat <<'EOF' > "${ARTIFACTS}/kind-monitoring.yaml"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-service
+  namespace: monitoring
+  annotations:
+      prometheus.io/scrape: 'true'
+      prometheus.io/port:   '9090'
+spec:
+  selector: 
+    app: prometheus-server
+  type: NodePort
+  ports:
+    - port: 8080
+      targetPort: 9090 
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: prometheus
+rules:
+- apiGroups: [""]
+  resources:
+  - nodes
+  - nodes/proxy
+  - services
+  - endpoints
+  - pods
+  verbs: ["get", "list", "watch"]
+- apiGroups:
+  - extensions
+  resources:
+  - ingresses
+  verbs: ["get", "list", "watch"]
+- nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: monitoring
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-server-conf
+  labels:
+    name: prometheus-server-conf
+  namespace: monitoring
+data:
+  prometheus.yml: |-
+    global:
+      scrape_interval: 5s
+      evaluation_interval: 5s
+    scrape_configs:
+      - job_name: 'kubernetes-apiservers'
+        kubernetes_sd_configs:
+        - role: endpoints
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: default;kubernetes;https
+
+      - job_name: 'kubernetes-controller-manager'
+        honor_labels: true
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        static_configs:
+          - targets:
+            - 127.0.0.1:10257
+
+      - job_name: 'kubernetes-nodes'
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+        - role: node
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: localhost:6443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/${1}/proxy/metrics
+
+      - job_name: 'kubernetes-cadvisor'
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+        - role: node
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: localhost:6443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+
+      - job_name: kube-proxy
+        honor_labels: true
+        kubernetes_sd_configs:
+        - role: pod
+        relabel_configs:
+        - action: keep
+          source_labels:
+          - __meta_kubernetes_namespace
+          - __meta_kubernetes_pod_name
+          separator: '/'
+          regex: 'kube-system/kube-proxy.+'
+        - source_labels:
+          - __address__
+          action: replace
+          target_label: __address__
+          regex: (.+?)(\\:\\d+)?
+          replacement: $1:10249
+---          
+apiVersion: v1
+kind: Pod
+metadata:
+  name: prometheus
+  namespace: monitoring
+  labels:
+    app: prometheus-server
+spec:
+  hostNetwork: true
+  nodeSelector:
+    node-role.kubernetes.io/master: ""
+  tolerations:
+  - key: CriticalAddonsOnly
+    operator: Exists
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/control-plane
+  containers:
+    - name: prometheus
+      image: prom/prometheus:v2.26.0
+      args:
+        - "--config.file=/etc/prometheus/prometheus.yml"
+        - "--storage.tsdb.path=/prometheus/"
+        - "--web.enable-admin-api"
+      ports:
+        - containerPort: 9090
+      volumeMounts:
+        - name: prometheus-config-volume
+          mountPath: /etc/prometheus/
+        - name: prometheus-storage-volume
+          mountPath: /prometheus/
+  volumes:
+    - name: prometheus-config-volume
+      configMap:
+        defaultMode: 420
+        name: prometheus-server-conf
+    - name: prometheus-storage-volume
+      emptyDir: {}
+EOF
+
+  kubectl apply -f "${ARTIFACTS}/kind-monitoring.yaml"
+
 }
 
 # run e2es with ginkgo-e2e.sh
@@ -263,6 +478,7 @@ main() {
   # create the cluster and run tests
   res=0
   create_cluster || res=$?
+  install_monitoring || res=$?
   run_tests || res=$?
   cleanup || res=$?
   exit $res
