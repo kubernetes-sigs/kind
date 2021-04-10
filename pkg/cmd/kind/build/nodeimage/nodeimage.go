@@ -51,7 +51,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	}
 	cmd.Flags().StringVar(
 		&flags.BuildType, "type",
-		"docker", "build type, one of [bazel, docker]",
+		"docker", "build type, default is docker",
 	)
 	cmd.Flags().StringVar(
 		&flags.Image, "image",
