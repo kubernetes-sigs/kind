@@ -133,7 +133,7 @@ Flags:
   -h, --help                help for node-image
       --image string        name:tag of the resulting image to be built (default "kindest/node:latest")
       --kube-root string    Path to the Kubernetes source directory (if empty, the path is autodetected)
-      --type string         build type, one of [bazel, docker] (default "docker")
+      --type string         build type, default is docker (default "docker")
 
 Global Flags:
       --loglevel string   logrus log level [panic, fatal, error, warning, info, debug] (default "warning")
