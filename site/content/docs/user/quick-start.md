@@ -202,19 +202,9 @@ The `node-image` in turn is built off the [`base-image`][base image], which
 installs all the dependencies needed for Docker and Kubernetes to run in a
 container.
 
-Currently, kind supports two different ways to build a `node-image`
+Currently, kind supports one default way to build a `node-image`
 if you have the [Kubernetes][kubernetes] source in your host machine
-(`$GOPATH/src/k8s.io/kubernetes`), by using `docker` or `bazel`.
-To specify the build type use the flag `--type`.
-Note however that using `--type=bazel` on Windows or MacOS will not work
-currently due to Kubelet using [CGO] which requires GCC/glibc for linux.
-A workaround may be enabled in the future.
-
-kind will default to using the build type `docker` if none is specified.
-
-```
-kind build node-image --type bazel
-```
+(`$GOPATH/src/k8s.io/kubernetes`), by using `docker`.
 
 
 ### Settings for Docker Desktop
