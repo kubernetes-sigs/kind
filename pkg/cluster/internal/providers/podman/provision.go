@@ -281,7 +281,7 @@ func getProxyEnv(cfg *config.Cluster) (map[string]string, error) {
 }
 
 func getSubnets(networkName string) ([]string, error) {
-	format := `{{range (index (index . "IPAM") "Config")}}{{index . "Subnet"}} {{end}}`
+	format := `{{index (index  .plugins  0).ipam.ranges 0 0 "subnet"}}`
 	cmd := exec.Command("podman", "network", "inspect", "-f", format, networkName)
 	lines, err := exec.OutputLines(cmd)
 	if err != nil {
