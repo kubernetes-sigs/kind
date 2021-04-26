@@ -61,13 +61,13 @@ KIND_BUILD_FLAGS?=-trimpath -ldflags="-buildid= -w -X=sigs.k8s.io/kind/pkg/cmd/k
 all: build
 # builds kind in a container, outputs to $(OUT_DIR)
 kind:
-	go build -v -o $(OUT_DIR)/$(KIND_BINARY_NAME) $(KIND_BUILD_FLAGS)
+	go build -v -o "$(OUT_DIR)/$(KIND_BINARY_NAME)" $(KIND_BUILD_FLAGS)
 # alias for building kind
 build: kind
 # use: make install INSTALL_DIR=/usr/local/bin
 install: build
 	$(INSTALL) -d $(INSTALL_DIR)
-	$(INSTALL) $(OUT_DIR)/$(KIND_BINARY_NAME) $(INSTALL_DIR)/$(KIND_BINARY_NAME)
+	$(INSTALL) "$(OUT_DIR)/$(KIND_BINARY_NAME)" "$(INSTALL_DIR)/$(KIND_BINARY_NAME)"
 ################################################################################
 # ================================= Testing ====================================
 # unit tests (hermetic)
@@ -84,8 +84,8 @@ test:
 # standard cleanup target
 # TODO: remove the vendor part in the future. We no longer populate vendor
 clean:
-	rm -rf $(OUT_DIR)/
-	rm -rf $(REPO_ROOT)/vendor/
+	rm -rf "$(OUT_DIR)/"
+	rm -rf "$(REPO_ROOT)/vendor/"
 ################################################################################
 # ============================== Auto-Update ===================================
 # update generated code, gofmt, etc.
