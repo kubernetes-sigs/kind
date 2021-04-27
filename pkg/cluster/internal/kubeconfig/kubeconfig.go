@@ -32,8 +32,8 @@ import (
 
 // Export exports the kubeconfig given the cluster context and a path to write it to
 // This will always be an external kubeconfig
-func Export(p providers.Provider, name, explicitPath string) error {
-	cfg, err := get(p, name, true)
+func Export(p providers.Provider, name, explicitPath string, external bool) error {
+	cfg, err := get(p, name, external)
 	if err != nil {
 		return err
 	}
