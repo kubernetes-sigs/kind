@@ -24,6 +24,7 @@ by the ingress controller `nodeSelector`.
     - [Ambassador](#ambassador)
     - [Contour](#contour)
     - [Ingress NGINX](#ingress-nginx)
+    - [Kong](#kong)
 
 ### Create Cluster
 
@@ -132,6 +133,59 @@ kubectl wait --namespace ingress-nginx \
 {{< /codeFromInline >}}
 
 Refer [Using Ingress](#using-ingress) for a basic example usage.
+
+### Kong
+
+To run Kong ingress, create your kind cluster with port mappings to
+80/443:
+
+```yaml
+cat <<EOF | kind create cluster --name my-kind-cluster --config=-
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  extraPortMappings:
+  - containerPort: 30080
+    hostPort: 80
+    protocol: TCP
+  - containerPort: 30443
+    hostPort: 443
+    protocol: TCP
+EOF
+```
+
+Next, create a ClusterRoleBinding granting full cluster admin
+privileges to the `default` ServiceAccount in `kube-system`:
+
+```bash
+kubectl create clusterrolebinding add-on-cluster-admin \
+  --clusterrole=cluster-admin \
+  --serviceaccount=kube-system:default
+```
+
+Next, install the [Kong helm chart](https://github.com/Kong/charts),
+setting the following values:
+
+```yaml
+proxy:
+  type: NodePort
+  http:
+    nodePort: 30080
+  tls:
+    nodePort: 30443
+```
+
+Or, if you prefer, you can give these options on the command line:
+
+```bash
+helm install kong kong/kong \
+  --set proxy.type=NodePort \
+  --set proxy.http.nodePort=30080 \
+  --set proxy.tls.nodePort=30443
+```
+
+Kong should be functioning as your Ingress at this point.
 
 ## Using Ingress
 
