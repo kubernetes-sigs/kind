@@ -3,7 +3,7 @@
 
 # Vagrant box for testing kind with cgroup v2
 Vagrant.configure("2") do |config|
-  config.vm.box = "fedora/33-cloud-base"
+  config.vm.box = "fedora/34-cloud-base"
   memory = 2048
   cpus = 2
   config.vm.provider :virtualbox do |v|
@@ -19,10 +19,14 @@ Vagrant.configure("2") do |config|
     set -eux -o pipefail
     dnf install -y golang-go make kubernetes-client podman
 
-    # The moby-engine package (v19.03) included in Fedora 33 does not support cgroup v2.
-    # So we need to install Docker 20.10 (or later) from the upstream.
     curl -fsSL https://get.docker.com | sh
     systemctl enable --now docker
+
+    # Configure Podman to resolve `kindest/node` to `docker.io/kindest/node`.
+    cat <<EOF > /etc/containers/registries.conf
+[registries.search]
+registries = ['docker.io']
+EOF
     SHELL
   end
   config.vm.provision "install-kind", type: "shell", run: "once" do |sh|
