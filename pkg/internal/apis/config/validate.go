@@ -29,7 +29,7 @@ import (
 // and suffix this name, we can relax it a little
 // see NewContext() for usage
 // https://godoc.org/github.com/docker/docker/daemon/names#pkg-constants
-var validNameRE = regexp.MustCompile(`^[a-z0-9_.-]+$`)
+var validNameRE = regexp.MustCompile(`^[a-z0-9.-]+$`)
 
 // Validate returns a ConfigErrors with an entry for each problem
 // with the config, or nil if there are none
