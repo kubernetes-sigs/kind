@@ -91,7 +91,6 @@ spec:
       hostNetwork: true
       tolerations:
       - operator: Exists
-        effect: NoSchedule
       serviceAccountName: kindnet
       containers:
       - name: kindnet-cni
