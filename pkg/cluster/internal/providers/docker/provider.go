@@ -322,9 +322,14 @@ func info() (*providers.ProviderInfo, error) {
 	// values are meaningless and need to be considered false.
 	// https://github.com/moby/moby/issues/42151
 	if dInfo.CgroupDriver != "none" {
-		info.SupportsMemoryLimit = dInfo.MemoryLimit
-		info.SupportsPidsLimit = dInfo.PidsLimit
-		info.SupportsCPUShares = dInfo.CPUShares
+		info.SupportsMemoryLimit = &dInfo.MemoryLimit
+		info.SupportsPidsLimit = &dInfo.PidsLimit
+		info.SupportsCPUShares = &dInfo.CPUShares
+	} else {
+		False := false
+		info.SupportsMemoryLimit = &False
+		info.SupportsPidsLimit = &False
+		info.SupportsCPUShares = &False
 	}
 	for _, o := range dInfo.SecurityOptions {
 		// o is like "name=seccomp,profile=default", or "name=rootless",

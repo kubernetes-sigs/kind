@@ -67,7 +67,7 @@ type ClusterOptions struct {
 // Cluster creates a cluster
 func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) error {
 	// validate provider first
-	if err := validateProvider(p); err != nil {
+	if err := validateProvider(p, logger); err != nil {
 		return err
 	}
 
@@ -240,7 +240,7 @@ func fixupOptions(opts *ClusterOptions) error {
 	return nil
 }
 
-func validateProvider(p providers.Provider) error {
+func validateProvider(p providers.Provider, logger log.Logger) error {
 	info, err := p.Info()
 	if err != nil {
 		return err
@@ -249,7 +249,11 @@ func validateProvider(p providers.Provider) error {
 		if !info.Cgroup2 {
 			return errors.New("running kind with rootless provider requires cgroup v2, see https://kind.sigs.k8s.io/docs/user/rootless/")
 		}
-		if !info.SupportsMemoryLimit || !info.SupportsPidsLimit || !info.SupportsCPUShares {
+		if !*info.SupportsMemoryLimit || !*info.SupportsPidsLimit || !*info.SupportsCPUShares {
+			logger.Warnf("support for memory and pids limit and CPU share unknown")
+			logger.Warnf("running kind with rootless provider requires setting systemd property \"Delegate=yes\", see https://kind.sigs.k8s.io/docs/user/rootless/")
+		}
+		if info.SupportsMemoryLimit == nil || info.SupportsPidsLimit == nil || info.SupportsCPUShares == nil {
 			return errors.New("running kind with rootless provider requires setting systemd property \"Delegate=yes\", see https://kind.sigs.k8s.io/docs/user/rootless/")
 		}
 	}

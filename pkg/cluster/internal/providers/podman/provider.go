@@ -19,7 +19,6 @@ package podman
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -358,45 +357,46 @@ func (p *provider) CollectLogs(dir string, nodes []nodes.Node) error {
 // Info returns the provider info.
 // The info is cached on the first time of the execution.
 func (p *provider) Info() (*providers.ProviderInfo, error) {
+	var err error
 	if p.info == nil {
-		p.info = info(p.logger)
+		p.info, err = info(p.logger)
 	}
-	return p.info, nil
+	return p.info, err
 }
 
-func info(logger log.Logger) *providers.ProviderInfo {
-	euid := os.Geteuid()
-	info := &providers.ProviderInfo{
-		Rootless: euid != 0,
+type podmanInfo struct{
+	Host struct {
+		CGroupManager string `json:"cgroupManager"`
+		CGroupVersion string `json:"cgroupVersion"`
+	} `json:"host"`
+	Security struct {
+		Rootless bool `json:"rootless"`
+	} `json:"security"`
+}
+
+func info(logger log.Logger) (*providers.ProviderInfo, error) {
+	cmd := exec.Command("podman", "info", "--format", "{{json .}}")
+	out, err := exec.Output(cmd)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get podman info")
 	}
-	if _, err := os.Stat("/sys/fs/cgroup/cgroup.controllers"); err == nil {
-		info.Cgroup2 = true
-		// Unlike `docker info`, `podman info` does not print available cgroup controllers.
-		// So we parse "cgroup.subtree_control" file by ourselves.
-		subtreeControl := "/sys/fs/cgroup/cgroup.subtree_control"
-		if info.Rootless {
-			// Change subtreeControl to the path of the systemd user-instance.
-			// Non-systemd hosts are not supported.
-			subtreeControl = fmt.Sprintf("/sys/fs/cgroup/user.slice/user-%d.slice/user@%d.service/cgroup.subtree_control", euid, euid)
-		}
-		if subtreeControlBytes, err := ioutil.ReadFile(subtreeControl); err != nil {
-			logger.Warnf("failed to read %q: %+v", subtreeControl, err)
-		} else {
-			for _, controllerName := range strings.Fields(string(subtreeControlBytes)) {
-				switch controllerName {
-				case "cpu":
-					info.SupportsCPUShares = true
-				case "memory":
-					info.SupportsMemoryLimit = true
-				case "pids":
-					info.SupportsPidsLimit = true
-				}
-			}
-		}
-	} else if !info.Rootless {
-		info.SupportsCPUShares = true
-		info.SupportsMemoryLimit = true
-		info.SupportsPidsLimit = true
+	var pInfo podmanInfo
+	if err := json.Unmarshal(out, &pInfo); err != nil {
+		return nil, err
 	}
-	return info
+	info := providers.ProviderInfo{
+		Cgroup2: pInfo.Host.CGroupVersion == "v2",
+	}
+	info.Rootless = pInfo.Security.Rootless
+	// When CgroupManager == "none", the MemoryLimit/PidsLimit/CPUShares
+	// values are meaningless and need to be considered false.
+	// https://github.com/moby/moby/issues/42151
+	// When CGroupManager is set, we leave the default "nil" which we use as "unknown"
+	if pInfo.Host.CGroupManager == "none" {
+		False := false
+		info.SupportsMemoryLimit = &False
+		info.SupportsPidsLimit = &False
+		info.SupportsCPUShares = &False
+	}
+	return &info, nil
 }

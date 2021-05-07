@@ -53,7 +53,8 @@ type Provider interface {
 type ProviderInfo struct {
 	Rootless            bool
 	Cgroup2             bool
-	SupportsMemoryLimit bool
-	SupportsPidsLimit   bool
-	SupportsCPUShares   bool
+	// true if supported, false if not supported, nil if unknown
+	SupportsMemoryLimit *bool
+	SupportsPidsLimit   *bool
+	SupportsCPUShares   *bool
 }
