@@ -38,6 +38,7 @@ type flagpole struct {
 	Config     string
 	ImageName  string
 	Retain     bool
+	NoSetup    bool
 	Wait       time.Duration
 	Kubeconfig string
 }
@@ -59,6 +60,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd.Flags().StringVar(&flags.Config, "config", "", "path to a kind config file")
 	cmd.Flags().StringVar(&flags.ImageName, "image", "", "node docker image to use for booting the cluster")
 	cmd.Flags().BoolVar(&flags.Retain, "retain", false, "retain nodes for debugging when cluster creation fails")
+	cmd.Flags().BoolVar(&flags.NoSetup, "nosetup", false, "stop setup cluster after created nodes. (default false)")
 	cmd.Flags().DurationVar(&flags.Wait, "wait", time.Duration(0), "wait for control plane node to be ready (default 0s)")
 	cmd.Flags().StringVar(&flags.Kubeconfig, "kubeconfig", "", "sets kubeconfig path instead of $KUBECONFIG or $HOME/.kube/config")
 	return cmd
@@ -85,6 +87,7 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		cluster.CreateWithWaitForReady(flags.Wait),
 		cluster.CreateWithKubeconfigPath(flags.Kubeconfig),
 		cluster.CreateWithDisplayUsage(true),
+		cluster.CreateWithStopBeforeSettingUpKubernetes(flags.NoSetup),
 		cluster.CreateWithDisplaySalutation(true),
 	); err != nil {
 		return errors.Wrap(err, "failed to create cluster")
