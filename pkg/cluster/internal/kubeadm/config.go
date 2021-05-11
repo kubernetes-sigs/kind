@@ -278,6 +278,10 @@ mode: "{{ .KubeProxyMode }}"
 {{end}}{{end}}
 iptables:
   minSyncPeriod: 1s
+conntrack:
+# Skip setting sysctl value "net.netfilter.nf_conntrack_max"
+# It is a global variable that affects other namespaces
+  maxPerCore: 0
 {{end}}
 `
 
@@ -411,9 +415,11 @@ mode: "{{ .KubeProxyMode }}"
 {{end}}{{end}}
 iptables:
   minSyncPeriod: 1s
-{{if .RootlessProvider}}conntrack:
+conntrack:
 # Skip setting sysctl value "net.netfilter.nf_conntrack_max"
+# It is a global variable that affects other namespaces
   maxPerCore: 0
+{{if .RootlessProvider}}
 # Skip setting "net.netfilter.nf_conntrack_tcp_timeout_established"
   tcpEstablishedTimeout: 0s
 # Skip setting "net.netfilter.nf_conntrack_tcp_timeout_close"
