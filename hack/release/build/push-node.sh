@@ -48,7 +48,7 @@ version_line="$(cd "${KUBEROOT}"; ./hack/print-workspace-status.sh | grep 'gitVe
 kube_version="${version_line#"gitVersion "}"
 
 # build for each arch
-image="kindest/node:${kube_version}"
+IMAGE="kindest/node:${kube_version}"
 images=()
 for arch in "${__arches__[@]}"; do
     image="kindest/node-${arch}:${kube_version}"
@@ -63,5 +63,5 @@ export DOCKER_CLI_EXPERIMENTAL=enabled
 for image in "${images[@]}"; do
     docker push "${image}"
 done
-docker manifest create "${image}" "${images[@]}"
-docker manifest push "${image}"
+docker manifest create "${IMAGE}" "${images[@]}"
+docker manifest push "${IMAGE}"
