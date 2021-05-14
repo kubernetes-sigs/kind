@@ -24,7 +24,6 @@ make build
 
 # generate tag
 DATE="$(date +v%Y%m%d)"
-TAG="${DATE}-$(git describe --always --dirty)"
 
 # build
 KUBEROOT="${KUBEROOT:-${GOPATH}/src/k8s.io/kubernetes}"
@@ -34,13 +33,35 @@ if [ -z "${GOFLAGS}" ]; then
     # TODO: add dockerless when 1.19 or greater
     GOFLAGS="-tags=providerless"
 fi
+
+# NOTE: adding platforms is costly in terms of build time
+# we will consider expanding this in the future, for now the aim is to prove
+# multi-arch and enable developers working on commonly available hardware
+# Other users are free to build their own images on additional platforms using
+# their own time and resources. Please see our docs.
+ARCHES="${ARCHES:-amd64 arm64}"
+__arches__=(${ARCHES})
+
 set -x
-"${REPO_ROOT}/bin/kind" build node-image --image="kindest/node:${TAG}" --kube-root="${KUBEROOT}"
+# get kubernetes version
+version_line="$(cd "${KUBEROOT}"; ./hack/print-workspace-status.sh | grep 'gitVersion')"
+kube_version="${version_line#"gitVersion "}"
 
-# re-tag with kubernetes version
-IMG="kindest/node:${TAG}"
-KUBE_VERSION="$(docker run --rm --entrypoint=cat "${IMG}" /kind/version)"
-docker tag "${IMG}" "kindest/node:${KUBE_VERSION}"
+# build for each arch
+image="kindest/node:${kube_version}"
+images=()
+for arch in "${__arches__[@]}"; do
+    image="kindest/node-${arch}:${kube_version}"
+    "${REPO_ROOT}/bin/kind" build node-image --image="${image}" --kube-root="${KUBEROOT}" --arch="${arch}"
+    images+=("${image}")
+done
 
-# push
-docker push kindest/node:"${KUBE_VERSION}"
+# combine to manifest list tagged with kubernetes version
+export DOCKER_CLI_EXPERIMENTAL=enabled
+# images must be pushed to be referenced by docker manifest
+# we push only after all builds have succeeded
+for image in "${images[@]}"; do
+    docker push "${image}"
+done
+docker manifest create "${image}" "${images[@]}"
+docker manifest push "${image}"
