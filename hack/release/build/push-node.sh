@@ -22,12 +22,10 @@ cd "${REPO_ROOT}"
 # ensure we have up to date kind
 make build
 
-# generate tag
-DATE="$(date +v%Y%m%d)"
-
-# build
+# path to kubernetes sources
 KUBEROOT="${KUBEROOT:-${GOPATH}/src/k8s.io/kubernetes}"
 
+# kubernetes build option(s)
 GOFLAGS="${GOFLAGS:-}"
 if [ -z "${GOFLAGS}" ]; then
     # TODO: add dockerless when 1.19 or greater
@@ -40,7 +38,7 @@ fi
 # Other users are free to build their own images on additional platforms using
 # their own time and resources. Please see our docs.
 ARCHES="${ARCHES:-amd64 arm64}"
-__arches__=(${ARCHES})
+IFS=" " read -r -a __arches__ <<< "$ARCHES"
 
 set -x
 # get kubernetes version
