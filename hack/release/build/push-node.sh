@@ -25,6 +25,9 @@ make build
 # path to kubernetes sources
 KUBEROOT="${KUBEROOT:-${GOPATH}/src/k8s.io/kubernetes}"
 
+# ensure we have qemu setup (de-duped logic with setting up buildx for multi-arch)
+"${REPO_ROOT}/hack/build/init-buildx.sh"
+
 # kubernetes build option(s)
 GOFLAGS="${GOFLAGS:-}"
 if [ -z "${GOFLAGS}" ]; then
@@ -50,7 +53,7 @@ IMAGE="kindest/node:${kube_version}"
 images=()
 for arch in "${__arches__[@]}"; do
     image="kindest/node-${arch}:${kube_version}"
-    "${REPO_ROOT}/bin/kind" build node-image --image="${image}" --kube-root="${KUBEROOT}" --arch="${arch}"
+    "${REPO_ROOT}/bin/kind" build node-image --image="${image}" --arch="${arch}" "${KUBEROOT}"
     images+=("${image}")
 done
 
