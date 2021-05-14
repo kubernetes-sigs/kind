@@ -31,22 +31,29 @@ type flagpole struct {
 	Image     string
 	BaseImage string
 	KubeRoot  string
+	Arch      string
 }
 
 // NewCommand returns a new cobra.Command for building the node image
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
-		Args: cobra.NoArgs,
+		Args: cobra.MaximumNArgs(1),
 		// TODO(bentheelder): more detailed usage
-		Use:   "node-image",
+		Use:   "node-image [kubernetes-source]",
 		Short: "Build the node image",
 		Long:  "Build the node image which contains Kubernetes build artifacts and other kind requirements",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if cmd.Flags().Lookup("kube-root").Changed {
+				if len(args) != 0 {
+					return errors.New("passing an argument and deprecated --kube-root is not supported, please switch to just the argument")
+				}
+				logger.Warn("--kube-root is deprecated, please switch to passing this as an argument")
+			}
 			if cmd.Flags().Lookup("type").Changed {
 				return errors.New("--type is no longer supported, please remove this flag")
 			}
-			return runE(logger, flags)
+			return runE(logger, flags, args)
 		},
 	}
 	cmd.Flags().StringVar(
@@ -68,15 +75,25 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		nodeimage.DefaultBaseImage,
 		"name:tag of the base image to use for the build",
 	)
+	cmd.Flags().StringVar(
+		&flags.Arch, "arch",
+		"",
+		"architecture to build for, defaults to the host architecture",
+	)
 	return cmd
 }
 
-func runE(logger log.Logger, flags *flagpole) error {
+func runE(logger log.Logger, flags *flagpole, args []string) error {
+	kubeRoot := flags.KubeRoot
+	if len(args) > 0 {
+		kubeRoot = args[0]
+	}
 	if err := nodeimage.Build(
 		nodeimage.WithImage(flags.Image),
 		nodeimage.WithBaseImage(flags.BaseImage),
-		nodeimage.WithKuberoot(flags.KubeRoot),
+		nodeimage.WithKuberoot(kubeRoot),
 		nodeimage.WithLogger(logger),
+		nodeimage.WithArch(flags.Arch),
 	); err != nil {
 		return errors.Wrap(err, "error building node image")
 	}

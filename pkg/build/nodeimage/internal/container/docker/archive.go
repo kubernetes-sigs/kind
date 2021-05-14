@@ -87,7 +87,7 @@ func GetArchiveTags(path string) ([]string, error) {
 // https://github.com/moby/moby/blob/master/image/spec/v1.md
 // https://github.com/moby/moby/blob/master/image/spec/v1.1.md
 // https://github.com/moby/moby/blob/master/image/spec/v1.2.md
-func EditArchiveRepositories(reader io.Reader, writer io.Writer, editRepositories func(string) string) error {
+func EditArchive(reader io.Reader, writer io.Writer, editRepositories func(string) string, architectureOverride string) error {
 	tarReader := tar.NewReader(reader)
 	tarWriter := tar.NewWriter(writer)
 	// iterate all entries in the tarball
@@ -117,6 +117,15 @@ func EditArchiveRepositories(reader io.Reader, writer io.Writer, editRepositorie
 				return err
 			}
 			hdr.Size = int64(len(b))
+			// edit image config when we find that
+		} else if strings.HasSuffix(hdr.Name, ".json") {
+			if architectureOverride != "" {
+				b, err = editConfigArchitecture(b, architectureOverride)
+				if err != nil {
+					return err
+				}
+				hdr.Size = int64(len(b))
+			}
 		}
 
 		// write to the output tarball
@@ -132,6 +141,19 @@ func EditArchiveRepositories(reader io.Reader, writer io.Writer, editRepositorie
 }
 
 /* helpers */
+
+func editConfigArchitecture(raw []byte, architectureOverride string) ([]byte, error) {
+	var cfg map[string]interface{}
+	if err := json.Unmarshal(raw, &cfg); err != nil {
+		return nil, err
+	}
+	const architecture = "architecture"
+	if _, ok := cfg[architecture]; !ok {
+		return raw, nil
+	}
+	cfg[architecture] = architectureOverride
+	return json.Marshal(cfg)
+}
 
 // archiveRepositories represents repository:tag:ref
 //

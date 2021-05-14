@@ -17,27 +17,20 @@ limitations under the License.
 package nodeimage
 
 import (
+	"io/ioutil"
+
 	"sigs.k8s.io/kind/pkg/exec"
 )
-
-type imageImporter interface {
-	Prepare() error
-	LoadCommand() exec.Cmd
-	ListImported() ([]string, error)
-	End() error
-}
 
 type containerdImporter struct {
 	containerCmder exec.Cmder
 }
 
-func newContainerdImporter(containerCmder exec.Cmder) imageImporter {
+func newContainerdImporter(containerCmder exec.Cmder) *containerdImporter {
 	return &containerdImporter{
 		containerCmder: containerCmder,
 	}
 }
-
-var _ imageImporter = &containerdImporter{}
 
 func (c *containerdImporter) Prepare() error {
 	if err := c.containerCmder.Command(
@@ -51,6 +44,14 @@ func (c *containerdImporter) Prepare() error {
 
 func (c *containerdImporter) End() error {
 	return c.containerCmder.Command("pkill", "containerd").Run()
+}
+
+func (c *containerdImporter) Pull(image, platform string) error {
+	// TODO: this should exist with a --no-unpack and some way to operate quietly
+	// without discarding output
+	return c.containerCmder.Command(
+		"ctr", "--namespace=k8s.io", "images", "pull", "--platform="+platform, image,
+	).SetStdout(ioutil.Discard).SetStderr(ioutil.Discard).Run()
 }
 
 func (c *containerdImporter) LoadCommand() exec.Cmd {
