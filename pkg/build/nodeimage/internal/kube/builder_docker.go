@@ -76,20 +76,20 @@ func (b *dockerBuilder) Build() (Bits, error) {
 		return nil, errors.Wrap(err, "failed to parse source version")
 	}
 
+	makeVars := []string{
+		// ensure the build isn't especially noisy..
+		"KUBE_VERBOSE=0",
+		// we don't want to build these images as we don't use them ...
+		"KUBE_BUILD_HYPERKUBE=n",
+		"KUBE_BUILD_CONFORMANCE=n",
+		// build for the host platform
+		"KUBE_BUILD_PLATFORMS=" + dockerBuildOsAndArch(b.arch),
+	}
+
 	// we will pass through the environment variables, prepending defaults
 	// NOTE: if env are specified multiple times the last one wins
-	env := append(
-		[]string{
-			// ensure the build isn't especially noisy..
-			"KUBE_VERBOSE=0",
-			// we don't want to build these images as we don't use them ...
-			"KUBE_BUILD_HYPERKUBE=n",
-			"KUBE_BUILD_CONFORMANCE=n",
-			// build for the host platform
-			"KUBE_BUILD_PLATFORMS=" + dockerBuildOsAndArch(b.arch),
-		},
-		os.Environ()...,
-	)
+	// NOTE: currently there are no defaults so this is essentially a deep copy
+	env := append([]string{}, os.Environ()...)
 	// binaries we want to build
 	what := []string{
 		// binaries we use directly
@@ -99,7 +99,15 @@ func (b *dockerBuilder) Build() (Bits, error) {
 	}
 
 	// build images + binaries (binaries only on 1.21+)
-	cmd := exec.Command("make", "quick-release-images", "KUBE_EXTRA_WHAT="+strings.Join(what, " ")).SetEnv(env...)
+	cmd := exec.Command("make",
+		append(
+			[]string{
+				"quick-release-images",
+				"KUBE_EXTRA_WHAT=" + strings.Join(what, " "),
+			},
+			makeVars...,
+		)...,
+	).SetEnv(env...)
 	exec.InheritOutput(cmd)
 	if err := cmd.Run(); err != nil {
 		return nil, errors.Wrap(err, "failed to build images")
@@ -111,7 +119,14 @@ func (b *dockerBuilder) Build() (Bits, error) {
 		// on older versions we still need to build binaries separately
 		cmd = exec.Command(
 			"build/run.sh",
-			"make", "all", "WHAT="+strings.Join(what, " "),
+			append(
+				[]string{
+					"make",
+					"all",
+					"WHAT=" + strings.Join(what, " "),
+				},
+				makeVars...,
+			)...,
 		).SetEnv(env...)
 		exec.InheritOutput(cmd)
 		if err := cmd.Run(); err != nil {
