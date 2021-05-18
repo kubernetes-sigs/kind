@@ -44,6 +44,8 @@ ARCHES="${ARCHES:-amd64 arm64}"
 IFS=" " read -r -a __arches__ <<< "$ARCHES"
 
 set -x
+# ensure clean build
+(cd "${KUBEROOT}" && make clean)
 # get kubernetes version
 version_line="$(cd "${KUBEROOT}"; ./hack/print-workspace-status.sh | grep 'gitVersion')"
 kube_version="${version_line#"gitVersion "}"
