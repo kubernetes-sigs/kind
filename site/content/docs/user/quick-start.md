@@ -19,7 +19,7 @@ description: |-
 > but you will not be able to perform some of the examples in our docs without it.
 > To install `kubectl` see the upstream [kubectl installation docs](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
 
-You can either install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@{{< stableVersion >}}` or clone this repo 
+You can either install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@{{< stableVersion >}}` or clone this repo
 and run `make build` from the repository.
 
 Please use the latest Go when installing KIND from source, ideally go 1.14 or greater.
@@ -47,14 +47,24 @@ chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
 {{< /codeFromInline >}}
 
-On Mac (homebrew): 
+On macOS via Homebrew:
 
 {{< codeFromInline lang="bash" >}}
 brew install kind
 {{< /codeFromInline >}}
-or
+
+On macOS via MacPorts:
+
+{{< codeFromInline lang="bash" >}}
+sudo port selfupdate && sudo port install kind
+{{< /codeFromInline >}}
+
+On macOS via Bash:
+
 {{< codeFromInline lang="bash" >}}
 curl -Lo ./kind https://kind.sigs.k8s.io/dl/{{< stableVersion >}}/kind-darwin-amd64
+chmod +x ./kind
+mv ./kind /some-dir-in-your-PATH/kind
 {{< /codeFromInline >}}
 
 On Windows:
@@ -76,7 +86,7 @@ Creating a Kubernetes cluster is as simple as `kind create cluster`.
 
 This will bootstrap a Kubernetes cluster using a pre-built
 [node image][node image]. Prebuilt images are hosted at[`kindest/node`][kindest/node], but to find images suitable for a given release currently you should check the [release notes] for your given kind version (check with `kind version`) where
-you'll find a complete listing of images created for a kind release. 
+you'll find a complete listing of images created for a kind release.
 
 To specify another image use the `--image` flag -- `kind create cluster --image=...`.
 
@@ -154,7 +164,7 @@ Docker images can be loaded into your cluster nodes with:
 
 `kind load docker-image my-custom-image-0 my-custom-image-1`
 
-> **Note**: If using a named cluster you will need to specify the name of the 
+> **Note**: If using a named cluster you will need to specify the name of the
 > cluster you wish to load the images into:
 > `kind load docker-image my-custom-image-0 my-custom-image-1 --name kind-2`
 
@@ -212,15 +222,15 @@ if you have the [Kubernetes][kubernetes] source in your host machine
 
 ### Settings for Docker Desktop
 
-If you are building Kubernetes (for example - `kind build node-image`) on MacOS or Windows then you need a minimum of 6GB of RAM 
+If you are building Kubernetes (for example - `kind build node-image`) on MacOS or Windows then you need a minimum of 6GB of RAM
 dedicated to the virtual machine (VM) running the Docker engine. 8GB is recommended.
 
 To change the resource limits for the Docker on Mac, you'll need to open the
-**Preferences** menu.  
+**Preferences** menu.
 <img src="/docs/user/images/docker-pref-1.png"/>
 
 Now, go to the **Advanced** settings page, and change the
-settings there, see [changing Docker's resource limits][Docker resource lims].  
+settings there, see [changing Docker's resource limits][Docker resource lims].
 <img src="/docs/user/images/docker-pref-2.png" alt="Setting 8Gb of memory in Docker for Mac" />
 
 
@@ -231,7 +241,7 @@ to do that first before opening "Settings"
 <img src="/docs/user/images/docker-pref-1-win.png"/>
 
 Now, go to the **Advanced** settings page, and change the
-settings there, see [changing Docker's resource limits][Docker resource lims].  
+settings there, see [changing Docker's resource limits][Docker resource lims].
 
 <img src="/docs/user/images/docker-pref-build-win.png" alt="Setting 8Gb of memory in Docker for Windows" />
 
@@ -354,7 +364,7 @@ As you can see, kind placed all the logs for the cluster `kind` in a
 temporary directory. If you want to specify a location then simply add the path
 to the directory after the command:
 ```
-kind export logs ./somedir  
+kind export logs ./somedir
 Exported logs to: ./somedir
 ```
 
@@ -371,7 +381,7 @@ The structure of the logs will look more or less like this:
     ├── kubernetes-version.txt
     └── pods/
 ```
-The logs contain information about the Docker host, the containers running 
+The logs contain information about the Docker host, the containers running
 kind, the Kubernetes cluster itself, etc.
 
 [go-supported]: https://golang.org/doc/devel/release.html#policy

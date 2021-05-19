@@ -2,7 +2,7 @@
 
 # Please see [Our Documentation](https://kind.sigs.k8s.io/docs/user/quick-start/) for more in-depth installation etc.
 
-kind is a tool for running local Kubernetes clusters using Docker container "nodes".  
+kind is a tool for running local Kubernetes clusters using Docker container "nodes".
 kind was primarily designed for testing Kubernetes itself, but may be used for local development or CI.
 
 If you have [go] ([1.11+][go-supported]) and [docker] installed `GO111MODULE="on" go get sigs.k8s.io/kind@v0.10.0 && kind create cluster` is all you need!
@@ -32,7 +32,7 @@ as go get inside a modules enabled project updates dependencies / behaves differ
 
 This will put `kind` in `$(go env GOPATH)/bin`. If you encounter the error
 `kind: command not found` after installation then you may need to either add that directory to your `$PATH` as
-shown [here](https://golang.org/doc/code.html#GOPATH) or do a manual installation by cloning the repo and run 
+shown [here](https://golang.org/doc/code.html#GOPATH) or do a manual installation by cloning the repo and run
 `make build` from the repository.
 
 Without installing go, kind can be built reproducibly with docker using `make build`.
@@ -42,7 +42,7 @@ generally recommended for CI usage in particular.
 To install, download the binary for your platform from "Assets" and place this
 into your `$PATH`:
 
-On Mac & Linux:
+On Linux:
 
 ```console
 curl -Lo ./kind "https://kind.sigs.k8s.io/dl/v0.10.0/kind-$(uname)-amd64"
@@ -50,10 +50,24 @@ chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
 ```
 
-On Mac via Homebrew:
+On macOS via Homebrew:
 
 ```console
 brew install kind
+```
+
+On macOS via MacPorts:
+
+```console
+sudo port selfupdate && sudo port install kind
+```
+
+On macOS via Bash:
+
+```console
+curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.10.0/kind-darwin-amd64
+chmod +x ./kind
+mv ./kind /some-dir-in-your-PATH/kind
 ```
 
 On Windows:
@@ -66,7 +80,7 @@ Move-Item .\kind-windows-amd64.exe c:\some-dir-in-your-PATH\kind.exe
 choco install kind
 ```
 
-To use kind, you will need to [install docker].  
+To use kind, you will need to [install docker].
 Once you have docker running you can create a cluster with:
 
 ```console
@@ -93,7 +107,7 @@ file, for more usage see [the docs][user guide] or run `kind [command] --help`
 
 ## Community
 
-Please reach out for bugs, feature requests, and other issues!  
+Please reach out for bugs, feature requests, and other issues!
 The maintainers of this project are reachable via:
 
 - [Kubernetes Slack] in the [#kind] channel
@@ -103,7 +117,7 @@ The maintainers of this project are reachable via:
 Current maintainers are [@BenTheElder], [@munnerz], [@aojea], and [@amwat] - feel free to
 reach out if you have any questions!
 
-Pull Requests are very welcome!  
+Pull Requests are very welcome!
 If you're planning a new feature, please file an issue to discuss first.
 
 Check the [issue tracker] for `help wanted` issues if you're unsure where to
