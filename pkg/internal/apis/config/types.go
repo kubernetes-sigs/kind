@@ -170,7 +170,7 @@ type ProxyMode string
 const (
 	// IPTablesProxyMode sets ProxyMode to iptables
 	IPTablesProxyMode ProxyMode = "iptables"
-	// IPVSProxyMode sets ProxyMode to iptables
+	// IPVSProxyMode sets ProxyMode to ipvs
 	IPVSProxyMode ProxyMode = "ipvs"
 	// NoneProxyMode disables kube-proxy
 	NoneProxyMode ProxyMode = "none"
