@@ -168,6 +168,8 @@ const (
 type ProxyMode string
 
 const (
+	// UserSpaceProxyMode sets ProxyMode to userspace (legacy)
+	UserSpaceProxyMode ProxyMode = "userspace"
 	// IPTablesProxyMode sets ProxyMode to iptables
 	IPTablesProxyMode ProxyMode = "iptables"
 	// IPVSProxyMode sets ProxyMode to iptables

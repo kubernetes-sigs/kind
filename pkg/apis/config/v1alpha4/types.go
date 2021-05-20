@@ -211,6 +211,8 @@ const (
 	IPTablesProxyMode ProxyMode = "iptables"
 	// IPVSProxyMode sets ProxyMode to iptables
 	IPVSProxyMode ProxyMode = "ipvs"
+	// UserSpaceProxyMode sets ProxyMode to userspace (legacy)
+	UserSpaceProxyMode ProxyMode = "userspace"
 )
 
 // PatchJSON6902 represents an inline kustomize json 6902 patch

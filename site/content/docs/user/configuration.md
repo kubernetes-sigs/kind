@@ -213,7 +213,7 @@ networking:
 
 #### kube-proxy mode
 
-You can configure the kube-proxy mode that will be used, between iptables and ipvs. By
+You can configure the kube-proxy mode that will be used, userspace (legacy), iptables or ipvs. By
 default iptables is used
 
 {{< codeFromInline lang="yaml" >}}
