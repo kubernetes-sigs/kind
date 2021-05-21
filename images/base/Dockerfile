@@ -19,7 +19,7 @@
 
 # start from ubuntu 20.10, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-ARG BASE_IMAGE=ubuntu:20.10
+ARG BASE_IMAGE=ubuntu:21.04
 FROM $BASE_IMAGE
 
 # `docker buildx` automatically sets this arg value, but we add the arg for
