@@ -66,5 +66,6 @@ export DOCKER_CLI_EXPERIMENTAL=enabled
 for image in "${images[@]}"; do
     docker push "${image}"
 done
+docker manifest rm "${IMAGE}" || true
 docker manifest create "${IMAGE}" "${images[@]}"
 docker manifest push "${IMAGE}"
