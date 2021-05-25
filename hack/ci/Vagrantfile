@@ -3,14 +3,14 @@
 
 # Vagrant box for testing kind with cgroup v2
 Vagrant.configure("2") do |config|
-  config.vm.box = "fedora/33-cloud-base"
+  # `config.vm.box = "fedora/33-cloud-base"` seems flaky,
+  # so we specify the URL explicitly.
+  # Mirrors can be found at here: https://admin.fedoraproject.org/mirrormanager/mirrors/Fedora/33/x86_64
+  config.vm.box = "dummy"
+  config.vm.box_url = "https://iad.mirror.rackspace.com/fedora/releases/33/Cloud/x86_64/images/Fedora-Cloud-Base-Vagrant-33-1.2.x86_64.vagrant-virtualbox.box"
   memory = 2048
   cpus = 2
   config.vm.provider :virtualbox do |v|
-    v.memory = memory
-    v.cpus = cpus
-  end
-  config.vm.provider :libvirt do |v|
     v.memory = memory
     v.cpus = cpus
   end
