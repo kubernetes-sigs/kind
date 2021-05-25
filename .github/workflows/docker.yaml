@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         ipFamily: [ipv4, ipv6]
-        deployment: [singleNode, multiNode]
+        deployment: [singleNode, multiNode, localRegistry]
     env:
       JOB_NAME: "docker-${{ matrix.deployment }}-${{ matrix.ipFamily }}"
       IP_FAMILY: ${{ matrix.ipFamily }}
@@ -61,7 +61,19 @@ jobs:
           - role: worker
           EOF
 
+      - name: Test local registry
+        if: ${{ matrix.deployment == 'localRegistry' }}
+        run: |
+          # use the kind build from repo
+          PATH=/usr/local/bin:$PATH kind version
+          PATH=/usr/local/bin:$PATH ./site/static/examples/kind-with-registry.sh
+          docker pull busybox:latest
+          docker tag busybox:latest localhost:5000/busybox:latest
+          docker push localhost:5000/busybox:latest
+          docker exec kind-control-plane crictl --debug pull localhost:5000/busybox:latest
+
       - name: Get Cluster status
+        if: ${{ matrix.deployment != 'localRegistry' }}
         run: |
           # wait network is ready
           kubectl wait --for=condition=ready pods --namespace=kube-system -l k8s-app=kube-dns
