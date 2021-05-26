@@ -83,10 +83,33 @@ func pull(logger log.Logger, image string, retries int) error {
 
 // sanitizeImage is a helper to return human readable image name and
 // the podman pullable image name from the provided image
-func sanitizeImage(image string) (string, string) {
+func sanitizeImage(image string) (friendlyImageName, pullImageName string) {
+	const (
+		defaultDomain    = "docker.io/"
+		officialRepoName = "library"
+	)
+
+	var remainder string
+
 	if strings.Contains(image, "@sha256:") {
 		splits := strings.Split(image, "@sha256:")
-		return splits[0], strings.Split(splits[0], ":")[0] + "@sha256:" + splits[1]
+		friendlyImageName = splits[0]
+		remainder = strings.Split(splits[0], ":")[0] + "@sha256:" + splits[1]
+	} else {
+		friendlyImageName = image
+		remainder = image
 	}
-	return image, image
+
+	if !strings.ContainsRune(remainder, '/') {
+		remainder = officialRepoName + "/" + remainder
+	}
+
+	i := strings.IndexRune(friendlyImageName, '/')
+	if i == -1 || (!strings.ContainsAny(friendlyImageName[:i], ".:") && friendlyImageName[:i] != "localhost") {
+		pullImageName = defaultDomain + remainder
+	} else {
+		pullImageName = remainder
+	}
+
+	return
 }
