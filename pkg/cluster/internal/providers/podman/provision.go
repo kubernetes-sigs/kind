@@ -206,6 +206,11 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		"--volume", fmt.Sprintf("%s:/var:suid,exec,dev", varVolume),
 		// some k8s things want to read /lib/modules
 		"--volume", "/lib/modules:/lib/modules:ro",
+		// propagate KIND_EXPERIMENTAL_CONTAINERD_SNAPSHOTTER to the entrypoint script
+		"-e", "KIND_EXPERIMENTAL_CONTAINERD_SNAPSHOTTER",
+		// enable /dev/fuse explicitly for fuse-overlayfs
+		// (Rootless Podman does not automatically mount /dev/fuse with --privileged)
+		"--device", "/dev/fuse",
 	},
 		args...,
 	)

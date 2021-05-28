@@ -1,6 +1,12 @@
 # explicitly use v2 config format
 version = 2
 
+[proxy_plugins]
+# fuse-overlayfs is used for rootless
+[proxy_plugins."fuse-overlayfs"]
+  type = "snapshot"
+  address = "/run/containerd-fuse-overlayfs.sock"
+
 [plugins."io.containerd.grpc.v1.cri".containerd]
   # save disk space when using a single snapshotter
   discard_unpacked_layers = true
