@@ -28,7 +28,8 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/log"
 
-	"sigs.k8s.io/kind/pkg/build/nodeimage/internal/container/docker"
+	"sigs.k8s.io/kind/pkg/build/internal/build"
+	"sigs.k8s.io/kind/pkg/build/internal/container/docker"
 	"sigs.k8s.io/kind/pkg/build/nodeimage/internal/kube"
 	"sigs.k8s.io/kind/pkg/internal/sets"
 	"sigs.k8s.io/kind/pkg/internal/version"
@@ -253,7 +254,7 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVers
 	requiredImages = append(requiredImages, defaultStorageImages...)
 
 	// setup image importer
-	importer := newContainerdImporter(cmder)
+	importer := build.NewContainerdImporter(cmder)
 	if err := importer.Prepare(); err != nil {
 		c.logger.Errorf("Image build Failed! Failed to prepare containerd to load images %v", err)
 		return nil, err
@@ -271,7 +272,7 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVers
 		image := image // https://golang.org/doc/faq#closures_and_goroutines
 		fns = append(fns, func() error {
 			if !builtImages.Has(image) {
-				if err = importer.Pull(image, dockerBuildOsAndArch(c.arch)); err != nil {
+				if err = importer.Pull(image, build.DockerBuildOsAndArch(c.arch)); err != nil {
 					c.logger.Warnf("Failed to pull %s with error: %v", image, err)
 					runE := exec.RunErrorForError(err)
 					c.logger.Warn(string(runE.Output))
@@ -328,7 +329,7 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVers
 func (c *buildContext) createBuildContainer() (id string, err error) {
 	// attempt to explicitly pull the image if it doesn't exist locally
 	// errors here are non-critical; we'll proceed with execution, which includes a pull operation
-	_ = docker.Pull(c.logger, c.baseImage, dockerBuildOsAndArch(c.arch), 4)
+	_ = docker.Pull(c.logger, c.baseImage, build.DockerBuildOsAndArch(c.arch), 4)
 	// this should be good enough: a specific prefix, the current unix time,
 	// and a little random bits in case we have multiple builds simultaneously
 	random := rand.New(rand.NewSource(time.Now().UnixNano())).Int31()
@@ -337,7 +338,7 @@ func (c *buildContext) createBuildContainer() (id string, err error) {
 		"-d",                 // make the client exit while the container continues to run
 		"--entrypoint=sleep", // the container should hang forever, so we can exec in it
 		"--name=" + id,
-		"--platform=" + dockerBuildOsAndArch(c.arch),
+		"--platform=" + build.DockerBuildOsAndArch(c.arch),
 		"--security-opt", "seccomp=unconfined",
 	}
 	// pass proxy settings from environment variables to the building container

@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"strings"
 
-	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
@@ -74,13 +73,33 @@ func ImageInspect(containerNameOrID, format string) ([]string, error) {
 }
 
 // ImageID return the Id of the container image
-func ImageID(containerNameOrID string) (string, error) {
-	lines, err := ImageInspect(containerNameOrID, "{{ .Id }}")
+func ImageID(containerNameOrID, arch string) (string, error) {
+	lines, err := ImageInspect(containerNameOrID, "{{ .Id }} {{ .Architecture }}")
 	if err != nil {
 		return "", err
 	}
-	if len(lines) != 1 {
-		return "", errors.Errorf("Docker image ID should only be one line, got %d lines", len(lines))
+
+	if arch != "" {
+		// We only want the ID that matches the architecture we're interested in, see if we can find it
+		for _, line := range lines {
+			parts := strings.Split(line, " ")
+			if len(parts) == 2 && parts[1] == arch {
+				// Found the right image
+				return parts[0], nil
+			}
+		}
+	} else if len(lines) > 0 {
+		parts := strings.Split(lines[0], " ")
+		if len(parts) == 2 && parts[1] == arch {
+			return parts[0], nil
+		}
 	}
-	return lines[0], nil
+
+	return "", fmt.Errorf("image ID for %q %s could not be found", containerNameOrID, arch)
+}
+
+// SaveImages saves one or more images to dest, as in `docker save`
+func SaveImages(images []string, dest string) error {
+	commandArgs := append([]string{"save", "-o", dest}, images...)
+	return exec.Command("docker", commandArgs...).Run()
 }

@@ -22,6 +22,7 @@ import (
 	"os"
 	"runtime"
 
+	"sigs.k8s.io/kind/pkg/build/internal/build"
 	"sigs.k8s.io/kind/pkg/build/nodeimage/internal/kube"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/internal/version"
@@ -46,7 +47,7 @@ func Build(options ...Option) error {
 	}
 
 	// verify that we're using a supported arch
-	if !supportedArch(ctx.arch) {
+	if !build.SupportedArch(ctx.arch) {
 		ctx.logger.Warnf("unsupported architecture %q", ctx.arch)
 	}
 
@@ -142,15 +143,4 @@ func detectBuildType(param string) string {
 		return "release"
 	}
 	return ""
-}
-
-func supportedArch(arch string) bool {
-	switch arch {
-	default:
-		return false
-	// currently we nominally support building node images for these
-	case "amd64":
-	case "arm64":
-	}
-	return true
 }

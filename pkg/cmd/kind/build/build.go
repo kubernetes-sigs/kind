@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cmd"
+	"sigs.k8s.io/kind/pkg/cmd/kind/build/addimage"
 	"sigs.k8s.io/kind/pkg/cmd/kind/build/nodeimage"
 	"sigs.k8s.io/kind/pkg/log"
 )
@@ -30,11 +31,10 @@ import (
 // NewCommand returns a new cobra.Command for building
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
-		Args: cobra.NoArgs,
-		// TODO(bentheelder): more detailed usage
+		Args:  cobra.NoArgs,
 		Use:   "build",
-		Short: "Build one of [node-image]",
-		Long:  "Build one of [node-image]",
+		Short: "Build a kind node image",
+		Long:  "Build a kind node image by creating a new image from source, or combining existing images in a new image.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := cmd.Help()
 			if err != nil {
@@ -45,5 +45,6 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	}
 	// add subcommands
 	cmd.AddCommand(nodeimage.NewCommand(logger, streams))
+	cmd.AddCommand(addimage.NewCommand(logger, streams))
 	return cmd
 }
