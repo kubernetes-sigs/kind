@@ -119,15 +119,15 @@ For more involved site / documentation development, you can run `make -C site se
 This site has a custom hugo theme under `site/layouts` & `site/assets`. It's
 mostly relatively simple but it has a few extra features:
 - The theme layout takes a `description` parameter in page [front matter]
-  - This renders the blockquote you see just below the page title, on this page wth the text `This page is intended to provide contributors with an introduction to developing the kind project.`
+  - This renders the blockquote you see just below the page title, on this page with the text `This page is intended to provide contributors with an introduction to developing the kind project.`
 - We have a few useful but simple custom shortcodes
 
 ### Shortcodes
 
 [Shortcodes](https://gohugo.io/content-management/shortcodes/) are a hugo feature, the kind docs use the following custom shortcodes:
 
-1. `absUrl` -- When you need an absolute URL e.g. for `kubectl apply -f $URL`, this
-shortcode converts an input URL to absolute. Usage: `{{</* absURL absURL */>}}`
+1. `absURL` -- When you need an absolute URL e.g. for `kubectl apply -f $URL`, this
+shortcode converts an input URL to absolute. Usage: `{{</* absURL "some/URL" */>}}`
 
 1. `securitygoose` -- This is a special shortcode for fun security notices. It wraps
 inner markdown content. Usage: `{{</* securitygoose */>}} Notice markdown content here {{</*/ securitygoose */>}}`
