@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cmd"
+	"sigs.k8s.io/kind/pkg/cmd/kind/build/addimage"
 	"sigs.k8s.io/kind/pkg/cmd/kind/build/nodeimage"
 	"sigs.k8s.io/kind/pkg/log"
 )
@@ -45,5 +46,6 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	}
 	// add subcommands
 	cmd.AddCommand(nodeimage.NewCommand(logger, streams))
+	cmd.AddCommand(addimage.NewCommand(logger, streams))
 	return cmd
 }
