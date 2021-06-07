@@ -31,6 +31,7 @@ import (
 type flagpole struct {
 	Name       string
 	Kubeconfig string
+	Internal   bool
 }
 
 // NewCommand returns a new cobra.Command for exporting the kubeconfig
@@ -58,6 +59,12 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		"",
 		"sets kubeconfig path instead of $KUBECONFIG or $HOME/.kube/config",
 	)
+	cmd.Flags().BoolVar(
+		&flags.Internal,
+		"internal",
+		false,
+		"use internal address instead of external",
+	)
 	return cmd
 }
 
@@ -66,7 +73,7 @@ func runE(logger log.Logger, flags *flagpole) error {
 		cluster.ProviderWithLogger(logger),
 		runtime.GetDefault(logger),
 	)
-	if err := provider.ExportKubeConfig(flags.Name, flags.Kubeconfig); err != nil {
+	if err := provider.ExportKubeConfig(flags.Name, flags.Kubeconfig, flags.Internal); err != nil {
 		return err
 	}
 	// TODO: get kind-name from a method? OTOH we probably want to keep this
