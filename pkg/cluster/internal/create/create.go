@@ -151,7 +151,7 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 	var err error
 	for _, b := range []time.Duration{0, time.Millisecond, time.Millisecond * 50, time.Millisecond * 100} {
 		time.Sleep(b)
-		if err = kubeconfig.Export(p, opts.Config.Name, opts.KubeconfigPath); err == nil {
+		if err = kubeconfig.Export(p, opts.Config.Name, opts.KubeconfigPath, true); err == nil {
 			break
 		}
 	}
