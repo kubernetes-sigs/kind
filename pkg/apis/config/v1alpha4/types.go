@@ -277,7 +277,7 @@ type PortMapping struct {
 	HostPort int32 `yaml:"hostPort,omitempty"`
 	// TODO: add protocol (tcp/udp) and port-ranges
 	ListenAddress string `yaml:"listenAddress,omitempty"`
-	// Protocol (TCP/UDP)
+	// Protocol (TCP/UDP/SCTP)
 	Protocol PortMappingProtocol `yaml:"protocol,omitempty"`
 }
 
