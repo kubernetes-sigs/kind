@@ -15,9 +15,3 @@ limitations under the License.
 */
 
 package addimage
-
-// these are well known paths within the node image
-const (
-	// TODO: refactor kubernetesVersionLocation to a common internal package
-	kubernetesVersionLocation = "/kind/version"
-)
