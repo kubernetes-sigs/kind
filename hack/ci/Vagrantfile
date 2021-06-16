@@ -18,7 +18,7 @@ Vagrant.configure("2") do |config|
     sh.inline = <<~SHELL
     set -eux -o pipefail
     # Ensure network-related modules to be loaded
-    modprobe tap ip_tables iptables_nat ip6_tables ip6tables_nat
+    modprobe tap ip_tables iptable_nat ip6_tables ip6table_nat
 
     # The moby-engine package included in Fedora lacks support for rootless,
     # So we need to install docker-ce and docker-ce-rootless-extras from the upstream.

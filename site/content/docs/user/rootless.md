@@ -29,8 +29,8 @@ Delegate=yes
 
 - Create `/etc/modules-load.d/iptables.conf` with the following content:
 ```
-iptables_nat
-ip6tables_nat
+iptable_nat
+ip6table_nat
 ```
 
 ## Restrictions
