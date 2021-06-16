@@ -20,7 +20,7 @@
 # start from ubuntu 20.10, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
 ARG BASE_IMAGE=ubuntu:21.04
-FROM $BASE_IMAGE
+FROM $BASE_IMAGE as build
 
 # `docker buildx` automatically sets this arg value, but we add the arg for
 # regular `docker bulid` invocations to force a selection
@@ -80,7 +80,7 @@ COPY --chmod=0644 files/etc/systemd/system/kubelet.service.d/* /etc/systemd/syst
 #
 # First we must ensure that our util scripts are executable.
 #
-# The base image already has: ssh, apt, snapd, but we need to install more packages.
+# The base image already has a basic userspace + apt but we need to install more packages.
 # Packages installed are broken down into (each on a line):
 # - packages needed to run services (systemd)
 # - packages needed for kubernetes components
@@ -104,10 +104,11 @@ COPY --chmod=0644 files/etc/systemd/system/kubelet.service.d/* /etc/systemd/syst
 # Finally we adjust tempfiles cleanup to be 1 minute after "boot" instead of 15m
 # This is plenty after we've done initial setup for a node, but before we are
 # likely to try to export logs etc.
+
 RUN echo "Installing Packages ..." \
     && DEBIAN_FRONTEND=noninteractive clean-install \
       systemd \
-      conntrack iptables iproute2 ethtool socat util-linux mount ebtables udev kmod \
+      conntrack iptables iproute2 ethtool socat util-linux mount ebtables kmod \
       libseccomp2 pigz \
       bash ca-certificates curl rsync \
       nfs-common fuse-overlayfs \
@@ -119,10 +120,12 @@ RUN echo "Installing Packages ..." \
     && rm -f /lib/systemd/system/sockets.target.wants/*initctl* \
     && rm -f /lib/systemd/system/basic.target.wants/* \
     && echo "ReadKMsg=no" >> /etc/systemd/journald.conf \
-    && ln -s "$(which systemd)" /sbin/init \
- && echo "Enabling kubelet ... " \
-    && systemctl enable kubelet.service \
- && echo "Installing containerd ..." \
+    && ln -s "$(which systemd)" /sbin/init
+
+RUN echo "Enabling kubelet ... " \
+    && systemctl enable kubelet.service
+
+RUN echo "Installing containerd ..." \
     && curl -sSL --retry 5 --output /tmp/containerd.${TARGETARCH}.tgz "${CONTAINERD_URL}" \
     && echo "${CONTAINERD_AMD64_SHA256SUM}  /tmp/containerd.amd64.tgz" | tee /tmp/containerd.sha256 \
     && echo "${CONTAINERD_ARM64_SHA256SUM}  /tmp/containerd.arm64.tgz" | tee -a /tmp/containerd.sha256 \
@@ -141,8 +144,9 @@ RUN echo "Installing Packages ..." \
     && chmod 755 /usr/local/sbin/runc \
     && containerd --version \
     && runc --version \
-    && systemctl enable containerd \
- && echo "Installing crictl ..." \
+    && systemctl enable containerd 
+
+RUN echo "Installing crictl ..." \
     && curl -sSL --retry 5 --output /tmp/crictl.${TARGETARCH}.tgz "${CRICTL_URL}" \
     && echo "${CRICTL_AMD64_SHA256SUM}  /tmp/crictl.amd64.tgz" | tee /tmp/crictl.sha256 \
     && echo "${CRICTL_ARM64_SHA256SUM}  /tmp/crictl.arm64.tgz" | tee -a /tmp/crictl.sha256 \
@@ -150,8 +154,9 @@ RUN echo "Installing Packages ..." \
     && sha256sum --ignore-missing -c /tmp/crictl.sha256 \
     && rm -f /tmp/crictl.sha256 \
     && tar -C /usr/local/bin -xzvf /tmp/crictl.${TARGETARCH}.tgz \
-    && rm -rf /tmp/crictl.${TARGETARCH}.tgz \
- && echo "Installing CNI plugin binaries ..." \
+    && rm -rf /tmp/crictl.${TARGETARCH}.tgz
+
+RUN echo "Installing CNI plugin binaries ..." \
     && curl -sSL --retry 5 --output /tmp/cni.${TARGETARCH}.tgz "${CNI_PLUGINS_URL}" \
     && echo "${CNI_PLUGINS_AMD64_SHA256SUM}  /tmp/cni.amd64.tgz" | tee /tmp/cni.sha256 \
     && echo "${CNI_PLUGINS_ARM64_SHA256SUM}  /tmp/cni.arm64.tgz" | tee -a /tmp/cni.sha256 \
@@ -167,8 +172,9 @@ RUN echo "Installing Packages ..." \
          -o -iname portmap \
          -o -iname loopback \
       \) \
-      -delete \
- && echo "Installing containerd-fuse-overlayfs ..." \
+      -delete
+
+RUN echo "Installing containerd-fuse-overlayfs ..." \
     && curl -sSL --retry 5 --output /tmp/containerd-fuse-overlayfs.${TARGETARCH}.tgz "${CONTAINERD_FUSE_OVERLAYFS_URL}" \
     && echo "${CONTAINERD_FUSE_OVERLAYFS_AMD64_SHA256SUM}  /tmp/containerd-fuse-overlayfs.amd64.tgz" | tee /tmp/containerd-fuse-overlayfs.sha256 \
     && echo "${CONTAINERD_FUSE_OVERLAYFS_ARM64_SHA256SUM}  /tmp/containerd-fuse-overlayfs.arm64.tgz" | tee -a /tmp/containerd-fuse-overlayfs.sha256 \
@@ -176,13 +182,13 @@ RUN echo "Installing Packages ..." \
     && sha256sum --ignore-missing -c /tmp/containerd-fuse-overlayfs.sha256 \
     && rm -f /tmp/containerd-fuse-overlayfs.sha256 \
     && tar -C /usr/local/bin -xzvf /tmp/containerd-fuse-overlayfs.${TARGETARCH}.tgz \
-    && rm -rf /tmp/containerd-fuse-overlayfs.${TARGETARCH}.tgz \
- && echo "Ensuring /etc/kubernetes/manifests" \
-    && mkdir -p /etc/kubernetes/manifests \
- && echo "Adjusting systemd-tmpfiles timer" \
-    && sed -i /usr/lib/systemd/system/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#' \
- && echo "Disabling udev" \
-    && systemctl disable udev.service
+    && rm -rf /tmp/containerd-fuse-overlayfs.${TARGETARCH}.tgz
+
+RUN echo "Ensuring /etc/kubernetes/manifests" \
+    && mkdir -p /etc/kubernetes/manifests 
+
+RUN echo "Adjusting systemd-tmpfiles timer" \
+    && sed -i /usr/lib/systemd/system/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#'
 
 # tell systemd that it is in docker (it will check for the container env)
 # https://systemd.io/CONTAINER_INTERFACE/
@@ -192,3 +198,7 @@ ENV container docker
 STOPSIGNAL SIGRTMIN+3
 # NOTE: this is *only* for documentation, the entrypoint is overridden later
 ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]
+
+# squash
+FROM scratch
+COPY --from=build / /
