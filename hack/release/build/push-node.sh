@@ -28,13 +28,6 @@ KUBEROOT="${KUBEROOT:-${GOPATH}/src/k8s.io/kubernetes}"
 # ensure we have qemu setup (de-duped logic with setting up buildx for multi-arch)
 "${REPO_ROOT}/hack/build/init-buildx.sh"
 
-# kubernetes build option(s)
-GOFLAGS="${GOFLAGS:-}"
-if [ -z "${GOFLAGS}" ]; then
-    # TODO: add dockerless when 1.19 or greater
-    GOFLAGS="-tags=providerless"
-fi
-
 # NOTE: adding platforms is costly in terms of build time
 # we will consider expanding this in the future, for now the aim is to prove
 # multi-arch and enable developers working on commonly available hardware
@@ -49,6 +42,21 @@ set -x
 # get kubernetes version
 version_line="$(cd "${KUBEROOT}"; ./hack/print-workspace-status.sh | grep 'gitVersion')"
 kube_version="${version_line#"gitVersion "}"
+
+# kubernetes build option(s)
+GOFLAGS="${GOFLAGS:-}"
+if [ -z "${GOFLAGS}" ]; then
+    # TODO: add dockerless when 1.19 or greater
+    case "${kube_version}" in
+    v1.1[0-8].*)
+        GOFLAGS="-tags=providerless"
+        ;;
+    *)
+        GOFLAGS="-tags=providerless,dockerless"
+        ;;
+    esac
+fi
+export GOFLAGS
 
 # build for each arch
 IMAGE="kindest/node:${kube_version}"
