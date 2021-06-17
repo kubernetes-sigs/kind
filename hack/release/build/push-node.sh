@@ -56,6 +56,7 @@ if [ -z "${GOFLAGS}" ]; then
         ;;
     esac
 fi
+export GOFLAGS
 
 # build for each arch
 IMAGE="kindest/node:${kube_version}"
