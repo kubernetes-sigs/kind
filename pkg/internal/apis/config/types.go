@@ -235,7 +235,7 @@ type PortMapping struct {
 	HostPort int32
 	// TODO: add protocol (tcp/udp) and port-ranges
 	ListenAddress string
-	// Protocol (TCP/UDP)
+	// Protocol (TCP/UDP/SCTP)
 	Protocol PortMappingProtocol
 }
 
