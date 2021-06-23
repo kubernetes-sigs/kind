@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyrigh. 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -54,13 +54,15 @@ func (c *buildContext) addImages() error {
 	c.logger.V(0).Info("Starting to add images to base image")
 	// pull images to local docker
 	for _, imageName := range c.additionalImages {
-		// Check to see if the image exists and if not pull it
+		// continue if image already exists, no need to pull
 		_, err := docker.ImageID(imageName)
+		if err == nil {
+			continue
+		}
+
+		err = docker.Pull(c.logger, imageName, dockerBuildOsAndArch(c.arch), 3)
 		if err != nil {
-			err = docker.Pull(c.logger, imageName, dockerBuildOsAndArch(c.arch), 3)
-			if err != nil {
-				c.logger.Errorf("Add image build Failed! Failed to pull image %v: %v", imageName, err)
-			}
+			c.logger.Errorf("Add image build Failed! Failed to pull image %v: %v", imageName, err)
 		}
 	}
 

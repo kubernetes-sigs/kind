@@ -19,6 +19,7 @@ package addimage
 import (
 	"runtime"
 
+	"sigs.k8s.io/kind/pkg/apis/config/defaults"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
@@ -27,7 +28,7 @@ func Build(options ...Option) error {
 	// default options
 	ctx := &buildContext{
 		image:     DefaultImage,
-		baseImage: DefaultBaseImage,
+		baseImage: defaults.Image,
 		logger:    log.NoopLogger{},
 		arch:      runtime.GOARCH,
 	}

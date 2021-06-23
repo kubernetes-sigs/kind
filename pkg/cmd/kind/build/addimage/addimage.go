@@ -19,6 +19,7 @@ package addimage
 import (
 	"github.com/spf13/cobra"
 
+	"sigs.k8s.io/kind/pkg/apis/config/defaults"
 	"sigs.k8s.io/kind/pkg/build/addimage"
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -57,7 +58,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	)
 	cmd.Flags().StringVar(
 		&flags.BaseImage, "base-image",
-		addimage.DefaultBaseImage,
+		defaults.Image,
 		"name:tag of the base image to use for the build",
 	)
 	cmd.Flags().StringVar(

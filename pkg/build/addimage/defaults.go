@@ -18,6 +18,3 @@ package addimage
 
 // DefaultImage is the default name:tag for the built image
 const DefaultImage = "kindest/custom-node:latest"
-
-// DefaultBaseImage is the default base image used
-const DefaultBaseImage = "docker.io/kindest/node:latest"
