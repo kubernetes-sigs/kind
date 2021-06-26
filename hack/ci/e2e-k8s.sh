@@ -86,6 +86,21 @@ create_cluster() {
     esac
   fi
 
+  scheduler_extra_args="      \"v\": \"${KIND_CLUSTER_LOG_LEVEL}\""
+  if [ -n "${SCHEDULER_LOG_FORMAT:-}" ]; then
+    case "${KUBE_VERSION}" in
+     v1.1[0-8].*)
+      echo "SCHEDULER_LOG_FORMAT is only supported on versions >= v1.19, got ${KUBE_VERSION}"
+      exit 1
+      ;;
+    *)
+      # NOTE: the indendation on the next line is meaningful!
+      scheduler_extra_args="${scheduler_extra_args}
+      \"logging-format\": \"${SCHEDULER_LOG_FORMAT}\""
+      ;;
+    esac
+  fi
+
   # JSON map injected into featureGates config
   feature_gates="{}"
   # --runtime-config argument value passed to the API server
