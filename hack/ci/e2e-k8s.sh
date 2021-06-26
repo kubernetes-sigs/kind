@@ -162,7 +162,7 @@ kubeadmConfigPatches:
       "v": "${KIND_CLUSTER_LOG_LEVEL}"
   scheduler:
     extraArgs:
-      "v": "${KIND_CLUSTER_LOG_LEVEL}"
+${scheduler_extra_args}
   ---
   kind: InitConfiguration
   nodeRegistration:
