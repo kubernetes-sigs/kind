@@ -105,7 +105,7 @@ cd src
 git init
 git remote add origin https://github.com/microsoft/WSL2-Linux-Kernel.git
 git config --local gc.auto 0
-git -c protocol.version=2 fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin +${WSL_COMMIT_REF}:refs/emotes/origin/build/linux-msft-wsl-5.4.y
+git -c protocol.version=2 fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin +${WSL_COMMIT_REF}:refs/remotes/origin/build/linux-msft-wsl-5.4.y
 git checkout --progress --force -B build/linux-msft-wsl-5.4.y refs/remotes/origin/build/linux-msft-wsl-5.4.y
 
 # Enable xt_recent kernel module
