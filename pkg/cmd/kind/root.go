@@ -69,7 +69,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		"verbosity",
 		"v",
 		0,
-		"info log verbosity",
+		"info log verbosity, higher value produces more output",
 	)
 	cmd.PersistentFlags().BoolVarP(
 		&flags.Quiet,
