@@ -84,6 +84,47 @@ nodes:
 1. create service `kubectl create service nodeport nginx --tcp=80:80 --node-port=30000`
 1. access service `curl localhost:30000`
 
+## Kubernetes Service with Session Affinity
+
+If you want to create a Kubernetes Service with `sessionAffinity: ClientIP` it will not be accessible (and neither will any Service created afterwards).
+WSL2 kernel is missing `xt_recent` kernel module, which is used by Kube Proxy to implement session affinity. You need to compile a custom kernel to enable this feature.
+
+1. Build a kernel with `xt_recent` kernel module enabled
+    {{< codeFromInline lang="bash" >}}
+docker run --name wsl-kernel-builder --rm -it ubuntu:latest bash
+
+WSL_COMMIT_REF=linux-msft-5.4.72 # change this line to the version you want to build
+
+# Install dependencies
+apt update
+apt install -y git build-essential flex bison libssl-dev libelf-dev bc
+
+# Checkout WSL2 Kernel repo
+mkdir src
+cd src
+git init
+git remote add origin https://github.com/microsoft/WSL2-Linux-Kernel.git
+git config --local gc.auto 0
+git -c protocol.version=2 fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin +${WSL_COMMIT_REF}:refs/remotes/origin/build/linux-msft-wsl-5.4.y
+git checkout --progress --force -B build/linux-msft-wsl-5.4.y refs/remotes/origin/build/linux-msft-wsl-5.4.y
+
+# Enable xt_recent kernel module
+sed -i 's/# CONFIG_NETFILTER_XT_MATCH_RECENT is not set/CONFIG_NETFILTER_XT_MATCH_RECENT=y/' Microsoft/config-wsl
+
+# Compile the kernel 
+make -j2 KCONFIG_CONFIG=Microsoft/config-wsl
+
+# From the host terminal copy the newly built kernel
+docker cp wsl-kernel-builder:/src/arch/x86/boot/bzImage .
+{{< /codeFromInline >}}
+1. Configure WSL to use newly built kernel: https://docs.microsoft.com/en-us/windows/wsl/wsl-config#configure-global-options-with-wslconfig
+
+   Create a `.wslconfig` file in `C:\Users\<your-user-name>\`:
+    {{< codeFromInline lang="toml" >}}
+[wsl2]
+kernel=c:\\path\\to\\your\\kernel\\bzImage
+{{< /codeFromInline >}}
+
 ## Helpful Tips for WSL2
 
 - If you want to terminate the WSL2 instance to save memory or "reboot", open an admin PowerShell prompt and run `wsl --terminate <distro>`. Closing a WSL2 window doesn't shut it down automatically.
