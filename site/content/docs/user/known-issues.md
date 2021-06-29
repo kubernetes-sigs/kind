@@ -37,9 +37,8 @@ description: |-
 * [Chrome OS](#chrome-os) (unsupported)
 * [AppArmor](#apparmor) (may break things, consider disabling)
 * [IPv6 Port Forwarding](#ipv6-port-forwarding) (docker doesn't seem to implement this correctly)
-* [Fedora 32 Firewalld](#fedora32-firewalld) (nftables + docker broken, switch to iptables)
-* [Fedora 33 SELinux](#fedora33-selinux) (SELinux policy broken, must run in permissive mode)
 * [Couldn't find an alternative telinit implementation to spawn](#docker-init-daemon-config)
+* [Fedora](#fedora) (various)
 
 ## Kubectl Version Skew
 
@@ -307,7 +306,9 @@ your workloads inside the cluster via the nodes IPv6 addresses.
 
 See Previous Discussion: [kind#1326]
 
-## Fedora32 Firewalld
+## Fedora
+
+### Firewalld
 
 On Fedora 32 [firewalld] moved to nftables backend by default.
 This seems to be incompatible with Docker, leading to KIND cluster nodes not
@@ -323,7 +324,7 @@ systemctl restart firewalld
 See [#1547 (comment)](https://github.com/kubernetes-sigs/kind/issues/1547#issuecomment-623756313)
 and [Docker and Fedora 32 article](https://fedoramagazine.org/docker-and-fedora-32/)
 
-## Fedora 33 SELinux
+### SELinux
 
 On Fedora 33 an update to the SELinux policy causes `kind create cluster` to fail with an error like
 
