@@ -38,6 +38,7 @@ description: |-
 * [AppArmor](#apparmor) (may break things, consider disabling)
 * [IPv6 Port Forwarding](#ipv6-port-forwarding) (docker doesn't seem to implement this correctly)
 * [Fedora 32 Firewalld](#fedora32-firewalld) (nftables + docker broken, switch to iptables)
+* [Fedora 33 SELinux](#fedora33-selinux) (SELinux policy broken, must run in permissive mode)
 * [Couldn't find an alternative telinit implementation to spawn](#docker-init-daemon-config)
 
 ## Kubectl Version Skew
@@ -322,6 +323,16 @@ systemctl restart firewalld
 See [#1547 (comment)](https://github.com/kubernetes-sigs/kind/issues/1547#issuecomment-623756313)
 and [Docker and Fedora 32 article](https://fedoramagazine.org/docker-and-fedora-32/)
 
+## Fedora 33 SELinux
+
+On Fedora 33 an update to the SELinux policy causes `kind create cluster` to fail with an error like
+
+```sh
+docker: Error response from daemon: open /dev/dma_heap: permission denied.
+```
+
+Although the policy has been fixed in Fedora 34, the fix has not been backported to Fedora 33 as of June 28, 2021. Putting SELinux in permissive mode (`setenforce 0`) is one known workaround. This disables SELinux until the next boot. For more details, see [kind#2296].
+
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new
 [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
@@ -335,6 +346,7 @@ and [Docker and Fedora 32 article](https://fedoramagazine.org/docker-and-fedora-
 [kind#270]: https://github.com/kubernetes-sigs/kind/issues/270
 [kind#1179]: https://github.com/kubernetes-sigs/kind/issues/1179
 [kind#1326]: https://github.com/kubernetes-sigs/kind/issues/1326
+[kind#2296]: https://github.com/kubernetes-sigs/kind/issues/2296
 [moby#9939]: https://github.com/moby/moby/issues/9939
 [moby#17666]: https://github.com/moby/moby/issues/17666
 [Docker resource lims]: https://docs.docker.com/docker-for-mac/#advanced
