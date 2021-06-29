@@ -48,3 +48,9 @@ export GOOS=linux GOARCH=arm64
 export GOOS=linux GOARCH=ppc64le
 EOF
 )
+
+# add sha256 for binaries
+cd "${REPO_ROOT}"/bin
+for f in kind-*; do
+    shasum -a 256 "$f" > "$f".sha256sum;
+done
