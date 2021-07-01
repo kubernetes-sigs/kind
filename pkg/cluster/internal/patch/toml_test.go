@@ -88,7 +88,9 @@ func TestTOML(t *testing.T) {
   runtime_type = "io.containerd.runsc.v1"`,
 			Patches:     []string{`disabled_plugins=[]`},
 			ExpectError: false,
-			ExpectOutput: `[plugins]
+			ExpectOutput: `disabled_plugins = []
+
+[plugins]
   [plugins.cri]
     [plugins.cri.containerd]
       [plugins.cri.containerd.runtimes]
