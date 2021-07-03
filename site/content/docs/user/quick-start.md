@@ -19,33 +19,17 @@ description: |-
 > but you will not be able to perform some of the examples in our docs without it.
 > To install `kubectl` see the upstream [kubectl installation docs](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
 
-You can either install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@{{< stableVersion >}}` or clone this repo
-and run `make build` from the repository.
+If you are a go developer you may find the [go get option](#installing-with-go-get--go-install) convenient.
 
-Please use the latest Go when installing KIND from source, ideally go 1.14 or greater.
+Otherwise we supply downloadable [release binaries](#installing-from-release-binaries), community-managed [packages](#installing-with-a-package-manager), and a [source installation guide](#installing-from-source).
 
-`go get` will put `kind` in `$(go env GOPATH)/bin`. You may need to add that directory to your `$PATH` as
-shown [here](https://golang.org/doc/code.html#GOPATH) if you encounter the error
-`kind: command not found` after installation.
+Stable tagged releases (currently {{< stableVersion >}}) are generally strongly recommended for CI usage in particular.
 
-> **NOTE**: `go get` should not be run from a Go [modules] enabled project directory,
-> as go get inside a modules enabled project updates dependencies / behaves differently. Try for example `cd $HOME` first.
+You may need to install the latest code from source at HEAD if you are developing Kubernetes itself at HEAD / the latest sources.
 
-Without installing Go, kind can be built reproducibly with docker using `make build`,
-the binary will be in `bin/kind`.
+### Installing With A Package Manager
 
-Stable binaries are also available on the [releases] page.
-Stable releases are generally recommended for CI usage in particular.
-To install, download the binary for your platform from "Assets" and place this
-into your `$PATH`.
-
-On Linux:
-
-{{< codeFromInline lang="bash" >}}
-curl -Lo ./kind https://kind.sigs.k8s.io/dl/{{< stableVersion >}}/kind-linux-amd64
-chmod +x ./kind
-mv ./kind /some-dir-in-your-PATH/kind
-{{< /codeFromInline >}}
+The kind community has enabled installation via the following package managers.
 
 On macOS via Homebrew:
 
@@ -59,7 +43,27 @@ On macOS via MacPorts:
 sudo port selfupdate && sudo port install kind
 {{< /codeFromInline >}}
 
-On macOS via Bash:
+On Windows via Chocolatey (https://chocolatey.org/packages/kind)
+{{< codeFromInline lang="powershell" >}}
+choco install kind
+{{< /codeFromInline >}}
+
+### Installing From Release Binaries
+
+Pre-built binaries are avilable on our [releases page](https://github.com/kubernetes-sigs/kind/releases).
+
+To install, download the binary for your platform from "Assets", then rename it to `kind` (or perhaps `kind.exe` on Windows) and place this
+into your `$PATH` at your preferred binary installation directory.
+
+On Linux:
+
+{{< codeFromInline lang="bash" >}}
+curl -Lo ./kind https://kind.sigs.k8s.io/dl/{{< stableVersion >}}/kind-linux-amd64
+chmod +x ./kind
+mv ./kind /some-dir-in-your-PATH/kind
+{{< /codeFromInline >}}
+
+On macOS:
 
 {{< codeFromInline lang="bash" >}}
 curl -Lo ./kind https://kind.sigs.k8s.io/dl/{{< stableVersion >}}/kind-darwin-amd64
@@ -67,17 +71,50 @@ chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
 {{< /codeFromInline >}}
 
-On Windows:
+On Windows in [PowerShell](https://en.wikipedia.org/wiki/PowerShell):
 
 {{< codeFromInline lang="powershell" >}}
 curl.exe -Lo kind-windows-amd64.exe https://kind.sigs.k8s.io/dl/{{< stableVersion >}}/kind-windows-amd64
 Move-Item .\kind-windows-amd64.exe c:\some-dir-in-your-PATH\kind.exe
 {{< /codeFromInline >}}
 
-On Windows via Chocolatey (https://chocolatey.org/packages/kind)
-{{< codeFromInline lang="powershell" >}}
-choco install kind
-{{< /codeFromInline >}}
+### Installing From Source
+
+In addition to the pre-built binary + package manager installation options listed
+above you can install kind from source with `GO111MODULE="on" go get sigs.k8s.io/kind@{{< stableVersion >}}` or clone this repo
+and run `make build` from the repository.
+
+#### Installing With `make`
+
+Using `make build` does not require installing Go and will build kind reproducibly,
+the binary will be in `bin/kind` inside your clone of the repo.
+
+You should only need `make` and standard userspace utilities to run this build,
+it will automatically obtain the correct go version with our vendored copy of [`gimmee`](https://github.com/travis-ci/gimme).
+
+You can then call `./bin/kind` to use it, or copy `bin/kind` into some directory in your system `PATH` to
+use it as `kind` from the command line.
+
+`make install` will attempt to mimic `go install` and has the same path requirements as `go install` below.
+
+#### Installing with `go get` / `go install`
+
+When installing with [Go](https://golang.org/) please use the latest stable Go release, ideally go1.16 or greater.
+
+For Go versions go1.17 and higher, you should use to `go install sigs.k8s.io/kind@{{< stableVersion >}}` per https://tip.golang.org/doc/go1.17#go-get
+
+For older versions use `GO111MODULE="on" go get sigs.k8s.io/kind@{{< stableVersion >}}`.
+
+For either version if you are building from a local source clone, use `go install .` from the top-level directory of the clone.
+
+> **NOTE**: `go get` should not be run from a Go [modules] enabled project directory,
+> as go get inside a modules enabled project updates dependencies / behaves differently. Try for example `cd $HOME` first.
+
+`go get` / `go install` will typically put the `kind` binary inside the `bin` directory under `go env GOPATH`, see
+Go's ["Compile and install packages and dependencies"](https://golang.org/cmd/go/#hdr-Compile_and_install_packages_and_dependencies)
+for more on this.
+You may need to add that directory to your `$PATH` if you encounter the error
+`kind: command not found` after installation, you can find a guide for adding a directory to your `PATH` at https://gist.github.com/nex3/c395b2f8fd4b02068be37c961301caa7#file-path-md.
 
 
 ## Creating a Cluster
@@ -384,6 +421,7 @@ The structure of the logs will look more or less like this:
 The logs contain information about the Docker host, the containers running
 kind, the Kubernetes cluster itself, etc.
 
+[modules]: https://github.com/golang/go/wiki/Modules
 [go-supported]: https://golang.org/doc/devel/release.html#policy
 [known issues]: /docs/user/known-issues
 [releases]: https://github.com/kubernetes-sigs/kind/releases
