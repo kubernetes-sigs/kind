@@ -92,11 +92,11 @@ controllerManager:
   extraArgs:
     enable-hostpath-provisioner: "true"
     # configure ipv6 default addresses for IPv6 clusters
-    
+
 scheduler:
   extraArgs:
     # configure ipv6 default addresses for IPv6 clusters
-    
+
 networking:
   podSubnet: "10.244.0.0/16"
   serviceSubnet: "10.96.0.0/12"
@@ -108,7 +108,7 @@ metadata:
 # we use a well know token for TLS bootstrap
 bootstrapTokens:
 - token: "abcdef.0123456789abcdef"
-# we use a well know port for making the API server discoverable inside docker network. 
+# we use a well know port for making the API server discoverable inside docker network.
 # from the host machine such port will be accessible via a random local port instead.
 localAPIEndpoint:
   advertiseAddress: "192.168.9.6"
@@ -144,7 +144,7 @@ kind: KubeletConfiguration
 metadata:
   name: config
 # configure ipv6 addresses in IPv6 mode
- 
+
 # disable disk resource management by default
 # kubelet will see the host disk that the inner container runtime
 # is ultimately backed by and attempt to recover disk space. we don't want that.
