@@ -144,7 +144,7 @@ RUN echo "Installing containerd ..." \
     && chmod 755 /usr/local/sbin/runc \
     && containerd --version \
     && runc --version \
-    && systemctl enable containerd 
+    && systemctl enable containerd
 
 RUN echo "Installing crictl ..." \
     && curl -sSL --retry 5 --output /tmp/crictl.${TARGETARCH}.tgz "${CRICTL_URL}" \
@@ -185,7 +185,7 @@ RUN echo "Installing containerd-fuse-overlayfs ..." \
     && rm -rf /tmp/containerd-fuse-overlayfs.${TARGETARCH}.tgz
 
 RUN echo "Ensuring /etc/kubernetes/manifests" \
-    && mkdir -p /etc/kubernetes/manifests 
+    && mkdir -p /etc/kubernetes/manifests
 
 RUN echo "Adjusting systemd-tmpfiles timer" \
     && sed -i /usr/lib/systemd/system/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#'
