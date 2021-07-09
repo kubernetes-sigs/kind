@@ -82,10 +82,8 @@ test:
 ################################################################################
 # ================================= Cleanup ====================================
 # standard cleanup target
-# TODO: remove the vendor part in the future. We no longer populate vendor
 clean:
 	rm -rf "$(OUT_DIR)/"
-	rm -rf "$(REPO_ROOT)/vendor/"
 ################################################################################
 # ============================== Auto-Update ===================================
 # update generated code, gofmt, etc.
