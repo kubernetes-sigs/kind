@@ -21,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/log"
@@ -64,21 +65,24 @@ func pullIfNotPresent(logger log.Logger, image string, retries int) (pulled bool
 
 // pull pulls an image, retrying up to retries times
 func pull(logger log.Logger, image string, retries int) error {
-	logger.V(1).Infof("Pulling image: %s ...", image)
-	err := exec.Command("podman", "pull", image).Run()
-	// retry pulling up to retries times if necessary
-	if err != nil {
-		for i := 0; i < retries; i++ {
-			time.Sleep(time.Second * time.Duration(i+1))
-			logger.V(1).Infof("Trying again to pull image: %q ... %v", image, err)
-			// TODO(bentheelder): add some backoff / sleep?
-			err = exec.Command("podman", "pull", image).Run()
-			if err == nil {
-				break
-			}
-		}
+	backoff := wait.Backoff{
+		Duration: time.Second,
+		Factor:   2,
+		Steps:    retries,
 	}
-	return errors.Wrapf(err, "failed to pull image %q", image)
+	var lastErr error
+	err := wait.ExponentialBackoff(backoff, func() (bool, error) {
+		logger.V(1).Infof("Trying to pull image: %s ...", image)
+		if lastErr = exec.Command("podman", "pull", image).Run(); lastErr != nil {
+			logger.V(1).Infof("Failed to pull image: %q ... %v", image, lastErr)
+			return false, nil
+		}
+		return true, nil
+	})
+	if err == wait.ErrWaitTimeout {
+		err = errors.Wrapf(lastErr, "failed to pull image %q", image)
+	}
+	return err
 }
 
 // sanitizeImage is a helper to return human readable image name and

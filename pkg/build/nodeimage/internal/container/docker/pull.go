@@ -19,25 +19,29 @@ package docker
 import (
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
 // Pull pulls an image, retrying up to retries times
 func Pull(logger log.Logger, image string, platform string, retries int) error {
-	logger.V(1).Infof("Pulling image: %s for platform %s ...", image, platform)
-	err := exec.Command("docker", "pull", "--platform="+platform, image).Run()
-	// retry pulling up to retries times if necessary
-	if err != nil {
-		for i := 0; i < retries; i++ {
-			time.Sleep(time.Second * time.Duration(i+1))
-			logger.V(1).Infof("Trying again to pull image: %q ... %v", image, err)
-			// TODO(bentheelder): add some backoff / sleep?
-			err = exec.Command("docker", "pull", "--platform="+platform, image).Run()
-			if err == nil {
-				break
-			}
+	backoff := wait.Backoff{
+		Duration: time.Second,
+		Factor:   2,
+		Steps:    retries,
+	}
+	var lastErr error
+	err := wait.ExponentialBackoff(backoff, func() (bool, error) {
+		logger.V(1).Infof("Trying to pull image: %s for platform %s ...", image, platform)
+		if lastErr = exec.Command("docker", "pull", "--platform="+platform, image).Run(); lastErr != nil {
+			logger.V(1).Infof("Failed to pull image: %q ... %v", image, lastErr)
+			return false, nil
 		}
+		return true, nil
+	})
+	if err == wait.ErrWaitTimeout {
+		err = lastErr
 	}
 	return err
 }
