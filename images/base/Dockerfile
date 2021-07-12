@@ -190,6 +190,10 @@ RUN echo "Ensuring /etc/kubernetes/manifests" \
 RUN echo "Adjusting systemd-tmpfiles timer" \
     && sed -i /usr/lib/systemd/system/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#'
 
+# squash
+FROM scratch
+COPY --from=build / /
+
 # tell systemd that it is in docker (it will check for the container env)
 # https://systemd.io/CONTAINER_INTERFACE/
 ENV container docker
@@ -198,7 +202,3 @@ ENV container docker
 STOPSIGNAL SIGRTMIN+3
 # NOTE: this is *only* for documentation, the entrypoint is overridden later
 ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]
-
-# squash
-FROM scratch
-COPY --from=build / /
