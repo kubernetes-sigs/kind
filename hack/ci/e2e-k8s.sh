@@ -96,7 +96,7 @@ create_cluster() {
     *)
       # NOTE: the indendation on the next line is meaningful!
       scheduler_extra_args="${scheduler_extra_args}
-      \"logging-format\": \"${SCHEDULER_LOG_FORMAT}\""
+        \"logging-format\": \"${SCHEDULER_LOG_FORMAT}\""
       ;;
     esac
   fi
