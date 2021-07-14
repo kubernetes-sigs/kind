@@ -116,8 +116,7 @@ Additional information about Contour can be found at: [projectcontour.io](https:
 ### Ingress NGINX
 
 {{< codeFromInline lang="bash" >}}
-VERSION=$(curl https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/stable.txt)
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/${VERSION}/deploy/static/provider/kind/deploy.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
 {{< /codeFromInline >}}
 
 The manifests contains kind specific patches to forward the hostPorts to the
