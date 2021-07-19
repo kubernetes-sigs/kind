@@ -70,6 +70,7 @@ create_cluster() {
   # Default Log level for all components in test clusters
   KIND_CLUSTER_LOG_LEVEL=${KIND_CLUSTER_LOG_LEVEL:-4}
 
+  CLUSTER_LOG_FORMAT=${CLUSTER_LOG_FORMAT:-} 
   # potentially enable --logging-format
   kubelet_extra_args="      \"v\": \"${KIND_CLUSTER_LOG_LEVEL}\""
   if [ -n "${KUBELET_LOG_FORMAT:-CLUSTER_LOG_FORMAT}" ]; then
