@@ -73,7 +73,7 @@ create_cluster() {
   CLUSTER_LOG_FORMAT=${CLUSTER_LOG_FORMAT:-} 
   # potentially enable --logging-format
   kubelet_extra_args="      \"v\": \"${KIND_CLUSTER_LOG_LEVEL}\""
-  if [ -n "${KUBELET_LOG_FORMAT:-CLUSTER_LOG_FORMAT}" ]; then
+  if [ -n "${KUBELET_LOG_FORMAT:-$CLUSTER_LOG_FORMAT}" ]; then
     case "${KUBE_VERSION}" in
      v1.1[0-8].*)
       echo "KUBELET_LOG_FORMAT is only supported on versions >= v1.19, got ${KUBE_VERSION}"
@@ -88,7 +88,7 @@ create_cluster() {
   fi
 
   scheduler_extra_args="      \"v\": \"${KIND_CLUSTER_LOG_LEVEL}\""
-  if [ -n "${SCHEDULER_LOG_FORMAT:-CLUSTER_LOG_FORMAT}" ]; then
+  if [ -n "${SCHEDULER_LOG_FORMAT:-$CLUSTER_LOG_FORMAT}" ]; then
     case "${KUBE_VERSION}" in
      v1.1[0-8].*)
       echo "SCHEDULER_LOG_FORMAT is only supported on versions >= v1.19, got ${KUBE_VERSION}"
