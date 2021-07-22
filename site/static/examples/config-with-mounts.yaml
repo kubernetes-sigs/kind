@@ -7,12 +7,12 @@ nodes:
   - hostPath: /path/to/my/files/
     containerPath: /files
     # optional: if set, the mount is read-only.
-    # false is the current default
+    # default false
     readOnly: true
     # optional: if set, the mount needs SELinux relabeling.
-    # false is the current default
+    # default false
     selinuxRelabel: false
     # optional: set propagation mode (None, HostToContainer or Bidirectional)
     # see https://kubernetes.io/docs/concepts/storage/volumes/#mount-propagation
-    # None is the current default
+    # default None
     propagation: HostToContainer
