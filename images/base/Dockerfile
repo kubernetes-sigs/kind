@@ -22,8 +22,7 @@
 ARG BASE_IMAGE=ubuntu:21.10
 FROM $BASE_IMAGE as build
 
-# `docker buildx` automatically sets this arg value, but we add the arg for
-# regular `docker bulid` invocations to force a selection
+# `docker buildx` automatically sets this arg value
 ARG TARGETARCH
 
 # Configure containerd and runc binaries from kind-ci/containerd-nightlies repository
