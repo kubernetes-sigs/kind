@@ -185,8 +185,8 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 					return errors.Wrap(err, "failed to write patched containerd config")
 				}
 				// restart containerd now that we've re-configured it
-				// skip if the systemd (also the containerd) is not running
-				if err := node.Command("bash", "-c", `! systemctl is-system-running || systemctl restart containerd`).Run(); err != nil {
+				// skip if containerd is not running
+				if err := node.Command("bash", "-c", `! pgrep --exact containerd || systemctl restart containerd`).Run(); err != nil {
 					return errors.Wrap(err, "failed to restart containerd after patching config")
 				}
 				return nil
