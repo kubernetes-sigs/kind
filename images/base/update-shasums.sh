@@ -22,6 +22,7 @@ cd "${REPO_ROOT}"
 CONTAINERD_VERSION="$(sed -n 's/ARG CONTAINERD_VERSION="\(.*\)"/\1/p' ./images/base/Dockerfile)"
 CNI_PLUGINS_VERSION="$(sed -n 's/ARG CNI_PLUGINS_VERSION="\(.*\)"/\1/p' ./images/base/Dockerfile)"
 CRICTL_VERSION="$(sed -n 's/ARG CRICTL_VERSION="\(.*\)"/\1/p' ./images/base/Dockerfile)"
+CONTAINERD_FUSE_OVERLAYFS_VERSION="$(sed -n 's/ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="\(.*\)"/\1/p' ./images/base/Dockerfile)"
 
 # darwin is great
 SED="sed"
@@ -76,4 +77,14 @@ for ARCH in "${ARCHITECTURES[@]}"; do
     ARCH_UPPER=$(echo "$ARCH" | tr '[:lower:]' '[:upper:]')
     echo "ARG CNI_PLUGINS_${ARCH_UPPER}_SHA256SUM=${SHASUM}"
     $SED -i 's/ARG CNI_PLUGINS_'"${ARCH_UPPER}"'_SHA256SUM=.*/ARG CNI_PLUGINS_'"${ARCH_UPPER}"'_SHA256SUM="'"${SHASUM}"'"/' ./images/base/Dockerfile
+done
+
+echo
+for ARCH in "${ARCHITECTURES[@]}"; do
+    CONTAINERD_FUSE_OVERLAYFS_TARBALL="containerd-fuse-overlayfs-${CONTAINERD_FUSE_OVERLAYFS_VERSION}-linux-${ARCH}.tar.gz"
+    CONTAINERD_FUSE_OVERLAYFS_URL="https://github.com/containerd/fuse-overlayfs-snapshotter/releases/download/v${CONTAINERD_FUSE_OVERLAYFS_VERSION}/SHA256SUMS"
+    SHASUM=$(curl -sSL --retry 5 "${CONTAINERD_FUSE_OVERLAYFS_URL}" | grep "${CONTAINERD_FUSE_OVERLAYFS_TARBALL}" | awk '{print $1}')
+    ARCH_UPPER=$(echo "$ARCH" | tr '[:lower:]' '[:upper:]')
+    echo "ARG CONTAINERD_FUSE_OVERLAYFS_${ARCH_UPPER}_SHA256SUM=${SHASUM}"
+    $SED -i 's/ARG CONTAINERD_FUSE_OVERLAYFS_'"${ARCH_UPPER}"'_SHA256SUM=.*/ARG CONTAINERD_FUSE_OVERLAYFS_'"${ARCH_UPPER}"'_SHA256SUM="'"${SHASUM}"'"/' ./images/base/Dockerfile
 done

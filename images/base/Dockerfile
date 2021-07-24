@@ -17,28 +17,27 @@
 # For systemd + docker configuration used below, see the following references:
 # https://systemd.io/CONTAINER_INTERFACE/
 
-# start from ubuntu 20.10, this image is reasonably small as a starting point
+# start from ubuntu, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-ARG BASE_IMAGE=ubuntu:21.04
+ARG BASE_IMAGE=ubuntu:21.10
 FROM $BASE_IMAGE as build
 
-# `docker buildx` automatically sets this arg value, but we add the arg for
-# regular `docker bulid` invocations to force a selection
+# `docker buildx` automatically sets this arg value
 ARG TARGETARCH
 
 # Configure containerd and runc binaries from kind-ci/containerd-nightlies repository
 # The repository contains latest stable releases and nightlies built for multiple architectures
-ARG CONTAINERD_VERSION="1.5.2"
+ARG CONTAINERD_VERSION="1.5.4-12-g1c13c54ca"
 ARG CONTAINERD_BASE_URL="https://github.com/kind-ci/containerd-nightlies/releases/download/containerd-${CONTAINERD_VERSION}"
 ARG CONTAINERD_URL="${CONTAINERD_BASE_URL}/containerd-${CONTAINERD_VERSION}.linux-${TARGETARCH}.tar.gz"
-ARG CONTAINERD_AMD64_SHA256SUM="1e39c79905adfde0aca9ed7347f37be9fb8b89776f4df829337eeeda983bf422"
-ARG CONTAINERD_ARM64_SHA256SUM="2aac475f960ee8a3a331256fd80e6ffb5f05328161e0f577d9b8691424a39584"
-ARG CONTAINERD_PPC64LE_SHA256SUM="21f7a229c431d0f66616312e437e5b4d01ae56302b0b2aa18ec315ced0876e60"
+ARG CONTAINERD_AMD64_SHA256SUM="0ed2da55ddd94394f36cb29827409975f08dba60b70c8f8ba4167b325dfe1270"
+ARG CONTAINERD_ARM64_SHA256SUM="c054b60148e3579c586621e95dbc62cda6ea965c45193f98d6b6131605078f51"
+ARG CONTAINERD_PPC64LE_SHA256SUM="c7c3b5d49837c71f74b7bb2e4e31a90e45a818afd1072863c72e64a93a6aa591"
 
 ARG RUNC_URL="${CONTAINERD_BASE_URL}/runc.${TARGETARCH}"
-ARG RUNC_AMD64_SHA256SUM="ed9896e8c010b2f06cdfb55ec575865f9382e1a599078c06dcbddb86b97be285"
-ARG RUNC_ARM64_SHA256SUM="75de65187fa809ae92eaeb49cbf725c7d9f226fbc589f84bd637e31aae38c453"
-ARG RUNC_PPC64LE_SHA256SUM="40b42ff58de2e71164f03db931aa70cc0fee6eb35aa96915e23290341ca9fd49"
+ARG RUNC_AMD64_SHA256SUM="bc1338c77e56b8720e1ed0106e3624f2f752930b937e0da08748f67a3f50339a"
+ARG RUNC_ARM64_SHA256SUM="498fced02fd30003f0d23addd1a0d81c3a011dc38ae65144c75651d58e4181d4"
+ARG RUNC_PPC64LE_SHA256SUM="bc13d63433a0dfbfc28e1f5dc72425b51645fde287ca41f931871315c39e0496"
 
 # Configure crictl binary from upstream
 ARG CRICTL_VERSION="v1.21.0"
@@ -56,12 +55,12 @@ ARG CNI_PLUGINS_ARM64_SHA256SUM="ef17764ffd6cdcb16d76401bac1db6acc050c9b088f1be5
 ARG CNI_PLUGINS_PPC64LE_SHA256SUM="5bd3c82ef248e5c6cc388f25545aa5a7d318778e5f9bc0a31475361bb27acefe"
 
 # Configure containerd-fuse-overlayfs snapshotter binary from upstream
-ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="1.0.2"
+ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="1.0.3"
 ARG CONTAINERD_FUSE_OVERLAYFS_TARBALL="v${CONTAINERD_FUSE_OVERLAYFS_VERSION}/containerd-fuse-overlayfs-${CONTAINERD_FUSE_OVERLAYFS_VERSION}-linux-${TARGETARCH}.tar.gz"
 ARG CONTAINERD_FUSE_OVERLAYFS_URL="https://github.com/containerd/fuse-overlayfs-snapshotter/releases/download/${CONTAINERD_FUSE_OVERLAYFS_TARBALL}"
-ARG CONTAINERD_FUSE_OVERLAYFS_AMD64_SHA256SUM="1f1e69f71b5ea568e93e40059af1b02a377ac0966d2acd27e4cce388a27af218"
-ARG CONTAINERD_FUSE_OVERLAYFS_ARM64_SHA256SUM="7ade1a44d880b3fb8eaa3c5ff7d3890a43b777d06ec80439c9a51ae35626c83c"
-ARG CONTAINERD_FUSE_OVERLAYFS_PPC64LE_SHA256SUM="eaf9bdd3de4514546945ea93119acea2b7bfa55ced43766e20adabddd5d20978"
+ARG CONTAINERD_FUSE_OVERLAYFS_AMD64_SHA256SUM="26c7af08d292f21e7067c0424479945bb9ff6315b49851511b2917179c5ae59a"
+ARG CONTAINERD_FUSE_OVERLAYFS_ARM64_SHA256SUM="68ef0896f3d5c0af73ad3d13b1b9a27f9b57cf22bdc30e36915d0f279b965bc3"
+ARG CONTAINERD_FUSE_OVERLAYFS_PPC64LE_SHA256SUM="49679827fa2b46dd28899bdc53c2926e83f42d305ad7ee31aeaf50dbb774a840"
 
 # copy in static files
 # all scripts are 0755: http://www.filepermissions.com/file-permission/0755
