@@ -62,6 +62,15 @@ build() {
   make all WHAT='cmd/kubectl test/e2e/e2e.test vendor/github.com/onsi/ginkgo/ginkgo'
 }
 
+check_log_format() {
+	case "${KUBE_VERSION}" in
+		v1.1[0-8].*)
+			echo "KUBELET_LOG_FORMAT is only supported on versions >= v1.19, got ${KUBE_VERSION}"
+			exit 1
+			;;
+	esac
+}
+
 # up a cluster with kind
 create_cluster() {
   # Grab the version of the cluster we're about to start
@@ -73,33 +82,35 @@ create_cluster() {
   CLUSTER_LOG_FORMAT=${CLUSTER_LOG_FORMAT:-} 
   # potentially enable --logging-format
   kubelet_extra_args="      \"v\": \"${KIND_CLUSTER_LOG_LEVEL}\""
-  if [ -n "${KUBELET_LOG_FORMAT:-$CLUSTER_LOG_FORMAT}" ]; then
-    case "${KUBE_VERSION}" in
-     v1.1[0-8].*)
-      echo "KUBELET_LOG_FORMAT is only supported on versions >= v1.19, got ${KUBE_VERSION}"
-      exit 1
-      ;;
-    *)
-      # NOTE: the indendation on the next line is meaningful!
+  KUBELET_LOG_FORMAT=${KUBELET_LOG_FORMAT:-$CLUSTER_LOG_FORMAT}
+  if [ -n "$KUBELET_LOG_FORMAT" ]; then
+      check_log_format
       kubelet_extra_args="${kubelet_extra_args}
       \"logging-format\": \"${KUBELET_LOG_FORMAT}\""
-      ;;
-    esac
   fi
 
   scheduler_extra_args="      \"v\": \"${KIND_CLUSTER_LOG_LEVEL}\""
-  if [ -n "${SCHEDULER_LOG_FORMAT:-$CLUSTER_LOG_FORMAT}" ]; then
-    case "${KUBE_VERSION}" in
-     v1.1[0-8].*)
-      echo "SCHEDULER_LOG_FORMAT is only supported on versions >= v1.19, got ${KUBE_VERSION}"
-      exit 1
-      ;;
-    *)
-      # NOTE: the indendation on the next line is meaningful!
+  SCHEDULER_LOG_FORMAT=${SCHEDULER_LOG_FORMAT:-$CLUSTER_LOG_FORMAT}
+  if [ -n "$SCHEDULER_LOG_FORMAT" ]; then
+      check_log_format
       scheduler_extra_args="${scheduler_extra_args}
-        \"logging-format\": \"${SCHEDULER_LOG_FORMAT}\""
-      ;;
-    esac
+      \"logging-format\": \"${SCHEDULER_LOG_FORMAT}\""
+  fi
+
+  controllerManager_extra_args="      \"v\": \"${KIND_CLUSTER_LOG_LEVEL}\""
+  CONTROLLERMANAGER_LOG_FORMAT=${CONTROLLERMANAGER_LOG_FORMAT:-$CLUSTER_LOG_FORMAT}
+  if [ -n "$CONTROLLERMANAGER_LOG_FORMAT" ]; then
+      check_log_format
+      controllerManager_extra_args="${controllerManager_extra_args}
+      \"logging-format\": \"${CONTROLLERMANAGER_LOG_FORMAT}\""
+  fi
+
+  apiServer_extra_args="      \"v\": \"${KIND_CLUSTER_LOG_LEVEL}\""
+  APISERVER_LOG_FORMAT=${APISERVER_LOG_FORMAT:-$CLUSTER_LOG_FORMAT}
+  if [ -n "$APISERVER_LOG_FORMAT" ]; then
+      check_log_format
+      apiServer_extra_args="${apiServer_extra_args}
+      \"logging-format\": \"${APISERVER_LOG_FORMAT}\""
   fi
 
   # JSON map injected into featureGates config
@@ -157,10 +168,10 @@ kubeadmConfigPatches:
     name: config
   apiServer:
     extraArgs:
-      "v": "${KIND_CLUSTER_LOG_LEVEL}"
+${apiServer_extra_args}
   controllerManager:
     extraArgs:
-      "v": "${KIND_CLUSTER_LOG_LEVEL}"
+${controllerManager_extra_args}
   scheduler:
     extraArgs:
 ${scheduler_extra_args}
