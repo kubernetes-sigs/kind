@@ -90,27 +90,16 @@ create_cluster() {
   fi
 
   scheduler_extra_args="      \"v\": \"${KIND_CLUSTER_LOG_LEVEL}\""
-  SCHEDULER_LOG_FORMAT=${SCHEDULER_LOG_FORMAT:-$CLUSTER_LOG_FORMAT}
-  if [ -n "$SCHEDULER_LOG_FORMAT" ]; then
+  controllerManager_extra_args="      \"v\": \"${KIND_CLUSTER_LOG_LEVEL}\""
+  apiServer_extra_args="      \"v\": \"${KIND_CLUSTER_LOG_LEVEL}\""
+  if [ -n "$CLUSTER_LOG_FORMAT" ]; then
       check_log_format
       scheduler_extra_args="${scheduler_extra_args}
-      \"logging-format\": \"${SCHEDULER_LOG_FORMAT}\""
-  fi
-
-  controllerManager_extra_args="      \"v\": \"${KIND_CLUSTER_LOG_LEVEL}\""
-  CONTROLLERMANAGER_LOG_FORMAT=${CONTROLLERMANAGER_LOG_FORMAT:-$CLUSTER_LOG_FORMAT}
-  if [ -n "$CONTROLLERMANAGER_LOG_FORMAT" ]; then
-      check_log_format
+      \"logging-format\": \"${CLUSTER_LOG_FORMAT}\""
       controllerManager_extra_args="${controllerManager_extra_args}
-      \"logging-format\": \"${CONTROLLERMANAGER_LOG_FORMAT}\""
-  fi
-
-  apiServer_extra_args="      \"v\": \"${KIND_CLUSTER_LOG_LEVEL}\""
-  APISERVER_LOG_FORMAT=${APISERVER_LOG_FORMAT:-$CLUSTER_LOG_FORMAT}
-  if [ -n "$APISERVER_LOG_FORMAT" ]; then
-      check_log_format
+      \"logging-format\": \"${CLUSTER_LOG_FORMAT}\""
       apiServer_extra_args="${apiServer_extra_args}
-      \"logging-format\": \"${APISERVER_LOG_FORMAT}\""
+      \"logging-format\": \"${CLUSTER_LOG_FORMAT}\""
   fi
 
   # JSON map injected into featureGates config
