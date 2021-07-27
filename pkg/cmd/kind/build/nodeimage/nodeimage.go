@@ -68,7 +68,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd.Flags().StringVar(
 		&flags.KubeRoot, "kube-root",
 		"",
-		"path to the Kubernetes source directory (if empty, the path is autodetected)",
+		"DEPRECATED: please switch to just the argument. Path to the Kubernetes source directory (if empty, the path is autodetected)",
 	)
 	cmd.Flags().StringVar(
 		&flags.BaseImage, "base-image",
