@@ -145,13 +145,13 @@ You'll specifically want to see the [documentation section] of the development g
 [install docker]: https://docs.docker.com/install/#supported-platforms
 [community]: https://github.com/kubernetes/community
 [contributor]: https://github.com/kubernetes/community/blob/master/contributors/guide/README.md
-[Kubernetes Slack]: http://slack.k8s.io/
+[Kubernetes Slack]: https://slack.k8s.io/
 [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
 [@BenTheElder]: https://github.com/BenTheElder
 [@munnerz]: https://github.com/munnerz
 [@aojea]: https://github.com/aojea
 [@amwat]: https://github.com/amwat
-[community page]: http://kubernetes.io/community/
+[community page]: https://kubernetes.io/community/
 [modules]: https://github.com/golang/go/wiki/Modules
 [SIG-Testing Mailing List]: https://groups.google.com/forum/#!forum/kubernetes-sig-testing
 [CNCF]: https://www.cncf.io/

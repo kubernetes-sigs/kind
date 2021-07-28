@@ -94,7 +94,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [go]: https://golang.org/
 [go-supported]: https://golang.org/doc/devel/release.html#policy
 [docker]: https://www.docker.com/
-[community page]: http://kubernetes.io/community/
+[community page]: https://kubernetes.io/community/
 [Kubernetes Code of Conduct]: https://github.com/kubernetes/community/blob/master/code-of-conduct.md
 [Go Report Card Badge]: https://goreportcard.com/badge/sigs.k8s.io/kind
 [Go Report Card]: https://goreportcard.com/report/sigs.k8s.io/kind
@@ -111,7 +111,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [SIG-Testing Mailing List]: https://groups.google.com/forum/#!forum/kubernetes-sig-testing
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [filing an issue]: https://github.com/kubernetes-sigs/kind/issues/new
-[Kubernetes Slack]: http://slack.k8s.io/
+[Kubernetes Slack]: https://slack.k8s.io/
 [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
 [1.0 roadmap]: /docs/contributing/1.0-roadmap
 [install docker]: https://docs.docker.com/install/
