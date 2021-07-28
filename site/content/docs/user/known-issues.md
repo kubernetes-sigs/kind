@@ -17,7 +17,7 @@ description: |-
   [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
   [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new
   [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
-  [kubernetes slack]: http://slack.k8s.io/
+  [kubernetes slack]: https://slack.k8s.io/
 ---
 
 
@@ -337,7 +337,7 @@ Although the policy has been fixed in Fedora 34, the fix has not been backported
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new
 [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
-[kubernetes slack]: http://slack.k8s.io/
+[kubernetes slack]: https://slack.k8s.io/
 [kind#136]: https://github.com/kubernetes-sigs/kind/issues/136
 [kind#136-docker]: https://github.com/kubernetes-sigs/kind/issues/136#issuecomment-457015838
 [kind#156]: https://github.com/kubernetes-sigs/kind/issues/156
