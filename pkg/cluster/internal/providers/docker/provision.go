@@ -21,6 +21,7 @@ import (
 	"net"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -131,6 +132,7 @@ func createContainer(args []string) error {
 	if err := exec.Command("docker", args...).Run(); err != nil {
 		return errors.Wrap(err, "docker run error")
 	}
+	time.Sleep(10 * time.Second) // debug
 	return nil
 }
 

@@ -74,6 +74,25 @@ jobs:
         run: |
           "$HELPER" kind create cluster -v7 --wait 10m --retain
 
+      - name: Debug https://github.com/kubernetes-sigs/kind/issues/2409
+        if: always()
+        run: |
+          cat <<EOF | "$HELPER" "$KIND_EXPERIMENTAL_PROVIDER" exec -i kind-control-plane bash
+          set -x
+          {
+          ls -l /sys/fs/cgroup
+          cat /proc/1/cgroup
+          cat /proc/self/cgroup
+          cat /sys/fs/cgroup/cgroup.procs
+          ps auxw
+          cat /sys/fs/cgroup/cgroup.controllers
+          cat /sys/fs/cgroup/cgroup.subtree_control
+          grep cgroup2 /proc/mounts
+          systemctl status kubelet.service
+          journalctl -u kubelet.service
+          } 2>&1
+          EOF
+
       - name: Get Cluster status
         run: |
           "$HELPER" kubectl wait --for=condition=ready pods --namespace=kube-system -l k8s-app=kube-dns
