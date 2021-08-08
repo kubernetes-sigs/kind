@@ -51,30 +51,6 @@ validate_userns() {
   done
 }
 
-fake_file_with_content(){
-  local path="$1"
-  local content="$2"
-  local base="/run/fake"
-  local fake_path="${base}/${path}"
-  mkdir -p "$(dirname "${fake_path}")"
-  echo "INFO: UserNS: faking ${path} to be \"${content}\" (writable)"
-  echo "${content}" > "${fake_path}"
-  mount --bind "${fake_path}" "${path}"
-}
-
-fake_sysctl() {
-  local key="$1"
-  local key_slash
-  # shellcheck disable=SC2001
-  key_slash="$(echo "${key}" | sed -e s@\\.@/@g)"
-  local path="/proc/sys/${key_slash}"
-  if [[ -f "${path}" ]]; then
-    local content
-    content="$(cat "${path}")"
-    fake_file_with_content "${path}" "${content}"
-  fi
-}
-
 configure_containerd() {
   local snapshotter=${KIND_EXPERIMENTAL_CONTAINERD_SNAPSHOTTER:-}
   if [[ -n "$userns" ]]; then
@@ -85,15 +61,6 @@ configure_containerd() {
 
     # Use fuse-overlayfs by default: https://github.com/kubernetes-sigs/kind/issues/2275
     snapshotter="fuse-overlayfs"
-
-    # To run vanilla kubelet inside UserNS, we need to fake several unwritable sysctl to be writable.
-    # Workaround until https://github.com/kubernetes/kubernetes/pull/92863 gets merged in the upstream.
-    fake_sysctl "vm.overcommit_memory"
-    fake_sysctl "vm.panic_on_oom"
-    fake_sysctl "kernel.panic"
-    fake_sysctl "kernel.panic_on_oops"
-    fake_sysctl "kernel.keys.root_maxkeys"
-    fake_sysctl "kernel.keys.root_maxbytes"
   else
     # we need to switch to the 'native' snapshotter on zfs
     if [[ "$(stat -f -c %T /kind)" == 'zfs' ]]; then
@@ -300,13 +267,6 @@ fix_kmsg() {
       ln -s /dev/console /dev/kmsg
     else
       echo 'WARN: /dev/kmsg does not exist, nor does /dev/console!' >&2
-    fi
-  elif [[ -n "${userns}" ]]; then
-    if [[ -f "/proc/sys/kernel/dmesg_restrict" ]]; then
-      if [[ "$(cat /proc/sys/kernel/dmesg_restrict)" = "1" ]]; then
-        echo 'WARN: UserNS: /dev/kmsg is not readable, faking with /dev/null (hint: set sysctl value "kernel.dmesg_restrict" to 0)' >&2
-        mount --bind /dev/null /dev/kmsg
-      fi
     fi
   fi
 }

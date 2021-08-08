@@ -440,12 +440,18 @@ func Config(data ConfigData) (config string, err error) {
 		data.FeatureGates = make(map[string]bool)
 	}
 
+	if data.RootlessProvider {
+		if ver.LessThan(version.MustParseSemantic("v1.22.0")) {
+			// rootless kind v0.12.x supports Kubernetes v1.22 with KubeletInUserNamespace gate.
+			// rootless kind v0.11.x supports older Kubernetes with fake procfs.
+			return "", errors.Errorf("version %q is not compatible with rootless provider (hint: kind v0.11.x may work with this version)", ver)
+		}
+		data.FeatureGates["KubeletInUserNamespace"] = true
+	}
+
 	// assume the latest API version, then fallback if the k8s version is too low
 	templateSource := ConfigTemplateBetaV2
 	if ver.LessThan(version.MustParseSemantic("v1.15.0")) {
-		if data.RootlessProvider {
-			return "", errors.Errorf("version %q is not compatible with rootless provider", ver)
-		}
 		templateSource = ConfigTemplateBetaV1
 	}
 
