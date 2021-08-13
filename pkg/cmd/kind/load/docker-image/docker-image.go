@@ -141,6 +141,11 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 		}
 	}
 
+	// return early if no node needs the image
+	if len(selectedNodes) == 0 {
+		return nil
+	}
+
 	// Setup the tar path where the images will be saved
 	dir, err := fs.TempDir("", "images-tar")
 	if err != nil {
