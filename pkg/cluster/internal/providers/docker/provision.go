@@ -74,7 +74,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 			if err != nil {
 				return err
 			}
-			return createContainer(args)
+			return common.RunContainer("docker", name, args)
 		})
 	}
 
@@ -110,7 +110,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 				if err != nil {
 					return err
 				}
-				return createContainer(args)
+				return common.RunContainer("docker", name, args, common.WithWaitUntilSystemdReachesMultiUserSystem())
 			})
 		case config.WorkerRole:
 			createContainerFuncs = append(createContainerFuncs, func() error {
@@ -118,20 +118,13 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 				if err != nil {
 					return err
 				}
-				return createContainer(args)
+				return common.RunContainer("docker", name, args, common.WithWaitUntilSystemdReachesMultiUserSystem())
 			})
 		default:
 			return nil, errors.Errorf("unknown node role: %q", node.Role)
 		}
 	}
 	return createContainerFuncs, nil
-}
-
-func createContainer(args []string) error {
-	if err := exec.Command("docker", args...).Run(); err != nil {
-		return errors.Wrap(err, "docker run error")
-	}
-	return nil
 }
 
 func clusterIsIPv6(cfg *config.Cluster) bool {
@@ -219,9 +212,7 @@ func commonArgs(cluster string, cfg *config.Cluster, networkName string, nodeNam
 
 func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, name string, args []string) ([]string, error) {
 	args = append([]string{
-		"run",
 		"--hostname", name, // make hostname match container name
-		"--name", name, // ... and set the container name
 		// label the node with the role ID
 		"--label", fmt.Sprintf("%s=%s", nodeRoleLabelKey, node.Role),
 		// running containers in a container requires privileged
@@ -271,9 +262,7 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 
 func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) ([]string, error) {
 	args = append([]string{
-		"run",
 		"--hostname", name, // make hostname match container name
-		"--name", name, // ... and set the container name
 		// label the node with the role ID
 		"--label", fmt.Sprintf("%s=%s", nodeRoleLabelKey, constants.ExternalLoadBalancerNodeRoleValue),
 	},
