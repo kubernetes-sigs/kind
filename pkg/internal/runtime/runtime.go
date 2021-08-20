@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"os"
+	"runtime"
 
 	"sigs.k8s.io/kind/pkg/cluster"
 	"sigs.k8s.io/kind/pkg/log"
@@ -22,4 +23,9 @@ func GetDefault(logger log.Logger) cluster.ProviderOption {
 		logger.Warnf("ignoring unknown value %q for KIND_EXPERIMENTAL_PROVIDER", p)
 		return nil
 	}
+}
+
+// GetDockerBuildOsAndArch returns the current linux architecture
+func GetDockerBuildOsAndArch() string {
+	return "linux/" + runtime.GOARCH
 }

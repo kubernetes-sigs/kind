@@ -28,11 +28,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/version"
 
-	"sigs.k8s.io/kind/pkg/build/nodeimage/internal/container/docker"
 	"sigs.k8s.io/kind/pkg/build/nodeimage/internal/kube"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
+	"sigs.k8s.io/kind/pkg/internal/container/docker"
 	"sigs.k8s.io/kind/pkg/log"
 )
 

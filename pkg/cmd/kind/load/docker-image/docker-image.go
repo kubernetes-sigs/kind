@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -40,6 +41,7 @@ import (
 type flagpole struct {
 	Name  string
 	Nodes []string
+	Pull  bool
 }
 
 // NewCommand returns a new cobra.Command for loading an image into a cluster
@@ -72,6 +74,12 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		nil,
 		"comma separated list of nodes to load images into",
 	)
+	cmd.Flags().BoolVar(
+		&flags.Pull,
+		"pull",
+		false,
+		"pull the image if not present",
+	)
 	return cmd
 }
 
@@ -87,7 +95,14 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 	for _, imageName := range imageNames {
 		imageID, err := imageID(imageName)
 		if err != nil {
-			return fmt.Errorf("image: %q not present locally", imageName)
+			if flags.Pull {
+				logger.V(0).Infof("image: %q not present locally, trying to pull from remote...", imageName)
+				// attempt to explicitly pull the image if it doesn't exist locally
+				// we don't care if this errors, we'll still try to run which also pulls
+				_ = pull(logger, imageName, runtime.GetDockerBuildOsAndArch(), 3)
+			} else {
+				return fmt.Errorf("image: %q not present locally, consider use --pull flag to pull image", imageName)
+			}
 		}
 		imageIDs = append(imageIDs, imageID)
 	}
@@ -201,4 +216,23 @@ func imageID(containerNameOrID string) (string, error) {
 		return "", errors.Errorf("Docker image ID should only be one line, got %d lines", len(lines))
 	}
 	return lines[0], nil
+}
+
+// pull pulls an image, retrying up to retries times
+func pull(logger log.Logger, image string, platform string, retries int) error {
+	logger.V(1).Infof("Pulling image: %s for platform %s ...", image, platform)
+	err := exec.Command("docker", "pull", "--platform="+platform, image).Run()
+	// retry pulling up to retries times if necessary
+	if err != nil {
+		for i := 0; i < retries; i++ {
+			time.Sleep(time.Second * time.Duration(i+1))
+			logger.V(1).Infof("Trying again to pull image: %q ... %v", image, err)
+			// TODO(bentheelder): add some backoff / sleep?
+			err = exec.Command("docker", "pull", "--platform="+platform, image).Run()
+			if err == nil {
+				break
+			}
+		}
+	}
+	return err
 }
