@@ -83,6 +83,21 @@ func LoadImageArchive(n nodes.Node, image io.Reader) error {
 	return nil
 }
 
+// LabelImages labels images loaded onto the node
+func LabelImages(n nodes.Node, images []string) error {
+	for _, image := range images {
+		repoTag, err := RepoTags(n, image)
+		if err != nil {
+			return err
+		}
+		cmd := n.Command("ctr", "--namespace=k8s.io", "images", "label", repoTag, "imported=true")
+		if err := cmd.Run(); err != nil {
+			return errors.Wrap(err, "failed to label image")
+		}
+	}
+	return nil
+}
+
 // ImageID returns ID of image on the node with the given image name if present
 func ImageID(n nodes.Node, image string) (string, error) {
 	var out bytes.Buffer
@@ -99,4 +114,22 @@ func ImageID(n nodes.Node, image string) (string, error) {
 		return "", err
 	}
 	return crictlOut.Status.ID, nil
+}
+
+// RepoTags returns RepoTags of image on the node with the given image name if present
+func RepoTags(n nodes.Node, image string) (string, error) {
+	var out bytes.Buffer
+	if err := n.Command("crictl", "inspecti", image).SetStdout(&out).Run(); err != nil {
+		return "", err
+	}
+	// we only care about the image ID
+	crictlOut := struct {
+		Status struct {
+			RepoTags []string `json:"repoTags"`
+		} `json:"status"`
+	}{}
+	if err := json.Unmarshal(out.Bytes(), &crictlOut); err != nil {
+		return "", err
+	}
+	return crictlOut.Status.RepoTags[0], nil
 }

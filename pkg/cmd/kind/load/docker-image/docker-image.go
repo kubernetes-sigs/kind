@@ -163,7 +163,15 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 	for _, selectedNode := range selectedNodes {
 		selectedNode := selectedNode // capture loop variable
 		fns = append(fns, func() error {
-			return loadImage(imagesTarPath, selectedNode)
+			err := loadImage(imagesTarPath, selectedNode)
+			if err != nil {
+				return err
+			}
+			err = nodeutils.LabelImages(selectedNode, imageNames)
+			if err != nil {
+				return err
+			}
+			return nil
 		})
 	}
 	return errors.UntilErrorConcurrent(fns)
