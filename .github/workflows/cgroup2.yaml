@@ -39,11 +39,6 @@ jobs:
             sleep $i
           done
 
-      - name: Reboot (workaround for https://github.com/containers/podman/issues/10928)
-        run: |
-          vagrant halt
-          vagrant up
-
       - name: Set up Rootless Docker
         if: ${{ matrix.provider == 'docker' && matrix.rootless == 'rootless' }}
         run: |
