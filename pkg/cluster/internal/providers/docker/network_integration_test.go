@@ -1,3 +1,4 @@
+//go:build !nointegration
 // +build !nointegration
 
 /*
