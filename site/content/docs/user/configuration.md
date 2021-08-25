@@ -23,7 +23,7 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 ```
 
-This config merely specifies that we are configuration a KIND cluster (`kind: Cluster`)
+This config merely specifies that we are configuring a KIND cluster (`kind: Cluster`)
 and that the version of KIND's config we are using is `v1alpha4` (`apiVersion: kind.x-k8s.io/v1alpha4`).
 
 Any given version of kind may support different versions which will have different
