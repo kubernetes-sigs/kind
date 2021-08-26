@@ -1,5 +1,5 @@
 ---
-title: "Running kind with Rootless Docker"
+title: "Rootless"
 menu:
   main:
     parent: "user"
@@ -29,8 +29,10 @@ Delegate=yes
 
 - Create `/etc/modules-load.d/iptables.conf` with the following content:
 ```
-iptable_nat
+ip6_tables
 ip6table_nat
+ip_tables
+iptable_nat
 ```
 
 ## Restrictions
@@ -39,7 +41,7 @@ The restrictions of Rootless Docker apply to kind clusters as well.
 
 e.g.
 - OverlayFS cannot be used unless the host is using kernel >= 5.11, or Ubuntu/Debian kernel
-- Cannot mount block storages
+- Cannot mount block storage
 - Cannot mount NFS
 
 ## Creating a kind cluster with Rootless Docker
@@ -49,6 +51,8 @@ To create a kind cluster with Rootless Docker, just run:
 $ export DOCKER_HOST=unix://${XDG_RUNTIME_DIR}/docker.sock
 $ kind create cluster
 ```
+
+## Creating a kind cluster with Rootless Podman
 
 To create a kind cluster with Rootless Podman, just run:
 ```console
