@@ -17,7 +17,7 @@ limitations under the License.
 package nodeimage
 
 import (
-	"io/ioutil"
+	"io"
 
 	"sigs.k8s.io/kind/pkg/exec"
 )
@@ -51,7 +51,7 @@ func (c *containerdImporter) Pull(image, platform string) error {
 	// without discarding output
 	return c.containerCmder.Command(
 		"ctr", "--namespace=k8s.io", "images", "pull", "--platform="+platform, image,
-	).SetStdout(ioutil.Discard).SetStderr(ioutil.Discard).Run()
+	).SetStdout(io.Discard).SetStderr(io.Discard).Run()
 }
 
 func (c *containerdImporter) LoadCommand() exec.Cmd {

@@ -17,7 +17,7 @@ limitations under the License.
 package kubeconfig
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -32,7 +32,7 @@ func TestWrite(t *testing.T) {
 
 func testWriteNoExistingFile(t *testing.T) {
 	t.Parallel()
-	dir, err := ioutil.TempDir("", "kind-testwritemerged")
+	dir, err := os.MkdirTemp("", "kind-testwritemerged")
 	if err != nil {
 		t.Fatalf("Failed to create tempdir: %d", err)
 	}
@@ -85,7 +85,7 @@ func testWriteNoExistingFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to open merged kubeconfig: %v", err)
 	}
-	contents, err := ioutil.ReadAll(f)
+	contents, err := io.ReadAll(f)
 	if err != nil {
 		t.Fatalf("Failed to read merged kubeconfig: %v", err)
 	}

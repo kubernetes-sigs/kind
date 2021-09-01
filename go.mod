@@ -1,6 +1,6 @@
 module sigs.k8s.io/kind
 
-go 1.14
+go 1.17
 
 require (
 	github.com/BurntSushi/toml v0.3.1
@@ -14,4 +14,10 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	k8s.io/apimachinery v0.21.2
 	sigs.k8s.io/yaml v1.2.0
+)
+
+require (
+	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	golang.org/x/sys v0.0.0-20210426230700-d19ff857e887 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

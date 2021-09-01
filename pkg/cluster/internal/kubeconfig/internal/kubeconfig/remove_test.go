@@ -17,7 +17,7 @@ limitations under the License.
 package kubeconfig
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -150,7 +150,7 @@ func TestRemoveKIND(t *testing.T) {
 
 func testRemoveKINDTrivial(t *testing.T) {
 	t.Parallel()
-	dir, err := ioutil.TempDir("", "kind-testremovekind")
+	dir, err := os.MkdirTemp("", "kind-testremovekind")
 	if err != nil {
 		t.Fatalf("Failed to create tempdir: %d", err)
 	}
@@ -178,7 +178,7 @@ users:
     client-key-data: yep
 `
 	existingConfigPath := filepath.Join(dir, "existing-kubeconfig")
-	if err := ioutil.WriteFile(existingConfigPath, []byte(existingConfig), os.ModePerm); err != nil {
+	if err := os.WriteFile(existingConfigPath, []byte(existingConfig), os.ModePerm); err != nil {
 		t.Fatalf("Failed to create existing kubeconfig: %d", err)
 	}
 
@@ -192,7 +192,7 @@ users:
 	if err != nil {
 		t.Fatalf("Failed to open merged kubeconfig: %v", err)
 	}
-	contents, err := ioutil.ReadAll(f)
+	contents, err := io.ReadAll(f)
 	if err != nil {
 		t.Fatalf("Failed to read merged kubeconfig: %v", err)
 	}
@@ -206,7 +206,7 @@ preferences: {}
 func testRemoveKINDKeepOther(t *testing.T) {
 	// tests removing a kind cluster but keeping another cluster
 	t.Parallel()
-	dir, err := ioutil.TempDir("", "kind-testremovekind")
+	dir, err := os.MkdirTemp("", "kind-testremovekind")
 	if err != nil {
 		t.Fatalf("Failed to create tempdir: %d", err)
 	}
@@ -246,7 +246,7 @@ users:
     client-key-data: yep
 `
 	existingConfigPath := filepath.Join(dir, "existing-kubeconfig")
-	if err := ioutil.WriteFile(existingConfigPath, []byte(existingConfig), os.ModePerm); err != nil {
+	if err := os.WriteFile(existingConfigPath, []byte(existingConfig), os.ModePerm); err != nil {
 		t.Fatalf("Failed to create existing kubeconfig: %d", err)
 	}
 
@@ -260,7 +260,7 @@ users:
 	if err != nil {
 		t.Fatalf("Failed to open merged kubeconfig: %v", err)
 	}
-	contents, err := ioutil.ReadAll(f)
+	contents, err := io.ReadAll(f)
 	if err != nil {
 		t.Fatalf("Failed to read merged kubeconfig: %v", err)
 	}
