@@ -91,7 +91,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// reload the config. haproxy will reload on SIGHUP
-	if err := loadBalancerNode.Command("kill", "-s", "HUP", "1").Run(); err != nil {
+	if err := loadBalancerNode.Command("kill", "-s", "HUP").Run(); err != nil {
 		return errors.Wrap(err, "failed to reload loadbalancer")
 	}
 

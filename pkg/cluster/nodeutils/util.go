@@ -17,11 +17,10 @@ limitations under the License.
 package nodeutils
 
 import (
+	"archive/tar"
 	"bytes"
 	"encoding/json"
 	"io"
-	"path"
-	"strings"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -44,34 +43,42 @@ func KubeVersion(n nodes.Node) (version string, err error) {
 
 // WriteFile writes content to dest on the node
 func WriteFile(n nodes.Node, dest, content string) error {
-	// create destination directory
-	err := n.Command("mkdir", "-p", path.Dir(dest)).Run()
+	// destination folder exists in tar and is created during cp from stdin
+	contentBytes, err := createTar(dest, content)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create directory %s", path.Dir(dest))
+		return errors.Wrap(err, "failed to tar content")
 	}
+	return n.Command("cp", "/").SetStdin(&contentBytes).Run()
+}
 
-	return n.Command("cp", "/dev/stdin", dest).SetStdin(strings.NewReader(content)).Run()
+func createTar(dest, content string) (bytes.Buffer, error) {
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+	file := []byte(content)
+	hdr := &tar.Header{
+		Name: dest,
+		Size: int64(len(file)),
+	}
+	if err := tw.WriteHeader(hdr); err != nil {
+		return buf, err
+	}
+	if _, err := tw.Write(file); err != nil {
+		return buf, err
+	}
+	if err := tw.Close(); err != nil {
+		return buf, err
+	}
+	return buf, nil
 }
 
 // CopyNodeToNode copies file from a to b
 func CopyNodeToNode(a, b nodes.Node, file string) error {
-	// create destination directory
-	err := b.Command("mkdir", "-p", path.Dir(file)).Run()
-	if err != nil {
-		return errors.Wrapf(err, "failed to create directory %q", path.Dir(file))
-	}
-
-	// TODO: experiment with streaming instead to avoid the copy
-	// for now we only use this for small files so it's not worth the complexity
 	var buff bytes.Buffer
 	if err := a.Command("cat", file).SetStdout(&buff).Run(); err != nil {
 		return errors.Wrapf(err, "failed to read %q from node", file)
 	}
-	if err := b.Command("cp", "/dev/stdin", file).SetStdin(&buff).Run(); err != nil {
-		return errors.Wrapf(err, "failed to write %q to node", file)
-	}
 
-	return nil
+	return WriteFile(b, file, buff.String())
 }
 
 // LoadImageArchive loads image onto the node, where image is a Reader over an image archive

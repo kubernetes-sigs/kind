@@ -37,15 +37,9 @@ RUN echo deb http://deb.debian.org/debian buster-backports main \
 COPY --chmod=0755 stage-binary-and-deps.sh /usr/local/bin/
 
 # stage everything for copying into the final image
-# NOTE: kind currently also uses "mkdir" and "cp" to write files within the container
-# TODO: mkdir especially should be unnecessary, with a little refactoring
-# NOTE: kill is used to signal haproxy to reload
 ARG STAGE_DIR="/opt/stage"
 RUN mkdir -p "${STAGE_DIR}" && \
-    stage-binary-and-deps.sh haproxy "${STAGE_DIR}" && \
-    stage-binary-and-deps.sh cp "${STAGE_DIR}" && \
-    stage-binary-and-deps.sh mkdir "${STAGE_DIR}" && \
-    stage-binary-and-deps.sh kill "${STAGE_DIR}"
+    stage-binary-and-deps.sh haproxy "${STAGE_DIR}"
 
 ################################################################################
 

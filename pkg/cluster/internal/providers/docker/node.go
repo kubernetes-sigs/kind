@@ -100,34 +100,19 @@ type nodeCmd struct {
 }
 
 func (c *nodeCmd) Run() error {
-	args := []string{
-		"exec",
-		// run with privileges so we can remount etc..
-		// this might not make sense in the most general sense, but it is
-		// important to many kind commands
-		"--privileged",
+	var args []string
+	switch c.command {
+	case "cp":
+		if c.stdin == nil {
+			return errors.Errorf("cp not supported without stdin") 
+		}
+		args = c.cpArgs()		
+	case "kill":
+		args = c.killArgs()
+	default:
+		args = c.execArgs()
 	}
-	if c.stdin != nil {
-		args = append(args,
-			"-i", // interactive so we can supply input
-		)
-	}
-	// set env
-	for _, env := range c.env {
-		args = append(args, "-e", env)
-	}
-	// specify the container and command, after this everything will be
-	// args the command in the container rather than to docker
-	args = append(
-		args,
-		c.nameOrID, // ... against the container
-		c.command,  // with the command specified
-	)
-	args = append(
-		args,
-		// finally, with the caller args
-		c.args...,
-	)
+	
 	var cmd exec.Cmd
 	if c.ctx != nil {
 		cmd = exec.CommandContext(c.ctx, "docker", args...)
@@ -168,4 +153,52 @@ func (c *nodeCmd) SetStderr(w io.Writer) exec.Cmd {
 
 func (n *node) SerialLogs(w io.Writer) error {
 	return exec.Command("docker", "logs", n.name).SetStdout(w).SetStderr(w).Run()
+}
+
+func (c *nodeCmd) cpArgs() []string {
+	return []string {
+		"cp",
+		"-", // stdin
+		fmt.Sprintf("%s:%s", c.nameOrID, c.args[0]), // dest path
+	}
+}
+
+func (c *nodeCmd) killArgs() []string {
+	args := []string {
+		"kill",
+		c.nameOrID,		
+	}
+	return append(args, c.args...)
+}
+
+func (c *nodeCmd) execArgs() []string {
+	args := []string{
+		"exec",
+		// run with privileges so we can remount etc..
+		// this might not make sense in the most general sense, but it is
+		// important to many kind commands
+		"--privileged",
+	}
+	if c.stdin != nil {
+		args = append(args,
+			"-i", // interactive so we can supply input
+		)
+	}
+	// set env
+	for _, env := range c.env {
+		args = append(args, "-e", env)
+	}
+	// specify the container and command, after this everything will be
+	// args the command in the container rather than to docker
+	args = append(
+		args,
+		c.nameOrID, // ... against the container
+		c.command,  // with the command specified
+	)
+	args = append(
+		args,
+		// finally, with the caller args
+		c.args...,
+	)
+	return args
 }

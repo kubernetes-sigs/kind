@@ -34,7 +34,7 @@ func createFile(containerCmder exec.Cmder, filePath, contents string) error {
 	if err := containerCmder.Command("mkdir", "-p", path.Dir(filePath)).Run(); err != nil {
 		return err
 	}
-
+	// TODO: need to pass tar
 	return containerCmder.Command(
 		"cp", "/dev/stdin", filePath,
 	).SetStdin(

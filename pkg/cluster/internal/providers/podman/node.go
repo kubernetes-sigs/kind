@@ -100,6 +100,7 @@ type nodeCmd struct {
 }
 
 func (c *nodeCmd) Run() error {
+	// TODO: handle cp using tar'd stdin
 	args := []string{
 		"exec",
 		// run with privileges so we can remount etc..
