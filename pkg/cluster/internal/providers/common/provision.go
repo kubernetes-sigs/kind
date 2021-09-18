@@ -78,7 +78,7 @@ func RunContainer(engine, name string, args []string, opts ...RunContainerOpt) e
 
 	if o.waitUntilLogRegexpMatches != nil {
 		logCtx := context.Background()
-		logCtx, logCancel := context.WithTimeout(logCtx, 30*time.Second)
+		logCtx, logCancel := context.WithTimeout(logCtx, 90*time.Second)
 		defer logCancel()
 		// use os/exec.CommandContext directly, as kind/pkg/exec.CommandContext lacks support for killing
 		logCmd := osexec.CommandContext(logCtx, engine, "logs", "-f", name)
