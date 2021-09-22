@@ -177,6 +177,54 @@ func TestClusterValidate(t *testing.T) {
 			ExpectErrors: 2,
 		},
 		{
+			Name: "ipv6 family and ipv4 podSubnet",
+			Cluster: func() Cluster {
+				c := Cluster{}
+				SetDefaultsCluster(&c)
+				c.Networking.PodSubnet = "192.168.0.2/24"
+				c.Networking.ServiceSubnet = "192.168.0.2/24"
+				c.Networking.IPFamily = IPv6Family
+				return c
+			}(),
+			ExpectErrors: 2,
+		},
+		{
+			Name: "ipv4 family and ipv6 podSubnet",
+			Cluster: func() Cluster {
+				c := Cluster{}
+				SetDefaultsCluster(&c)
+				c.Networking.PodSubnet = "fd00:1::/25"
+				c.Networking.ServiceSubnet = "fd00:1::/25"
+				c.Networking.IPFamily = IPv4Family
+				return c
+			}(),
+			ExpectErrors: 2,
+		},
+		{
+			// This test validates the empty podsubnet check. It should never happen
+			// in real world since defaulting is happening before the validation step.
+			Name: "no pod subnet",
+			Cluster: func() Cluster {
+				c := Cluster{}
+				SetDefaultsCluster(&c)
+				c.Networking.PodSubnet = ""
+				return c
+			}(),
+			ExpectErrors: 1,
+		},
+		{
+			// This test validates the empty servicesubnet check. It should never happen
+			// in real world since defaulting is happening before the validation step.
+			Name: "no service subnet",
+			Cluster: func() Cluster {
+				c := Cluster{}
+				SetDefaultsCluster(&c)
+				c.Networking.ServiceSubnet = ""
+				return c
+			}(),
+			ExpectErrors: 1,
+		},
+		{
 			Name: "missing control-plane",
 			Cluster: func() Cluster {
 				c := Cluster{}
