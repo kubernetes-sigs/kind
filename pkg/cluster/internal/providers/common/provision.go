@@ -43,8 +43,8 @@ func WithWaitUntilLogRegexpMatches(re *regexp.Regexp) RunContainerOpt {
 }
 
 // WithWaitUntilSystemdReachesMultiUserSystem waits until the systemd in the container
-// reaches "Multi-User System" target, so that `docker exec` can be executed safely without
-// breaking cgroup v2 hierarchy.
+// reaches "Multi-User System" target if is using cgroups v2, so that `docker exec` can be
+// executed safely without breaking cgroup v2 hierarchy.
 //
 // This is implemented by grepping `docker logs` with "Reached target .*Multi-User System.*"
 // message from systemd.
@@ -53,7 +53,7 @@ func WithWaitUntilLogRegexpMatches(re *regexp.Regexp) RunContainerOpt {
 // Needed for avoiding "ERROR: this script needs /sys/fs/cgroup/cgroup.procs to be empty (for writing the top-level cgroup.subtree_control)"
 // See https://github.com/kubernetes-sigs/kind/issues/2409
 func WithWaitUntilSystemdReachesMultiUserSystem() RunContainerOpt {
-	re, err := regexp.Compile("Reached target .*Multi-User System.*")
+	re, err := regexp.Compile("Reached target .*Multi-User System.*|detected cgroup v1")
 	if err != nil {
 		panic(err)
 	}
