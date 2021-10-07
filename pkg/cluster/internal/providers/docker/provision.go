@@ -365,7 +365,7 @@ func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings .
 		// in a future API revision we will handle this at the API level and remove this
 		if pm.ListenAddress == "" {
 			switch clusterIPFamily {
-			case config.IPv4Family:
+			case config.IPv4Family, config.DualStackFamily:
 				pm.ListenAddress = "0.0.0.0" // this is the docker default anyhow
 			case config.IPv6Family:
 				pm.ListenAddress = "::"
