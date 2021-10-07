@@ -193,7 +193,14 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.N
 		}
 		data.NodeAddress = nodeAddressIPv6
 		if cfg.Networking.IPFamily == config.DualStackFamily {
-			data.NodeAddress = fmt.Sprintf("%s,%s", nodeAddress, nodeAddressIPv6)
+			// order matters since the nodeAddress will be used later to configure the apiserver advertise address
+			// Ref: #2484
+			primaryServiceSubnet := strings.Split(cfg.Networking.ServiceSubnet, ",")[0]
+			if net.ParseIP(primaryServiceSubnet).To4() != nil {
+				data.NodeAddress = fmt.Sprintf("%s,%s", nodeAddress, nodeAddressIPv6)
+			} else {
+				data.NodeAddress = fmt.Sprintf("%s,%s", nodeAddressIPv6, nodeAddress)
+			}
 		}
 	}
 
