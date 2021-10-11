@@ -18,31 +18,40 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# If /proc/self/uid_map 4294967295 mappings, we are in the initial user namespace, i.e. the host.
-# Otherwise we are in a non-initial user namespace.
-# https://github.com/opencontainers/runc/blob/v1.0.0-rc92/libcontainer/system/linux.go#L109-L118
-userns=""
-if grep -Eqv "0[[:space:]]+0[[:space:]]+4294967295" /proc/self/uid_map; then
-  userns="1"
-  echo "INFO: running in a user namespace (experimental)"  >&2
+rootless=""
+if [[ -n "${KIND_ROOTLESS-}" ]]; then
+  rootless=1
 fi
 
-validate_userns() {
-  if [[ -z "${userns}" ]]; then
+validate_rootless() {
+  if [[ -z "${rootless}" ]]; then
     return
   fi
+  echo 'INFO: running in rootless mode (experimental)'  >&2
 
   local nofile_hard
   nofile_hard="$(ulimit -Hn)"
   local nofile_hard_expected="64000"
   if [[ "${nofile_hard}" -lt "${nofile_hard_expected}" ]]; then
-    echo "WARN: UserNS: expected RLIMIT_NOFILE to be at least ${nofile_hard_expected}, got ${nofile_hard}" >&2
+    echo "WARN: rootless: expected RLIMIT_NOFILE to be at least ${nofile_hard_expected}, got ${nofile_hard}" >&2
   fi
+
+  if [[ ! -f "/sys/fs/cgroup/cgroup.controllers" ]]; then
+    echo "ERROR: rootless: cgroup v2 needs to be enabled" >&2
+    exit 1
+  fi
+
+  for f in cpu memory pids; do
+    if ! grep -qw $f /sys/fs/cgroup/cgroup.controllers; then
+      echo "ERROR: rootless: $f controller needs to be delegated" >&2
+    exit 1
+    fi
+  done
 }
 
 configure_containerd() {
   local snapshotter=${KIND_EXPERIMENTAL_CONTAINERD_SNAPSHOTTER:-}
-  if [[ -n "$userns" ]]; then
+  if [[ -n "$rootless" ]]; then
     # userns (rootless) configs
 
     # Adjust oomScoreAdj
@@ -91,7 +100,7 @@ fix_mount() {
     sync
   fi
 
-  if [[ -z "${userns}" ]]; then
+  if [[ -z "${rootless}" ]]; then
     echo 'INFO: remounting /sys read-only'
     # systemd-in-a-container should have read only /sys
     # https://systemd.io/CONTAINER_INTERFACE/
@@ -343,7 +352,7 @@ enable_network_magic(){
 }
 
 # validate state
-validate_userns
+validate_rootless
 
 # run pre-init fixups
 # NOTE: it's important that we do configure* first in this order to avoid races

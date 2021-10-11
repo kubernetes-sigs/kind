@@ -206,6 +206,15 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		args...,
 	)
 
+	// let the container know that it's running in rootless mode
+	info, err := info(nil)
+	if err != nil {
+		return nil, err
+	}
+	if info.Rootless {
+		args = append(args, "-e", "KIND_ROOTLESS=1")
+	}
+
 	// convert mounts and port mappings to container run args
 	args = append(args, generateMountBindings(node.ExtraMounts...)...)
 	mappingArgs, err := generatePortMappings(clusterIPFamily, node.ExtraPortMappings...)

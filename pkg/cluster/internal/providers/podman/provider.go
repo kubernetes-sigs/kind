@@ -407,7 +407,7 @@ func info(logger log.Logger) (*providers.ProviderInfo, error) {
 		SupportsPidsLimit:   true, // not guaranteed to be correct
 		SupportsCPUShares:   true, // not guaranteed to be correct
 	}
-	if info.Rootless {
+	if logger != nil && info.Rootless {
 		logger.Warn("Cgroup controller detection is not implemented for Podman. " +
 			"If you see cgroup-related errors, you might need to set systemd property \"Delegate=yes\", see https://kind.sigs.k8s.io/docs/user/rootless/")
 	}
