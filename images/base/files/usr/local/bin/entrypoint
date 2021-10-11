@@ -38,19 +38,6 @@ validate_userns() {
   if [[ "${nofile_hard}" -lt "${nofile_hard_expected}" ]]; then
     echo "WARN: UserNS: expected RLIMIT_NOFILE to be at least ${nofile_hard_expected}, got ${nofile_hard}" >&2
   fi
-
-  if [[ ! -f "/sys/fs/cgroup/cgroup.controllers" ]]; then
-    echo "ERROR: UserNS: cgroup v2 needs to be enabled" >&2
-    echo "WARN: UserNS: Falling back to disabling user namespace optimizations" >&2
-    userns=""
-    return
-  fi
-  for f in cpu memory pids; do
-    if ! grep -qw $f /sys/fs/cgroup/cgroup.controllers; then
-      echo "ERROR: UserNS: $f controller needs to be delegated" >&2
-    exit 1
-    fi
-  done
 }
 
 configure_containerd() {
