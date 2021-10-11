@@ -46,6 +46,7 @@ export GOOS=darwin GOARCH=arm64
 export GOOS=linux GOARCH=amd64
 export GOOS=linux GOARCH=arm64
 export GOOS=linux GOARCH=ppc64le
+export GOOS=linux GOARCH=s390x
 EOF
 )
 
