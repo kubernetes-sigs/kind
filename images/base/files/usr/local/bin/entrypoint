@@ -47,12 +47,11 @@ validate_userns() {
 
 configure_containerd() {
   local snapshotter=${KIND_EXPERIMENTAL_CONTAINERD_SNAPSHOTTER:-}
-  if [[ -n "$rootless" ]]; then
-    # rootless configs
-
+  if [[ -n "$userns" ]]; then
     # Adjust oomScoreAdj
     sed -i 's/restrict_oom_score_adj = false/restrict_oom_score_adj = true/' /etc/containerd/config.toml
-
+  fi
+  if [[ -n "$rootless" ]]; then
     # Use fuse-overlayfs by default: https://github.com/kubernetes-sigs/kind/issues/2275
     snapshotter="fuse-overlayfs"
   else
