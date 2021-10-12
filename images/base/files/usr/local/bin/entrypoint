@@ -95,14 +95,14 @@ fix_mount() {
     sync
   fi
 
-  if [[ -z "${rootless}" ]]; then
+  if [[ -z "${userns}" ]]; then
     echo 'INFO: remounting /sys read-only'
     # systemd-in-a-container should have read only /sys
     # https://systemd.io/CONTAINER_INTERFACE/
     # however, we need other things from `docker run --privileged` ...
     # and this flag also happens to make /sys rw, amongst other things
     #
-    # This step is skipped when running inside rootless mode, because it fails with EACCES.
+    # This step is skipped when running inside UserNS, because it fails with EACCES.
     mount -o remount,ro /sys
   fi
 
