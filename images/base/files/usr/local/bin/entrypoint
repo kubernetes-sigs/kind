@@ -18,28 +18,28 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-rootless=""
+userns=""
 if [[ -n "${KIND_ROOTLESS-}" ]]; then
-  rootless=1
+  userns=1
 fi
 
-validate_rootless() {
-  if [[ -z "${rootless}" ]]; then
+validate_userns() {
+  if [[ -z "${userns}" ]]; then
     return
   fi
-  echo 'INFO: running in rootless mode (experimental)'  >&2
+  echo 'INFO: running in a user namespace (experimental)'  >&2
 
   local nofile_hard
   nofile_hard="$(ulimit -Hn)"
   local nofile_hard_expected="64000"
   if [[ "${nofile_hard}" -lt "${nofile_hard_expected}" ]]; then
-    echo "WARN: rootless: expected RLIMIT_NOFILE to be at least ${nofile_hard_expected}, got ${nofile_hard}" >&2
+    echo "WARN: UserNS: expected RLIMIT_NOFILE to be at least ${nofile_hard_expected}, got ${nofile_hard}" >&2
   fi
 }
 
 configure_containerd() {
   local snapshotter=${KIND_EXPERIMENTAL_CONTAINERD_SNAPSHOTTER:-}
-  if [[ -n "$rootless" ]]; then
+  if [[ -n "$userns" ]]; then
     # userns (rootless) configs
 
     # Adjust oomScoreAdj
@@ -88,7 +88,7 @@ fix_mount() {
     sync
   fi
 
-  if [[ -z "${rootless}" ]]; then
+  if [[ -z "${userns}" ]]; then
     echo 'INFO: remounting /sys read-only'
     # systemd-in-a-container should have read only /sys
     # https://systemd.io/CONTAINER_INTERFACE/
@@ -340,7 +340,7 @@ enable_network_magic(){
 }
 
 # validate state
-validate_rootless
+validate_userns
 
 # run pre-init fixups
 # NOTE: it's important that we do configure* first in this order to avoid races
