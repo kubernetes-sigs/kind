@@ -102,7 +102,9 @@ fix_mount() {
   # and this flag also happens to make /sys rw, amongst other things
   #
   # This step is ignored when running inside UserNS, because it may fail with EACCES.
-  mount -o remount,ro /sys || [[ -n "$userns" ]]
+  if ! mount -o remount,ro /sys && [[ -n "$userns" ]]; then
+    echo 'INFO: UserNS: ignoring mount fail' >&2
+  fi
 
   echo 'INFO: making mounts shared' >&2
   # for mount propagation
