@@ -58,10 +58,12 @@ configure_containerd() {
     sed -i 's/restrict_oom_score_adj = false/restrict_oom_score_adj = true/' /etc/containerd/config.toml
 
     # Use fuse-overlayfs by default: https://github.com/kubernetes-sigs/kind/issues/2275
-    snapshotter="fuse-overlayfs"
+    if [[ -z "$snapshotter" ]]; then
+      snapshotter="fuse-overlayfs"
+    fi
   else
     # we need to switch to the 'native' snapshotter on zfs
-    if [[ "$(stat -f -c %T /kind)" == 'zfs' ]]; then
+    if [[ -z "$snapshotter" ]] && [[ "$(stat -f -c %T /kind)" == 'zfs' ]]; then
       snapshotter="native"
     fi
   fi
