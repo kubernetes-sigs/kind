@@ -100,15 +100,19 @@ fix_mount() {
     sync
   fi
 
-  if [[ -z "${userns}" ]]; then
-    echo 'INFO: remounting /sys read-only'
-    # systemd-in-a-container should have read only /sys
-    # https://systemd.io/CONTAINER_INTERFACE/
-    # however, we need other things from `docker run --privileged` ...
-    # and this flag also happens to make /sys rw, amongst other things
-    #
-    # This step is skipped when running inside UserNS, because it fails with EACCES.
-    mount -o remount,ro /sys
+  echo 'INFO: remounting /sys read-only'
+  # systemd-in-a-container should have read only /sys
+  # https://systemd.io/CONTAINER_INTERFACE/
+  # however, we need other things from `docker run --privileged` ...
+  # and this flag also happens to make /sys rw, amongst other things
+  #
+  # This step is ignored when running inside UserNS, because it fails with EACCES.
+  if ! mount -o remount,ro /sys; then
+    if [[ -n "$userns" ]]; then
+      echo 'INFO: UserNS: ignoring mount fail' >&2
+    else
+      exit 1
+    fi
   fi
 
   echo 'INFO: making mounts shared' >&2
