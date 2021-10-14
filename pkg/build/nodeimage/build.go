@@ -74,6 +74,7 @@ func supportedArch(arch string) bool {
 	case "amd64":
 	case "arm64":
 	case "ppc64le":
+	case "s390x":
 	}
 	return true
 }
