@@ -360,6 +360,7 @@ func (c *buildContext) createBuildContainer() (id string, err error) {
 			"--entrypoint=sleep",
 			"--name=" + id,
 			"--platform=" + dockerBuildOsAndArch(c.arch),
+			"--security-opt", "seccomp=unconfined", // ignore seccomp
 		},
 		[]string{
 			"infinity", // sleep infinitely to keep the container around
