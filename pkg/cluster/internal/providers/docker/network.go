@@ -266,7 +266,7 @@ func isIPv6UnavailableError(err error) bool {
 
 func isPoolOverlapError(err error) bool {
 	rerr := exec.RunErrorForError(err)
-	return rerr != nil && strings.HasPrefix(string(rerr.Output), "Error response from daemon: Pool overlaps with other one on this address space")
+	return rerr != nil && strings.HasPrefix(string(rerr.Output), "Error response from daemon: Pool overlaps with other one on this address space") || strings.Contains(string(rerr.Output), "networks have overlapping")
 }
 
 func isNetworkAlreadyExistsError(err error) bool {
