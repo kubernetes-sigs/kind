@@ -20,7 +20,7 @@ package nodeimage
 The default CNI manifest and images are our own tiny kindnet
 */
 
-const kindnetdImage = "docker.io/kindest/kindnetd:v20210729-e8b68380"
+const kindnetdImage = "docker.io/kindest/kindnetd:v20211103-24515ddb"
 
 var defaultCNIImages = []string{kindnetdImage}
 
