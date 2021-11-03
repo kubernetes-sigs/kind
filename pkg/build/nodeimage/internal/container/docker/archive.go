@@ -77,7 +77,7 @@ func GetArchiveTags(path string) ([]string, error) {
 	return res, nil
 }
 
-// EditArchiveRepositories applies edit to reader's image repositories,
+// EditArchive applies edit to reader's image repositories,
 // IE the repository part of repository:tag in image tags
 // This supports v1 / v1.1 / v1.2 Docker Image Archives
 //
