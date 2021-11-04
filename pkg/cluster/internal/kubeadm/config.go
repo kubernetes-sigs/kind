@@ -448,6 +448,10 @@ func Config(data ConfigData) (config string, err error) {
 			return "", errors.Errorf("version %q is not compatible with rootless provider (hint: kind v0.11.x may work with this version)", ver)
 		}
 		data.FeatureGates["KubeletInUserNamespace"] = true
+
+		// For avoiding err="failed to get rootfs info: failed to get device for dir \"/var/lib/kubelet\": could not find device with major: 0, minor: 41 in cached partitions map"
+		// https://github.com/kubernetes-sigs/kind/issues/2524
+		data.FeatureGates["LocalStorageCapacityIsolation"] = false
 	}
 
 	// assume the latest API version, then fallback if the k8s version is too low
