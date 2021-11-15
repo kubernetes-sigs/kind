@@ -101,6 +101,27 @@ func InheritOutput(cmd Cmd) Cmd {
 	return cmd
 }
 
+// RunWithCombinedOutputReader runs cmd with stdout and stderr piped to readerFunc
+func RunWithCombinedOutputReader(cmd Cmd, readerFunc func(io.Reader) error) error {
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		return err
+	}
+	cmd.SetStdout(pw)
+	cmd.SetStderr(pw)
+
+	return errors.AggregateConcurrent([]func() error{
+		func() error {
+			defer pr.Close()
+			return readerFunc(pr)
+		},
+		func() error {
+			defer pw.Close()
+			return cmd.Run()
+		},
+	})
+}
+
 // RunWithStdoutReader runs cmd with stdout piped to readerFunc
 func RunWithStdoutReader(cmd Cmd, readerFunc func(io.Reader) error) error {
 	pr, pw, err := os.Pipe()

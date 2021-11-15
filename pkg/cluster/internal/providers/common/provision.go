@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	osexec "os/exec"
 	"regexp"
 	"time"
 
@@ -80,18 +79,10 @@ func RunContainer(engine, name string, args []string, opts ...RunContainerOpt) e
 		logCtx := context.Background()
 		logCtx, logCancel := context.WithTimeout(logCtx, 30*time.Second)
 		defer logCancel()
-		// use os/exec.CommandContext directly, as kind/pkg/exec.CommandContext lacks support for killing
-		logCmd := osexec.CommandContext(logCtx, engine, "logs", "-f", name)
-		pr, pw := io.Pipe()
-		defer pr.Close()
-		defer pw.Close()
-		logCmd.Stdout = pw
-		logCmd.Stderr = pw
-		if err := logCmd.Start(); err != nil {
-			return fmt.Errorf("failed to run %v: %w", logCmd.Args, err)
-		}
-		defer func() { _ = logCmd.Process.Kill() }()
-		return waitUntilLogRegexpMatches(logCtx, pr, o.waitUntilLogRegexpMatches)
+		logCmd := exec.CommandContext(logCtx, engine, "logs", "-f", name)
+		return exec.RunWithCombinedOutputReader(logCmd, func(r io.Reader) error {
+			return waitUntilLogRegexpMatches(logCtx, r, o.waitUntilLogRegexpMatches)
+		})
 	}
 	return nil
 }
