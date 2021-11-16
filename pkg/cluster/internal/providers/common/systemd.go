@@ -27,14 +27,15 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
-var systemdReachedMultiUserSystemRegexp *regexp.Regexp
-var systemdReachedMultiUserSystemRegexpCompileOnce sync.Once
+var systemdReachedCgroupsReadyRegexp *regexp.Regexp
+var systemdReachedCgroupsReadyRegexpCompileOnce sync.Once
 
-func SystemdReachedMultiUserSystemRegexp() *regexp.Regexp {
-	systemdReachedMultiUserSystemRegexpCompileOnce.Do(func() {
-		systemdReachedMultiUserSystemRegexp = regexp.MustCompile("Reached target .*Multi-User System.*|detected cgroup v1")
+func SystemdReachedCgroupsReadyRegexp() *regexp.Regexp {
+	systemdReachedCgroupsReadyRegexpCompileOnce.Do(func() {
+		// This is an approximation, see: https://github.com/kubernetes-sigs/kind/pull/2421
+		systemdReachedCgroupsReadyRegexp = regexp.MustCompile("Reached target .*Multi-User System.*|detected cgroup v1")
 	})
-	return systemdReachedMultiUserSystemRegexp
+	return systemdReachedCgroupsReadyRegexp
 }
 
 func WaitUntilLogRegexpMatches(logCtx context.Context, logCmd exec.Cmd, re *regexp.Regexp) error {
