@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"k8s.io/apimachinery/pkg/util/sets"
+	"sigs.k8s.io/kind/pkg/internal/sets"
 )
 
 const kubeconfigEnv = "KUBECONFIG"
