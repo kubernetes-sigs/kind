@@ -17,6 +17,7 @@ limitations under the License.
 package podman
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -118,16 +119,34 @@ func deleteVolumes(names []string) error {
 
 // mountDevMapper checks if the podman storage driver is Btrfs or ZFS
 func mountDevMapper() bool {
-	storage := ""
-	cmd := exec.Command("podman", "info", "-f",
-		`{{ index .Store.GraphStatus "Backing Filesystem"}}`)
-	lines, err := exec.OutputLines(cmd)
+	cmd := exec.Command("podman", "info", "--format", "json")
+	out, err := exec.Output(cmd)
 	if err != nil {
 		return false
 	}
 
-	if len(lines) > 0 {
-		storage = strings.ToLower(strings.TrimSpace(lines[0]))
+	var pInfo podmanStorageInfo
+	if err := json.Unmarshal(out, &pInfo); err != nil {
+		return false
 	}
-	return storage == "btrfs" || storage == "zfs"
+
+	// match docker logic pkg/cluster/internal/providers/docker/util.go
+	if pInfo.Store.GraphDriverName == "btrfs" ||
+		pInfo.Store.GraphDriverName == "zfs" ||
+		pInfo.Store.GraphDriverName == "devicemapper" ||
+		pInfo.Store.GraphStatus.BackingFilesystem == "btrfs" ||
+		pInfo.Store.GraphStatus.BackingFilesystem == "xfs" ||
+		pInfo.Store.GraphStatus.BackingFilesystem == "zfs" {
+		return true
+	}
+	return false
+}
+
+type podmanStorageInfo struct {
+	Store struct {
+		GraphDriverName string `json:"graphDriverName,omitempty"`
+		GraphStatus     struct {
+			BackingFilesystem string `json:"Backing Filesystem,omitempty"` // "v2"
+		} `json:"graphStatus"`
+	} `json:"store"`
 }
