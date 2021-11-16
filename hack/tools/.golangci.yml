@@ -19,9 +19,9 @@ linters:
     # additional lints
     - gochecknoinits
     - gofmt
-    - golint
+    - revive # replaces golint for now
     - misspell
-    - scopelint
+    - exportloopref
     - unparam
 
 linters-settings:
