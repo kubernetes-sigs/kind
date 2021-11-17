@@ -27,17 +27,29 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
-var systemdReachedCgroupsReadyRegexp *regexp.Regexp
-var systemdReachedCgroupsReadyRegexpCompileOnce sync.Once
+var nodeReachedCgroupsReadyRegexp *regexp.Regexp
+var nodeReachedCgroupsReadyRegexpCompileOnce sync.Once
 
-func SystemdReachedCgroupsReadyRegexp() *regexp.Regexp {
-	systemdReachedCgroupsReadyRegexpCompileOnce.Do(func() {
+// NodeReachedCgroupsReadyRegexp returns a regexp for use with WaitUntilLogRegexpMatches
+//
+// This is used to avoid "ERROR: this script needs /sys/fs/cgroup/cgroup.procs to be empty (for writing the top-level cgroup.subtree_control)"
+// See https://github.com/kubernetes-sigs/kind/issues/2409
+//
+// This pattern matches either "detected cgroupv1" from the kind node image's entrypoint logs
+// or "Multi-User System" target if is using cgroups v2,
+// so that `docker exec` can be executed safely without breaking cgroup v2 hierarchy.
+func NodeReachedCgroupsReadyRegexp() *regexp.Regexp {
+	nodeReachedCgroupsReadyRegexpCompileOnce.Do(func() {
 		// This is an approximation, see: https://github.com/kubernetes-sigs/kind/pull/2421
-		systemdReachedCgroupsReadyRegexp = regexp.MustCompile("Reached target .*Multi-User System.*|detected cgroup v1")
+		nodeReachedCgroupsReadyRegexp = regexp.MustCompile("Reached target .*Multi-User System.*|detected cgroup v1")
 	})
-	return systemdReachedCgroupsReadyRegexp
+	return nodeReachedCgroupsReadyRegexp
 }
 
+// WaitUntilLogRegexpMatches waits until logCmd output produces a line matching re.
+// It will use logCtx to determine if the logCmd deadline was exceeded for producing
+// the most useful error message in failure cases, logCtx should be the context
+// supplied to create logCmd with CommandContext
 func WaitUntilLogRegexpMatches(logCtx context.Context, logCmd exec.Cmd, re *regexp.Regexp) error {
 	pr, pw, err := os.Pipe()
 	if err != nil {

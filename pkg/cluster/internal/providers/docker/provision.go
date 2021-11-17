@@ -417,5 +417,5 @@ func createContainerWithWaitUntilSystemdReachesMultiUserSystem(name string, args
 	logCtx, logCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	logCmd := exec.CommandContext(logCtx, "docker", "logs", "-f", name)
 	defer logCancel()
-	return common.WaitUntilLogRegexpMatches(logCtx, logCmd, common.SystemdReachedCgroupsReadyRegexp())
+	return common.WaitUntilLogRegexpMatches(logCtx, logCmd, common.NodeReachedCgroupsReadyRegexp())
 }
