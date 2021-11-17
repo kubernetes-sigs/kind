@@ -17,9 +17,8 @@ limitations under the License.
 package common
 
 import (
-	"k8s.io/apimachinery/pkg/util/sets"
-
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
+	"sigs.k8s.io/kind/pkg/internal/sets"
 )
 
 // RequiredNodeImages returns the set of _node_ images specified by the config

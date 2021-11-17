@@ -17,10 +17,12 @@ limitations under the License.
 package podman
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -62,7 +64,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 			if err != nil {
 				return err
 			}
-			return common.RunContainer("podman", name, args)
+			return createContainer(name, args)
 		})
 	}
 
@@ -96,7 +98,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 				if err != nil {
 					return err
 				}
-				return common.RunContainer("podman", name, args, common.WithWaitUntilSystemdReachesMultiUserSystem())
+				return createContainerWithWaitUntilSystemdReachesMultiUserSystem(name, args)
 			})
 		case config.WorkerRole:
 			createContainerFuncs = append(createContainerFuncs, func() error {
@@ -104,7 +106,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 				if err != nil {
 					return err
 				}
-				return common.RunContainer("podman", name, args, common.WithWaitUntilSystemdReachesMultiUserSystem())
+				return createContainerWithWaitUntilSystemdReachesMultiUserSystem(name, args)
 			})
 		default:
 			return nil, errors.Errorf("unknown node role: %q", node.Role)
@@ -368,4 +370,22 @@ func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings .
 		args = append(args, fmt.Sprintf("--publish=%s:%d/%s", hostPortBinding, pm.ContainerPort, strings.ToLower(protocol)))
 	}
 	return args, nil
+}
+
+func createContainer(name string, args []string) error {
+	if err := exec.Command("podman", append([]string{"run", "--name", name}, args...)...).Run(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func createContainerWithWaitUntilSystemdReachesMultiUserSystem(name string, args []string) error {
+	if err := exec.Command("podman", append([]string{"run", "--name", name}, args...)...).Run(); err != nil {
+		return err
+	}
+
+	logCtx, logCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer logCancel()
+	logCmd := exec.CommandContext(logCtx, "podman", "logs", "-f", name)
+	return common.WaitUntilLogRegexpMatches(logCtx, logCmd, common.NodeReachedCgroupsReadyRegexp())
 }
