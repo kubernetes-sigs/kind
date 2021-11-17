@@ -16,18 +16,14 @@ limitations under the License.
 
 package errors
 
-import (
-	k8serrors "k8s.io/apimachinery/pkg/util/errors"
-)
-
-// NewAggregate is a k8s.io/apimachinery/pkg/util/errors.NewAggregate wrapper
+// NewAggregate is a k8s.io/apimachinery/pkg/util/errors.NewAggregate compatible wrapper
 // note that while it returns a StackTrace wrapped Aggregate
 // That has been Flattened and Reduced
 func NewAggregate(errlist []error) error {
 	return WithStack(
-		k8serrors.Reduce(
-			k8serrors.Flatten(
-				k8serrors.NewAggregate(errlist),
+		reduce(
+			flatten(
+				newAggregate(errlist),
 			),
 		),
 	)
@@ -35,9 +31,9 @@ func NewAggregate(errlist []error) error {
 
 // Errors returns the deepest Aggregate in a Cause chain
 func Errors(err error) []error {
-	var errors k8serrors.Aggregate
+	var errors Aggregate
 	for {
-		if v, ok := err.(k8serrors.Aggregate); ok {
+		if v, ok := err.(Aggregate); ok {
 			errors = v
 		}
 		if causerErr, ok := err.(Causer); ok {
