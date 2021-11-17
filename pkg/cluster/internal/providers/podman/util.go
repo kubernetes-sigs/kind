@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/util/version"
-
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
+
+	"sigs.k8s.io/kind/pkg/internal/version"
 )
 
 // IsAvailable checks if podman is available in the system
