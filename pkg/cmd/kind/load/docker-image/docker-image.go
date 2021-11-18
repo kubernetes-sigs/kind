@@ -203,18 +203,15 @@ func imageID(containerNameOrID string) (string, error) {
 	return lines[0], nil
 }
 
-// remove duplicates from a slice
+// removeDuplicates removes duplicates from a string slice
 func removeDuplicates(slice []string) []string {
 	result := []string{}
-	if len(slice) == 0 {
-		return result
-	}
-	seen := make(map[string]struct{})
-	for _, s := range slice {
-		seen[s] = struct{}{}
-	}
-	for k, _ := range seen {
-		result = append(result, k)
+	seenKeys := make(map[string]struct{})
+	for _, k := range slice {
+		if _, seen := seenKeys[k]; !seen {
+			result = append(result, k)
+			seenKeys[k] = struct{}{}
+		}
 	}
 	return result
 }
