@@ -50,7 +50,7 @@ choco install kind
 
 ### Installing From Release Binaries
 
-Pre-built binaries are avilable on our [releases page](https://github.com/kubernetes-sigs/kind/releases).
+Pre-built binaries are available on our [releases page](https://github.com/kubernetes-sigs/kind/releases).
 
 To install, download the binary for your platform from "Assets", then rename it to `kind` (or perhaps `kind.exe` on Windows) and place this
 into your `$PATH` at your preferred binary installation directory.
