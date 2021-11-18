@@ -82,7 +82,7 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 	)
 
 	// Check that the image exists locally and gets its ID, if not return error
-	imageNames := args
+	imageNames := removeDuplicates(args)
 	var imageIDs []string
 	for _, imageName := range imageNames {
 		imageID, err := imageID(imageName)
@@ -201,4 +201,17 @@ func imageID(containerNameOrID string) (string, error) {
 		return "", errors.Errorf("Docker image ID should only be one line, got %d lines", len(lines))
 	}
 	return lines[0], nil
+}
+
+// removeDuplicates removes duplicates from a string slice
+func removeDuplicates(slice []string) []string {
+	result := []string{}
+	seenKeys := make(map[string]struct{})
+	for _, k := range slice {
+		if _, seen := seenKeys[k]; !seen {
+			result = append(result, k)
+			seenKeys[k] = struct{}{}
+		}
+	}
+	return result
 }
