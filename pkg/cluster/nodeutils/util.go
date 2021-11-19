@@ -23,6 +23,8 @@ import (
 	"path"
 	"strings"
 
+	"github.com/pelletier/go-toml"
+
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
@@ -76,11 +78,35 @@ func CopyNodeToNode(a, b nodes.Node, file string) error {
 
 // LoadImageArchive loads image onto the node, where image is a Reader over an image archive
 func LoadImageArchive(n nodes.Node, image io.Reader) error {
-	cmd := n.Command("ctr", "--namespace=k8s.io", "images", "import", "-").SetStdin(image)
+	snapshotter, err := getSnapshotter(n)
+	if err != nil {
+		return err
+	}
+	cmd := n.Command("ctr", "--namespace=k8s.io", "images", "import", "--snapshotter", snapshotter, "-").SetStdin(image)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrap(err, "failed to load image")
 	}
 	return nil
+}
+
+func getSnapshotter(n nodes.Node) (string, error) {
+	out, err := exec.Output(n.Command("containerd", "config", "dump"))
+	if err != nil {
+		return "", errors.Wrap(err, "failed to detect containerd snapshotter")
+	}
+	return parseSnapshotter(string(out))
+}
+
+func parseSnapshotter(config string) (string, error) {
+	parsed, err := toml.Load(config)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to detect containerd snapshotter")
+	}
+	snapshotter, ok := parsed.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "snapshotter"}).(string)
+	if !ok {
+		return "", errors.New("failed to detect containerd snapshotter")
+	}
+	return snapshotter, nil
 }
 
 // ImageID returns ID of image on the node with the given image name if present
