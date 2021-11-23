@@ -40,15 +40,15 @@ export PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
 #
 bundle=$(jq -r .bundle)
 
-cp /kind/product_* "$bundle/rootfs/"
+cp /kind/product_* "${bundle:?}/rootfs/"
 if [[ -f /sys/class/dmi/id/product_name ]]; then
-  mount -o ro,bind "$bundle/rootfs/product_name" "$bundle/rootfs/sys/class/dmi/id/product_name"
+  mount -o ro,bind "${bundle:?}"/rootfs/product_name "${bundle:?}"/rootfs/sys/class/dmi/id/product_name
 fi
 
 if [[ -f /sys/class/dmi/id/product_uuid ]]; then
-  mount -o ro,bind "$bundle/rootfs/product_uuid" "$bundle/rootfs/sys/class/dmi/id/product_uuid"
+  mount -o ro,bind "${bundle:?}"/rootfs/product_uuid "${bundle:?}"/rootfs/sys/class/dmi/id/product_uuid
 fi
 
 if [[ -f /sys/devices/virtual/dmi/id/product_uuid ]]; then
-  mount -o ro,bind "$bundle/rootfs/product_uuid" "$bundle/rootfs/sys/devices/virtual/dmi/id/product_uuid"
+  mount -o ro,bind "${bundle:?}"/rootfs/product_uuid "${bundle:?}"/rootfs/sys/devices/virtual/dmi/id/product_uuid
 fi
