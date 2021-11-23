@@ -22,6 +22,17 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+# Explicitly set PATH so as not to be inherited from the container
+# We have no reason to be using any binary from the container, and the
+# container PATH may lack normal "host" (kind node container in this case)
+# system paths.
+#
+# See: https://github.com/kubernetes-sigs/kind/issues/2551
+#
+# All of the binaries this script needs are in /usr/bin currently, but this is
+# the full normal PATH for this image with pretty standard linux paths.
+export PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+
 # The bundle represents the dir path to container filesystem, container runtime state [1] is
 # passed to the hook's stdin
 #
@@ -29,15 +40,15 @@ set -o pipefail
 #
 bundle=$(jq -r .bundle)
 
-cp /kind/product_* "$bundle/rootfs/"
+cp /kind/product_* "${bundle:?}/rootfs/"
 if [[ -f /sys/class/dmi/id/product_name ]]; then
-  mount -o ro,bind "$bundle/rootfs/product_name" "$bundle/rootfs/sys/class/dmi/id/product_name"
+  mount -o ro,bind "${bundle:?}"/rootfs/product_name "${bundle:?}"/rootfs/sys/class/dmi/id/product_name
 fi
 
 if [[ -f /sys/class/dmi/id/product_uuid ]]; then
-  mount -o ro,bind "$bundle/rootfs/product_uuid" "$bundle/rootfs/sys/class/dmi/id/product_uuid"
+  mount -o ro,bind "${bundle:?}"/rootfs/product_uuid "${bundle:?}"/rootfs/sys/class/dmi/id/product_uuid
 fi
 
 if [[ -f /sys/devices/virtual/dmi/id/product_uuid ]]; then
-  mount -o ro,bind "$bundle/rootfs/product_uuid" "$bundle/rootfs/sys/devices/virtual/dmi/id/product_uuid"
+  mount -o ro,bind "${bundle:?}"/rootfs/product_uuid "${bundle:?}"/rootfs/sys/devices/virtual/dmi/id/product_uuid
 fi
