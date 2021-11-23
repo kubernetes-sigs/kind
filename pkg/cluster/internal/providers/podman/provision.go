@@ -45,7 +45,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 	// only the external LB should reflect the port if we have multiple control planes
 	apiServerPort := cfg.Networking.APIServerPort
 	apiServerAddress := cfg.Networking.APIServerAddress
-	if clusterHasImplicitLoadBalancer(cfg) {
+	if config.ClusterHasImplicitLoadBalancer(cfg) {
 		// TODO: picking ports locally is less than ideal with a remote runtime
 		// (does podman have this?)
 		// but this is supposed to be an implementation detail and NOT picking
@@ -115,21 +115,6 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 	return createContainerFuncs, nil
 }
 
-func clusterIsIPv6(cfg *config.Cluster) bool {
-	return cfg.Networking.IPFamily == config.IPv6Family || cfg.Networking.IPFamily == config.DualStackFamily
-}
-
-func clusterHasImplicitLoadBalancer(cfg *config.Cluster) bool {
-	controlPlanes := 0
-	for _, configNode := range cfg.Nodes {
-		role := string(configNode.Role)
-		if role == constants.ControlPlaneNodeRoleValue {
-			controlPlanes++
-		}
-	}
-	return controlPlanes > 1
-}
-
 // commonArgs computes static arguments that apply to all containers
 func commonArgs(cfg *config.Cluster, networkName string) ([]string, error) {
 	// standard arguments all nodes containers need, computed once
@@ -144,7 +129,7 @@ func commonArgs(cfg *config.Cluster, networkName string) ([]string, error) {
 	}
 
 	// enable IPv6 if necessary
-	if clusterIsIPv6(cfg) {
+	if config.ClusterHasIPv6(cfg) {
 		args = append(args, "--sysctl=net.ipv6.conf.all.disable_ipv6=0", "--sysctl=net.ipv6.conf.all.forwarding=1")
 	}
 

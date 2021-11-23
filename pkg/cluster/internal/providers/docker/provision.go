@@ -44,7 +44,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 		name := nodeNamer(string(node.Role)) // name the node
 		names[i] = name
 	}
-	haveLoadbalancer := clusterHasImplicitLoadBalancer(cfg)
+	haveLoadbalancer := config.ClusterHasImplicitLoadBalancer(cfg)
 	if haveLoadbalancer {
 		names = append(names, nodeNamer(constants.ExternalLoadBalancerNodeRoleValue))
 	}
@@ -129,21 +129,6 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 	return createContainerFuncs, nil
 }
 
-func clusterIsIPv6(cfg *config.Cluster) bool {
-	return cfg.Networking.IPFamily == config.IPv6Family || cfg.Networking.IPFamily == config.DualStackFamily
-}
-
-func clusterHasImplicitLoadBalancer(cfg *config.Cluster) bool {
-	controlPlanes := 0
-	for _, configNode := range cfg.Nodes {
-		role := string(configNode.Role)
-		if role == constants.ControlPlaneNodeRoleValue {
-			controlPlanes++
-		}
-	}
-	return controlPlanes > 1
-}
-
 // commonArgs computes static arguments that apply to all containers
 func commonArgs(cluster string, cfg *config.Cluster, networkName string, nodeNames []string) ([]string, error) {
 	// standard arguments all nodes containers need, computed once
@@ -185,7 +170,7 @@ func commonArgs(cluster string, cfg *config.Cluster, networkName string, nodeNam
 	}
 
 	// enable IPv6 if necessary
-	if clusterIsIPv6(cfg) {
+	if config.ClusterHasIPv6(cfg) {
 		args = append(args, "--sysctl=net.ipv6.conf.all.disable_ipv6=0", "--sysctl=net.ipv6.conf.all.forwarding=1")
 	}
 
