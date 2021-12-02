@@ -52,6 +52,8 @@ jobs:
           "$HELPER" dockerd-rootless-setuptool.sh install
           # Modify the client config to use the rootless daemon by default
           "$HELPER" docker context use rootless
+          # TEMP: debug
+          "$HELPER" ls /dev/
 
 
       - name: Set up Rootless Podman
