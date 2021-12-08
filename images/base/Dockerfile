@@ -149,8 +149,10 @@ RUN echo "Installing containerd ..." \
     && sha256sum --ignore-missing -c /tmp/runc.sha256 \
     && mv /tmp/runc.${TARGETARCH} /usr/local/sbin/runc \
     && chmod 755 /usr/local/sbin/runc \
-    && ctr oci spec | jq '.hooks.createContainer[.hooks.createContainer| length] |= . + {"path": "/usr/local/bin/mount-product-files"}' \
-         > /etc/containerd/cri-base.json \
+    && ctr oci spec \
+        | jq '.hooks.createContainer[.hooks.createContainer| length] |= . + {"path": "/usr/local/bin/mount-product-files"}' \
+        | jq 'del(.process.rlimits)' \
+        > /etc/containerd/cri-base.json \
     && containerd --version \
     && runc --version \
     && systemctl enable containerd
