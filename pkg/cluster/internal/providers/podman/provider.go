@@ -130,7 +130,7 @@ func (p *provider) ListNodes(cluster string) ([]nodes.Node, error) {
 	)
 	lines, err := exec.OutputLines(cmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to list clusters")
+		return nil, errors.Wrap(err, "failed to list nodes")
 	}
 	// convert names to node handles
 	ret := make([]nodes.Node, 0, len(lines))
