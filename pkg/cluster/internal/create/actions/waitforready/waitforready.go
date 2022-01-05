@@ -97,7 +97,7 @@ func waitForReady(node nodes.Node, until time.Time) bool {
 		if err != nil {
 			return false
 		}
-		//fmt.Println(lines)
+		// If the server is not ready the answer is empty and this situation must be taken in account
 		if len(lines) == 0 {
 			return false
 		}
