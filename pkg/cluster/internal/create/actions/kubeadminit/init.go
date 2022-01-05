@@ -18,7 +18,6 @@ limitations under the License.
 package kubeadminit
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -112,14 +111,14 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	// https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#master-isolation
 	if len(allNodes) == 1 {
 		var err error
-		for count := 10; count > 0; count -= 1 {
+		// retry and wait up to 1 minute for the server to be ready
+		endTime := time.Now().Add(1 * time.Minute)
+		for endTime.After(time.Now()) {
 			if err = node.Command(
 				"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf",
 				"taint", "nodes", "--all", "node-role.kubernetes.io/master-",
 			).Run(); err == nil {
 				break
-			} else {
-				fmt.Println(count, err)
 			}
 			time.Sleep(1 * time.Second)
 		}
