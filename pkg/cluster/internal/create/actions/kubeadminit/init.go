@@ -18,7 +18,9 @@ limitations under the License.
 package kubeadminit
 
 import (
+	"fmt"
 	"strings"
+	"time"
 
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
@@ -109,10 +111,19 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	// if we are only provisioning one node, remove the master taint
 	// https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#master-isolation
 	if len(allNodes) == 1 {
-		if err := node.Command(
-			"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf",
-			"taint", "nodes", "--all", "node-role.kubernetes.io/master-",
-		).Run(); err != nil {
+		var err error
+		for count := 10; count > 0; count -= 1 {
+			if err = node.Command(
+				"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf",
+				"taint", "nodes", "--all", "node-role.kubernetes.io/master-",
+			).Run(); err == nil {
+				break
+			} else {
+				fmt.Println(count, err)
+			}
+			time.Sleep(1 * time.Second)
+		}
+		if err != nil {
 			return errors.Wrap(err, "failed to remove master taint")
 		}
 	}

@@ -97,6 +97,10 @@ func waitForReady(node nodes.Node, until time.Time) bool {
 		if err != nil {
 			return false
 		}
+		//fmt.Println(lines)
+		if len(lines) == 0 {
+			return false
+		}
 
 		// 'lines' will return the status of all nodes labeled as master. For
 		// example, if we have three control plane nodes, and all are ready,
