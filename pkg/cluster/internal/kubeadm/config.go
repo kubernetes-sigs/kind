@@ -326,7 +326,6 @@ scheduler:
 {{ end }}
     # configure ipv6 default addresses for IPv6 clusters
     {{ if .IPv6 -}}
-    address: "::"
     bind-address: "::1"
     {{- end }}
 networking:
