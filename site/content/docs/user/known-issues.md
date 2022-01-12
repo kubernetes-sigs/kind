@@ -322,7 +322,7 @@ stat failed on /dev/nvme0n1p3 with error: no such file or directory
 "Failed to start ContainerManager" err="failed to get rootfs info: failed to get device for dir \"/var/lib/kubelet\": could not find device with major: 0, minor: 40 in cached partitions map"
 ```
 
-Kubernetes needs access to storage device nodes in order to do some stuff, e.g. tracking free disk space. Therefore, Kind needs to mount the necessary device nodes from the host into the control-plane container — however, it cannot always determine which device Kubernetes requires, since this varies with the host filesystem. For example, Kind doesn't handle BTRFS, which is the default for modern Fedora.
+Kubernetes needs access to storage device nodes in order to do some stuff, e.g. tracking free disk space. Therefore, Kind needs to mount the necessary device nodes from the host into the control-plane container — however, it cannot always determine which device Kubernetes requires, since this varies with the host OS and filesystem. For example, the error above occurred with a BTRFS filesystem on Fedora Desktop 35.
 
 This can be worked around by including the necessary device as an extra mount in the cluster configuration file.
 
@@ -337,7 +337,9 @@ nodes:
       propagation: HostToContainer
 ```
 
-The expected device is named in the error message, but will typically be the location where container volumes are stored — for rootless Docker or Podman, this will usually be $HOME.
+To identify the device that must be listed, two variations have been observed.
+* The device reported in the error message is a symlink (e.g. `/dev/mapper/luks-903aad3d-...`) — in this case, the config file should refer to the target of that symlink (e.g. `/dev/dm-0`).
+* The device reported in the error message is a regular block device (e.g. `/dev/nvme0n1p3`) — in this case, use the device reported.
 
 See Previous Discussion: [kind#2411]
 
