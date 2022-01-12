@@ -68,10 +68,10 @@ ARG CONTAINERD_FUSE_OVERLAYFS_PPC64LE_SHA256SUM="49679827fa2b46dd28899bdc53c2926
 ARG CONTAINERD_FUSE_OVERLAYFS_S390X_SHA256SUM="ed74e26de3215a62154b47be67953a25a15e02f7a8550408fec541d6799bc7ad"
 
 # copy in static files
-# all scripts are 0755: http://www.filepermissions.com/file-permission/0755
+# all scripts are 0755 (rwx r-x r-x)
 COPY --chmod=0755 files/usr/local/bin/* /usr/local/bin/
 
-# all configs are 0644: http://www.filepermissions.com/file-permission/0644
+# all configs are 0644 (rw- r-- r--)
 COPY --chmod=0644 files/etc/* /etc/
 COPY --chmod=0644 files/etc/containerd/* /etc/containerd/
 COPY --chmod=0644 files/etc/default/* /etc/default/
