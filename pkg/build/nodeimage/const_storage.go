@@ -88,7 +88,13 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/os: linux
+      # TODO: Remove the "master" taint after kubeadm nodes no longer have it.
+      # This can be done once kind no longer supports kubeadm 1.24.
+      # https://github.com/kubernetes-sigs/kind/issues/1699
       tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Equal
+        effect: NoSchedule
       - key: node-role.kubernetes.io/master
         operator: Equal
         effect: NoSchedule
