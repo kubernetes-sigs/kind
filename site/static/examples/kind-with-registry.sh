@@ -23,7 +23,9 @@ EOF
 
 # connect the registry to the cluster network
 # (the network may already be connected)
-docker network connect "kind" "${reg_name}" || true
+if [ "$(docker inspect --format='{{json .NetworkSettings.Networks.kind}}' "${reg_name}")" = 'null' ]; then
+    docker network connect "kind" "${reg_name}" || true
+fi
 
 # Document the local registry
 # https://github.com/kubernetes/enhancements/tree/master/keps/sig-cluster-lifecycle/generic/1755-communicating-a-local-registry
