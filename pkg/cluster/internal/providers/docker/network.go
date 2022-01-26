@@ -275,7 +275,6 @@ func isNetworkAlreadyExistsError(err error) bool {
 }
 
 // returns true if:
-// - err is nil
 // - err only contains no such network errors
 func isOnlyErrorNoSuchNetwork(err error) bool {
 	rerr := exec.RunErrorForError(err)
@@ -291,7 +290,7 @@ func isOnlyErrorNoSuchNetwork(err error) bool {
 		} else if err != nil {
 			return false
 		}
-		// if the line begins with Eror: No such network: it's fine
+		// if the line begins with Error: No such network: it's fine
 		s := string(l)
 		if strings.HasPrefix(s, "Error: No such network:") {
 			continue
