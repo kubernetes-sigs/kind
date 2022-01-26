@@ -291,7 +291,7 @@ func isOnlyErrorNoSuchNetwork(err error) bool {
 		} else if err != nil {
 			return false
 		}
-		// if the line begins with Eror: No such network: it's fine
+		// if the line begins with Error: No such network: it's fine
 		s := string(l)
 		if strings.HasPrefix(s, "Error: No such network:") {
 			continue
