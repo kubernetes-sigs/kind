@@ -275,8 +275,12 @@ func isNetworkAlreadyExistsError(err error) bool {
 }
 
 // returns true if:
+// - err is nil
 // - err only contains no such network errors
 func isOnlyErrorNoSuchNetwork(err error) bool {
+	if err == nil {
+		return true
+	}
 	rerr := exec.RunErrorForError(err)
 	if rerr == nil {
 		return false
