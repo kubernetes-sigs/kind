@@ -275,7 +275,6 @@ func isNetworkAlreadyExistsError(err error) bool {
 }
 
 // returns true if:
-// - err is nil
 // - err only contains no such network errors
 func isOnlyErrorNoSuchNetwork(err error) bool {
 	rerr := exec.RunErrorForError(err)
