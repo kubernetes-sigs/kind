@@ -194,12 +194,9 @@ func commonArgs(cluster string, cfg *config.Cluster, networkName string, nodeNam
 		args = append(args, "--volume", "/dev/mapper:/dev/mapper")
 	}
 
-	// rootless: use fuse-overlayfs by default
-	// https://github.com/kubernetes-sigs/kind/issues/2275
-	i, _ := info()
-	if i != nil && i.Rootless {
-		// enable /dev/fuse explicitly for fuse-overlayfs
-		// (Rootless Docker does not automatically mount /dev/fuse with --privileged)
+	// enable /dev/fuse explicitly for fuse-overlayfs
+	// (Rootless Docker does not automatically mount /dev/fuse with --privileged)
+	if mountFuse() {
 		args = append(args, "--device", "/dev/fuse")
 	}
 	return args, nil

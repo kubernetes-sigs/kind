@@ -150,10 +150,7 @@ func commonArgs(cfg *config.Cluster, networkName string) ([]string, error) {
 
 	// rootless: use fuse-overlayfs by default
 	// https://github.com/kubernetes-sigs/kind/issues/2275
-	i, _ := info(nil)
-	if i != nil && i.Rootless {
-		// enable /dev/fuse explicitly for fuse-overlayfs
-		// (Rootless Podman does not automatically mount /dev/fuse with --privileged)
+	if mountFuse() {
 		args = append(args, "--device", "/dev/fuse")
 	}
 
