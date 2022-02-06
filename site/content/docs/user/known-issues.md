@@ -23,6 +23,7 @@ description: |-
 
 
 ## Contents
+* [Troubleshooting Kind](#troubleshooting-kind)
 * [Kubectl Version Skew](#kubectl-version-skew) (Kubernetes limits supported version skew)
 * [Older Docker Installations](#older-docker-installations) (untested, known to have bugs)
 * [Docker Installed With Snap](#docker-installed-with-snap) (snap filesystem restrictions problematic)
@@ -39,6 +40,12 @@ description: |-
 * [IPv6 Port Forwarding](#ipv6-port-forwarding) (docker doesn't seem to implement this correctly)
 * [Couldn't find an alternative telinit implementation to spawn](#docker-init-daemon-config)
 * [Fedora](#fedora) (various)
+* [Failed to get rootfs info](#failed-to-get-rootfs-info--stat-failed-on-dev)
+
+## Troubleshooting Kind
+
+If the cluster fails to create, try again with the `--retain` option (preserving the failed container),
+then run `kind export logs` to export the logs from the container to a temporary directory on the host.
 
 ## Kubectl Version Skew
 
@@ -306,6 +313,36 @@ your workloads inside the cluster via the nodes IPv6 addresses.
 
 See Previous Discussion: [kind#1326]
 
+## Failed to get rootfs info / "stat failed on /dev/..."
+
+On some systems, creating a cluster times out with these errors in kubelet.log (device varies):
+
+```
+stat failed on /dev/nvme0n1p3 with error: no such file or directory
+"Failed to start ContainerManager" err="failed to get rootfs info: failed to get device for dir \"/var/lib/kubelet\": could not find device with major: 0, minor: 40 in cached partitions map"
+```
+
+Kubernetes needs access to storage device nodes in order to do some stuff, e.g. tracking free disk space. Therefore, Kind needs to mount the necessary device nodes from the host into the control-plane container — however, it cannot always determine which device Kubernetes requires, since this varies with the host OS and filesystem. For example, the error above occurred with a BTRFS filesystem on Fedora Desktop 35.
+
+This can be worked around by including the necessary device as an extra mount in the cluster configuration file.
+
+```yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  extraMounts:
+    - hostPath: /dev/nvme0n1p3
+      containerPath: /dev/nvme0n1p3
+      propagation: HostToContainer
+```
+
+To identify the device that must be listed, two variations have been observed.
+* The device reported in the error message is a symlink (e.g. `/dev/mapper/luks-903aad3d-...`) — in this case, the config file should refer to the target of that symlink (e.g. `/dev/dm-0`).
+* The device reported in the error message is a regular block device (e.g. `/dev/nvme0n1p3`) — in this case, use the device reported.
+
+See Previous Discussion: [kind#2411]
+
 ## Fedora
 
 ### Firewalld
@@ -348,6 +385,7 @@ Although the policy has been fixed in Fedora 34, the fix has not been backported
 [kind#1179]: https://github.com/kubernetes-sigs/kind/issues/1179
 [kind#1326]: https://github.com/kubernetes-sigs/kind/issues/1326
 [kind#2296]: https://github.com/kubernetes-sigs/kind/issues/2296
+[kind#2411]: https://github.com/kubernetes-sigs/kind/issues/2411
 [moby#9939]: https://github.com/moby/moby/issues/9939
 [moby#17666]: https://github.com/moby/moby/issues/17666
 [Docker resource lims]: https://docs.docker.com/docker-for-mac/#advanced
