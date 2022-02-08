@@ -46,8 +46,14 @@ stage_file() {
     if [[ -L "${1}" ]]; then
         stage_file "$(cd "$(dirname "${1}")"; realpath -s "$(readlink "${1}")")" "${2}"
     fi
+    # get the package so we can stage package metadata as well
+    package="$(file_to_package "${1}")"
     # stage the copyright for the file
-    cp -a --parents "$(package_to_copyright "$(file_to_package "${1}")")" "${2}"
+    cp -a --parents "$(package_to_copyright "${package}")" "${2}"
+    # stage the package status mimicking bazel
+    # https://github.com/bazelbuild/rules_docker/commit/f5432b813e0a11491cf2bf83ff1a923706b36420
+    # instead of parsing the control file, we can just get the actual package status with dpkg
+    dpkg -s "${package}" >> "${2}/var/lib/dpkg/status.d/${package}"
 }
 
 # binary_to_libraries identifies the library files needed by the binary $1 with ldd
@@ -71,6 +77,9 @@ main(){
     # locate the path to the binary
     local binary_path
     binary_path="$(which "${BINARY}")"
+
+    # ensure package metadata dir
+    mkdir -p "${STAGE_DIR}"/var/lib/dpkg/status.d/
 
     # stage the binary itself
     stage_file "${binary_path}" "${STAGE_DIR}"
