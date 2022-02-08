@@ -45,7 +45,8 @@ RUN mkdir -p "${STAGE_DIR}" && \
     stage-binary-and-deps.sh haproxy "${STAGE_DIR}" && \
     stage-binary-and-deps.sh cp "${STAGE_DIR}" && \
     stage-binary-and-deps.sh mkdir "${STAGE_DIR}" && \
-    stage-binary-and-deps.sh kill "${STAGE_DIR}"
+    stage-binary-and-deps.sh kill "${STAGE_DIR}" && \
+    find "${STAGE_DIR}"
 
 ################################################################################
 
