@@ -45,7 +45,8 @@ RUN mkdir -p "${STAGE_DIR}" && \
     stage-binary-and-deps.sh haproxy "${STAGE_DIR}" && \
     stage-binary-and-deps.sh cp "${STAGE_DIR}" && \
     stage-binary-and-deps.sh mkdir "${STAGE_DIR}" && \
-    stage-binary-and-deps.sh kill "${STAGE_DIR}"
+    stage-binary-and-deps.sh kill "${STAGE_DIR}" && \
+    find "${STAGE_DIR}"
 
 ################################################################################
 
@@ -53,7 +54,7 @@ RUN mkdir -p "${STAGE_DIR}" && \
 # See: https://github.com/GoogleContainerTools/distroless/tree/main/base
 # See: https://github.com/GoogleContainerTools/distroless/tree/main/cc
 # This has /etc/passwd, tzdata, cacerts, glibc, libssl, openssl, and libgcc1
-FROM "gcr.io/distroless/cc"
+FROM "gcr.io/distroless/static-debian11"
 
 ARG STAGE_DIR="/opt/stage"
 
