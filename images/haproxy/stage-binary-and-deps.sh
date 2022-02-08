@@ -87,8 +87,10 @@ main(){
     # stage the dependencies of the binary
     while IFS= read -r c_dep; do
         # skip libc, libgcc1 we already have this in the distroless images
+        # NOTE: debian10 -> libggc1, debian11 -> libgcc-s1
+        # https://github.com/GoogleContainerTools/distroless/blob/47cf1c0554fdfc71604af0b8f6e19072f62e4f93/cc/BUILD#L10-L14
         pkg="$(file_to_package "${c_dep}")"
-        if [[ "${pkg}" == "libc6" || "${pkg}" == "libgcc1" ]]; then
+        if [[ "${pkg}" == "libc6" || "${pkg}" == "libgcc1" || "${pkg}" == "libgcc-s1" ]]; then
             continue
         fi
         # otherwise stage dependency
