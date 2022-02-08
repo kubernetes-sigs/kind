@@ -54,7 +54,7 @@ RUN mkdir -p "${STAGE_DIR}" && \
 # See: https://github.com/GoogleContainerTools/distroless/tree/main/base
 # See: https://github.com/GoogleContainerTools/distroless/tree/main/cc
 # This has /etc/passwd, tzdata, cacerts, glibc, libssl, openssl, and libgcc1
-FROM "gcr.io/distroless/cc-debian11"
+FROM "gcr.io/distroless/static-debian11"
 
 ARG STAGE_DIR="/opt/stage"
 
