@@ -85,3 +85,16 @@ func mountDevMapper() bool {
 
 	return storage == "btrfs" || storage == "zfs" || storage == "xfs"
 }
+
+// rootless: use fuse-overlayfs by default
+// https://github.com/kubernetes-sigs/kind/issues/2275
+func mountFuse() bool {
+	i, err := info()
+	if err != nil {
+		return false
+	}
+	if i != nil && i.Rootless {
+		return true
+	}
+	return false
+}
