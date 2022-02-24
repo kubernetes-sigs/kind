@@ -195,6 +195,10 @@ kind delete cluster
 If the flag `--name` is not specified, kind will use the default cluster
 context name `kind` and delete that cluster.
 
+> **Note**: By design, requesting to delete a cluster that does not exist
+> will not return an error. This is intentional and is a means to have an
+> idempotent way of cleaning up resources.
+
 ## Loading an Image Into Your Cluster
 
 Docker images can be loaded into your cluster nodes with:
