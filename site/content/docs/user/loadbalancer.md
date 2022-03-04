@@ -32,12 +32,6 @@ description: |-
 kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/master/manifests/namespace.yaml
 {{< /codeFromInline >}}
 
-### Create the memberlist secrets
-
-{{< codeFromInline lang="bash" >}}
-kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)" 
-{{< /codeFromInline >}}
-
 ### Apply metallb manifest
 
 {{< codeFromInline lang="bash" >}}
