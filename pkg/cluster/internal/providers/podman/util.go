@@ -100,6 +100,10 @@ func getVolumes(label string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	if string(output) == "" {
+		// no volumes
+		return nil, nil
+	}
 	// Trim away the last `\n`.
 	trimmedOutput := strings.TrimSuffix(string(output), "\n")
 	// Get names of all volumes by splitting via `\n`.
