@@ -52,7 +52,7 @@ var _ error = &RunError{}
 
 func (e *RunError) Error() string {
 	// TODO(BenTheElder): implement formatter, and show output for %+v ?
-	return fmt.Sprintf("command \"%s\" failed with error: %v", e.PrettyCommand(), e.Inner)
+	return fmt.Sprintf("command \"%s\" failed with error: %v: %s", e.PrettyCommand(), e.Inner, e.Output)
 }
 
 // PrettyCommand pretty prints the command in a way that could be pasted
