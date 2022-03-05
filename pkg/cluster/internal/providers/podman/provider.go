@@ -165,6 +165,9 @@ func (p *provider) DeleteNodes(n []nodes.Node) error {
 		}
 		nodeVolumes = append(nodeVolumes, volumes...)
 	}
+	if len(nodeVolumes) == 0 {
+		return nil
+	}
 	return deleteVolumes(nodeVolumes)
 }
 
