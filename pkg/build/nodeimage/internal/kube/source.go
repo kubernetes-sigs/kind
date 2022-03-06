@@ -38,7 +38,7 @@ func FindSource() (root string, err error) {
 	if err == nil && maybeKubeDir(pkg.Dir) {
 		return pkg.Dir, nil
 	}
-	return "", errors.New("could not find kubernetes source")
+	return "", fmt.Errorf("could not find %s module source under GOPATH=%s: %w", ImportPath, build.Default.GOPATH, err)
 }
 
 // maybeKubeDir returns true if the dir looks plausibly like a kubernetes
