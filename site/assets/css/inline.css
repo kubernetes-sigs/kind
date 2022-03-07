@@ -140,8 +140,16 @@ body {
   color: white;
   background: black;
 }
+#noticebar.ua {
+  background: #ffd700;
+  color: black;
+}
 #noticebar.docker-blue {
   background: #44a2f1;
+  color: white;
+}
+#navbar.ua {
+  background: #0057b8;
   color: white;
 }
 #navbar.docker-blue {
@@ -149,15 +157,23 @@ body {
   color: white;
 }
 /* invert colors on different background */
-.black a, .docker-blue a {
+.black a, .docker-blue a{
   color: white;
 }
+#navbar.ua a {
+  color: #ffd700;
+}
+#noticebar.ua a {
+  color: blue;
+}
 #navbar.black>#sidebar-toggle,
-#navbar.docker-blue>#sidebar-toggle {
+#navbar.docker-blue>#sidebar-toggle,
+#navbar.ua>#sidebar-toggle {
   color: white;
 }
 #navbar.black>#github,
-#navbar.docker-blue>#github {
+#navbar.docker-blue>#github,
+#navbar.ua>#github {
   filter: invert(1);
 }
 
