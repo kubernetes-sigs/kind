@@ -41,6 +41,7 @@ description: |-
 * [Couldn't find an alternative telinit implementation to spawn](#docker-init-daemon-config)
 * [Fedora](#fedora) (various)
 * [Failed to get rootfs info](#failed-to-get-rootfs-info--stat-failed-on-dev)
+* [Failure to Create Cluster with Docker Desktop as Container Runtime](#failure-to-create-cluster-with-docker-desktop-as-container-runtime)
 
 ## Troubleshooting Kind
 
@@ -68,7 +69,7 @@ You can check your client and server versions by running:
 kubectl version
 {{< /codeFromInline >}}
 
-If there is a mismatch between the server and client versions, you should install a newer client version. 
+If there is a mismatch between the server and client versions, you should install a newer client version.
 
 If you are using Mac, you can install kubectl via homebrew by running:
 {{< codeFromInline lang="bash" >}}
@@ -156,7 +157,7 @@ Open the **Preferences** menu.
 
 <img src="/docs/user/images/docker-pref-1.png"/>
 
-Go to the **Advanced** settings page, and change the settings there, see 
+Go to the **Advanced** settings page, and change the settings there, see
 [changing Docker's resource limits][Docker resource lims].
 
 <img width="400px" src="/docs/user/images/docker-pref-build.png" alt="Setting 8Gb of memory in Docker for Mac" />
@@ -164,7 +165,7 @@ Go to the **Advanced** settings page, and change the settings there, see
 <img width="400px" src="/docs/user/images/docker-pref-build-win.png" alt="Setting 8Gb of memory in Docker for Windows" />
 
 ## Failing to properly start cluster
-This issue is similar to a 
+This issue is similar to a
 [failure while building the node image](#failure-to-build-node-image).
 If the cluster creation process was successful but you are unable to see any
 Kubernetes resources running, for example:
@@ -189,7 +190,7 @@ Unable to connect to the server: EOF
 ```
 
 Then as in [kind#156][kind#156], you may solve this issue by claiming back some
-space on your machine by removing unused data or images left by the Docker 
+space on your machine by removing unused data or images left by the Docker
 engine by running:
 {{< codeFromInline lang="bash" >}}
 docker system prune
@@ -280,7 +281,7 @@ When using named KIND instances you may sometimes see your images failing to pul
 Failed to pull image "docker.io/my-custom-image:tag": rpc error: code = Unknown desc = failed to resolve image "docker.io/library/my-custom-image:tag": no available registry endpoint: pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed
 ```
 
-If this image has been loaded onto your kind cluster using the command `kind load docker-image my-custom-image` then you have likely not provided the name parameter. 
+If this image has been loaded onto your kind cluster using the command `kind load docker-image my-custom-image` then you have likely not provided the name parameter.
 
 Re-run the command this time adding the `--name my-cluster-name` param:
 
@@ -308,7 +309,7 @@ See Previous Discussion: [kind#1179]
 Docker assumes that all the IPv6 addresses should be reachable, hence doesn't implement
 port mapping using NAT [moby#17666].
 
-You will likely need to use Kubernetes services like NodePort or LoadBalancer to access 
+You will likely need to use Kubernetes services like NodePort or LoadBalancer to access
 your workloads inside the cluster via the nodes IPv6 addresses.
 
 See Previous Discussion: [kind#1326]
@@ -370,6 +371,10 @@ docker: Error response from daemon: open /dev/dma_heap: permission denied.
 ```
 
 Although the policy has been fixed in Fedora 34, the fix has not been backported to Fedora 33 as of June 28, 2021. Putting SELinux in permissive mode (`setenforce 0`) is one known workaround. This disables SELinux until the next boot. For more details, see [kind#2296].
+
+## Failure to Create Cluster with Docker Desktop as Container Runtime
+
+Docker Desktop 4.3.0+ uses Cgroups v2 (see [release notes](https://docs.docker.com/release-notes/)) and can only work with Kubernetes versions >= 1.19 (see [failure to create cluster with Cgroups v2](https://kind.sigs.k8s.io/docs/user/known-issues/#failure-to-create-cluster-with-cgroups-v2)).
 
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new
