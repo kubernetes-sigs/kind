@@ -173,6 +173,9 @@ ${kubelet_extra_args}
   nodeRegistration:
     kubeletExtraArgs:
 ${kubelet_extra_args}
+  ---
+  kind: KubeProxyConfiguration
+  detectLocalMode: ${KUBE_PROXY_DETECT_LOCAL_MODE:-ClusterCIDR}
 EOF
   # NOTE: must match the number of workers above
   NUM_NODES=2
