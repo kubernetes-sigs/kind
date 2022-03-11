@@ -477,6 +477,8 @@ apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
 metadata:
   name: config
+patches:
+  directory: /kind/patches
 # we use a well know token for TLS bootstrap
 bootstrapTokens:
 - token: "{{ .Token }}"
@@ -498,6 +500,8 @@ apiVersion: kubeadm.k8s.io/v1beta3
 kind: JoinConfiguration
 metadata:
   name: config
+patches:
+  directory: /kind/patches
 {{ if .ControlPlane -}}
 controlPlane:
   localAPIEndpoint:

@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/common"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
+	"sigs.k8s.io/kind/pkg/internal/version"
 )
 
 // Action implements action for creating the node config files
@@ -87,6 +88,23 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	kubeadmConfigPlusPatches := func(node nodes.Node, data kubeadm.ConfigData) func() error {
 		return func() error {
 			data.NodeName = node.String()
+			kubeVersion, err := nodeutils.KubeVersion(node)
+			if err != nil {
+				// TODO(bentheelder): logging here
+				return errors.Wrap(err, "failed to get kubernetes version from node")
+			}
+			data.KubernetesVersion = kubeVersion
+
+			patches, err := getKubeadmPatches(data)
+			if err != nil {
+				return errors.Wrap(err, "failed to generate kubeadm patches content")
+			}
+
+			ctx.Logger.V(2).Infof("Using the following kubeadm patches for node %s:\n%s", node.String(), patches)
+			if err := writeKubeadmPatches(patches, node); err != nil {
+				return err
+			}
+
 			kubeadmConfig, err := getKubeadmConfig(ctx.Config, data, node, provider)
 			if err != nil {
 				// TODO(bentheelder): logging here
@@ -155,13 +173,6 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 // getKubeadmConfig generates the kubeadm config contents for the cluster
 // by running data through the template and applying patches as needed.
 func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.Node, provider string) (path string, err error) {
-	kubeVersion, err := nodeutils.KubeVersion(node)
-	if err != nil {
-		// TODO(bentheelder): logging here
-		return "", errors.Wrap(err, "failed to get kubernetes version from node")
-	}
-	data.KubernetesVersion = kubeVersion
-
 	// TODO: gross hack!
 	// identify node in config by matching name (since these are named in order)
 	// we should really just streamline the bootstrap code and maintain
@@ -241,6 +252,31 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.N
 	return removeMetadata(patchedConfig), nil
 }
 
+// getKubeadmPatches generates the kubeadm patch contents. It returns a map of patch file name to patch content.
+func getKubeadmPatches(data kubeadm.ConfigData) (map[string]string, error) {
+	ver, err := version.ParseGeneric(data.KubernetesVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	patches := map[string]string{}
+	// Kubernetes older than v1.25 don't support patching kubeconfig files.
+	if ver.AtLeast(version.MustParseSemantic("v1.25.0")) {
+		// controller-manager and scheduler connect to local API endpoint, which defaults to the advertise address of the
+		// API server. If the Node's IP changes (which could happen after docker restarts), the server address in KubeConfig
+		// should be updated. However, the server certificate isn't valid for the new IP. To resolve it, we update the
+		// address to loopback address which is an alternative address of the certificate.
+		loopbackAddress := "127.0.0.1"
+		if data.IPFamily == config.IPv6Family {
+			loopbackAddress = "[::1]"
+		}
+		jsonPatch := fmt.Sprintf(`[{"op": "replace", "path": "/clusters/0/cluster/server", "value": "https://%s:%d"}]`, loopbackAddress, data.APIBindPort)
+		patches["controller-manager.conf+json.json"] = jsonPatch
+		patches["scheduler.conf+json.json"] = jsonPatch
+	}
+	return patches, nil
+}
+
 // trims out the metadata.name we put in the config for kustomize matching,
 // kubeadm will complain about this otherwise
 func removeMetadata(kustomized string) string {
@@ -264,6 +300,22 @@ func writeKubeadmConfig(kubeadmConfig string, node nodes.Node) error {
 	if err := nodeutils.WriteFile(node, "/kind/kubeadm.conf", kubeadmConfig); err != nil {
 		// TODO(bentheelder): logging here
 		return errors.Wrap(err, "failed to copy kubeadm config to node")
+	}
+
+	return nil
+}
+
+// writeKubeadmPatches writes the kubeadm patches in the specified node
+func writeKubeadmPatches(patches map[string]string, node nodes.Node) error {
+	patchesDir := "/kind/patches/"
+	if err := node.Command("mkdir", "-p", patchesDir).Run(); err != nil {
+		return errors.Wrapf(err, "failed to create directory %s", patchesDir)
+	}
+
+	for file, patch := range patches {
+		if err := nodeutils.WriteFile(node, patchesDir+file, patch); err != nil {
+			return errors.Wrapf(err, "failed to copy patch file %s to node", file)
+		}
 	}
 
 	return nil
