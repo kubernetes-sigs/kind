@@ -283,7 +283,7 @@ for persisting data, mounting through code etc.
 {{< codeFromFile file="static/examples/config-with-mounts.yaml" lang="yaml" >}}
 
 
-NOTE: If you are using Docker for Mac or Windows check that the hostPath is
+**NOTE**: If you are using Docker for Mac or Windows check that the hostPath is
 included in the Preferences -> Resources -> File Sharing.
 
 For more information see the [Docker file sharing guide.](https://docs.docker.com/docker-for-mac/#file-sharing)
