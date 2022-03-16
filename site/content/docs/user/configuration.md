@@ -140,7 +140,7 @@ networking:
 {{< /codeFromInline >}}
 
 ##### Dual Stack clusters
-You can run dual stack clusters using `kind` 0.11+, on kubernetes versions 1.20+.
+You can run dual stack clusters using `kind` 0.12+, on kubernetes versions 1.20+.
 
 {{< codeFromInline lang="yaml" >}}
 kind: Cluster
