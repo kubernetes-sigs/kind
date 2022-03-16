@@ -268,6 +268,7 @@ func (p *provider) CollectLogs(dir string, nodes []nodes.Node) error {
 		fns = append(fns,
 			func() error { return common.CollectLogs(node, path) },
 			execToPathFn(exec.Command("docker", "inspect", name), filepath.Join(path, "inspect.json")),
+			execToPathFn(exec.Command("docker", "images", name), filepath.Join(path, "images.log")),
 			func() error {
 				f, err := common.FileOnHost(filepath.Join(path, "serial.log"))
 				if err != nil {
