@@ -49,13 +49,13 @@ choco install kind
 {{< /codeFromInline >}}
 
 ### Installing From Release Binaries
-
+Supported architectures are darwin-amd64, darwin-arm64, linux-amd64, linux-arm64, linux-ppc64le, linux-s390x, windows-amd64.
 Pre-built binaries are available on our [releases page](https://github.com/kubernetes-sigs/kind/releases).
 
 To install, download the binary for your platform from "Assets", then rename it to `kind` (or perhaps `kind.exe` on Windows) and place this
 into your `$PATH` at your preferred binary installation directory.
 
-On Linux:
+On Linux-amd64:
 
 {{< codeFromInline lang="bash" >}}
 curl -Lo ./kind https://kind.sigs.k8s.io/dl/{{< stableVersion >}}/kind-linux-amd64
@@ -63,7 +63,7 @@ chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
 {{< /codeFromInline >}}
 
-On macOS:
+On macOS-amd64:
 
 {{< codeFromInline lang="bash" >}}
 curl -Lo ./kind https://kind.sigs.k8s.io/dl/{{< stableVersion >}}/kind-darwin-amd64
@@ -71,7 +71,7 @@ chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
 {{< /codeFromInline >}}
 
-On Windows in [PowerShell](https://en.wikipedia.org/wiki/PowerShell):
+On Windows-amd64 in [PowerShell](https://en.wikipedia.org/wiki/PowerShell):
 
 {{< codeFromInline lang="powershell" >}}
 curl.exe -Lo kind-windows-amd64.exe https://kind.sigs.k8s.io/dl/{{< stableVersion >}}/kind-windows-amd64
