@@ -41,6 +41,10 @@ func CollectLogs(n nodes.Node, dir string) error {
 			n.Command("journalctl", "--no-pager", "-u", "containerd.service"),
 			"containerd.log",
 		),
+		execToPathFn(
+			n.Command("crictl", "images"),
+			"images.log",
+		),
 	})
 }
 
