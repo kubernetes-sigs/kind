@@ -52,16 +52,16 @@ To complete layer2 configuration, we need to provide metallb a range of IP addre
 docker network inspect -f '{{.IPAM.Config}}' kind
 {{< /codeFromInline >}}
 
-The output will contain a cidr such as 172.19.0.0/16.  We want our loadbalancer IP range to come from this subclass.  We can configure metallb, for instance, to use 172.19.255.200 to 172.19.255.250 by creating the configmap.
+The output will contain a cidr such as 172.19.0.0/16.  We want our loadbalancer IP range to come from this subclass.  We can configure metallb, for instance, to use 172.19.255.200 to 172.19.255.250 by creating an AddressPool custom resource.
 
 ```yaml
-{{% readFile "static/examples/loadbalancer/metallb-configmap.yaml" %}}
+{{% readFile "static/examples/loadbalancer/metallb-addresspool.yaml" %}}
 ```
 
 Apply the contents
 
 {{< codeFromInline lang="bash" >}}
-kubectl apply -f https://kind.sigs.k8s.io/examples/loadbalancer/metallb-configmap.yaml
+kubectl apply -f https://kind.sigs.k8s.io/examples/loadbalancer/metallb-addresspool.yaml
 {{< /codeFromInline >}}
 
 ## Using LoadBalancer
