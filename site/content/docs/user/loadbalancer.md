@@ -29,13 +29,13 @@ description: |-
 ### Create the metallb namespace
 
 {{< codeFromInline lang="bash" >}}
-kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/master/manifests/namespace.yaml
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.12.1/manifests/namespace.yaml
 {{< /codeFromInline >}}
 
 ### Apply metallb manifest
 
 {{< codeFromInline lang="bash" >}}
-kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/master/manifests/metallb.yaml
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.12.1/manifests/metallb.yaml
 {{< /codeFromInline >}}
 
 Wait for metallb pods to have a status of Running
@@ -71,6 +71,7 @@ The following example creates a loadbalancer service that routes to two http-ech
 ```yaml
 {{% readFile "static/examples/loadbalancer/usage.yaml" %}}
 ```
+
 Apply the contents
 
 {{< codeFromInline lang="yaml" >}}
@@ -89,7 +90,3 @@ for _ in {1..10}; do
   curl ${LB_IP}:5678
 done
 ```
-
-
-
-
