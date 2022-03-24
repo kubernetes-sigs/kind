@@ -376,6 +376,17 @@ Although the policy has been fixed in Fedora 34, the fix has not been backported
 
 Docker Desktop 4.3.0+ uses Cgroups v2 (see [release notes](https://docs.docker.com/release-notes/)) and can only work with Kubernetes versions >= 1.19 (see [failure to create cluster with Cgroups v2](https://kind.sigs.k8s.io/docs/user/known-issues/#failure-to-create-cluster-with-cgroups-v2)).
 
+There are a couple options for getting around this limitation with Docker
+Desktop. You may downgrade your Docker Desktop to version 4.2.0. This was the
+last release to default to cgroupv1.
+
+You may also be able to make a configuration change to your Docker Desktop
+settings. Starting with Docker Desktop 4.4.2 a deprecated option has been added
+to support those requiring cgroupv1. As noted in the [4.4.2 release
+notes](https://docs.docker.com/desktop/mac/release-notes/#docker-desktop-442),
+the setting `deprecatedCgroupv1` can be set to `true` in `settings.json`. After
+restarting the Docker Engine, the VM used by Docker Desktop will use cgroupv1.
+
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new
 [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
