@@ -42,10 +42,9 @@ ARCHITECTURES=(
     "s390x"
 )
 
-echo
 CONTAINERD_BASE_URL="https://github.com/kind-ci/containerd-nightlies/releases/download/containerd-${CONTAINERD_VERSION}"
 for ARCH in "${ARCHITECTURES[@]}"; do
-    CONTAINERD_URL="${CONTAINERD_BASE_URL}/containerd-${CONTAINERD_VERSION}.linux-${ARCH}.tar.gz.sha256sum"
+    CONTAINERD_URL="${CONTAINERD_BASE_URL}/containerd-${CONTAINERD_VERSION}-linux-${ARCH}.tar.gz.sha256sum"
     SHASUM=$(curl -sSL --retry 5 "${CONTAINERD_URL}" | awk '{print $1}')
     ARCH_UPPER=$(echo "$ARCH" | tr '[:lower:]' '[:upper:]')
     echo "ARG CONTAINERD_${ARCH_UPPER}_SHA256SUM=${SHASUM}"
