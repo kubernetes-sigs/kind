@@ -113,13 +113,14 @@ var NoNodeProviderDetectedError = errors.NewWithoutStack("failed to detect any s
 // that logic will be in a public API as well.
 func DetectNodeProvider() (ProviderOption, error) {
 	// auto-detect based on each node provider's IsAvailable() function
-	if docker.IsAvailable() {
+	switch {
+	case docker.IsAvailable():
 		return ProviderWithDocker(), nil
-	}
-	if podman.IsAvailable() {
+	case podman.IsAvailable():
 		return ProviderWithPodman(), nil
+	default:
+		return nil, errors.WithStack(NoNodeProviderDetectedError)
 	}
-	return nil, errors.WithStack(NoNodeProviderDetectedError)
 }
 
 // ProviderOption is an option for configuring a provider
