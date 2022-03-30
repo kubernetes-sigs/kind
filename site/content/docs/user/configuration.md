@@ -257,7 +257,15 @@ nodes:
 - role: worker
 {{< /codeFromInline >}}
 
-You can also set a specific Kubernetes version by setting the `node`'s container image. You can find available image tags on the [releases page](https://github.com/kubernetes-sigs/kind/releases). Please include the `@sha256:` [image digest](https://docs.docker.com/engine/reference/commandline/pull/#pull-an-image-by-digest-immutable-identifier) from the image in the release notes, as seen in this example:
+## Per-Node Options
+
+The following options are available for setting on each entry in `nodes`.
+
+NOTE: not all options are documented yet!  We will fix this with time, PRs welcome!
+
+### Kubernetes Version
+
+You can set a specific Kubernetes version by setting the `node`'s container image. You can find available image tags on the [releases page](https://github.com/kubernetes-sigs/kind/releases). Please include the `@sha256:` [image digest](https://docs.docker.com/engine/reference/commandline/pull/#pull-an-image-by-digest-immutable-identifier) from the image in the release notes, as seen in this example:
 
 {{< codeFromInline lang="yaml" >}}
 kind: Cluster
@@ -267,13 +275,6 @@ nodes:
 - role: worker
   image: kindest/node:v1.16.4@sha256:b91a2c2317a000f3a783489dfb755064177dbc3a0b2f4147d50f04825d016f55
 {{< /codeFromInline >}}
-
-
-## Per-Node Options
-
-The following options are available for setting on each entry in `nodes`.
-
-NOTE: not all options are documented yet!  We will fix this with time, PRs welcome!
 
 ### Extra Mounts
 
