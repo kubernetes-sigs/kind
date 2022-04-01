@@ -8,6 +8,9 @@ on:
     paths-ignore:
       - 'site/**'
 
+permissions:
+  contents: read
+
 jobs:
   podman:
     name: Podman

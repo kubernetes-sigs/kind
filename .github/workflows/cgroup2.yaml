@@ -8,6 +8,9 @@ on:
     paths-ignore:
       - 'site/**'
 
+permissions:
+  contents: read
+
 jobs:
   docker:
     name: Cgroup v2
