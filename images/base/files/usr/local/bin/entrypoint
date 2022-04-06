@@ -217,6 +217,28 @@ fix_cgroup() {
   current_cgroup=$(grep -E '^[^:]*:([^:]*,)?cpu(,[^,:]*)?:.*' /proc/self/cgroup | cut -d: -f3)
   local cgroup_subsystems
   cgroup_subsystems=$(findmnt -lun -o source,target -t cgroup | grep "${current_cgroup}" | awk '{print $2}')
+  # Unmount the cgroup subsystems that are not known to runtime used to
+  # run the container we are in. Those subsystems are not properly scoped
+  # (i.e. the root cgroup is exposed, rather than something like docker/xxxx).
+  # In case a runtime (which is aware of more subsystems -- such as rdma,
+  # misc, or unified) is used inside the container, it may create cgroups for
+  # these subsystems, and as they are not scoped, they will leak to the host
+  # and thus will become non-removable.
+  #
+  # See https://github.com/kubernetes/kubernetes/issues/109182
+  local unsupported_cgroups
+  unsupported_cgroups=$(findmnt -lun -o source,target -t cgroup | grep -v "${current_cgroup}" | awk '{print $2}')
+  if [ -n "$unsupported_cgroups" ]; then
+    local mnt
+    echo "$unsupported_cgroups" |
+    while IFS= read -r mnt; do
+      echo "INFO: unmounting and removing $mnt"
+      umount "$mnt" || true
+      rmdir "$mnt" || true
+    done
+  fi
+
+
   # For each cgroup subsystem, Docker does a bind mount from the current
   # cgroup to the root of the cgroup subsystem. For instance:
   #   /sys/fs/cgroup/memory/docker/<cid> -> /sys/fs/cgroup/memory
