@@ -203,18 +203,31 @@ fix_cgroup() {
     return
   fi
   echo 'INFO: detected cgroup v1'
-  echo 'INFO: fix cgroup mounts for all subsystems'
+  local current_cgroup
+  current_cgroup=$(grep -E '^[^:]*:([^:]*,)?cpu(,[^,:]*)?:.*' /proc/self/cgroup | cut -d: -f3)
+  if [ "$current_cgroup" = "/" ]; then
+    echo "INFO: cgroupns detected, no need to fix cgroups"
+    return
+  fi
+
+  # NOTE The rest of this function deals with the unfortunate situation of
+  # cgroup v1 with no cgroupns enabled. One fine day every user will have
+  # cgroupns enabled (or switch or cgroup v2 which has it enabled by default).
+  # Once that happens, this function can be removed completely.
+
+  echo 'WARN: cgroupns not enabled! Please use cgroup v2, or cgroup v1 with cgroupns enabled.'
+
   # See: https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration
   # Capture initial state before modifying
   #
   # Basically we're looking for the cgroup-path for the cpu controller for the
   # current process. this tells us what cgroup-path the container is in.
   # Then we collect the subsystems that are active on this path.
-  # We assume the cpu controller is in use on all node containers.
+  # We assume the cpu controller is in use on all node containers,
+  # and other controllers use the same sub-path.
   #
   # See: https://man7.org/linux/man-pages/man7/cgroups.7.html
-  local current_cgroup
-  current_cgroup=$(grep -E '^[^:]*:([^:]*,)?cpu(,[^,:]*)?:.*' /proc/self/cgroup | cut -d: -f3)
+  echo 'INFO: fix cgroup mounts for all subsystems'
   local cgroup_subsystems
   cgroup_subsystems=$(findmnt -lun -o source,target -t cgroup | grep "${current_cgroup}" | awk '{print $2}')
   # Unmount the cgroup subsystems that are not known to runtime used to
