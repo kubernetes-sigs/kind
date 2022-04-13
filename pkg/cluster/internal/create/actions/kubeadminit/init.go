@@ -122,7 +122,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			return errors.Wrap(err, "could not parse Kubernetes version")
 		}
 		taints := []string{"node-role.kubernetes.io/control-plane-", "node-role.kubernetes.io/master-"}
-		if kubeVersion.LessThan(version.MustParseSemantic("v1.24.0")) {
+		if kubeVersion.LessThan(version.MustParseSemantic("v1.24.0-0")) {
 			taints = []string{"node-role.kubernetes.io/master-"}
 		}
 		taintArgs := []string{"--kubeconfig=/etc/kubernetes/admin.conf", "taint", "nodes", "--all"}

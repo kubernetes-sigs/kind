@@ -346,3 +346,72 @@ func TestComponents(t *testing.T) {
 		}
 	}
 }
+
+func TestVersion_LessThan_AtLeast(t *testing.T) {
+	tests := []struct {
+		name     string
+		version  string
+		lessThan string
+		want     bool
+	}{
+		{
+			name:     "same version",
+			version:  "1.21.1",
+			lessThan: "1.21.1",
+			want:     false,
+		},
+		{
+			name:     "one patch less",
+			version:  "1.21.1",
+			lessThan: "1.21.2",
+			want:     true,
+		},
+		{
+			name:     "one patch greater",
+			version:  "1.21.3",
+			lessThan: "1.21.2",
+			want:     false,
+		},
+		{
+			name:     "one patch less but one minor more",
+			version:  "1.22.1",
+			lessThan: "1.21.2",
+			want:     false,
+		},
+		{
+			name:     "one patch greater but one minor less",
+			version:  "1.20.3",
+			lessThan: "1.21.2",
+			want:     true,
+		},
+		{
+			name:     "same version against prerelease",
+			version:  "v1.24.0",
+			lessThan: "v1.24.0-beta.0.115+65178fec72df62",
+			want:     false,
+		},
+		{
+			name:     "prerelease against same version",
+			version:  "v1.24.0-beta.0.115+65178fec72df62",
+			lessThan: "v1.24.0",
+			want:     true,
+		},
+		{
+			name:     "prerelease against same version considering prereleases",
+			version:  "v1.24.0-beta.0.115+65178fec72df62",
+			lessThan: "v1.24.0-0",
+			want:     false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := MustParseSemantic(tt.version)
+			if got := v.LessThan(MustParseSemantic(tt.lessThan)); got != tt.want {
+				t.Errorf("Version.LessThan() = %v, want %v", got, tt.want)
+			}
+			if got := v.AtLeast(MustParseSemantic(tt.lessThan)); got == tt.want {
+				t.Errorf("Version.AtLeast() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
