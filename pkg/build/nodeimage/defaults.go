@@ -20,4 +20,4 @@ package nodeimage
 const DefaultImage = "kindest/node:latest"
 
 // DefaultBaseImage is the default base image used
-const DefaultBaseImage = "docker.io/kindest/base:v20220324-837a3da8"
+const DefaultBaseImage = "docker.io/kindest/base:v20220413-d2354dce"
