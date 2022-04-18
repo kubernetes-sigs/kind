@@ -58,8 +58,13 @@ trap signal_handler INT TERM
 build() {
   # build the node image w/ kubernetes
   kind build node-image -v 1
+  # Ginkgo v1 is used by Kubernetes 1.24 and earlier, fallback if v2 is not available.
+  GINKGO_SRC_DIR="vendor/github.com/onsi/ginkgo/v2/ginkgo"
+  if [ ! -d "$GINKGO_SRC_DIR" ]; then
+      GINKGO_SRC_DIR="vendor/github.com/onsi/ginkgo/ginkgo"
+  fi
   # make sure we have e2e requirements
-  make all WHAT='cmd/kubectl test/e2e/e2e.test vendor/github.com/onsi/ginkgo/ginkgo'
+  make all WHAT="cmd/kubectl test/e2e/e2e.test $GINKGO_SRC_DIR"
 }
 
 check_structured_log_support() {
