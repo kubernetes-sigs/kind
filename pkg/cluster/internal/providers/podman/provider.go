@@ -17,7 +17,6 @@ limitations under the License.
 package podman
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -26,7 +25,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/shirou/gopsutil/disk"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -444,30 +442,5 @@ func info(logger log.Logger) (*providers.ProviderInfo, error) {
 }
 
 func (p *provider) CheckFreeDiskSpace(maxPercentage int) error {
-	var buff bytes.Buffer
-	err := exec.Command("podman", "info", "--format", "{{ .Store.GraphRoot }}").SetStdout(&buff).Run()
-	if err != nil {
-		return err
-	}
-
-	path := buff.String()
-	path = strings.ReplaceAll(path, "\n", "")
-	path = strings.ReplaceAll(path, "\r\n", "")
-
-	usageStat, err := disk.Usage(path)
-	if err != nil {
-		return err
-	}
-
-	usedPercent, err := strconv.Atoi(fmt.Sprintf("%2.f", usageStat.UsedPercent))
-
-	if err != nil {
-		return err
-	}
-
-	if usedPercent >= maxPercentage {
-		return errors.Errorf("out of disk space: more than %d%% used", maxPercentage)
-	}
-
-	return nil
+	return common.CheckFreeDiskSpace(maxPercentage, "podman", "info", "--format", "{{ .Store.GraphRoot }}")
 }
