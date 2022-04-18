@@ -17,14 +17,17 @@ limitations under the License.
 package docker
 
 import (
+	"bytes"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
+	"github.com/shirou/gopsutil/disk"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
@@ -341,4 +344,33 @@ func info() (*providers.ProviderInfo, error) {
 		}
 	}
 	return &info, nil
+}
+
+func (p *provider) CheckFreeDiskSpace(maxPercentage int) error {
+	var buff bytes.Buffer
+	err := exec.Command("docker", "info", "--format", "{{ .DockerRootDir }}").SetStdout(&buff).Run()
+	if err != nil {
+		return err
+	}
+
+	path := buff.String()
+	path = strings.ReplaceAll(path, "\n", "")
+	path = strings.ReplaceAll(path, "\r\n", "")
+
+	usageStat, err := disk.Usage(path)
+	if err != nil {
+		return err
+	}
+
+	usedPercent, err := strconv.Atoi(fmt.Sprintf("%2.f", usageStat.UsedPercent))
+
+	if err != nil {
+		return err
+	}
+
+	if usedPercent >= maxPercentage {
+		return errors.Errorf("out of disk space: more than %d%% used", maxPercentage)
+	}
+
+	return nil
 }

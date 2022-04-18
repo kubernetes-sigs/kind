@@ -47,6 +47,8 @@ type Provider interface {
 	CollectLogs(dir string, nodes []nodes.Node) error
 	// Info returns the provider info
 	Info() (*ProviderInfo, error)
+	// CheckFreeDiskSpace returns an error, in case there is less than (100 - maxPercentage) disk space available
+	CheckFreeDiskSpace(maxPercentage int) error
 }
 
 // ProviderInfo is the info of the provider
