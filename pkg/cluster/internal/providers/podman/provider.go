@@ -373,6 +373,9 @@ func (p *provider) Info() (*providers.ProviderInfo, error) {
 // The structure is different from `docker info --format '{{json .}}'`,
 // and lacks information about the availability of the cgroup controllers.
 type podmanInfo struct {
+	Store struct {
+		GraphRoot string `json:"graphRoot,omitempty"`
+	} `json:"store"`
 	Host struct {
 		CgroupVersion     string   `json:"cgroupVersion,omitempty"` // "v2"
 		CgroupControllers []string `json:"cgroupControllers,omitempty"`
@@ -396,6 +399,12 @@ func info(logger log.Logger) (*providers.ProviderInfo, error) {
 	if err := json.Unmarshal(out, &pInfo); err != nil {
 		return nil, err
 	}
+
+	// Check if there is enough disk space available
+	if err := common.CheckFreeDiskSpace(pInfo.Store.GraphRoot); err != nil {
+		return nil, err
+	}
+
 	stringSliceContains := func(s []string, str string) bool {
 		for _, v := range s {
 			if v == str {
@@ -439,8 +448,4 @@ func info(logger log.Logger) (*providers.ProviderInfo, error) {
 		}
 	}
 	return info, nil
-}
-
-func (p *provider) CheckFreeDiskSpace(maxPercentage int) error {
-	return common.CheckFreeDiskSpace(maxPercentage, "podman", "info", "--format", "{{ .Store.GraphRoot }}")
 }

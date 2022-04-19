@@ -18,27 +18,20 @@ limitations under the License.
 package common
 
 import (
-	"bytes"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/shirou/gopsutil/disk"
 	"sigs.k8s.io/kind/pkg/errors"
-	"sigs.k8s.io/kind/pkg/exec"
 )
 
-func CheckFreeDiskSpace(maxPercentage int, command string, args ...string) error {
-	var buff bytes.Buffer
-	if err := exec.Command(command, args...).SetStdout(&buff).Run(); err != nil {
-		return err
-	}
+const (
+	maxPercentage = 95
+)
 
-	path := buff.String()
-	path = strings.ReplaceAll(path, "\n", "")
-	path = strings.ReplaceAll(path, "\r\n", "")
-
-	usageStat, err := disk.Usage(path)
+// CheckFreeDiskSpace returns an error, in case there is less than (100 - maxPercentage) disk space available
+func CheckFreeDiskSpace(containerRootDir string) error {
+	usageStat, err := disk.Usage(containerRootDir)
 	if err != nil {
 		return err
 	}

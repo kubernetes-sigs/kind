@@ -296,6 +296,7 @@ func (p *provider) Info() (*providers.ProviderInfo, error) {
 
 // dockerInfo corresponds to `docker info --format '{{json .}}'`
 type dockerInfo struct {
+	DockerRootDir   string   `json:"DockerRootDir"`
 	CgroupDriver    string   `json:"CgroupDriver"`  // "systemd", "cgroupfs", "none"
 	CgroupVersion   string   `json:"CgroupVersion"` // e.g. "2"
 	MemoryLimit     bool     `json:"MemoryLimit"`
@@ -314,6 +315,12 @@ func info() (*providers.ProviderInfo, error) {
 	if err := json.Unmarshal(out, &dInfo); err != nil {
 		return nil, err
 	}
+
+	// Check if there is enough disk space available
+	if err := common.CheckFreeDiskSpace(dInfo.DockerRootDir); err != nil {
+		return nil, err
+	}
+
 	info := providers.ProviderInfo{
 		Cgroup2: dInfo.CgroupVersion == "2",
 	}
@@ -341,8 +348,4 @@ func info() (*providers.ProviderInfo, error) {
 		}
 	}
 	return &info, nil
-}
-
-func (p *provider) CheckFreeDiskSpace(maxPercentage int) error {
-	return common.CheckFreeDiskSpace(maxPercentage, "docker", "info", "--format", "{{ .DockerRootDir }}")
 }

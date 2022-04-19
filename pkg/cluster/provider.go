@@ -171,11 +171,6 @@ func ProviderWithPodman() ProviderOption {
 
 // Create provisions and starts a kubernetes-in-docker cluster
 func (p *Provider) Create(name string, options ...CreateOption) error {
-	// Check if there is enough disk space available
-	if err := p.provider.CheckFreeDiskSpace(maxPercentageDiskSpace); err != nil {
-		return err
-	}
-
 	// apply options
 	opts := &internalcreate.ClusterOptions{
 		NameOverride: name,
