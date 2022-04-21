@@ -64,7 +64,7 @@ build() {
       GINKGO_SRC_DIR="vendor/github.com/onsi/ginkgo/ginkgo"
   fi
   # make sure we have e2e requirements
-  make all WHAT="cmd/kubectl test/e2e/e2e.test $GINKGO_SRC_DIR"
+  make all WHAT="cmd/kubectl test/e2e/e2e.test ${GINKGO_SRC_DIR}"
 }
 
 check_structured_log_support() {
