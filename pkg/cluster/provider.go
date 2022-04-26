@@ -222,6 +222,16 @@ func (p *Provider) ListInternalNodes(name string) ([]nodes.Node, error) {
 	return nodeutils.InternalNodes(n)
 }
 
+// SaveImage saves images to dest, as in `podman save` or `docker save`
+func (p *Provider) SaveImage(images []string, dest string) error {
+	return p.provider.SaveImage(images, dest)
+}
+
+// ImageID return the Id of the container image
+func (p *Provider) ImageID(containerNameOrID string) (string, error) {
+	return p.provider.ImageID(containerNameOrID)
+}
+
 // CollectLogs will populate dir with cluster logs and other debug files
 func (p *Provider) CollectLogs(name, dir string) error {
 	// TODO: should use ListNodes and Collect should handle nodes differently

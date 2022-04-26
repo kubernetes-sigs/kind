@@ -139,6 +139,28 @@ func (p *provider) ListNodes(cluster string) ([]nodes.Node, error) {
 	return ret, nil
 }
 
+// SaveImage saves images to dest, as in `podman save`
+func (p *provider) SaveImage(images []string, dest string) error {
+	commandArgs := append([]string{"save", "-o", dest}, images...)
+	return exec.Command("podman", commandArgs...).Run()
+}
+
+// ImageID return the Id of the container image
+func (p *provider) ImageID(containerNameOrID string) (string, error) {
+	cmd := exec.Command("podman", "image", "inspect",
+		"-f", "{{ .Id }}",
+		containerNameOrID, // ... against the container
+	)
+	lines, err := exec.OutputLines(cmd)
+	if err != nil {
+		return "", err
+	}
+	if len(lines) != 1 {
+		return "", errors.Errorf("Podman image ID should only be one line, got %d lines", len(lines))
+	}
+	return lines[0], nil
+}
+
 // DeleteNodes is part of the providers.Provider interface
 func (p *provider) DeleteNodes(n []nodes.Node) error {
 	if len(n) == 0 {
