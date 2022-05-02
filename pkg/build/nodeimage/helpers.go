@@ -49,3 +49,7 @@ func findSandboxImage(config string) (string, error) {
 	}
 	return match[1], nil
 }
+
+func dockerBuildOsAndArch(arch string) string {
+	return "linux/" + arch
+}
