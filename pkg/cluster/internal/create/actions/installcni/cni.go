@@ -26,8 +26,8 @@ import (
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
-	"sigs.k8s.io/kind/pkg/cluster/internal/patch"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
+	"sigs.k8s.io/kind/pkg/internal/patch"
 )
 
 type action struct{}

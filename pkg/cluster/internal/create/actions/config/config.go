@@ -29,10 +29,10 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
-	"sigs.k8s.io/kind/pkg/cluster/internal/patch"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/common"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
+	"sigs.k8s.io/kind/pkg/internal/patch"
 )
 
 // Action implements action for creating the node config files
