@@ -113,13 +113,18 @@ func (c *buildContext) buildImage(bits kube.Bits) error {
 	// write version
 	// TODO: support grabbing version from a binary instead?
 	// This may or may not be a good idea ...
-	if err := createFile(cmder, "/kind/version", bits.Version()); err != nil {
+	rawVersion := bits.Version()
+	parsedVersion, err := version.ParseSemantic(rawVersion)
+	if err != nil {
+		return errors.Wrap(err, "invalid Kubernetes version")
+	}
+	if err := createFile(cmder, "/kind/version", rawVersion); err != nil {
 		return err
 	}
 
 	// pre-pull images that were not part of the build and write CNI / storage
 	// manifests
-	if _, err = c.prePullImagesAndWriteManifests(bits, containerID); err != nil {
+	if _, err = c.prePullImagesAndWriteManifests(bits, parsedVersion, containerID); err != nil {
 		c.logger.Errorf("Image build Failed! Failed to pull Images: %v", err)
 		return err
 	}
@@ -153,7 +158,7 @@ func (c *buildContext) getBuiltImages(bits kube.Bits) (sets.String, error) {
 }
 
 // must be run after kubernetes has been installed on the node
-func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, containerID string) ([]string, error) {
+func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVersion *version.Version, containerID string) ([]string, error) {
 	// first get the images we actually built
 	builtImages, err := c.getBuiltImages(bits)
 	if err != nil {
@@ -163,13 +168,6 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, containerI
 
 	// helpers to run things in the build container
 	cmder := docker.ContainerCmder(containerID)
-
-	// parse version for comparison
-	rawVersion := bits.Version()
-	ver, err := version.ParseSemantic(rawVersion)
-	if err != nil {
-		return nil, err
-	}
 
 	// For kubernetes v1.15+ (actually 1.16 alpha versions) we may need to
 	// drop the arch suffix from images to get the expected image
@@ -199,18 +197,18 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, containerI
 
 	// gets the list of images required by kubeadm
 	requiredImages, err := exec.OutputLines(cmder.Command(
-		"kubeadm", "config", "images", "list", "--kubernetes-version", rawVersion,
+		"kubeadm", "config", "images", "list", "--kubernetes-version", bits.Version(),
 	))
 	if err != nil {
 		return nil, err
 	}
 
 	// replace pause image with our own
-	config, err := exec.Output(cmder.Command("cat", "/etc/containerd/config.toml"))
+	containerdConfig, err := exec.Output(cmder.Command("cat", containerdConfigPath))
 	if err != nil {
 		return nil, err
 	}
-	pauseImage, err := findSandboxImage(string(config))
+	pauseImage, err := findSandboxImage(string(containerdConfig))
 	if err != nil {
 		return nil, err
 	}
@@ -223,6 +221,12 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, containerI
 	}
 	requiredImages = append(requiredImages[:n], pauseImage)
 
+	if parsedVersion.LessThan(version.MustParseSemantic("v1.24.0")) {
+		if err := configureContainerdSystemdCgroupFalse(cmder, string(containerdConfig)); err != nil {
+			return nil, err
+		}
+	}
+
 	// write the default CNI manifest
 	if err := createFile(cmder, defaultCNIManifestLocation, defaultCNIManifest); err != nil {
 		c.logger.Errorf("Image build Failed! Failed write default CNI Manifest: %v", err)
@@ -234,7 +238,7 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, containerI
 	// write the default Storage manifest
 	// in < 1.14 we need to use beta labels
 	storageManifest := defaultStorageManifest
-	if ver.LessThan(version.MustParseSemantic("v1.14.0")) {
+	if parsedVersion.LessThan(version.MustParseSemantic("v1.14.0")) {
 		storageManifest = strings.ReplaceAll(storageManifest, "kubernetes.io/os", "beta.kubernetes.io/os")
 	}
 	if err := createFile(cmder, defaultStorageManifestLocation, storageManifest); err != nil {
