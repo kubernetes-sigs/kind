@@ -13,8 +13,11 @@ ConditionPathExists=/var/lib/kubelet/config.yaml
 ExecStart=/usr/bin/kubelet
 Restart=always
 StartLimitInterval=0
-# NOTE: kind deviates from upstream here with a lower RestartSecuse
+# NOTE: kind deviates from upstream here with a lower RestartSec
 RestartSec=1s
+# and here
+CPUAccounting=true
+MemoryAccounting=true
 
 [Install]
 WantedBy=multi-user.target
