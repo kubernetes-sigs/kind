@@ -44,3 +44,6 @@ ensure_subtree_control() {
 ensure_subtree_control /
 mkdir -p /sys/fs/cgroup/kubelet
 ensure_subtree_control /kubelet
+# again for kubelet.slice for systemd cgroup driver
+mkdir -p /sys/fs/cgroup/kubelet.slice
+ensure_subtree_control /kubelet.slice
