@@ -39,6 +39,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision "install-kind", type: "shell", run: "once" do |sh|
     sh.inline = <<~SHELL
     set -eux -o pipefail
+    git config --global --add safe.directory /vagrant
     make -C /vagrant install INSTALL_DIR=/usr/local/bin
     SHELL
   end
