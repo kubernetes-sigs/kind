@@ -47,16 +47,11 @@ Once your Windows machine is ready, you need to do a few more steps to set up WS
 1. Open a PowerShell window as an admin, then run
 
     {{< codeFromInline lang="powershell" >}}
-Enable-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform, Microsoft-Windows-Subsystem-Linux
+wsl --install -d Ubuntu-20.04
 {{< /codeFromInline >}}
 
-1. Reboot when prompted.
-1. After the reboot, set WSL to default to WSL2. Open an admin PowerShell window and run
-    {{< codeFromInline lang="powershell" >}}
-wsl --set-default-version 2
-{{< /codeFromInline >}}
-1. Now, you can install your Linux distro of choice by searching the Windows Store. If you don't want to use the Windows Store, then follow the steps in the WSL docs for [manual install](https://docs.microsoft.com/en-us/windows/wsl/install-manual).
-1. Start up your distro with the shortcut added to the start menu
+1. Reboot if prompted.
+1. You can also install your Linux distro of choice by searching the Windows Store. 
 
 ## Setting up Docker in WSL2
 
