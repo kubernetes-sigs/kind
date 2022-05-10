@@ -294,10 +294,12 @@ fix_cgroup() {
   # "nesting" clusters, unless we instruct it to use a different cgroup root.
   # We do this, and when doing so we must fixup this alternative root
   # currently this is hardcoded to be /kubelet
+  # under systemd cgroup driver, kubelet appends .slice
   mount --make-rprivate /sys/fs/cgroup
   echo "${cgroup_subsystems}" |
   while IFS= read -r subsystem; do
     mount_kubelet_cgroup_root "/kubelet" "${subsystem}"
+    mount_kubelet_cgroup_root "/kubelet.slice" "${subsystem}"
   done
 }
 
