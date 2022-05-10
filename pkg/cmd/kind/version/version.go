@@ -54,7 +54,7 @@ const VersionCore = "0.13.0"
 
 // VersionPreRelease is the pre-release portion of the kind CLI version per
 // Semantic Versioning 2.0.0
-const VersionPreRelease = "alpha"
+const VersionPreRelease = ""
 
 // GitCommit is the commit used to build the kind binary, if available.
 // It is injected at build time.
