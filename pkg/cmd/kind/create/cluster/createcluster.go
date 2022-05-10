@@ -62,7 +62,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd.Flags().BoolVar(&flags.Retain, "retain", false, "retain nodes for debugging when cluster creation fails")
 	cmd.Flags().DurationVar(&flags.Wait, "wait", time.Duration(0), "wait for control plane node to be ready (default 0s)")
 	cmd.Flags().StringVar(&flags.Kubeconfig, "kubeconfig", "", "sets kubeconfig path instead of $KUBECONFIG or $HOME/.kube/config")
-	cmd.Flags().StringVar(&flags.Kubeconfig, "apiServerAddress", "", "apiServerAddress to write to kubeconfig")
+	cmd.Flags().StringVar(&flags.Kubeconfig, "address", "", "default cluster server address to write to kubeconfig instead of loopback address")
 	return cmd
 }
 
