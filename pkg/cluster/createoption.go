@@ -124,3 +124,11 @@ func CreateWithDisplaySalutation(displaySalutation bool) CreateOption {
 		return nil
 	})
 }
+
+// CreateWithApiServerAddress Sets server in kubeconfig to provided value
+func CreateWithApiServerAddress(apiServerAddress string) CreateOption {
+	return createOptionAdapter(func(o *internalcreate.ClusterOptions) error {
+		o.ApiServerAddressOverride = apiServerAddress
+		return nil
+	})
+}

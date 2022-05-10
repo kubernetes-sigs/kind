@@ -60,8 +60,9 @@ type ClusterOptions struct {
 	// see https://github.com/kubernetes-sigs/kind/issues/324
 	StopBeforeSettingUpKubernetes bool // if false kind should setup kubernetes after creating nodes
 	// Options to control output
-	DisplayUsage      bool
-	DisplaySalutation bool
+	DisplayUsage             bool
+	DisplaySalutation        bool
+	ApiServerAddressOverride string
 }
 
 // Cluster creates a cluster
@@ -231,6 +232,10 @@ func fixupOptions(opts *ClusterOptions) error {
 		for i := range opts.Config.Nodes {
 			opts.Config.Nodes[i].Image = opts.NodeImage
 		}
+	}
+
+	if opts.ApiServerAddressOverride != "" {
+		opts.Config.Networking.APIServerAddress = opts.ApiServerAddressOverride
 	}
 
 	// default config fields (important for usage as a library, where the config
