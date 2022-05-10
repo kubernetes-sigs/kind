@@ -27,6 +27,11 @@ if grep -Eqv "0[[:space:]]+0[[:space:]]+4294967295" /proc/self/uid_map; then
   echo 'INFO: running in a user namespace (experimental)'
 fi
 
+grep_allow_nomatch() {
+  # grep exits 0 on match, 1 on no match, 2 on error
+  grep "$@" || [[ $? == 1 ]]
+}
+
 validate_userns() {
   if [[ -z "${userns}" ]]; then
     return
@@ -240,7 +245,7 @@ fix_cgroup() {
   #
   # See https://github.com/kubernetes/kubernetes/issues/109182
   local unsupported_cgroups
-  unsupported_cgroups=$(findmnt -lun -o source,target -t cgroup | grep -v "${current_cgroup}" | awk '{print $2}')
+  unsupported_cgroups=$(findmnt -lun -o source,target -t cgroup | grep_allow_nomatch -v "${current_cgroup}" | awk '{print $2}')
   if [ -n "$unsupported_cgroups" ]; then
     local mnt
     echo "$unsupported_cgroups" |
