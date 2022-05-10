@@ -40,6 +40,10 @@ version = 2
   tolerate_missing_hugepages_controller = true
   # restrict_oom_score_adj needs to be true when running inside UserNS (rootless)
   restrict_oom_score_adj = false
+  # allow listen ports < 1024 for non-root
+  enable_unprivileged_ports = true
+  # allow icmp without capabilities
+  enable_unprivileged_icmp = true
 
 # Enable registry.k8s.io as the primary mirror for k8s.gcr.io
 # See: https://github.com/kubernetes/k8s.io/issues/3411
