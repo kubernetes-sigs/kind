@@ -5,8 +5,8 @@ go 1.13
 require (
 	github.com/coreos/go-iptables v0.6.0
 	github.com/vishvananda/netlink v1.1.0
-	k8s.io/api v0.22.3
-	k8s.io/apimachinery v0.22.3
-	k8s.io/client-go v0.22.3
-	k8s.io/klog/v2 v2.30.0
+	k8s.io/api v0.24.0
+	k8s.io/apimachinery v0.24.0
+	k8s.io/client-go v0.24.0
+	k8s.io/klog/v2 v2.60.1
 )
