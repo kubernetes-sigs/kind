@@ -1,6 +1,8 @@
 # explicitly use v2 config format
 version = 2
 
+imports = ["/etc/containerd/conf.d/*.toml"]
+
 [proxy_plugins]
 # fuse-overlayfs is used for rootless
 [proxy_plugins."fuse-overlayfs"]
@@ -40,6 +42,9 @@ version = 2
   tolerate_missing_hugepages_controller = true
   # restrict_oom_score_adj needs to be true when running inside UserNS (rootless)
   restrict_oom_score_adj = false
+
+[plugins."io.containerd.grpc.v1.cri".registry]
+  config_path = "/etc/containerd/certs.d"
 
 # Enable registry.k8s.io as the primary mirror for k8s.gcr.io
 # See: https://github.com/kubernetes/k8s.io/issues/3411
