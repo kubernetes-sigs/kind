@@ -27,7 +27,7 @@ For a complete [install guide] see [the documentation here][install guide].
 
 You can install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.12.0`.
 
-**NOTE**: please use the latest go to do this, ideally go 1.13 or greater.
+**NOTE**: please use the latest go to do this. KIND is developed with the latest stable go, see [`.go-version`](./.go-version) for the exact version we're using.
 
 **NOTE**: `go get` should not be run from a Go [modules] enabled project directory,
 as go get inside a modules enabled project updates dependencies / behaves differently. Try for example `cd $HOME` first.
