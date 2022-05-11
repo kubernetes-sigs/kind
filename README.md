@@ -67,7 +67,10 @@ sudo port selfupdate && sudo port install kind
 On macOS via Bash:
 
 ```console
-curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.13.0/kind-darwin-amd64
+# for Intel Macs
+[ $(uname -m) = x86_64 ]&& curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.13.0/kind-darwin-amd64
+# for M1 / ARM Macs
+[ $(uname -m) = arm64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.13.0/kind-darwin-arm64
 chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
 ```

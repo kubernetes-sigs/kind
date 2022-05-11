@@ -66,7 +66,10 @@ mv ./kind /some-dir-in-your-PATH/kind
 On macOS:
 
 {{< codeFromInline lang="bash" >}}
-curl -Lo ./kind https://kind.sigs.k8s.io/dl/{{< stableVersion >}}/kind-darwin-amd64
+# for Intel Macs
+[ $(uname -m) = x86_64 ]&& curl -Lo ./kind https://kind.sigs.k8s.io/dl/{{< stableVersion >}}/kind-darwin-amd64
+# for M1 / ARM Macs
+[ $(uname -m) = arm64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/{{< stableVersion >}}/kind-darwin-arm64
 chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
 {{< /codeFromInline >}}
