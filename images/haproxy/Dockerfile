@@ -15,7 +15,7 @@
 # This image is a haproxy image + minimal config so the container will not exit
 # while we rewrite the config at runtime and signal haproxy to reload.
 
-ARG BASE="k8s.gcr.io/build-image/debian-base:buster-v1.8.0"
+ARG BASE="k8s.gcr.io/build-image/debian-base:bullseye-v1.2.0"
 FROM ${BASE} as build
 
 # NOTE: copyrights.tar.gz is a quirk of Kubernetes's debian-base image
@@ -27,9 +27,7 @@ RUN [ ! -f /usr/share/copyrights.tar.gz ] || tar -C / -xzvf /usr/share/copyright
 # - haproxy (see: https://haproxy.debian.net/)
 # - bash (ldd is a bash script and debian-base removes bash)
 # - procps (for `kill` which kind needs)
-RUN echo deb http://deb.debian.org/debian buster-backports main \
-      >/etc/apt/sources.list.d/backports.list && \
-    apt update && \
+RUN apt update && \
     apt install -y --no-install-recommends haproxy=2.2.\* \
       procps bash
 
