@@ -25,9 +25,9 @@ kind bootstraps each "node" with [kubeadm][kubeadm]. For more details see [the d
 
 For a complete [install guide] see [the documentation here][install guide].
 
-You can install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.12.0`.
+You can install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.13.0`.
 
-**NOTE**: please use the latest go to do this, ideally go 1.13 or greater.
+**NOTE**: please use the latest go to do this. KIND is developed with the latest stable go, see [`.go-version`](./.go-version) for the exact version we're using.
 
 **NOTE**: `go get` should not be run from a Go [modules] enabled project directory,
 as go get inside a modules enabled project updates dependencies / behaves differently. Try for example `cd $HOME` first.
@@ -47,7 +47,7 @@ into your `$PATH`:
 On Linux:
 
 ```console
-curl -Lo ./kind "https://kind.sigs.k8s.io/dl/v0.12.0/kind-$(uname)-amd64"
+curl -Lo ./kind "https://kind.sigs.k8s.io/dl/v0.13.0/kind-$(uname)-amd64"
 chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
 ```
@@ -67,7 +67,10 @@ sudo port selfupdate && sudo port install kind
 On macOS via Bash:
 
 ```console
-curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.12.0/kind-darwin-amd64
+# for Intel Macs
+[ $(uname -m) = x86_64 ]&& curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.13.0/kind-darwin-amd64
+# for M1 / ARM Macs
+[ $(uname -m) = arm64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.13.0/kind-darwin-arm64
 chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
 ```
@@ -75,7 +78,7 @@ mv ./kind /some-dir-in-your-PATH/kind
 On Windows:
 
 ```powershell
-curl.exe -Lo kind-windows-amd64.exe https://kind.sigs.k8s.io/dl/v0.12.0/kind-windows-amd64
+curl.exe -Lo kind-windows-amd64.exe https://kind.sigs.k8s.io/dl/v0.13.0/kind-windows-amd64
 Move-Item .\kind-windows-amd64.exe c:\some-dir-in-your-PATH\kind.exe
 
 # OR via Chocolatey (https://chocolatey.org/packages/kind)
