@@ -250,11 +250,8 @@ apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 metadata:
   name: config
-# explicitly set default cgroup driver
-# unblocks https://github.com/kubernetes/kubernetes/pull/99471
-# TODO: consider switching to systemd instead
-# tracked in: https://github.com/kubernetes-sigs/kind/issues/1726
 cgroupDriver: {{ .CgroupDriver }}
+cgroupRoot: /kubelet
 # configure ipv6 addresses in IPv6 mode
 {{ if .IPv6 -}}
 address: "::"
@@ -386,11 +383,8 @@ apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 metadata:
   name: config
-# explicitly set default cgroup driver
-# unblocks https://github.com/kubernetes/kubernetes/pull/99471
-# TODO: consider switching to systemd instead
-# tracked in: https://github.com/kubernetes-sigs/kind/issues/1726
 cgroupDriver: {{ .CgroupDriver }}
+cgroupRoot: /kubelet
 # configure ipv6 addresses in IPv6 mode
 {{ if .IPv6 -}}
 address: "::"
@@ -527,11 +521,8 @@ apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 metadata:
   name: config
-# explicitly set default cgroup driver
-# unblocks https://github.com/kubernetes/kubernetes/pull/99471
-# TODO: consider switching to systemd instead
-# tracked in: https://github.com/kubernetes-sigs/kind/issues/1726
 cgroupDriver: {{ .CgroupDriver }}
+cgroupRoot: /kubelet
 # configure ipv6 addresses in IPv6 mode
 {{ if .IPv6 -}}
 address: "::"
