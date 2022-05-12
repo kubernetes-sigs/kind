@@ -27,6 +27,7 @@ import (
 	"os"
 	"strings"
 
+	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
@@ -36,6 +37,7 @@ import (
 // https://github.com/moby/moby/blob/master/image/spec/v1.md
 // https://github.com/moby/moby/blob/master/image/spec/v1.1.md
 // https://github.com/moby/moby/blob/master/image/spec/v1.2.md
+// https://github.com/opencontainers/image-spec/blob/v1.0.0/spec.md
 func GetArchiveTags(path string) ([]string, error) {
 	// open the archive and find the repositories entry
 	f, err := os.Open(path)
@@ -44,7 +46,12 @@ func GetArchiveTags(path string) ([]string, error) {
 	}
 	defer f.Close()
 	tr := tar.NewReader(f)
-	var hdr *tar.Header
+	var (
+		hdr        *tar.Header
+		ociLayout  ocispec.ImageLayout
+		indexBytes []byte
+		repoTags   archiveRepositories
+	)
 	for {
 		hdr, err = tr.Next()
 		if err == io.EOF {
@@ -54,19 +61,49 @@ func GetArchiveTags(path string) ([]string, error) {
 			return nil, err
 		}
 		if hdr.Name == "repositories" {
+			if err := untarJSON(tr, &repoTags); err != nil {
+				return nil, err
+			}
+			break
+		} else if hdr.Name == ocispec.ImageLayoutFile {
+			if err := untarJSON(tr, &ociLayout); err != nil {
+				return nil, err
+			}
+		} else if hdr.Name == "index.json" {
+			indexBytes, err = ioutil.ReadAll(tr)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if ociLayout.Version != "" && len(indexBytes) > 0 {
 			break
 		}
 	}
-	// read and parse the tags
-	b, err := ioutil.ReadAll(tr)
-	if err != nil {
-		return nil, err
+
+	if ociLayout.Version != "" {
+		if ociLayout.Version != ocispec.ImageLayoutVersion {
+			return nil, fmt.Errorf("unsupported OCI Version: %s", ociLayout.Version)
+		}
+
+		var imageIndex ocispec.Index
+		if err := json.Unmarshal(indexBytes, &imageIndex); err != nil {
+			return nil, err
+		}
+
+		res := []string{}
+		for _, manifest := range imageIndex.Manifests {
+			if imageName, ok := manifest.Annotations["io.containerd.image.name"]; ok {
+				res = append(res, imageName)
+			}
+		}
+
+		if len(res) == 0 {
+			return nil, errors.New("could not find image tags in image metadata")
+		}
+
+		return res, nil
 	}
-	// parse
-	repoTags, err := parseRepositories(b)
-	if err != nil {
-		return nil, err
-	}
+
 	// convert to tags in the docker CLI sense
 	res := []string{}
 	for repo, tags := range repoTags {
@@ -214,4 +251,13 @@ func parseRepositories(data []byte) (archiveRepositories, error) {
 		return nil, err
 	}
 	return repoTags, nil
+}
+
+func untarJSON(reader io.Reader, i interface{}) error {
+	b, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(b, i)
 }
