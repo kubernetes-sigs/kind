@@ -9,6 +9,6 @@ hot reload it at runtime with the actual desired config.
 
 ## Building
 
-You can `docker build -t kindest/haproxy .` in this directory to build a test image.
+You can `make quick` in this directory to build a test image.
 
-To push an actual image use `./push-cross.sh`.
+To push an actual image use `make push`.
