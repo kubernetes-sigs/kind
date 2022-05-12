@@ -34,7 +34,7 @@ cleanup() {
   fi
   # KIND_CREATE_ATTEMPTED is true once we: kind create
   if [ "${KIND_CREATE_ATTEMPTED:-}" = true ]; then
-    kind "export" logs "${ARTIFACTS}/logs" || true
+    kind "export" logs "${ARTIFACTS}" || true
     kind delete cluster || true
   fi
   rm -f _output/bin/e2e.test || true
