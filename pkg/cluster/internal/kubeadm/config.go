@@ -219,7 +219,6 @@ localAPIEndpoint:
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
   kubeletExtraArgs:
-    fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
     provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
 ---
@@ -237,7 +236,6 @@ controlPlane:
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
   kubeletExtraArgs:
-    fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
     provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
 discovery:
@@ -252,6 +250,7 @@ metadata:
   name: config
 cgroupDriver: {{ .CgroupDriver }}
 cgroupRoot: /kubelet
+failSwapOn: false
 # configure ipv6 addresses in IPv6 mode
 {{ if .IPv6 -}}
 address: "::"
@@ -350,7 +349,6 @@ localAPIEndpoint:
 nodeRegistration:
   criSocket: "unix:///run/containerd/containerd.sock"
   kubeletExtraArgs:
-    fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
     provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
     node-labels: "{{ .NodeLabels }}"
@@ -369,7 +367,6 @@ controlPlane:
 nodeRegistration:
   criSocket: "unix:///run/containerd/containerd.sock"
   kubeletExtraArgs:
-    fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
     provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
     node-labels: "{{ .NodeLabels }}"
@@ -385,6 +382,7 @@ metadata:
   name: config
 cgroupDriver: {{ .CgroupDriver }}
 cgroupRoot: /kubelet
+failSwapOn: false
 # configure ipv6 addresses in IPv6 mode
 {{ if .IPv6 -}}
 address: "::"
@@ -488,7 +486,6 @@ localAPIEndpoint:
 nodeRegistration:
   criSocket: "unix:///run/containerd/containerd.sock"
   kubeletExtraArgs:
-    fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
     provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
     node-labels: "{{ .NodeLabels }}"
@@ -507,7 +504,6 @@ controlPlane:
 nodeRegistration:
   criSocket: "unix:///run/containerd/containerd.sock"
   kubeletExtraArgs:
-    fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
     provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
     node-labels: "{{ .NodeLabels }}"
@@ -523,6 +519,7 @@ metadata:
   name: config
 cgroupDriver: {{ .CgroupDriver }}
 cgroupRoot: /kubelet
+failSwapOn: false
 # configure ipv6 addresses in IPv6 mode
 {{ if .IPv6 -}}
 address: "::"
