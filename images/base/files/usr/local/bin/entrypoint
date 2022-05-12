@@ -378,6 +378,22 @@ select_iptables() {
   update-alternatives --set ip6tables "/usr/sbin/ip6tables-${mode}" > /dev/null
 }
 
+fix_certificate() {
+  local apiserver_crt_file="/etc/kubernetes/pki/apiserver.crt"
+  local apiserver_key_file="/etc/kubernetes/pki/apiserver.key"
+
+  # Skip if this Node doesn't run kube-apiserver
+  if [[ ! -f ${apiserver_crt_file} ]] || [[ ! -f ${apiserver_key_file} ]]; then
+    return
+  fi
+
+  # Deletes the certificate for kube-apiserver and generates a new one.
+  # This is necessary because the old one doesn't match the current IP.
+  echo 'INFO: clearing and regenerating the certificate for serving the Kubernetes API' >&2
+  rm -f ${apiserver_crt_file} ${apiserver_key_file}
+  kubeadm init phase certs apiserver --config /kind/kubeadm.conf
+}
+
 enable_network_magic(){
   # well-known docker embedded DNS is at 127.0.0.11:53
   local docker_embedded_dns_ip='127.0.0.11'
@@ -416,10 +432,17 @@ enable_network_magic(){
         echo "ERROR: Have an old IPv4 address but no current IPv4 address (!)" >&2
         exit 1
       fi
-      # kubernetes manifests are only present on control-plane nodes
-      sed -i "s#${old_ipv4}#${curr_ipv4}#" /etc/kubernetes/manifests/*.yaml || true
-      # this is no longer required with autodiscovery
-      sed -i "s#${old_ipv4}#${curr_ipv4}#" /var/lib/kubelet/kubeadm-flags.env || true
+      if [[ "${old_ipv4}" != "${curr_ipv4}" ]]; then
+        # kubernetes manifests are only present on control-plane nodes
+        sed -i "s#${old_ipv4}#${curr_ipv4}#" /etc/kubernetes/manifests/*.yaml || true
+        sed -i "s#${old_ipv4}#${curr_ipv4}#" /etc/kubernetes/controller-manager.conf || true
+        sed -i "s#${old_ipv4}#${curr_ipv4}#" /etc/kubernetes/scheduler.conf || true
+        sed -i "s#${old_ipv4}#${curr_ipv4}#" /kind/kubeadm.conf || true
+        # this is no longer required with autodiscovery
+        sed -i "s#${old_ipv4}#${curr_ipv4}#" /var/lib/kubelet/kubeadm-flags.env || true
+        # certificate must match the new IP
+        fix_certificate || true
+      fi
   fi
   if [[ -n $curr_ipv4 ]]; then
     echo -n "${curr_ipv4}" >/kind/old-ipv4
@@ -435,10 +458,17 @@ enable_network_magic(){
       if [[ -z $curr_ipv6 ]]; then
         echo "ERROR: Have an old IPv6 address but no current IPv6 address (!)" >&2
       fi
-      # kubernetes manifests are only present on control-plane nodes
-      sed -i "s#${old_ipv6}#${curr_ipv6}#" /etc/kubernetes/manifests/*.yaml || true
-      # this is no longer required with autodiscovery
-      sed -i "s#${old_ipv6}#${curr_ipv6}#" /var/lib/kubelet/kubeadm-flags.env || true
+      if [[ "${old_ipv6}" != "${curr_ipv6}" ]]; then
+        # kubernetes manifests are only present on control-plane nodes
+        sed -i "s#${old_ipv6}#${curr_ipv6}#" /etc/kubernetes/manifests/*.yaml || true
+        sed -i "s#${old_ipv6}#${curr_ipv6}#" /etc/kubernetes/controller-manager.conf || true
+        sed -i "s#${old_ipv6}#${curr_ipv6}#" /etc/kubernetes/scheduler.conf || true
+        sed -i "s#${old_ipv6}#${curr_ipv6}#" /kind/kubeadm.conf || true
+        # this is no longer required with autodiscovery
+        sed -i "s#${old_ipv6}#${curr_ipv6}#" /var/lib/kubelet/kubeadm-flags.env || true
+        # certificate must match the new IP
+        fix_certificate || true
+      fi
   fi
   if [[ -n $curr_ipv6 ]]; then
     echo -n "${curr_ipv6}" >/kind/old-ipv6
