@@ -234,7 +234,7 @@ fix_cgroup() {
   # See: https://man7.org/linux/man-pages/man7/cgroups.7.html
   echo 'INFO: fix cgroup mounts for all subsystems'
   local cgroup_subsystems
-  cgroup_subsystems=$(findmnt -lun -o source,target -t cgroup | grep "${current_cgroup}" | awk '{print $2}')
+  cgroup_subsystems=$(findmnt -lun -o source,target -t cgroup | grep -F "${current_cgroup}" | awk '{print $2}')
   # Unmount the cgroup subsystems that are not known to runtime used to
   # run the container we are in. Those subsystems are not properly scoped
   # (i.e. the root cgroup is exposed, rather than something like docker/xxxx).
@@ -245,7 +245,7 @@ fix_cgroup() {
   #
   # See https://github.com/kubernetes/kubernetes/issues/109182
   local unsupported_cgroups
-  unsupported_cgroups=$(findmnt -lun -o source,target -t cgroup | grep_allow_nomatch -v "${current_cgroup}" | awk '{print $2}')
+  unsupported_cgroups=$(findmnt -lun -o source,target -t cgroup | grep_allow_nomatch -v -F "${current_cgroup}" | awk '{print $2}')
   if [ -n "$unsupported_cgroups" ]; then
     local mnt
     echo "$unsupported_cgroups" |
