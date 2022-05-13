@@ -55,43 +55,43 @@ validate_userns() {
 }
 
 overlayfs_preferrable() {
-	if [[ -z "$userns" ]]; then
-		# If we are outside userns, we can always assume overlayfs is preferrable
-		return 0
-	fi
+  if [[ -z "$userns" ]]; then
+    # If we are outside userns, we can always assume overlayfs is preferrable
+    return 0
+  fi
 
-	# Debian 10 and 11 supports overlayfs in userns with a "permit_mount_in_userns" kernel patch,
-	# but known to be unstable, so we avoid using it https://github.com/moby/moby/issues/42302
-	if [[ -e "/sys/module/overlay/parameters/permit_mounts_in_userns" ]]; then
-		echo "INFO: UserNS: kernel seems supporting overlayfs with permit_mounts_in_userns, but avoiding due to instability."
-		return 1
-	fi
+  # Debian 10 and 11 supports overlayfs in userns with a "permit_mount_in_userns" kernel patch,
+  # but known to be unstable, so we avoid using it https://github.com/moby/moby/issues/42302
+  if [[ -e "/sys/module/overlay/parameters/permit_mounts_in_userns" ]]; then
+    echo "INFO: UserNS: kernel seems supporting overlayfs with permit_mounts_in_userns, but avoiding due to instability."
+    return 1
+  fi
 
-	# Check overlayfs availability, by attempting to mount it.
-	#
-	# Overlayfs inside userns is known to be available for the following environments:
-	# - Kernel >= 5.11 (but 5.11 and 5.12 have issues on SELinux hosts. Fixed in 5.13.)
-	# - Ubuntu kernel
-	# - Debian kernel (but avoided due to instability, see the /sys/module/overlay/... check above)
-	# - Sysbox
-	tmp=$(mktemp -d)
-	mkdir -p "${tmp}/l" "${tmp}/u" "${tmp}/w" "${tmp}/m"
-	if ! mount -t overlay -o lowerdir="${tmp}/l,upperdir=${tmp}/u,workdir=${tmp}/w" overlay "${tmp}/m"; then
-		echo "INFO: UserNS: kernel does not seem to support overlayfs."
-		rm -rf "${tmp}"
-		return 1
-	fi
-	umount "${tmp}/m"
-	rm -rf "${tmp}"
+  # Check overlayfs availability, by attempting to mount it.
+  #
+  # Overlayfs inside userns is known to be available for the following environments:
+  # - Kernel >= 5.11 (but 5.11 and 5.12 have issues on SELinux hosts. Fixed in 5.13.)
+  # - Ubuntu kernel
+  # - Debian kernel (but avoided due to instability, see the /sys/module/overlay/... check above)
+  # - Sysbox
+  tmp=$(mktemp -d)
+  mkdir -p "${tmp}/l" "${tmp}/u" "${tmp}/w" "${tmp}/m"
+  if ! mount -t overlay -o lowerdir="${tmp}/l,upperdir=${tmp}/u,workdir=${tmp}/w" overlay "${tmp}/m"; then
+    echo "INFO: UserNS: kernel does not seem to support overlayfs."
+    rm -rf "${tmp}"
+    return 1
+  fi
+  umount "${tmp}/m"
+  rm -rf "${tmp}"
 
-	# Detect whether SELinux is Enforcing (or Permitted) by grepping /proc/self/attr/current .
-	# Note that we cannot use `getenforce` command here because /sys/fs/selinux is typically not mounted for containers.
-	if grep -q "_t:" "/proc/self/attr/current"; then
-		# When the kernel is before v5.13 and SELinux is enforced, fuse-overlayfs might be safer, so we print a warning (but not an error).
-		# https://github.com/torvalds/linux/commit/7fa2e79a6bb924fa4b2de5766dab31f0f47b5ab6
-		echo "WARN: UserNS: SELinux might be Enforcing. If you see an error related to overlayfs, try setting \`KIND_EXPERIMENTAL_CONTAINERD_SNAPSHOTTER=fuse-overlayfs\` ." >&2
-	fi
-	return 0
+  # Detect whether SELinux is Enforcing (or Permitted) by grepping /proc/self/attr/current .
+  # Note that we cannot use `getenforce` command here because /sys/fs/selinux is typically not mounted for containers.
+  if grep -q "_t:" "/proc/self/attr/current"; then
+    # When the kernel is before v5.13 and SELinux is enforced, fuse-overlayfs might be safer, so we print a warning (but not an error).
+    # https://github.com/torvalds/linux/commit/7fa2e79a6bb924fa4b2de5766dab31f0f47b5ab6
+    echo "WARN: UserNS: SELinux might be Enforcing. If you see an error related to overlayfs, try setting \`KIND_EXPERIMENTAL_CONTAINERD_SNAPSHOTTER=fuse-overlayfs\` ." >&2
+  fi
+  return 0
 }
 
 configure_containerd() {
@@ -208,6 +208,8 @@ fix_cgroup() {
     return
   fi
   echo 'INFO: detected cgroup v1'
+  # We're looking for the cgroup-path for the cpu controller for the
+  # current process. this tells us what cgroup-path the container is in.
   local current_cgroup
   current_cgroup=$(grep -E '^[^:]*:([^:]*,)?cpu(,[^,:]*)?:.*' /proc/self/cgroup | cut -d: -f3)
   if [ "$current_cgroup" = "/" ]; then
@@ -225,9 +227,7 @@ fix_cgroup() {
   # See: https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration
   # Capture initial state before modifying
   #
-  # Basically we're looking for the cgroup-path for the cpu controller for the
-  # current process. this tells us what cgroup-path the container is in.
-  # Then we collect the subsystems that are active on this path.
+  # Then we collect the subsystems that are active on our current process.
   # We assume the cpu controller is in use on all node containers,
   # and other controllers use the same sub-path.
   #
