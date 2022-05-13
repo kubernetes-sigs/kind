@@ -298,9 +298,15 @@ fix_cgroup() {
   mount --make-rprivate /sys/fs/cgroup
   echo "${cgroup_subsystems}" |
   while IFS= read -r subsystem; do
-    mount_kubelet_cgroup_root "/kubelet" "${subsystem}"
-    mount_kubelet_cgroup_root "/kubelet.slice" "${subsystem}"
+    mount_kubelet_cgroup_root /kubelet "${subsystem}"
+    mount_kubelet_cgroup_root /kubelet.slice "${subsystem}"
   done
+  # workaround for hosts not running systemd
+  # we only do this for kubelet.slice because it's not relevant when not using
+  # the systemd cgroup driver
+  if [[ ! "${cgroup_subsystems}" = */sys/fs/cgroup/systemd* ]]; then
+    mount_kubelet_cgroup_root /kubelet.slice /sys/fs/cgroup/systemd
+  fi
 }
 
 fix_machine_id() {
