@@ -20,43 +20,49 @@ package nodeimage
 The default PV driver manifest and images are provisionally rancher.io/local-path-provisioner
 NOTE: we have customized it in the following ways:
 - storage is under /var instead of /opt
-- debian-base is used as the helper image (k8s already ships this upstream as the base for many images) instead of busybox
-- schedule to linux nodes
+- our own image and helper image
+- schedule to linux nodes only
 - install as the default storage class
 */
 
-var defaultStorageImages = []string{"docker.io/rancher/local-path-provisioner:v0.0.14", "k8s.gcr.io/build-image/debian-base:buster-v1.7.2"}
+const storageProvisionerImage = "docker.io/kindest/local-path-provisioner:v0.0.22-kind.0"
+const storageHelperImage = "docker.io/kindest/local-path-helper:v20220512-507ff70b"
+
+// image we need to preload
+var defaultStorageImages = []string{storageProvisionerImage, storageHelperImage}
 
 const defaultStorageManifest = `
-# kind customized https://github.com/rancher/local-path-provisioner manifest
 apiVersion: v1
 kind: Namespace
 metadata:
   name: local-path-storage
+
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: local-path-provisioner-service-account
   namespace: local-path-storage
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: local-path-provisioner-role
 rules:
-- apiGroups: [""]
-  resources: ["nodes", "persistentvolumeclaims"]
-  verbs: ["get", "list", "watch"]
-- apiGroups: [""]
-  resources: ["endpoints", "persistentvolumes", "pods"]
-  verbs: ["*"]
-- apiGroups: [""]
-  resources: ["events"]
-  verbs: ["create", "patch"]
-- apiGroups: ["storage.k8s.io"]
-  resources: ["storageclasses"]
-  verbs: ["get", "list", "watch"]
+  - apiGroups: [ "" ]
+    resources: [ "nodes", "persistentvolumeclaims", "configmaps" ]
+    verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "" ]
+    resources: [ "endpoints", "persistentvolumes", "pods" ]
+    verbs: [ "*" ]
+  - apiGroups: [ "" ]
+    resources: [ "events" ]
+    verbs: [ "create", "patch" ]
+  - apiGroups: [ "storage.k8s.io" ]
+    resources: [ "storageclasses" ]
+    verbs: [ "get", "list", "watch" ]
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -67,9 +73,10 @@ roleRef:
   kind: ClusterRole
   name: local-path-provisioner-role
 subjects:
-- kind: ServiceAccount
-  name: local-path-provisioner-service-account
-  namespace: local-path-storage
+  - kind: ServiceAccount
+    name: local-path-provisioner-service-account
+    namespace: local-path-storage
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -100,40 +107,42 @@ spec:
         effect: NoSchedule
       serviceAccountName: local-path-provisioner-service-account
       containers:
-      - name: local-path-provisioner
-        image: docker.io/rancher/local-path-provisioner:v0.0.14
-        imagePullPolicy: IfNotPresent
-        command:
-        - local-path-provisioner
-        - --debug
-        - start
-        - --helper-image
-        - k8s.gcr.io/build-image/debian-base:buster-v1.7.2
-        - --config
-        - /etc/config/config.json
-        volumeMounts:
-        - name: config-volume
-          mountPath: /etc/config/
-        env:
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
+        - name: local-path-provisioner
+          image: ` + storageProvisionerImage + `
+          imagePullPolicy: IfNotPresent
+          command:
+            - local-path-provisioner
+            - --debug
+            - start
+            - --helper-image
+            - ` + storageHelperImage + `
+            - --config
+            - /etc/config/config.json
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/config/
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
       volumes:
         - name: config-volume
           configMap:
             name: local-path-config
+
 ---
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  namespace: kube-system
   name: standard
+  namespace: kube-system
   annotations:
     storageclass.kubernetes.io/is-default-class: "true"
 provisioner: rancher.io/local-path
 volumeBindingMode: WaitForFirstConsumer
 reclaimPolicy: Delete
+
 ---
 kind: ConfigMap
 apiVersion: v1
@@ -142,12 +151,30 @@ metadata:
   namespace: local-path-storage
 data:
   config.json: |-
-        {
-                "nodePathMap":[
-                {
-                        "node":"DEFAULT_PATH_FOR_NON_LISTED_NODES",
-                        "paths":["/var/local-path-provisioner"]
-                }
-                ]
-        }
+    {
+            "nodePathMap":[
+            {
+                    "node":"DEFAULT_PATH_FOR_NON_LISTED_NODES",
+                    "paths":["/var/local-path-provisioner"]
+            }
+            ]
+    }
+  setup: |-
+    #!/bin/sh
+    set -eu
+    mkdir -m 0777 -p "$VOL_DIR"
+  teardown: |-
+    #!/bin/sh
+    set -eu
+    rm -rf "$VOL_DIR"
+  helperPod.yaml: |-
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: helper-pod
+    spec:
+      containers:
+      - name: helper-pod
+        image: ` + storageHelperImage + `
+        imagePullPolicy: IfNotPresent
 `

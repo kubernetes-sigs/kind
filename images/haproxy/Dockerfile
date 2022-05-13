@@ -48,10 +48,8 @@ RUN mkdir -p "${STAGE_DIR}" && \
 
 ################################################################################
 
-# haproxy is a c++ binary, so we will use the c++ distroless image
 # See: https://github.com/GoogleContainerTools/distroless/tree/main/base
-# See: https://github.com/GoogleContainerTools/distroless/tree/main/cc
-# This has /etc/passwd, tzdata, cacerts, glibc, libssl, openssl, and libgcc1
+# This has /etc/passwd, tzdata, cacerts
 FROM "gcr.io/distroless/static-debian11"
 
 ARG STAGE_DIR="/opt/stage"

@@ -1,4 +1,4 @@
-# Copyright 2020 The Kubernetes Authors.
+# Copyright 2022 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+VERSION=v0.0.22
+TAG=$(VERSION)-kind.0
+EXTRA_BUILD_OPT=--build-arg=VERSION=$(VERSION)
 include $(CURDIR)/../Makefile.common.in
-
-update-shasums:
-	./update-shasums.sh

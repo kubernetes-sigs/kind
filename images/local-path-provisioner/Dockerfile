@@ -1,4 +1,4 @@
-# Copyright 2020 The Kubernetes Authors.
+# Copyright 2022 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-include $(CURDIR)/../Makefile.common.in
+FROM golang:1.18
+RUN git clone https://github.com/rancher/local-path-provisioner
+ARG VERSION
+RUN cd local-path-provisioner && \
+    git fetch && git checkout "${VERSION}" && \
+    scripts/build && \
+    mv bin/local-path-provisioner /usr/local/bin/local-path-provisioner
 
-update-shasums:
-	./update-shasums.sh
+FROM gcr.io/distroless/base-debian11
+COPY --from=0 /usr/local/bin/local-path-provisioner /usr/local/bin/local-path-provisioner
+ENTRYPOINT /usr/local/bin/local-path-provisioner
