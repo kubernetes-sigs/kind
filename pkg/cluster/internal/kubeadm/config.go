@@ -219,7 +219,6 @@ localAPIEndpoint:
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
   kubeletExtraArgs:
-    fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
     provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
 ---
@@ -237,7 +236,6 @@ controlPlane:
 nodeRegistration:
   criSocket: "/run/containerd/containerd.sock"
   kubeletExtraArgs:
-    fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
     provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
 discovery:
@@ -250,11 +248,9 @@ apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 metadata:
   name: config
-# explicitly set default cgroup driver
-# unblocks https://github.com/kubernetes/kubernetes/pull/99471
-# TODO: consider switching to systemd instead
-# tracked in: https://github.com/kubernetes-sigs/kind/issues/1726
 cgroupDriver: {{ .CgroupDriver }}
+cgroupRoot: /kubelet
+failSwapOn: false
 # configure ipv6 addresses in IPv6 mode
 {{ if .IPv6 -}}
 address: "::"
@@ -353,7 +349,6 @@ localAPIEndpoint:
 nodeRegistration:
   criSocket: "unix:///run/containerd/containerd.sock"
   kubeletExtraArgs:
-    fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
     provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
     node-labels: "{{ .NodeLabels }}"
@@ -372,7 +367,6 @@ controlPlane:
 nodeRegistration:
   criSocket: "unix:///run/containerd/containerd.sock"
   kubeletExtraArgs:
-    fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
     provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
     node-labels: "{{ .NodeLabels }}"
@@ -386,11 +380,9 @@ apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 metadata:
   name: config
-# explicitly set default cgroup driver
-# unblocks https://github.com/kubernetes/kubernetes/pull/99471
-# TODO: consider switching to systemd instead
-# tracked in: https://github.com/kubernetes-sigs/kind/issues/1726
 cgroupDriver: {{ .CgroupDriver }}
+cgroupRoot: /kubelet
+failSwapOn: false
 # configure ipv6 addresses in IPv6 mode
 {{ if .IPv6 -}}
 address: "::"
@@ -494,7 +486,6 @@ localAPIEndpoint:
 nodeRegistration:
   criSocket: "unix:///run/containerd/containerd.sock"
   kubeletExtraArgs:
-    fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
     provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
     node-labels: "{{ .NodeLabels }}"
@@ -513,7 +504,6 @@ controlPlane:
 nodeRegistration:
   criSocket: "unix:///run/containerd/containerd.sock"
   kubeletExtraArgs:
-    fail-swap-on: "false"
     node-ip: "{{ .NodeAddress }}"
     provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
     node-labels: "{{ .NodeLabels }}"
@@ -527,11 +517,9 @@ apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 metadata:
   name: config
-# explicitly set default cgroup driver
-# unblocks https://github.com/kubernetes/kubernetes/pull/99471
-# TODO: consider switching to systemd instead
-# tracked in: https://github.com/kubernetes-sigs/kind/issues/1726
 cgroupDriver: {{ .CgroupDriver }}
+cgroupRoot: /kubelet
+failSwapOn: false
 # configure ipv6 addresses in IPv6 mode
 {{ if .IPv6 -}}
 address: "::"
