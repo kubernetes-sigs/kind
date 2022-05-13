@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This image is a haproxy image + minimal config so the container will not exit
-# while we rewrite the config at runtime and signal haproxy to reload.
+# This image is contains the binaries needed for the local-path-provisioner
+# helper pod. Currently that means: sh, rm, mkdir
 
 ARG BASE="k8s.gcr.io/build-image/debian-base:bullseye-v1.2.0"
 FROM ${BASE} as build
