@@ -142,7 +142,7 @@ Apply kind specific patch to change service type to `NodePort`:
 Apply it by running:
 
 {{< codeFromInline lang="bash" >}}
-kubectl patch service -n kong ingress-kong -p '{{< minify file="static/examples/ingress/kong/service.patch.json" >}}'
+kubectl patch service -n kong kong-proxy -p '{{< minify file="static/examples/ingress/kong/service.patch.json" >}}'
 {{< /codeFromInline >}}
 
 KIC can be used to configure ingress now.
