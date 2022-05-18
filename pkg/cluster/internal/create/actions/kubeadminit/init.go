@@ -111,7 +111,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	// https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#master-isolation
 	if len(allNodes) == 1 {
 		// TODO: Once kubeadm 1.23 is no longer supported remove the <1.24 handling.
-		// TODO: Remove only the "control-plane" taint for kubeadm >= 1.25.
+		// TODO: Once kubeadm 1.24 is no longer supported remove the <1.25 handling.
 		// https://github.com/kubernetes-sigs/kind/issues/1699
 		rawVersion, err := nodeutils.KubeVersion(node)
 		if err != nil {
@@ -121,9 +121,16 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		if err != nil {
 			return errors.Wrap(err, "could not parse Kubernetes version")
 		}
-		taints := []string{"node-role.kubernetes.io/control-plane-", "node-role.kubernetes.io/master-"}
+		var taints []string
 		if kubeVersion.LessThan(version.MustParseSemantic("v1.24.0-0")) {
+			// for versions older than 1.24 prerelease remove only the old taint
 			taints = []string{"node-role.kubernetes.io/master-"}
+		} else if kubeVersion.LessThan(version.MustParseSemantic("v1.25.0-0")) {
+			// for versions between 1.24 and 1.25 prerelease remove both the old and new taint
+			taints = []string{"node-role.kubernetes.io/control-plane-", "node-role.kubernetes.io/master-"}
+		} else {
+			// for any newer version only remove the new taint
+			taints = []string{"node-role.kubernetes.io/control-plane-"}
 		}
 		taintArgs := []string{"--kubeconfig=/etc/kubernetes/admin.conf", "taint", "nodes", "--all"}
 		taintArgs = append(taintArgs, taints...)
