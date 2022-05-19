@@ -122,10 +122,10 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			return errors.Wrap(err, "could not parse Kubernetes version")
 		}
 		var taints []string
-		if kubeVersion.LessThan(version.MustParseSemantic("v1.24.0-0")) {
+		if kubeVersion.LessThan(version.MustParseSemantic("v1.24.0-alpha.1.592+370031cadac624")) {
 			// for versions older than 1.24 prerelease remove only the old taint
 			taints = []string{"node-role.kubernetes.io/master-"}
-		} else if kubeVersion.LessThan(version.MustParseSemantic("v1.25.0-0")) {
+		} else if kubeVersion.LessThan(version.MustParseSemantic("v1.25.0-alpha.0.557+84c8afeba39ec9")) {
 			// for versions between 1.24 and 1.25 prerelease remove both the old and new taint
 			taints = []string{"node-role.kubernetes.io/control-plane-", "node-role.kubernetes.io/master-"}
 		} else {

@@ -80,7 +80,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "could not parse Kubernetes version")
 	}
 	selectorLabel := "node-role.kubernetes.io/control-plane"
-	if kubeVersion.LessThan(version.MustParseSemantic("v1.24.0")) {
+	if kubeVersion.LessThan(version.MustParseSemantic("v1.24.0-alpha.1.591+a3d5e5598290df")) {
 		selectorLabel = "node-role.kubernetes.io/master"
 	}
 
