@@ -15,9 +15,10 @@ Restart=always
 StartLimitInterval=0
 # NOTE: kind deviates from upstream here with a lower RestartSec
 RestartSec=1s
-# and here
+# And by adding the [Service] lines below
 CPUAccounting=true
 MemoryAccounting=true
+Slice=kubelet.slice
 
 [Install]
 WantedBy=multi-user.target
