@@ -33,7 +33,7 @@ description: |-
 * [Pod Errors Due to "too many open files"](#pod-errors-due-to-too-many-open-files) (likely [inotify] limits which are not namespaced)
 * [Docker Permission Denied](#docker-permission-denied) (ensure you have permission to use docker)
 * [Windows Containers](#windows-containers) (unsupported / infeasible)
-* [Non-AMD64 Architectures](#non-amd64-architectures) (images not pre-built yet)
+* [Non-AMD64 Architectures](#nonamd64-architectures) (images not pre-built yet)
 * [Unable to Pull Images](#unable-to-pull-images) (various)
 * [Chrome OS](#chrome-os) (unsupported)
 * [AppArmor](#apparmor) (may break things, consider disabling)
