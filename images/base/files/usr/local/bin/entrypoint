@@ -29,7 +29,7 @@ fi
 
 grep_allow_nomatch() {
   # grep exits 0 on match, 1 on no match, 2 on error
-  grep "$@"|| [[ $? == 1 ]]
+  grep "$@" || [[ $? == 1 ]]
 }
 
 # regex_escape_ip converts IP address string $1 to a regex-escaped literal
@@ -426,6 +426,17 @@ enable_network_magic(){
   cp /etc/resolv.conf /etc/resolv.conf.original
   sed -e "s/${docker_embedded_dns_ip}/${docker_host_ip}/g" /etc/resolv.conf.original >/etc/resolv.conf
 
+  local files_to_update=(
+    /etc/kubernetes/manifests/etcd.yaml
+    /etc/kubernetes/manifests/kube-apiserver.yaml
+    /etc/kubernetes/manifests/kube-controller-manager.yaml
+    /etc/kubernetes/manifests/kube-scheduler.yaml
+    /etc/kubernetes/controller-manager.conf
+    /etc/kubernetes/scheduler.conf
+    /kind/kubeadm.conf
+    /var/lib/kubelet/kubeadm-flags.env
+  )
+  local should_fix_certificate=false
   # fixup IPs in manifests ...
   curr_ipv4="$( (head -n1 <(getent ahostsv4 "$(hostname)") | cut -d' ' -f1) || true)"
   echo "INFO: Detected IPv4 address: ${curr_ipv4}" >&2
@@ -438,16 +449,14 @@ enable_network_magic(){
         exit 1
       fi
       if [[ "${old_ipv4}" != "${curr_ipv4}" ]]; then
-        # kubernetes manifests are only present on control-plane nodes
-        sed_ipv4_command="s#$(regex_escape_ip "${old_ipv4}")#${curr_ipv4}#g"
-        sed -i "${sed_ipv4_command}" /etc/kubernetes/manifests/*.yaml || true
-        sed -i "${sed_ipv4_command}" /etc/kubernetes/controller-manager.conf || true
-        sed -i "${sed_ipv4_command}" /etc/kubernetes/scheduler.conf || true
-        sed -i "${sed_ipv4_command}" /kind/kubeadm.conf || true
-        # this is no longer required with autodiscovery
-        sed -i "${sed_ipv4_command}" /var/lib/kubelet/kubeadm-flags.env || true
-        # certificate must match the new IP
-        fix_certificate || true
+        should_fix_certificate=true
+        sed_ipv4_command="s#\b$(regex_escape_ip "${old_ipv4}")\b#${curr_ipv4}#g"
+        for f in "${files_to_update[@]}"; do
+          # kubernetes manifests are only present on control-plane nodes
+          if [[ -f "$f" ]]; then
+            sed -i "${sed_ipv4_command}" "$f"
+          fi
+        done
       fi
   fi
   if [[ -n $curr_ipv4 ]]; then
@@ -465,20 +474,22 @@ enable_network_magic(){
         echo "ERROR: Have an old IPv6 address but no current IPv6 address (!)" >&2
       fi
       if [[ "${old_ipv6}" != "${curr_ipv6}" ]]; then
-        sed_ipv6_command="s#$(regex_escape_ip "${old_ipv6}")#${curr_ipv6}#g"
-        # kubernetes manifests are only present on control-plane nodes
-        sed -i "${sed_ipv6_command}" /etc/kubernetes/manifests/*.yaml || true
-        sed -i "${sed_ipv6_command}" /etc/kubernetes/controller-manager.conf || true
-        sed -i "${sed_ipv6_command}" /etc/kubernetes/scheduler.conf || true
-        sed -i "${sed_ipv6_command}" /kind/kubeadm.conf || true
-        # this is no longer required with autodiscovery
-        sed -i "${sed_ipv6_command}" /var/lib/kubelet/kubeadm-flags.env || true
-        # certificate must match the new IP
-        fix_certificate || true
+        should_fix_certificate=true
+        sed_ipv6_command="s#\b$(regex_escape_ip "${old_ipv6}")\b#${curr_ipv6}#g"
+        for f in "${files_to_update[@]}"; do
+          # kubernetes manifests are only present on control-plane nodes
+          if [[ -f "$f" ]]; then
+            sed -i "${sed_ipv6_command}" "$f"
+          fi
+        done
       fi
   fi
   if [[ -n $curr_ipv6 ]]; then
     echo -n "${curr_ipv6}" >/kind/old-ipv6
+  fi
+
+  if $should_fix_certificate; then
+    fix_certificate
   fi
 }
 
