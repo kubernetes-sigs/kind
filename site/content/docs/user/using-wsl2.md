@@ -58,11 +58,22 @@ wsl --set-default-version 2
 1. Now, you can install your Linux distro of choice by searching the Windows Store. If you don't want to use the Windows Store, then follow the steps in the WSL docs for [manual install](https://docs.microsoft.com/en-us/windows/wsl/install-manual).
 1. Start up your distro with the shortcut added to the start menu
 
-## Setting up Docker in WSL2
+## Setting up Docker Desktop in WSL2
 
-Install Docker with WSL2 backend here: https://docs.docker.com/docker-for-windows/wsl/
+Install Docker Desktop with WSL2 backend here: https://docs.docker.com/docker-for-windows/wsl/
 
 Now, move on to the [Quick Start](/docs/user/quick-start) to set up your cluster with kind.
+
+## Setting up regular Docker in WSL2
+
+If you are working for big company you can't install Docker Desktop with WSL2 for free.
+There is simple alternative: install Docker as linux service. So we need Docker version
+which does not require systemd. Good news: official Docker version from Docker's repository
+work without systemd. Follow instructions from [Install Docker using repository](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository)
+to install Docker in your WSL2 environment. After installation, and after every WSL2 restart
+you need manually start Docker using command `sudo service docker start` to run Docker daemon
+in your system. To be able to use Docker as regular user add your user to `docker` group:
+`sudo usermod -a -G docker your-username` and restart your WSL to see the effect.
 
 ## Accessing a Kubernetes Service running in WSL2
 
