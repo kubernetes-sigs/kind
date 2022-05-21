@@ -289,6 +289,11 @@ included in the Preferences -> Resources -> File Sharing.
 
 For more information see the [Docker file sharing guide.](https://docs.docker.com/docker-for-mac/#file-sharing)
 
+**NOTE**: Mount propagation is not possible with Mac or Windows Docker Desktop,
+due to limitation of Docker Desktop implementation. 
+
+For more information, see this [issue thread](https://github.com/kubernetes-sigs/kind/issues/2576)
+
 ### Extra Port Mappings
 
 Extra port mappings can be used to port forward to the kind nodes. This is a 
