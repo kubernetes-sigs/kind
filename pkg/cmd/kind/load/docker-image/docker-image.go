@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -35,6 +36,10 @@ import (
 
 	"sigs.k8s.io/kind/pkg/internal/cli"
 	"sigs.k8s.io/kind/pkg/internal/runtime"
+)
+
+type (
+	imageTagFetcher func(nodes.Node, string) (map[string]bool, error)
 )
 
 type flagpole struct {
@@ -128,16 +133,34 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 	fns := []func() error{}
 	for i, imageName := range imageNames {
 		imageID := imageIDs[i]
+		processed := false
 		for _, node := range candidateNodes {
+			exists, reTagRequired := checkIfImageReTagRequired(node, imageID, imageName, nodeutils.ImageTags)
+			if exists && !reTagRequired {
+				continue
+			}
+
+			if reTagRequired {
+				// We will try to re-tag the image. If the re-tag fails, we will fall back to the default behavior of loading
+				// the images into the nodes again
+				logger.V(0).Infof("Image with ID: %s already present on the node %s but is missing the tag %s. re-tagging...", imageID, node.String(), imageName)
+				if err := nodeutils.ReTagImage(node, imageID, imageName); err != nil {
+					logger.Errorf("failed to re-tag image on the node %s due to an error %s. Will load it instead...", node.String(), err)
+					selectedNodes = append(selectedNodes, node)
+				} else {
+					processed = true
+				}
+				continue
+			}
 			id, err := nodeutils.ImageID(node, imageName)
 			if err != nil || id != imageID {
 				selectedNodes = append(selectedNodes, node)
 				logger.V(0).Infof("Image: %q with ID %q not yet present on node %q, loading...", imageName, imageID, node.String())
 			}
-		}
-		if len(selectedNodes) == 0 {
-			logger.V(0).Infof("Image: %q with ID %q found to be already present on all nodes.", imageName, imageID)
 			continue
+		}
+		if len(selectedNodes) == 0 && !processed {
+			logger.V(0).Infof("Image: %q with ID %q found to be already present on all nodes.", imageName, imageID)
 		}
 	}
 
@@ -214,4 +237,47 @@ func removeDuplicates(slice []string) []string {
 		}
 	}
 	return result
+}
+
+// checkIfImageExists makes sure we only perform the reverse lookup of the ImageID to tag map
+func checkIfImageReTagRequired(node nodes.Node, imageID, imageName string, tagFetcher imageTagFetcher) (exists, reTagRequired bool) {
+	tags, err := tagFetcher(node, imageID)
+	if len(tags) == 0 || err != nil {
+		exists = false
+		return
+	}
+	exists = true
+	imageName = sanitizeImage(imageName)
+	if ok := tags[imageName]; ok {
+		reTagRequired = false
+		return
+	}
+	reTagRequired = true
+	return
+}
+
+// sanitizeImage is a helper to return human readable image name
+// This is a modified version of the same function found under providers/podman/images.go
+func sanitizeImage(image string) (sanitizedName string) {
+	const (
+		defaultDomain    = "docker.io/"
+		officialRepoName = "library"
+	)
+	sanitizedName = image
+
+	if !strings.ContainsRune(image, '/') {
+		sanitizedName = officialRepoName + "/" + image
+	}
+
+	i := strings.IndexRune(sanitizedName, '/')
+	if i == -1 || (!strings.ContainsAny(sanitizedName[:i], ".:") && sanitizedName[:i] != "localhost") {
+		sanitizedName = defaultDomain + sanitizedName
+	}
+
+	i = strings.IndexRune(sanitizedName, ':')
+	if i == -1 {
+		sanitizedName += ":latest"
+	}
+
+	return
 }
