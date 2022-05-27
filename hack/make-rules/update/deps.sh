@@ -30,5 +30,6 @@ go mod tidy
 cd "${REPO_ROOT}/hack/tools"
 go mod tidy
 
+# NOTE: kindnetd is only built for linux and uses linux APIs
 cd "${REPO_ROOT}/images/kindnetd"
-go mod tidy
+GOOS=linux go mod tidy
