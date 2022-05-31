@@ -419,4 +419,4 @@ restarting the Docker Engine, the VM used by Docker Desktop will use cgroupv1.
 
 ## Docker Desktop for macOS and Windows
 
-Docker containers cannot be executed natively on macOS and Windows, therefore Docker Desktop runs them in a Linux VM. As consequence, the container networks are not exposed to the host and you cannot reach the kind nodes via IP. You can work around this limitation by configuring [extra port mappings](https://kind.sigs.k8s.io/docs/user/configuration/#extra-port-mappings) though.
+Docker containers cannot be executed natively on macOS and Windows, therefore Docker Desktop runs them in a Linux VM. As a consequence, the container networks are not exposed to the host and you cannot reach the kind nodes via IP. You can work around this limitation by configuring [extra port mappings](https://kind.sigs.k8s.io/docs/user/configuration/#extra-port-mappings) though.
