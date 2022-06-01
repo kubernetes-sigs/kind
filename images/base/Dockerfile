@@ -79,6 +79,9 @@ COPY --chmod=0644 files/etc/sysctl.d/* /etc/sysctl.d/
 COPY --chmod=0644 files/etc/systemd/system/* /etc/systemd/system/
 COPY --chmod=0644 files/etc/systemd/system/kubelet.service.d/* /etc/systemd/system/kubelet.service.d/
 
+# copy the repo LICENSE file
+ADD https://raw.githubusercontent.com/kubernetes-sigs/kind/main/LICENSE /
+
 # Install dependencies, first from apt, then from release tarballs.
 # NOTE: we use one RUN to minimize layers.
 #
