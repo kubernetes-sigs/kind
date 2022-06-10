@@ -138,7 +138,7 @@ EOF
 }
 
 fix_mount() {
-  echo 'INFO: ensuring we can execute mount/umount even with userns-remap' 
+  echo 'INFO: ensuring we can execute mount/umount even with userns-remap'
   # necessary only when userns-remap is enabled on the host, but harmless
   # The binary /bin/mount should be owned by root and have the setuid bit
   chown root:root "$(which mount)" "$(which umount)"
@@ -405,7 +405,7 @@ enable_network_magic(){
 
   # first we need to detect an IP to use for reaching the docker host
   local docker_host_ip
-  docker_host_ip="$( (head -n1 <(getent ahostsv4 'host.docker.internal') | cut -d' ' -f1) || true)"
+  docker_host_ip="$( (head -n1 <(timeout 5 getent ahostsv4 'host.docker.internal') | cut -d' ' -f1) || true)"
   # if the ip doesn't exist or is a loopback address use the default gateway
   if [[ -z "${docker_host_ip}" ]] || [[ $docker_host_ip =~ ^127\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     docker_host_ip=$(ip -4 route show default | cut -d' ' -f3)
@@ -438,7 +438,7 @@ enable_network_magic(){
   )
   local should_fix_certificate=false
   # fixup IPs in manifests ...
-  curr_ipv4="$( (head -n1 <(getent ahostsv4 "$(hostname)") | cut -d' ' -f1) || true)"
+  curr_ipv4="$( (head -n1 <(timeout 5 getent ahostsv4 "$(hostname)") | cut -d' ' -f1) || true)"
   echo "INFO: Detected IPv4 address: ${curr_ipv4}" >&2
   if [ -f /kind/old-ipv4 ]; then
       old_ipv4=$(cat /kind/old-ipv4)
@@ -464,7 +464,7 @@ enable_network_magic(){
   fi
 
   # do IPv6
-  curr_ipv6="$( (head -n1 <(getent ahostsv6 "$(hostname)") | cut -d' ' -f1) || true)"
+  curr_ipv6="$( (head -n1 <(timeout 5 getent ahostsv6 "$(hostname)") | cut -d' ' -f1) || true)"
   echo "INFO: Detected IPv6 address: ${curr_ipv6}" >&2
   if [ -f /kind/old-ipv6 ]; then
       old_ipv6=$(cat /kind/old-ipv6)
