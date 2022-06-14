@@ -56,7 +56,8 @@ $ kind create cluster
 
 To create a kind cluster with Rootless Podman, just run:
 ```console
-$ KIND_EXPERIMENTAL_PROVIDER=podman kind create cluster
+$ KIND_EXPERIMENTAL_PROVIDER=podman 
+$ kind create cluster
 ```
 
 ## Tips
