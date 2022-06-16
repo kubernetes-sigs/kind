@@ -260,6 +260,16 @@ Currently, kind supports one default way to build a `node-image`
 if you have the [Kubernetes][kubernetes] source in your host machine
 (`$GOPATH/src/k8s.io/kubernetes`), by using `docker`.
 
+To create a cluster from Kubernetes source:
+
+- ensure that Kubernetes is cloned in `$(go env GOPATH)/src/k8s.io/kubernetes`
+- build a node image and create a cluster with:
+
+```console
+kind build node-image
+kind create cluster --image kindest/node:latest
+```
+
 > **NOTE**: Building Kubernetes node-images requires everything building upstream
 > Kubernetes requires, we wrap the upstream build. This includes Docker with buildx.
 > See: https://git.k8s.io/community/contributors/devel/development.md#building-kubernetes-with-docker
