@@ -15,7 +15,7 @@
 # This image is contains the binaries needed for the local-path-provisioner
 # helper pod. Currently that means: sh, rm, mkdir
 
-ARG BASE="k8s.gcr.io/build-image/debian-base:bullseye-v1.3.0"
+ARG BASE="registry.k8s.io/build-image/debian-base:bullseye-v1.3.0"
 FROM ${BASE} as build
 
 # NOTE: copyrights.tar.gz is a quirk of Kubernetes's debian-base image
