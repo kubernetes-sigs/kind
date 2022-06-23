@@ -77,7 +77,7 @@ func TestParseSnapshotter(t *testing.T) {
 		max_container_log_line_size = 16384
 		netns_mounts_under_state_dir = false
 		restrict_oom_score_adj = false
-		sandbox_image = "k8s.gcr.io/pause:3.6"
+		sandbox_image = "k8s.gcr.io/pause:3.7"
 		selinux_category_range = 1024
 		stats_collect_period = 10
 		stream_idle_timeout = "4h0m0s"
