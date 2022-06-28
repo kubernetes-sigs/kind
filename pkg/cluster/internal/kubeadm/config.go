@@ -266,7 +266,7 @@ evictionHard:
   imagefs.available: "0%"
 {{if .FeatureGates}}featureGates:
 {{ range $key := .SortedFeatureGateKeys }}
-  "{{ $key }}": {{$.FeatureGates $key }}
+  "{{ $key }}": {{index $.FeatureGates $key }}
 {{end}}{{end}}
 {{if ne .KubeProxyMode "None"}}
 ---
