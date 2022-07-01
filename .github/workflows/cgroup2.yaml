@@ -44,10 +44,6 @@ jobs:
       - name: Set up Rootless Docker
         if: ${{ matrix.provider == 'docker' && matrix.rootless == 'rootless' }}
         run: |
-          # Disable SELinux for Rootless Docker, until the following PRs gets merged into Docker CE:
-          # - https://github.com/moby/moby/pull/42199 ("dockerd-rootless.sh: avoid /run/xtables.lock EACCES on SELinux hosts")
-          # - https://github.com/moby/moby/pull/42334 ("rootless: disable overlay2 if running with SELinux")
-          "$HELPER" sudo setenforce 0
           # Disable the rootful daemon
           "$HELPER" sudo systemctl disable --now docker
           # Install the systemd unit
@@ -64,9 +60,6 @@ jobs:
           "$HELPER" sudo loginctl terminate-user vagrant || true
           # We have modprobe ip6_tables in Vagrantfile, but it seems we have to modprobe it once again
           "$HELPER" sudo modprobe ip6_tables
-          # Disable selinux on rootless podman
-          # ref: https://github.com/kubernetes-sigs/kind/pull/2502#issuecomment-944230380
-          "$HELPER" sudo setenforce 0
 
       - name: Show provider info
         run: |
