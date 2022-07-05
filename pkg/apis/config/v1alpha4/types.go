@@ -94,7 +94,7 @@ type TypeMeta struct {
 // A node in kind config represent a container that will be provisioned with all the components
 // required for the assigned role in the Kubernetes cluster
 type Node struct {
-	// Role defines the role of the node in the in the Kubernetes cluster
+	// Role defines the role of the node in the Kubernetes cluster
 	// created by kind
 	//
 	// Defaults to "control-plane"
