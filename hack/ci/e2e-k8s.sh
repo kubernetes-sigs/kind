@@ -168,6 +168,10 @@ ${controllerManager_extra_args}
   scheduler:
     extraArgs:
 ${scheduler_extra_args}
+   etcd:
+     local:
+       extraArgs:
+         experimental-watch-progress-notify-interval: "5s"
   ---
   kind: InitConfiguration
   nodeRegistration:
