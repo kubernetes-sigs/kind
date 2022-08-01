@@ -12,7 +12,7 @@ jobs:
   docker:
     name: Cgroup v2
     # nested virtualization is only available on macOS hosts
-    runs-on: macos-10.15
+    runs-on: macos-12
     timeout-minutes: 30
     strategy:
       fail-fast: false
