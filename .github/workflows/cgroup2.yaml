@@ -67,8 +67,9 @@ jobs:
           "$HELPER" "$KIND_EXPERIMENTAL_PROVIDER" version
 
       - name: Create a cluster
+        # DO NOT MERGE: overriding with image contianing new field and removing feature gate
         run: |
-          "$HELPER" kind create cluster -v7 --wait 10m --retain
+          "$HELPER" kind create cluster -v7 --wait 10m --retain --image=bentheelder/kind-node:v1.25.0-alpha.3.366_adcdebb07d4944
 
       - name: Get Cluster status
         run: |
