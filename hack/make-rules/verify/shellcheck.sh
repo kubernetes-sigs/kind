@@ -23,8 +23,23 @@ set -o pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." &> /dev/null && pwd -P)"
 cd "${REPO_ROOT}"
 
-# upstream shellcheck latest stable image as of January 10th, 2019
-SHELLCHECK_IMAGE='koalaman/shellcheck:v0.7.1'
+# required version for this script, if not installed on the host we will
+# use the official docker image instead. keep this in sync with SHELLCHECK_IMAGE
+SHELLCHECK_VERSION="0.8.0"
+# upstream shellcheck latest stable image as of October 23rd, 2019
+SHELLCHECK_IMAGE='docker.io/koalaman/shellcheck-alpine:v0.8.0@sha256:f42fde76d2d14a645a848826e54a4d650150e151d9c81057c898da89a82c8a56'
+
+DOCKER="${DOCKER:-docker}"
+
+# detect if the host machine has the required shellcheck version installed
+# if so, we will use that instead.
+HAVE_SHELLCHECK=false
+if which shellcheck &>/dev/null; then
+  detected_version="$(shellcheck --version | grep 'version: .*')"
+  if [[ "${detected_version}" = "version: ${SHELLCHECK_VERSION}" ]]; then
+    HAVE_SHELLCHECK=true
+  fi
+fi
 
 # Find all shell scripts excluding:
 # - Anything git-ignored - No need to lint untracked files.
@@ -34,7 +49,7 @@ SHELLCHECK_IMAGE='koalaman/shellcheck:v0.7.1'
 all_shell_scripts=()
 while IFS=$'\n' read -r script;
   do git check-ignore -q "$script" || all_shell_scripts+=("$script");
-done < <(grep -irl '#!.*sh' . | grep -Ev '(^\./\.git/)|(^\./vendor/)|(^\./bin/)|(\.go$)')
+done < <(grep -irl '#!.*sh' . | grep -Ev '(^\./\.git/)|(^\./vendor/)|(^\./hack/third_party/)|(^\./bin/)|(\.go$)')
 
 # common arguments we'll pass to shellcheck
 SHELLCHECK_OPTIONS=(
@@ -53,7 +68,18 @@ SHELLCHECK_OPTIONS=(
 )
 
 # actually shellcheck
-docker run \
-  --rm -t -v "${REPO_ROOT}:${REPO_ROOT}" -w "${REPO_ROOT}" \
-  "${SHELLCHECK_IMAGE}" \
-  "${SHELLCHECK_OPTIONS[@]}" "${all_shell_scripts[@]}"
+# tell the user which we've selected and lint all scripts
+# The shellcheck errors are printed to stdout by default, hence they need to be redirected
+# to stderr in order to be well parsed for Junit representation by juLog function
+res=0
+if ${HAVE_SHELLCHECK}; then
+  >&2 echo "Using host shellcheck ${SHELLCHECK_VERSION} binary."
+  shellcheck "${SHELLCHECK_OPTIONS[@]}" "${all_shell_scripts[@]}" >&2 || res=$?
+else
+  >&2 echo "Using shellcheck ${SHELLCHECK_VERSION} docker image."
+  "${DOCKER}" run \
+    --rm -v "${REPO_ROOT}:${REPO_ROOT}" -w "${REPO_ROOT}" \
+    "${SHELLCHECK_IMAGE}" \
+  shellcheck "${SHELLCHECK_OPTIONS[@]}" "${all_shell_scripts[@]}" >&2 || res=$?
+fi
+exit $res
