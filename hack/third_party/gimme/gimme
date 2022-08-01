@@ -285,7 +285,7 @@ _extract() {
 
 # _setup_bootstrap
 _setup_bootstrap() {
-	local versions=("1.14" "1.13" "1.12" "1.11" "1.10" "1.9" "1.8" "1.7" "1.6" "1.5" "1.4")
+	local versions=("1.18" "1.17" "1.16" "1.15" "1.14" "1.13" "1.12" "1.11" "1.10" "1.9" "1.8" "1.7" "1.6" "1.5" "1.4")
 
 	# try existing
 	for v in "${versions[@]}"; do
@@ -785,7 +785,7 @@ _to_goarch() {
 : "${GIMME_GO_GIT_REMOTE:=https://github.com/golang/go.git}"
 : "${GIMME_TYPE:=auto}" # 'auto', 'binary', 'source', or 'git'
 : "${GIMME_BINARY_OSX:=osx10.8}"
-: "${GIMME_DOWNLOAD_BASE:=https://storage.googleapis.com/golang}"
+: "${GIMME_DOWNLOAD_BASE:=https://dl.google.com/go}"
 : "${GIMME_LIST_KNOWN:=https://golang.org/dl}"
 : "${GIMME_KNOWN_CACHE_MAX:=10800}"
 
