@@ -43,7 +43,7 @@ set -x
 (cd "${KUBEROOT}" && make clean)
 # get kubernetes version
 version_line="$(cd "${KUBEROOT}"; ./hack/print-workspace-status.sh | grep 'gitVersion')"
-kube_version="${version_line#"gitVersion "}"
+kube_version="${version_line#"STABLE_DOCKER_TAG "}"
 
 # kubernetes build option(s)
 GOFLAGS="${GOFLAGS:-}"
