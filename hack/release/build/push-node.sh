@@ -16,6 +16,7 @@
 set -o errexit -o nounset -o pipefail
 
 REGISTRY="${REGISTRY:-kindest}"
+IMAGE_NAME="${IMAGE_NAME:-node}"
 
 # cd to the repo root
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." &> /dev/null && pwd -P)"
@@ -43,7 +44,7 @@ set -x
 (cd "${KUBEROOT}" && make clean)
 # get kubernetes version
 version_line="$(cd "${KUBEROOT}"; ./hack/print-workspace-status.sh | grep 'gitVersion')"
-kube_version="${version_line#"gitVersion "}"
+kube_version="${version_line#"STABLE_DOCKER_TAG "}"
 
 # kubernetes build option(s)
 GOFLAGS="${GOFLAGS:-}"
@@ -61,10 +62,10 @@ fi
 export GOFLAGS
 
 # build for each arch
-IMAGE="${REGISTRY}/node:${kube_version}"
+IMAGE="${REGISTRY}/${IMAGE_NAME}:${kube_version}"
 images=()
 for arch in "${__arches__[@]}"; do
-    image="${REGISTRY}/node-${arch}:${kube_version}"
+    image="${REGISTRY}/${IMAGE_NAME}-${arch}:${kube_version}"
     "${REPO_ROOT}/bin/kind" build node-image --image="${image}" --arch="${arch}" "${KUBEROOT}"
     images+=("${image}")
 done
