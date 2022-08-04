@@ -75,14 +75,16 @@ type ConfigData struct {
 	// Labels are the labels, in the format "key1=val1,key2=val2", with which the respective node will be labeled
 	NodeLabels string
 
-	// DerivedConfigData is populated by Derive()
-	// These auto-generated fields are available to Config templates,
-	// but not meant to be set by hand
-	DerivedConfigData
-
-	// Provider is running with rootless mode, so kube-proxy needs to be configured
-	// not to fail on sysctl error.
+	// RootlessProvider is true if kind is running with rootless mode
 	RootlessProvider bool
+
+	// DisableLocalStorageCapacityIsolation is typically set true based on RootlessProvider
+	// based on the Kubernetes version, if true kubelet localStorageCapacityIsolation is set false
+	DisableLocalStorageCapacityIsolation bool
+
+	// DerivedConfigData contains fields computed from the other fields for use
+	// in the config templates and should only be populated by calling Derive()
+	DerivedConfigData
 }
 
 // DerivedConfigData fields are automatically derived by
@@ -537,6 +539,7 @@ evictionHard:
 {{ range $key := .SortedFeatureGateKeys }}
   "{{ $key }}": {{ index $.FeatureGates $key }}
 {{end}}{{end}}
+localStorageCapacityIsolation: {{if .DisableLocalStorageCapacityIsolation}}false{{else}}true{{end}}
 {{if ne .KubeProxyMode "None"}}
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
@@ -585,7 +588,13 @@ func Config(data ConfigData) (config string, err error) {
 
 		// For avoiding err="failed to get rootfs info: failed to get device for dir \"/var/lib/kubelet\": could not find device with major: 0, minor: 41 in cached partitions map"
 		// https://github.com/kubernetes-sigs/kind/issues/2524
-		data.FeatureGates["LocalStorageCapacityIsolation"] = false
+		if ver.LessThan(version.MustParseSemantic("v1.25.0-alpha.3.440+0064010cddfa00")) {
+			// this feature gate was removed in v1.25 and replaced by an opt-out to disable
+			data.FeatureGates["LocalStorageCapacityIsolation"] = false
+		} else {
+			// added in v1.25 https://github.com/kubernetes/kubernetes/pull/111513
+			data.DisableLocalStorageCapacityIsolation = true
+		}
 	}
 
 	// assume the latest API version, then fallback if the k8s version is too low
