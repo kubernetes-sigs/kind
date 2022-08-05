@@ -539,7 +539,7 @@ evictionHard:
 {{ range $key := .SortedFeatureGateKeys }}
   "{{ $key }}": {{ index $.FeatureGates $key }}
 {{end}}{{end}}
-localStorageCapacityIsolation: {{if .DisableLocalStorageCapacityIsolation}}false{{else}}true{{end}}
+{{if .DisableLocalStorageCapacityIsolation}}localStorageCapacityIsolation: false{{end}}
 {{if ne .KubeProxyMode "None"}}
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
