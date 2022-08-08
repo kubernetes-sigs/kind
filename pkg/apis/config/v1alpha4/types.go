@@ -236,11 +236,13 @@ https://github.com/kubernetes/kubernetes/blob/063e7ff358fdc8b0916e6f39beedc0d025
 // names on disk as opposed to the int32 values, and the serialized field names
 // have been made closer to core/v1 VolumeMount field names
 // In yaml this looks like:
-//  containerPath: /foo
-//  hostPath: /bar
-//  readOnly: true
-//  selinuxRelabel: false
-//  propagation: None
+//
+//	containerPath: /foo
+//	hostPath: /bar
+//	readOnly: true
+//	selinuxRelabel: false
+//	propagation: None
+//
 // Propagation may be one of: None, HostToContainer, Bidirectional
 type Mount struct {
 	// Path of the mount within the container.
@@ -259,10 +261,11 @@ type Mount struct {
 
 // PortMapping specifies a host port mapped into a container port.
 // In yaml this looks like:
-//  containerPort: 80
-//  hostPort: 8000
-//  listenAddress: 127.0.0.1
-//  protocol: TCP
+//
+//	containerPort: 80
+//	hostPort: 8000
+//	listenAddress: 127.0.0.1
+//	protocol: TCP
 type PortMapping struct {
 	// Port within the container.
 	ContainerPort int32 `yaml:"containerPort,omitempty" json:"containerPort,omitempty"`
