@@ -28,4 +28,4 @@ The registry can be used like this.
 4. And now we can use the image `kubectl create deployment hello-server --image=localhost:5001/hello-app:1.0`
 
 If you build your own image and tag it like `localhost:5001/image:foo` and then use
-it in kubernetes as `localhost:5001/image:foo`.
+it in kubernetes as `localhost:5001/image:foo`. And use it from inside of your cluster application as `kind-registry:5000`.
