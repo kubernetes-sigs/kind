@@ -23,3 +23,9 @@ linters:
     - unparam
 
 linters-settings:
+  staticcheck:
+    checks:
+    - all
+    # TODO: require go1.16 for kind and sort out migrating without breakage
+    # until then, we still use io/ioutil for now
+    - '-SA1019'
