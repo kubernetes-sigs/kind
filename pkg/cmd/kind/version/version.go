@@ -33,11 +33,15 @@ func Version() string {
 	// add pre-release version info if we have it
 	if VersionPreRelease != "" {
 		v += "-" + VersionPreRelease
+		// If GitCommitCount was set, add the + <build>
+		if GitCommitCount != "" {
+			v += "+" + GitCommitCount
+		}
 		// if commit was set, add the + <build>
 		// we only do this for pre-release versions
 		if GitCommit != "" {
 			// NOTE: use 14 character short hash, like Kubernetes
-			v += "+" + truncate(GitCommit, 14)
+			v += "-" + truncate(GitCommit, 14)
 		}
 	}
 	return v
@@ -59,6 +63,10 @@ const VersionPreRelease = "alpha"
 // GitCommit is the commit used to build the kind binary, if available.
 // It is injected at build time.
 var GitCommit = ""
+
+// GitCommitCount count the commits since the last release.
+// It is injected at build time.
+var GitCommitCount = ""
 
 // NewCommand returns a new cobra.Command for version
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
