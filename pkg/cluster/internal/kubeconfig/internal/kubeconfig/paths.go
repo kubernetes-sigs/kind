@@ -31,7 +31,7 @@ const kubeconfigEnv = "KUBECONFIG"
 paths returns the list of paths to be considered for kubeconfig files
 where explicitPath is the value of --kubeconfig
 
-Logic based on kubectl
+# Logic based on kubectl
 
 https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands
 
