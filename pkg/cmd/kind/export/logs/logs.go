@@ -49,7 +49,13 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 			return runE(logger, streams, flags, args)
 		},
 	}
-	cmd.Flags().StringVar(&flags.Name, "name", cluster.DefaultName, "the cluster context name")
+	cmd.Flags().StringVarP(
+		&flags.Name,
+		"name",
+		"n",
+		cluster.DefaultName,
+		"the cluster context name",
+	)
 	return cmd
 }
 
