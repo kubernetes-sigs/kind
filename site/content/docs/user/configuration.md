@@ -367,6 +367,29 @@ spec:
 
 [Ingress Guide]: /docs/user/ingress
 
+### Extra Labels
+
+Extra labels might be useful for working with
+[nodeSelectors](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).
+
+An example label for specifying a `tier` label:
+
+{{< codeFromInline lang="yaml">}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+- role: worker
+  extraPortMappings:
+  - containerPort: 30950
+    hostPort: 80
+  labels:
+    tier: frontend
+- role: worker
+  labels:
+    tier: backend
+{{< /codeFromInline >}}
+
 ### Kubeadm Config Patches
 
 KIND uses [`kubeadm`](/docs/design/principles/#leverage-existing-tooling) 
