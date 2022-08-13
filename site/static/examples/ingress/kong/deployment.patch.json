@@ -14,7 +14,7 @@
               },
               {
                 "containerPort": 8443,
-                "hostPort": 43,
+                "hostPort": 443,
                 "name": "proxy-ssl",
                 "protocol": "TCP"
               }
