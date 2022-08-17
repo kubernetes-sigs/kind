@@ -18,6 +18,7 @@ package podman
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"path/filepath"
@@ -264,15 +265,54 @@ func getProxyEnv(cfg *config.Cluster, networkName string) (map[string]string, er
 	return envs, nil
 }
 
+type podmanNetworks []struct {
+	// v4+
+	Subnets []struct {
+		Subnet  string `json:"subnet"`
+		Gateway string `json:"gateway"`
+	} `json:"subnets"`
+	// v3 and anything still using CNI/IPAM
+	Plugins []struct {
+		Ipam struct {
+			Ranges [][]struct {
+				Gateway string `json:"gateway"`
+				Subnet  string `json:"subnet"`
+			} `json:"ranges"`
+		} `json:"ipam,omitempty"`
+	} `json:"plugins"`
+}
+
 func getSubnets(networkName string) ([]string, error) {
-	// TODO: unmarshall json and get rid of this complex query
-	format := `{{ range (index (index (index (index . "plugins") 0 ) "ipam" ) "ranges")}}{{ index ( index . 0 ) "subnet" }} {{end}}`
-	cmd := exec.Command("podman", "network", "inspect", "-f", format, networkName)
-	lines, err := exec.OutputLines(cmd)
+	cmd := exec.Command("podman", "network", "inspect", networkName)
+	out, err := exec.Output(cmd)
+
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get subnets")
 	}
-	return strings.Split(strings.TrimSpace(lines[0]), " "), nil
+
+	networks := podmanNetworks{}
+	jsonErr := json.Unmarshal([]byte(out), &networks)
+	if jsonErr != nil {
+		return nil, errors.Wrap(jsonErr, "failed to get subnets")
+	}
+	subnets := []string{}
+	for _, network := range networks {
+		if len(network.Subnets) > 0 {
+			for _, subnet := range network.Subnets {
+				subnets = append(subnets, subnet.Subnet)
+			}
+		}
+		if len(network.Plugins) > 0 {
+			for _, plugin := range network.Plugins {
+				for _, r := range plugin.Ipam.Ranges {
+					for _, rr := range r {
+						subnets = append(subnets, rr.Subnet)
+					}
+				}
+			}
+		}
+	}
+	return subnets, nil
 }
 
 // generateMountBindings converts the mount list to a list of args for podman
