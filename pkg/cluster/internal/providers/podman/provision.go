@@ -265,7 +265,7 @@ func getProxyEnv(cfg *config.Cluster, networkName string) (map[string]string, er
 	return envs, nil
 }
 
-type PodmanNetworks []struct {
+type podmanNetworks []struct {
 	// v4+
 	Subnets []struct {
 		Subnet  string `json:"subnet"`
@@ -290,7 +290,7 @@ func getSubnets(networkName string) ([]string, error) {
 		return nil, errors.Wrap(err, "failed to get subnets")
 	}
 
-	networks := PodmanNetworks{}
+	networks := podmanNetworks{}
 	jsonErr := json.Unmarshal([]byte(out), &networks)
 	if jsonErr != nil {
 		return nil, errors.Wrap(jsonErr, "failed to get subnets")
