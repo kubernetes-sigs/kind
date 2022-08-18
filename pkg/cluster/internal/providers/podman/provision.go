@@ -262,6 +262,11 @@ func getProxyEnv(cfg *config.Cluster, networkName string) (map[string]string, er
 		for _, node := range cfg.Nodes {
 			clusterNodeNames = append(clusterNodeNames, nodeNamer(string(node.Role)))
 		}
+		if len(cfg.Nodes) > 1 {
+			clusterNodeNames = append(clusterNodeNames, nodeNamer(string(constants.ExternalLoadBalancerNodeRoleValue)),
+				nodeNamer(string(constants.ExternalEtcdNodeRoleValue)))
+		}
+
 		noProxyList = append(noProxyList, ".svc", ".svc.cluster", ".svc.cluster.local")
 		noProxyList = append(noProxyList, clusterNodeNames...)
 		noProxyJoined := strings.Join(noProxyList, ",")
