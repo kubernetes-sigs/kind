@@ -286,22 +286,12 @@ func getProxyEnv(cfg *config.Cluster, networkName string, nodeNames []string) (m
 
 		noProxyList := append(subnets, envs[common.NOProxy])
 		noProxyList = append(noProxyList, nodeNames...)
-		// Add pod,service and all the cluster nodes' dns names to no_proxy to allow in cluster
+		// Add pod and service dns names to no_proxy to allow in cluster
 		// Note: this is best effort based on the default CoreDNS spec
 		// https://github.com/kubernetes/dns/blob/master/docs/specification.md
 		// Any user created pod/service hostnames, namespaces, custom DNS services
 		// are expected to be no-proxied by the user explicitly.
-		var clusterNodeNames []string
-		nodeNamer := common.MakeNodeNamer(cfg.Name)
-		for _, node := range cfg.Nodes {
-			clusterNodeNames = append(clusterNodeNames, nodeNamer(string(node.Role)))
-		}
-		if len(cfg.Nodes) > 1 {
-			clusterNodeNames = append(clusterNodeNames, nodeNamer(string(constants.ExternalLoadBalancerNodeRoleValue)),
-				nodeNamer(string(constants.ExternalEtcdNodeRoleValue)))
-		}
 		noProxyList = append(noProxyList, ".svc", ".svc.cluster", ".svc.cluster.local")
-		noProxyList = append(noProxyList, clusterNodeNames...)
 		noProxyJoined := strings.Join(noProxyList, ",")
 		envs[common.NOProxy] = noProxyJoined
 		envs[strings.ToLower(common.NOProxy)] = noProxyJoined
