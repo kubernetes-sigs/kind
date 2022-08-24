@@ -286,8 +286,8 @@ table.includecode thead th {
 }
 
 table.includecode thead th button {
-  background: #326be5;
-  border: .25em solid white;
+  background: transparent;
+  border: 0;
   color: white;
   font-weight: bold;
   margin: .25em;
