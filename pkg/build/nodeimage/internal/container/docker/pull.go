@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Copyright (c) 2022, Oracle and/or its affiliates.
+// Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
 package docker
 
 import (
@@ -26,14 +29,14 @@ import (
 // Pull pulls an image, retrying up to retries times
 func Pull(logger log.Logger, image string, platform string, retries int) error {
 	logger.V(1).Infof("Pulling image: %s for platform %s ...", image, platform)
-	err := exec.Command("docker", "pull", "--platform="+platform, image).Run()
+	err := exec.Command("docker", "pull", image).Run()
 	// retry pulling up to retries times if necessary
 	if err != nil {
 		for i := 0; i < retries; i++ {
 			time.Sleep(time.Second * time.Duration(i+1))
 			logger.V(1).Infof("Trying again to pull image: %q ... %v", image, err)
 			// TODO(bentheelder): add some backoff / sleep?
-			err = exec.Command("docker", "pull", "--platform="+platform, image).Run()
+			err = exec.Command("docker", "pull", image).Run()
 			if err == nil {
 				break
 			}
