@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Copyright (c) 2022, Oracle and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
 # shared makefile for all images
 
 # get image name from directory we're building
@@ -37,7 +40,7 @@ OUTPUT?=
 PROGRESS=auto
 EXTRA_BUILD_OPT?=
 build: ensure-buildx ocne_tar
-	docker buildx build --platform=${PLATFORMS} $(OUTPUT) --progress=$(PROGRESS) -t ${IMAGE} --pull $(EXTRA_BUILD_OPT) .
+	docker buildx build $(OUTPUT) --progress=$(PROGRESS) -t ${IMAGE} --pull $(EXTRA_BUILD_OPT) .
 
 # push the cross built image
 push: OUTPUT=--push
