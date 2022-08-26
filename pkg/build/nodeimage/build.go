@@ -20,7 +20,6 @@ import (
 	"runtime"
 
 	"sigs.k8s.io/kind/pkg/build/nodeimage/internal/kube"
-	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
@@ -46,15 +45,6 @@ func Build(options ...Option) error {
 		ctx.logger.Warnf("unsupported architecture %q", ctx.arch)
 	}
 
-	// locate sources if no kubernetes source was specified
-	if ctx.kubeRoot == "" {
-		kubeRoot, err := kube.FindSource()
-		if err != nil {
-			return errors.Wrap(err, "error finding kuberoot")
-		}
-		ctx.kubeRoot = kubeRoot
-	}
-
 	// initialize bits
 	builder, err := kube.NewDockerBuilder(ctx.logger, ctx.kubeRoot, ctx.arch)
 	if err != nil {
@@ -72,9 +62,6 @@ func supportedArch(arch string) bool {
 		return false
 	// currently we nominally support building node images for these
 	case "amd64":
-	case "arm64":
-	case "ppc64le":
-	case "s390x":
 	}
 	return true
 }

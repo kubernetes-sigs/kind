@@ -1,0 +1,32 @@
+[Unit]
+Description=Container Runtime Interface for OCI (CRI-O)
+Documentation=https://github.com/cri-o/cri-o
+Before=kubelet.service
+After=network.target
+
+[Service]
+Type=notify
+ExecStartPre=-/sbin/modprobe overlayfs
+EnvironmentFile=-/etc/sysconfig/crio
+Environment=GOTRACEBACK=crash
+ExecStart=/usr/bin/crio \
+          $CRIO_CONFIG_OPTIONS \
+          $CRIO_RUNTIME_OPTIONS \
+          $CRIO_STORAGE_OPTIONS \
+          $CRIO_NETWORK_OPTIONS \
+          $CRIO_METRICS_OPTIONS
+ExecReload=/bin/kill -s HUP $MAINPID
+LimitNPROC=infinity
+LimitCORE=infinity
+LimitNOFILE=infinity
+TasksMax=infinity
+OOMScoreAdjust=-999
+TimeoutStartSec=0
+Restart=always
+RestartSec=1
+Delegate=yes
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
+Alias=cri-o.service

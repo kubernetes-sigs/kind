@@ -18,7 +18,6 @@ limitations under the License.
 package config
 
 import (
-	"bytes"
 	"fmt"
 	"net"
 	"strings"
@@ -115,38 +114,40 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
-	// if we have containerd config, patch all the nodes concurrently
-	if len(ctx.Config.ContainerdConfigPatches) > 0 || len(ctx.Config.ContainerdConfigPatchesJSON6902) > 0 {
-		fns := make([]func() error, len(kubeNodes))
-		for i, node := range kubeNodes {
-			node := node // capture loop variable
-			fns[i] = func() error {
-				// read and patch the config
-				const containerdConfigPath = "/etc/containerd/config.toml"
-				var buff bytes.Buffer
-				if err := node.Command("cat", containerdConfigPath).SetStdout(&buff).Run(); err != nil {
-					return errors.Wrap(err, "failed to read containerd config from node")
+	ctx.Logger.V(9).Infof("DEBUG: Skipping containerd patching")
+	/*
+		// if we have containerd config, patch all the nodes concurrently
+		if len(ctx.Config.ContainerdConfigPatches) > 0 || len(ctx.Config.ContainerdConfigPatchesJSON6902) > 0 {
+			fns := make([]func() error, len(kubeNodes))
+			for i, node := range kubeNodes {
+				node := node // capture loop variable
+				fns[i] = func() error {
+					// read and patch the config
+					const containerdConfigPath = "/etc/containerd/config.toml"
+					var buff bytes.Buffer
+					if err := node.Command("cat", containerdConfigPath).SetStdout(&buff).Run(); err != nil {
+						return errors.Wrap(err, "failed to read containerd config from node")
+					}
+					patched, err := patch.TOML(buff.String(), ctx.Config.ContainerdConfigPatches, ctx.Config.ContainerdConfigPatchesJSON6902)
+					if err != nil {
+						return errors.Wrap(err, "failed to patch containerd config")
+					}
+					if err := nodeutils.WriteFile(node, containerdConfigPath, patched); err != nil {
+						return errors.Wrap(err, "failed to write patched containerd config")
+					}
+					// restart containerd now that we've re-configured it
+					// skip if containerd is not running
+					if err := node.Command("bash", "-c", `! pgrep --exact containerd || systemctl restart containerd`).Run(); err != nil {
+						return errors.Wrap(err, "failed to restart containerd after patching config")
+					}
+					return nil
 				}
-				patched, err := patch.TOML(buff.String(), ctx.Config.ContainerdConfigPatches, ctx.Config.ContainerdConfigPatchesJSON6902)
-				if err != nil {
-					return errors.Wrap(err, "failed to patch containerd config")
-				}
-				if err := nodeutils.WriteFile(node, containerdConfigPath, patched); err != nil {
-					return errors.Wrap(err, "failed to write patched containerd config")
-				}
-				// restart containerd now that we've re-configured it
-				// skip if containerd is not running
-				if err := node.Command("bash", "-c", `! pgrep --exact containerd || systemctl restart containerd`).Run(); err != nil {
-					return errors.Wrap(err, "failed to restart containerd after patching config")
-				}
-				return nil
+			}
+			if err := errors.UntilErrorConcurrent(fns); err != nil {
+				return err
 			}
 		}
-		if err := errors.UntilErrorConcurrent(fns); err != nil {
-			return err
-		}
-	}
-
+	*/
 	// mark success
 	ctx.Status.End(true)
 	return nil
@@ -265,7 +266,6 @@ func writeKubeadmConfig(kubeadmConfig string, node nodes.Node) error {
 		// TODO(bentheelder): logging here
 		return errors.Wrap(err, "failed to copy kubeadm config to node")
 	}
-
 	return nil
 }
 

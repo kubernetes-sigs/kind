@@ -18,10 +18,9 @@ limitations under the License.
 package kubeadminit
 
 import (
-	"strings"
-
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
+	"strings"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 
@@ -67,6 +66,16 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		skipPhases += ",addon/kube-proxy"
 	}
 
+	// enable crio
+	crioCmd := node.Command(
+		// init because this is the control plane node
+		"systemctl",
+		"restart",
+		"crio.service",
+	)
+	crioLines, err := exec.CombinedOutputLines(crioCmd)
+	ctx.Logger.V(9).Info(strings.Join(crioLines, "\n"))
+
 	// run kubeadm
 	cmd := node.Command(
 		// init because this is the control plane node
@@ -76,10 +85,11 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		"--config=/kind/kubeadm.conf",
 		"--skip-token-print",
 		// increase verbosity for debugging
-		"--v=6",
+		"--v=9",
 	)
+
 	lines, err := exec.CombinedOutputLines(cmd)
-	ctx.Logger.V(3).Info(strings.Join(lines, "\n"))
+	ctx.Logger.V(9).Info(strings.Join(lines, "\n"))
 	if err != nil {
 		return errors.Wrap(err, "failed to init node with kubeadm")
 	}

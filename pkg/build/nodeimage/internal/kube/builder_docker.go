@@ -39,6 +39,8 @@ type dockerBuilder struct {
 
 var _ Builder = &dockerBuilder{}
 
+const outPath = "/images/base/_output/"
+
 // NewDockerBuilder returns a new Bits backed by the docker-ized build,
 // given kubeRoot, the path to the kubernetes source directory
 func NewDockerBuilder(logger log.Logger, kubeRoot, arch string) (Builder, error) {
@@ -159,4 +161,28 @@ func (b *dockerBuilder) Build() (Bits, error) {
 
 func dockerBuildOsAndArch(arch string) string {
 	return "linux/" + arch
+}
+
+func (b *dockerBuilder) OracleCneBuild() (Bits, error) {
+	cwd, err := os.Getwd()
+	k8sVersion, ok := os.LookupEnv("K8S-VERSION")
+	if !ok {
+		k8sVersion = "v1.23.7"
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &bits{
+		binaryPaths: []string{},
+		imagePaths: []string{
+
+			filepath.Join(cwd, outPath, "kube-apiserver.tar"),
+			filepath.Join(cwd, outPath, "kube-controller-manager.tar"),
+			filepath.Join(cwd, outPath, "kube-proxy.tar"),
+			filepath.Join(cwd, outPath, "kube-scheduler.tar"),
+			filepath.Join(cwd, outPath, "etcd.tar"),
+			filepath.Join(cwd, outPath, "pause.tar"),
+		},
+		version: k8sVersion,
+	}, nil
 }

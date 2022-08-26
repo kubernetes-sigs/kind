@@ -53,7 +53,7 @@ type buildContext struct {
 func (c *buildContext) Build() (err error) {
 	// ensure kubernetes build is up to date first
 	c.logger.V(0).Info("Starting to build Kubernetes")
-	bits, err := c.builder.Build()
+	bits, err := c.builder.OracleCneBuild()
 	if err != nil {
 		c.logger.Errorf("Failed to build Kubernetes: %v", err)
 		return errors.Wrap(err, "failed to build kubernetes")
@@ -71,10 +71,9 @@ func (c *buildContext) buildImage(bits kube.Bits) error {
 	// debian packages without permanently copying them into the image.
 	// if docker gets proper squash support, we can rm them instead
 	// This also allows the KubeBit implementations to perform programmatic
-	// install in the image
+	// install in the imag
 	containerID, err := c.createBuildContainer()
 	cmder := docker.ContainerCmder(containerID)
-
 	// ensure we will delete it
 	if containerID != "" {
 		defer func() {
@@ -95,6 +94,7 @@ func (c *buildContext) buildImage(bits kube.Bits) error {
 	}
 
 	// copy artifacts in
+	// this never gets invoked as BinaryPaths is empty for OCNE
 	for _, binary := range bits.BinaryPaths() {
 		// TODO: probably should be /usr/local/bin, but the existing kubelet
 		// service file expects /usr/bin/kubelet
@@ -122,8 +122,8 @@ func (c *buildContext) buildImage(bits kube.Bits) error {
 		return err
 	}
 
-	// pre-pull images that were not part of the build and write CNI / storage
-	// manifests
+	//pre-pull images that were not part of the build and write CNI / storage
+	//manifests
 	if _, err = c.prePullImagesAndWriteManifests(bits, parsedVersion, containerID); err != nil {
 		c.logger.Errorf("Image build Failed! Failed to pull Images: %v", err)
 		return err
@@ -193,25 +193,19 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVers
 		fixedImages.Insert(registry + ":" + tag)
 	}
 	builtImages = fixedImages
+
 	c.logger.V(1).Info("Detected built images: " + strings.Join(builtImages.List(), ", "))
 
 	// gets the list of images required by kubeadm
 	requiredImages, err := exec.OutputLines(cmder.Command(
-		"kubeadm", "config", "images", "list", "--kubernetes-version", bits.Version(),
+		"kubeadm", "config", "images", "list", "--kubernetes-version", bits.Version(), "--config", "/etc/kubeadm.yaml",
 	))
 	if err != nil {
 		return nil, err
 	}
 
-	// replace pause image with our own
-	containerdConfig, err := exec.Output(cmder.Command("cat", containerdConfigPath))
-	if err != nil {
-		return nil, err
-	}
-	pauseImage, err := findSandboxImage(string(containerdConfig))
-	if err != nil {
-		return nil, err
-	}
+	pauseImage := "container-registry.oracle.com/olcne/pause:3.6"
+
 	n := 0
 	for _, image := range requiredImages {
 		if !strings.Contains(image, "pause") {
@@ -221,12 +215,6 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVers
 	}
 	requiredImages = append(requiredImages[:n], pauseImage)
 
-	if parsedVersion.LessThan(version.MustParseSemantic("v1.24.0")) {
-		if err := configureContainerdSystemdCgroupFalse(cmder, string(containerdConfig)); err != nil {
-			return nil, err
-		}
-	}
-
 	// write the default CNI manifest
 	if err := createFile(cmder, defaultCNIManifestLocation, defaultCNIManifest); err != nil {
 		c.logger.Errorf("Image build Failed! Failed write default CNI Manifest: %v", err)
@@ -234,7 +222,6 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVers
 	}
 	// all builds should install the default CNI images from the above manifest currently
 	requiredImages = append(requiredImages, defaultCNIImages...)
-
 	// write the default Storage manifest
 	// in < 1.14 we need to use beta labels
 	storageManifest := defaultStorageManifest
@@ -279,6 +266,7 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVers
 				*/
 				_ = importer.Pull(image, dockerBuildOsAndArch(c.arch))
 			}
+
 			return nil
 		})
 	}
@@ -293,11 +281,12 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVers
 		loadFns = append(loadFns, func() error {
 			f, err := os.Open(image)
 			if err != nil {
+				c.logger.V(9).Infof("Error = %v !!!", err)
 				return err
 			}
 			defer f.Close()
 			//return importer.LoadCommand().SetStdout(os.Stdout).SetStderr(os.Stderr).SetStdin(f).Run()
-			// we will rewrite / correct the tags as we load the image
+			//we will rewrite / correct the tags as we load the image
 			if err := exec.RunWithStdinWriter(importer.LoadCommand().SetStdout(os.Stdout).SetStderr(os.Stdout), func(w io.Writer) error {
 				return docker.EditArchive(f, w, fixRepository, c.arch)
 			}); err != nil {

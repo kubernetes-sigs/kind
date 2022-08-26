@@ -23,4 +23,6 @@ type Builder interface {
 	// Some implementations (upstream binaries) may use this step to obtain
 	// an existing build instead
 	Build() (Bits, error)
+
+	OracleCneBuild() (Bits, error)
 }

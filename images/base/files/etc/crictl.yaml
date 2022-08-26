@@ -1,1 +1,1 @@
-runtime-endpoint: unix:///run/containerd/containerd.sock
+runtime-endpoint: unix:///run/crio/crio.sock

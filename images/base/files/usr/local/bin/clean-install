@@ -25,16 +25,6 @@ if [ $# = 0 ]; then
   exit 1
 fi
 
-apt-get update
-apt-get install -y --no-install-recommends "$@"
-apt-get clean -y
-rm -rf \
-   /var/cache/debconf/* \
-   /var/lib/apt/lists/* \
-   /var/log/* \
-   /tmp/* \
-   /var/tmp/* \
-   /usr/share/doc/* \
-   /usr/share/doc-base/* \
-   /usr/share/man/* \
-   /usr/share/local/*
+yum update -y
+rm -rf /var/cache/yum/*
+yum clean all
