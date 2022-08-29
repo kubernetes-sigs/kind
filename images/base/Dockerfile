@@ -28,7 +28,7 @@ RUN echo "Adding yum repos ..." \
     && yum-config-manager --add-repo http://yum.oracle.com/repo/OracleLinux/OL8/kvm/appstream/x86_64
 
 RUN echo "Installing Packages ..." \
-    && dnf -y install hostname which vi systemd iptables \
+    && dnf -y install hostname which vi systemd iptables fuse-overlayfs \
     && dnf clean all \
     && rm -rf /var/cache/yum/*
 
