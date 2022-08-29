@@ -14,6 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Copyright (c) 2022, Oracle and/or its affiliates.
+// Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
 package nodeimage
 
 import (
@@ -320,7 +323,6 @@ func (c *buildContext) createBuildContainer() (id string, err error) {
 			// the container should hang forever so we can exec in it
 			"--entrypoint=sleep",
 			"--name=" + id,
-			"--platform=" + dockerBuildOsAndArch(c.arch),
 			"--security-opt", "seccomp=unconfined", // ignore seccomp
 		},
 		[]string{
