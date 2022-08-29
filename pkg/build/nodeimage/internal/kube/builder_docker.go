@@ -164,25 +164,14 @@ func dockerBuildOsAndArch(arch string) string {
 }
 
 func (b *dockerBuilder) OracleCneBuild() (Bits, error) {
-	cwd, err := os.Getwd()
+	//cwd, err := os.Getwd()
 	k8sVersion, ok := os.LookupEnv("K8S-VERSION")
 	if !ok {
 		k8sVersion = "v1.23.7"
 	}
-	if err != nil {
-		return nil, err
-	}
 	return &bits{
 		binaryPaths: []string{},
-		imagePaths: []string{
-
-			filepath.Join(cwd, outPath, "kube-apiserver.tar"),
-			filepath.Join(cwd, outPath, "kube-controller-manager.tar"),
-			filepath.Join(cwd, outPath, "kube-proxy.tar"),
-			filepath.Join(cwd, outPath, "kube-scheduler.tar"),
-			filepath.Join(cwd, outPath, "etcd.tar"),
-			filepath.Join(cwd, outPath, "pause.tar"),
-		},
+		imagePaths: []string{},
 		version: k8sVersion,
 	}, nil
 }

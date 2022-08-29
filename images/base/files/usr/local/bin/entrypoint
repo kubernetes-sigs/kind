@@ -99,13 +99,10 @@ overlayfs_preferrable() {
   return 0
 }
 
-configure_containerd() {
+configure_overlay() {
   local snapshotter=${KIND_EXPERIMENTAL_CONTAINERD_SNAPSHOTTER:-}
   if [[ -n "$userns" ]]; then
     # userns (rootless) configs
-
-    # Adjust oomScoreAdj
-    sed -i 's/restrict_oom_score_adj = false/restrict_oom_score_adj = true/' /etc/containerd/config.toml
 
     # Use fuse-overlayfs if overlayfs is not preferrable: https://github.com/kubernetes-sigs/kind/issues/2275
     if [[ -z "$snapshotter" ]] && ! overlayfs_preferrable; then
@@ -119,10 +116,9 @@ configure_containerd() {
   fi
   if [[ -n "$snapshotter" ]]; then
     echo "INFO: changing snapshotter from \"overlayfs\" to \"$snapshotter\""
-    sed -i "s/snapshotter = \"overlayfs\"/snapshotter = \"$snapshotter\"/" /etc/containerd/config.toml
     if [[ "$snapshotter" = "fuse-overlayfs" ]]; then
       echo 'INFO: enabling containerd-fuse-overlayfs service'
-      systemctl enable containerd-fuse-overlayfs
+      systemctl enable fuse-overlayfs
     fi
   fi
 }
@@ -500,7 +496,7 @@ validate_userns
 
 # run pre-init fixups
 # NOTE: it's important that we do configure* first in this order to avoid races
-#configure_containerd
+configure_overlay
 configure_proxy
 fix_kmsg
 fix_mount
@@ -508,7 +504,7 @@ fix_cgroup
 fix_machine_id
 fix_product_name
 fix_product_uuid
-#select_iptables
+select_iptables
 enable_network_magic
 
 # we want the command (expected to be systemd) to be PID1, so exec to it
