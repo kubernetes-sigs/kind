@@ -2,7 +2,7 @@ module github.com/verrazzano/kind
 
 go 1.14
 
-replace sigs.k8s.io/kind => github.com/verrazzano/kind v0.14.0-oracle
+replace sigs.k8s.io/kind => ./
 
 require (
 	github.com/BurntSushi/toml v1.0.0
