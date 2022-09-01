@@ -73,6 +73,7 @@ make clean && ./hack/release/build/cross.sh
 # update to the second version
 set_version "${2}" "alpha"
 make_commit "v${2}-alpha"
+add_tag "v${2}-alpha"
 
 # print follow-up instructions
 echo ""
