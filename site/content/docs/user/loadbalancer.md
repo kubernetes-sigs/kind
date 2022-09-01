@@ -26,16 +26,13 @@ description: |-
 
 ## Installing metallb using default manifests
 
-### Create the metallb namespace
-
-{{< codeFromInline lang="bash" >}}
-kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.12.1/manifests/namespace.yaml
-{{< /codeFromInline >}}
-
 ### Apply metallb manifest
 
+Since version 0.13.0, MetalLB is configured via CRs and the original way of configuring it via a ConfigMap based configuration
+is not working anymore.
+
 {{< codeFromInline lang="bash" >}}
-kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.12.1/manifests/metallb.yaml
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.5/config/manifests/metallb-native.yaml
 {{< /codeFromInline >}}
 
 Wait for metallb pods to have a status of Running
@@ -52,16 +49,16 @@ To complete layer2 configuration, we need to provide metallb a range of IP addre
 docker network inspect -f '{{.IPAM.Config}}' kind
 {{< /codeFromInline >}}
 
-The output will contain a cidr such as 172.19.0.0/16.  We want our loadbalancer IP range to come from this subclass.  We can configure metallb, for instance, to use 172.19.255.200 to 172.19.255.250 by creating the configmap.
+The output will contain a cidr such as 172.19.0.0/16.  We want our loadbalancer IP range to come from this subclass.  We can configure metallb, for instance, to use 172.19.255.200 to 172.19.255.250 by creating the IPAddressPool and the related L2Advertisement.
 
 ```yaml
-{{% readFile "static/examples/loadbalancer/metallb-configmap.yaml" %}}
+{{% readFile "static/examples/loadbalancer/metallb-config.yaml" %}}
 ```
 
 Apply the contents
 
 {{< codeFromInline lang="bash" >}}
-kubectl apply -f https://kind.sigs.k8s.io/examples/loadbalancer/metallb-configmap.yaml
+kubectl apply -f https://kind.sigs.k8s.io/examples/loadbalancer/metallb-config.yaml
 {{< /codeFromInline >}}
 
 ## Using LoadBalancer
