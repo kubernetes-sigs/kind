@@ -29,15 +29,19 @@ import (
 
 // Version returns the kind CLI Semantic Version
 func Version() string {
-	v := VersionCore
+	v := versionCore
 	// add pre-release version info if we have it
-	if VersionPreRelease != "" {
-		v += "-" + VersionPreRelease
+	if versionPreRelease != "" {
+		v += "-" + versionPreRelease
+		// If gitCommitCount was set, add to the pre-release version
+		if gitCommitCount != "" {
+			v += "." + gitCommitCount
+		}
 		// if commit was set, add the + <build>
 		// we only do this for pre-release versions
-		if GitCommit != "" {
+		if gitCommit != "" {
 			// NOTE: use 14 character short hash, like Kubernetes
-			v += "+" + truncate(GitCommit, 14)
+			v += "+" + truncate(gitCommit, 14)
 		}
 	}
 	return v
@@ -49,16 +53,20 @@ func DisplayVersion() string {
 	return "kind v" + Version() + " " + runtime.Version() + " " + runtime.GOOS + "/" + runtime.GOARCH
 }
 
-// VersionCore is the core portion of the kind CLI version per Semantic Versioning 2.0.0
-const VersionCore = "0.15.0"
+// versionCore is the core portion of the kind CLI version per Semantic Versioning 2.0.0
+const versionCore = "0.15.0"
 
-// VersionPreRelease is the pre-release portion of the kind CLI version per
+// versionPreRelease is the base pre-release portion of the kind CLI version per
 // Semantic Versioning 2.0.0
-const VersionPreRelease = "alpha"
+const versionPreRelease = "alpha"
 
-// GitCommit is the commit used to build the kind binary, if available.
+// gitCommitCount count the commits since the last release.
 // It is injected at build time.
-var GitCommit = ""
+var gitCommitCount = ""
+
+// gitCommit is the commit used to build the kind binary, if available.
+// It is injected at build time.
+var gitCommit = ""
 
 // NewCommand returns a new cobra.Command for version
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
