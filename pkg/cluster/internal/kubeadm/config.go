@@ -21,7 +21,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"text/template"
+
+	"github.com/google/safetext/yamltemplate"
 
 	"sigs.k8s.io/kind/pkg/errors"
 
@@ -476,7 +477,7 @@ func Config(data ConfigData) (config string, err error) {
 		templateSource = ConfigTemplateBetaV2
 	}
 
-	t, err := template.New("kubeadm-config").Parse(templateSource)
+	t, err := yamltemplate.New("kubeadm-config").Parse(templateSource)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse config template")
 	}
