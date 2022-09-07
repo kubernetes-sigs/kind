@@ -68,7 +68,7 @@ The maintainers of this project are reachable via:
 - [filing an issue] against this repo
 - The Kubernetes [SIG-Testing Mailing List]
 
-Current maintainers are [@BenTheElder], [@munnerz], [@aojea], and [@amwat] -- feel free to
+Current maintainers are [@aojea] and [@BenTheElder] -- feel free to
 reach out directly if you have any questions!
 
 Pull Requests are very welcome!  
@@ -118,7 +118,5 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [1.0 roadmap]: /docs/contributing/1.0-roadmap
 [install docker]: https://docs.docker.com/install/
 [@BenTheElder]: https://github.com/BenTheElder
-[@munnerz]: https://github.com/munnerz
 [@aojea]: https://github.com/aojea
-[@amwat]: https://github.com/amwat
 [contributor guide]: /docs/contributing/getting-started
