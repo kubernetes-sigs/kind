@@ -366,22 +366,6 @@ fix_product_uuid() {
   fi
 }
 
-fix_kmsg() {
-  # In environments where /dev/kmsg is not available, the kubelet (1.15+) won't
-  # start because it cannot open /dev/kmsg when starting the kmsgparser in the
-  # OOM parser.
-  # To support those environments, we link /dev/kmsg to /dev/console.
-  # https://github.com/kubernetes-sigs/kind/issues/662
-  if [[ ! -e /dev/kmsg ]]; then
-    if [[ -e /dev/console ]]; then
-      echo 'WARN: /dev/kmsg does not exist, symlinking /dev/console' >&2
-      ln -s /dev/console /dev/kmsg
-    else
-      echo 'WARN: /dev/kmsg does not exist, nor does /dev/console!' >&2
-    fi
-  fi
-}
-
 select_iptables() {
   # based on: https://github.com/kubernetes-sigs/iptables-wrappers/blob/97b01f43a8e8db07840fc4b95e833a37c0d36b12/iptables-wrapper-installer.sh
   local mode num_legacy_lines num_nft_lines
@@ -514,7 +498,6 @@ validate_userns
 # NOTE: it's important that we do configure* first in this order to avoid races
 configure_containerd
 configure_proxy
-fix_kmsg
 fix_mount
 fix_cgroup
 fix_machine_id
