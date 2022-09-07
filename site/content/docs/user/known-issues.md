@@ -86,6 +86,10 @@ brew link --overwrite kubernetes-cli
 
 ## Older Docker Installations
 
+> **NOTE**: This only applies to kind version v0.15.0 and back: Kubernetes
+> before 1.15 will not be supported in KIND v0.16.0 and versions below 1.13
+> were no longer supported in kind v0.9.0.
+
 `kind` is known to have issues with Kubernetes 1.13 or lower when using Docker versions:
 
 - `1.13.1` (released January 2017)
