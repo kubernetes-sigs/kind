@@ -21,7 +21,6 @@ by the ingress controller `nodeSelector`.
 
 1. [Create a cluster](#create-cluster)
 2. Deploy an Ingress controller, the following ingress controllers are known to work:
-    - [Ambassador](#ambassador)
     - [Contour](#contour)
     - [Ingress Kong](#ingress-kong)
     - [Ingress NGINX](#ingress-nginx)
@@ -54,37 +53,6 @@ nodes:
     protocol: TCP
 EOF
 {{< /codeFromInline >}}
-
-### Ambassador
-
-[Ambassador](https://www.getambassador.io/) will be installed with the help of
-the [Ambassador operator](https://www.getambassador.io/docs/latest/topics/install/aes-operator/).
-
-First install the CRDs with
-
-{{< codeFromInline lang="bash" >}}
-kubectl apply -f https://github.com/datawire/ambassador-operator/releases/latest/download/ambassador-operator-crds.yaml
-{{< /codeFromInline >}}
-
-Now install the kind-specific manifest for installing Ambassador with the operator
-in the `ambassador` namespace:
-
-{{< codeFromInline lang="bash" >}}
-kubectl apply -n ambassador -f https://github.com/datawire/ambassador-operator/releases/latest/download/ambassador-operator-kind.yaml
-kubectl wait --timeout=180s -n ambassador --for=condition=deployed ambassadorinstallations/ambassador
-{{< /codeFromInline >}}
-
-Ambassador is now ready for use. You can try the example in [Using Ingress](#using-ingress) at this moment,
-but Ambassador will not automatically load the `Ingress` defined there. `Ingress` resources must include
-the annotation `kubernetes.io/ingress.class: ambassador` for being recognized by Ambassador (otherwise they are just ignored).
-So once the example has been loaded you can add this annotation with:
-
-{{< codeFromInline lang="bash" >}}
-kubectl annotate ingress example-ingress kubernetes.io/ingress.class=ambassador
-{{< /codeFromInline >}}
-
-Ambassador should be exposing your Ingress now. Please find additional documentation on
-Ambassador [here](https://www.getambassador.io/docs/latest/).
 
 ### Contour
 
