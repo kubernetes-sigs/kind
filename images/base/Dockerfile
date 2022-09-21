@@ -115,7 +115,7 @@ RUN echo "Installing Packages ..." \
       conntrack iptables iproute2 ethtool socat util-linux mount ebtables kmod \
       libseccomp2 pigz \
       bash ca-certificates curl rsync \
-      nfs-common fuse-overlayfs \
+      nfs-common fuse-overlayfs open-iscsi \
       jq \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
     && rm -f /lib/systemd/system/multi-user.target.wants/* \
