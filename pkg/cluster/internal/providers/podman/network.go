@@ -109,9 +109,13 @@ func isUnknownIPv6FlagError(err error) bool {
 
 func isPoolOverlapError(err error) bool {
 	rerr := exec.RunErrorForError(err)
-	return rerr != nil &&
-		(strings.Contains(string(rerr.Output), "is being used by a network interface") ||
-			strings.Contains(string(rerr.Output), "is already being used by a cni configuration"))
+	if rerr == nil {
+		return false
+	}
+	output := string(rerr.Output)
+	return strings.Contains(output, "is already used on the host or by another config") ||
+		strings.Contains(output, "is being used by a network interface") ||
+		strings.Contains(output, "is already being used by a cni configuration")
 }
 
 // generateULASubnetFromName generate an IPv6 subnet based on the
