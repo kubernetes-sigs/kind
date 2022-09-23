@@ -66,7 +66,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	// create kubeadm init config
 	fns := []func() error{}
 
-	provider := fmt.Sprintf("%s", ctx.Provider)
+	provider := ctx.Provider.String()
 	configData := kubeadm.ConfigData{
 		NodeProvider:         provider,
 		ClusterName:          ctx.Config.Name,

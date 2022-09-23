@@ -47,6 +47,8 @@ type Provider interface {
 	CollectLogs(dir string, nodes []nodes.Node) error
 	// Info returns the provider info
 	Info() (*ProviderInfo, error)
+	// String implements fmt.Stringer, it is used as the --provider-id flag in kubeadmin config
+	String() string
 }
 
 // ProviderInfo is the info of the provider
