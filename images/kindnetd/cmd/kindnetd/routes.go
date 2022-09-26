@@ -34,15 +34,31 @@ func syncRoute(nodeIP string, podCIDRs []string) error {
 			return err
 		}
 
-		// Check if the route exists to the other node's PodCIDR
+		// Declare the wanted route.
 		routeToDst := netlink.Route{Dst: dst, Gw: ip}
-		route, err := netlink.RouteListFiltered(nl.GetIPFamily(ip), &routeToDst, netlink.RT_FILTER_DST)
+		// List all routes which have the same dst set.
+		// RouteListFiltered ignores the gw for filtering because of the passed filterMask.
+		routes, err := netlink.RouteListFiltered(nl.GetIPFamily(ip), &routeToDst, netlink.RT_FILTER_DST)
 		if err != nil {
 			return err
 		}
 
+		// Check if the wanted route exists and delete wrong routes
+		found := false
+		for _, route := range routes {
+			if routeToDst.Gw.Equal(ip) {
+				found = true
+				continue
+			}
+			// Delete wrong route because of invalid gateway.
+			klog.Infof("Removing invalid route %v\n", route)
+			if err := netlink.RouteDel(&route); err != nil {
+				return err
+			}
+		}
+
 		// Add route if not present
-		if len(route) == 0 {
+		if !found {
 			klog.Infof("Adding route %v \n", routeToDst)
 			if err := netlink.RouteAdd(&routeToDst); err != nil {
 				return err
