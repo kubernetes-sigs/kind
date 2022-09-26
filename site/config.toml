@@ -67,7 +67,7 @@ baseName = "_redirects"
 home = ["HTML", "REDIRECTS"]
 
 [params]
-stable = "v0.15.0"
+stable = "v0.16.0"
 
 # privacy settings
 [privacy]
