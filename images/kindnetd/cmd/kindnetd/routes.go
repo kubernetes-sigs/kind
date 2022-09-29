@@ -46,7 +46,7 @@ func syncRoute(nodeIP string, podCIDRs []string) error {
 		// Check if the wanted route exists and delete wrong routes
 		found := false
 		for _, route := range routes {
-			if routeToDst.Gw.Equal(ip) {
+			if route.Gw.Equal(ip) {
 				found = true
 				continue
 			}
