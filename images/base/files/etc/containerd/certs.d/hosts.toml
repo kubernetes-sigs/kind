@@ -1,0 +1,3 @@
+# Enable registry.k8s.io as the primary mirror for k8s.gcr.io
+# See: https://github.com/kubernetes/k8s.io/issues/3411
+server = ["https://registry.k8s.io", "https://k8s.gcr.io"]
