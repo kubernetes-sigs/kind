@@ -21,7 +21,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"text/template"
+
+	"github.com/google/safetext/yamltemplate"
 
 	"sigs.k8s.io/kind/pkg/errors"
 
@@ -94,8 +95,8 @@ type DerivedConfigData struct {
 	AdvertiseAddress string
 	// DockerStableTag is automatically derived from KubernetesVersion
 	DockerStableTag string
-	// SortedFeatureGateKeys allows us to iterate FeatureGates deterministically
-	SortedFeatureGateKeys []string
+	// SortedFeatureGates allows us to iterate FeatureGates deterministically
+	SortedFeatureGates []FeatureGate
 	// FeatureGatesString is of the form `Foo=true,Baz=false`
 	FeatureGatesString string
 	// RuntimeConfigString is of the form `Foo=true,Baz=false`
@@ -106,6 +107,11 @@ type DerivedConfigData struct {
 	IPv6 bool
 	// kubelet cgroup driver, based on kubernetes version
 	CgroupDriver string
+}
+
+type FeatureGate struct {
+	Name  string
+	Value bool
 }
 
 // Derive automatically derives DockerStableTag if not specified
@@ -130,13 +136,17 @@ func (c *ConfigData) Derive() {
 		featureGateKeys = append(featureGateKeys, k)
 	}
 	sort.Strings(featureGateKeys)
-	c.SortedFeatureGateKeys = featureGateKeys
 
 	// create a sorted key=value,... string of FeatureGates
-	var featureGates []string
+	c.SortedFeatureGates = make([]FeatureGate, 0, len(c.FeatureGates))
+	featureGates := make([]string, 0, len(c.FeatureGates))
 	for _, k := range featureGateKeys {
 		v := c.FeatureGates[k]
 		featureGates = append(featureGates, fmt.Sprintf("%s=%t", k, v))
+		c.SortedFeatureGates = append(c.SortedFeatureGates, FeatureGate{
+			Name:  k,
+			Value: v,
+		})
 	}
 	c.FeatureGatesString = strings.Join(featureGates, ",")
 
@@ -173,7 +183,7 @@ kubernetesVersion: {{.KubernetesVersion}}
 clusterName: "{{.ClusterName}}"
 {{ if .KubeadmFeatureGates}}featureGates:
 {{ range $key, $value := .KubeadmFeatureGates }}
-  "{{ $key }}": {{ $value }}
+  "{{ (StructuralData $key) }}": {{ $value }}
 {{end}}{{end}}
 controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # on docker for mac we have to expose the api server via port forward,
@@ -272,8 +282,8 @@ evictionHard:
   nodefs.inodesFree: "0%"
   imagefs.available: "0%"
 {{if .FeatureGates}}featureGates:
-{{ range $key := .SortedFeatureGateKeys }}
-  "{{ $key }}": {{ index $.FeatureGates $key }}
+{{ range $index, $gate := .SortedFeatureGates }}
+  "{{ (StructuralData $gate.Name) }}": {{ $gate.Value }}
 {{end}}{{end}}
 {{if ne .KubeProxyMode "None"}}
 ---
@@ -283,8 +293,8 @@ metadata:
   name: config
 mode: "{{ .KubeProxyMode }}"
 {{if .FeatureGates}}featureGates:
-{{ range $key := .SortedFeatureGateKeys }}
-  "{{ $key }}": {{ index $.FeatureGates $key }}
+{{ range $index, $gate := .SortedFeatureGates }}
+  "{{ (StructuralData $gate.Name) }}": {{ $gate.Value }}
 {{end}}{{end}}
 iptables:
   minSyncPeriod: 1s
@@ -310,7 +320,7 @@ kubernetesVersion: {{.KubernetesVersion}}
 clusterName: "{{.ClusterName}}"
 {{ if .KubeadmFeatureGates}}featureGates:
 {{ range $key, $value := .KubeadmFeatureGates }}
-  "{{ $key }}": {{ $value }}
+  "{{ (StructuralData $key) }}": {{ $value }}
 {{end}}{{end}}
 controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # on docker for mac we have to expose the api server via port forward,
@@ -409,8 +419,8 @@ evictionHard:
   nodefs.inodesFree: "0%"
   imagefs.available: "0%"
 {{if .FeatureGates}}featureGates:
-{{ range $key := .SortedFeatureGateKeys }}
-  "{{ $key }}": {{ index $.FeatureGates $key }}
+{{ range $index, $gate := .SortedFeatureGates }}
+  "{{ (StructuralData $gate.Name) }}": {{ $gate.Value }}
 {{end}}{{end}}
 {{if .DisableLocalStorageCapacityIsolation}}localStorageCapacityIsolation: false{{end}}
 {{if ne .KubeProxyMode "None"}}
@@ -421,8 +431,8 @@ metadata:
   name: config
 mode: "{{ .KubeProxyMode }}"
 {{if .FeatureGates}}featureGates:
-{{ range $key := .SortedFeatureGateKeys }}
-  "{{ $key }}": {{ index $.FeatureGates $key }}
+{{ range $index, $gate := .SortedFeatureGates }}
+  "{{ (StructuralData $gate.Name) }}": {{ $gate.Value }}
 {{end}}{{end}}
 iptables:
   minSyncPeriod: 1s
@@ -476,7 +486,7 @@ func Config(data ConfigData) (config string, err error) {
 		templateSource = ConfigTemplateBetaV2
 	}
 
-	t, err := template.New("kubeadm-config").Parse(templateSource)
+	t, err := yamltemplate.New("kubeadm-config").Parse(templateSource)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse config template")
 	}
