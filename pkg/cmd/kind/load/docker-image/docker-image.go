@@ -136,7 +136,7 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 		imageID := imageIDs[i]
 		processed := false
 		for _, node := range candidateNodes {
-			exists, reTagRequired := checkIfImageReTagRequired(node, imageID, imageName, nodeutils.ImageTags)
+			exists, reTagRequired, imageName := checkIfImageReTagRequired(node, imageID, imageName, nodeutils.ImageTags)
 			if exists && !reTagRequired {
 				continue
 			}
@@ -241,15 +241,15 @@ func removeDuplicates(slice []string) []string {
 }
 
 // checkIfImageExists makes sure we only perform the reverse lookup of the ImageID to tag map
-func checkIfImageReTagRequired(node nodes.Node, imageID, imageName string, tagFetcher imageTagFetcher) (exists, reTagRequired bool) {
+func checkIfImageReTagRequired(node nodes.Node, imageID, imageName string, tagFetcher imageTagFetcher) (exists, reTagRequired bool, sanitizedImage string) {
 	tags, err := tagFetcher(node, imageID)
 	if len(tags) == 0 || err != nil {
 		exists = false
 		return
 	}
 	exists = true
-	imageName = sanitizeImage(imageName)
-	if ok := tags[imageName]; ok {
+	sanitizedImage = sanitizeImage(imageName)
+	if ok := tags[sanitizedImage]; ok {
 		reTagRequired = false
 		return
 	}

@@ -112,9 +112,10 @@ func Test_checkIfImageReTagRequired(t *testing.T) {
 			tags map[string]bool
 			err  error
 		}
-		imageID      string
-		imageName    string
-		returnValues []bool
+		imageID        string
+		imageName      string
+		returnValues   []bool
+		sanitizedImage string
 	}{
 		{
 			name: "image is already present",
@@ -128,9 +129,10 @@ func Test_checkIfImageReTagRequired(t *testing.T) {
 				},
 				nil,
 			},
-			imageID:      "sha256:fd3fd9ab134a864eeb7b2c073c0d90192546f597c60416b81fc4166cca47f29a",
-			imageName:    "k8s.io/image1:tag1",
-			returnValues: []bool{true, false},
+			imageID:        "sha256:fd3fd9ab134a864eeb7b2c073c0d90192546f597c60416b81fc4166cca47f29a",
+			imageName:      "k8s.io/image1:tag1",
+			returnValues:   []bool{true, false},
+			sanitizedImage: "k8s.io/image1:tag1",
 		},
 		{
 			name: "re-tag is required",
@@ -144,9 +146,26 @@ func Test_checkIfImageReTagRequired(t *testing.T) {
 				},
 				nil,
 			},
-			imageID:      "sha256:fd3fd9ab134a864eeb7b2c073c0d90192546f597c60416b81fc4166cca47f29a",
-			imageName:    "k8s.io/image1:tag2",
-			returnValues: []bool{true, true},
+			imageID:        "sha256:fd3fd9ab134a864eeb7b2c073c0d90192546f597c60416b81fc4166cca47f29a",
+			imageName:      "k8s.io/image1:tag2",
+			returnValues:   []bool{true, true},
+			sanitizedImage: "k8s.io/image1:tag2",
+		},
+		{
+			name: "re-tag is required with docker.io prefix",
+			imageTags: struct {
+				tags map[string]bool
+				err  error
+			}{
+				map[string]bool{
+					"docker.io/foo/image1:tag1": true,
+				},
+				nil,
+			},
+			imageID:        "sha256:fd3fd9ab134a864eeb7b2c073c0d90192546f597c60416b81fc4166cca47f29a",
+			imageName:      "foo/image1:tag2",
+			returnValues:   []bool{true, true},
+			sanitizedImage: "docker.io/foo/image1:tag2",
 		},
 		{
 			name: "image tag fetch failed",
@@ -157,9 +176,10 @@ func Test_checkIfImageReTagRequired(t *testing.T) {
 				map[string]bool{},
 				errors.New("some runtime error"),
 			},
-			imageID:      "sha256:fd3fd9ab134a864eeb7b2c073c0d90192546f597c60416b81fc4166cca47f29a",
-			imageName:    "k8s.io/image1:tag2",
-			returnValues: []bool{false, false},
+			imageID:        "sha256:fd3fd9ab134a864eeb7b2c073c0d90192546f597c60416b81fc4166cca47f29a",
+			imageName:      "k8s.io/image1:tag2",
+			returnValues:   []bool{false, false},
+			sanitizedImage: "",
 		},
 	}
 
@@ -169,11 +189,11 @@ func Test_checkIfImageReTagRequired(t *testing.T) {
 			// checkIfImageReTagRequired doesn't use the `nodes.Node` type for anything. So
 			// passing a nil value here should be fine as the other two functions that use the
 			// nodes.Node has been stubbed out already
-			exists, reTagRequired := checkIfImageReTagRequired(nil, tc.imageID, tc.imageName, func(n nodes.Node, s string) (map[string]bool, error) {
+			exists, reTagRequired, sanitizedImage := checkIfImageReTagRequired(nil, tc.imageID, tc.imageName, func(n nodes.Node, s string) (map[string]bool, error) {
 				return tc.imageTags.tags, tc.imageTags.err
 			})
-			if exists != tc.returnValues[0] || reTagRequired != tc.returnValues[1] {
-				t.Errorf("checkIfImageReTagRequired failed. Expected: %v, got: [%v, %v]", tc.returnValues, exists, reTagRequired)
+			if exists != tc.returnValues[0] || reTagRequired != tc.returnValues[1] || sanitizedImage != tc.sanitizedImage {
+				t.Errorf("checkIfImageReTagRequired failed. Expected: [%v,%v,%v], got: [%v, %v, %v]", tc.returnValues[0], tc.returnValues[1], tc.sanitizedImage, exists, reTagRequired, sanitizedImage)
 			}
 		})
 	}
