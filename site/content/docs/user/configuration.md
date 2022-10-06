@@ -294,8 +294,8 @@ For more information see the [Docker file sharing guide.](https://docs.docker.co
 Extra port mappings can be used to port forward to the kind nodes. This is a 
 cross-platform option to get traffic into your kind cluster. 
 
-With docker on Linux you can simply send traffic to the node IPs from the host
-without this, but to cover macOS and Windows you'll want to use these.
+If you are running Docker without the Docker Desktop Application on Linux, you can simply send traffic to the node IPs from the host without extra port mappings. 
+With the installation of the Docker Desktop Application, whether it is on macOs, Windows or Linux, you'll want to use these.
 
 You may also want to see the [Ingress Guide].
 
