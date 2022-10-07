@@ -82,7 +82,7 @@ func LoadImageArchive(n nodes.Node, image io.Reader) error {
 	if err != nil {
 		return err
 	}
-	cmd := n.Command("ctr", "--namespace=k8s.io", "images", "import", "--digests", "--snapshotter="+snapshotter, "-").SetStdin(image)
+	cmd := n.Command("ctr", "--namespace=k8s.io", "images", "import", "--all-platforms", "--digests", "--snapshotter="+snapshotter, "-").SetStdin(image)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrap(err, "failed to load image")
 	}
