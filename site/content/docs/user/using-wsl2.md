@@ -58,9 +58,15 @@ wsl --set-default-version 2
 1. Now, you can install your Linux distro of choice by searching the Windows Store. If you don't want to use the Windows Store, then follow the steps in the WSL docs for [manual install](https://docs.microsoft.com/en-us/windows/wsl/install-manual).
 1. Start up your distro with the shortcut added to the start menu
 
-## Setting up Docker in WSL2
+## Setting up Docker in WSL2 with Docker Desktop
 
 Install Docker with WSL2 backend here: https://docs.docker.com/docker-for-windows/wsl/
+
+
+## Setting up Docker in WSL2 without Docker Desktop
+
+An alternative approach that does not require the use of the heavy Docker Desktop. The installation procedure can be found at https://dev.to/bowmanjd/install-docker-on-windows-wsl-without-docker-desktop-34m9
+
 
 Now, move on to the [Quick Start](/docs/user/quick-start) to set up your cluster with kind.
 
