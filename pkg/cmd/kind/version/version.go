@@ -31,18 +31,16 @@ import (
 func Version() string {
 	v := versionCore
 	// add pre-release version info if we have it
-	if versionPreRelease != "" {
-		v += "-" + versionPreRelease
-		// If gitCommitCount was set, add to the pre-release version
-		if gitCommitCount != "" {
-			v += "." + gitCommitCount
-		}
-		// if commit was set, add the + <build>
-		// we only do this for pre-release versions
-		if gitCommit != "" {
-			// NOTE: use 14 character short hash, like Kubernetes
-			v += "+" + truncate(gitCommit, 14)
-		}
+	v += "-" + versionPreRelease
+	// If gitCommitCount was set, add to the pre-release version
+	if gitCommitCount != "" {
+		v += "." + gitCommitCount
+	}
+	// if commit was set, add the + <build>
+	// we only do this for pre-release versions
+	if gitCommit != "" {
+		// NOTE: use 14 character short hash, like Kubernetes
+		v += "+" + truncate(gitCommit, 14)
 	}
 	return v
 }
