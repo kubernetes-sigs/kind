@@ -60,3 +60,46 @@ func TestTruncate(t *testing.T) {
 		})
 	}
 }
+
+func TestVersion_Success(t *testing.T) {
+
+	want := versionCore + "-" + versionPreRelease
+
+	got := Version()
+
+	if got != want {
+		t.Errorf("Version() = %v, want %v", got, want)
+	}
+}
+
+func TestVersion_SuccessWithGitCommitHash(t *testing.T) {
+
+	gitCommitBackup := gitCommit
+	defer func() {
+		gitCommit = gitCommitBackup
+	}()
+	gitCommit = "mocked-commit"
+	want := versionCore + "-" + versionPreRelease + "+" + gitCommit
+
+	got := Version()
+
+	if got != want {
+		t.Errorf("Version() = %v, want %v", got, want)
+	}
+}
+
+func TestVersion_SuccessWithGitCommitCount(t *testing.T) {
+
+	gitCommitCountBackup := gitCommitCount
+	defer func() {
+		gitCommitCount = gitCommitCountBackup
+	}()
+	gitCommitCount = "mock-commit"
+	want := versionCore + "-" + versionPreRelease + "." + gitCommitCount
+
+	got := Version()
+
+	if got != want {
+		t.Errorf("Version() = %v, want %v", got, want)
+	}
+}
