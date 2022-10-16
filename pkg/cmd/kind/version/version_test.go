@@ -60,3 +60,66 @@ func TestTruncate(t *testing.T) {
 		})
 	}
 }
+
+func TestVersion_SuccessWithGitCommitCountAndHash(t *testing.T) {
+
+	if versionPreRelease != "" {
+		gitCommitBackup := gitCommit
+		gitCommitCountBackup := gitCommitCount
+		defer func() {
+			gitCommit = gitCommitBackup
+			gitCommitCount = gitCommitCountBackup
+		}()
+		gitCommit = "mocked-hash"
+		gitCommitCount = "mocked-count"
+		want := versionCore + "-" + versionPreRelease + "." + gitCommitCount + "+" + gitCommit
+
+		got := Version()
+
+		if got != want {
+			t.Errorf("Version() = %v, want %v", got, want)
+		}
+	}
+}
+
+func TestVersion_SuccessWithGitCommitCountAndNoHash(t *testing.T) {
+
+	if versionPreRelease != "" {
+		gitCommitBackup := gitCommit
+		gitCommitCountBackup := gitCommitCount
+		defer func() {
+			gitCommit = gitCommitBackup
+			gitCommitCount = gitCommitCountBackup
+		}()
+		gitCommit = ""
+		gitCommitCount = "mocked-count"
+		want := versionCore + "-" + versionPreRelease + "." + gitCommitCount
+
+		got := Version()
+
+		if got != want {
+			t.Errorf("Version() = %v, want %v", got, want)
+		}
+	}
+}
+
+func TestVersion_SuccessWithGitHashAndNoCount(t *testing.T) {
+
+	if versionPreRelease != "" {
+		gitCommitBackup := gitCommit
+		gitCommitCountBackup := gitCommitCount
+		defer func() {
+			gitCommit = gitCommitBackup
+			gitCommitCount = gitCommitCountBackup
+		}()
+		gitCommit = "mocked-hash"
+		gitCommitCount = ""
+		want := versionCore + "-" + versionPreRelease + "+" + gitCommit
+
+		got := Version()
+
+		if got != want {
+			t.Errorf("Version() = %v, want %v", got, want)
+		}
+	}
+}
