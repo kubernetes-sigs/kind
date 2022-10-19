@@ -8,14 +8,14 @@ menu:
 description: |-
     This guide covers how to get service of type LoadBalancer working in a kind cluster using [Metallb].
 
-    This guide complements metallb [installation docs], and sets up metallb using layer2 protocol.  For other protocols check metallb [configuration docs].
+    This guide complements MetalLB [installation docs], and sets up MetalLB using layer2 protocol.  For other protocols check MetalLB [configuration docs].
 
     With Docker on Linux, you can send traffic directly to the loadbalancer's external IP if the IP space is within the docker IP space.  
     
     On macOS and Windows, docker does not expose the docker network to the host.  Because of this limitation, containers (including kind nodes) are only reachable from the host via port-forwards, however other containers/pods can reach other things running in docker including loadbalancers.  You may want to check out the [Ingress Guide] as a cross-platform workaround.  You can also expose pods and services using extra port mappings as shown in the extra port mappings section of the [Configuration Guide].
     
 
-    [Metallb]: https://metallb.universe.tf/
+    [MetalLB]: https://metallb.universe.tf/
     [installation docs]: https://metallb.universe.tf/installation/
     [configuration docs]: https://metallb.universe.tf/configuration/
 
@@ -24,9 +24,9 @@ description: |-
 
 ---
 
-## Installing metallb using default manifests
+## Installing MetalLB using default manifests
 
-### Apply metallb manifest
+### Apply MetalLB manifest
 
 Since version 0.13.0, MetalLB is configured via CRs and the original way of configuring it via a ConfigMap based configuration
 is not working anymore.
@@ -46,13 +46,13 @@ kubectl wait --namespace metallb-system \
 
 ### Setup address pool used by loadbalancers
 
-To complete layer2 configuration, we need to provide metallb a range of IP addresses it controls.  We want this range to be on the docker kind network.
+To complete layer2 configuration, we need to provide MetalLB a range of IP addresses it controls.  We want this range to be on the docker kind network.
 
 {{< codeFromInline lang="bash" >}}
 docker network inspect -f '{{.IPAM.Config}}' kind
 {{< /codeFromInline >}}
 
-The output will contain a cidr such as 172.19.0.0/16.  We want our loadbalancer IP range to come from this subclass.  We can configure metallb, for instance, to use 172.19.255.200 to 172.19.255.250 by creating the IPAddressPool and the related L2Advertisement.
+The output will contain a cidr such as 172.19.0.0/16.  We want our loadbalancer IP range to come from this subclass.  We can configure MetalLB, for instance, to use 172.19.255.200 to 172.19.255.250 by creating the IPAddressPool and the related L2Advertisement.
 
 ```yaml
 {{% readFile "static/examples/loadbalancer/metallb-config.yaml" %}}
