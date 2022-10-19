@@ -65,7 +65,8 @@ Install Docker with WSL2 backend here: https://docs.docker.com/docker-for-window
 
 ## Setting up Docker in WSL2 without Docker Desktop
 
-An alternative approach that does not require the use of the heavy Docker Desktop. The installation procedure can be found at https://dev.to/bowmanjd/install-docker-on-windows-wsl-without-docker-desktop-34m9
+Alternatively, docker can be installed in WSL2 without using Docker Desktop.
+See for example: https://dev.to/bowmanjd/install-docker-on-windows-wsl-without-docker-desktop-34m9
 
 
 Now, move on to the [Quick Start](/docs/user/quick-start) to set up your cluster with kind.
