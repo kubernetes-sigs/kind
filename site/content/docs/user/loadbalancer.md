@@ -35,10 +35,13 @@ is not working anymore.
 kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml
 {{< /codeFromInline >}}
 
-Wait for metallb pods to have a status of Running
+Wait until the MetalLB pods (controller and speakers) are ready:
 
 {{< codeFromInline lang="bash" >}}
-kubectl get pods -n metallb-system --watch
+kubectl wait --namespace metallb-system \
+                --for=condition=ready pod \
+                --selector=app=metallb \
+                --timeout=90s
 {{< /codeFromInline >}}
 
 ### Setup address pool used by loadbalancers
