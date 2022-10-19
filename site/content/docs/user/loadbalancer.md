@@ -32,7 +32,7 @@ Since version 0.13.0, MetalLB is configured via CRs and the original way of conf
 is not working anymore.
 
 {{< codeFromInline lang="bash" >}}
-kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.5/config/manifests/metallb-native.yaml
+kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml
 {{< /codeFromInline >}}
 
 Wait for metallb pods to have a status of Running
