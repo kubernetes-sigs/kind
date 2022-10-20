@@ -61,7 +61,7 @@ func TestTruncate(t *testing.T) {
 	}
 }
 
-func TestVersion_Success(t *testing.T) {
+func TestVersion(t *testing.T) {
 	tests := []struct {
 		name           string
 		gitCommit      string
