@@ -60,3 +60,59 @@ func TestTruncate(t *testing.T) {
 		})
 	}
 }
+
+func TestVersion(t *testing.T) {
+	tests := []struct {
+		name           string
+		gitCommit      string
+		gitCommitCount string
+		want           string
+	}{
+		{
+			name:           "With git commit count and with commit hash",
+			gitCommit:      "mocked-hash",
+			gitCommitCount: "mocked-count",
+			want:           versionCore + "-" + versionPreRelease + "." + "mocked-count" + "+" + "mocked-hash",
+		},
+		{
+			name:           "Without git commit count and and with hash",
+			gitCommit:      "mocked-hash",
+			gitCommitCount: "",
+			want:           versionCore + "-" + versionPreRelease + "+" + "mocked-hash",
+		},
+		{
+			name:           "Without git commit hash and with commit count",
+			gitCommit:      "",
+			gitCommitCount: "mocked-count",
+			want:           versionCore + "-" + versionPreRelease + "." + "mocked-count",
+		},
+		{
+			name:           "Without git commit hash and without commit count",
+			gitCommit:      "",
+			gitCommitCount: "",
+			want:           versionCore + "-" + versionPreRelease,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.gitCommit != "" {
+				gitCommitBackup := gitCommit
+				gitCommit = tt.gitCommit
+				defer func() {
+					gitCommit = gitCommitBackup
+				}()
+			}
+
+			if tt.gitCommitCount != "" {
+				gitCommitCountBackup := gitCommitCount
+				gitCommitCount = tt.gitCommitCount
+				defer func() {
+					gitCommitCount = gitCommitCountBackup
+				}()
+			}
+			if got := Version(); got != tt.want {
+				t.Errorf("Version() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
