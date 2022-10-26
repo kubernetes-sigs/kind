@@ -261,38 +261,33 @@ table.includecode {
   max-width: 100%;
   width: 100%;
   table-layout: fixed;
-  background: #f3f4f4;
-  border: .15em solid black;
+  border: 1px solid rgba(0,0,0,.125);
   border-spacing: 0;
 }
 
-table.includecode thead {
-  background: #333;
-  color: white;
-}
-
-table.includecode thead th a {
-  color: white;
-}
-
 table.includecode thead th {
-  border-bottom: .1em solid black;
+  border-bottom: 1px solid rgba(0,0,0,.125);
   font-weight: normal;
-  font-size: .9em;
+  font-size: 85%;
 }
 
 table.includecode thead th {
   text-align: right;
 }
 
+table.includecode thead th a {
+  font-family: monospace;
+}
+
 table.includecode thead th button {
-  background: #326be5;
-  border: .25em solid white;
-  color: white;
-  font-weight: bold;
-  margin: .25em;
+  vertical-align: middle;
+  background: transparent;
+  border: 0;
   cursor: pointer;
-  padding: .1em .5em;
+}
+
+table.includecode tbody {
+  background: #f3f4f4;
 }
 
 table.includecode pre {
