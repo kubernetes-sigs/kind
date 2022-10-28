@@ -108,7 +108,6 @@ WSL_COMMIT_REF=linux-msft-wsl-5.10.102.1 # change this line to the version you w
 apt update
 apt install -y build-essential flex bison bc dwarves libssl-dev git libelf-dev python3
 
-
 # Checkout WSL2 Kernel repo
 mkdir src
 cd src
