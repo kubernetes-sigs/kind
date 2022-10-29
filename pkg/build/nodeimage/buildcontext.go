@@ -48,10 +48,10 @@ type buildContext struct {
 	builder kube.Builder
 }
 
-// Build builds the cluster node image, the sourcedir must be set on
+// Build builds the cluster node image, the source dir must be set on
 // the buildContext
 func (c *buildContext) Build() (err error) {
-	// ensure kubernetes build is up to date first
+	// ensure kubernetes build is up-to-date first
 	c.logger.V(0).Info("Starting to build Kubernetes")
 	bits, err := c.builder.Build()
 	if err != nil {
@@ -60,17 +60,17 @@ func (c *buildContext) Build() (err error) {
 	}
 	c.logger.V(0).Info("Finished building Kubernetes")
 
-	// then the perform the actual docker image build
+	// then perform the actual docker image build
 	c.logger.V(0).Info("Building node image ...")
 	return c.buildImage(bits)
 }
 
 func (c *buildContext) buildImage(bits kube.Bits) error {
 	// create build container
-	// NOTE: we are using docker run + docker commit so we can install
+	// NOTE: we are using docker run + docker commit, so we can install
 	// debian packages without permanently copying them into the image.
 	// if docker gets proper squash support, we can rm them instead
-	// This also allows the KubeBit implementations to perform programmatic
+	// This also allows the KubeBit implementations to programmatically
 	// install in the image
 	containerID, err := c.createBuildContainer()
 	cmder := docker.ContainerCmder(containerID)
@@ -144,7 +144,7 @@ func (c *buildContext) buildImage(bits kube.Bits) error {
 	return nil
 }
 
-// returns a set of image tags that will be sideloaded
+// returns a set of image tags that will be side-loaded
 func (c *buildContext) getBuiltImages(bits kube.Bits) (sets.String, error) {
 	images := sets.NewString()
 	for _, path := range bits.ImagePaths() {
@@ -313,7 +313,7 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVers
 
 func (c *buildContext) createBuildContainer() (id string, err error) {
 	// attempt to explicitly pull the image if it doesn't exist locally
-	// we don't care if this errors, we'll still try to run which also pulls
+	// we don't care if this returns error, we'll still try to run which also pulls
 	_ = docker.Pull(c.logger, c.baseImage, dockerBuildOsAndArch(c.arch), 4)
 	// this should be good enough: a specific prefix, the current unix time,
 	// and a little random bits in case we have multiple builds simultaneously
@@ -323,7 +323,7 @@ func (c *buildContext) createBuildContainer() (id string, err error) {
 		c.baseImage,
 		[]string{
 			"-d", // make the client exit while the container continues to run
-			// the container should hang forever so we can exec in it
+			// the container should hang forever, so we can exec in it
 			"--entrypoint=sleep",
 			"--name=" + id,
 			"--platform=" + dockerBuildOsAndArch(c.arch),
