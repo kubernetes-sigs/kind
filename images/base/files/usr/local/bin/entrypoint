@@ -102,16 +102,6 @@ overlayfs_preferrable() {
 configure_containerd() {
   local snapshotter=${KIND_EXPERIMENTAL_CONTAINERD_SNAPSHOTTER:-}
 
-  # handle userns (rootless)
-  if [[ -n "$userns" ]]; then
-    # enable restrict_oom_score_adj
-    sed -i 's/restrict_oom_score_adj = false/restrict_oom_score_adj = true/' /etc/containerd/config.toml
-    # Use fuse-overlayfs if overlayfs is not preferrable: https://github.com/kubernetes-sigs/kind/issues/2275
-    if [[ -z "$snapshotter" ]] && ! overlayfs_preferrable; then
-      snapshotter="fuse-overlayfs"
-    fi
-  fi
-
   # if we have not already overridden the snapshotter, attempt to auto select
   if [[ -z "$snapshotter" ]]; then
     # we need to switch to 'native' or 'fuse-overlayfs' on zfs
@@ -124,10 +114,20 @@ configure_containerd() {
       else
         snapshotter="native"
       fi
-    # fuse likely implies fuse-overlayfs, we should switch to fuse-overlayfs (or native)
+    # fuse should imply fuse-overlayfs, we should switch to fuse-overlayfs (or native)
     elif [[ "$container_filesystem" == 'fuseblk' ]]; then
       snapshotter="fuse-overlayfs"
+    # Otherwise use fuse-overlayfs if overlayfs is not preferrable
+    # https://github.com/kubernetes-sigs/kind/issues/2275
+    elif [[ -n "$userns" ]] && ! overlayfs_preferrable; then
+      snapshotter="fuse-overlayfs"
     fi
+  fi
+
+  # handle userns (rootless)
+  if [[ -n "$userns" ]]; then
+    # enable restrict_oom_score_adj
+    sed -i 's/restrict_oom_score_adj = false/restrict_oom_score_adj = true/' /etc/containerd/config.toml
   fi
 
   # if we've overridden or auto-selected the snapshotter vs the default, update containerd
