@@ -67,5 +67,10 @@ To create a kind cluster with Rootless Podman, just run:
 $ KIND_EXPERIMENTAL_PROVIDER=podman kind create cluster
 ```
 
+On some distributions, you might need to use systemd-run to start kind into its own cgroup scope:
+```console
+$ systemd-run --scope --user kind create cluster
+```
+
 ## Tips
 - To enable OOM watching, allow `dmesg` by running `sysctl -w kernel.dmesg_restrict=0`.
