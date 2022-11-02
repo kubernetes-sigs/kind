@@ -69,6 +69,10 @@ type Cluster struct {
 	// in the order listed.
 	// These should be YAML or JSON formatting RFC 6902 JSON patches
 	ContainerdConfigPatchesJSON6902 []string
+
+	// Custom manifests are applied to the cluster in the order listed.
+	// These should be inline YAML as a string or paths to filenames.
+	CustomManifests []interface{}
 }
 
 // Node contains settings for a node in the `kind` Cluster.

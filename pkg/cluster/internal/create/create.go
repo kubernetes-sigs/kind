@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	configaction "sigs.k8s.io/kind/pkg/cluster/internal/create/actions/config"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installcni"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installcustom"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installstorage"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/kubeadminit"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/kubeadmjoin"
@@ -124,6 +125,7 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 		// add remaining steps
 		actionsToRun = append(actionsToRun,
 			installstorage.NewAction(),                // install StorageClass
+			installcustom.NewAction(),                 // install customManifests
 			kubeadmjoin.NewAction(),                   // run kubeadm join
 			waitforready.NewAction(opts.WaitForReady), // wait for cluster readiness
 		)

@@ -19,6 +19,7 @@ package config
 import (
 	"fmt"
 	"net"
+	"os"
 	"regexp"
 	"strings"
 
@@ -87,6 +88,11 @@ func (c *Cluster) Validate() error {
 	numControlPlane, anyControlPlane := numByRole[ControlPlaneRole]
 	if !anyControlPlane || numControlPlane < 1 {
 		errs = append(errs, errors.Errorf("must have at least one %s node", string(ControlPlaneRole)))
+	}
+
+	//validate custom manifests
+	if len(c.CustomManifests) > 0 {
+		errs = append(errs, validateCustomManifests(&c.CustomManifests))
 	}
 
 	if len(errs) > 0 {
@@ -206,4 +212,48 @@ func isDualStackCIDRs(cidrs []*net.IPNet) (bool, error) {
 	}
 
 	return v4Found && v6Found, nil
+}
+
+// Check if interface is either map[string]string or string
+func isCustomManifest(index int, customManifest *interface{}) (err error) {
+	switch t := (*customManifest).(type) {
+	case map[string]string:
+	case string:
+		fileName := (*customManifest).(string)
+		if !strings.HasPrefix(fileName, "http") {
+			if _, err = os.Stat(fileName); os.IsNotExist(err) {
+				err = fmt.Errorf("customManifests[%d]: '%s' does not exist", index, fileName)
+			}
+		}
+	case map[string]interface{}:
+		allErrs := []error{}
+		for manifestName, manifest := range (*customManifest).(map[string]interface{}) {
+			if _, ok := manifest.(string); !ok {
+				allErrs = append(allErrs, fmt.Errorf("customManifests[%s]: incorrect type (map[string]%T) expected string or map[string]string", manifestName, manifest))
+			}
+		}
+		if len(allErrs) > 0 {
+			return errors.NewAggregate(allErrs)
+		}
+	default:
+		err = fmt.Errorf("customManifests[%d]: incorrect type (%T) expected string or map[string]string", index, t)
+	}
+	return
+}
+
+// Validate customManifests array members are string or map[string]string
+func validateCustomManifests(customManifests *[]interface{}) error {
+	allErrs := []error{}
+
+	for manifestIndex, manifestContents := range *customManifests {
+		err := isCustomManifest(manifestIndex, &manifestContents)
+		if err != nil {
+			allErrs = append(allErrs, err)
+		}
+	}
+
+	if len(allErrs) > 0 {
+		return errors.NewAggregate(allErrs)
+	}
+	return nil
 }

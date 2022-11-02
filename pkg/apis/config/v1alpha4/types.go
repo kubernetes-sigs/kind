@@ -81,6 +81,10 @@ type Cluster struct {
 	// in the order listed.
 	// These should be YAML or JSON formatting RFC 6902 JSON patches
 	ContainerdConfigPatchesJSON6902 []string `yaml:"containerdConfigPatchesJSON6902,omitempty" json:"containerdConfigPatchesJSON6902,omitempty"`
+
+	// Custom manifests are applied to the cluster in the order listed.
+	// These should be inline YAML as a string or paths to filenames.
+	CustomManifests []interface{} `yaml:"customManifests,omitempty" json:"customManifests,omitempty"`
 }
 
 // TypeMeta partially copies apimachinery/pkg/apis/meta/v1.TypeMeta

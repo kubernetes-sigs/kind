@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"os"
 	"testing"
 
 	"sigs.k8s.io/kind/pkg/errors"
@@ -416,6 +417,113 @@ func TestPortValidate(t *testing.T) {
 		t.Run(tc.TestName, func(t *testing.T) {
 			t.Parallel()
 			err := validatePort(tc.Port)
+			// the error can be:
+			// - nil, in which case we should expect no errors or fail
+			if err == nil && len(tc.ExpectError) > 0 {
+				t.Errorf("Test failed, unexpected error: %s", tc.ExpectError)
+			}
+
+			if err != nil && err.Error() != tc.ExpectError {
+				t.Errorf("Test failed, error: %s expected error: %s", err, tc.ExpectError)
+			}
+		})
+	}
+}
+
+func TestCustomManifestValidate(t *testing.T) {
+	cases := []struct {
+		TestName       string
+		CustomManifest []interface{}
+		CreateFiles    map[string]string
+		ExpectError    string
+	}{
+		{
+			TestName: "Correct inline manifest",
+			CustomManifest: []interface{}{
+				map[string]string{
+					"test2.yaml": "test: test",
+				},
+				map[string]interface{}{
+					"test3.yaml": "test: test",
+				},
+			},
+			ExpectError: "",
+		},
+		{
+			TestName: "Correct file manifest",
+			CustomManifest: []interface{}{
+				"correct_manifest1.yaml",
+			},
+			ExpectError: "",
+			CreateFiles: map[string]string{
+				"correct_manifest1.yaml": "test: test",
+			},
+		},
+		{
+			TestName: "Remote http file manifest",
+			CustomManifest: []interface{}{
+				"https://test.local/test.yaml",
+			},
+			ExpectError: "",
+		},
+		{
+			TestName: "Non existent file manifest",
+			CustomManifest: []interface{}{
+				"no_file.yaml",
+			},
+			ExpectError: "customManifests[0]: 'no_file.yaml' does not exist",
+		},
+		{
+			TestName: "Incorrect manifest type map[string]int",
+			CustomManifest: []interface{}{
+				map[string]int{
+					"test2.yaml": 5,
+				},
+			},
+			ExpectError: "customManifests[0]: incorrect type (map[string]int) expected string or map[string]string",
+		},
+		{
+			TestName: "Incorrect manifest type map[string]interface",
+			CustomManifest: []interface{}{
+				map[string]interface{}{
+					"test2.yaml": 5,
+				},
+			},
+			ExpectError: "customManifests[test2.yaml]: incorrect type (map[string]int) expected string or map[string]string",
+		},
+		{
+			TestName: "Incorrect manifest type multiple",
+			CustomManifest: []interface{}{
+				5,
+				map[int]string{
+					6: "hello",
+				},
+			},
+			ExpectError: "[customManifests[0]: incorrect type (int) expected string or map[string]string, customManifests[1]: incorrect type (map[int]string) expected string or map[string]string]",
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc //capture loop variable
+		t.Run(tc.TestName, func(t *testing.T) {
+			t.Parallel()
+
+			if tc.CreateFiles != nil && len(tc.CreateFiles) > 0 {
+				for fileName, contents := range tc.CreateFiles {
+					err := os.WriteFile(fileName, []byte(contents), 0644)
+					if err != nil {
+						t.Errorf("unexpected error in creating file %s: %v", fileName, err)
+					}
+				}
+			}
+
+			err := validateCustomManifests(&tc.CustomManifest)
+
+			if tc.CreateFiles != nil && len(tc.CreateFiles) > 0 {
+				for fileName := range tc.CreateFiles {
+					os.Remove(fileName)
+				}
+			}
 			// the error can be:
 			// - nil, in which case we should expect no errors or fail
 			if err == nil && len(tc.ExpectError) > 0 {
