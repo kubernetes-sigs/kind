@@ -68,7 +68,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	return nil
 }
 
-// run kubectl apply on control plane node, and can be overriden for testing
+// run kubectl apply on control plane node, and can be overridden for testing
 var runApplyCustomManifest = func(controlPlane nodes.Node, path string, stdin string) error {
 	var in *strings.Reader = nil
 	// only create if we have stdin

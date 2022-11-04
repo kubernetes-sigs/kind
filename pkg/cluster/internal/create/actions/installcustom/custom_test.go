@@ -123,7 +123,7 @@ func TestAddCustomManifests(t *testing.T) {
 				expectedStdin, ok := tc.ExpectOutput[expectedOuputIndex][path]
 				assert.BoolEqual(t, true, ok)
 				assert.StringEqual(t, expectedStdin, stdin)
-				expectedOuputIndex += 1
+				expectedOuputIndex++
 
 				if tc.OutputError != "" {
 					return fmt.Errorf("%s", tc.OutputError)
