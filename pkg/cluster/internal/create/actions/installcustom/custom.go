@@ -60,7 +60,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	// add the custom manifests
 	if err := addCustomManifests(node, &ctx.Config.CustomManifests); err != nil {
-		return errors.Wrap(err, "failed to add default storage class")
+		return errors.Wrap(err, "failed to deploy manifest")
 	}
 
 	// mark success
@@ -139,7 +139,7 @@ func addCustomManifests(controlPlane nodes.Node, customManifests *[]interface{})
 				}
 				err = runApplyCustomManifest(controlPlane, path, manifest)
 				if err != nil {
-					err = fmt.Errorf("customManifest[%d][%s]: %w", index, manifestName, err)
+					err = errors.Wrapf(err, "customManifest[%d][%s]: error deploying manifest", index, manifestName)
 					return
 				}
 			}

@@ -61,7 +61,7 @@ func TestAddCustomManifests(t *testing.T) {
 					"test2.yaml": "test2: test",
 				},
 			},
-			ExpectError: "customManifest[0][test2.yaml]: error",
+			ExpectError: "customManifest[0][test2.yaml]: error deploying manifest: error",
 			OutputError: "error",
 			ExpectOutput: []map[string]string{
 				{"-": "test2: test"},
