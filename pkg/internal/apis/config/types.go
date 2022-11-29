@@ -107,6 +107,9 @@ type Node struct {
 	// KubeadmConfigPatchesJSON6902 are applied to the generated kubeadm config
 	// as patchesJson6902 to `kustomize build`
 	KubeadmConfigPatchesJSON6902 []PatchJSON6902
+
+	// Gpus passes GPUs through to the node
+	Gpus bool
 }
 
 // NodeRole defines possible role for nodes in a Kubernetes cluster managed by `kind`

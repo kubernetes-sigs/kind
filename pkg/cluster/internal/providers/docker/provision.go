@@ -240,6 +240,10 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 	}
 	args = append(args, mappingArgs...)
 
+	if node.Gpus {
+		args = append(args, "--gpus=all")
+	}
+
 	switch node.Role {
 	case config.ControlPlaneRole:
 		args = append(args, "-e", "KUBECONFIG=/etc/kubernetes/admin.conf")
