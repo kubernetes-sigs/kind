@@ -1,3 +1,7 @@
+This fork applies the same changes as [jacobtomlinson's](https://github.com/jacobtomlinson/kind/tree/gpu), but on the latest version.
+
+______
+
 <p align="center"><img alt="kind" src="./logo/logo.png" width="300px" /></p>
 
 # Please see [Our Documentation](https://kind.sigs.k8s.io/docs/user/quick-start/) for more in-depth installation etc.
