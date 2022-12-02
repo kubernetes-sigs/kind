@@ -184,6 +184,7 @@ RUN echo "Installing CNI plugin binaries ..." \
          -o -iname ptp \
          -o -iname portmap \
          -o -iname loopback \
+         -o -iname bridge \
       \) \
       -delete
 
