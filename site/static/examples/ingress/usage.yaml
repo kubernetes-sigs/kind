@@ -7,7 +7,7 @@ metadata:
 spec:
   containers:
     - name: foo-app
-      image: mcr.microsoft.com/azuredocs/aks-helloworld:v2
+      image: mcr.microsoft.com/azuredocs/aks-helloworld:v1
       env:
         - name: TITLE
           value: "Welcome to foo-app!"
@@ -32,7 +32,7 @@ metadata:
 spec:
   containers:
     - name: bar-app
-      image: mcr.microsoft.com/azuredocs/aks-helloworld:v2
+      image: mcr.microsoft.com/azuredocs/aks-helloworld:v1
       env:
         - name: TITLE
           value: "Welcome to bar-app!"
