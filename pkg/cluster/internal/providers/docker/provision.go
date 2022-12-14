@@ -254,6 +254,8 @@ func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) ([]
 		"--hostname", name, // make hostname match container name
 		// label the node with the role ID
 		"--label", fmt.Sprintf("%s=%s", nodeRoleLabelKey, constants.ExternalLoadBalancerNodeRoleValue),
+		// see: https://github.com/kubernetes-sigs/kind/issues/2954
+		"--ulimit", "nofile=65536:65536",
 	},
 		args...,
 	)
