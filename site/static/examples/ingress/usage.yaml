@@ -6,11 +6,13 @@ metadata:
     app: foo
 spec:
   containers:
-    - name: foo-app
-      image: mcr.microsoft.com/azuredocs/aks-helloworld:v1
-      env:
-        - name: TITLE
-          value: "Welcome to foo-app!"
+  - command:
+    - /agnhost
+    - netexec
+    - --http-port
+    - "8080"
+    image: registry.k8s.io/e2e-test-images/agnhost:2.39
+    name: foo-app
 ---
 kind: Service
 apiVersion: v1
@@ -21,7 +23,7 @@ spec:
     app: foo
   ports:
     # Default port used by the image
-    - port: 80
+    - port: 8080
 ---
 kind: Pod
 apiVersion: v1
@@ -31,11 +33,13 @@ metadata:
     app: bar
 spec:
   containers:
-    - name: bar-app
-      image: mcr.microsoft.com/azuredocs/aks-helloworld:v1
-      env:
-        - name: TITLE
-          value: "Welcome to bar-app!"
+  - command:
+    - /agnhost
+    - netexec
+    - --http-port
+    - "8080"
+    image: registry.k8s.io/e2e-test-images/agnhost:2.39
+    name: bar-app
 ---
 kind: Service
 apiVersion: v1
@@ -46,30 +50,30 @@ spec:
     app: bar
   ports:
     # Default port used by the image
-    - port: 80
+    - port: 8080
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: example-ingress
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   rules:
-    - http:
-        paths:
-          - pathType: Prefix
-            path: "/foo"
-            backend:
-              service:
-                name: foo-service
-                port:
-                  number: 80
-          - pathType: Prefix
-            path: "/bar"
-            backend:
-              service:
-                name: bar-service
-                port:
-                  number: 80
+  - http:
+      paths:
+      - pathType: Prefix
+        path: /foo(/|$)(.*)
+        backend:
+          service:
+            name: foo-service
+            port:
+              number: 8080
+      - pathType: Prefix
+        path: /bar(/|$)(.*)
+        backend:
+          service:
+            name: bar-service
+            port:
+              number: 8080
 ---
