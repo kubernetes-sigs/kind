@@ -46,6 +46,7 @@ cleanup() {
 }
 
 # setup signal handlers
+# shellcheck disable=SC2317 # this is not unreachable code
 signal_handler() {
   if [ -n "${GINKGO_PID:-}" ]; then
     kill -TERM "$GINKGO_PID" || true

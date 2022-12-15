@@ -22,10 +22,7 @@ if [ ! -f "$SSH_CONFIG" ]; then
   vagrant ssh-config > "$SSH_CONFIG"
 fi
 
-sudo="sudo"
 if [ "$ROOTLESS" = "rootless" ]; then
-  sudo=
+  exec ssh -F "$SSH_CONFIG" default KIND_EXPERIMENTAL_PROVIDER="$KIND_EXPERIMENTAL_PROVIDER" "${@}"
 fi
-
-# shellcheck disable=SC2086
-exec ssh -F "$SSH_CONFIG" default $sudo KIND_EXPERIMENTAL_PROVIDER="$KIND_EXPERIMENTAL_PROVIDER" "$@"
+exec ssh -F "$SSH_CONFIG" default sudo KIND_EXPERIMENTAL_PROVIDER="$KIND_EXPERIMENTAL_PROVIDER" "${@}"
