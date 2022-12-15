@@ -136,7 +136,7 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 		imageID := imageIDs[i]
 		processed := false
 		for _, node := range candidateNodes {
-			exists, reTagRequired, imageName := checkIfImageReTagRequired(node, imageID, imageName, nodeutils.ImageTags)
+			exists, reTagRequired, sanitizedImageName := checkIfImageReTagRequired(node, imageID, imageName, nodeutils.ImageTags)
 			if exists && !reTagRequired {
 				continue
 			}
@@ -144,8 +144,8 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 			if reTagRequired {
 				// We will try to re-tag the image. If the re-tag fails, we will fall back to the default behavior of loading
 				// the images into the nodes again
-				logger.V(0).Infof("Image with ID: %s already present on the node %s but is missing the tag %s. re-tagging...", imageID, node.String(), imageName)
-				if err := nodeutils.ReTagImage(node, imageID, imageName); err != nil {
+				logger.V(0).Infof("Image with ID: %s already present on the node %s but is missing the tag %s. re-tagging...", imageID, node.String(), sanitizedImageName)
+				if err := nodeutils.ReTagImage(node, imageID, sanitizedImageName); err != nil {
 					logger.Errorf("failed to re-tag image on the node %s due to an error %s. Will load it instead...", node.String(), err)
 					selectedNodes = append(selectedNodes, node)
 				} else {
