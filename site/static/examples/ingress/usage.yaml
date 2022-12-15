@@ -22,8 +22,8 @@ spec:
   selector:
     app: foo
   ports:
-    # Default port used by the image
-    - port: 8080
+  # Default port used by the image
+  - port: 8080
 ---
 kind: Pod
 apiVersion: v1
@@ -49,8 +49,8 @@ spec:
   selector:
     app: bar
   ports:
-    # Default port used by the image
-    - port: 8080
+  # Default port used by the image
+  - port: 8080
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
