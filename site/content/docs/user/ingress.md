@@ -165,8 +165,8 @@ kubectl apply -f {{< absURL "examples/ingress/usage.yaml" >}}
 Now verify that the ingress works
 
 {{< codeFromInline lang="bash" >}}
-# should output "foo"
-curl localhost/foo
-# should output "bar"
-curl localhost/bar
+# should output "foo-app"
+curl localhost/foo/hostname
+# should output "bar-app"
+curl localhost/bar/hostname
 {{< /codeFromInline >}}
