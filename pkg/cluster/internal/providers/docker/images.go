@@ -17,7 +17,10 @@ limitations under the License.
 package docker
 
 import (
+	_ "embed"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 
@@ -30,6 +33,11 @@ import (
 	"sigs.k8s.io/kind/pkg/internal/cli"
 )
 
+var (
+	//go:embed stratio/Dockerfile
+	stratioDockerfile []byte
+)
+
 // ensureNodeImages ensures that the node images used by the create
 // configuration are present
 func ensureNodeImages(logger log.Logger, status *cli.Status, cfg *config.Cluster) error {
@@ -39,6 +47,20 @@ func ensureNodeImages(logger log.Logger, status *cli.Status, cfg *config.Cluster
 		friendlyImageName, image := sanitizeImage(image)
 		status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", friendlyImageName))
 		if _, err := pullIfNotPresent(logger, image, 4); err != nil {
+			status.End(false)
+			return err
+		}
+		// build the stratio image
+		status.Start(fmt.Sprintf("Building Stratio image (%s) 📸", "stratio-capi-image:"+strings.Split(friendlyImageName, ":")[1]))
+
+		dockerfileDir, err := ensureStratioImageFiles(logger)
+		if err != nil {
+			status.End(false)
+			return err
+		}
+
+		err = buildStratioImage(logger, "stratio-capi-image:"+strings.Split(friendlyImageName, ":")[1], dockerfileDir)
+		if err != nil {
 			status.End(false)
 			return err
 		}
@@ -60,6 +82,30 @@ func pullIfNotPresent(logger log.Logger, image string, retries int) (pulled bool
 	}
 	// otherwise try to pull it
 	return true, pull(logger, image, retries)
+}
+
+// ensureStratioImageFiles creates a temporary directory
+// with the Dockerfile required to build the Stratio image
+func ensureStratioImageFiles(logger log.Logger) (dir string, err error) {
+	dir, err = ioutil.TempDir("", "stratio-")
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to create the temp directory")
+	}
+
+	err = os.WriteFile(dir+"/Dockerfile", stratioDockerfile, 0644)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to create the Stratio Dockerfile")
+	}
+	return dir, nil
+}
+
+// buildStratioImage builds the stratio image
+func buildStratioImage(logger log.Logger, image string, path string) error {
+	cmd := exec.Command("docker", "build", "--tag="+image, path)
+	if err := cmd.Run(); err != nil {
+		return errors.Wrapf(err, "failed to build image %q", image)
+	}
+	return nil
 }
 
 // pull pulls an image, retrying up to retries times

@@ -33,8 +33,13 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	configaction "sigs.k8s.io/kind/pkg/cluster/internal/create/actions/config"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/createworker"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installcapi"
+
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installcni"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installstorage"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/keosinstaller"
+
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/kubeadminit"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/kubeadmjoin"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/loadbalancer"
@@ -95,7 +100,7 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 	status := cli.StatusForLogger(logger)
 
 	// we're going to start creating now, tell the user
-	logger.V(0).Infof("Creating cluster %q ...\n", opts.Config.Name)
+	logger.V(0).Infof("Creating temporary cluster %q ...\n", opts.Config.Name)
 
 	// Create node containers implementing defined config Nodes
 	if err := p.Provision(status, opts.Config); err != nil {
@@ -126,6 +131,16 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 			installstorage.NewAction(),                // install StorageClass
 			kubeadmjoin.NewAction(),                   // run kubeadm join
 			waitforready.NewAction(opts.WaitForReady), // wait for cluster readiness
+		)
+
+		// add Stratio step
+		actionsToRun = append(actionsToRun,
+			installcapi.NewAction(), // install ClusterAPI in local
+		)
+
+		// add Stratio step
+		actionsToRun = append(actionsToRun,
+			createworker.NewAction(), // create worker k8s cluster
 		)
 	}
 
@@ -159,15 +174,34 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 		return err
 	}
 
-	// optionally display usage
-	if opts.DisplayUsage {
-		logUsage(logger, opts.Config.Name, opts.KubeconfigPath)
+	// add Stratio action: generate the KEOS descriptor
+	actionsContext.Status.Start("Generating the KEOS descriptor 📝")
+	defer actionsContext.Status.End(false)
+
+	err = keosinstaller.CreateKEOSDescriptor()
+	if err != nil {
+		return err
 	}
+	actionsContext.Status.End(true) // End Generating KEOS descriptor
+
+	// add Stratio action: delete the local cluster
+	if !opts.Retain {
+		actionsContext.Status.Start("Cleaning up temporary cluster 🧹")
+		defer actionsContext.Status.End(false)
+		_ = delete.Cluster(logger, p, opts.Config.Name, opts.KubeconfigPath)
+		actionsContext.Status.End(true) // End Cleaning up local cluster
+	}
+
+	// optionally display usage
+	// if opts.DisplayUsage {
+	// 	logUsage(logger, opts.Config.Name, opts.KubeconfigPath)
+	// }
 	// optionally give the user a friendly salutation
 	if opts.DisplaySalutation {
 		logger.V(0).Info("")
 		logSalutation(logger)
 	}
+
 	return nil
 }
 
@@ -198,10 +232,8 @@ func logUsage(logger log.Logger, name, explicitKubeconfigPath string) {
 
 func logSalutation(logger log.Logger) {
 	salutations := []string{
-		"Have a nice day! 👋",
-		"Thanks for using kind! 😊",
-		"Not sure what to do next? 😅  Check out https://kind.sigs.k8s.io/docs/user/quick-start/",
-		"Have a question, bug, or feature request? Let us know! https://kind.sigs.k8s.io/#community 🙂",
+		// "Kubeconfig file: ",
+		"The cluster has been installed, please refer to Stratio KEOS documentation on how to proceed.",
 	}
 	r := rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
 	s := salutations[r.Intn(len(salutations))]
