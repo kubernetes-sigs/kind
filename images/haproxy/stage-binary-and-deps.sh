@@ -53,7 +53,7 @@ stage_file() {
     # stage the package status mimicking bazel
     # https://github.com/bazelbuild/rules_docker/commit/f5432b813e0a11491cf2bf83ff1a923706b36420
     # instead of parsing the control file, we can just get the actual package status with dpkg
-    dpkg -s "${package}" >> "${2}/var/lib/dpkg/status.d/${package}"
+    dpkg -s "${package}" > "${2}/var/lib/dpkg/status.d/${package}"
 }
 
 # binary_to_libraries identifies the library files needed by the binary $1 with ldd
