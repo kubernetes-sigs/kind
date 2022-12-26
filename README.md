@@ -172,3 +172,6 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [releases]: https://github.com/kubernetes-sigs/kind/releases
 [install guide]: https://kind.sigs.k8s.io/docs/user/quick-start/#installation
 [modules]: https://github.com/golang/go/wiki/Modules
+
+
+# Extern with OpScaleHub OCI image and Configuration
