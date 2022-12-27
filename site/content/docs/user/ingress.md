@@ -35,7 +35,7 @@ Create a kind cluster with `extraPortMappings` and `node-labels`.
 {{< codeFromInline lang="bash" >}}
 cat <<EOF | kind create cluster --config=-
 kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
+apiVersion: kind.x-k8s.io/v1
 nodes:
 - role: control-plane
   kubeadmConfigPatches:
