@@ -2,4 +2,4 @@
 
 ## 0.1.0 (upcoming)
 
-* Add clusterAPI for AWS capabilities
+* Add clusterAPI capabilities for EKS
