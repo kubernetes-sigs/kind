@@ -20,3 +20,8 @@
 *.sublime-project
 *.sublime-workspace
 *~
+
+deploy-recorder.lst
+/hack/go
+/hack/pkg
+/hack/*.tar.gz

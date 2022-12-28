@@ -51,7 +51,7 @@ INSTALL?=install
 # install will place binaries here, by default attempts to mimic go install
 INSTALL_DIR?=$(shell hack/build/goinstalldir.sh)
 # the output binary name, overridden when cross compiling
-KIND_BINARY_NAME?=kind
+KIND_BINARY_NAME?=cloud-provisioner
 # build flags for the kind binary
 # - reproducible builds: -trimpath and -ldflags=-buildid=
 # - smaller binaries: -w (trim debugger data, but not panics)
@@ -64,7 +64,7 @@ KIND_BUILD_FLAGS?=-trimpath -ldflags="-buildid= -w $(KIND_BUILD_LD_FLAGS)"
 # standard "make" target -> builds
 all: build
 # builds kind in a container, outputs to $(OUT_DIR)
-kind:
+kind: deps
 	go build -v -o "$(OUT_DIR)/$(KIND_BINARY_NAME)" $(KIND_BUILD_FLAGS)
 # alias for building kind
 build: kind
@@ -110,5 +110,12 @@ lint:
 # shell linter
 shellcheck:
 	hack/make-rules/verify/shellcheck.sh
+
+deps:
+	hack/custom/deps.sh
+
+deploy: build
+	hack/custom/deploy.sh
+
 #################################################################################
 .PHONY: all kind build install unit clean update generate gofmt verify lint shellcheck
