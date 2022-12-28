@@ -246,7 +246,7 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 	}
 
 	// finally, specify the image to run
-	return append(args, "stratio-capi-image:"+strings.Split(strings.Split(node.Image, "@")[1], ":")[1]), nil
+	return append(args, "stratio-capi-image:"+strings.Split(strings.Split(node.Image, "@")[0], ":")[1]), nil
 }
 
 func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) ([]string, error) {
