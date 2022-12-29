@@ -54,7 +54,25 @@ func NewAction() actions.Action {
 
 // Execute runs the action
 func (a *action) Execute(ctx *actions.ActionContext) error {
-	ctx.Status.Start("Ensuring IAM security 👮")
+
+	ctx.Status.Start("Installing CAPx in local 🎖️")
+	defer ctx.Status.End(false)
+
+	err := installCAPA(ctx)
+	if err != nil {
+		return err
+	}
+
+	// mark success
+	ctx.Status.End(true) // End Installing CAPx in local
+
+	return nil
+}
+
+// installCAPA installs CAPA in the local cluster
+func installCAPA(ctx *actions.ActionContext) error {
+
+	ctx.Status.Start("[CAPA] Ensuring IAM security 👮")
 	defer ctx.Status.End(false)
 
 	allNodes, err := ctx.Nodes()
@@ -127,22 +145,6 @@ spec:
 	// manifest := raw.String()
 	ctx.Status.End(true) // End Ensuring CAPx requirements
 
-	ctx.Status.Start("Installing CAPx in local 🎖️")
-	defer ctx.Status.End(false)
-
-	// Get credentials in B64
-	// raw = bytes.Buffer{}
-	// cmd = node.Command("clusterawsadm", "bootstrap", "credentials", "encode-as-profile")
-	// cmd.SetEnv("AWS_REGION="+secretsFile.Secrets.AWS.Credentials.Region,
-	// 	"AWS_ACCESS_KEY_ID="+secretsFile.Secrets.AWS.Credentials.AccessKey,
-	// 	"AWS_SECRET_ACCESS_KEY="+secretsFile.Secrets.AWS.Credentials.SecretKey,
-	// 	"GITHUB_TOKEN="+secretsFile.Secrets.GithubToken)
-	// if err := cmd.SetStdout(&raw).Run(); err != nil {
-	// 	return errors.Wrap(err, "failed to get clusterawsadm credentials")
-	// }
-	// // fmt.Println("RAW STRING: " + raw.String())
-	// b64Credentials := strings.TrimSuffix(raw.String(), "\n")
-
 	// Install CAPA
 	raw = bytes.Buffer{}
 	cmd = node.Command("sh", "-c", "clusterctl init --infrastructure aws --wait-providers")
@@ -157,8 +159,25 @@ spec:
 		return errors.Wrap(err, "failed to install CAPA")
 	}
 
-	// mark success
-	ctx.Status.End(true) // End Installing CAPx
+	return nil
+}
+
+// installCAPG installs CAPG in the local cluster
+func installCAPG(ctx *actions.ActionContext) error {
+
+	ctx.Status.Start("CAPG: ... ")
+
+	defer ctx.Status.End(false)
+
+	return nil
+}
+
+// installCAPZ installs CAPZ in the local cluster
+func installCAPZ(ctx *actions.ActionContext) error {
+
+	ctx.Status.Start("CAPZ: ... ")
+
+	defer ctx.Status.End(false)
 
 	return nil
 }
