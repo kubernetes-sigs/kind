@@ -19,8 +19,12 @@ package createworker
 
 import (
 	"bytes"
+	"os"
 
+	"gopkg.in/yaml.v3"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
@@ -108,9 +112,6 @@ spec:
   nodes:
     extraPolicyAttachments:
     - arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy`
-	// - arn:aws:iam::` + secretsFile.Secrets.AWS.Credentials.AccountID + `:policy/csi.cluster-api-provider-aws.sigs.k8s.io`
-
-	// fmt.Println("RAW STRING eksConfigData: " + eksConfigData)
 
 	// Create the eks.config file in the container
 	var raw bytes.Buffer
@@ -131,8 +132,6 @@ spec:
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to run clusterawsadm")
 	}
-	// fmt.Println("RAW STRING: " + raw.String())
-	// manifest := raw.String()
 	ctx.Status.End(true) // End Ensuring CAPx requirements
 
 	// Install CAPA

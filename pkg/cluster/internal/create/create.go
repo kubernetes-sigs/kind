@@ -34,7 +34,6 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	configaction "sigs.k8s.io/kind/pkg/cluster/internal/create/actions/config"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/createworker"
-	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installcapx"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installcni"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installstorage"
@@ -131,11 +130,6 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 			installstorage.NewAction(),                // install StorageClass
 			kubeadmjoin.NewAction(),                   // run kubeadm join
 			waitforready.NewAction(opts.WaitForReady), // wait for cluster readiness
-		)
-
-		// add Stratio step
-		actionsToRun = append(actionsToRun,
-			installcapx.NewAction(), // install ClusterAPI in local
 		)
 
 		// add Stratio step

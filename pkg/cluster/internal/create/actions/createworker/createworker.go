@@ -119,6 +119,17 @@ func NewAction() actions.Action {
 // Execute runs the action
 func (a *action) Execute(ctx *actions.ActionContext) error {
 
+	ctx.Status.Start("Installing CAPx in local 🎖️")
+	defer ctx.Status.End(false)
+
+	err := installCAPALocal(ctx)
+	if err != nil {
+		return err
+	}
+
+	// mark success
+	ctx.Status.End(true) // End Installing CAPx in local
+
 	ctx.Status.Start("Generating worker cluster manifests 📝")
 	defer ctx.Status.End(false)
 
@@ -164,15 +175,11 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	capiClustersNamespace := "capi-clusters"
 
-	// ######################## generate: EKS specific ##########################
-
-	// Generate the manifest for EKS
+	// EKS specific: Generate the manifest
 	descriptorData, err := generateEKSManifest(secretsFile, descriptorFile, capiClustersNamespace)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate EKS manifests")
 	}
-
-	// ######################## END generate: EKS specific ##########################
 
 	// Create the cluster manifests file in the container
 	descriptorPath := "/kind/manifests/cluster_" + descriptorFile.ClusterID + ".yaml"
@@ -271,14 +278,11 @@ spec:
 		return errors.Wrap(err, "failed to get the kubeconfig file")
 	}
 
-	// ######################## install: AWS/EKS specific ##########################
-
+	// AWS/EKS specific
 	err = installCAPAWorker(secretsFile, node, kubeconfigPath, allowAllEgressNetPolPath)
 	if err != nil {
 		return err
 	}
-
-	// ######################## END install: AWS/EKS specific ##########################
 
 	//Scale CAPI to 2 replicas
 	raw = bytes.Buffer{}
@@ -323,8 +327,7 @@ spec:
 		return errors.Wrap(err, "failed to create manifests Namespace")
 	}
 
-	// ######################## pivot: EKS specific ##########################
-	// Pivot management role to worker cluster
+	// EKS specific: Pivot management role to worker cluster
 	raw = bytes.Buffer{}
 	cmd = node.Command("sh", "-c", "clusterctl move -n "+capiClustersNamespace+" --to-kubeconfig "+kubeconfigPath)
 	cmd.SetEnv("AWS_REGION="+secretsFile.Secrets.AWS.Credentials.Region,
@@ -335,8 +338,6 @@ spec:
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to pivot management role to worker cluster")
 	}
-
-	// ######################## END pivot: EKS specific ##########################
 
 	ctx.Status.End(true) // End Transfering the management role
 
