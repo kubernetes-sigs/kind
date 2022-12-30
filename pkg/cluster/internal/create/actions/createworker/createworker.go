@@ -172,15 +172,15 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to generate EKS manifests")
 	}
 
+	// ######################## END generate: EKS specific ##########################
+
 	// Create the cluster manifests file in the container
 	descriptorPath := "/kind/manifests/cluster_" + descriptorFile.ClusterID + ".yaml"
 	raw := bytes.Buffer{}
 	cmd := node.Command("sh", "-c", "echo \""+descriptorData+"\" > "+descriptorPath)
-	if err = cmd.SetStdout(&raw).Run(); err != nil {
+	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to write the cluster manifests")
 	}
-
-	// ######################## END generate: EKS specific ##########################
 
 	ctx.Status.End(true) // End Generating worker cluster manifests
 
@@ -226,7 +226,7 @@ spec:
 	machineHealthCheckPath := "/kind/machinehealthcheck.yaml"
 	raw = bytes.Buffer{}
 	cmd = node.Command("sh", "-c", "echo \""+machineHealthCheck+"\" > "+machineHealthCheckPath)
-	if err = cmd.SetStdout(&raw).Run(); err != nil {
+	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to write the MachineHealthCheck manifest")
 	}
 
@@ -243,7 +243,6 @@ spec:
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to create the worker Cluster")
 	}
-	// fmt.Println("RAW STRING: " + raw.String())
 
 	// Wait for machines creation
 	raw = bytes.Buffer{}
@@ -261,7 +260,7 @@ spec:
 	allowAllEgressNetPolPath := "/kind/allow-all-egress_netpol.yaml"
 	raw = bytes.Buffer{}
 	cmd = node.Command("sh", "-c", "echo \""+allowAllEgressNetPol+"\" > "+allowAllEgressNetPolPath)
-	if err = cmd.SetStdout(&raw).Run(); err != nil {
+	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to write the allow-all-egress network policy")
 	}
 
@@ -274,34 +273,10 @@ spec:
 
 	// ######################## install: AWS/EKS specific ##########################
 
-	// Install CAPA in worker cluster
-	raw = bytes.Buffer{}
-	cmd = node.Command("sh", "-c", "clusterctl --kubeconfig "+kubeconfigPath+" init --infrastructure aws --wait-providers")
-	cmd.SetEnv("AWS_REGION="+secretsFile.Secrets.AWS.Credentials.Region,
-		"AWS_ACCESS_KEY_ID="+secretsFile.Secrets.AWS.Credentials.AccessKey,
-		"AWS_SECRET_ACCESS_KEY="+secretsFile.Secrets.AWS.Credentials.SecretKey,
-		"AWS_B64ENCODED_CREDENTIALS="+secretsFile.Secrets.AWS.B64Credentials,
-		"GITHUB_TOKEN="+secretsFile.Secrets.GithubToken,
-		"CAPA_EKS_IAM=true")
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to install CAPA")
+	err = installCAPAWorker(secretsFile, node, kubeconfigPath, allowAllEgressNetPolPath)
+	if err != nil {
+		return err
 	}
-
-	//Scale CAPA to 2 replicas
-	raw = bytes.Buffer{}
-	cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capa-system", "scale", "--replicas", "2", "deploy", "capa-controller-manager")
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to scale the CAPA Deployment")
-	}
-
-	// Allow egress in CAPA's Namespace
-	raw = bytes.Buffer{}
-	cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capa-system", "apply", "-f", allowAllEgressNetPolPath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to apply CAPA's NetworkPolicy")
-	}
-
-	// TODO STG: Disable OIDC provider
 
 	// ######################## END install: AWS/EKS specific ##########################
 

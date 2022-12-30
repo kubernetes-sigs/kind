@@ -34,7 +34,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	configaction "sigs.k8s.io/kind/pkg/cluster/internal/create/actions/config"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/createworker"
-	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installcapi"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installcapx"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installcni"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installstorage"
@@ -135,7 +135,7 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 
 		// add Stratio step
 		actionsToRun = append(actionsToRun,
-			installcapi.NewAction(), // install ClusterAPI in local
+			installcapx.NewAction(), // install ClusterAPI in local
 		)
 
 		// add Stratio step
