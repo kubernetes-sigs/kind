@@ -81,7 +81,6 @@ type MachineDeploymentSpec struct {
 
 // downloadTemplates downloads the template manifests according to the CAPA version provided
 func downloadTemplates(capaVersion string) ([]byte, error) {
-	// url := "https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-aws/" + capaVersion + "/templates/cluster-template-eks.yaml"
 	url := "https://raw.githubusercontent.com/kubernetes-sigs/cluster-api-provider-aws/" + capaVersion + "/templates/cluster-template-eks.yaml"
 
 	// Get the data
@@ -93,7 +92,6 @@ func downloadTemplates(capaVersion string) ([]byte, error) {
 
 	// Check server response
 	if resp.StatusCode != http.StatusOK {
-		// return nil, fmt.Errorf("bad status: %s", resp.Status)
 		return nil, errors.Wrap(err, "failed to get templates - bad status: "+resp.Status)
 	}
 	body, err := ioutil.ReadAll(resp.Body)
@@ -175,11 +173,9 @@ func generateEKSManifest(secretsFile SecretsFile, descriptorFile DescriptorFile,
 			// fmt.Printf("STG %s", string(specBytes))
 			specBytes = append(specBytes, []byte("associateOIDCProvider: yes")...)
 			specBytes = append(specBytes, []byte("\naddons:\n  - name: aws-ebs-csi-driver\n    version: v1.11.4-eksbuild.1")...)
-			// fmt.Printf("\nSTG %v", descriptorFile.Bastion)
 
 			// Note: we take the VMSize as a mandatory parameter
 			if descriptorFile.Bastion.VMSize != "" {
-				// fmt.Printf("\nSTG: BASTION.")
 				specBytes = append(specBytes, []byte("\nbastion:\n  enabled: true"+
 					"\n  instanceType: "+descriptorFile.Bastion.VMSize+
 					"\n  ami: "+descriptorFile.Bastion.AmiID)...)
@@ -207,7 +203,6 @@ func generateEKSManifest(secretsFile SecretsFile, descriptorFile DescriptorFile,
 			var machineDeployment MachineDeployment
 			err = goyaml.Unmarshal([]byte(renderedStr), &machineDeployment)
 			if err != nil {
-				// fmt.Printf("nope %v", err)
 				return "", err
 			}
 
@@ -223,7 +218,6 @@ func generateEKSManifest(secretsFile SecretsFile, descriptorFile DescriptorFile,
 				machineDeploymentZone.Spec.Template.Spec.InfrastructureRef.Name = machineDeploymentName
 				machineDeploymentZone.Spec.Template.Spec.InfrastructureRef.Namespace = capiClustersNamespace
 				machineDeploymentZone.Spec.Template.Spec.FailureDomain = nodeZone
-				// machineDeploymentZone.Spec.Selector.MatchLabels = "null"
 
 				// // Add specs in MachineDeployment object (needs marshaling)
 				// specBytesZone, err := goyaml.Marshal(machineDeploymentZone.Spec)
