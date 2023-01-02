@@ -1,17 +1,16 @@
 FROM kindest/node:v1.24.6
 
-# Download clusterctl (61.5M)
-
-RUN curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.2.4/clusterctl-linux-amd64 -o clusterctl
-RUN chmod +x ./clusterctl
-RUN mv ./clusterctl /usr/local/bin/clusterctl
-
-# Download clusterawsadm (92.5M)
-
-RUN curl -L https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/download/v1.5.0/clusterawsadm-linux-amd64 -o clusterawsadm
-RUN chmod +x clusterawsadm
-RUN mv clusterawsadm /usr/local/bin
+# Tools versions
+ENV CLUSTERCTL=v1.2.4
+ENV CLUSTERAWSADM=v1.5.0
 
 # Init feature gates
-
 ENV CLUSTER_TOPOLOGY="true"
+
+# Download clusterctl (61.5M)
+RUN curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/${CLUSTERCTL}/clusterctl-linux-amd64 -o /usr/local/bin/clusterctl \
+    && chmod +x /usr/local/bin/clusterctl
+
+# Download clusterawsadm (92.5M)
+RUN curl -L https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/download/${CLUSTERAWSADM}/clusterawsadm-linux-amd64 -o /usr/local/bin/clusterawsadm \
+    && chmod +x /usr/local/bin/clusterawsadm
