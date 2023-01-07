@@ -17,6 +17,7 @@ limitations under the License.
 package cluster
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -91,6 +92,24 @@ func NewProvider(options ...ProviderOption) *Provider {
 		providerOpt.apply(p)
 	}
 	return p
+}
+
+// SupportedProviders returns a list of all supported providers
+func SupportedProviders() []*Provider {
+	opts := []ProviderOption{
+		ProviderWithDocker(),
+		ProviderWithPodman(),
+	}
+
+	var providers []*Provider
+	for _, opt := range opts {
+		p := &Provider{
+			logger: log.NoopLogger{},
+		}
+		opt.apply(p)
+		providers = append(providers, p)
+	}
+	return providers
 }
 
 // NoNodeProviderDetectedError indicates that we could not autolocate an available
@@ -244,4 +263,9 @@ func (p *Provider) CollectLogs(name, dir string) error {
 	}
 	// collect and write cluster logs
 	return p.provider.CollectLogs(dir, n)
+}
+
+// Name returns the runtime name of the configured provider
+func (p *Provider) Name() string {
+	return fmt.Sprintf("%s", p.provider)
 }
