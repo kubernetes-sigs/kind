@@ -405,15 +405,49 @@ enable_network_magic(){
   fi
 
   # patch docker's iptables rules to switch out the DNS IP
-  iptables-save \
-    | sed \
-      `# switch docker DNS DNAT rules to our chosen IP` \
-      -e "s/-d ${docker_embedded_dns_ip}/-d ${docker_host_ip}/g" \
-      `# we need to also apply these rules to non-local traffic (from pods)` \
-      -e 's/-A OUTPUT \(.*\) -j DOCKER_OUTPUT/\0\n-A PREROUTING \1 -j DOCKER_OUTPUT/' \
-      `# switch docker DNS SNAT rules rules to our chosen IP` \
-      -e "s/--to-source :53/--to-source ${docker_host_ip}:53/g"\
-    | iptables-restore
+  # we can't use iptables-save | (sed) | iptables-restore because is not safe (#3054)
+  local iptables_original
+  iptables_original="$(iptables-save -t nat | grep DOCKER)"
+
+  # capture the forwarded TCP and UDP ports for the docker embedded DNS
+  local docker_embedded_dns_tcp_port
+  docker_embedded_dns_tcp_port="$( printf '%s' "${iptables_original}" | grep tcp | grep -E -o "\-\-to\-destination ${docker_embedded_dns_ip}:([0-9]+)" | cut -d\: -f2 | head -n1)"
+  local docker_embedded_dns_udp_port
+  docker_embedded_dns_udp_port="$( printf '%s' "${iptables_original}" | grep udp | grep -E -o "\-\-to\-destination ${docker_embedded_dns_ip}:([0-9]+)" | cut -d\: -f2 | head -n1)"
+
+  # Skip if this Node doesn't have embedded dns
+  if [[ -z ${docker_embedded_dns_tcp_port} ]] || [[-z ${docker_embedded_dns_udp_port} ]]; then
+    return
+  fi
+
+  # capture all the iptables rules we have to change, those that reference the docker embedded dns IP
+  local iptables_rules_change
+  iptables_rules_change="$(printf '%s' "${iptables_original}" | grep ${docker_embedded_dns_ip})"
+
+  # remove all rules related to the embedded dns server
+  local iptables_remove
+  iptables_remove="$( printf '%s' "${iptables_rules_change}" | sed "s/^-A/iptables -t nat -D/g" )"
+  eval "$iptables_remove"
+
+  # add new rules to forward the traffic directed to the docker_host_ip:53
+  # to the docker_embedded_dns_ip:[docker_embedded_dns_tcp_port,docker_embedded_dns_udp_port]
+  local iptables_add_rules
+  iptables_add_rules=(
+  # capture all traffic from the node and and the pods directed to the new nameserver (docker_host_ip)
+  "PREROUTING -d ${docker_host_ip} -j DOCKER_OUTPUT"
+  "OUTPUT -d ${docker_host_ip} -j DOCKER_OUTPUT"
+  "POSTROUTING -d ${docker_host_ip} -j DOCKER_POSTROUTING"
+  # forward the traffic directed to the docker_host_ip to the docker embedded dns
+  "DOCKER_OUTPUT -d ${docker_host_ip} -p tcp -m tcp --dport 53 -j DNAT --to-destination ${docker_embedded_dns_ip}:${docker_embedded_dns_tcp_port}"
+  "DOCKER_OUTPUT -d ${docker_host_ip} -p udp -m udp --dport 53 -j DNAT --to-destination ${docker_embedded_dns_ip}:${docker_embedded_dns_udp_port}"
+  # traffic with origin the embedded dns should be translated to appear that is coming from the docker_host_ip
+  "DOCKER_POSTROUTING -s ${docker_embedded_dns_ip} -p tcp -m tcp --sport ${docker_embedded_dns_tcp_port} -j SNAT --to-source ${docker_host_ip}:53"
+  "DOCKER_POSTROUTING -s ${docker_embedded_dns_ip} -p udp -m udp --sport ${docker_embedded_dns_udp_port} -j SNAT --to-source ${docker_host_ip}:53"
+  )
+  for rule in "${iptables_add_rules[@]}"; do
+    # check if the rule exist first to make the script idempotent
+    eval "iptables -t nat -C ${rule} || iptables -t nat -A ${rule}"
+  done
 
   # now we can ensure that DNS is configured to use our IP
   cp /etc/resolv.conf /etc/resolv.conf.original
