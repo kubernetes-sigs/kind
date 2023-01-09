@@ -126,9 +126,7 @@ func CreateKEOSDescriptor() error {
 		flavourEntry = "\n  flavour: " + descriptorFile.Keos.Flavour
 	}
 
-	keosYAMLData := `---
-k8s_bootstrapping:
-  type: external
+	keosYAMLData := `
 aws:
   eks: true
   enabled: true` +
@@ -138,6 +136,7 @@ keos:` +
 		flavourEntry +
 		domainEntry +
 		externalDomainEntry + `
+  k8s_installation: false
   storage:
     default_storage_class: gp2
     providers:
