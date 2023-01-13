@@ -53,7 +53,7 @@ func GetArchiveTags(path string) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		if hdr.Name == "repositories" {
+		if hdr.Name == "manifest.json" || hdr.Name == "repositories" {
 			break
 		}
 	}
@@ -62,17 +62,25 @@ func GetArchiveTags(path string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	// parse
-	repoTags, err := parseRepositories(b)
-	if err != nil {
-		return nil, err
-	}
-	// convert to tags in the docker CLI sense
 	res := []string{}
-	for repo, tags := range repoTags {
-		for tag := range tags {
-			res = append(res, fmt.Sprintf("%s:%s", repo, tag))
+	// parse
+	if hdr.Name == "repositories" {
+		repoTags, err := parseRepositories(b)
+		if err != nil {
+			return nil, err
 		}
+		// convert to tags in the docker CLI sense
+		for repo, tags := range repoTags {
+			for tag := range tags {
+				res = append(res, fmt.Sprintf("%s:%s", repo, tag))
+			}
+		}
+	} else if hdr.Name == "manifest.json" {
+		manifest, err := parseDockerV1Manifest(b)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, manifest[0].RepoTags...)
 	}
 	return res, nil
 }
@@ -214,4 +222,14 @@ func parseRepositories(data []byte) (archiveRepositories, error) {
 		return nil, err
 	}
 	return repoTags, nil
+}
+
+// parseDockerV1Manifest parses Docker Image Spec v1 manifest (not OCI Image Spec manifest)
+// https://github.com/moby/moby/blob/v20.10.22/image/spec/v1.2.md#combined-image-json--filesystem-changeset-format
+func parseDockerV1Manifest(data []byte) ([]metadataEntry, error) {
+	var entries []metadataEntry
+	if err := json.Unmarshal(data, &entries); err != nil {
+		return nil, err
+	}
+	return entries, nil
 }
