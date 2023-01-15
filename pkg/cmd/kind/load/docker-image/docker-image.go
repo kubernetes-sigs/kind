@@ -130,7 +130,7 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 	}
 
 	// pick only the nodes that don't have the image
-	selectedNodes := []nodes.Node{}
+	selectedNodes := map[string]nodes.Node{}
 	fns := []func() error{}
 	for i, imageName := range imageNames {
 		imageID := imageIDs[i]
@@ -147,7 +147,7 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 				logger.V(0).Infof("Image with ID: %s already present on the node %s but is missing the tag %s. re-tagging...", imageID, node.String(), sanitizedImageName)
 				if err := nodeutils.ReTagImage(node, imageID, sanitizedImageName); err != nil {
 					logger.Errorf("failed to re-tag image on the node %s due to an error %s. Will load it instead...", node.String(), err)
-					selectedNodes = append(selectedNodes, node)
+					selectedNodes[node.String()] = node
 				} else {
 					processed = true
 				}
@@ -155,7 +155,7 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 			}
 			id, err := nodeutils.ImageID(node, imageName)
 			if err != nil || id != imageID {
-				selectedNodes = append(selectedNodes, node)
+				selectedNodes[node.String()] = node
 				logger.V(0).Infof("Image: %q with ID %q not yet present on node %q, loading...", imageName, imageID, node.String())
 			}
 			continue
