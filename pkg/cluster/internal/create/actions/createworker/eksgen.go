@@ -107,7 +107,7 @@ func generateEKSManifest(secretsFile SecretsFile, descriptorFile DescriptorFile,
 
 	// TODO: Embeber los templates?
 	// TODO: Obtener capaVersion del cluster?
-	capaVersion := "v1.5.1"
+	capaVersion := "v2.0.2"
 	templates, _ := downloadTemplates(capaVersion)
 	templatesRAW := goyaml.NewDecoder(bytes.NewReader(templates))
 
