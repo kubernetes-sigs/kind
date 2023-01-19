@@ -11,8 +11,10 @@ require (
 	github.com/mattn/go-isatty v0.0.14
 	github.com/pelletier/go-toml v1.9.4
 	github.com/pkg/errors v0.9.1
+	github.com/sosedoff/ansible-vault-go v0.1.1 // indirect
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
+	golang.org/x/term v0.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1
 	sigs.k8s.io/yaml v1.3.0
 )

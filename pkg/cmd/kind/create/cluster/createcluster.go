@@ -18,9 +18,17 @@ limitations under the License.
 package cluster
 
 import (
+	//"bufio"
+	"fmt"
 	"io"
 	"io/ioutil"
+
+	//"os"
+	//"strings"
+	"syscall"
 	"time"
+
+	term "golang.org/x/term"
 
 	"github.com/spf13/cobra"
 
@@ -34,12 +42,13 @@ import (
 )
 
 type flagpole struct {
-	Name       string
-	Config     string
-	ImageName  string
-	Retain     bool
-	Wait       time.Duration
-	Kubeconfig string
+	Name          string
+	Config        string
+	ImageName     string
+	Retain        bool
+	Wait          time.Duration
+	Kubeconfig    string
+	VaultPassword string
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
@@ -92,6 +101,14 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		"",
 		"sets kubeconfig path instead of $KUBECONFIG or $HOME/.kube/config",
 	)
+	cmd.Flags().StringVarP(
+		&flags.VaultPassword,
+		"vaultPassword",
+		"p",
+		"",
+		"sets vault password to encrypt secrets",
+	)
+
 	return cmd
 }
 
@@ -107,9 +124,14 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		return err
 	}
 
+	if flags.VaultPassword == "" {
+		flags.VaultPassword, err = requestPassword()
+	}
+
 	// create the cluster
 	if err = provider.Create(
 		flags.Name,
+		flags.VaultPassword,
 		withConfig,
 		cluster.CreateWithNodeImage(flags.ImageName),
 		cluster.CreateWithRetain(flags.Retain),
@@ -137,4 +159,14 @@ func configOption(rawConfigFlag string, stdin io.Reader) (cluster.CreateOption, 
 		return nil, errors.Wrap(err, "error reading config from stdin")
 	}
 	return cluster.CreateWithRawConfig(raw), nil
+}
+
+func requestPassword() (string, error) {
+	fmt.Print("Vault Password: ")
+	bytePassword, err := term.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		return "", err
+	}
+	fmt.Print("\n")
+	return string(bytePassword), nil
 }

@@ -19,7 +19,11 @@ package createworker
 
 import (
 	"bytes"
+	"fmt"
+	"io/ioutil"
 	"os"
+
+	vault "github.com/sosedoff/ansible-vault-go"
 
 	"gopkg.in/yaml.v3"
 
@@ -28,7 +32,9 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
-type action struct{}
+type action struct {
+	vaultPassword string
+}
 
 // DescriptorFile represents the YAML structure in the cluster.yaml file
 type DescriptorFile struct {
@@ -72,6 +78,17 @@ type DescriptorFile struct {
 			Spot     bool   `yaml:"spot"`
 		} `yaml:"kube_node"`
 	} `yaml:"nodes"`
+	Credentials struct {
+		AWS struct {
+			AccessKey  string `yaml:"access_key"`
+			SecretKey  string `yaml:"secret_key"`
+			Region     string `yaml:"region"`
+			Account    string `yaml:"account"`
+			AssumeRole string `yaml:"assume_role"`
+		} `yaml:"aws"`
+	} `yaml:"credentials"`
+	B64Credentials string `yaml:"b64_credentials"`
+	GithubToken    string `yaml:"github_token"`
 }
 
 // Bastion represents the bastion VM
@@ -82,20 +99,20 @@ type Bastion struct {
 }
 
 // SecretsFile represents the YAML structure in the secrets.yaml file
-type SecretsFile struct {
-	Secrets struct {
-		AWS struct {
-			Credentials struct {
-				AccessKey string `yaml:"access_key"`
-				SecretKey string `yaml:"secret_key"`
-				Region    string `yaml:"region"`
-				AccountID string `yaml:"account_id"`
-			} `yaml:"credentials"`
-			B64Credentials string `yaml:"b64_credentials"`
-		} `yaml:"aws"`
-		GithubToken string `yaml:"github_token"`
-	} `yaml:"secrets"`
-}
+// type SecretsFile struct {
+// 	Secrets struct {
+// 		AWS struct {
+// 			Credentials struct {
+// 				AccessKey string `yaml:"access_key"`
+// 				SecretKey string `yaml:"secret_key"`
+// 				Region    string `yaml:"region"`
+// 				AccountID string `yaml:"account_id"`
+// 			} `yaml:"credentials"`
+// 			B64Credentials string `yaml:"b64_credentials"`
+// 		} `yaml:"aws"`
+// 		GithubToken string `yaml:"github_token"`
+// 	} `yaml:"secrets"`
+// }
 
 const allowAllEgressNetPol = `
 apiVersion: networking.k8s.io/v1
@@ -112,8 +129,8 @@ spec:
 const kubeconfigPath = "/kind/worker-cluster.kubeconfig"
 
 // NewAction returns a new action for installing default CAPI
-func NewAction() actions.Action {
-	return &action{}
+func NewAction(vaultPassword string) actions.Action {
+	return &action{vaultPassword: vaultPassword}
 }
 
 // Execute runs the action
@@ -147,16 +164,16 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	// Read secrets.yaml file
 
-	secretRAW, err := os.ReadFile("./secrets.yaml.clear")
-	if err != nil {
-		return err
-	}
+	// secretRAW, err := os.ReadFile("./secrets.yaml.clear")
+	// if err != nil {
+	// 	return err
+	// }
 
-	var secretsFile SecretsFile
-	err = yaml.Unmarshal(secretRAW, &secretsFile)
-	if err != nil {
-		return err
-	}
+	// var secretsFile SecretsFile
+	// err = yaml.Unmarshal(secretRAW, &secretsFile)
+	// if err != nil {
+	// 	return err
+	// }
 
 	// Read cluster.yaml file
 
@@ -176,7 +193,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	capiClustersNamespace := "capi-clusters"
 
 	// EKS specific: Generate the manifest
-	descriptorData, err := generateEKSManifest(secretsFile, descriptorFile, capiClustersNamespace)
+	//descriptorData, err := generateEKSManifest(secretsFile, descriptorFile, capiClustersNamespace)
+	descriptorData, err := generateEKSManifest(descriptorFile, capiClustersNamespace)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate EKS manifests")
 	}
@@ -190,6 +208,36 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	ctx.Status.End(true) // End Generating worker cluster manifests
+
+	ctx.Status.Start("Generating secrets file 📝🗝️")
+	defer ctx.Status.End(false)
+
+	filelines := []string{"secrets:\n", "\taws:\n", "\t\tcredentials:\n", "\t\t\taccess_key: " + descriptorFile.Credentials.AWS.AccessKey + "\n",
+		"\t\t\taccount_id: " + descriptorFile.Credentials.AWS.Account + "\n", "\t\t\tregion: " + descriptorFile.Credentials.AWS.Region + "\n",
+		"\t\t\tsecret_key: " + descriptorFile.Credentials.AWS.SecretKey + "\n"}
+
+	basepath, err := os.Getwd()
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	directory := basepath + "/workspace"
+	err = createDirectory(directory)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	filename := directory + "/secrets.yaml"
+	err = writeFile(filename, filelines)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	err = encryptFile(filename, a.vaultPassword)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
 
 	ctx.Status.Start("Creating the worker cluster 💥")
 	defer ctx.Status.End(false)
@@ -279,7 +327,7 @@ spec:
 	}
 
 	// AWS/EKS specific
-	err = installCAPAWorker(secretsFile, node, kubeconfigPath, allowAllEgressNetPolPath)
+	err = installCAPAWorker(descriptorFile, node, kubeconfigPath, allowAllEgressNetPolPath)
 	if err != nil {
 		return err
 	}
@@ -330,16 +378,63 @@ spec:
 	// EKS specific: Pivot management role to worker cluster
 	raw = bytes.Buffer{}
 	cmd = node.Command("sh", "-c", "clusterctl move -n "+capiClustersNamespace+" --to-kubeconfig "+kubeconfigPath)
-	cmd.SetEnv("AWS_REGION="+secretsFile.Secrets.AWS.Credentials.Region,
-		"AWS_ACCESS_KEY_ID="+secretsFile.Secrets.AWS.Credentials.AccessKey,
-		"AWS_SECRET_ACCESS_KEY="+secretsFile.Secrets.AWS.Credentials.SecretKey,
-		"AWS_B64ENCODED_CREDENTIALS="+secretsFile.Secrets.AWS.B64Credentials,
-		"GITHUB_TOKEN="+secretsFile.Secrets.GithubToken)
+	cmd.SetEnv("AWS_REGION="+descriptorFile.Credentials.AWS.Region,
+		"AWS_ACCESS_KEY_ID="+descriptorFile.Credentials.AWS.AccessKey,
+		"AWS_SECRET_ACCESS_KEY="+descriptorFile.Credentials.AWS.SecretKey,
+		"AWS_B64ENCODED_CREDENTIALS="+descriptorFile.B64Credentials,
+		"GITHUB_TOKEN="+descriptorFile.GithubToken)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to pivot management role to worker cluster")
 	}
 
 	ctx.Status.End(true) // End Transfering the management role
 
+	return nil
+}
+
+func createDirectory(directory string) error {
+	if _, err := os.Stat(directory); os.IsNotExist(err) {
+		err = os.Mkdir(directory, 0777)
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
+	}
+	return nil
+}
+
+func writeFile(filePath string, contentLines []string) error {
+	f, err := os.Create(filePath)
+	if err != nil {
+		fmt.Println(err)
+		f.Close()
+		return nil
+	}
+	for _, v := range contentLines {
+		fmt.Fprintf(f, v)
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
+	}
+	err = f.Close()
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	return nil
+}
+
+func encryptFile(filePath string, vaultPassword string) error {
+	data, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	err = vault.EncryptFile(filePath, string(data), vaultPassword)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
 	return nil
 }

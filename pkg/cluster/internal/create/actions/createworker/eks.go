@@ -29,16 +29,16 @@ import (
 )
 
 // installCAPAWorker generates and apply the EKS manifests
-func installCAPAWorker(secretsFile SecretsFile, node nodes.Node, kubeconfigPath string, allowAllEgressNetPolPath string) error {
+func installCAPAWorker(descriptorFile DescriptorFile, node nodes.Node, kubeconfigPath string, allowAllEgressNetPolPath string) error {
 
 	// Install CAPA in worker cluster
 	raw := bytes.Buffer{}
 	cmd := node.Command("sh", "-c", "clusterctl --kubeconfig "+kubeconfigPath+" init --infrastructure aws --wait-providers")
-	cmd.SetEnv("AWS_REGION="+secretsFile.Secrets.AWS.Credentials.Region,
-		"AWS_ACCESS_KEY_ID="+secretsFile.Secrets.AWS.Credentials.AccessKey,
-		"AWS_SECRET_ACCESS_KEY="+secretsFile.Secrets.AWS.Credentials.SecretKey,
-		"AWS_B64ENCODED_CREDENTIALS="+secretsFile.Secrets.AWS.B64Credentials,
-		"GITHUB_TOKEN="+secretsFile.Secrets.GithubToken,
+	cmd.SetEnv("AWS_REGION="+descriptorFile.Credentials.AWS.Region,
+		"AWS_ACCESS_KEY_ID="+descriptorFile.Credentials.AWS.AccessKey,
+		"AWS_SECRET_ACCESS_KEY="+descriptorFile.Credentials.AWS.SecretKey,
+		"AWS_B64ENCODED_CREDENTIALS="+descriptorFile.B64Credentials,
+		"GITHUB_TOKEN="+descriptorFile.GithubToken,
 		"CAPA_EKS_IAM=true")
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to install CAPA")
@@ -85,13 +85,24 @@ func installCAPALocal(ctx *actions.ActionContext) error {
 	// as environment variables. So we read the secrets.yaml file and ask for the decryption passphrase.
 	// TODO STG: ask for the decryption passphrase (in new module "getcredentials"?)
 
-	secretRAW, err := os.ReadFile("./secrets.yaml.clear")
+	// secretRAW, err := os.ReadFile("./secrets.yaml.clear")
+	// if err != nil {
+	// 	return err
+	// }
+
+	// var secretsFile SecretsFile
+	// err = yaml.Unmarshal(secretRAW, &secretsFile)
+	// if err != nil {
+	// 	return err
+	// }
+
+	descriptorRAW, err := os.ReadFile("./cluster.yaml")
 	if err != nil {
 		return err
 	}
 
-	var secretsFile SecretsFile
-	err = yaml.Unmarshal(secretRAW, &secretsFile)
+	var descriptorFile DescriptorFile
+	err = yaml.Unmarshal(descriptorRAW, &descriptorFile)
 	if err != nil {
 		return err
 	}
@@ -125,10 +136,10 @@ spec:
 	// (this will create or update the CloudFormation stack in AWS)
 	raw = bytes.Buffer{}
 	cmd = node.Command("clusterawsadm", "bootstrap", "iam", "create-cloudformation-stack", "--config", eksConfigPath)
-	cmd.SetEnv("AWS_REGION="+secretsFile.Secrets.AWS.Credentials.Region,
-		"AWS_ACCESS_KEY_ID="+secretsFile.Secrets.AWS.Credentials.AccessKey,
-		"AWS_SECRET_ACCESS_KEY="+secretsFile.Secrets.AWS.Credentials.SecretKey,
-		"GITHUB_TOKEN="+secretsFile.Secrets.GithubToken)
+	cmd.SetEnv("AWS_REGION="+descriptorFile.Credentials.AWS.Region,
+		"AWS_ACCESS_KEY_ID="+descriptorFile.Credentials.AWS.AccessKey,
+		"AWS_SECRET_ACCESS_KEY="+descriptorFile.Credentials.AWS.SecretKey,
+		"GITHUB_TOKEN="+descriptorFile.GithubToken)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to run clusterawsadm")
 	}
@@ -137,11 +148,11 @@ spec:
 	// Install CAPA
 	raw = bytes.Buffer{}
 	cmd = node.Command("sh", "-c", "clusterctl init --infrastructure aws --wait-providers")
-	cmd.SetEnv("AWS_REGION="+secretsFile.Secrets.AWS.Credentials.Region,
-		"AWS_ACCESS_KEY_ID="+secretsFile.Secrets.AWS.Credentials.AccessKey,
-		"AWS_SECRET_ACCESS_KEY="+secretsFile.Secrets.AWS.Credentials.SecretKey,
-		"AWS_B64ENCODED_CREDENTIALS="+secretsFile.Secrets.AWS.B64Credentials,
-		"GITHUB_TOKEN="+secretsFile.Secrets.GithubToken,
+	cmd.SetEnv("AWS_REGION="+descriptorFile.Credentials.AWS.Region,
+		"AWS_ACCESS_KEY_ID="+descriptorFile.Credentials.AWS.AccessKey,
+		"AWS_SECRET_ACCESS_KEY="+descriptorFile.Credentials.AWS.SecretKey,
+		"AWS_B64ENCODED_CREDENTIALS="+descriptorFile.B64Credentials,
+		"GITHUB_TOKEN="+descriptorFile.GithubToken,
 		"CAPA_EKS_IAM=true")
 	// "EXP_MACHINE_POOL=true")
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
