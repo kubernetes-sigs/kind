@@ -162,19 +162,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 	node := controlPlanes[0] // kind expects at least one always
 
-	// Read secrets.yaml file
-
-	// secretRAW, err := os.ReadFile("./secrets.yaml.clear")
-	// if err != nil {
-	// 	return err
-	// }
-
-	// var secretsFile SecretsFile
-	// err = yaml.Unmarshal(secretRAW, &secretsFile)
-	// if err != nil {
-	// 	return err
-	// }
-
 	// Read cluster.yaml file
 
 	descriptorRAW, err := os.ReadFile("./cluster.yaml")
@@ -193,7 +180,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	capiClustersNamespace := "capi-clusters"
 
 	// EKS specific: Generate the manifest
-	//descriptorData, err := generateEKSManifest(secretsFile, descriptorFile, capiClustersNamespace)
 	descriptorData, err := generateEKSManifest(descriptorFile, capiClustersNamespace)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate EKS manifests")

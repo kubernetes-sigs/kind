@@ -81,21 +81,6 @@ func installCAPALocal(ctx *actions.ActionContext) error {
 	}
 	node := controlPlanes[0] // kind expects at least one always
 
-	// Right now, a CAPA pre-requisite is to have the region, aws_access_key_id and aws_secret_access_key
-	// as environment variables. So we read the secrets.yaml file and ask for the decryption passphrase.
-	// TODO STG: ask for the decryption passphrase (in new module "getcredentials"?)
-
-	// secretRAW, err := os.ReadFile("./secrets.yaml.clear")
-	// if err != nil {
-	// 	return err
-	// }
-
-	// var secretsFile SecretsFile
-	// err = yaml.Unmarshal(secretRAW, &secretsFile)
-	// if err != nil {
-	// 	return err
-	// }
-
 	descriptorRAW, err := os.ReadFile("./cluster.yaml")
 	if err != nil {
 		return err

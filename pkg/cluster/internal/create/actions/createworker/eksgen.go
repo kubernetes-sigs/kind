@@ -103,7 +103,6 @@ func downloadTemplates(capaVersion string) ([]byte, error) {
 }
 
 // generateEKSManifest downloads, renders and persists the manifests for the EKS cluster
-// func generateEKSManifest(secretsFile SecretsFile, descriptorFile DescriptorFile, capiClustersNamespace string) (string, error) {
 func generateEKSManifest(descriptorFile DescriptorFile, capiClustersNamespace string) (string, error) {
 
 	// TODO: Embeber los templates?

@@ -18,13 +18,10 @@ limitations under the License.
 package cluster
 
 import (
-	//"bufio"
 	"fmt"
 	"io"
 	"io/ioutil"
 
-	//"os"
-	//"strings"
 	"syscall"
 	"time"
 
