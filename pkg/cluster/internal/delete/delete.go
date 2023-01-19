@@ -32,6 +32,9 @@ func Cluster(logger log.Logger, p providers.Provider, name, explicitKubeconfigPa
 	if err != nil {
 		return errors.Wrap(err, "error listing nodes")
 	}
+	if len(n) == 0 {
+		return errors.Errorf("cluster \"%s\" doesn't exist", name)
+	}
 
 	kerr := kubeconfig.Remove(name, explicitKubeconfigPath)
 	if kerr != nil {
