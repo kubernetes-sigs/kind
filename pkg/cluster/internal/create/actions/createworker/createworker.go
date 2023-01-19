@@ -98,22 +98,6 @@ type Bastion struct {
 	AllowedCIDRBlocks []string `yaml:"allowedCIDRBlocks"`
 }
 
-// SecretsFile represents the YAML structure in the secrets.yaml file
-// type SecretsFile struct {
-// 	Secrets struct {
-// 		AWS struct {
-// 			Credentials struct {
-// 				AccessKey string `yaml:"access_key"`
-// 				SecretKey string `yaml:"secret_key"`
-// 				Region    string `yaml:"region"`
-// 				AccountID string `yaml:"account_id"`
-// 			} `yaml:"credentials"`
-// 			B64Credentials string `yaml:"b64_credentials"`
-// 		} `yaml:"aws"`
-// 		GithubToken string `yaml:"github_token"`
-// 	} `yaml:"secrets"`
-// }
-
 const allowAllEgressNetPol = `
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
