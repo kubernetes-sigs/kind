@@ -81,16 +81,18 @@ type DescriptorFile struct {
 }
 
 type SecretFile struct {
-	AWS AWS `yaml:"aws"`
+	Secrets struct {
+		AWS AWS `yaml: "aws"`
+	} `yaml: "secrets"`
 }
 
 type AWS struct {
 	Credentials struct {
-		AccessKey  string `yaml:"access_key"`
-		SecretKey  string `yaml:"secret_key"`
-		Region     string `yaml:"region"`
-		Account    string `yaml:"account"`
-		AssumeRole string `yaml:"assume_role"`
+		AccessKey string `yaml:"access_key"`
+		SecretKey string `yaml:"secret_key"`
+		Region    string `yaml:"region"`
+		Account   string `yaml:"account_id"`
+		//AssumeRole string `yaml:"assume_role"`
 	} `yaml:"credentials"`
 }
 
@@ -222,9 +224,9 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Generating secrets file 📝🗝️")
 	defer ctx.Status.End(false)
 
-	filelines := []string{"secrets:\n", "\taws:\n", "\t\tcredentials:\n", "\t\t\taccess_key: " + aws.Credentials.AccessKey + "\n",
-		"\t\t\taccount_id: " + aws.Credentials.Account + "\n", "\t\t\tregion: " + aws.Credentials.Region + "\n",
-		"\t\t\tsecret_key: " + aws.Credentials.SecretKey + "\n"}
+	filelines := []string{"secrets:\n", "  aws:\n", "    credentials:\n", "      access_key: " + aws.Credentials.AccessKey + "\n",
+		"      account_id: " + aws.Credentials.Account + "\n", "      region: " + aws.Credentials.Region + "\n",
+		"      secret_key: " + aws.Credentials.SecretKey + "\n"}
 
 	basepath, err := os.Getwd()
 	if err != nil {

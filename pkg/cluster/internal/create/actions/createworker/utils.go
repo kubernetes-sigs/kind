@@ -3,6 +3,7 @@ package createworker
 import (
 	"bytes"
 	gob "encoding/gob"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -67,6 +68,8 @@ func decryptFile(filePath string, vaultPassword string) (string, error) {
 		//fmt.Println(err)
 		return "", err
 	}
+	fmt.Println("Decrypted: ")
+	fmt.Println(data)
 	return data, nil
 }
 
@@ -86,25 +89,43 @@ func getCredentials(descriptorFile DescriptorFile, vaultPassword string) (AWS, e
 	// //assumeRole = aws.Credentials.AssumeRole
 	// return
 
-	secretRaw, err := decryptFile("./secret.yaml", vaultPassword)
-	var secretFile SecretFile
+	_, err := os.Stat("./secrets.yaml")
 	if err != nil {
 		fmt.Println("descriptorFile.AWS: ", descriptorFile.AWS)
-		return descriptorFile.AWS, nil
-		//accessKey, account, region, secretKey = getCredentials(aws)
-	} else {
-		err = yaml.Unmarshal(stringToBytes(secretRaw), &secretFile)
-		if err != nil {
-			return aws, err
+		if aws != descriptorFile.AWS {
+			return descriptorFile.AWS, nil
 		}
-		fmt.Println("secretFile.AWS: ", secretFile.AWS)
-		return secretFile.AWS, nil
-		//accessKey, account, region, secretKey = getCredentials(aws)
+		err := errors.New("Incorrect AWS credentials in Cluster.yaml")
+		return aws, err
+
+	} else {
+		secretRaw, err := decryptFile("./secrets.yaml", vaultPassword)
+		var secretFile SecretFile
+		if err != nil {
+			err := errors.New("The vaultPassword is incorrect")
+			return aws, err
+			//accessKey, account, region, secretKey = getCredentials(aws)
+		} else {
+			fmt.Println("secretRAW: ")
+			fmt.Println(secretRaw)
+			err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
+			if err != nil {
+				fmt.Println(err)
+				return aws, err
+			}
+			fmt.Println("secretFile: ", secretFile)
+			fmt.Println("secretFile.AWS: ", secretFile.Secrets.AWS)
+			return secretFile.Secrets.AWS, nil
+			//accessKey, account, region, secretKey = getCredentials(aws)
+		}
 	}
+
 }
 
 func stringToBytes(str string) []byte {
 	buf := &bytes.Buffer{}
 	gob.NewEncoder(buf).Encode(str)
-	return buf.Bytes()
+	bytes := buf.Bytes()
+
+	return bytes
 }
