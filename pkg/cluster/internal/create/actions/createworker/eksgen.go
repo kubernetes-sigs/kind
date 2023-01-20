@@ -103,15 +103,15 @@ func downloadTemplates(capaVersion string) ([]byte, error) {
 }
 
 // generateEKSManifest downloads, renders and persists the manifests for the EKS cluster
-func generateEKSManifest(descriptorFile DescriptorFile, capiClustersNamespace string) (string, error) {
+func generateEKSManifest(descriptorFile DescriptorFile, capiClustersNamespace string, aws AWS) (string, error) {
 
 	// TODO: Embeber los templates?
 	// TODO: Obtener capaVersion del cluster?
-	capaVersion := "v2.0.2"
+	capaVersion := "v1.5.1"
 	templates, _ := downloadTemplates(capaVersion)
 	templatesRAW := goyaml.NewDecoder(bytes.NewReader(templates))
 
-	nodesRegion := descriptorFile.Credentials.AWS.Region
+	nodesRegion := aws.Credentials.Region
 	// TODO: Get zones from the AWS endpoint
 	nodesZones := []string{nodesRegion + "a", nodesRegion + "b", nodesRegion + "c"}
 

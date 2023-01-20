@@ -122,7 +122,10 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	}
 
 	if flags.VaultPassword == "" {
-		flags.VaultPassword, err = requestPassword()
+		flags.VaultPassword, err = setPassword()
+		if err != nil {
+			return err
+		}
 	}
 
 	// create the cluster
@@ -158,8 +161,24 @@ func configOption(rawConfigFlag string, stdin io.Reader) (cluster.CreateOption, 
 	return cluster.CreateWithRawConfig(raw), nil
 }
 
-func requestPassword() (string, error) {
-	fmt.Print("Vault Password: ")
+func setPassword() (string, error) {
+	firstPassword, err := requestPassword("Vault Password: ")
+	if err != nil {
+		return "", err
+	}
+	secondPassword, err := requestPassword("Rewrite Vault Password:")
+	if err != nil {
+		return "", err
+	}
+	if firstPassword != secondPassword {
+		return "", errors.New("The passwords do not match.")
+	}
+
+	return firstPassword, nil
+}
+
+func requestPassword(request string) (string, error) {
+	fmt.Print(request)
 	bytePassword, err := term.ReadPassword(int(syscall.Stdin))
 	if err != nil {
 		return "", err
