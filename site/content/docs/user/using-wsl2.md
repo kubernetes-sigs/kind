@@ -19,7 +19,7 @@ Download latest ISO at https://www.microsoft.com/en-us/software-download/windows
 
 Required Settings
 
-- Supported processor and operating system, see [Enable Nester Virtualization](https://learn.microsoft.com/en-us/virtualization/hyper-v-on-windows/user-guide/nested-virtualization) guide for Windows
+- Supported processor and operating system, see [Enable Nested Virtualization](https://learn.microsoft.com/en-us/virtualization/hyper-v-on-windows/user-guide/nested-virtualization) guide for Windows
   - Intel processors require Windows 10/Windows Server 2016 or greater and the processor must support VT-x and extended page tables (also known as [second level address translation](https://en.wikipedia.org/wiki/Second_Level_Address_Translation))
   - AMD processors require Windows 11/Windows Server 2022 or greater and the processor generation must be AMD EPYC or Ryzen or newer
 - At least 8GB of memory
