@@ -8,9 +8,10 @@ import (
 	"io/ioutil"
 	"os"
 
-	"gopkg.in/yaml.v3"
-
 	b64 "encoding/base64"
+
+	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 
 	vault "github.com/sosedoff/ansible-vault-go"
 )
@@ -20,10 +21,20 @@ func createDirectory(directory string) error {
 		err = os.Mkdir(directory, 0777)
 		if err != nil {
 			fmt.Println(err)
-			return nil
+			return err
 		}
 	}
 	return nil
+}
+
+func currentdir() (string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Println(err)
+		return "", nil
+	}
+
+	return cwd, nil
 }
 
 func writeFile(filePath string, contentLines []string) error {
@@ -93,6 +104,7 @@ func getCredentials(descriptorFile DescriptorFile, vaultPassword string) (AWS, e
 	if err != nil {
 		fmt.Println("descriptorFile.AWS: ", descriptorFile.AWS)
 		if aws != descriptorFile.AWS {
+			rewriteDescriptorFile(descriptorFile)
 			return descriptorFile.AWS, nil
 		}
 		err := errors.New("Incorrect AWS credentials in Cluster.yaml")
@@ -128,4 +140,48 @@ func stringToBytes(str string) []byte {
 	bytes := buf.Bytes()
 
 	return bytes
+}
+
+func rewriteDescriptorFile(descriptorFile DescriptorFile) error {
+	descriptor := DescriptorFile{}
+	viper.SetConfigName("cluster.yaml")
+	currentDir, err := currentdir()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	viper.AddConfigPath(currentDir)
+	err = viper.Unmarshal(&descriptor)
+	if err != nil {
+		fmt.Println("unable to decode into struct, %v", err)
+	}
+
+	fmt.Println(descriptor)
+	descriptor = descriptorFile
+	descriptor.AWS = AWS{}
+	d, err := yaml.Marshal(&descriptor)
+	if err != nil {
+		fmt.Println("error: %v", err)
+		return err
+	}
+
+	fmt.Println(string(d))
+
+	// write to file
+	f, err := os.Create(currentDir + "/cluster.yaml")
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+
+	err = ioutil.WriteFile("cluster.yaml", d, 0755)
+	if err != nil {
+		fmt.Println("error: %v", err)
+		return err
+	}
+
+	f.Close()
+
+	return nil
+
 }

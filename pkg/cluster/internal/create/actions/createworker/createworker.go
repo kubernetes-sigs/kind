@@ -228,28 +228,25 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		"      account_id: " + aws.Credentials.Account + "\n", "      region: " + aws.Credentials.Region + "\n",
 		"      secret_key: " + aws.Credentials.SecretKey + "\n"}
 
-	basepath, err := os.Getwd()
+	basepath, err := currentdir()
+	err = createDirectory(basepath)
 	if err != nil {
 		fmt.Println(err)
-		return nil
+		return err
 	}
-	directory := basepath
-	err = createDirectory(directory)
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-	filename := directory + "/secrets.yaml"
+	filename := basepath + "/secrets.yaml"
 	err = writeFile(filename, filelines)
 	if err != nil {
 		fmt.Println(err)
-		return nil
+		return err
 	}
 	err = encryptFile(filename, a.vaultPassword)
 	if err != nil {
 		fmt.Println(err)
-		return nil
+		return err
 	}
+
+	defer ctx.Status.End(true)
 
 	ctx.Status.Start("Creating the worker cluster 💥")
 	defer ctx.Status.End(false)
