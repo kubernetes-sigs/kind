@@ -17,10 +17,11 @@ Download latest ISO at https://www.microsoft.com/en-us/software-download/windows
 
 ### Installing on a virtual machine
 
-> **NOTE**: this currently only works with Intel processors. The Hyper-V hypervisor used by WSL2 cannot run underneath another hypervisor on AMD processors.
-
 Required Settings
 
+- Supported processor and operating system, see [Enable Nester Virtualization](https://learn.microsoft.com/en-us/virtualization/hyper-v-on-windows/user-guide/nested-virtualization) guide for Windows
+  - Intel processors require Windows 10/Windows Server 2016 or greater and the processor must support VT-x and extended page tables (also known as [second level address translation](https://en.wikipedia.org/wiki/Second_Level_Address_Translation))
+  - AMD processors require Windows 11/Windows Server 2022 or greater and the processor generation must be AMD EPYC or Ryzen or newer
 - At least 8GB of memory
   - It's best to use a static memory allocation, not dynamic. The VM will automatically use paging inside so you don't want it to page on the VM host.
 - Enable nested virtualization support. On Hyper-V, you need to run this from an admin PowerShell prompt - `Set-VMProcessor -VMName ... -ExposeVirtualizationExtensions $true`
