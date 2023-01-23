@@ -79,8 +79,8 @@ func decryptFile(filePath string, vaultPassword string) (string, error) {
 		fmt.Println(err)
 		return "", err
 	}
-	fmt.Println("Decrypted: ")
-	fmt.Println(data)
+	//fmt.Println("Decrypted: ")
+	//fmt.Println(data)
 	return data, nil
 }
 
@@ -94,9 +94,8 @@ func getCredentials(descriptorFile DescriptorFile, vaultPassword string) (AWS, e
 
 	_, err := os.Stat("./secrets.yaml")
 	if err != nil {
-		fmt.Println("descriptorFile.AWS: ", descriptorFile.AWS)
+		//fmt.Println("descriptorFile.AWS: ", descriptorFile.AWS)
 		if aws != descriptorFile.AWS {
-			rewriteDescriptorFile(descriptorFile)
 			return descriptorFile.AWS, nil
 		}
 		err := errors.New("Incorrect AWS credentials in Cluster.yaml")
@@ -109,15 +108,15 @@ func getCredentials(descriptorFile DescriptorFile, vaultPassword string) (AWS, e
 			err := errors.New("The vaultPassword is incorrect")
 			return aws, err
 		} else {
-			fmt.Println("secretRAW: ")
-			fmt.Println(secretRaw)
+			//fmt.Println("secretRAW: ")
+			//fmt.Println(secretRaw)
 			err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
 			if err != nil {
 				fmt.Println(err)
 				return aws, err
 			}
-			fmt.Println("secretFile: ", secretFile)
-			fmt.Println("secretFile.AWS: ", secretFile.Secrets.AWS)
+			//fmt.Println("secretFile: ", secretFile)
+			//fmt.Println("secretFile.AWS: ", secretFile.Secrets.AWS)
 			return secretFile.Secrets.AWS, nil
 		}
 	}
@@ -146,7 +145,7 @@ func rewriteDescriptorFile(descriptorFile DescriptorFile) error {
 		fmt.Println("unable to decode into struct, %v", err)
 	}
 
-	fmt.Println(descriptor)
+	//fmt.Println(descriptor)
 	descriptor = descriptorFile
 	descriptor.AWS = AWS{}
 	d, err := yaml.Marshal(&descriptor)
@@ -155,7 +154,7 @@ func rewriteDescriptorFile(descriptorFile DescriptorFile) error {
 		return err
 	}
 
-	fmt.Println(string(d))
+	//fmt.Println(string(d))
 
 	// write to file
 	f, err := os.Create(currentDir + "/cluster.yaml")

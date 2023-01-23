@@ -215,6 +215,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
+	rewriteDescriptorFile(descriptorFile)
 	defer ctx.Status.End(true)
 
 	ctx.Status.Start("Creating the worker cluster 💥")

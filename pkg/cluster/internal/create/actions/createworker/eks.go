@@ -19,7 +19,6 @@ package createworker
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -98,7 +97,7 @@ func installCAPALocal(ctx *actions.ActionContext, vaultPassword string) error {
 		return err
 	}
 
-	fmt.Println(aws)
+	//fmt.Println(aws)
 	eksConfigData := `
 apiVersion: bootstrap.aws.infrastructure.cluster.x-k8s.io/v1alpha1
 kind: AWSIAMConfiguration
