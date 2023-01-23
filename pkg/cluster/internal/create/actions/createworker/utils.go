@@ -76,7 +76,7 @@ func encryptFile(filePath string, vaultPassword string) error {
 func decryptFile(filePath string, vaultPassword string) (string, error) {
 	data, err := vault.DecryptFile(filePath, vaultPassword)
 	if err != nil {
-		//fmt.Println(err)
+		fmt.Println(err)
 		return "", err
 	}
 	fmt.Println("Decrypted: ")
@@ -89,16 +89,8 @@ func generateB64Credentials(access_key string, secret_key string, region string)
 	return b64.StdEncoding.EncodeToString([]byte(credentialsINIlines))
 }
 
-// func getCredentials(aws AWS) (accessKey string, account string, region string, secretKey string, assumeRole string) {
-// func getCredentials(aws AWS) (accessKey string, account string, region string, secretKey string) {
 func getCredentials(descriptorFile DescriptorFile, vaultPassword string) (AWS, error) {
 	aws := AWS{}
-	// accessKey = aws.Credentials.AccessKey
-	// account = aws.Credentials.Account
-	// region = aws.Credentials.Region
-	// secretKey = aws.Credentials.SecretKey
-	// //assumeRole = aws.Credentials.AssumeRole
-	// return
 
 	_, err := os.Stat("./secrets.yaml")
 	if err != nil {
@@ -116,7 +108,6 @@ func getCredentials(descriptorFile DescriptorFile, vaultPassword string) (AWS, e
 		if err != nil {
 			err := errors.New("The vaultPassword is incorrect")
 			return aws, err
-			//accessKey, account, region, secretKey = getCredentials(aws)
 		} else {
 			fmt.Println("secretRAW: ")
 			fmt.Println(secretRaw)
@@ -128,7 +119,6 @@ func getCredentials(descriptorFile DescriptorFile, vaultPassword string) (AWS, e
 			fmt.Println("secretFile: ", secretFile)
 			fmt.Println("secretFile.AWS: ", secretFile.Secrets.AWS)
 			return secretFile.Secrets.AWS, nil
-			//accessKey, account, region, secretKey = getCredentials(aws)
 		}
 	}
 

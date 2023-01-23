@@ -126,11 +126,6 @@ func NewAction(vaultPassword string) actions.Action {
 func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	var aws AWS
-	// var accessKey string
-	// var account string
-	// var region string
-	// var secretKey string
-	//var assumeRole string
 
 	ctx.Status.Start("Installing CAPx in local 🎖️")
 	defer ctx.Status.End(false)
@@ -159,32 +154,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	node := controlPlanes[0] // kind expects at least one always
 
 	// Read cluster.yaml file
-
-	// descriptorRAW, err := os.ReadFile("./cluster.yaml")
-	// if err != nil {
-	// 	return err
-	// }
-
-	// var descriptorFile DescriptorFile
-	// err = yaml.Unmarshal(descriptorRAW, &descriptorFile)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// secretRaw, err := decryptFile("./secret.yaml", a.vaultPassword)
-	// var secretFile SecretFile
-	// if err != nil {
-	// 	aws = descriptorFile.AWS
-	// 	accessKey, account, region, secretKey = getCredentials(aws)
-	// } else {
-	// 	err = yaml.Unmarshal(stringToBytes(secretRaw), &secretFile)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	aws = secretFile.AWS
-	// 	accessKey, account, region, secretKey = getCredentials(aws)
-	// }
-
 	descriptorRAW, err := os.ReadFile("./cluster.yaml")
 	if err != nil {
 		return err
