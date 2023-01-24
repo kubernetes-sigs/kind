@@ -75,8 +75,8 @@ type DescriptorFile struct {
 			Spot     bool   `yaml:"spot"`
 		} `yaml:"kube_node"`
 	} `yaml:"nodes"`
-	AWS AWS `yaml:"aws"`
-	//B64Credentials string `yaml:"b64_credentials"`
+	Spot        bool   `yaml:"spot"`
+	AWS         AWS    `yaml:"aws,omitempty"`
 	GithubToken string `yaml:"github_token"`
 }
 
@@ -193,6 +193,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Generating secrets file 📝🗝️")
 	defer ctx.Status.End(false)
 
+	rewriteDescriptorFile(descriptorRAW)
+
 	filelines := []string{"secrets:\n", "  aws:\n", "    credentials:\n", "      access_key: " + aws.Credentials.AccessKey + "\n",
 		"      account_id: " + aws.Credentials.Account + "\n", "      region: " + aws.Credentials.Region + "\n",
 		"      secret_key: " + aws.Credentials.SecretKey + "\n"}
@@ -215,7 +217,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
-	rewriteDescriptorFile(descriptorFile)
+	//rewriteDescriptorFile(descriptorFile)
 	defer ctx.Status.End(true)
 
 	ctx.Status.Start("Creating the worker cluster 💥")

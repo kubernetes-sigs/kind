@@ -94,7 +94,7 @@ func getCredentials(descriptorFile DescriptorFile, vaultPassword string) (AWS, e
 
 	_, err := os.Stat("./secrets.yaml")
 	if err != nil {
-		//fmt.Println("descriptorFile.AWS: ", descriptorFile.AWS)
+		fmt.Println("descriptorFile.AWS: ", descriptorFile.AWS)
 		if aws != descriptorFile.AWS {
 			return descriptorFile.AWS, nil
 		}
@@ -131,8 +131,8 @@ func stringToBytes(str string) []byte {
 	return bytes
 }
 
-func rewriteDescriptorFile(descriptorFile DescriptorFile) error {
-	descriptor := DescriptorFile{}
+func rewriteDescriptorFile(descriptorRAW []byte) error {
+	descriptorMap := map[string]interface{}{}
 	viper.SetConfigName("cluster.yaml")
 	currentDir, err := currentdir()
 	if err != nil {
@@ -140,15 +140,28 @@ func rewriteDescriptorFile(descriptorFile DescriptorFile) error {
 		return err
 	}
 	viper.AddConfigPath(currentDir)
-	err = viper.Unmarshal(&descriptor)
-	if err != nil {
-		fmt.Println("unable to decode into struct, %v", err)
-	}
 
 	//fmt.Println(descriptor)
-	descriptor = descriptorFile
-	descriptor.AWS = AWS{}
-	d, err := yaml.Marshal(&descriptor)
+	//descriptor = descriptorFile
+	//descriptorFile.AWS = AWS{}
+
+	err = yaml.Unmarshal(descriptorRAW, &descriptorMap)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Before descriptorMap: ")
+	fmt.Println(descriptorMap)
+
+	aws := descriptorMap["aws"]
+	if aws != nil {
+		delete(descriptorMap, "aws")
+	}
+
+	fmt.Println("After descriptorMap: ")
+	fmt.Println(descriptorMap)
+
+	d, err := yaml.Marshal(&descriptorMap)
 	if err != nil {
 		fmt.Println("error: %v", err)
 		return err
