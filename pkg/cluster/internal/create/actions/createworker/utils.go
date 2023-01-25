@@ -2,6 +2,7 @@ package createworker
 
 import (
 	"bytes"
+	//"crypto/des"
 	gob "encoding/gob"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 
 	vault "github.com/sosedoff/ansible-vault-go"
 )
@@ -89,35 +91,35 @@ func generateB64Credentials(access_key string, secret_key string, region string)
 	return b64.StdEncoding.EncodeToString([]byte(credentialsINIlines))
 }
 
-func getCredentials(descriptorFile DescriptorFile, vaultPassword string) (AWS, error) {
-	aws := AWS{}
+func getCredentials(descriptorFile cluster.DescriptorFile, vaultPassword string) (cluster.AWSCredentials, string, error) {
+	aws := cluster.AWSCredentials{}
 
 	_, err := os.Stat("./secrets.yaml")
 	if err != nil {
-		fmt.Println("descriptorFile.AWS: ", descriptorFile.AWS)
-		if aws != descriptorFile.AWS {
-			return descriptorFile.AWS, nil
+		fmt.Println("descriptorFile.AWS: ", descriptorFile.AWSCredentials)
+		if aws != descriptorFile.AWSCredentials {
+			return descriptorFile.AWSCredentials, descriptorFile.GithubToken, nil
 		}
 		err := errors.New("Incorrect AWS credentials in Cluster.yaml")
-		return aws, err
+		return aws, "", err
 
 	} else {
 		secretRaw, err := decryptFile("./secrets.yaml", vaultPassword)
-		var secretFile SecretFile
+		var secretFile SecretsFile
 		if err != nil {
 			err := errors.New("The vaultPassword is incorrect")
-			return aws, err
+			return aws, "", err
 		} else {
-			//fmt.Println("secretRAW: ")
-			//fmt.Println(secretRaw)
+			fmt.Println("secretRAW: ")
+			fmt.Println(secretRaw)
 			err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
 			if err != nil {
 				fmt.Println(err)
-				return aws, err
+				return aws, "", err
 			}
-			//fmt.Println("secretFile: ", secretFile)
-			//fmt.Println("secretFile.AWS: ", secretFile.Secrets.AWS)
-			return secretFile.Secrets.AWS, nil
+			fmt.Println("secretFile: ", secretFile)
+			fmt.Println("secretFile.Secret: ", secretFile.Secret)
+			return secretFile.Secret.AWSCredentials, secretFile.Secret.GithubToken, nil
 		}
 	}
 
@@ -131,7 +133,13 @@ func stringToBytes(str string) []byte {
 	return bytes
 }
 
-func rewriteDescriptorFile(descriptorRAW []byte) error {
+func rewriteDescriptorFile() error {
+
+	descriptorRAW, err := os.ReadFile("./cluster.yaml")
+	if err != nil {
+		return err
+	}
+
 	descriptorMap := map[string]interface{}{}
 	viper.SetConfigName("cluster.yaml")
 	currentDir, err := currentdir()
@@ -153,10 +161,12 @@ func rewriteDescriptorFile(descriptorRAW []byte) error {
 	fmt.Println("Before descriptorMap: ")
 	fmt.Println(descriptorMap)
 
-	aws := descriptorMap["aws"]
-	if aws != nil {
-		delete(descriptorMap, "aws")
-	}
+	// aws := descriptorMap["aws"]
+	// if aws != nil {
+	// 	delete(descriptorMap, "aws")
+	// }
+	deleteKey("aws", descriptorMap)
+	deleteKey("github_token", descriptorMap)
 
 	fmt.Println("After descriptorMap: ")
 	fmt.Println(descriptorMap)
@@ -186,4 +196,11 @@ func rewriteDescriptorFile(descriptorRAW []byte) error {
 
 	return nil
 
+}
+
+func deleteKey(key string, descriptorMap map[string]interface{}) {
+	value := descriptorMap[key]
+	if value != nil {
+		delete(descriptorMap, key)
+	}
 }

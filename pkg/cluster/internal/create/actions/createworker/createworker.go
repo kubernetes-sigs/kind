@@ -20,9 +20,10 @@ package createworker
 import (
 	"bytes"
 	"fmt"
-	"os"
 
-	"gopkg.in/yaml.v3"
+	//"os"
+
+	//"gopkg.in/yaml.v3"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
@@ -99,27 +100,21 @@ type action struct {
 // }
 
 // // Bastion represents the bastion VM
-// type Bastion struct {
-// 	AmiID             string   `yaml:"ami_id"`
-// 	VMSize            string   `yaml:"vm_size"`
-// 	AllowedCIDRBlocks []string `yaml:"allowedCIDRBlocks"`
+//
+//	type Bastion struct {
+//		AmiID             string   `yaml:"ami_id"`
+//		VMSize            string   `yaml:"vm_size"`
+//		AllowedCIDRBlocks []string `yaml:"allowedCIDRBlocks"`
+//
 // =======
 // // SecretsFile represents the YAML structure in the secrets.yaml file
-// type SecretsFile struct {
-// 	Secrets struct {
-// 		AWS struct {
-// 			Credentials struct {
-// 				AccessKey string `yaml:"access_key"`
-// 				SecretKey string `yaml:"secret_key"`
-// 				Region    string `yaml:"region"`
-// 				AccountID string `yaml:"account_id"`
-// 			} `yaml:"credentials"`
-// 			B64Credentials string `yaml:"b64_credentials"`
-// 		} `yaml:"aws"`
-// 		GithubToken string `yaml:"github_token"`
-// 	} `yaml:"secrets"`
-// >>>>>>> branch-0.17.0-0.1
-// }
+type SecretsFile struct {
+	Secret struct {
+		AWSCredentials cluster.AWSCredentials `yaml:"aws"`
+		GithubToken    string                 `yaml:"github_token"`
+	} `yaml:"secrets"`
+	// >>>>>>> branch-0.17.0-0.1
+}
 
 const allowAllEgressNetPol = `
 apiVersion: networking.k8s.io/v1
@@ -143,7 +138,7 @@ func NewAction(vaultPassword string) actions.Action {
 // Execute runs the action
 func (a *action) Execute(ctx *actions.ActionContext) error {
 
-	var aws AWS
+	var aws cluster.AWSCredentials
 
 	ctx.Status.Start("Installing CAPx in local 🎖️")
 	defer ctx.Status.End(false)
@@ -198,7 +193,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	//<<<<<<< HEAD
-	aws, err = getCredentials(descriptorFile, a.vaultPassword)
+	aws, github_token, err := getCredentials(*descriptorFile, a.vaultPassword)
 	if err != nil {
 		return err
 	}
@@ -232,8 +227,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	rewriteDescriptorFile()
 
-	filelines := []string{"secrets:\n", "  aws:\n", "    credentials:\n", "      access_key: " + aws.Credentials.AccessKey + "\n",
-		"      account_id: " + aws.Credentials.Account + "\n", "      region: " + descriptorFile.Region + "\n",
+	filelines := []string{"secrets:\n", "  github_token:" + github_token, "  aws:\n", "    credentials:\n", "      access_key: " + aws.Credentials.AccessKey + "\n",
+		"      account_id: " + aws.Credentials.AccountID + "\n", "      region: " + descriptorFile.Region + "\n",
 		"      secret_key: " + aws.Credentials.SecretKey + "\n"}
 
 	basepath, err := currentdir()
@@ -400,7 +395,7 @@ spec:
 		"AWS_ACCESS_KEY_ID="+aws.Credentials.AccessKey,
 		"AWS_SECRET_ACCESS_KEY="+aws.Credentials.SecretKey,
 		"AWS_B64ENCODED_CREDENTIALS="+generateB64Credentials(aws.Credentials.AccessKey, aws.Credentials.SecretKey, aws.Credentials.Region),
-		"GITHUB_TOKEN="+descriptorFile.GithubToken)
+		"GITHUB_TOKEN="+github_token)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to pivot management role to worker cluster")
 	}
