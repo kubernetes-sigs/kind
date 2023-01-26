@@ -65,7 +65,7 @@ func installCAPAWorker(aws cluster.AWSCredentials, githubToken string, node node
 }
 
 // installCAPALocal installs CAPA in the local cluster
-func installCAPALocal(ctx *actions.ActionContext, vaultPassword string) error {
+func installCAPALocal(ctx *actions.ActionContext, vaultPassword string, descriptorName string) error {
 
 	ctx.Status.Start("[CAPA] Ensuring IAM security 👮")
 	defer ctx.Status.End(false)
@@ -82,7 +82,7 @@ func installCAPALocal(ctx *actions.ActionContext, vaultPassword string) error {
 	}
 	node := controlPlanes[0] // kind expects at least one always
 
-	descriptorRAW, err := os.ReadFile("./cluster.yaml")
+	descriptorRAW, err := os.ReadFile("./" + descriptorName)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,6 @@ func installCAPALocal(ctx *actions.ActionContext, vaultPassword string) error {
 		return err
 	}
 
-	//fmt.Println(aws)
 	eksConfigData := `
 apiVersion: bootstrap.aws.infrastructure.cluster.x-k8s.io/v1alpha1
 kind: AWSIAMConfiguration

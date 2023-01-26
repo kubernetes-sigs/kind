@@ -32,11 +32,12 @@ import (
 )
 
 type action struct {
-	vaultPassword string
+	vaultPassword  string
+	descriptorName string
 }
 
 // <<<<<<< HEAD
-// // DescriptorFile represents the YAML structure in the cluster.yaml file
+// // DescriptorFile represents the YAML structure in the descriptor file
 // type DescriptorFile struct {
 // 	ClusterID string `yaml:"cluster_id"`
 // 	Keos      struct {
@@ -131,8 +132,11 @@ spec:
 const kubeconfigPath = "/kind/worker-cluster.kubeconfig"
 
 // NewAction returns a new action for installing default CAPI
-func NewAction(vaultPassword string) actions.Action {
-	return &action{vaultPassword: vaultPassword}
+func NewAction(vaultPassword string, descriptorName string) actions.Action {
+	return &action{
+		vaultPassword:  vaultPassword,
+		descriptorName: descriptorName,
+	}
 }
 
 // Execute runs the action
@@ -143,7 +147,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Installing CAPx in local 🎖️")
 	defer ctx.Status.End(false)
 
-	err := installCAPALocal(ctx, a.vaultPassword)
+	err := installCAPALocal(ctx, a.vaultPassword, a.descriptorName)
 	if err != nil {
 		return err
 	}
@@ -167,7 +171,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	node := controlPlanes[0] // kind expects at least one always
 
 	// <<<<<<< HEAD
-	// Read cluster.yaml file
+	// Read descriptor file
 
 	// =======
 	// 	// Read secrets.yaml file
@@ -187,7 +191,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	// >>>>>>> branch-0.17.0-0.1
 
 	// Parse the cluster descriptor
-	descriptorFile, err := cluster.GetClusterDescriptor()
+	descriptorFile, err := cluster.GetClusterDescriptor(a.descriptorName)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse cluster descriptor")
 	}
@@ -225,9 +229,9 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Generating secrets file 📝🗝️")
 	defer ctx.Status.End(false)
 
-	rewriteDescriptorFile()
+	rewriteDescriptorFile(a.descriptorName)
 
-	filelines := []string{"secrets:\n", "  github_token:" + github_token, "  aws:\n", "    credentials:\n", "      access_key: " + aws.Credentials.AccessKey + "\n",
+	filelines := []string{"secrets:\n", "  github_token: " + github_token + "\n", "  aws:\n", "    credentials:\n", "      access_key: " + aws.Credentials.AccessKey + "\n",
 		"      account_id: " + aws.Credentials.AccountID + "\n", "      region: " + descriptorFile.Region + "\n",
 		"      secret_key: " + aws.Credentials.SecretKey + "\n"}
 
@@ -261,7 +265,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to create cluster's Namespace")
 	}
-	// fmt.Println("RAW STRING: " + raw.String())
 
 	// Apply cluster manifests
 	raw = bytes.Buffer{}
@@ -269,7 +272,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to apply manifests")
 	}
-	// fmt.Println("RAW STRING: " + raw.String())
 
 	var machineHealthCheck = `
 apiVersion: cluster.x-k8s.io/v1alpha3
@@ -307,14 +309,14 @@ spec:
 
 	// Wait for the worker cluster creation
 	raw = bytes.Buffer{}
-	cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "25m", "cluster", descriptorFile.ClusterID)
+	cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "60m", "cluster", descriptorFile.ClusterID)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to create the worker Cluster")
 	}
 
 	// Wait for machines creation
 	raw = bytes.Buffer{}
-	cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "20m", "--all", "md")
+	cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "50m", "--all", "md")
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to create the Machines")
 	}
@@ -340,7 +342,7 @@ spec:
 	}
 
 	// AWS/EKS specific
-	err = installCAPAWorker(aws, descriptorFile.GithubToken, node, kubeconfigPath, allowAllEgressNetPolPath)
+	err = installCAPAWorker(aws, github_token, node, kubeconfigPath, allowAllEgressNetPolPath)
 	if err != nil {
 		return err
 	}

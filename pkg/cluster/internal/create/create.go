@@ -54,9 +54,10 @@ const (
 
 // ClusterOptions holds cluster creation options
 type ClusterOptions struct {
-	Config        *config.Cluster
-	NameOverride  string // overrides config.Name
-	VaultPassword string
+	Config         *config.Cluster
+	NameOverride   string // overrides config.Name
+	VaultPassword  string
+	DescriptorName string
 	// NodeImage overrides the nodes' images in Config if non-zero
 	NodeImage      string
 	Retain         bool
@@ -135,7 +136,7 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 
 		// add Stratio step
 		actionsToRun = append(actionsToRun,
-			createworker.NewAction(opts.VaultPassword), // create worker k8s cluster
+			createworker.NewAction(opts.VaultPassword, opts.DescriptorName), // create worker k8s cluster
 		)
 	}
 
@@ -173,7 +174,7 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 	actionsContext.Status.Start("Generating the KEOS descriptor 📝")
 	defer actionsContext.Status.End(false)
 
-	err = keosinstaller.CreateKEOSDescriptor()
+	err = keosinstaller.CreateKEOSDescriptor(opts.DescriptorName)
 	if err != nil {
 		return err
 	}

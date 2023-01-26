@@ -46,6 +46,7 @@ type flagpole struct {
 	Wait          time.Duration
 	Kubeconfig    string
 	VaultPassword string
+	Descriptor    string
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
@@ -105,6 +106,13 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		"",
 		"sets vault password to encrypt secrets",
 	)
+	cmd.Flags().StringVarP(
+		&flags.Descriptor,
+		"descriptor",
+		"d",
+		"",
+		"allows you to indicate the name of the descriptor located in this directory. By default it is cluster.yaml",
+	)
 
 	return cmd
 }
@@ -128,10 +136,15 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		}
 	}
 
+	if flags.Descriptor == "" {
+		flags.Descriptor = "cluster.yaml"
+	}
+
 	// create the cluster
 	if err = provider.Create(
 		flags.Name,
 		flags.VaultPassword,
+		flags.Descriptor,
 		withConfig,
 		cluster.CreateWithNodeImage(flags.ImageName),
 		cluster.CreateWithRetain(flags.Retain),

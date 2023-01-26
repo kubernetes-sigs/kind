@@ -2,7 +2,6 @@ package createworker
 
 import (
 	"bytes"
-	//"crypto/des"
 	gob "encoding/gob"
 	"errors"
 	"fmt"
@@ -81,8 +80,6 @@ func decryptFile(filePath string, vaultPassword string) (string, error) {
 		fmt.Println(err)
 		return "", err
 	}
-	//fmt.Println("Decrypted: ")
-	//fmt.Println(data)
 	return data, nil
 }
 
@@ -96,11 +93,10 @@ func getCredentials(descriptorFile cluster.DescriptorFile, vaultPassword string)
 
 	_, err := os.Stat("./secrets.yaml")
 	if err != nil {
-		fmt.Println("descriptorFile.AWS: ", descriptorFile.AWSCredentials)
 		if aws != descriptorFile.AWSCredentials {
 			return descriptorFile.AWSCredentials, descriptorFile.GithubToken, nil
 		}
-		err := errors.New("Incorrect AWS credentials in Cluster.yaml")
+		err := errors.New("Incorrect AWS credentials in descriptor file")
 		return aws, "", err
 
 	} else {
@@ -110,15 +106,11 @@ func getCredentials(descriptorFile cluster.DescriptorFile, vaultPassword string)
 			err := errors.New("The vaultPassword is incorrect")
 			return aws, "", err
 		} else {
-			fmt.Println("secretRAW: ")
-			fmt.Println(secretRaw)
 			err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
 			if err != nil {
 				fmt.Println(err)
 				return aws, "", err
 			}
-			fmt.Println("secretFile: ", secretFile)
-			fmt.Println("secretFile.Secret: ", secretFile.Secret)
 			return secretFile.Secret.AWSCredentials, secretFile.Secret.GithubToken, nil
 		}
 	}
@@ -133,15 +125,15 @@ func stringToBytes(str string) []byte {
 	return bytes
 }
 
-func rewriteDescriptorFile() error {
+func rewriteDescriptorFile(descriptorName string) error {
 
-	descriptorRAW, err := os.ReadFile("./cluster.yaml")
+	descriptorRAW, err := os.ReadFile("./" + descriptorName)
 	if err != nil {
 		return err
 	}
 
 	descriptorMap := map[string]interface{}{}
-	viper.SetConfigName("cluster.yaml")
+	viper.SetConfigName(descriptorName)
 	currentDir, err := currentdir()
 	if err != nil {
 		fmt.Println(err)
@@ -149,27 +141,13 @@ func rewriteDescriptorFile() error {
 	}
 	viper.AddConfigPath(currentDir)
 
-	//fmt.Println(descriptor)
-	//descriptor = descriptorFile
-	//descriptorFile.AWS = AWS{}
-
 	err = yaml.Unmarshal(descriptorRAW, &descriptorMap)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("Before descriptorMap: ")
-	fmt.Println(descriptorMap)
-
-	// aws := descriptorMap["aws"]
-	// if aws != nil {
-	// 	delete(descriptorMap, "aws")
-	// }
 	deleteKey("aws", descriptorMap)
 	deleteKey("github_token", descriptorMap)
-
-	fmt.Println("After descriptorMap: ")
-	fmt.Println(descriptorMap)
 
 	d, err := yaml.Marshal(&descriptorMap)
 	if err != nil {
@@ -177,16 +155,14 @@ func rewriteDescriptorFile() error {
 		return err
 	}
 
-	//fmt.Println(string(d))
-
 	// write to file
-	f, err := os.Create(currentDir + "/cluster.yaml")
+	f, err := os.Create(currentDir + descriptorName)
 	if err != nil {
 		fmt.Println(err)
 		return nil
 	}
 
-	err = ioutil.WriteFile("cluster.yaml", d, 0755)
+	err = ioutil.WriteFile(descriptorName, d, 0755)
 	if err != nil {
 		fmt.Println("error: %v", err)
 		return err

@@ -141,8 +141,8 @@ func (d DescriptorFile) Init() DescriptorFile {
 }
 
 // Read cluster.yaml file
-func GetClusterDescriptor() (*DescriptorFile, error) {
-	descriptorRAW, err := os.ReadFile("./cluster.yaml")
+func GetClusterDescriptor(descriptorPath string) (*DescriptorFile, error) {
+	descriptorRAW, err := os.ReadFile(descriptorPath)
 	if err != nil {
 		return nil, err
 	}
