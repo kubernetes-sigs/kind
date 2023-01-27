@@ -91,7 +91,7 @@ func generateB64Credentials(access_key string, secret_key string, region string)
 func getCredentials(descriptorFile cluster.DescriptorFile, vaultPassword string) (cluster.AWSCredentials, string, error) {
 	aws := cluster.AWSCredentials{}
 
-	_, err := os.Stat("./secrets.yaml")
+	_, err := os.Stat("./secrets.yml")
 	if err != nil {
 		if aws != descriptorFile.AWSCredentials {
 			return descriptorFile.AWSCredentials, descriptorFile.GithubToken, nil
@@ -100,7 +100,7 @@ func getCredentials(descriptorFile cluster.DescriptorFile, vaultPassword string)
 		return aws, "", err
 
 	} else {
-		secretRaw, err := decryptFile("./secrets.yaml", vaultPassword)
+		secretRaw, err := decryptFile("./secrets.yml", vaultPassword)
 		var secretFile SecretsFile
 		if err != nil {
 			err := errors.New("The vaultPassword is incorrect")

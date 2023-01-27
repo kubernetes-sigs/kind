@@ -32,7 +32,7 @@ type action struct {
 	descriptorName string
 }
 
-// // SecretsFile represents the YAML structure in the secrets.yaml file
+// // SecretsFile represents the YAML structure in the secrets.yml file
 type SecretsFile struct {
 	Secret struct {
 		AWSCredentials cluster.AWSCredentials `yaml:"aws"`
@@ -141,7 +141,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		fmt.Println(err)
 		return err
 	}
-	filename := basepath + "/secrets.yaml"
+	filename := basepath + "/secrets.yml"
 	err = writeFile(filename, filelines)
 	if err != nil {
 		fmt.Println(err)
