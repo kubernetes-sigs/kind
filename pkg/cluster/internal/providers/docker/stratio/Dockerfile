@@ -14,3 +14,6 @@ RUN curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/${C
 # Download clusterawsadm (92.5M)
 RUN curl -L https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/download/${CLUSTERAWSADM}/clusterawsadm-linux-amd64 -o /usr/local/bin/clusterawsadm \
     && chmod +x /usr/local/bin/clusterawsadm
+
+# Add alias for kubectl
+RUN echo 'alias k="kubectl"' >> ~/.bashrc
