@@ -19,9 +19,7 @@ package createworker
 
 import (
 	"bytes"
-	"os"
-
-	"gopkg.in/yaml.v3"
+	"fmt"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
@@ -29,21 +27,16 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
-type action struct{}
+type action struct {
+	vaultPassword  string
+	descriptorName string
+}
 
-// SecretsFile represents the YAML structure in the secrets.yaml file
+// // SecretsFile represents the YAML structure in the secrets.yaml file
 type SecretsFile struct {
-	Secrets struct {
-		AWS struct {
-			Credentials struct {
-				AccessKey string `yaml:"access_key"`
-				SecretKey string `yaml:"secret_key"`
-				Region    string `yaml:"region"`
-				AccountID string `yaml:"account_id"`
-			} `yaml:"credentials"`
-			B64Credentials string `yaml:"b64_credentials"`
-		} `yaml:"aws"`
-		GithubToken string `yaml:"github_token"`
+	Secret struct {
+		AWSCredentials cluster.AWSCredentials `yaml:"aws"`
+		GithubToken    string                 `yaml:"github_token"`
 	} `yaml:"secrets"`
 }
 
@@ -62,17 +55,22 @@ spec:
 const kubeconfigPath = "/kind/worker-cluster.kubeconfig"
 
 // NewAction returns a new action for installing default CAPI
-func NewAction() actions.Action {
-	return &action{}
+func NewAction(vaultPassword string, descriptorName string) actions.Action {
+	return &action{
+		vaultPassword:  vaultPassword,
+		descriptorName: descriptorName,
+	}
 }
 
 // Execute runs the action
 func (a *action) Execute(ctx *actions.ActionContext) error {
 
+	var aws cluster.AWSCredentials
+
 	ctx.Status.Start("Installing CAPx in local 🎖️")
 	defer ctx.Status.End(false)
 
-	err := installCAPALocal(ctx)
+	err := installCAPALocal(ctx, a.vaultPassword, a.descriptorName)
 	if err != nil {
 		return err
 	}
@@ -95,29 +93,25 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 	node := controlPlanes[0] // kind expects at least one always
 
-	// Read secrets.yaml file
-
-	secretRAW, err := os.ReadFile("./secrets.yaml.clear")
-	if err != nil {
-		return err
-	}
-
-	var secretsFile SecretsFile
-	err = yaml.Unmarshal(secretRAW, &secretsFile)
-	if err != nil {
-		return err
-	}
-
-	capiClustersNamespace := "capi-clusters"
-
 	// Parse the cluster descriptor
-	descriptorFile, err := cluster.GetClusterDescriptor()
+	descriptorFile, err := cluster.GetClusterDescriptor(a.descriptorName)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse cluster descriptor")
 	}
 
+	//<<<<<<< HEAD
+	aws, github_token, err := getCredentials(*descriptorFile, a.vaultPassword)
+	if err != nil {
+		return err
+	}
+
+	// TODO STG: make k8s version configurable?
+
+	capiClustersNamespace := "capi-clusters"
+
 	// Generate the cluster manifest
 	descriptorData, err := cluster.GetClusterManifest(*descriptorFile)
+	//>>>>>>> branch-0.17.0-0.1
 	if err != nil {
 		return errors.Wrap(err, "failed to generate cluster manifests")
 	}
@@ -132,6 +126,36 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	ctx.Status.End(true) // End Generating worker cluster manifests
 
+	ctx.Status.Start("Generating secrets file 📝🗝️")
+	defer ctx.Status.End(false)
+
+	rewriteDescriptorFile(a.descriptorName)
+
+	filelines := []string{"secrets:\n", "  github_token: " + github_token + "\n", "  aws:\n", "    credentials:\n", "      access_key: " + aws.Credentials.AccessKey + "\n",
+		"      account_id: " + aws.Credentials.AccountID + "\n", "      region: " + descriptorFile.Region + "\n",
+		"      secret_key: " + aws.Credentials.SecretKey + "\n"}
+
+	basepath, err := currentdir()
+	err = createDirectory(basepath)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	filename := basepath + "/secrets.yaml"
+	err = writeFile(filename, filelines)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	err = encryptFile(filename, a.vaultPassword)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	//rewriteDescriptorFile(descriptorFile)
+	defer ctx.Status.End(true)
+
 	ctx.Status.Start("Creating the worker cluster 💥")
 	defer ctx.Status.End(false)
 
@@ -141,7 +165,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to create cluster's Namespace")
 	}
-	// fmt.Println("RAW STRING: " + raw.String())
 
 	// Apply cluster manifests
 	raw = bytes.Buffer{}
@@ -149,7 +172,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to apply manifests")
 	}
-	// fmt.Println("RAW STRING: " + raw.String())
 
 	var machineHealthCheck = `
 apiVersion: cluster.x-k8s.io/v1alpha3
@@ -220,7 +242,7 @@ spec:
 	}
 
 	// AWS/EKS specific
-	err = installCAPAWorker(secretsFile, node, kubeconfigPath, allowAllEgressNetPolPath)
+	err = installCAPAWorker(aws, github_token, node, kubeconfigPath, allowAllEgressNetPolPath)
 	if err != nil {
 		return err
 	}
@@ -271,11 +293,11 @@ spec:
 	// EKS specific: Pivot management role to worker cluster
 	raw = bytes.Buffer{}
 	cmd = node.Command("sh", "-c", "clusterctl move -n "+capiClustersNamespace+" --to-kubeconfig "+kubeconfigPath)
-	cmd.SetEnv("AWS_REGION="+secretsFile.Secrets.AWS.Credentials.Region,
-		"AWS_ACCESS_KEY_ID="+secretsFile.Secrets.AWS.Credentials.AccessKey,
-		"AWS_SECRET_ACCESS_KEY="+secretsFile.Secrets.AWS.Credentials.SecretKey,
-		"AWS_B64ENCODED_CREDENTIALS="+secretsFile.Secrets.AWS.B64Credentials,
-		"GITHUB_TOKEN="+secretsFile.Secrets.GithubToken)
+	cmd.SetEnv("AWS_REGION="+aws.Credentials.Region,
+		"AWS_ACCESS_KEY_ID="+aws.Credentials.AccessKey,
+		"AWS_SECRET_ACCESS_KEY="+aws.Credentials.SecretKey,
+		"AWS_B64ENCODED_CREDENTIALS="+generateB64Credentials(aws.Credentials.AccessKey, aws.Credentials.SecretKey, aws.Credentials.Region),
+		"GITHUB_TOKEN="+github_token)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to pivot management role to worker cluster")
 	}

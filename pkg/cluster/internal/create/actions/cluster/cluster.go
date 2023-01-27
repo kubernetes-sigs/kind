@@ -15,7 +15,7 @@ import (
 //go:embed templates/*
 var ctel embed.FS
 
-// DescriptorFile represents the YAML structure in the cluster.yaml file
+// DescriptorFile represents the YAML structure in the descriptor file
 type DescriptorFile struct {
 	APIVersion string `yaml:"apiVersion"`
 	Kind       string `yaml:"kind"`
@@ -23,13 +23,8 @@ type DescriptorFile struct {
 
 	Bastion Bastion `yaml:"bastion"`
 
-	Credentials struct {
-		AccessKey  string `yaml:"access_key"`
-		Account    string `yaml:"account"`
-		Region     string `yaml:"region"`
-		SecretKey  string `yaml:"secret"`
-		AssumeRole string `yaml:"assume_role"`
-	} `yaml:"credentials"`
+	AWSCredentials AWSCredentials `yaml:"aws"`
+	GithubToken    string         `yaml:"github_token"`
 
 	InfraProvider string `yaml:"infra_provider" validate:"required,oneof='aws' 'gcp' 'azure'"`
 
@@ -113,6 +108,14 @@ type Node struct {
 	AZ string
 	QA int
 }
+type AWSCredentials struct {
+	Credentials struct {
+		AccessKey string `yaml:"access_key"`
+		SecretKey string `yaml:"secret_key"`
+		Region    string `yaml:"region"`
+		AccountID string `yaml:"account_id"`
+	} `yaml:"credentials"`
+}
 
 // Init sets default values for the DescriptorFile
 func (d DescriptorFile) Init() DescriptorFile {
@@ -129,9 +132,9 @@ func (d DescriptorFile) Init() DescriptorFile {
 	return d
 }
 
-// Read cluster.yaml file
-func GetClusterDescriptor() (*DescriptorFile, error) {
-	descriptorRAW, err := os.ReadFile("./cluster.yaml")
+// Read descriptor file
+func GetClusterDescriptor(descriptorName string) (*DescriptorFile, error) {
+	descriptorRAW, err := os.ReadFile("./" + descriptorName)
 	if err != nil {
 		return nil, err
 	}

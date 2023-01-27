@@ -18,9 +18,14 @@ limitations under the License.
 package cluster
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
+
+	"syscall"
 	"time"
+
+	term "golang.org/x/term"
 
 	"github.com/spf13/cobra"
 
@@ -34,12 +39,14 @@ import (
 )
 
 type flagpole struct {
-	Name       string
-	Config     string
-	ImageName  string
-	Retain     bool
-	Wait       time.Duration
-	Kubeconfig string
+	Name          string
+	Config        string
+	ImageName     string
+	Retain        bool
+	Wait          time.Duration
+	Kubeconfig    string
+	VaultPassword string
+	Descriptor    string
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
@@ -92,6 +99,21 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		"",
 		"sets kubeconfig path instead of $KUBECONFIG or $HOME/.kube/config",
 	)
+	cmd.Flags().StringVarP(
+		&flags.VaultPassword,
+		"vaultPassword",
+		"p",
+		"",
+		"sets vault password to encrypt secrets",
+	)
+	cmd.Flags().StringVarP(
+		&flags.Descriptor,
+		"descriptor",
+		"d",
+		"",
+		"allows you to indicate the name of the descriptor located in this directory. By default it is cluster.yaml",
+	)
+
 	return cmd
 }
 
@@ -107,9 +129,22 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		return err
 	}
 
+	if flags.VaultPassword == "" {
+		flags.VaultPassword, err = setPassword()
+		if err != nil {
+			return err
+		}
+	}
+
+	if flags.Descriptor == "" {
+		flags.Descriptor = "cluster.yaml"
+	}
+
 	// create the cluster
 	if err = provider.Create(
 		flags.Name,
+		flags.VaultPassword,
+		flags.Descriptor,
 		withConfig,
 		cluster.CreateWithNodeImage(flags.ImageName),
 		cluster.CreateWithRetain(flags.Retain),
@@ -137,4 +172,30 @@ func configOption(rawConfigFlag string, stdin io.Reader) (cluster.CreateOption, 
 		return nil, errors.Wrap(err, "error reading config from stdin")
 	}
 	return cluster.CreateWithRawConfig(raw), nil
+}
+
+func setPassword() (string, error) {
+	firstPassword, err := requestPassword("Vault Password: ")
+	if err != nil {
+		return "", err
+	}
+	secondPassword, err := requestPassword("Rewrite Vault Password:")
+	if err != nil {
+		return "", err
+	}
+	if firstPassword != secondPassword {
+		return "", errors.New("The passwords do not match.")
+	}
+
+	return firstPassword, nil
+}
+
+func requestPassword(request string) (string, error) {
+	fmt.Print(request)
+	bytePassword, err := term.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		return "", err
+	}
+	fmt.Print("\n")
+	return string(bytePassword), nil
 }

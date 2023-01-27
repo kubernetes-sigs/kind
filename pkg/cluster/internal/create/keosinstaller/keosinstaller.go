@@ -26,7 +26,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// DescriptorFile represents the YAML structure in the cluster.yaml file
+// DescriptorFile represents the YAML structure in the descriptor file
 type DescriptorFile struct {
 	ClusterID string `yaml:"cluster_id"`
 	Keos      struct {
@@ -78,11 +78,11 @@ type Bastion struct {
 }
 
 // CreateKEOSDescriptor creates the keos.yaml file
-func CreateKEOSDescriptor() error {
+func CreateKEOSDescriptor(descriptorName string) error {
 
-	// Read cluster.yaml file
+	// Read descriptor file
 
-	descriptorRAW, err := os.ReadFile("./cluster.yaml")
+	descriptorRAW, err := os.ReadFile("./" + descriptorName)
 	if err != nil {
 		return err
 	}

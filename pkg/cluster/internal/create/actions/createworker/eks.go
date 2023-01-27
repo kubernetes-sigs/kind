@@ -23,22 +23,23 @@ import (
 
 	"gopkg.in/yaml.v3"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
 // installCAPAWorker generates and apply the EKS manifests
-func installCAPAWorker(secretsFile SecretsFile, node nodes.Node, kubeconfigPath string, allowAllEgressNetPolPath string) error {
+func installCAPAWorker(aws cluster.AWSCredentials, githubToken string, node nodes.Node, kubeconfigPath string, allowAllEgressNetPolPath string) error {
 
 	// Install CAPA in worker cluster
 	raw := bytes.Buffer{}
 	cmd := node.Command("sh", "-c", "clusterctl --kubeconfig "+kubeconfigPath+" init --infrastructure aws --wait-providers")
-	cmd.SetEnv("AWS_REGION="+secretsFile.Secrets.AWS.Credentials.Region,
-		"AWS_ACCESS_KEY_ID="+secretsFile.Secrets.AWS.Credentials.AccessKey,
-		"AWS_SECRET_ACCESS_KEY="+secretsFile.Secrets.AWS.Credentials.SecretKey,
-		"AWS_B64ENCODED_CREDENTIALS="+secretsFile.Secrets.AWS.B64Credentials,
-		"GITHUB_TOKEN="+secretsFile.Secrets.GithubToken,
+	cmd.SetEnv("AWS_REGION="+aws.Credentials.Region,
+		"AWS_ACCESS_KEY_ID="+aws.Credentials.AccessKey,
+		"AWS_SECRET_ACCESS_KEY="+aws.Credentials.SecretKey,
+		"AWS_B64ENCODED_CREDENTIALS="+generateB64Credentials(aws.Credentials.AccessKey, aws.Credentials.SecretKey, aws.Credentials.Region),
+		"GITHUB_TOKEN="+githubToken,
 		"CAPA_EKS_IAM=true")
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to install CAPA")
@@ -64,7 +65,7 @@ func installCAPAWorker(secretsFile SecretsFile, node nodes.Node, kubeconfigPath 
 }
 
 // installCAPALocal installs CAPA in the local cluster
-func installCAPALocal(ctx *actions.ActionContext) error {
+func installCAPALocal(ctx *actions.ActionContext, vaultPassword string, descriptorName string) error {
 
 	ctx.Status.Start("[CAPA] Ensuring IAM security 👮")
 	defer ctx.Status.End(false)
@@ -81,17 +82,18 @@ func installCAPALocal(ctx *actions.ActionContext) error {
 	}
 	node := controlPlanes[0] // kind expects at least one always
 
-	// Right now, a CAPA pre-requisite is to have the region, aws_access_key_id and aws_secret_access_key
-	// as environment variables. So we read the secrets.yaml file and ask for the decryption passphrase.
-	// TODO STG: ask for the decryption passphrase (in new module "getcredentials"?)
-
-	secretRAW, err := os.ReadFile("./secrets.yaml.clear")
+	descriptorRAW, err := os.ReadFile("./" + descriptorName)
 	if err != nil {
 		return err
 	}
 
-	var secretsFile SecretsFile
-	err = yaml.Unmarshal(secretRAW, &secretsFile)
+	var descriptorFile cluster.DescriptorFile
+	err = yaml.Unmarshal(descriptorRAW, &descriptorFile)
+	if err != nil {
+		return err
+	}
+
+	aws, github_token, err := getCredentials(descriptorFile, vaultPassword)
 	if err != nil {
 		return err
 	}
@@ -125,10 +127,10 @@ spec:
 	// (this will create or update the CloudFormation stack in AWS)
 	raw = bytes.Buffer{}
 	cmd = node.Command("clusterawsadm", "bootstrap", "iam", "create-cloudformation-stack", "--config", eksConfigPath)
-	cmd.SetEnv("AWS_REGION="+secretsFile.Secrets.AWS.Credentials.Region,
-		"AWS_ACCESS_KEY_ID="+secretsFile.Secrets.AWS.Credentials.AccessKey,
-		"AWS_SECRET_ACCESS_KEY="+secretsFile.Secrets.AWS.Credentials.SecretKey,
-		"GITHUB_TOKEN="+secretsFile.Secrets.GithubToken)
+	cmd.SetEnv("AWS_REGION="+aws.Credentials.Region,
+		"AWS_ACCESS_KEY_ID="+aws.Credentials.AccessKey,
+		"AWS_SECRET_ACCESS_KEY="+aws.Credentials.SecretKey,
+		"GITHUB_TOKEN="+github_token)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to run clusterawsadm")
 	}
@@ -137,11 +139,11 @@ spec:
 	// Install CAPA
 	raw = bytes.Buffer{}
 	cmd = node.Command("sh", "-c", "clusterctl init --infrastructure aws --wait-providers")
-	cmd.SetEnv("AWS_REGION="+secretsFile.Secrets.AWS.Credentials.Region,
-		"AWS_ACCESS_KEY_ID="+secretsFile.Secrets.AWS.Credentials.AccessKey,
-		"AWS_SECRET_ACCESS_KEY="+secretsFile.Secrets.AWS.Credentials.SecretKey,
-		"AWS_B64ENCODED_CREDENTIALS="+secretsFile.Secrets.AWS.B64Credentials,
-		"GITHUB_TOKEN="+secretsFile.Secrets.GithubToken,
+	cmd.SetEnv("AWS_REGION="+aws.Credentials.Region,
+		"AWS_ACCESS_KEY_ID="+aws.Credentials.AccessKey,
+		"AWS_SECRET_ACCESS_KEY="+aws.Credentials.SecretKey,
+		"AWS_B64ENCODED_CREDENTIALS="+generateB64Credentials(aws.Credentials.AccessKey, aws.Credentials.SecretKey, aws.Credentials.Region),
+		"GITHUB_TOKEN="+github_token,
 		"CAPA_EKS_IAM=true")
 	// "EXP_MACHINE_POOL=true")
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
