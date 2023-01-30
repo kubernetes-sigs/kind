@@ -23,7 +23,6 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
-	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
@@ -67,10 +66,15 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	var aws cluster.AWSCredentials
 
+	node, err := getNode(ctx)
+	if err != nil {
+		return err
+	}
+
 	ctx.Status.Start("Installing CAPx in local 🎖️")
 	defer ctx.Status.End(false)
 
-	err := installCAPALocal(ctx, a.vaultPassword, a.descriptorName)
+	err = installCAPALocal(node, ctx, a.vaultPassword, a.descriptorName)
 	if err != nil {
 		return err
 	}
@@ -80,18 +84,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	ctx.Status.Start("Generating worker cluster manifests 📝")
 	defer ctx.Status.End(false)
-
-	allNodes, err := ctx.Nodes()
-	if err != nil {
-		return err
-	}
-
-	// get the target node for this task
-	controlPlanes, err := nodeutils.ControlPlaneNodes(allNodes)
-	if err != nil {
-		return err
-	}
-	node := controlPlanes[0] // kind expects at least one always
 
 	// Parse the cluster descriptor
 	descriptorFile, err := cluster.GetClusterDescriptor(a.descriptorName)

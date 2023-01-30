@@ -25,7 +25,6 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
@@ -65,22 +64,10 @@ func installCAPAWorker(aws cluster.AWSCredentials, githubToken string, node node
 }
 
 // installCAPALocal installs CAPA in the local cluster
-func installCAPALocal(ctx *actions.ActionContext, vaultPassword string, descriptorName string) error {
+func installCAPALocal(node nodes.Node, ctx *actions.ActionContext, vaultPassword string, descriptorName string) error {
 
 	ctx.Status.Start("[CAPA] Ensuring IAM security 👮")
 	defer ctx.Status.End(false)
-
-	allNodes, err := ctx.Nodes()
-	if err != nil {
-		return err
-	}
-
-	// get the target node for this task
-	controlPlanes, err := nodeutils.ControlPlaneNodes(allNodes)
-	if err != nil {
-		return err
-	}
-	node := controlPlanes[0] // kind expects at least one always
 
 	descriptorRAW, err := os.ReadFile("./" + descriptorName)
 	if err != nil {
