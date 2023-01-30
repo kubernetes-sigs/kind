@@ -31,7 +31,7 @@ type action struct {
 	descriptorName string
 }
 
-// // SecretsFile represents the YAML structure in the secrets.yml file
+// SecretsFile represents the YAML structure in the secrets.yml file
 type SecretsFile struct {
 	Secret struct {
 		AWSCredentials cluster.AWSCredentials `yaml:"aws"`
@@ -91,19 +91,15 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to parse cluster descriptor")
 	}
 
-	//<<<<<<< HEAD
 	aws, github_token, err := getCredentials(*descriptorFile, a.vaultPassword)
 	if err != nil {
 		return err
 	}
 
-	// TODO STG: make k8s version configurable?
-
 	capiClustersNamespace := "capi-clusters"
 
 	// Generate the cluster manifest
 	descriptorData, err := cluster.GetClusterManifest(*descriptorFile)
-	//>>>>>>> branch-0.17.0-0.1
 	if err != nil {
 		return errors.Wrap(err, "failed to generate cluster manifests")
 	}
