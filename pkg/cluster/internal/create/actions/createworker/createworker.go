@@ -33,10 +33,9 @@ type action struct {
 
 // SecretsFile represents the YAML structure in the secrets.yml file
 type SecretsFile struct {
-	Secret struct {
-		AWSCredentials cluster.AWSCredentials `yaml:"aws"`
-		GithubToken    string                 `yaml:"github_token"`
-	} `yaml:"secrets"`
+	AWS struct {
+		cluster.Credentials `yaml:"credentials"`
+	} `yaml:"aws"`
 }
 
 const allowAllEgressNetPol = `
@@ -64,8 +63,6 @@ func NewAction(vaultPassword string, descriptorName string) actions.Action {
 // Execute runs the action
 func (a *action) Execute(ctx *actions.ActionContext) error {
 
-	var aws cluster.AWSCredentials
-
 	// Get the target node
 	node, err := getNode(ctx)
 	if err != nil {
@@ -79,15 +76,20 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// Get the credentials
-	aws, github_token, err := getCredentials(*descriptorFile, a.vaultPassword)
+	credentials, err := getCredentials(*descriptorFile, a.vaultPassword)
 	if err != nil {
 		return err
+	}
+
+	envVars := []string{}
+	if descriptorFile.InfraProvider == "aws" {
+		envVars = getAWSEnv(credentials)
 	}
 
 	ctx.Status.Start("Installing CAPx in local 🎖️")
 	defer ctx.Status.End(false)
 
-	err = installCAPALocal(node, ctx, aws, github_token)
+	err = installCAPALocal(node, ctx, envVars)
 	if err != nil {
 		return err
 	}
@@ -121,9 +123,9 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	rewriteDescriptorFile(a.descriptorName)
 
-	filelines := []string{"secrets:\n", "  github_token: " + github_token + "\n", "  aws:\n", "    credentials:\n", "      access_key: " + aws.Credentials.AccessKey + "\n",
-		"      account_id: " + aws.Credentials.AccountID + "\n", "      region: " + descriptorFile.Region + "\n",
-		"      secret_key: " + aws.Credentials.SecretKey + "\n"}
+	filelines := []string{"secrets:\n", "  github_token: " + credentials.GithubToken + "\n", "  aws:\n", "    credentials:\n", "      access_key: " + credentials.AccessKey + "\n",
+		"      account_id: " + credentials.AccountID + "\n", "      region: " + descriptorFile.Region + "\n",
+		"      secret_key: " + credentials.SecretKey + "\n"}
 
 	basepath, err := currentdir()
 	err = createDirectory(basepath)
@@ -232,12 +234,12 @@ spec:
 	}
 
 	// AWS/EKS specific
-	err = installCAPAWorker(node, aws, github_token, kubeconfigPath, allowAllEgressNetPolPath)
+	err = installCAPAWorker(node, envVars, kubeconfigPath, allowAllEgressNetPolPath)
 	if err != nil {
 		return err
 	}
 
-	//Scale CAPI to 2 replicas
+	// Scale CAPI to 2 replicas
 	raw = bytes.Buffer{}
 	cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capi-system", "scale", "--replicas", "2", "deploy", "capi-controller-manager")
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
@@ -283,11 +285,7 @@ spec:
 	// EKS specific: Pivot management role to worker cluster
 	raw = bytes.Buffer{}
 	cmd = node.Command("sh", "-c", "clusterctl move -n "+capiClustersNamespace+" --to-kubeconfig "+kubeconfigPath)
-	cmd.SetEnv("AWS_REGION="+aws.Credentials.Region,
-		"AWS_ACCESS_KEY_ID="+aws.Credentials.AccessKey,
-		"AWS_SECRET_ACCESS_KEY="+aws.Credentials.SecretKey,
-		"AWS_B64ENCODED_CREDENTIALS="+generateB64Credentials(aws.Credentials.AccessKey, aws.Credentials.SecretKey, aws.Credentials.Region),
-		"GITHUB_TOKEN="+github_token)
+	cmd.SetEnv(envVars...)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to pivot management role to worker cluster")
 	}

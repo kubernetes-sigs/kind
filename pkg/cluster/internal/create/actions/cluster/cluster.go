@@ -23,8 +23,7 @@ type DescriptorFile struct {
 
 	Bastion Bastion `yaml:"bastion"`
 
-	AWSCredentials AWSCredentials `yaml:"aws"`
-	GithubToken    string         `yaml:"github_token"`
+	Credentials Credentials `yaml:"credentials"`
 
 	InfraProvider string `yaml:"infra_provider" validate:"required,oneof='aws' 'gcp' 'azure'"`
 
@@ -108,13 +107,15 @@ type Node struct {
 	AZ string
 	QA int
 }
-type AWSCredentials struct {
-	Credentials struct {
-		AccessKey string `yaml:"access_key"`
-		SecretKey string `yaml:"secret_key"`
-		Region    string `yaml:"region"`
-		AccountID string `yaml:"account_id"`
-	} `yaml:"credentials"`
+
+type Credentials struct {
+	// AWS
+	AccessKey string `yaml:"access_key"`
+	SecretKey string `yaml:"secret_key"`
+	Region    string `yaml:"region"`
+	AccountID string `yaml:"account_id"`
+
+	GithubToken string `yaml:"github_token"`
 }
 
 // Init sets default values for the DescriptorFile

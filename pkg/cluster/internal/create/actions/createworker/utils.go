@@ -91,33 +91,32 @@ func generateB64Credentials(access_key string, secret_key string, region string)
 	return b64.StdEncoding.EncodeToString([]byte(credentialsINIlines))
 }
 
-func getCredentials(descriptorFile cluster.DescriptorFile, vaultPassword string) (cluster.AWSCredentials, string, error) {
-	aws := cluster.AWSCredentials{}
+func getCredentials(descriptorFile cluster.DescriptorFile, vaultPassword string) (cluster.Credentials, error) {
+	c := cluster.Credentials{}
 
 	_, err := os.Stat("./secrets.yml")
 	if err != nil {
-		if aws != descriptorFile.AWSCredentials {
-			return descriptorFile.AWSCredentials, descriptorFile.GithubToken, nil
+		if c != descriptorFile.Credentials {
+			return descriptorFile.Credentials, nil
 		}
 		err := errors.New("Incorrect AWS credentials in descriptor file")
-		return aws, "", err
+		return c, err
 
 	} else {
 		secretRaw, err := decryptFile("./secrets.yml", vaultPassword)
 		var secretFile SecretsFile
 		if err != nil {
 			err := errors.New("The vaultPassword is incorrect")
-			return aws, "", err
+			return c, err
 		} else {
 			err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
 			if err != nil {
 				fmt.Println(err)
-				return aws, "", err
+				return c, err
 			}
-			return secretFile.Secret.AWSCredentials, secretFile.Secret.GithubToken, nil
+			return secretFile.AWS.Credentials, nil
 		}
 	}
-
 }
 
 func stringToBytes(str string) []byte {

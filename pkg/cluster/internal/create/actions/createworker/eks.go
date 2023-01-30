@@ -26,18 +26,24 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
+func getAWSEnv(credentials cluster.Credentials) []string {
+	envvars := []string{
+		"AWS_REGION=" + credentials.Region,
+		"AWS_ACCESS_KEY_ID=" + credentials.AccessKey,
+		"AWS_SECRET_ACCESS_KEY=" + credentials.SecretKey,
+		"AWS_B64ENCODED_CREDENTIALS=" + generateB64Credentials(credentials.AccessKey, credentials.SecretKey, credentials.Region),
+		"GITHUB_TOKEN=" + credentials.GithubToken,
+		"CAPA_EKS_IAM=true"}
+	return envvars
+}
+
 // installCAPAWorker generates and apply the EKS manifests
-func installCAPAWorker(node nodes.Node, aws cluster.AWSCredentials, githubToken string, kubeconfigPath string, allowAllEgressNetPolPath string) error {
+func installCAPAWorker(node nodes.Node, envVars []string, kubeconfigPath string, allowAllEgressNetPolPath string) error {
 
 	// Install CAPA in worker cluster
 	raw := bytes.Buffer{}
 	cmd := node.Command("sh", "-c", "clusterctl --kubeconfig "+kubeconfigPath+" init --infrastructure aws --wait-providers")
-	cmd.SetEnv("AWS_REGION="+aws.Credentials.Region,
-		"AWS_ACCESS_KEY_ID="+aws.Credentials.AccessKey,
-		"AWS_SECRET_ACCESS_KEY="+aws.Credentials.SecretKey,
-		"AWS_B64ENCODED_CREDENTIALS="+generateB64Credentials(aws.Credentials.AccessKey, aws.Credentials.SecretKey, aws.Credentials.Region),
-		"GITHUB_TOKEN="+githubToken,
-		"CAPA_EKS_IAM=true")
+	cmd.SetEnv(envVars...)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to install CAPA")
 	}
@@ -56,19 +62,17 @@ func installCAPAWorker(node nodes.Node, aws cluster.AWSCredentials, githubToken 
 		return errors.Wrap(err, "failed to apply CAPA's NetworkPolicy")
 	}
 
-	// TODO STG: Disable OIDC provider
-
 	return nil
 }
 
 // installCAPALocal installs CAPA in the local cluster
-func installCAPALocal(node nodes.Node, ctx *actions.ActionContext, aws cluster.AWSCredentials, githubToken string) error {
+func installCAPALocal(node nodes.Node, ctx *actions.ActionContext, envVars []string) error {
 
 	ctx.Status.Start("[CAPA] Ensuring IAM security 👮")
 	defer ctx.Status.End(false)
 
 	eksConfigData := `
-apiVersion: bootstrap.aws.infrastructure.cluster.x-k8s.io/v1alpha1
+apiVersion: apiVersion: bootstrap.aws.infrastructure.cluster.x-k8s.io/v1alpha1
 kind: AWSIAMConfiguration
 spec:
   bootstrapUser:
@@ -96,10 +100,7 @@ spec:
 	// (this will create or update the CloudFormation stack in AWS)
 	raw = bytes.Buffer{}
 	cmd = node.Command("clusterawsadm", "bootstrap", "iam", "create-cloudformation-stack", "--config", eksConfigPath)
-	cmd.SetEnv("AWS_REGION="+aws.Credentials.Region,
-		"AWS_ACCESS_KEY_ID="+aws.Credentials.AccessKey,
-		"AWS_SECRET_ACCESS_KEY="+aws.Credentials.SecretKey,
-		"GITHUB_TOKEN="+githubToken)
+	cmd.SetEnv(envVars...)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to run clusterawsadm")
 	}
@@ -108,13 +109,7 @@ spec:
 	// Install CAPA
 	raw = bytes.Buffer{}
 	cmd = node.Command("sh", "-c", "clusterctl init --infrastructure aws --wait-providers")
-	cmd.SetEnv("AWS_REGION="+aws.Credentials.Region,
-		"AWS_ACCESS_KEY_ID="+aws.Credentials.AccessKey,
-		"AWS_SECRET_ACCESS_KEY="+aws.Credentials.SecretKey,
-		"AWS_B64ENCODED_CREDENTIALS="+generateB64Credentials(aws.Credentials.AccessKey, aws.Credentials.SecretKey, aws.Credentials.Region),
-		"GITHUB_TOKEN="+githubToken,
-		"CAPA_EKS_IAM=true")
-	// "EXP_MACHINE_POOL=true")
+	cmd.SetEnv(envVars...)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to install CAPA")
 	}
