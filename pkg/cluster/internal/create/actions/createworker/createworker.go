@@ -180,7 +180,7 @@ metadata:
   name: ` + descriptorFile.ClusterID + `-node-unhealthy
 spec:
   clusterName: ` + descriptorFile.ClusterID + `
-  nodeStartupTimeout: 120s
+  nodeStartupTimeout: 300s
   selector:
     matchLabels:
       cluster.x-k8s.io/cluster-name: ` + descriptorFile.ClusterID + `
