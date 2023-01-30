@@ -66,7 +66,20 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	var aws cluster.AWSCredentials
 
+	// Get the target node
 	node, err := getNode(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Parse the cluster descriptor
+	descriptorFile, err := cluster.GetClusterDescriptor(a.descriptorName)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse cluster descriptor")
+	}
+
+	// Get the credentials
+	aws, github_token, err := getCredentials(*descriptorFile, a.vaultPassword)
 	if err != nil {
 		return err
 	}
@@ -74,7 +87,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Installing CAPx in local 🎖️")
 	defer ctx.Status.End(false)
 
-	err = installCAPALocal(node, ctx, a.vaultPassword, a.descriptorName)
+	err = installCAPALocal(node, ctx, aws, github_token)
 	if err != nil {
 		return err
 	}
@@ -84,17 +97,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	ctx.Status.Start("Generating worker cluster manifests 📝")
 	defer ctx.Status.End(false)
-
-	// Parse the cluster descriptor
-	descriptorFile, err := cluster.GetClusterDescriptor(a.descriptorName)
-	if err != nil {
-		return errors.Wrap(err, "failed to parse cluster descriptor")
-	}
-
-	aws, github_token, err := getCredentials(*descriptorFile, a.vaultPassword)
-	if err != nil {
-		return err
-	}
 
 	capiClustersNamespace := "capi-clusters"
 
@@ -230,7 +232,7 @@ spec:
 	}
 
 	// AWS/EKS specific
-	err = installCAPAWorker(aws, github_token, node, kubeconfigPath, allowAllEgressNetPolPath)
+	err = installCAPAWorker(node, aws, github_token, kubeconfigPath, allowAllEgressNetPolPath)
 	if err != nil {
 		return err
 	}

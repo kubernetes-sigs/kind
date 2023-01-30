@@ -19,9 +19,7 @@ package createworker
 
 import (
 	"bytes"
-	"os"
 
-	"gopkg.in/yaml.v3"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
@@ -29,7 +27,7 @@ import (
 )
 
 // installCAPAWorker generates and apply the EKS manifests
-func installCAPAWorker(aws cluster.AWSCredentials, githubToken string, node nodes.Node, kubeconfigPath string, allowAllEgressNetPolPath string) error {
+func installCAPAWorker(node nodes.Node, aws cluster.AWSCredentials, githubToken string, kubeconfigPath string, allowAllEgressNetPolPath string) error {
 
 	// Install CAPA in worker cluster
 	raw := bytes.Buffer{}
@@ -64,26 +62,10 @@ func installCAPAWorker(aws cluster.AWSCredentials, githubToken string, node node
 }
 
 // installCAPALocal installs CAPA in the local cluster
-func installCAPALocal(node nodes.Node, ctx *actions.ActionContext, vaultPassword string, descriptorName string) error {
+func installCAPALocal(node nodes.Node, ctx *actions.ActionContext, aws cluster.AWSCredentials, githubToken string) error {
 
 	ctx.Status.Start("[CAPA] Ensuring IAM security 👮")
 	defer ctx.Status.End(false)
-
-	descriptorRAW, err := os.ReadFile("./" + descriptorName)
-	if err != nil {
-		return err
-	}
-
-	var descriptorFile cluster.DescriptorFile
-	err = yaml.Unmarshal(descriptorRAW, &descriptorFile)
-	if err != nil {
-		return err
-	}
-
-	aws, github_token, err := getCredentials(descriptorFile, vaultPassword)
-	if err != nil {
-		return err
-	}
 
 	eksConfigData := `
 apiVersion: bootstrap.aws.infrastructure.cluster.x-k8s.io/v1alpha1
@@ -117,7 +99,7 @@ spec:
 	cmd.SetEnv("AWS_REGION="+aws.Credentials.Region,
 		"AWS_ACCESS_KEY_ID="+aws.Credentials.AccessKey,
 		"AWS_SECRET_ACCESS_KEY="+aws.Credentials.SecretKey,
-		"GITHUB_TOKEN="+github_token)
+		"GITHUB_TOKEN="+githubToken)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to run clusterawsadm")
 	}
@@ -130,7 +112,7 @@ spec:
 		"AWS_ACCESS_KEY_ID="+aws.Credentials.AccessKey,
 		"AWS_SECRET_ACCESS_KEY="+aws.Credentials.SecretKey,
 		"AWS_B64ENCODED_CREDENTIALS="+generateB64Credentials(aws.Credentials.AccessKey, aws.Credentials.SecretKey, aws.Credentials.Region),
-		"GITHUB_TOKEN="+github_token,
+		"GITHUB_TOKEN="+githubToken,
 		"CAPA_EKS_IAM=true")
 	// "EXP_MACHINE_POOL=true")
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
