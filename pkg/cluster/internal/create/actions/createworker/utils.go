@@ -180,3 +180,7 @@ func deleteKey(key string, descriptorMap map[string]interface{}) {
 		delete(descriptorMap, key)
 	}
 }
+
+// func getKubeconfig(cmd exec.Cmd, namespace string, clusterId string, kubeconfigPath string) (exec.Cmd){
+
+// }

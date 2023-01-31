@@ -209,14 +209,14 @@ spec:
 
 	// Wait for the worker cluster creation
 	raw = bytes.Buffer{}
-	cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "25m", "cluster", descriptorFile.ClusterID)
+	cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "50m", "cluster", descriptorFile.ClusterID)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to create the worker Cluster")
 	}
 
 	// Wait for machines creation
 	raw = bytes.Buffer{}
-	cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "20m", "--all", "md")
+	cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "50m", "--all", "md")
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to create the Machines")
 	}
@@ -280,8 +280,78 @@ spec:
 
 	ctx.Status.End(true) // End Installing CAPx in worker cluster
 
+	// 	ctx.Status.Start("Configuring AWSCLI Settings 🗝️")
+	// 	defer ctx.Status.End(false)
+
+	// 	awsDirectoryPath := "/root/.aws"
+	// 	awsCredentialsContent := `
+	// [default]
+	// aws_access_key_id = ` + aws.Credentials.AccessKey + `
+	// aws_secret_access_key = ` + aws.Credentials.SecretKey + `
+	// 	`
+
+	// 	raw = bytes.Buffer{}
+	// 	cmd = node.Command("sh", "-c", "mkdir "+awsDirectoryPath)
+	// 	if err := cmd.SetStdout(&raw).Run(); err != nil {
+	// 		return errors.Wrap(err, "failed to write the MachineHealthCheck manifest")
+	// 	}
+	// 	// Create the MachineHealthCheck manifest file in the container
+	// 	raw = bytes.Buffer{}
+	// 	cmd = node.Command("sh", "-c", "echo \""+awsCredentialsContent+"\" > "+awsDirectoryPath+"/credentials")
+	// 	if err := cmd.SetStdout(&raw).Run(); err != nil {
+	// 		return errors.Wrap(err, "failed to write the MachineHealthCheck manifest")
+	// 	}
+
+	// 	ctx.Status.End(true)
+
+	// ctx.Status.Start("Getting Cluster kubeconfig 🗝️")
+	// defer ctx.Status.End(false)
+
+	// raw = bytes.Buffer{}
+	// cmd = node.Command("aws", "eks", "update-kubeconfig", "--region", "eu-west-1", "--name", descriptorFile.ClusterID, "--kubeconfig", kubeconfigPath)
+	// cmd.SetEnv("AWS_REGION="+aws.Credentials.Region,
+	// 	"AWS_ACCESS_KEY_ID="+aws.Credentials.AccessKey,
+	// 	"AWS_SECRET_ACCESS_KEY="+aws.Credentials.SecretKey)
+
+	// if err := cmd.SetStdout(&raw).Run(); err != nil {
+	// 	return errors.Wrap(err, "failed to get worker cluster kubeconfig")
+	// }
+
+	// raw = bytes.Buffer{}
+	// cmd = node.Command("chmod", "0777", awsDirectoryPath+"/aws.kubeconfig")
+	// if err := cmd.SetStdout(&raw).Run(); err != nil {
+	// 	return errors.Wrap(err, "failed to get worker cluster kubeconfig")
+	// }
+
+	// ctx.Status.End(true)
+
+	ctx.Status.Start("Adding Cluster-Autoescaler 🗝️")
+	defer ctx.Status.End(false)
+
+	raw = bytes.Buffer{}
+	cmd = node.Command("helm", "install", "autoescaler-release", "autoscaler/cluster-autoscaler",
+		"--kubeconfig", kubeconfigPath,
+		"--namespace", "kube-system",
+		"--set", "autoDiscovery.clusterName="+descriptorFile.ClusterID,
+		"--set", "autoDiscovery.labels[0].namespace=capi-clusters",
+		"--set", "cloudProvider=clusterapi",
+		"--set", "clusterAPIMode=incluster-incluster",
+	)
+	if err := cmd.SetStdout(&raw).Run(); err != nil {
+		return errors.Wrap(err, "failed to install chart cluster-autoscaler")
+	}
+
+	ctx.Status.End(true)
+
 	ctx.Status.Start("Transfering the management role 🗝️")
 	defer ctx.Status.End(false)
+
+	// Get worker cluster's kubeconfig file (in EKS the token last 10m, which should be enough)
+	raw = bytes.Buffer{}
+	cmd = node.Command("sh", "-c", "clusterctl -n "+capiClustersNamespace+" get kubeconfig "+descriptorFile.ClusterID+" > "+kubeconfigPath)
+	if err := cmd.SetStdout(&raw).Run(); err != nil {
+		return errors.Wrap(err, "failed to get the kubeconfig file")
+	}
 
 	// Create namespace for CAPI clusters (it must exists) in worker cluster
 	raw = bytes.Buffer{}
@@ -293,76 +363,12 @@ spec:
 	// EKS specific: Pivot management role to worker cluster
 	raw = bytes.Buffer{}
 	cmd = node.Command("sh", "-c", "clusterctl move -n "+capiClustersNamespace+" --to-kubeconfig "+kubeconfigPath)
-	cmd.SetEnv("AWS_REGION="+aws.Credentials.Region,
-		"AWS_ACCESS_KEY_ID="+aws.Credentials.AccessKey,
-		"AWS_SECRET_ACCESS_KEY="+aws.Credentials.SecretKey,
-		"AWS_B64ENCODED_CREDENTIALS="+generateB64Credentials(aws.Credentials.AccessKey, aws.Credentials.SecretKey, aws.Credentials.Region),
-		"GITHUB_TOKEN="+github_token)
+
+	if err := cmd.SetStdout(&raw).Run(); err != nil {
+		return errors.Wrap(err, "failed to transfer cluster")
+	}
 
 	ctx.Status.End(true) // End Transfering the management role
-
-	ctx.Status.Start("Configuring AWSCLI Settings 🗝️")
-	defer ctx.Status.End(false)
-
-	awsDirectoryPath := "/root/.aws"
-	awsCredentialsContent := `
-[default]
-aws_access_key_id = ` + aws.Credentials.AccessKey + `
-aws_secret_access_key = ` + aws.Credentials.SecretKey + `
-	`
-
-	raw = bytes.Buffer{}
-	cmd = node.Command("sh", "-c", "mkdir "+awsDirectoryPath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to write the MachineHealthCheck manifest")
-	}
-	// Create the MachineHealthCheck manifest file in the container
-	raw = bytes.Buffer{}
-	cmd = node.Command("sh", "-c", "echo \""+awsCredentialsContent+"\" > "+awsDirectoryPath+"/credentials")
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to write the MachineHealthCheck manifest")
-	}
-
-	ctx.Status.End(true)
-
-	ctx.Status.Start("Getting Cluster kubeconfig 🗝️")
-	defer ctx.Status.End(false)
-
-	raw = bytes.Buffer{}
-	cmd = node.Command("aws", "eks", "update-kubeconfig", "--region", "eu-west-1", "--name", descriptorFile.ClusterID, "--kubeconfig", awsDirectoryPath+"/aws.kubeconfig")
-	cmd.SetEnv("AWS_REGION="+aws.Credentials.Region,
-		"AWS_ACCESS_KEY_ID="+aws.Credentials.AccessKey,
-		"AWS_SECRET_ACCESS_KEY="+aws.Credentials.SecretKey)
-
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to get worker cluster kubeconfig")
-	}
-
-	// raw = bytes.Buffer{}
-	// cmd = node.Command("chmod", "0777", awsDirectoryPath+"/aws.kubeconfig")
-	// if err := cmd.SetStdout(&raw).Run(); err != nil {
-	// 	return errors.Wrap(err, "failed to get worker cluster kubeconfig")
-	// }
-
-	ctx.Status.End(true)
-
-	ctx.Status.Start("Adding Cluster-Autoescaler 🗝️")
-	defer ctx.Status.End(false)
-
-	raw = bytes.Buffer{}
-	cmd = node.Command("helm", "install", "autoescaler-release", "autoscaler/cluster-autoscaler",
-		"--kubeconfig", awsDirectoryPath+"/aws.kubeconfig",
-		"--namespace", "kube-system",
-		"--set", "autoDiscovery.clusterName="+descriptorFile.ClusterID+"",
-		"--set", "autoDiscovery.labels[0].namespace=capi-clusters",
-		"--set", "cloudProvider=clusterapi",
-		"--set", "clusterAPIMode=incluster-incluster",
-	)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to install chart cluster-autoscaler")
-	}
-
-	ctx.Status.End(true)
 
 	return nil
 }
