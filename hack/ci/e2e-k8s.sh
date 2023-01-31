@@ -179,6 +179,9 @@ EOF
     -v=3 \
     "--config=${ARTIFACTS}/kind-config.yaml"
 
+  # debug cluster version
+  kubectl version
+
   # Patch kube-proxy to set the verbosity level
   kubectl patch -n kube-system daemonset/kube-proxy \
     --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--v='"${KIND_CLUSTER_LOG_LEVEL}"'" }]'
