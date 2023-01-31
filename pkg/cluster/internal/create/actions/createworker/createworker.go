@@ -107,7 +107,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	// TODO STG: make k8s version configurable?
 
-	capiClustersNamespace := "capi-clusters"
+	capiClustersNamespace := "cluster-" + descriptorFile.ClusterID
 
 	// Generate the cluster manifest
 	descriptorData, err := cluster.GetClusterManifest(*descriptorFile)

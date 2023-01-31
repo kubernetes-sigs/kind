@@ -6,5 +6,9 @@ cluster-api-provider-aws:
 cluster-api-provider-gcp: 
 cluster-autoscaler: -
 aws-ebs-csi-driver: v1.14.1-eksbuild.1
-vpc-cni: v1.12.1-eksbuild.1
+vpc-cni:
+  - v1.12.1-eksbuild.1
+eks_k8s:
+  - v1.23.0
+  - v1.24.0
 capa_templates: 
