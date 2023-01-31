@@ -99,7 +99,7 @@ func installCAPALocal(ctx *actions.ActionContext, vaultPassword string, descript
 	}
 
 	eksConfigData := `
-apiVersion: bootstrap.aws.infrastructure.cluster.x-k8s.io/v1alpha1
+apiVersion: bootstrap.aws.infrastructure.cluster.x-k8s.io/v1beta1
 kind: AWSIAMConfiguration
 spec:
   bootstrapUser:
