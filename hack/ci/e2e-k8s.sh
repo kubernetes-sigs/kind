@@ -118,22 +118,9 @@ create_cluster() {
     runtime_config="{}"
     ;;
   true)
-    case "${KUBE_VERSION}" in
-    v1.1[0-7].*)
-      echo "GA_ONLY=true is only supported on versions >= v1.18, got ${KUBE_VERSION}"
-      exit 1
-      ;;
-    v1.18.*)
-      echo "Limiting to GA APIs and features (plus certificates.k8s.io/v1beta1 and RotateKubeletClientCertificate) for ${KUBE_VERSION}"
-      feature_gates='{"AllAlpha":false,"AllBeta":false,"RotateKubeletClientCertificate":true}'
-      runtime_config='{"api/alpha":"false", "api/beta":"false", "certificates.k8s.io/v1beta1":"true"}'
-      ;;
-    *)
-      echo "Limiting to GA APIs and features for ${KUBE_VERSION}"
-      feature_gates='{"AllAlpha":false,"AllBeta":false}'
-      runtime_config='{"api/alpha":"false", "api/beta":"false"}'
-      ;;
-    esac
+    echo "Limiting to GA APIs and features for ${KUBE_VERSION}"
+    feature_gates='{"AllAlpha":false,"AllBeta":false}'
+    runtime_config='{"api/alpha":"false", "api/beta":"false"}'
     ;;
   *)
     echo "\$GA_ONLY set to '${GA_ONLY}'; supported values are true and false (default)"
