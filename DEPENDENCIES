@@ -1,0 +1,10 @@
+kind: 
+clusterctl: v1.3.2
+clusterawsadm: v2.0.2
+cluster-api: 
+cluster-api-provider-aws: 
+cluster-api-provider-gcp: 
+cluster-autoscaler: -
+aws-ebs-csi-driver: v1.14.1-eksbuild.1
+vpc-cni: v1.12.1-eksbuild.1
+capa_templates: 
