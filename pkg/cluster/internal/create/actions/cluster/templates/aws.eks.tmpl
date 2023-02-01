@@ -71,8 +71,12 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
   annotations:
-    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: '{{ $node.NodeGroupMaxSize }}'
-    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: '{{ $node.NodeGroupMinSize }}'
+  {{- if ne $node.NodeGroupMaxSize "" }} 
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: '{{ $node.NodeGroupMaxSize }}'  
+  {{- end }}
+  {{- if ne $node.NodeGroupMinSize "" }} 
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: '{{ $node.NodeGroupMinSize }}' 
+  {{- end }}
   name: "{{ $node.Name }}-md-{{ $index }}"
   namespace: capi-clusters
 spec:
