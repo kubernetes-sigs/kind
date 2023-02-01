@@ -104,7 +104,9 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
-	capiClustersNamespace := "capi-clusters"
+	// TODO STG: make k8s version configurable?
+
+	capiClustersNamespace := "cluster-" + descriptorFile.ClusterID
 
 	// Generate the cluster manifest
 	descriptorData, err := cluster.GetClusterManifest(*descriptorFile)
@@ -206,14 +208,14 @@ spec:
 
 	// Wait for the worker cluster creation
 	raw = bytes.Buffer{}
-	cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "50m", "cluster", descriptorFile.ClusterID)
+	cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "25m", "cluster", descriptorFile.ClusterID)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to create the worker Cluster")
 	}
 
 	// Wait for machines creation
 	raw = bytes.Buffer{}
-	cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "50m", "--all", "md")
+	cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "20m", "--all", "md")
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to create the Machines")
 	}
