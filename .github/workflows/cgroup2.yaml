@@ -29,7 +29,7 @@ jobs:
       JOB_NAME: "cgroup2-${{ matrix.provider }}-${{ matrix.rootless }}"
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Boot Fedora
         run: |
@@ -53,7 +53,6 @@ jobs:
           "$HELPER" dockerd-rootless-setuptool.sh install
           # Modify the client config to use the rootless daemon by default
           "$HELPER" docker context use rootless
-
 
       - name: Set up Rootless Podman
         if: ${{ matrix.provider == 'podman' && matrix.rootless == 'rootless' }}
@@ -88,7 +87,7 @@ jobs:
 
       - name: Upload logs
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: kind-logs-${{ env.JOB_NAME }}-${{ github.run_id }}
           path: /tmp/kind/logs
