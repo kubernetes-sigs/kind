@@ -173,7 +173,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	var machineHealthCheck = `
-apiVersion: cluster.x-k8s.io/v1alpha3
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineHealthCheck
 metadata:
   name: ` + descriptorFile.ClusterID + `-node-unhealthy
