@@ -283,7 +283,7 @@ spec:
 	defer ctx.Status.End(false)
 
 	raw = bytes.Buffer{}
-	cmd = integrateClusterAutoscaler(node, kubeconfigPath, descriptorFile.ClusterID, "capi-clusters", "clusterapi")
+	cmd = integrateClusterAutoscaler(node, kubeconfigPath, descriptorFile.ClusterID, "clusterapi")
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to install chart cluster-autoscaler")
 	}

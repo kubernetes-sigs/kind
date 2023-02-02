@@ -199,12 +199,12 @@ func deleteKey(key string, descriptorMap map[string]interface{}) {
 	}
 }
 
-func integrateClusterAutoscaler(node nodes.Node, kubeconfigPath string, clusterID string, clusterNamespace string, provider string) exec.Cmd {
+func integrateClusterAutoscaler(node nodes.Node, kubeconfigPath string, clusterID string, provider string) exec.Cmd {
 	cmd := node.Command("helm", "install", "autoescaler-release", "autoscaler/cluster-autoscaler",
 		"--kubeconfig", kubeconfigPath,
 		"--namespace", "kube-system",
 		"--set", "autoDiscovery.clusterName="+clusterID,
-		"--set", "autoDiscovery.labels[0].namespace="+clusterNamespace,
+		"--set", "autoDiscovery.labels[0].namespace=cluster-"+clusterID,
 		"--set", "cloudProvider="+provider,
 		"--set", "clusterAPIMode=incluster-incluster")
 
