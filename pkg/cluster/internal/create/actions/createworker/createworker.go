@@ -33,9 +33,15 @@ type action struct {
 
 // SecretsFile represents the YAML structure in the secrets.yml file
 type SecretsFile struct {
-	AWS struct {
-		cluster.Credentials `yaml:"credentials"`
-	} `yaml:"aws"`
+	Secrets struct {
+		AWS struct {
+			Credentials `yaml:"credentials"`
+		} `yaml:"aws"`
+		GCP struct {
+			Credentials `yaml:"credentials"`
+		} `yaml:"gcp"`
+		GithubToken string `yaml:"github_token"`
+	}
 }
 
 const allowAllEgressNetPol = `
@@ -75,15 +81,15 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to parse cluster descriptor")
 	}
 
-	// Get the credentials
-	credentials, err := getCredentials(*descriptorFile, a.vaultPassword)
+	// Get the secrets
+	credentials, githubToken, err := getSecrets(*descriptorFile, a.vaultPassword)
 	if err != nil {
 		return err
 	}
 
 	envVars := []string{}
 	if descriptorFile.InfraProvider == "aws" {
-		envVars = getAWSEnv(credentials)
+		envVars = getAWSEnv(credentials, githubToken)
 	}
 
 	ctx.Status.Start("Installing CAPx in local 🎖️")
@@ -123,9 +129,15 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	rewriteDescriptorFile(a.descriptorName)
 
-	filelines := []string{"secrets:\n", "  github_token: " + credentials.GithubToken + "\n", "  aws:\n", "    credentials:\n", "      access_key: " + credentials.AccessKey + "\n",
-		"      account_id: " + credentials.AccountID + "\n", "      region: " + descriptorFile.Region + "\n",
-		"      secret_key: " + credentials.SecretKey + "\n"}
+	filelines := []string{
+		"secrets:\n",
+		"  github_token: " + githubToken + "\n",
+		"  " + descriptorFile.InfraProvider + ":\n", "    credentials:\n",
+		"      access_key: " + credentials["AccessKey"] + "\n",
+		"      account: " + credentials["Account"] + "\n",
+		"      region: " + descriptorFile.Region + "\n",
+		"      secret_key: " + credentials["SecretKey"] + "\n",
+	}
 
 	basepath, err := currentdir()
 	err = createDirectory(basepath)
@@ -285,7 +297,6 @@ spec:
 	// EKS specific: Pivot management role to worker cluster
 	raw = bytes.Buffer{}
 	cmd = node.Command("sh", "-c", "clusterctl move -n "+capiClustersNamespace+" --to-kubeconfig "+kubeconfigPath)
-	cmd.SetEnv(envVars...)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to pivot management role to worker cluster")
 	}

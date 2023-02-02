@@ -7,9 +7,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	b64 "encoding/base64"
 
+	"github.com/fatih/structs"
+	"github.com/oleiade/reflections"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
@@ -66,12 +69,10 @@ func writeFile(filePath string, contentLines []string) error {
 func encryptFile(filePath string, vaultPassword string) error {
 	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		fmt.Println(err)
 		return nil
 	}
 	err = vault.EncryptFile(filePath, string(data), vaultPassword)
 	if err != nil {
-		fmt.Println(err)
 		return nil
 	}
 	return nil
@@ -80,7 +81,6 @@ func encryptFile(filePath string, vaultPassword string) error {
 func decryptFile(filePath string, vaultPassword string) (string, error) {
 	data, err := vault.DecryptFile(filePath, vaultPassword)
 	if err != nil {
-		fmt.Println(err)
 		return "", err
 	}
 	return data, nil
@@ -91,30 +91,41 @@ func generateB64Credentials(access_key string, secret_key string, region string)
 	return b64.StdEncoding.EncodeToString([]byte(credentialsINIlines))
 }
 
-func getCredentials(descriptorFile cluster.DescriptorFile, vaultPassword string) (cluster.Credentials, error) {
-	c := cluster.Credentials{}
+func convertToMapStringString(m map[string]interface{}) map[string]string {
+	var m2 = map[string]string{}
+	for k, v := range m {
+		m2[k] = v.(string)
+	}
+	return m2
+}
+
+func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (map[string]string, string, error) {
+
+	var m = map[string]string{}
 
 	_, err := os.Stat("./secrets.yml")
 	if err != nil {
-		if c != descriptorFile.Credentials {
-			return descriptorFile.Credentials, nil
+		if descriptorFile.Credentials == (Credentials{}) {
+			return m, "", errors.New("Incorrect credentials in descriptor file")
 		}
-		err := errors.New("Incorrect AWS credentials in descriptor file")
-		return c, err
-
+		r := structs.Map(descriptorFile.Credentials)
+		return convertToMapStringString(r["Credentials"].(map[string]interface{})), descriptorFile.GithubToken, nil
 	} else {
-		secretRaw, err := decryptFile("./secrets.yml", vaultPassword)
 		var secretFile SecretsFile
+		secretRaw, err := decryptFile("./secrets.yml", vaultPassword)
 		if err != nil {
-			err := errors.New("The vaultPassword is incorrect")
-			return c, err
+			return m, "", errors.New("The Vault password is incorrect")
 		} else {
 			err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
 			if err != nil {
-				fmt.Println(err)
-				return c, err
+				return m, "", err
 			}
-			return secretFile.AWS.Credentials, nil
+			c, err := reflections.GetField(secretFile.Secrets, strings.ToUpper(descriptorFile.InfraProvider))
+			if err != nil {
+				return m, "", errors.New("No " + descriptorFile.InfraProvider + " credentials found in secrets file")
+			}
+			r := structs.Map(c)
+			return convertToMapStringString(r["Credentials"].(map[string]interface{})), secretFile.Secrets.GithubToken, nil
 		}
 	}
 }
@@ -148,7 +159,7 @@ func rewriteDescriptorFile(descriptorName string) error {
 		return err
 	}
 
-	deleteKey("aws", descriptorMap)
+	deleteKey("credentials", descriptorMap)
 	deleteKey("github_token", descriptorMap)
 
 	d, err := yaml.Marshal(&descriptorMap)

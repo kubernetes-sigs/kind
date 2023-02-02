@@ -24,6 +24,7 @@ type DescriptorFile struct {
 	Bastion Bastion `yaml:"bastion"`
 
 	Credentials Credentials `yaml:"credentials"`
+	GithubToken string      `yaml:"github_token"`
 
 	InfraProvider string `yaml:"infra_provider" validate:"required,oneof='aws' 'gcp' 'azure'"`
 
@@ -113,9 +114,14 @@ type Credentials struct {
 	AccessKey string `yaml:"access_key"`
 	SecretKey string `yaml:"secret_key"`
 	Region    string `yaml:"region"`
-	AccountID string `yaml:"account_id"`
+	Account   string `yaml:"account"`
 
-	GithubToken string `yaml:"github_token"`
+	// GCP
+	ProjectID    string `yaml:"project_id"`
+	PrivateKeyID string `yaml:"private_key_id"`
+	PrivateKey   string `yaml:"private_key"`
+	ClientEmail  string `yaml:"client_email"`
+	ClientID     string `yaml:"client_id"`
 }
 
 // Init sets default values for the DescriptorFile
