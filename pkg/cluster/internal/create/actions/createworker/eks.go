@@ -29,12 +29,18 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
+const CAPICoreProvider = "cluster-api:v1.3.2"
+const CAPIBootstrapProvider = "kubeadm:v1.3.2"
+const CAPIControlPlaneProvider = "kubeadm:v1.3.2"
+const CAPIInfraProvider = "aws:v2.0.2"
+
 // installCAPAWorker generates and apply the EKS manifests
 func installCAPAWorker(aws cluster.AWSCredentials, githubToken string, node nodes.Node, kubeconfigPath string, allowAllEgressNetPolPath string) error {
 
 	// Install CAPA in worker cluster
 	raw := bytes.Buffer{}
-	cmd := node.Command("sh", "-c", "clusterctl --kubeconfig "+kubeconfigPath+" init --infrastructure aws --wait-providers")
+	cmd := node.Command("sh", "-c", "clusterctl --kubeconfig " + kubeconfigPath + " init --wait-providers --infrastructure " +
+	CAPIInfraProvider + " --core " + CAPICoreProvider + " --bootstrap " + CAPIBootstrapProvider + " --control-plane " + CAPIControlPlaneProvider)
 	cmd.SetEnv("AWS_REGION="+aws.Credentials.Region,
 		"AWS_ACCESS_KEY_ID="+aws.Credentials.AccessKey,
 		"AWS_SECRET_ACCESS_KEY="+aws.Credentials.SecretKey,
@@ -138,7 +144,8 @@ spec:
 
 	// Install CAPA
 	raw = bytes.Buffer{}
-	cmd = node.Command("sh", "-c", "clusterctl init --infrastructure aws --wait-providers")
+	cmd = node.Command("sh", "-c", "clusterctl init --wait-providers --infrastructure " +
+	 CAPIInfraProvider + " --core " + CAPICoreProvider + " --bootstrap " + CAPIBootstrapProvider + " --control-plane " + CAPIControlPlaneProvider)
 	cmd.SetEnv("AWS_REGION="+aws.Credentials.Region,
 		"AWS_ACCESS_KEY_ID="+aws.Credentials.AccessKey,
 		"AWS_SECRET_ACCESS_KEY="+aws.Credentials.SecretKey,
