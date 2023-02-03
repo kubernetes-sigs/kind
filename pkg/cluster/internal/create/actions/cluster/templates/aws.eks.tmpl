@@ -65,17 +65,17 @@ spec:
       - name: ANNOTATE_POD_IP
         value: \"true\"
 {{- range $node := .WorkerNodes }}
-{{- range $index, $n := loop .AZ .Quantity }}
+{{- range $index, $n := loop .AZ .Quantity .NodeGroupMaxSize .NodeGroupMinSize}}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
   annotations:
-  {{- if ne $node.NodeGroupMaxSize "" }} 
-    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: '{{ $node.NodeGroupMaxSize }}'  
+  {{- if $node.NodeGroupMaxSize }} 
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: '{{ $n.MaxSize }}'  
   {{- end }}
-  {{- if ne $node.NodeGroupMinSize "" }} 
-    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: '{{ $node.NodeGroupMinSize }}' 
+  {{- if $node.NodeGroupMinSize }} 
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: '{{ $n.MinSize }}' 
   {{- end }}
   name: "{{ $node.Name }}-md-{{ $index }}"
   namespace: "cluster-{{ $.ClusterID }}"

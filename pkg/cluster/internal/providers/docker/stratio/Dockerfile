@@ -4,7 +4,7 @@ FROM kindest/node:v1.24.6
 ENV CLUSTERCTL=v1.3.2
 ENV CLUSTERAWSADM=v2.0.2
 ENV HELM_VERSION=v3.11.0
-ENV HELM_FILENAME=helm-${HELM_VERSION}-linux-amd64.tar.gz
+
 # Init feature gates
 ENV CLUSTER_TOPOLOGY="true"
 
@@ -19,6 +19,6 @@ RUN curl -L https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases
 # Add alias for kubectl
 RUN echo 'alias k="kubectl"' >> ~/.bashrc
 
-RUN curl -L https://get.helm.sh/${HELM_FILENAME} -o /root/helm.tar.gz && tar -xf /root/helm.tar.gz -C /root && mv /root/linux-amd64/helm /usr/local/bin/helm && rm -rf /root/linux-amd64 && rm /root/helm.tar.gz \
+RUN curl -L https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz -o /root/helm.tar.gz && tar -xf /root/helm.tar.gz -C /root && mv /root/linux-amd64/helm /usr/local/bin/helm && rm -rf /root/linux-amd64 && rm /root/helm.tar.gz \
     && chmod +x /usr/local/bin/helm && /usr/local/bin/helm repo add autoscaler https://kubernetes.github.io/autoscaler
 

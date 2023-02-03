@@ -200,7 +200,7 @@ func deleteKey(key string, descriptorMap map[string]interface{}) {
 }
 
 func integrateClusterAutoscaler(node nodes.Node, kubeconfigPath string, clusterID string, provider string) exec.Cmd {
-	cmd := node.Command("helm", "install", "autoescaler-release", "autoscaler/cluster-autoscaler",
+	cmd := node.Command("helm", "install", "cluster-autoscaler", "autoscaler/cluster-autoscaler",
 		"--kubeconfig", kubeconfigPath,
 		"--namespace", "kube-system",
 		"--set", "autoDiscovery.clusterName="+clusterID,

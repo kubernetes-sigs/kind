@@ -106,8 +106,8 @@ type WorkerNodes []struct {
 	AZ               string `yaml:"az"`
 	SSHKey           string `yaml:"ssh_key"`
 	Spot             bool   `yaml:"spot" validate:"boolean"`
-	NodeGroupMaxSize string `yaml:"node_max_size"`
-	NodeGroupMinSize string `yaml:"node_min_size"`
+	NodeGroupMaxSize int    `yaml:"max_size"`
+	NodeGroupMinSize int    `yaml:"min_size"`
 	RootVolume       struct {
 		Size      int    `yaml:"size" validate:"numeric"`
 		Type      string `yaml:"type"`
@@ -123,8 +123,10 @@ type Bastion struct {
 }
 
 type Node struct {
-	AZ string
-	QA int
+	AZ      string
+	QA      int
+	MaxSize int
+	MinSize int
 }
 type AWSCredentials struct {
 	Credentials struct {
@@ -188,20 +190,26 @@ func getTemplateFile(d DescriptorFile) (string, error) {
 func GetClusterManifest(d DescriptorFile) (string, error) {
 
 	funcMap := template.FuncMap{
-		"loop": func(az string, qa int) <-chan Node {
+		"loop": func(az string, qa int, maxsize int, minsize int) <-chan Node {
 			ch := make(chan Node)
 			go func() {
 				var azs []string
 				var q int
+				var mx int
+				var mn int
 				if az != "" {
 					azs = []string{az}
 					q = qa
+					mx = maxsize
+					mn = minsize
 				} else {
 					azs = []string{"a", "b", "c"}
 					q = qa / 3
+					mx = maxsize / 3
+					mn = minsize / 3
 				}
 				for _, a := range azs {
-					ch <- Node{AZ: a, QA: q}
+					ch <- Node{AZ: a, QA: q, MaxSize: mx, MinSize: mn}
 				}
 				close(ch)
 			}()

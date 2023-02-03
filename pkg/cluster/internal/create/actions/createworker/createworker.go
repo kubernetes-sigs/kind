@@ -312,7 +312,7 @@ spec:
 	cmd = node.Command("sh", "-c", "clusterctl move -n "+capiClustersNamespace+" --to-kubeconfig "+kubeconfigPath)
 
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to transfer cluster")
+		return errors.Wrap(err, "failed to pivot management role to worker cluster")
 	}
 
 	ctx.Status.End(true) // End Transfering the management role
