@@ -36,7 +36,7 @@ type DescriptorFile struct {
 	APIVersion       string `yaml:"apiVersion"`
 	Kind             string `yaml:"kind"`
 	ClusterID        string `yaml:"cluster_id" validate:"required,min=3,max=100"`
-	DeployAutoscaler bool   `yaml:"deploy_autoscaler" default:"true"`
+	DeployAutoscaler bool   `yaml:"deploy_autoscaler"`
 
 	Bastion Bastion `yaml:"bastion"`
 
@@ -142,6 +142,9 @@ type AWSCredentials struct {
 func (d DescriptorFile) Init() DescriptorFile {
 	d.FullyPrivate = false
 	d.ControlPlane.HighlyAvailable = true
+
+	// Autoscaler
+	d.DeployAutoscaler = true
 
 	// AWS
 	d.ControlPlane.AWS.AssociateOIDCProvider = true

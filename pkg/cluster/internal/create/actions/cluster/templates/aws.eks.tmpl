@@ -73,7 +73,7 @@ metadata:
 {{- if $.DeployAutoscaler }}
   annotations:
   {{- if $node.NodeGroupMaxSize }} 
-    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: '{{ $n.MaxSize }}'  
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: '{{ $n.MaxSize }}'
   {{- end }}
   {{- if $node.NodeGroupMinSize }} 
     cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: '{{ $n.MinSize }}' 
