@@ -135,11 +135,14 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		filelines := []string{
 			"secrets:\n",
 			"  github_token: " + githubToken + "\n",
-			"  " + descriptorFile.InfraProvider + ":\n", "    credentials:\n",
-			"      access_key: " + credentials["access_key"] + "\n",
-			"      account: " + credentials["account"] + "\n",
-			"      region: " + descriptorFile.Region + "\n",
-			"      secret_key: " + credentials["secret_key"] + "\n",
+			"  " + descriptorFile.InfraProvider + ":\n",
+			"    credentials:\n",
+		}
+
+		for k, v := range credentials {
+			if v != "" {
+				filelines = append(filelines, "      "+k+": "+v+"\n")
+			}
 		}
 
 		basepath, err := currentdir()

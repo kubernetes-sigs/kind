@@ -129,15 +129,15 @@ type Credentials struct {
 	// AWS
 	AccessKey string `yaml:"access_key" structs:"access_key"`
 	SecretKey string `yaml:"secret_key" structs:"secret_key"`
-	Region    string `yaml:"region" 	structs:"region"`
-	Account   string `yaml:"account" 	structs:"account"`
+	Region    string `yaml:"region" structs:"region"`
+	Account   string `yaml:"account" structs:"account"`
 
 	// GCP
-	ProjectID    string `yaml:"project_id"     structs:"project_id"`
+	ProjectID    string `yaml:"project_id" structs:"project_id"`
 	PrivateKeyID string `yaml:"private_key_id" structs:"private_key_id"`
-	PrivateKey   string `yaml:"private_key"    structs:"private_key"`
-	ClientEmail  string `yaml:"client_email"   structs:"client_email"`
-	ClientID     string `yaml:"client_id" 	   structs:"client_id"`
+	PrivateKey   string `yaml:"private_key" structs:"private_key"`
+	ClientEmail  string `yaml:"client_email" structs:"client_email"`
+	ClientID     string `yaml:"client_id" structs:"client_id"`
 }
 
 // Init sets default values for the DescriptorFile
