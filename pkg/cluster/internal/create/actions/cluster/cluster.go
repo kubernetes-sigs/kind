@@ -33,9 +33,10 @@ var ctel embed.FS
 
 // DescriptorFile represents the YAML structure in the descriptor file
 type DescriptorFile struct {
-	APIVersion string `yaml:"apiVersion"`
-	Kind       string `yaml:"kind"`
-	ClusterID  string `yaml:"cluster_id" validate:"required,min=3,max=100"`
+	APIVersion       string `yaml:"apiVersion"`
+	Kind             string `yaml:"kind"`
+	ClusterID        string `yaml:"cluster_id" validate:"required,min=3,max=100"`
+	DeployAutoscaler bool   `yaml:"deploy_autoscaler" default:"true"`
 
 	Bastion Bastion `yaml:"bastion"`
 

@@ -279,16 +279,18 @@ spec:
 
 	ctx.Status.End(true) // End Installing CAPx in worker cluster
 
-	ctx.Status.Start("Adding Cluster-Autoescaler 🗝️")
-	defer ctx.Status.End(false)
+	if descriptorFile.DeployAutoscaler {
+		ctx.Status.Start("Adding Cluster-Autoescaler 🗝️")
+		defer ctx.Status.End(false)
 
-	raw = bytes.Buffer{}
-	cmd = integrateClusterAutoscaler(node, kubeconfigPath, descriptorFile.ClusterID, "clusterapi")
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to install chart cluster-autoscaler")
+		raw = bytes.Buffer{}
+		cmd = integrateClusterAutoscaler(node, kubeconfigPath, descriptorFile.ClusterID, "clusterapi")
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to install chart cluster-autoscaler")
+		}
+
+		ctx.Status.End(true)
 	}
-
-	ctx.Status.End(true)
 
 	ctx.Status.Start("Transfering the management role 🗝️")
 	defer ctx.Status.End(false)
