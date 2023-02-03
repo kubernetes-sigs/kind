@@ -20,6 +20,7 @@ package createworker
 import (
 	"bytes"
 	"fmt"
+	"os"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
@@ -124,41 +125,43 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	ctx.Status.End(true) // End Generating worker cluster manifests
 
-	ctx.Status.Start("Generating secrets file 📝🗝️")
-	defer ctx.Status.End(false)
-
-	rewriteDescriptorFile(a.descriptorName)
-
-	filelines := []string{
-		"secrets:\n",
-		"  github_token: " + githubToken + "\n",
-		"  " + descriptorFile.InfraProvider + ":\n", "    credentials:\n",
-		"      access_key: " + credentials["AccessKey"] + "\n",
-		"      account: " + credentials["Account"] + "\n",
-		"      region: " + descriptorFile.Region + "\n",
-		"      secret_key: " + credentials["SecretKey"] + "\n",
-	}
-
-	basepath, err := currentdir()
-	err = createDirectory(basepath)
+	_, err = os.Stat("./secrets.yml")
 	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	filename := basepath + "/secrets.yml"
-	err = writeFile(filename, filelines)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	err = encryptFile(filename, a.vaultPassword)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
+		ctx.Status.Start("Generating secrets file 📝🗝️")
+		defer ctx.Status.End(false)
 
-	//rewriteDescriptorFile(descriptorFile)
-	defer ctx.Status.End(true)
+		rewriteDescriptorFile(a.descriptorName)
+
+		filelines := []string{
+			"secrets:\n",
+			"  github_token: " + githubToken + "\n",
+			"  " + descriptorFile.InfraProvider + ":\n", "    credentials:\n",
+			"      access_key: " + credentials["AccessKey"] + "\n",
+			"      account: " + credentials["Account"] + "\n",
+			"      region: " + descriptorFile.Region + "\n",
+			"      secret_key: " + credentials["SecretKey"] + "\n",
+		}
+
+		basepath, err := currentdir()
+		err = createDirectory(basepath)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		filename := basepath + "/secrets.yml"
+		err = writeFile(filename, filelines)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		err = encryptFile(filename, a.vaultPassword)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+
+		defer ctx.Status.End(true) // End Generating secrets file
+	}
 
 	ctx.Status.Start("Creating the worker cluster 💥")
 	defer ctx.Status.End(false)
