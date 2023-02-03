@@ -99,7 +99,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to parse cluster descriptor")
 	}
 
-	//<<<<<<< HEAD
 	aws, github_token, err := getCredentials(*descriptorFile, a.vaultPassword)
 	if err != nil {
 		return err
@@ -111,7 +110,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	// Generate the cluster manifest
 	descriptorData, err := cluster.GetClusterManifest(*descriptorFile)
-	//>>>>>>> branch-0.17.0-0.1
+
 	if err != nil {
 		return errors.Wrap(err, "failed to generate cluster manifests")
 	}
@@ -280,8 +279,26 @@ spec:
 
 	ctx.Status.End(true) // End Installing CAPx in worker cluster
 
+	ctx.Status.Start("Adding Cluster-Autoescaler 🗚")
+	defer ctx.Status.End(false)
+
+	raw = bytes.Buffer{}
+	cmd = integrateClusterAutoscaler(node, kubeconfigPath, descriptorFile.ClusterID, "clusterapi")
+	if err := cmd.SetStdout(&raw).Run(); err != nil {
+		return errors.Wrap(err, "failed to install chart cluster-autoscaler")
+	}
+
+	ctx.Status.End(true)
+
 	ctx.Status.Start("Transfering the management role 🗝️")
 	defer ctx.Status.End(false)
+
+	// Get worker cluster's kubeconfig file (in EKS the token last 10m, which should be enough)
+	raw = bytes.Buffer{}
+	cmd = node.Command("sh", "-c", "clusterctl -n "+capiClustersNamespace+" get kubeconfig "+descriptorFile.ClusterID+" > "+kubeconfigPath)
+	if err := cmd.SetStdout(&raw).Run(); err != nil {
+		return errors.Wrap(err, "failed to get the kubeconfig file")
+	}
 
 	// Create namespace for CAPI clusters (it must exists) in worker cluster
 	raw = bytes.Buffer{}
@@ -293,11 +310,7 @@ spec:
 	// EKS specific: Pivot management role to worker cluster
 	raw = bytes.Buffer{}
 	cmd = node.Command("sh", "-c", "clusterctl move -n "+capiClustersNamespace+" --to-kubeconfig "+kubeconfigPath)
-	cmd.SetEnv("AWS_REGION="+aws.Credentials.Region,
-		"AWS_ACCESS_KEY_ID="+aws.Credentials.AccessKey,
-		"AWS_SECRET_ACCESS_KEY="+aws.Credentials.SecretKey,
-		"AWS_B64ENCODED_CREDENTIALS="+generateB64Credentials(aws.Credentials.AccessKey, aws.Credentials.SecretKey, aws.Credentials.Region),
-		"GITHUB_TOKEN="+github_token)
+
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to pivot management role to worker cluster")
 	}

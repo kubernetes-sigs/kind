@@ -29,6 +29,8 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
+	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/exec"
 
 	vault "github.com/sosedoff/ansible-vault-go"
 )
@@ -195,4 +197,16 @@ func deleteKey(key string, descriptorMap map[string]interface{}) {
 	if value != nil {
 		delete(descriptorMap, key)
 	}
+}
+
+func integrateClusterAutoscaler(node nodes.Node, kubeconfigPath string, clusterID string, provider string) exec.Cmd {
+	cmd := node.Command("helm", "install", "cluster-autoscaler", "autoscaler/cluster-autoscaler",
+		"--kubeconfig", kubeconfigPath,
+		"--namespace", "kube-system",
+		"--set", "autoDiscovery.clusterName="+clusterID,
+		"--set", "autoDiscovery.labels[0].namespace=cluster-"+clusterID,
+		"--set", "cloudProvider="+provider,
+		"--set", "clusterAPIMode=incluster-incluster")
+
+	return cmd
 }
