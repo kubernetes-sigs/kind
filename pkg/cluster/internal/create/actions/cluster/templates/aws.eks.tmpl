@@ -109,6 +109,10 @@ metadata:
 spec:
   template:
     spec:
+    {{- if ne $node.AmiID "" }}
+      ami:
+        id: {{ $node.AmiID }}
+    {{- end }}
       iamInstanceProfile: "nodes.cluster-api-provider-aws.sigs.k8s.io"
       instanceType: "{{ $node.Size }}"
       sshKeyName: \"{{ $node.SSHKey }}\"
