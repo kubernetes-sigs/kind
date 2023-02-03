@@ -36,10 +36,10 @@ type action struct {
 type SecretsFile struct {
 	Secrets struct {
 		AWS struct {
-			Credentials `yaml:"credentials"`
+			cluster.Credentials `yaml:"credentials"`
 		} `yaml:"aws"`
 		GCP struct {
-			Credentials `yaml:"credentials"`
+			cluster.Credentials `yaml:"credentials"`
 		} `yaml:"gcp"`
 		GithubToken string `yaml:"github_token"`
 	}
@@ -90,7 +90,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	envVars := []string{}
 	if descriptorFile.InfraProvider == "aws" {
-		envVars = getAWSEnv(credentials, githubToken)
+		envVars = getAWSEnv(descriptorFile.Region, credentials, githubToken)
 	}
 
 	ctx.Status.Start("Installing CAPx in local 🎖️")
@@ -136,10 +136,10 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			"secrets:\n",
 			"  github_token: " + githubToken + "\n",
 			"  " + descriptorFile.InfraProvider + ":\n", "    credentials:\n",
-			"      access_key: " + credentials["AccessKey"] + "\n",
-			"      account: " + credentials["Account"] + "\n",
+			"      access_key: " + credentials["access_key"] + "\n",
+			"      account: " + credentials["account"] + "\n",
 			"      region: " + descriptorFile.Region + "\n",
-			"      secret_key: " + credentials["SecretKey"] + "\n",
+			"      secret_key: " + credentials["secret_key"] + "\n",
 		}
 
 		basepath, err := currentdir()

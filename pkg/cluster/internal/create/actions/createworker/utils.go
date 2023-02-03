@@ -105,11 +105,11 @@ func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (ma
 
 	_, err := os.Stat("./secrets.yml")
 	if err != nil {
-		if descriptorFile.Credentials == (Credentials{}) {
+		if descriptorFile.Credentials == (cluster.Credentials{}) {
 			return m, "", errors.New("Incorrect credentials in descriptor file")
 		}
 		r := structs.Map(descriptorFile.Credentials)
-		return convertToMapStringString(r["Credentials"].(map[string]interface{})), descriptorFile.GithubToken, nil
+		return convertToMapStringString(r), descriptorFile.GithubToken, nil
 	} else {
 		var secretFile SecretsFile
 		secretRaw, err := decryptFile("./secrets.yml", vaultPassword)

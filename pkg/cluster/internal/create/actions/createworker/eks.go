@@ -21,20 +21,19 @@ import (
 	"bytes"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
-	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
-func getAWSEnv(credentials cluster.Credentials) []string {
-	envvars := []string{
-		"AWS_REGION=" + credentials.Region,
-		"AWS_ACCESS_KEY_ID=" + credentials.AccessKey,
-		"AWS_SECRET_ACCESS_KEY=" + credentials.SecretKey,
-		"AWS_B64ENCODED_CREDENTIALS=" + generateB64Credentials(credentials.AccessKey, credentials.SecretKey, credentials.Region),
-		"GITHUB_TOKEN=" + credentials.GithubToken,
+func getAWSEnv(region string, credentials map[string]string, githubToken string) []string {
+	envVars := []string{
+		"AWS_REGION=" + region,
+		"AWS_ACCESS_KEY_ID=" + credentials["access_key"],
+		"AWS_SECRET_ACCESS_KEY=" + credentials["secret_key"],
+		"AWS_B64ENCODED_CREDENTIALS=" + generateB64Credentials(credentials["access_key"], credentials["secret_key"], region),
+		"GITHUB_TOKEN=" + githubToken,
 		"CAPA_EKS_IAM=true"}
-	return envvars
+	return envVars
 }
 
 // installCAPAWorker generates and apply the EKS manifests
@@ -99,7 +98,7 @@ spec:
 	// Run clusterawsadm with the eks.config file previously created
 	// (this will create or update the CloudFormation stack in AWS)
 	raw = bytes.Buffer{}
-	cmd = node.Command("clusterawsadm", "bootstrap", "iam", "create-cloudformation-stack", "--config", eksConfigPath)
+	cmd = node.Command("sh", "-c", "clusterawsadm bootstrap iam create-cloudformation-stack --config "+eksConfigPath)
 	cmd.SetEnv(envVars...)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to run clusterawsadm")
