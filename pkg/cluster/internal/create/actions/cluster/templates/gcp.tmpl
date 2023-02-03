@@ -23,7 +23,7 @@ metadata:
   name: "{{ .ClusterID }}"
   namespace: "cluster-{{ .ClusterID }}"
 spec:
-  project: {{ .Account }}
+  project: {{ .ProjectID }}
   region: "{{ .Region }}"
 {{- if ne .Networks.VPCID "" }}
   network:
@@ -121,7 +121,7 @@ spec:
     spec:
       clusterName: "{{ .ClusterID }}"
       version: "{{ $.K8SVersion }}"
-      failureDomain: "{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ $.Region }}{{ $n.AZ }} {{- end }}"
+      failureDomain: "{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ $.Region }}-{{ $n.AZ }} {{- end }}"
       bootstrap:
         configRef:
           name: "{{ $node.Name }}-md-{{ $index }}"
