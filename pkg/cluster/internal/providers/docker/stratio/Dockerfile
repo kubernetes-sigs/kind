@@ -1,8 +1,8 @@
 FROM kindest/node:v1.24.6
 
 # Tools versions
-ENV CLUSTERCTL=v1.2.4
-ENV CLUSTERAWSADM=v1.5.0
+ENV CLUSTERCTL=v1.3.2
+ENV CLUSTERAWSADM=v2.0.2
 
 # Init feature gates
 ENV CLUSTER_TOPOLOGY="true"

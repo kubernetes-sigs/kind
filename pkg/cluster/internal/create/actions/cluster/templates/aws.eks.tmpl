@@ -3,7 +3,7 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   name: "{{ .ClusterID }}"
-  namespace: capi-clusters
+  namespace: "cluster-{{ .ClusterID }}"
 spec:
   clusterNetwork:
     pods:
@@ -21,14 +21,14 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSManagedCluster
 metadata:
   name: "{{ .ClusterID }}"
-  namespace: capi-clusters
+  namespace: "cluster-{{ .ClusterID }}"
 spec: {}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: AWSManagedControlPlane
 metadata:
   name: "{{ .ClusterID }}-control-plane"
-  namespace: capi-clusters
+  namespace: "cluster-{{ .ClusterID }}"
 spec:
   addons:
     - name: "aws-ebs-csi-driver"
@@ -71,7 +71,7 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
-  namespace: capi-clusters
+  namespace: "cluster-{{ $.ClusterID }}"
 spec:
   clusterName: "{{ $.ClusterID }}"
   replicas: {{ $n.QA }}
@@ -96,10 +96,14 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSMachineTemplate
 metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
-  namespace: capi-clusters
+  namespace: "cluster-{{ $.ClusterID }}"
 spec:
   template:
     spec:
+    {{- if ne $node.AmiID "" }}
+      ami:
+        id: {{ $node.AmiID }}
+    {{- end }}
       iamInstanceProfile: "nodes.cluster-api-provider-aws.sigs.k8s.io"
       instanceType: "{{ $node.Size }}"
       sshKeyName: \"{{ $node.SSHKey }}\"
@@ -112,7 +116,7 @@ apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: EKSConfigTemplate
 metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
-  namespace: capi-clusters
+  namespace: "cluster-{{ $.ClusterID }}"
 spec:
   template: {}
 {{- end }}

@@ -107,7 +107,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Generating worker cluster manifests 📝")
 	defer ctx.Status.End(false)
 
-	capiClustersNamespace := "capi-clusters"
+	capiClustersNamespace := "cluster-" + descriptorFile.ClusterID
 
 	// Generate the cluster manifest
 	descriptorData, err := cluster.GetClusterManifest(*descriptorFile)
@@ -181,7 +181,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	var machineHealthCheck = `
-apiVersion: cluster.x-k8s.io/v1alpha3
+apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineHealthCheck
 metadata:
   name: ` + descriptorFile.ClusterID + `-node-unhealthy

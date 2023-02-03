@@ -71,7 +71,7 @@ func installCAPALocal(node nodes.Node, ctx *actions.ActionContext, envVars []str
 	defer ctx.Status.End(false)
 
 	eksConfigData := `
-apiVersion: apiVersion: bootstrap.aws.infrastructure.cluster.x-k8s.io/v1alpha1
+apiVersion: bootstrap.aws.infrastructure.cluster.x-k8s.io/v1beta1
 kind: AWSIAMConfiguration
 spec:
   bootstrapUser:
