@@ -51,7 +51,7 @@ spec:
   kubeadmConfigSpec:
     initConfiguration:
       nodeRegistration:
-        name: {{`\"{{ ds.meta_data.local_hostname.split(".")[0] }}\"`}}
+        name: {{`'{{ ds.meta_data.local_hostname.split(".")[0] }}'`}}
         kubeletExtraArgs:
           cloud-provider: gce
     clusterConfiguration:
@@ -70,13 +70,33 @@ spec:
             name: gce-conf
             pathType: FileOrCreate
     files:
+      {{- if .ExternalRegistry.User }}
+      - content: |
+          version = 2
+          imports = ["/etc/containerd/conf.d/*.toml"]
+          [plugins]
+            [plugins."io.containerd.grpc.v1.cri"]
+              sandbox_image = "k8s.gcr.io/pause:3.6"
+            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+              runtime_type = "io.containerd.runc.v2"
+            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+              SystemdCgroup = true
+            [plugins."io.containerd.grpc.v1.cri".registry]
+              [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
+                [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+                  endpoint = ["https://registry-1.docker.io"]
+              [plugins."io.containerd.grpc.v1.cri".registry.configs."{{ .ExternalRegistry.Url }}".auth]
+                password = "{{ .ExternalRegistry.Pass }}"
+                username = "{{ .ExternalRegistry.User }}"
+        path: /etc/containerd/config.toml
+      {{- end }}
       - content: |
           [Global]
           multizone=true
         path: /etc/kubernetes/gce.conf
     joinConfiguration:
       nodeRegistration:
-        name: {{`\"{{ ds.meta_data.local_hostname.split(".")[0] }}\"`}}
+        name: {{`'{{ ds.meta_data.local_hostname.split(".")[0] }}'`}}
         kubeletExtraArgs:
           cloud-provider: gce
   version: "{{ .Descriptor.K8SVersion }}"
@@ -98,11 +118,18 @@ spec:
       rootDeviceType: {{ .Descriptor.ControlPlane.RootVolume.Type }}
       {{- end }}
 {{- range $node := .Descriptor.WorkerNodes }}
-{{- range $index, $n := loop .AZ .Quantity }}
+{{- range $index, $n := loop .AZ .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
+  annotations:
+  {{- if $node.NodeGroupMaxSize }}
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: '{{ $n.MaxSize }}'
+  {{- end }}
+  {{- if $node.NodeGroupMinSize }}
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: '{{ $n.MinSize }}'
+  {{- end }}
   name: "{{ $node.Name }}-md-{{ $index }}"
   namespace: "cluster-{{ $.Descriptor.ClusterID }}"
 spec:
@@ -150,9 +177,30 @@ metadata:
 spec:
   template:
     spec:
+      files:
+        {{- if $.ExternalRegistry.User }}
+        - content: |
+            version = 2
+            imports = ["/etc/containerd/conf.d/*.toml"]
+            [plugins]
+              [plugins."io.containerd.grpc.v1.cri"]
+                sandbox_image = "k8s.gcr.io/pause:3.6"
+              [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+                runtime_type = "io.containerd.runc.v2"
+              [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+                SystemdCgroup = true
+              [plugins."io.containerd.grpc.v1.cri".registry]
+                [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
+                  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+                    endpoint = ["https://registry-1.docker.io"]
+                [plugins."io.containerd.grpc.v1.cri".registry.configs."{{ $.ExternalRegistry.Url }}".auth]
+                  password = "{{ $.ExternalRegistry.Pass }}"
+                  username = "{{ $.ExternalRegistry.User }}"
+          path: /etc/containerd/config.toml
+        {{- end }}
       joinConfiguration:
         nodeRegistration:
-          name: {{`\"{{ ds.meta_data.local_hostname.split(".")[0] }}\"`}}
+          name: {{`'{{ ds.meta_data.local_hostname.split(".")[0] }}'`}}
           kubeletExtraArgs:
             cloud-provider: gce
 {{- end }}

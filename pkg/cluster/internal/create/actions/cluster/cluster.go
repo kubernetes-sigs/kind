@@ -19,9 +19,7 @@ package cluster
 import (
 	"bytes"
 	"embed"
-	"errors"
 	"os"
-	"strings"
 	"text/template"
 
 	"github.com/go-playground/validator/v10"
@@ -63,6 +61,8 @@ type DescriptorFile struct {
 		AuthRequired bool   `yaml:"auth_required" validate:"boolean"`
 		Type         string `yaml:"type"`
 		URL          string `yaml:"url" validate:"required"`
+		User         string `yaml:"user"`
+		Pass         string `yaml:"pass"`
 	} `yaml:"external_registry"`
 
 	Keos struct {
@@ -150,8 +150,9 @@ type Credentials struct {
 }
 
 type TemplateParams struct {
-	Descriptor  DescriptorFile
-	Credentials map[string]string
+	Descriptor       DescriptorFile
+	Credentials      map[string]string
+	ExternalRegistry map[string]string
 }
 
 // Init sets default values for the DescriptorFile
@@ -189,31 +190,7 @@ func GetClusterDescriptor(descriptorName string) (*DescriptorFile, error) {
 	return &descriptorFile, nil
 }
 
-func getTemplateFile(d DescriptorFile) (string, error) {
-	var t string
-	switch d.InfraProvider {
-	case "aws":
-		if d.ControlPlane.Managed {
-			t = "templates/aws.eks.tmpl"
-		} else {
-			return "", errors.New("AWS not supported yet")
-		}
-	case "gcp":
-		if d.ControlPlane.Managed {
-			return "", errors.New("GKE not supported yet")
-		} else {
-			t = "templates/gcp.tmpl"
-		}
-	}
-	return t, nil
-}
-
-func GetClusterManifest(d DescriptorFile, c map[string]string) (string, error) {
-
-	params := TemplateParams{
-		Descriptor:  d,
-		Credentials: c,
-	}
+func GetClusterManifest(flavor string, params TemplateParams) (string, error) {
 
 	funcMap := template.FuncMap{
 		"loop": func(az string, qa int, maxsize int, minsize int) <-chan Node {
@@ -243,18 +220,13 @@ func GetClusterManifest(d DescriptorFile, c map[string]string) (string, error) {
 		},
 	}
 
-	flavor, err := getTemplateFile(d)
-	if err != nil {
-		return "", err
-	}
-
 	var tpl bytes.Buffer
-	t, err := template.New("").Funcs(funcMap).ParseFS(ctel, flavor)
+	t, err := template.New("").Funcs(funcMap).ParseFS(ctel, "templates/"+flavor)
 	if err != nil {
 		return "", err
 	}
 
-	err = t.ExecuteTemplate(&tpl, strings.Split(flavor, "/")[1], params)
+	err = t.ExecuteTemplate(&tpl, flavor, params)
 	if err != nil {
 		return "", err
 	}

@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/gobeam/stringy"
-	"github.com/mitchellh/mapstructure"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -43,7 +42,11 @@ type SecretsFile struct {
 		GCP struct {
 			Credentials cluster.Credentials `yaml:"credentials"`
 		} `yaml:"gcp"`
-		GithubToken string `yaml:"github_token"`
+		GithubToken      string `yaml:"github_token"`
+		ExternalRegistry struct {
+			User string `yaml:"user"`
+			Pass string `yaml:"pass"`
+		} `yaml:"external_registry"`
 	}
 }
 
@@ -85,33 +88,35 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// Get the secrets
-	credentials, githubToken, err := getSecrets(*descriptorFile, a.vaultPassword)
+	credentials, externalRegistry, githubToken, err := getSecrets(*descriptorFile, a.vaultPassword)
 	if err != nil {
 		return err
 	}
 
-	var capxName string
-	var envVars = []string{}
+	providerParams := ProviderParams{
+		region:      descriptorFile.Region,
+		managed:     descriptorFile.ControlPlane.Managed,
+		credentials: credentials,
+		githubToken: githubToken,
+	}
+
+	providerBuilder := getBuilder(descriptorFile.InfraProvider)
+	infra := newInfra(providerBuilder)
+	provider := infra.buildProvider(providerParams)
+
 	if descriptorFile.InfraProvider == "aws" {
-		capxName = "capa"
-		envVars = getAWSEnv(descriptorFile.Region, credentials, githubToken)
 		ctx.Status.Start("[CAPA] Ensuring IAM security 👮")
 		defer ctx.Status.End(false)
 
-		createCloudFormationStack(node, envVars)
+		createCloudFormationStack(node, provider.capxEnvVars)
 
 		ctx.Status.End(true) // End Ensuring CAPx requirements
-	}
-
-	if descriptorFile.InfraProvider == "gcp" {
-		capxName = "capg"
-		envVars = getGCPEnv(credentials, githubToken)
 	}
 
 	ctx.Status.Start("Installing CAPx in local 🎖️")
 	defer ctx.Status.End(false)
 
-	err = installCAPXLocal(descriptorFile.InfraProvider, node, envVars)
+	err = installCAPXLocal(provider, node)
 	if err != nil {
 		return err
 	}
@@ -123,12 +128,14 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	capiClustersNamespace := "cluster-" + descriptorFile.ClusterID
 
-	var input cluster.Credentials
-	mapstructure.Decode(credentials, &input)
-	descriptorFile.Credentials = input
+	templateParams := cluster.TemplateParams{
+		Descriptor:       *descriptorFile,
+		Credentials:      credentials,
+		ExternalRegistry: externalRegistry,
+	}
 
 	// Generate the cluster manifest
-	descriptorData, err := cluster.GetClusterManifest(*descriptorFile, credentials)
+	descriptorData, err := cluster.GetClusterManifest(provider.capxTemplate, templateParams)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate cluster manifests")
 	}
@@ -164,6 +171,10 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				filelines = append(filelines, "      "+field.SnakeCase().ToLower()+": \""+v+"\"\n")
 			}
 		}
+
+		filelines = append(filelines, "  external_registry:\n")
+		filelines = append(filelines, "    user: "+externalRegistry["User"]+"\n")
+		filelines = append(filelines, "    pass: "+externalRegistry["Pass"]+"\n")
 
 		basepath, err := currentdir()
 		err = createDirectory(basepath)
@@ -268,7 +279,7 @@ spec:
 		return errors.Wrap(err, "failed to get the kubeconfig file")
 	}
 
-	err = installCAPXWorker(descriptorFile.InfraProvider, node, envVars, capxName, kubeconfigPath, allowAllEgressNetPolPath)
+	err = installCAPXWorker(provider, node, kubeconfigPath, allowAllEgressNetPolPath)
 	if err != nil {
 		return err
 	}

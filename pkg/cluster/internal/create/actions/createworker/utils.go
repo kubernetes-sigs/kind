@@ -109,33 +109,36 @@ func convertToMapStringString(m map[string]interface{}) map[string]string {
 	return m2
 }
 
-func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (map[string]string, string, error) {
+func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (map[string]string, map[string]string, string, error) {
 
-	var m = map[string]string{}
+	var c = map[string]string{}
+	var r = map[string]string{}
 
 	_, err := os.Stat("./secrets.yml")
 	if err != nil {
 		if descriptorFile.Credentials == (cluster.Credentials{}) {
-			return m, "", errors.New("Incorrect credentials in descriptor file")
+			return c, r, "", errors.New("Incorrect credentials in descriptor file")
 		}
-		r := structs.Map(descriptorFile.Credentials)
-		return convertToMapStringString(r), descriptorFile.GithubToken, nil
+		m := structs.Map(descriptorFile.Credentials)
+		r := map[string]string{"User": descriptorFile.ExternalRegistry.User, "Pass": descriptorFile.ExternalRegistry.Pass, "Url": descriptorFile.ExternalRegistry.URL}
+		return convertToMapStringString(m), r, descriptorFile.GithubToken, nil
 	} else {
 		var secretFile SecretsFile
 		secretRaw, err := decryptFile("./secrets.yml", vaultPassword)
 		if err != nil {
-			return m, "", errors.New("The Vault password is incorrect")
+			return c, r, "", errors.New("The Vault password is incorrect")
 		} else {
 			err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
 			if err != nil {
-				return m, "", err
+				return c, r, "", err
 			}
-			c, err := reflections.GetField(secretFile.Secrets, strings.ToUpper(descriptorFile.InfraProvider))
+			f, err := reflections.GetField(secretFile.Secrets, strings.ToUpper(descriptorFile.InfraProvider))
 			if err != nil {
-				return m, "", errors.New("No " + descriptorFile.InfraProvider + " credentials found in secrets file")
+				return c, r, "", errors.New("No " + descriptorFile.InfraProvider + " credentials found in secrets file")
 			}
-			r := structs.Map(c)
-			return convertToMapStringString(r["Credentials"].(map[string]interface{})), secretFile.Secrets.GithubToken, nil
+			m := structs.Map(f)
+			r := map[string]string{"User": secretFile.Secrets.ExternalRegistry.User, "Pass": secretFile.Secrets.ExternalRegistry.Pass, "Url": descriptorFile.ExternalRegistry.URL}
+			return convertToMapStringString(m["Credentials"].(map[string]interface{})), r, secretFile.Secrets.GithubToken, nil
 		}
 	}
 }
