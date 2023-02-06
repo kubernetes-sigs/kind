@@ -19,9 +19,11 @@ package createworker
 
 import (
 	"bytes"
-	"fmt"
 	"os"
+	"strings"
 
+	"github.com/gobeam/stringy"
+	"github.com/mitchellh/mapstructure"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -36,10 +38,10 @@ type action struct {
 type SecretsFile struct {
 	Secrets struct {
 		AWS struct {
-			cluster.Credentials `yaml:"credentials"`
+			Credentials cluster.Credentials `yaml:"credentials"`
 		} `yaml:"aws"`
 		GCP struct {
-			cluster.Credentials `yaml:"credentials"`
+			Credentials cluster.Credentials `yaml:"credentials"`
 		} `yaml:"gcp"`
 		GithubToken string `yaml:"github_token"`
 	}
@@ -88,20 +90,32 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
-	envVars := []string{}
+	var capxName string
+	var envVars = []string{}
 	if descriptorFile.InfraProvider == "aws" {
+		capxName = "capa"
 		envVars = getAWSEnv(descriptorFile.Region, credentials, githubToken)
+		ctx.Status.Start("[CAPA] Ensuring IAM security 👮")
+		defer ctx.Status.End(false)
+
+		createCloudFormationStack(node, envVars)
+
+		ctx.Status.End(true) // End Ensuring CAPx requirements
+	}
+
+	if descriptorFile.InfraProvider == "gcp" {
+		capxName = "capg"
+		envVars = getGCPEnv(credentials, githubToken)
 	}
 
 	ctx.Status.Start("Installing CAPx in local 🎖️")
 	defer ctx.Status.End(false)
 
-	err = installCAPALocal(node, ctx, envVars)
+	err = installCAPXLocal(descriptorFile.InfraProvider, node, envVars)
 	if err != nil {
 		return err
 	}
 
-	// mark success
 	ctx.Status.End(true) // End Installing CAPx in local
 
 	ctx.Status.Start("Generating worker cluster manifests 📝")
@@ -109,8 +123,12 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	capiClustersNamespace := "cluster-" + descriptorFile.ClusterID
 
+	var input cluster.Credentials
+	mapstructure.Decode(credentials, &input)
+	descriptorFile.Credentials = input
+
 	// Generate the cluster manifest
-	descriptorData, err := cluster.GetClusterManifest(*descriptorFile)
+	descriptorData, err := cluster.GetClusterManifest(*descriptorFile, credentials)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate cluster manifests")
 	}
@@ -141,26 +159,25 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 		for k, v := range credentials {
 			if v != "" {
-				filelines = append(filelines, "      "+k+": "+v+"\n")
+				v = strings.Replace(v, "\n", `\n`, -1)
+				field := stringy.New(k)
+				filelines = append(filelines, "      "+field.SnakeCase().ToLower()+": \""+v+"\"\n")
 			}
 		}
 
 		basepath, err := currentdir()
 		err = createDirectory(basepath)
 		if err != nil {
-			fmt.Println(err)
 			return err
 		}
 		filename := basepath + "/secrets.yml"
 		err = writeFile(filename, filelines)
 		if err != nil {
-			fmt.Println(err)
-			return err
+			return errors.Wrap(err, "failed to write the secrets file")
 		}
 		err = encryptFile(filename, a.vaultPassword)
 		if err != nil {
-			fmt.Println(err)
-			return err
+			return errors.Wrap(err, "failed to cipher the secrets file")
 		}
 
 		defer ctx.Status.End(true) // End Generating secrets file
@@ -233,7 +250,7 @@ spec:
 
 	ctx.Status.End(true) // End Creating the worker cluster
 
-	ctx.Status.Start("Installing CAPx in EKS 🎖️")
+	ctx.Status.Start("Installing CAPx in worker cluster 🎖️")
 	defer ctx.Status.End(false)
 
 	// Create the allow-all-egress network policy file in the container
@@ -251,8 +268,7 @@ spec:
 		return errors.Wrap(err, "failed to get the kubeconfig file")
 	}
 
-	// AWS/EKS specific
-	err = installCAPAWorker(node, envVars, kubeconfigPath, allowAllEgressNetPolPath)
+	err = installCAPXWorker(descriptorFile.InfraProvider, node, envVars, capxName, kubeconfigPath, allowAllEgressNetPolPath)
 	if err != nil {
 		return err
 	}
@@ -300,7 +316,7 @@ spec:
 		return errors.Wrap(err, "failed to create manifests Namespace")
 	}
 
-	// EKS specific: Pivot management role to worker cluster
+	// Pivot management role to worker cluster
 	raw = bytes.Buffer{}
 	cmd = node.Command("sh", "-c", "clusterctl move -n "+capiClustersNamespace+" --to-kubeconfig "+kubeconfigPath)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {

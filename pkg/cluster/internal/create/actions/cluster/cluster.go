@@ -79,7 +79,12 @@ type DescriptorFile struct {
 		HighlyAvailable bool   `yaml:"highly_available" validate:"boolean"`
 		Size            string `yaml:"size" validate:"required_if=Managed false"`
 		Image           string `yaml:"image" validate:"required_if=InfraProvider gcp"`
-		AWS             AWS    `yaml:"aws"`
+		RootVolume      struct {
+			Size      int    `yaml:"size" validate:"numeric"`
+			Type      string `yaml:"type"`
+			Encrypted bool   `yaml:"encrypted" validate:"boolean"`
+		} `yaml:"root_volume"`
+		AWS AWS `yaml:"aws"`
 	} `yaml:"control_plane"`
 
 	WorkerNodes WorkerNodes `yaml:"worker_nodes"`
@@ -127,17 +132,22 @@ type Node struct {
 
 type Credentials struct {
 	// AWS
-	AccessKey string `yaml:"access_key" structs:"access_key"`
-	SecretKey string `yaml:"secret_key" structs:"secret_key"`
-	Region    string `yaml:"region" structs:"region"`
-	Account   string `yaml:"account" structs:"account"`
+	AccessKey string `yaml:"access_key"`
+	SecretKey string `yaml:"secret_key"`
+	Region    string `yaml:"region"`
+	Account   string `yaml:"account"`
 
 	// GCP
-	ProjectID    string `yaml:"project_id" structs:"project_id"`
-	PrivateKeyID string `yaml:"private_key_id" structs:"private_key_id"`
-	PrivateKey   string `yaml:"private_key" structs:"private_key"`
-	ClientEmail  string `yaml:"client_email" structs:"client_email"`
-	ClientID     string `yaml:"client_id" structs:"client_id"`
+	ProjectID    string `yaml:"project_id"`
+	PrivateKeyID string `yaml:"private_key_id"`
+	PrivateKey   string `yaml:"private_key"`
+	ClientEmail  string `yaml:"client_email"`
+	ClientID     string `yaml:"client_id"`
+}
+
+type TemplateParams struct {
+	Descriptor  DescriptorFile
+	Credentials map[string]string
 }
 
 // Init sets default values for the DescriptorFile
@@ -185,12 +195,21 @@ func getTemplateFile(d DescriptorFile) (string, error) {
 			return "", errors.New("AWS not supported yet")
 		}
 	case "gcp":
-		return "", errors.New("GCP not supported yet")
+		if d.ControlPlane.Managed {
+			return "", errors.New("GKE not supported yet")
+		} else {
+			t = "templates/gcp.tmpl"
+		}
 	}
 	return t, nil
 }
 
-func GetClusterManifest(d DescriptorFile) (string, error) {
+func GetClusterManifest(d DescriptorFile, c map[string]string) (string, error) {
+
+	params := TemplateParams{
+		Descriptor:  d,
+		Credentials: c,
+	}
 
 	funcMap := template.FuncMap{
 		"loop": func(az string, qa int) <-chan Node {
@@ -225,7 +244,7 @@ func GetClusterManifest(d DescriptorFile) (string, error) {
 		return "", err
 	}
 
-	err = t.ExecuteTemplate(&tpl, strings.Split(flavor, "/")[1], d)
+	err = t.ExecuteTemplate(&tpl, strings.Split(flavor, "/")[1], params)
 	if err != nil {
 		return "", err
 	}

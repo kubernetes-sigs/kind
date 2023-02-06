@@ -25,8 +25,6 @@ import (
 	"os"
 	"strings"
 
-	b64 "encoding/base64"
-
 	"github.com/fatih/structs"
 	"github.com/oleiade/reflections"
 	"github.com/spf13/viper"
@@ -100,11 +98,6 @@ func decryptFile(filePath string, vaultPassword string) (string, error) {
 		return "", err
 	}
 	return data, nil
-}
-
-func generateB64Credentials(access_key string, secret_key string, region string) string {
-	credentialsINIlines := "[default]\naws_access_key_id = " + access_key + "\naws_secret_access_key = " + secret_key + "\nregion = " + region + "\n\n"
-	return b64.StdEncoding.EncodeToString([]byte(credentialsINIlines))
 }
 
 func convertToMapStringString(m map[string]interface{}) map[string]string {

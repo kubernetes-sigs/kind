@@ -2,8 +2,8 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  name: "{{ .ClusterID }}"
-  namespace: "cluster-{{ .ClusterID }}"
+  name: "{{ .Descriptor.ClusterID }}"
+  namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec:
   clusterNetwork:
     pods:
@@ -11,26 +11,26 @@ spec:
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: GCPCluster
-    name: "{{ .ClusterID }}"
+    name: "{{ .Descriptor.ClusterID }}"
   controlPlaneRef:
     kind: KubeadmControlPlane
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
-    name: "{{ .ClusterID }}-control-plane"
+    name: "{{ .Descriptor.ClusterID }}-control-plane"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: GCPCluster
 metadata:
-  name: "{{ .ClusterID }}"
-  namespace: "cluster-{{ .ClusterID }}"
+  name: "{{ .Descriptor.ClusterID }}"
+  namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec:
-  project: {{ .ProjectID }}
-  region: "{{ .Region }}"
-{{- if ne .Networks.VPCID "" }}
+  project: {{ .Credentials.ProjectID }}
+  region: "{{ .Descriptor.Region }}"
+{{- if ne .Descriptor.Networks.VPCID "" }}
   network:
-    name: {{ .Networks.VPCID }}
-    {{- if ne .Networks.Subnets nil }}
+    name: {{ .Descriptor.Networks.VPCID }}
+    {{- if ne .Descriptor.Networks.Subnets nil }}
     subnets:
-    {{- range .Networks.Subnets }}
+    {{- range .Descriptor.Networks.Subnets }}
       - id: {{ .Name }}
     {{- end }}
     {{- end }}
@@ -39,15 +39,15 @@ spec:
 kind: KubeadmControlPlane
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 metadata:
-  name: "{{ .ClusterID }}-control-plane"
-  namespace: "cluster-{{ .ClusterID }}"
+  name: "{{ .Descriptor.ClusterID }}-control-plane"
+  namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec:
-  replicas: {{- if .ControlPlane.HighlyAvailable }} 3 {{- else }} 1 {{- end }}
+  replicas: {{- if .Descriptor.ControlPlane.HighlyAvailable }} 3 {{- else }} 1 {{- end }}
   machineTemplate:
     infrastructureRef:
       kind: GCPMachineTemplate
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      name: "{{ .ClusterID }}-control-plane"
+      name: "{{ .Descriptor.ClusterID }}-control-plane"
   kubeadmConfigSpec:
     initConfiguration:
       nodeRegistration:
@@ -70,58 +70,51 @@ spec:
             name: gce-conf
             pathType: FileOrCreate
     files:
-    - content: |
-        [Global]
-        multizone=true
-      path: /etc/kubernetes/gce.conf
+      - content: |
+          [Global]
+          multizone=true
+        path: /etc/kubernetes/gce.conf
     joinConfiguration:
       nodeRegistration:
         name: {{`\"{{ ds.meta_data.local_hostname.split(".")[0] }}\"`}}
         kubeletExtraArgs:
           cloud-provider: gce
-  version: "{{ $.K8SVersion }}"
+  version: "{{ .Descriptor.K8SVersion }}"
 ---
 kind: GCPMachineTemplate
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 metadata:
-  name: "{{ .ClusterID }}-control-plane"
-  namespace: "cluster-{{ .ClusterID }}"
+  name: "{{ .Descriptor.ClusterID }}-control-plane"
+  namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec:
   template:
     spec:
-      instanceType: "{{ .ControlPlane.Size }}"
-      image: "{{ .ControlPlane.Image }}"
-      {{- if ne .ControlPlane.RootVolume.Size "" }}
-      rootDeviceSize: {{ .ControlPlane.RootVolume.Size }}
+      instanceType: "{{ .Descriptor.ControlPlane.Size }}"
+      image: "{{ .Descriptor.ControlPlane.Image }}"
+      {{- if .Descriptor.ControlPlane.RootVolume.Size }}
+      rootDeviceSize: {{ .Descriptor.ControlPlane.RootVolume.Size }}
       {{- end }}
-      {{- if ne .ControlPlane.RootVolume.Type "" }}
-      rootDeviceType: {{ .ControlPlane.RootVolume.Type }}
+      {{- if .Descriptor.ControlPlane.RootVolume.Type }}
+      rootDeviceType: {{ .Descriptor.ControlPlane.RootVolume.Type }}
       {{- end }}
-{{- range $node := .WorkerNodes }}
+{{- range $node := .Descriptor.WorkerNodes }}
 {{- range $index, $n := loop .AZ .Quantity }}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
-  annotations:
-  {{- if ne $node.NodeGroupMaxSize "" }}
-    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: '{{ $node.NodeGroupMaxSize }}'
-  {{- end }}
-  {{- if ne $node.NodeGroupMinSize "" }}
-    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: '{{ $node.NodeGroupMinSize }}'
-  {{- end }}
   name: "{{ $node.Name }}-md-{{ $index }}"
-  namespace: "cluster-{{ .ClusterID }}"
+  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
 spec:
-  clusterName: "{{ .ClusterID }}"
+  clusterName: "{{ $.Descriptor.ClusterID }}"
   replicas: {{ $n.QA }}
   selector:
     matchLabels:
   template:
     spec:
-      clusterName: "{{ .ClusterID }}"
-      version: "{{ $.K8SVersion }}"
-      failureDomain: "{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ $.Region }}-{{ $n.AZ }} {{- end }}"
+      clusterName: "{{ $.Descriptor.ClusterID }}"
+      version: "{{ $.Descriptor.K8SVersion }}"
+      failureDomain: "{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ $.Descriptor.Region }}-{{ $n.AZ }} {{- end }}"
       bootstrap:
         configRef:
           name: "{{ $node.Name }}-md-{{ $index }}"
@@ -136,16 +129,16 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: GCPMachineTemplate
 metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
-  namespace: "cluster-{{ .ClusterID }}"
+  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
 spec:
   template:
     spec:
       instanceType: "{{ $node.Size }}"
       image: "{{ $node.Image }}"
-      {{- if ne $node.RootVolume.Size ""}}
+      {{- if $node.RootVolume.Size }}
       rootDeviceSize: {{ $node.RootVolume.Size }}
       {{- end }}
-      {{- if ne $node.RootVolume.Type "" }}
+      {{- if $node.RootVolume.Type }}
       rootDeviceType: {{ $node.RootVolume.Type }}
       {{- end }}
 ---
@@ -153,7 +146,7 @@ apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
 metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
-  namespace: "cluster-{{ .ClusterID }}"
+  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
 spec:
   template:
     spec:
