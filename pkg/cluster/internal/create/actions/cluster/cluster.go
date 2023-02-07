@@ -42,7 +42,7 @@ type DescriptorFile struct {
 
 	InfraProvider string `yaml:"infra_provider" validate:"required,oneof='aws' 'gcp' 'azure'"`
 
-	K8SVersion   string `yaml:"k8s_version" validate:"required,startswith=v,len=7"`
+	K8SVersion   string `yaml:"k8s_version" validate:"required,startswith=v,min=7,max=8"`
 	Region       string `yaml:"region" validate:"required"`
 	SSHKey       string `yaml:"ssh_key"`
 	FullyPrivate bool   `yaml:"fully_private" validate:"boolean"`
