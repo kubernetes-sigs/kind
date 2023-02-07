@@ -62,7 +62,7 @@ spec:
       controllerManager:
         extraArgs:
           cloud-provider: gce
-          allocate-node-cidrs: "false"
+          allocate-node-cidrs: \"false\"
           cloud-config: /etc/kubernetes/gce.conf
         extraVolumes:
           - hostPath: /etc/kubernetes/gce.conf
@@ -73,21 +73,21 @@ spec:
       {{- if .ExternalRegistry.User }}
       - content: |
           version = 2
-          imports = ["/etc/containerd/conf.d/*.toml"]
+          imports = [\"/etc/containerd/conf.d/*.toml\"]
           [plugins]
-            [plugins."io.containerd.grpc.v1.cri"]
-              sandbox_image = "k8s.gcr.io/pause:3.6"
-            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-              runtime_type = "io.containerd.runc.v2"
-            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            [plugins.\"io.containerd.grpc.v1.cri\"]
+              sandbox_image = \"k8s.gcr.io/pause:3.6\"
+            [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc]
+              runtime_type = \"io.containerd.runc.v2\"
+            [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc.options]
               SystemdCgroup = true
-            [plugins."io.containerd.grpc.v1.cri".registry]
-              [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
-                [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-                  endpoint = ["https://registry-1.docker.io"]
-              [plugins."io.containerd.grpc.v1.cri".registry.configs."{{ .ExternalRegistry.Url }}".auth]
-                password = "{{ .ExternalRegistry.Pass }}"
-                username = "{{ .ExternalRegistry.User }}"
+            [plugins.\"io.containerd.grpc.v1.cri\".registry]
+              [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors]
+                [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]
+                  endpoint = [\"https://registry-1.docker.io\"]
+              [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ .ExternalRegistry.Url }}\".auth]
+                password = \"{{ .ExternalRegistry.Pass }}\"
+                username = \"{{ .ExternalRegistry.User }}\"
         path: /etc/containerd/config.toml
       {{- end }}
       - content: |
@@ -177,25 +177,25 @@ metadata:
 spec:
   template:
     spec:
+      {{- if $.ExternalRegistry.User }}
       files:
-        {{- if $.ExternalRegistry.User }}
         - content: |
             version = 2
-            imports = ["/etc/containerd/conf.d/*.toml"]
+            imports = [\"/etc/containerd/conf.d/*.toml\"]
             [plugins]
-              [plugins."io.containerd.grpc.v1.cri"]
-                sandbox_image = "k8s.gcr.io/pause:3.6"
-              [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-                runtime_type = "io.containerd.runc.v2"
-              [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+              [plugins.\"io.containerd.grpc.v1.cri\"]
+                sandbox_image = \"k8s.gcr.io/pause:3.6\"
+              [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc]
+                runtime_type = \"io.containerd.runc.v2\"
+              [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc.options]
                 SystemdCgroup = true
-              [plugins."io.containerd.grpc.v1.cri".registry]
-                [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
-                  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-                    endpoint = ["https://registry-1.docker.io"]
-                [plugins."io.containerd.grpc.v1.cri".registry.configs."{{ $.ExternalRegistry.Url }}".auth]
-                  password = "{{ $.ExternalRegistry.Pass }}"
-                  username = "{{ $.ExternalRegistry.User }}"
+              [plugins.\"io.containerd.grpc.v1.cri\".registry]
+                [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors]
+                  [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]
+                    endpoint = [\"https://registry-1.docker.io\"]
+                [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ $.ExternalRegistry.Url }}\".auth]
+                  password = \"{{ $.ExternalRegistry.Pass }}\"
+                  username = \"{{ $.ExternalRegistry.User }}\"
           path: /etc/containerd/config.toml
         {{- end }}
       joinConfiguration:
