@@ -204,6 +204,53 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to create cluster's Namespace")
 	}
 
+	if !descriptorFile.ControlPlane.Managed {
+
+		// Download Calico manifest in the container
+		calicoPath := "/kind/calico.yaml"
+		calicoURL := "https://projectcalico.docs.tigera.io/archive/v3.22/manifests/calico.yaml"
+		raw = bytes.Buffer{}
+		cmd = node.Command("sh", "-c", "curl "+calicoURL+" -s -o "+calicoPath)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to write the ClusterResourceSet manifest")
+		}
+
+		// Create a ConfigMap that contains the manifest to install Calico
+		raw = bytes.Buffer{}
+		cmd = node.Command("sh", "-c", "kubectl -n "+capiClustersNamespace+" create configmap calico-crs-configmap --from-file="+calicoPath)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to write the ClusterResourceSet manifest")
+		}
+
+		var clusterResourceSet = `
+apiVersion: addons.cluster.x-k8s.io/v1alpha3
+kind: ClusterResourceSet
+metadata:
+  name: calico-crs
+spec:
+  clusterSelector:
+    matchLabels:
+      cni: calico
+  resources:
+  - kind: ConfigMap
+    name: calico-crs-configmap`
+
+		// Create the ClusterResourceSet manifest file in the container
+		clusterResourceSetPath := "/kind/clusterresourceset.yaml"
+		raw = bytes.Buffer{}
+		cmd = node.Command("sh", "-c", "echo \""+clusterResourceSet+"\" > "+clusterResourceSetPath)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to write the ClusterResourceSet manifest")
+		}
+
+		// Create the ClusterResourceSet resource
+		raw = bytes.Buffer{}
+		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "apply", "-f", clusterResourceSetPath)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
+		}
+	}
+
 	// Apply cluster manifests
 	raw = bytes.Buffer{}
 	cmd = node.Command("kubectl", "create", "-n", capiClustersNamespace, "-f", descriptorPath)
