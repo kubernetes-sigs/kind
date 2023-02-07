@@ -292,32 +292,34 @@ spec:
 		ctx.Status.End(true)
 	}
 
-	ctx.Status.Start("Transfering the management role 🗝️")
-	defer ctx.Status.End(false)
+	if !descriptorFile.LocalManagementRole {
+		ctx.Status.Start("Transfering the management role 🗝️")
+		defer ctx.Status.End(false)
 
-	// Get worker cluster's kubeconfig file (in EKS the token last 10m, which should be enough)
-	raw = bytes.Buffer{}
-	cmd = node.Command("sh", "-c", "clusterctl -n "+capiClustersNamespace+" get kubeconfig "+descriptorFile.ClusterID+" > "+kubeconfigPath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to get the kubeconfig file")
+		// Get worker cluster's kubeconfig file (in EKS the token last 10m, which should be enough)
+		raw = bytes.Buffer{}
+		cmd = node.Command("sh", "-c", "clusterctl -n "+capiClustersNamespace+" get kubeconfig "+descriptorFile.ClusterID+" > "+kubeconfigPath)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to get the kubeconfig file")
+		}
+
+		// Create namespace for CAPI clusters (it must exists) in worker cluster
+		raw = bytes.Buffer{}
+		cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "create", "ns", capiClustersNamespace)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to create manifests Namespace")
+		}
+
+		// EKS specific: Pivot management role to worker cluster
+		raw = bytes.Buffer{}
+		cmd = node.Command("sh", "-c", "clusterctl move -n "+capiClustersNamespace+" --to-kubeconfig "+kubeconfigPath)
+
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to pivot management role to worker cluster")
+		}
+
+		ctx.Status.End(true) // End Transfering the management role
 	}
-
-	// Create namespace for CAPI clusters (it must exists) in worker cluster
-	raw = bytes.Buffer{}
-	cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "create", "ns", capiClustersNamespace)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to create manifests Namespace")
-	}
-
-	// EKS specific: Pivot management role to worker cluster
-	raw = bytes.Buffer{}
-	cmd = node.Command("sh", "-c", "clusterctl move -n "+capiClustersNamespace+" --to-kubeconfig "+kubeconfigPath)
-
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to pivot management role to worker cluster")
-	}
-
-	ctx.Status.End(true) // End Transfering the management role
 
 	return nil
 }

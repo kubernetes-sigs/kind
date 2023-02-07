@@ -33,10 +33,11 @@ var ctel embed.FS
 
 // DescriptorFile represents the YAML structure in the descriptor file
 type DescriptorFile struct {
-	APIVersion       string `yaml:"apiVersion"`
-	Kind             string `yaml:"kind"`
-	ClusterID        string `yaml:"cluster_id" validate:"required,min=3,max=100"`
-	DeployAutoscaler bool   `yaml:"deploy_autoscaler"`
+	APIVersion          string `yaml:"apiVersion"`
+	Kind                string `yaml:"kind"`
+	ClusterID           string `yaml:"cluster_id" validate:"required,min=3,max=100"`
+	DeployAutoscaler    bool   `yaml:"deploy_autoscaler" validate:"boolean"`
+	LocalManagementRole bool   `yaml:"local_mgmt" validate:"boolean"`
 
 	Bastion Bastion `yaml:"bastion"`
 
@@ -142,6 +143,7 @@ type AWSCredentials struct {
 func (d DescriptorFile) Init() DescriptorFile {
 	d.FullyPrivate = false
 	d.ControlPlane.HighlyAvailable = true
+	d.LocalManagementRole = false
 
 	// Autoscaler
 	d.DeployAutoscaler = true
