@@ -51,7 +51,7 @@ spec:
   kubeadmConfigSpec:
     initConfiguration:
       nodeRegistration:
-        name: {{`'{{ ds.meta_data.local_hostname.split(".")[0] }}'`}}
+        name: {{`'{{ ds.meta_data.local_hostname.split(\".\")[0] }}'`}}
         kubeletExtraArgs:
           cloud-provider: gce
     clusterConfiguration:
@@ -96,7 +96,7 @@ spec:
         path: /etc/kubernetes/gce.conf
     joinConfiguration:
       nodeRegistration:
-        name: {{`'{{ ds.meta_data.local_hostname.split(".")[0] }}'`}}
+        name: {{`'{{ ds.meta_data.local_hostname.split(\".\")[0] }}'`}}
         kubeletExtraArgs:
           cloud-provider: gce
   version: "{{ .Descriptor.K8SVersion }}"
@@ -200,7 +200,7 @@ spec:
         {{- end }}
       joinConfiguration:
         nodeRegistration:
-          name: {{`'{{ ds.meta_data.local_hostname.split(".")[0] }}'`}}
+          name: {{`'{{ ds.meta_data.local_hostname.split(\".\")[0] }}'`}}
           kubeletExtraArgs:
             cloud-provider: gce
 {{- end }}
