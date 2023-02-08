@@ -66,35 +66,66 @@ func generateB64Credentials(access_key string, secret_key string, region string)
 
 func getCredentials(descriptorFile cluster.DescriptorFile, vaultPassword string) (cluster.AWSCredentials, string, error) {
 	awsEmptyCreds := cluster.AWSCredentials{}
-	descriptorEmptyCreds := checkCreds(descriptorFile.AWSCredentials, descriptorFile.GithubToken)
+	descriptorEmptyCreds := checkAWSCreds(descriptorFile.AWSCredentials)
+	descriptorEmptyGHT := checkGHToken(descriptorFile.GithubToken)
 	_, err := os.Stat(secretPath)
 	if err != nil {
 
-		if !descriptorEmptyCreds {
+		if !descriptorEmptyCreds && !descriptorEmptyGHT {
 			return descriptorFile.AWSCredentials, descriptorFile.GithubToken, nil
 		}
 		err := errors.New("Incorrect AWS credentials or GithubToken in descriptor file")
 		return awsEmptyCreds, "", err
 
 	} else {
-
 		secretFile, err := getDecryptedSecret(vaultPassword)
-		secretsEmptyCreds := checkCreds(secretFile.Secret.AWSCredentials, secretFile.Secret.GithubToken)
-		if secretsEmptyCreds {
-			if !descriptorEmptyCreds {
-				return descriptorFile.AWSCredentials, descriptorFile.GithubToken, nil
-			}
-			return awsEmptyCreds, "", errors.New("It is not possible to find the AWSCredentials in the descriptor or in secrets.yml")
+		if err != nil {
+			return cluster.AWSCredentials{}, "", err
 		}
-		return secretFile.Secret.AWSCredentials, secretFile.Secret.GithubToken, err
+		awsCreds, githubToken := chooseCredentials(descriptorFile, secretFile)
+		EmptyCreds := checkCreds(awsCreds, githubToken)
+		if EmptyCreds {
+			return awsCreds, githubToken, errors.New("It is not possible to find the AWSCredentials or GithubToken in the descriptor or in secrets.yml")
+		}
+		return awsCreds, githubToken, nil
 
 	}
 
 }
 
+func chooseCredentials(descriptorFile cluster.DescriptorFile, secretFile SecretsFile) (cluster.AWSCredentials, string) {
+	awsCreds := cluster.AWSCredentials{}
+	githubToken := ""
+	descriptorEmptyCreds := checkAWSCreds(descriptorFile.AWSCredentials)
+	descriptorEmptyGHT := checkGHToken(descriptorFile.GithubToken)
+	secretsEmptyCreds := checkAWSCreds(secretFile.Secret.AWSCredentials)
+	secretEmptyGHT := checkGHToken(secretFile.Secret.GithubToken)
+	if !secretsEmptyCreds {
+		awsCreds = secretFile.Secret.AWSCredentials
+	} else if !descriptorEmptyCreds {
+		awsCreds = descriptorFile.AWSCredentials
+	}
+
+	if !secretEmptyGHT {
+		githubToken = secretFile.Secret.GithubToken
+	} else if !descriptorEmptyGHT {
+		githubToken = descriptorFile.GithubToken
+	}
+	return awsCreds, githubToken
+}
+
 func checkCreds(awsCreds cluster.AWSCredentials, github_token string) bool {
 	awsEmptyCreds := cluster.AWSCredentials{}
 	return awsCreds == awsEmptyCreds || github_token == ""
+}
+
+func checkAWSCreds(awsCreds cluster.AWSCredentials) bool {
+	awsEmptyCreds := cluster.AWSCredentials{}
+	return awsCreds == awsEmptyCreds
+}
+
+func checkGHToken(github_token string) bool {
+	return github_token == ""
 }
 
 func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword string) error {
