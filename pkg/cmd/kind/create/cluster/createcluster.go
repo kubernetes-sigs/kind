@@ -39,14 +39,15 @@ import (
 )
 
 type flagpole struct {
-	Name          string
-	Config        string
-	ImageName     string
-	Retain        bool
-	Wait          time.Duration
-	Kubeconfig    string
-	VaultPassword string
-	Descriptor    string
+	Name           string
+	Config         string
+	ImageName      string
+	Retain         bool
+	Wait           time.Duration
+	Kubeconfig     string
+	VaultPassword  string
+	Descriptor     string
+	MoveManagement bool
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
@@ -113,6 +114,13 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		"",
 		"allows you to indicate the name of the descriptor located in this directory. By default it is cluster.yaml",
 	)
+	cmd.Flags().BoolVarP(
+		&flags.MoveManagement,
+		"localMgmt",
+		"l",
+		false,
+		"by setting this flag the cluster management will be kept in the kind",
+	)
 
 	return cmd
 }
@@ -145,9 +153,11 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		flags.Name,
 		flags.VaultPassword,
 		flags.Descriptor,
+		flags.MoveManagement,
 		withConfig,
 		cluster.CreateWithNodeImage(flags.ImageName),
 		cluster.CreateWithRetain(flags.Retain),
+		cluster.CreateWithMove(flags.MoveManagement),
 		cluster.CreateWithWaitForReady(flags.Wait),
 		cluster.CreateWithKubeconfigPath(flags.Kubeconfig),
 		cluster.CreateWithDisplayUsage(true),

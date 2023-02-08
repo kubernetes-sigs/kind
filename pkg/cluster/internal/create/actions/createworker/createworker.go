@@ -30,6 +30,7 @@ import (
 type action struct {
 	vaultPassword  string
 	descriptorName string
+	moveManagement bool
 }
 
 // // SecretsFile represents the YAML structure in the secrets.yml file
@@ -55,10 +56,11 @@ spec:
 const kubeconfigPath = "/kind/worker-cluster.kubeconfig"
 
 // NewAction returns a new action for installing default CAPI
-func NewAction(vaultPassword string, descriptorName string) actions.Action {
+func NewAction(vaultPassword string, descriptorName string, moveManagement bool) actions.Action {
 	return &action{
 		vaultPassword:  vaultPassword,
 		descriptorName: descriptorName,
+		moveManagement: moveManagement,
 	}
 }
 
@@ -292,7 +294,7 @@ spec:
 		ctx.Status.End(true)
 	}
 
-	if descriptorFile.MoveManagement {
+	if !a.moveManagement {
 		ctx.Status.Start("Moving the management role 🗝️")
 		defer ctx.Status.End(false)
 
