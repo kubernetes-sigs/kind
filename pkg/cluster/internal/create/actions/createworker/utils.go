@@ -94,7 +94,7 @@ func getCredentials(descriptorFile cluster.DescriptorFile, vaultPassword string)
 
 func checkCreds(awsCreds cluster.AWSCredentials, github_token string) bool {
 	awsEmptyCreds := cluster.AWSCredentials{}
-	return awsCreds == awsEmptyCreds && github_token == ""
+	return awsCreds == awsEmptyCreds || github_token == ""
 }
 
 func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword string) error {
