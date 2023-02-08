@@ -37,7 +37,7 @@ type DescriptorFile struct {
 	Kind                string `yaml:"kind"`
 	ClusterID           string `yaml:"cluster_id" validate:"required,min=3,max=100"`
 	DeployAutoscaler    bool   `yaml:"deploy_autoscaler" validate:"boolean"`
-	LocalManagementRole bool   `yaml:"local_mgmt" validate:"boolean"`
+	MoveManagement bool   `yaml:"move_mgmt" validate:"boolean"`
 
 	Bastion Bastion `yaml:"bastion"`
 
