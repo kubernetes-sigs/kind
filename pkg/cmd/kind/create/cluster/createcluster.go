@@ -102,7 +102,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	)
 	cmd.Flags().StringVarP(
 		&flags.VaultPassword,
-		"vaultPassword",
+		"vault-password",
 		"p",
 		"",
 		"sets vault password to encrypt secrets",
@@ -114,10 +114,9 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		"",
 		"allows you to indicate the name of the descriptor located in this directory. By default it is cluster.yaml",
 	)
-	cmd.Flags().BoolVarP(
+	cmd.Flags().BoolVar(
 		&flags.MoveManagement,
-		"localMgmt",
-		"l",
+		"keep-mgmt",
 		false,
 		"by setting this flag the cluster management will be kept in the kind",
 	)
