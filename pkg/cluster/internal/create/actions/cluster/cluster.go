@@ -36,7 +36,7 @@ type DescriptorFile struct {
 	APIVersion       string `yaml:"apiVersion"`
 	Kind             string `yaml:"kind"`
 	ClusterID        string `yaml:"cluster_id" validate:"required,min=3,max=100"`
-	DeployAutoscaler bool   `yaml:"deploy_autoscaler"`
+	DeployAutoscaler bool   `yaml:"deploy_autoscaler" validate:"boolean"`
 
 	Bastion Bastion `yaml:"bastion"`
 

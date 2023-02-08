@@ -18,7 +18,6 @@ package createworker
 
 import (
 	"bytes"
-	gob "encoding/gob"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -26,7 +25,6 @@ import (
 
 	b64 "encoding/base64"
 
-	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
@@ -35,48 +33,8 @@ import (
 	vault "github.com/sosedoff/ansible-vault-go"
 )
 
-func createDirectory(directory string) error {
-	if _, err := os.Stat(directory); os.IsNotExist(err) {
-		err = os.Mkdir(directory, 0777)
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
-	}
-	return nil
-}
-
-func currentdir() (string, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		fmt.Println(err)
-		return "", nil
-	}
-
-	return cwd, nil
-}
-
-func writeFile(filePath string, contentLines []string) error {
-	f, err := os.Create(filePath)
-	if err != nil {
-		fmt.Println(err)
-		f.Close()
-		return nil
-	}
-	for _, v := range contentLines {
-		fmt.Fprintf(f, v)
-		if err != nil {
-			fmt.Println(err)
-			return nil
-		}
-	}
-	err = f.Close()
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-	return nil
-}
+const secretName = "secrets.yml"
+const secretPath = "./" + secretName
 
 func encryptFile(filePath string, vaultPassword string) error {
 	data, err := ioutil.ReadFile(filePath)
@@ -107,40 +65,91 @@ func generateB64Credentials(access_key string, secret_key string, region string)
 }
 
 func getCredentials(descriptorFile cluster.DescriptorFile, vaultPassword string) (cluster.AWSCredentials, string, error) {
-	aws := cluster.AWSCredentials{}
-
-	_, err := os.Stat("./secrets.yml")
+	awsEmptyCreds := cluster.AWSCredentials{}
+	descriptorEmptyCreds := checkCreds(descriptorFile.AWSCredentials, descriptorFile.GithubToken)
+	_, err := os.Stat(secretPath)
 	if err != nil {
-		if aws != descriptorFile.AWSCredentials {
+
+		if !descriptorEmptyCreds {
 			return descriptorFile.AWSCredentials, descriptorFile.GithubToken, nil
 		}
-		err := errors.New("Incorrect AWS credentials in descriptor file")
-		return aws, "", err
+		err := errors.New("Incorrect AWS credentials or GithubToken in descriptor file")
+		return awsEmptyCreds, "", err
 
 	} else {
-		secretRaw, err := decryptFile("./secrets.yml", vaultPassword)
-		var secretFile SecretsFile
-		if err != nil {
-			err := errors.New("The vaultPassword is incorrect")
-			return aws, "", err
-		} else {
-			err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
-			if err != nil {
-				fmt.Println(err)
-				return aws, "", err
+
+		secretFile, err := getDecryptedSecret(vaultPassword)
+		secretsEmptyCreds := checkCreds(secretFile.Secret.AWSCredentials, secretFile.Secret.GithubToken)
+		if secretsEmptyCreds {
+			if !descriptorEmptyCreds {
+				return descriptorFile.AWSCredentials, descriptorFile.GithubToken, nil
 			}
-			return secretFile.Secret.AWSCredentials, secretFile.Secret.GithubToken, nil
+			return awsEmptyCreds, "", errors.New("It is not possible to find the AWSCredentials in the descriptor or in secrets.yml")
 		}
+		return secretFile.Secret.AWSCredentials, secretFile.Secret.GithubToken, err
+
 	}
 
 }
 
-func stringToBytes(str string) []byte {
-	buf := &bytes.Buffer{}
-	gob.NewEncoder(buf).Encode(str)
-	bytes := buf.Bytes()
+func checkCreds(awsCreds cluster.AWSCredentials, github_token string) bool {
+	awsEmptyCreds := cluster.AWSCredentials{}
+	return awsCreds == awsEmptyCreds && github_token == ""
+}
 
-	return bytes
+func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword string) error {
+	edited := false
+
+	awsCredentials, github_token, err := getCredentials(descriptorFile, vaultPassword)
+	if err != nil {
+		return err
+	}
+
+	_, err = os.Stat(secretPath)
+	if err != nil {
+		secret := Secret{awsCredentials, github_token}
+		secretFile := SecretsFile{secret}
+		secretRaw, err := yaml.Marshal(secretFile)
+		secretMap := map[string]map[string]interface{}{}
+		err = yaml.Unmarshal([]byte(secretRaw), &secretMap)
+		if err != nil {
+			return err
+		}
+
+		err = encryptSecret(secretMap, vaultPassword)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	// En caso de que exista
+
+	secretRaw, err := decryptFile(secretPath, vaultPassword)
+	if err != nil {
+		return err
+	}
+	secretMap := map[string]map[string]interface{}{}
+	err = yaml.Unmarshal([]byte(secretRaw), &secretMap)
+	if err != nil {
+		return err
+	}
+
+	if secretMap["secrets"]["aws"] == nil {
+		edited = true
+		secretMap["secrets"]["aws"] = awsCredentials
+	}
+	if secretMap["secrets"]["github_token"] == nil {
+		edited = true
+		secretMap["secrets"]["github_token"] = github_token
+	}
+	if edited {
+		err = encryptSecret(secretMap, vaultPassword)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	return nil
 }
 
 func rewriteDescriptorFile(descriptorName string) error {
@@ -151,13 +160,6 @@ func rewriteDescriptorFile(descriptorName string) error {
 	}
 
 	descriptorMap := map[string]interface{}{}
-	viper.SetConfigName(descriptorName)
-	currentDir, err := currentdir()
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	viper.AddConfigPath(currentDir)
 
 	err = yaml.Unmarshal(descriptorRAW, &descriptorMap)
 	if err != nil {
@@ -170,24 +172,13 @@ func rewriteDescriptorFile(descriptorName string) error {
 
 		d, err := yaml.Marshal(&descriptorMap)
 		if err != nil {
-			fmt.Println("error: %v", err)
 			return err
-		}
-
-		// write to file
-		f, err := os.Create(currentDir + descriptorName)
-		if err != nil {
-			fmt.Println(err)
-			return nil
 		}
 
 		err = ioutil.WriteFile(descriptorName, d, 0755)
 		if err != nil {
-			fmt.Println("error: %v", err)
 			return err
 		}
-
-		f.Close()
 
 	}
 
@@ -212,4 +203,35 @@ func integrateClusterAutoscaler(node nodes.Node, kubeconfigPath string, clusterI
 		"--set", "clusterAPIMode=incluster-incluster")
 
 	return cmd
+}
+
+func getDecryptedSecret(vaultPassword string) (SecretsFile, error) {
+	secretRaw, err := decryptFile("./secrets.yml", vaultPassword)
+	secretFile := new(SecretsFile)
+	if err != nil {
+		err := errors.New("The vaultPassword is incorrect")
+		return *secretFile, err
+	} else {
+		err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
+		if err != nil {
+			fmt.Println(err)
+			return *secretFile, err
+		}
+		return *secretFile, nil
+	}
+}
+
+func encryptSecret(secretMap map[string]map[string]interface{}, vaultPassword string) error {
+
+	var b bytes.Buffer
+	yamlEncoder := yaml.NewEncoder(&b)
+	yamlEncoder.SetIndent(2)
+	yamlEncoder.Encode(&secretMap)
+
+	err := vault.EncryptFile(secretPath, string(b.Bytes()), vaultPassword)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

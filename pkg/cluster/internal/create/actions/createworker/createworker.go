@@ -19,7 +19,6 @@ package createworker
 
 import (
 	"bytes"
-	"fmt"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
@@ -34,10 +33,12 @@ type action struct {
 
 // // SecretsFile represents the YAML structure in the secrets.yml file
 type SecretsFile struct {
-	Secret struct {
-		AWSCredentials cluster.AWSCredentials `yaml:"aws"`
-		GithubToken    string                 `yaml:"github_token"`
-	} `yaml:"secrets"`
+	Secret Secret `yaml:"secrets"`
+}
+
+type Secret struct {
+	AWSCredentials cluster.AWSCredentials `yaml:"aws"`
+	GithubToken    string                 `yaml:"github_token"`
 }
 
 const allowAllEgressNetPol = `
@@ -104,8 +105,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
-	// TODO STG: make k8s version configurable?
-
 	capiClustersNamespace := "cluster-" + descriptorFile.ClusterID
 
 	// Generate the cluster manifest
@@ -128,31 +127,10 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Generating secrets file 📝🗝️")
 	defer ctx.Status.End(false)
 
+	ensureSecretsFile(*descriptorFile, a.vaultPassword)
+
 	rewriteDescriptorFile(a.descriptorName)
 
-	filelines := []string{"secrets:\n", "  github_token: " + github_token + "\n", "  aws:\n", "    credentials:\n", "      access_key: " + aws.Credentials.AccessKey + "\n",
-		"      account_id: " + aws.Credentials.AccountID + "\n", "      region: " + descriptorFile.Region + "\n",
-		"      secret_key: " + aws.Credentials.SecretKey + "\n"}
-
-	basepath, err := currentdir()
-	err = createDirectory(basepath)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	filename := basepath + "/secrets.yml"
-	err = writeFile(filename, filelines)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	err = encryptFile(filename, a.vaultPassword)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	//rewriteDescriptorFile(descriptorFile)
 	defer ctx.Status.End(true)
 
 	ctx.Status.Start("Creating the worker cluster 💥")
