@@ -292,7 +292,7 @@ spec:
 		ctx.Status.End(true)
 	}
 
-	if !descriptorFile.LocalManagementRole {
+	if descriptorFile.MoveManagement {
 		ctx.Status.Start("Moving the management role 🗝️")
 		defer ctx.Status.End(false)
 
