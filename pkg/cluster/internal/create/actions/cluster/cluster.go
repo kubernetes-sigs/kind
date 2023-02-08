@@ -143,7 +143,7 @@ type AWSCredentials struct {
 func (d DescriptorFile) Init() DescriptorFile {
 	d.FullyPrivate = false
 	d.ControlPlane.HighlyAvailable = true
-	d.LocalManagementRole = false
+	d.MoveManagement = true
 
 	// Autoscaler
 	d.DeployAutoscaler = true
