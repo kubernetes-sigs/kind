@@ -293,7 +293,7 @@ spec:
 	}
 
 	if !descriptorFile.LocalManagementRole {
-		ctx.Status.Start("Transfering the management role 🗝️")
+		ctx.Status.Start("Moving the management role 🗝️")
 		defer ctx.Status.End(false)
 
 		// Get worker cluster's kubeconfig file (in EKS the token last 10m, which should be enough)
