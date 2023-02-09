@@ -111,8 +111,7 @@ spec:
     spec:
     {{- if $node.Spot }}
       spotMarketOptions:
-        maxPrice: \"\"
-    {{ end }}
+        maxPrice: \"\"    {{ end }}
     {{- if ne $node.AmiID "" }}
       ami:
         id: {{ $node.AmiID }}
