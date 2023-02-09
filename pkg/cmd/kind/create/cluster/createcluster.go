@@ -165,6 +165,7 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		cluster.CreateWithNodeImage(flags.ImageName),
 		cluster.CreateWithRetain(flags.Retain),
 		cluster.CreateWithMove(flags.MoveManagement),
+		cluster.CreateWithAvoidCreation(flags.AvoidCreation),
 		cluster.CreateWithWaitForReady(flags.Wait),
 		cluster.CreateWithKubeconfigPath(flags.Kubeconfig),
 		cluster.CreateWithDisplayUsage(true),
