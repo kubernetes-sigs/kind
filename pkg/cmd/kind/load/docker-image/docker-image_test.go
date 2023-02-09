@@ -83,8 +83,8 @@ func Test_sanitizeImage(t *testing.T) {
 			sanitizedImage: "registry.k8s.io/kindest/node:latest",
 		},
 		{
-			image:          "k8s.gcr.io/pause:3.6",
-			sanitizedImage: "k8s.gcr.io/pause:3.6",
+			image:          "registry.k8s.io/pause:3.6",
+			sanitizedImage: "registry.k8s.io/pause:3.6",
 		},
 		{
 			image:          "baz",
