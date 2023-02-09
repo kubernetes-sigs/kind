@@ -169,13 +169,14 @@ func ProviderWithPodman() ProviderOption {
 }
 
 // Create provisions and starts a kubernetes-in-docker cluster
-func (p *Provider) Create(name string, vaultPassword string, descriptorName string, moveManagement bool, options ...CreateOption) error {
+func (p *Provider) Create(name string, vaultPassword string, descriptorName string, moveManagement bool, avoidCreation bool, options ...CreateOption) error {
 	// apply options
 	opts := &internalcreate.ClusterOptions{
 		NameOverride:   name,
 		VaultPassword:  vaultPassword,
 		DescriptorName: descriptorName,
 		MoveManagement: moveManagement,
+		AvoidCreation:  avoidCreation,
 	}
 	for _, o := range options {
 		if err := o.apply(opts); err != nil {
