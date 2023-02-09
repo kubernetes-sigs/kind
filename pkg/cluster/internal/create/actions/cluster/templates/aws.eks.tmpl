@@ -39,7 +39,7 @@ spec:
   associateOIDCProvider: {{ .Descriptor.ControlPlane.AWS.AssociateOIDCProvider }}
   eksClusterName: "{{ .Descriptor.ClusterID }}"
   logging:
-    apiServer: {{ ..DescriptorControlPlane.AWS.Logging.ApiServer }}
+    apiServer: {{ .DescriptorControlPlane.AWS.Logging.ApiServer }}
     audit: {{ .Descriptor.ControlPlane.AWS.Logging.Audit }}
     authenticator: {{ .Descriptor.ControlPlane.AWS.Logging.Authenticator }}
     controllerManager: {{ .Descriptor.ControlPlane.AWS.Logging.ControllerManager }}
