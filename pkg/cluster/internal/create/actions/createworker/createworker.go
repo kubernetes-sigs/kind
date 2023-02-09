@@ -42,6 +42,18 @@ type SecretsFile struct {
 	} `yaml:"secrets"`
 }
 
+const allowAllEgressNetPol = `
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-all-egress
+spec:
+  egress:
+  - {}
+  podSelector: {}
+  policyTypes:
+  - Egress`
+
 const kubeconfigPath = "/kind/worker-cluster.kubeconfig"
 
 // NewAction returns a new action for installing default CAPI
@@ -153,10 +165,29 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to create cluster's Namespace")
 	}
 
+	var machineHealthCheck = `
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineHealthCheck
+metadata:
+  name: ` + descriptorFile.ClusterID + `-node-unhealthy
+spec:
+  clusterName: ` + descriptorFile.ClusterID + `
+  nodeStartupTimeout: 300s
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: ` + descriptorFile.ClusterID + `
+  unhealthyConditions:
+    - type: Ready
+      status: Unknown
+      timeout: 60s
+    - type: Ready
+      status: 'False'
+      timeout: 60s`
+
 	// Create the MachineHealthCheck manifest file in the container
 	machineHealthCheckPath := "/kind/machinehealthcheck.yaml"
 	raw = bytes.Buffer{}
-	cmd = node.Command("sh", "-c", "echo \""+getMachineHealthCheck(descriptorFile.ClusterID)+"\" > "+machineHealthCheckPath)
+	cmd = node.Command("sh", "-c", "echo \""+machineHealthCheck+"\" > "+machineHealthCheckPath)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to write the MachineHealthCheck manifest")
 	}
