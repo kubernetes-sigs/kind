@@ -23,6 +23,12 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
+const (
+	CAPICoreProvider         = "cluster-api:v1.3.2"
+	CAPIBootstrapProvider    = "kubeadm:v1.3.2"
+	CAPIControlPlaneProvider = "kubeadm:v1.3.2"
+)
+
 type PBuilder interface {
 	setCapxProvider()
 	setCapxName()
@@ -83,7 +89,12 @@ func installCAPXWorker(provider Provider, node nodes.Node, kubeconfigPath string
 
 	// Install CAPX in worker cluster
 	raw := bytes.Buffer{}
-	cmd := node.Command("sh", "-c", "clusterctl --kubeconfig "+kubeconfigPath+" init --infrastructure "+provider.capxProvider+" --wait-providers")
+	cmd := node.Command("sh", "-c", "clusterctl --kubeconfig "+kubeconfigPath+" init --wait-providers"+
+		" --core "+CAPICoreProvider+
+		" --bootstrap "+CAPIBootstrapProvider+
+		" --control-plane "+CAPIControlPlaneProvider+
+		" --infrastructure "+provider.capxProvider,
+	)
 	cmd.SetEnv(provider.capxEnvVars...)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to install CAPX")
@@ -109,7 +120,12 @@ func installCAPXWorker(provider Provider, node nodes.Node, kubeconfigPath string
 // installCAPXLocal installs CAPX in the local cluster
 func installCAPXLocal(provider Provider, node nodes.Node) error {
 	var raw bytes.Buffer
-	cmd := node.Command("sh", "-c", "clusterctl init --infrastructure "+provider.capxProvider+" --wait-providers")
+	cmd := node.Command("sh", "-c", "clusterctl init --wait-providers"+
+		" --core "+CAPICoreProvider+
+		" --bootstrap "+CAPIBootstrapProvider+
+		" --control-plane "+CAPIControlPlaneProvider+
+		" --infrastructure "+provider.capxProvider,
+	)
 	cmd.SetEnv(provider.capxEnvVars...)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to install CAPX")
