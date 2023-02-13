@@ -49,7 +49,7 @@ type SecretsFile struct {
 			User string `yaml:"user"`
 			Pass string `yaml:"pass"`
 		} `yaml:"external_registry"`
-	}
+	} `yaml:"secrets"`
 }
 
 const allowAllEgressNetPol = `
@@ -280,17 +280,8 @@ spec:
 			ctx.Status.End(true) // End Installing CNI in workload cluster
 		}
 
-		ctx.Status.Start("Enabling workload cluster's self-healing 🏥")
+		ctx.Status.Start("Preparing nodes in workload cluster 📦")
 		defer ctx.Status.End(false)
-
-		// Enable the cluster's self-healing
-		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "apply", "-f", machineHealthCheckPath)
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
-		}
-
-		ctx.Status.End(true) // End Enabling workload cluster's self-healing
 
 		// Wait for the worker cluster creation
 		raw = bytes.Buffer{}
@@ -305,6 +296,20 @@ spec:
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
 			return errors.Wrap(err, "failed to create the Machines")
 		}
+
+		ctx.Status.End(true) // End Preparing nodes in workload cluster
+
+		ctx.Status.Start("Enabling workload cluster's self-healing 🏥")
+		defer ctx.Status.End(false)
+
+		// Enable the cluster's self-healing
+		raw = bytes.Buffer{}
+		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "apply", "-f", machineHealthCheckPath)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
+		}
+
+		ctx.Status.End(true) // End Enabling workload cluster's self-healing
 
 		ctx.Status.Start("Installing CAPx in workload cluster 🎖️")
 		defer ctx.Status.End(false)
@@ -363,13 +368,6 @@ spec:
 		if !a.moveManagement {
 			ctx.Status.Start("Moving the management role 🗝️")
 			defer ctx.Status.End(false)
-
-			// Get worker cluster's kubeconfig file (in EKS the token last 10m, which should be enough)
-			raw = bytes.Buffer{}
-			cmd = node.Command("sh", "-c", "clusterctl -n "+capiClustersNamespace+" get kubeconfig "+descriptorFile.ClusterID+" > "+kubeconfigPath)
-			if err := cmd.SetStdout(&raw).Run(); err != nil {
-				return errors.Wrap(err, "failed to get the kubeconfig file")
-			}
 
 			// Create namespace for CAPI clusters (it must exists) in worker cluster
 			raw = bytes.Buffer{}
