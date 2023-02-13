@@ -232,3 +232,15 @@ func getNode(ctx *actions.ActionContext) (nodes.Node, error) {
 	}
 	return controlPlanes[0], nil
 }
+
+func executeCommand(node nodes.Node, command string, envVars ...[]string) error {
+	raw := bytes.Buffer{}
+	cmd := node.Command("sh", "-c", command)
+	if len(envVars) > 0 {
+		cmd.SetEnv(envVars[0]...)
+	}
+	if err := cmd.SetStdout(&raw).Run(); err != nil {
+		return err
+	}
+	return nil
+}

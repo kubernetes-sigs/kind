@@ -17,7 +17,7 @@ limitations under the License.
 package createworker
 
 import (
-	"bytes"
+	_ "embed"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -27,7 +27,15 @@ const (
 	CAPICoreProvider         = "cluster-api:v1.3.2"
 	CAPIBootstrapProvider    = "kubeadm:v1.3.2"
 	CAPIControlPlaneProvider = "kubeadm:v1.3.2"
+
+	CNIName      = "calico"
+	CNINamespace = "calico-system"
+	CNIHelmChart = "/stratio/helm/tigera-operator"
+	CNITemplate  = "/kind/calico-helm-values.yaml"
 )
+
+//go:embed files/calico-helm-values.yaml
+var calicoHelmValues string
 
 type PBuilder interface {
 	setCapxProvider()
@@ -85,50 +93,78 @@ func (i *Infra) buildProvider(p ProviderParams) Provider {
 }
 
 // installCAPXWorker installs CAPX in the worker cluster
-func installCAPXWorker(provider Provider, node nodes.Node, kubeconfigPath string, allowAllEgressNetPolPath string) error {
+func (p *Provider) installCAPXWorker(node nodes.Node, kubeconfigPath string, allowAllEgressNetPolPath string) error {
+	var command string
+	var err error
 
 	// Install CAPX in worker cluster
-	raw := bytes.Buffer{}
-	cmd := node.Command("sh", "-c", "clusterctl --kubeconfig "+kubeconfigPath+" init --wait-providers"+
-		" --core "+CAPICoreProvider+
-		" --bootstrap "+CAPIBootstrapProvider+
-		" --control-plane "+CAPIControlPlaneProvider+
-		" --infrastructure "+provider.capxProvider,
-	)
-	cmd.SetEnv(provider.capxEnvVars...)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to install CAPX")
+	command = "clusterctl --kubeconfig " + kubeconfigPath + " init --wait-providers" +
+		" --core " + CAPICoreProvider +
+		" --bootstrap " + CAPIBootstrapProvider +
+		" --control-plane " + CAPIControlPlaneProvider +
+		" --infrastructure " + p.capxProvider
+	err = executeCommand(node, command, p.capxEnvVars)
+	if err != nil {
+		return errors.Wrap(err, "failed to install CAPX in workload cluster")
 	}
 
 	// Scale CAPX to 2 replicas
-	raw = bytes.Buffer{}
-	cmd = node.Command("sh", "-c", "kubectl --kubeconfig "+kubeconfigPath+" -n "+provider.capxName+"-system scale --replicas 2 deploy "+provider.capxName+"-controller-manager")
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to scale the CAPA Deployment")
+	command = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system scale --replicas 2 deploy " + p.capxName + "-controller-manager"
+	err = executeCommand(node, command)
+	if err != nil {
+		return errors.Wrap(err, "failed to scale CAPX in workload cluster")
 	}
 
 	// Allow egress in CAPX's Namespace
-	raw = bytes.Buffer{}
-	cmd = node.Command("sh", "-c", "kubectl --kubeconfig "+kubeconfigPath+" -n "+provider.capxName+"-system apply -f "+allowAllEgressNetPolPath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to apply CAPA's NetworkPolicy")
+	command = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system apply -f " + allowAllEgressNetPolPath
+	err = executeCommand(node, command)
+	if err != nil {
+		return errors.Wrap(err, "failed to apply CAPX's NetworkPolicy in workload cluster")
 	}
 
 	return nil
 }
 
 // installCAPXLocal installs CAPX in the local cluster
-func installCAPXLocal(provider Provider, node nodes.Node) error {
-	var raw bytes.Buffer
-	cmd := node.Command("sh", "-c", "clusterctl init --wait-providers"+
-		" --core "+CAPICoreProvider+
-		" --bootstrap "+CAPIBootstrapProvider+
-		" --control-plane "+CAPIControlPlaneProvider+
-		" --infrastructure "+provider.capxProvider,
-	)
-	cmd.SetEnv(provider.capxEnvVars...)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to install CAPX")
+func (p *Provider) installCAPXLocal(node nodes.Node) error {
+	var command string
+	var err error
+
+	command = "clusterctl init --wait-providers" +
+		" --core " + CAPICoreProvider +
+		" --bootstrap " + CAPIBootstrapProvider +
+		" --control-plane " + CAPIControlPlaneProvider +
+		" --infrastructure " + p.capxProvider
+	err = executeCommand(node, command, p.capxEnvVars)
+	if err != nil {
+		return errors.Wrap(err, "failed to install CAPX in local cluster")
 	}
+
+	return nil
+}
+
+func installCNI(node nodes.Node, kubeconfigPath string) error {
+	var command string
+	var err error
+
+	command = "echo '" + calicoHelmValues + "' > " + CNITemplate
+	err = executeCommand(node, command)
+	if err != nil {
+		return errors.Wrap(err, "failed to create CNI Helm chart values file")
+	}
+
+	command = "kubectl --kubeconfig " + kubeconfigPath + " create namespace " + CNINamespace
+	err = executeCommand(node, command)
+	if err != nil {
+		return errors.Wrap(err, "failed to create CNI namespace")
+	}
+
+	command = "helm install --kubeconfig " + kubeconfigPath + " " + CNIName + " " + CNIHelmChart +
+		" --namespace " + CNINamespace + " --values " + CNITemplate
+	err = executeCommand(node, command)
+	if err != nil {
+		return errors.Wrap(err, "failed to deploy CNI Helm Chart")
+	}
+
 	return nil
 }

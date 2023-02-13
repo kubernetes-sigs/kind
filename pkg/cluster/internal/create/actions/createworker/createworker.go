@@ -115,17 +115,17 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.End(true) // End Ensuring CAPx requirements
 	}
 
-	ctx.Status.Start("Installing CAPx in local 🎖️")
+	ctx.Status.Start("Installing CAPx 🎖️")
 	defer ctx.Status.End(false)
 
-	err = installCAPXLocal(provider, node)
+	err = provider.installCAPXLocal(node)
 	if err != nil {
 		return err
 	}
 
-	ctx.Status.End(true) // End Installing CAPx in local
+	ctx.Status.End(true) // End Installing CAPx
 
-	ctx.Status.Start("Generating worker cluster manifests 📝")
+	ctx.Status.Start("Generating workload cluster manifests 📝")
 	defer ctx.Status.End(false)
 
 	capiClustersNamespace := "cluster-" + descriptorFile.ClusterID
@@ -196,7 +196,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		defer ctx.Status.End(true) // End Generating secrets file
 	}
 
-	ctx.Status.Start("Creating the worker cluster 💥")
+	ctx.Status.Start("Creating the workload cluster 💥")
 	defer ctx.Status.End(false)
 
 	// Create namespace for CAPI clusters (it must exists)
@@ -206,59 +206,55 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to create cluster's Namespace")
 	}
 
-	if !descriptorFile.ControlPlane.Managed {
-
-		// Download Calico manifest in the container
-		calicoPath := "/kind/calico.yaml"
-		calicoURL := "https://projectcalico.docs.tigera.io/archive/v3.22/manifests/calico.yaml"
-		raw = bytes.Buffer{}
-		cmd = node.Command("sh", "-c", "curl "+calicoURL+" -s -o "+calicoPath)
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to write the ClusterResourceSet manifest")
-		}
-
-		// Create a ConfigMap that contains the manifest to install Calico
-		raw = bytes.Buffer{}
-		cmd = node.Command("sh", "-c", "kubectl -n "+capiClustersNamespace+" create configmap calico-crs-configmap --from-file="+calicoPath)
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to write the ClusterResourceSet manifest")
-		}
-
-		var clusterResourceSet = `
-apiVersion: addons.cluster.x-k8s.io/v1alpha3
-kind: ClusterResourceSet
-metadata:
-  name: calico-crs
-spec:
-  clusterSelector:
-    matchLabels:
-      cni: calico
-  resources:
-  - kind: ConfigMap
-    name: calico-crs-configmap`
-
-		// Create the ClusterResourceSet manifest file in the container
-		clusterResourceSetPath := "/kind/clusterresourceset.yaml"
-		raw = bytes.Buffer{}
-		cmd = node.Command("sh", "-c", "echo \""+clusterResourceSet+"\" > "+clusterResourceSetPath)
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to write the ClusterResourceSet manifest")
-		}
-
-		// Create the ClusterResourceSet resource
-		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "apply", "-f", clusterResourceSetPath)
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
-		}
-	}
-
 	// Apply cluster manifests
 	raw = bytes.Buffer{}
 	cmd = node.Command("kubectl", "create", "-n", capiClustersNamespace, "-f", descriptorPath)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to apply manifests")
 	}
+
+	// Wait for the workload cluster control plane to be ready
+	command := "kubectl -n " + capiClustersNamespace + " wait --for=condition=ControlPlaneReady --timeout 15m cluster " + descriptorFile.ClusterID
+	err = executeCommand(node, command)
+	if err != nil {
+		return errors.Wrap(err, "failed to wait for workload cluster Control Plane to be ready")
+	}
+
+	// Get the workload cluster kubeconfig
+	command = "clusterctl -n " + capiClustersNamespace + " get kubeconfig " + descriptorFile.ClusterID + " > " + kubeconfigPath
+	err = executeCommand(node, command)
+	if err != nil {
+		return errors.Wrap(err, "failed to get workload cluster kubeconfig")
+	}
+
+	ctx.Status.End(true) // End Creating the workload cluster
+
+	// Install unmanaged cluster addons
+	if !descriptorFile.ControlPlane.Managed {
+		var err error
+
+		ctx.Status.Start("Installing CNI in workload cluster 🔌")
+		defer ctx.Status.End(false)
+
+		err = installCNI(node, kubeconfigPath)
+		if err != nil {
+			return errors.Wrap(err, "failed to install CNI in workload cluster")
+		}
+		ctx.Status.End(true) // End Installing CNI in workload cluster
+
+		// ctx.Status.Start("Installing StorageClass in workload cluster 💾")
+		// defer ctx.Status.End(false)
+
+		// err := installStorageClass(node)
+		// if err != nil {
+		// 	return errors.Wrap(err, "failed to install StorageClass")
+		// }
+
+		// ctx.Status.End(true) // End Installing StorageClass in workload cluster
+	}
+
+	ctx.Status.Start("Enabling workload cluster's self-healing 💉")
+	defer ctx.Status.End(false)
 
 	var machineHealthCheck = `
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -294,6 +290,8 @@ spec:
 		return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
 	}
 
+	ctx.Status.End(true) // End Enabling workload cluster's self-healing
+
 	// Wait for the worker cluster creation
 	raw = bytes.Buffer{}
 	cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "25m", "cluster", descriptorFile.ClusterID)
@@ -308,9 +306,7 @@ spec:
 		return errors.Wrap(err, "failed to create the Machines")
 	}
 
-	ctx.Status.End(true) // End Creating the worker cluster
-
-	ctx.Status.Start("Installing CAPx in worker cluster 🎖️")
+	ctx.Status.Start("Installing CAPx in workload cluster 🎖️")
 	defer ctx.Status.End(false)
 
 	// Create the allow-all-egress network policy file in the container
@@ -321,14 +317,7 @@ spec:
 		return errors.Wrap(err, "failed to write the allow-all-egress network policy")
 	}
 
-	// Get worker cluster's kubeconfig file (in EKS the token last 10m, which should be enough)
-	raw = bytes.Buffer{}
-	cmd = node.Command("sh", "-c", "clusterctl -n "+capiClustersNamespace+" get kubeconfig "+descriptorFile.ClusterID+" > "+kubeconfigPath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to get the kubeconfig file")
-	}
-
-	err = installCAPXWorker(provider, node, kubeconfigPath, allowAllEgressNetPolPath)
+	err = provider.installCAPXWorker(node, kubeconfigPath, allowAllEgressNetPolPath)
 	if err != nil {
 		return err
 	}
