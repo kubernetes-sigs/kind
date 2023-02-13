@@ -376,7 +376,7 @@ spec:
 				return errors.Wrap(err, "failed to create manifests Namespace")
 			}
 
-			// EKS specific: Pivot management role to worker cluster
+			// Pivot management role to worker cluster
 			raw = bytes.Buffer{}
 			cmd = node.Command("sh", "-c", "clusterctl move -n "+capiClustersNamespace+" --to-kubeconfig "+kubeconfigPath)
 
