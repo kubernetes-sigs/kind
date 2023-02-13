@@ -58,6 +58,8 @@ type ClusterOptions struct {
 	NameOverride   string // overrides config.Name
 	VaultPassword  string
 	DescriptorName string
+	MoveManagement bool
+	AvoidCreation  bool
 	// NodeImage overrides the nodes' images in Config if non-zero
 	NodeImage      string
 	Retain         bool
@@ -136,7 +138,7 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 
 		// add Stratio step
 		actionsToRun = append(actionsToRun,
-			createworker.NewAction(opts.VaultPassword, opts.DescriptorName), // create worker k8s cluster
+			createworker.NewAction(opts.VaultPassword, opts.DescriptorName, opts.MoveManagement, opts.AvoidCreation), // create worker k8s cluster
 		)
 	}
 

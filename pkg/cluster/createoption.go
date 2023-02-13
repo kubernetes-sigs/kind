@@ -80,6 +80,14 @@ func CreateWithRetain(retain bool) CreateOption {
 	})
 }
 
+func CreateWithMove(move bool) CreateOption {
+	return CreateWithRetain(move)
+}
+
+func CreateWithAvoidCreation(avoidCreation bool) CreateOption {
+	return CreateWithRetain(avoidCreation)
+}
+
 // CreateWithWaitForReady configures a maximum wait time for the control plane
 // node(s) to be ready. By default no waiting is performed
 func CreateWithWaitForReady(waitTime time.Duration) CreateOption {

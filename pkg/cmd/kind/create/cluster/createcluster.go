@@ -39,14 +39,16 @@ import (
 )
 
 type flagpole struct {
-	Name          string
-	Config        string
-	ImageName     string
-	Retain        bool
-	Wait          time.Duration
-	Kubeconfig    string
-	VaultPassword string
-	Descriptor    string
+	Name           string
+	Config         string
+	ImageName      string
+	Retain         bool
+	Wait           time.Duration
+	Kubeconfig     string
+	VaultPassword  string
+	Descriptor     string
+	MoveManagement bool
+	AvoidCreation  bool
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
@@ -101,7 +103,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	)
 	cmd.Flags().StringVarP(
 		&flags.VaultPassword,
-		"vaultPassword",
+		"vault-password",
 		"p",
 		"",
 		"sets vault password to encrypt secrets",
@@ -112,6 +114,18 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		"d",
 		"",
 		"allows you to indicate the name of the descriptor located in this directory. By default it is cluster.yaml",
+	)
+	cmd.Flags().BoolVar(
+		&flags.MoveManagement,
+		"keep-mgmt",
+		false,
+		"by setting this flag the cluster management will be kept in the kind",
+	)
+	cmd.Flags().BoolVar(
+		&flags.AvoidCreation,
+		"avoid-creation",
+		false,
+		"by setting this flag the worker cluster won't be created",
 	)
 
 	return cmd
@@ -145,9 +159,13 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		flags.Name,
 		flags.VaultPassword,
 		flags.Descriptor,
+		flags.MoveManagement,
+		flags.AvoidCreation,
 		withConfig,
 		cluster.CreateWithNodeImage(flags.ImageName),
 		cluster.CreateWithRetain(flags.Retain),
+		cluster.CreateWithMove(flags.MoveManagement),
+		cluster.CreateWithAvoidCreation(flags.AvoidCreation),
 		cluster.CreateWithWaitForReady(flags.Wait),
 		cluster.CreateWithKubeconfigPath(flags.Kubeconfig),
 		cluster.CreateWithDisplayUsage(true),
