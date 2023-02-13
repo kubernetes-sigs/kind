@@ -185,7 +185,7 @@ spec:
       timeout: 60s`
 
 	// Create the MachineHealthCheck manifest file in the container
-	machineHealthCheckPath := "/kind/machinehealthcheck.yaml"
+	machineHealthCheckPath := "/kind/manifests/machinehealthcheck.yaml"
 	raw = bytes.Buffer{}
 	cmd = node.Command("sh", "-c", "echo \""+machineHealthCheck+"\" > "+machineHealthCheckPath)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
