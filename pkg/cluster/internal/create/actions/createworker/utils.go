@@ -164,29 +164,32 @@ func rewriteDescriptorFile(descriptorName string) error {
 		return err
 	}
 
-	deleteKey("aws", descriptorMap)
-	deleteKey("github_token", descriptorMap)
+	if descriptorMap["aws"] != nil || descriptorMap["github_token"] != nil {
+		deleteKey("aws", descriptorMap)
+		deleteKey("github_token", descriptorMap)
 
-	d, err := yaml.Marshal(&descriptorMap)
-	if err != nil {
-		fmt.Println("error: %v", err)
-		return err
+		d, err := yaml.Marshal(&descriptorMap)
+		if err != nil {
+			fmt.Println("error: %v", err)
+			return err
+		}
+
+		// write to file
+		f, err := os.Create(currentDir + descriptorName)
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
+
+		err = ioutil.WriteFile(descriptorName, d, 0755)
+		if err != nil {
+			fmt.Println("error: %v", err)
+			return err
+		}
+
+		f.Close()
+
 	}
-
-	// write to file
-	f, err := os.Create(currentDir + descriptorName)
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-
-	err = ioutil.WriteFile(descriptorName, d, 0755)
-	if err != nil {
-		fmt.Println("error: %v", err)
-		return err
-	}
-
-	f.Close()
 
 	return nil
 
