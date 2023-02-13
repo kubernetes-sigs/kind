@@ -125,7 +125,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		&flags.AvoidCreation,
 		"avoid-creation",
 		false,
-		"by setting this flag the cluster management will be kept in the kind",
+		"by setting this flag the worker cluster won't be created",
 	)
 
 	return cmd
