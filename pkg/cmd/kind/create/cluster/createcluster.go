@@ -48,6 +48,7 @@ type flagpole struct {
 	VaultPassword  string
 	Descriptor     string
 	MoveManagement bool
+	AvoidCreation  bool
 }
 
 // NewCommand returns a new cobra.Command for cluster creation
@@ -120,6 +121,12 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		false,
 		"by setting this flag the cluster management will be kept in the kind",
 	)
+	cmd.Flags().BoolVar(
+		&flags.AvoidCreation,
+		"avoid-creation",
+		false,
+		"by setting this flag the worker cluster won't be created",
+	)
 
 	return cmd
 }
@@ -153,10 +160,12 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		flags.VaultPassword,
 		flags.Descriptor,
 		flags.MoveManagement,
+		flags.AvoidCreation,
 		withConfig,
 		cluster.CreateWithNodeImage(flags.ImageName),
 		cluster.CreateWithRetain(flags.Retain),
 		cluster.CreateWithMove(flags.MoveManagement),
+		cluster.CreateWithAvoidCreation(flags.AvoidCreation),
 		cluster.CreateWithWaitForReady(flags.Wait),
 		cluster.CreateWithKubeconfigPath(flags.Kubeconfig),
 		cluster.CreateWithDisplayUsage(true),

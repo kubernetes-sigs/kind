@@ -32,6 +32,7 @@ type action struct {
 	vaultPassword  string
 	descriptorName string
 	moveManagement bool
+	avoidCreation  bool
 }
 
 // SecretsFile represents the YAML structure in the secrets.yml file
@@ -66,11 +67,12 @@ spec:
 const kubeconfigPath = "/kind/worker-cluster.kubeconfig"
 
 // NewAction returns a new action for installing default CAPI
-func NewAction(vaultPassword string, descriptorName string, moveManagement bool) actions.Action {
+func NewAction(vaultPassword string, descriptorName string, moveManagement bool, avoidCreation bool) actions.Action {
 	return &action{
 		vaultPassword:  vaultPassword,
 		descriptorName: descriptorName,
 		moveManagement: moveManagement,
+		avoidCreation:  avoidCreation,
 	}
 }
 
@@ -196,65 +198,12 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		defer ctx.Status.End(true) // End Generating secrets file
 	}
 
-	ctx.Status.Start("Creating the workload cluster 💥")
-	defer ctx.Status.End(false)
-
 	// Create namespace for CAPI clusters (it must exists)
 	raw = bytes.Buffer{}
 	cmd = node.Command("kubectl", "create", "ns", capiClustersNamespace)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to create cluster's Namespace")
 	}
-
-	// Apply cluster manifests
-	raw = bytes.Buffer{}
-	cmd = node.Command("kubectl", "create", "-n", capiClustersNamespace, "-f", descriptorPath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to apply manifests")
-	}
-
-	// Wait for the workload cluster control plane to be ready
-	command := "kubectl -n " + capiClustersNamespace + " wait --for=condition=ControlPlaneReady --timeout 15m cluster " + descriptorFile.ClusterID
-	err = executeCommand(node, command)
-	if err != nil {
-		return errors.Wrap(err, "failed to wait for workload cluster Control Plane to be ready")
-	}
-
-	// Get the workload cluster kubeconfig
-	command = "clusterctl -n " + capiClustersNamespace + " get kubeconfig " + descriptorFile.ClusterID + " > " + kubeconfigPath
-	err = executeCommand(node, command)
-	if err != nil {
-		return errors.Wrap(err, "failed to get workload cluster kubeconfig")
-	}
-
-	ctx.Status.End(true) // End Creating the workload cluster
-
-	// Install unmanaged cluster addons
-	if !descriptorFile.ControlPlane.Managed {
-		var err error
-
-		ctx.Status.Start("Installing CNI in workload cluster 🔌")
-		defer ctx.Status.End(false)
-
-		err = installCNI(node, kubeconfigPath)
-		if err != nil {
-			return errors.Wrap(err, "failed to install CNI in workload cluster")
-		}
-		ctx.Status.End(true) // End Installing CNI in workload cluster
-
-		// ctx.Status.Start("Installing StorageClass in workload cluster 💾")
-		// defer ctx.Status.End(false)
-
-		// err := installStorageClass(node)
-		// if err != nil {
-		// 	return errors.Wrap(err, "failed to install StorageClass")
-		// }
-
-		// ctx.Status.End(true) // End Installing StorageClass in workload cluster
-	}
-
-	ctx.Status.Start("Enabling workload cluster's self-healing 💉")
-	defer ctx.Status.End(false)
 
 	var machineHealthCheck = `
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -276,38 +225,12 @@ spec:
       timeout: 60s`
 
 	// Create the MachineHealthCheck manifest file in the container
-	machineHealthCheckPath := "/kind/machinehealthcheck.yaml"
+	machineHealthCheckPath := "/kind/manifests/machinehealthcheck.yaml"
 	raw = bytes.Buffer{}
 	cmd = node.Command("sh", "-c", "echo \""+machineHealthCheck+"\" > "+machineHealthCheckPath)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to write the MachineHealthCheck manifest")
 	}
-
-	// Enable the cluster's self-healing
-	raw = bytes.Buffer{}
-	cmd = node.Command("kubectl", "-n", capiClustersNamespace, "apply", "-f", machineHealthCheckPath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
-	}
-
-	ctx.Status.End(true) // End Enabling workload cluster's self-healing
-
-	// Wait for the worker cluster creation
-	raw = bytes.Buffer{}
-	cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "25m", "cluster", descriptorFile.ClusterID)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to create the worker Cluster")
-	}
-
-	// Wait for machines creation
-	raw = bytes.Buffer{}
-	cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "20m", "--all", "md")
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to create the Machines")
-	}
-
-	ctx.Status.Start("Installing CAPx in workload cluster 🎖️")
-	defer ctx.Status.End(false)
 
 	// Create the allow-all-egress network policy file in the container
 	allowAllEgressNetPolPath := "/kind/allow-all-egress_netpol.yaml"
@@ -317,83 +240,155 @@ spec:
 		return errors.Wrap(err, "failed to write the allow-all-egress network policy")
 	}
 
-	err = provider.installCAPXWorker(node, kubeconfigPath, allowAllEgressNetPolPath)
-	if err != nil {
-		return err
-	}
+	if !a.avoidCreation {
 
-	// Scale CAPI to 2 replicas
-	raw = bytes.Buffer{}
-	cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capi-system", "scale", "--replicas", "2", "deploy", "capi-controller-manager")
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to scale the CAPI Deployment")
-	}
-
-	// Allow egress in CAPI's Namespaces
-	raw = bytes.Buffer{}
-	cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capi-system", "apply", "-f", allowAllEgressNetPolPath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to apply CAPI's NetworkPolicy")
-	}
-	raw = bytes.Buffer{}
-	cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capi-kubeadm-bootstrap-system", "apply", "-f", allowAllEgressNetPolPath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to apply CAPI's NetworkPolicy")
-	}
-	raw = bytes.Buffer{}
-	cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capi-kubeadm-control-plane-system", "apply", "-f", allowAllEgressNetPolPath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to apply CAPI's NetworkPolicy")
-	}
-
-	// Allow egress in cert-manager Namespace
-	raw = bytes.Buffer{}
-	cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "cert-manager", "apply", "-f", allowAllEgressNetPolPath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to apply cert-manager's NetworkPolicy")
-	}
-
-	ctx.Status.End(true) // End Installing CAPx in worker cluster
-
-	if descriptorFile.DeployAutoscaler {
-		ctx.Status.Start("Adding Cluster-Autoescaler 🗚")
+		ctx.Status.Start("Creating the workload cluster 💥")
 		defer ctx.Status.End(false)
 
+		// Apply cluster manifests
 		raw = bytes.Buffer{}
-		cmd = integrateClusterAutoscaler(node, kubeconfigPath, descriptorFile.ClusterID, "clusterapi")
+		cmd = node.Command("kubectl", "create", "-n", capiClustersNamespace, "-f", descriptorPath)
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to install chart cluster-autoscaler")
+			return errors.Wrap(err, "failed to apply manifests")
 		}
 
-		ctx.Status.End(true)
-	}
+		// Wait for the workload cluster control plane to be ready
+		command := "kubectl -n " + capiClustersNamespace + " wait --for=condition=ControlPlaneReady --timeout 15m cluster " + descriptorFile.ClusterID
+		err = executeCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to wait for workload cluster Control Plane to be ready")
+		}
 
-	if !a.moveManagement {
-		ctx.Status.Start("Moving the management role 🗝️")
+		// Get the workload cluster kubeconfig
+		command = "clusterctl -n " + capiClustersNamespace + " get kubeconfig " + descriptorFile.ClusterID + " > " + kubeconfigPath
+		err = executeCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to get workload cluster kubeconfig")
+		}
+
+		ctx.Status.End(true) // End Creating the workload cluster
+
+		// Install unmanaged cluster addons
+		if !descriptorFile.ControlPlane.Managed {
+			ctx.Status.Start("Installing CNI in workload cluster 🔌")
+			defer ctx.Status.End(false)
+
+			err = installCNI(node, kubeconfigPath)
+			if err != nil {
+				return errors.Wrap(err, "failed to install CNI in workload cluster")
+			}
+			ctx.Status.End(true) // End Installing CNI in workload cluster
+		}
+
+		ctx.Status.Start("Enabling workload cluster's self-healing 🏥")
 		defer ctx.Status.End(false)
 
-		// Get worker cluster's kubeconfig file (in EKS the token last 10m, which should be enough)
+		// Enable the cluster's self-healing
 		raw = bytes.Buffer{}
-		cmd = node.Command("sh", "-c", "clusterctl -n "+capiClustersNamespace+" get kubeconfig "+descriptorFile.ClusterID+" > "+kubeconfigPath)
+		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "apply", "-f", machineHealthCheckPath)
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to get the kubeconfig file")
+			return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
 		}
 
-		// Create namespace for CAPI clusters (it must exists) in worker cluster
+		ctx.Status.End(true) // End Enabling workload cluster's self-healing
+
+		// Wait for the worker cluster creation
 		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "create", "ns", capiClustersNamespace)
+		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "25m", "cluster", descriptorFile.ClusterID)
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to create manifests Namespace")
+			return errors.Wrap(err, "failed to create the worker Cluster")
 		}
 
-		// Pivot management role to worker cluster
+		// Wait for machines creation
 		raw = bytes.Buffer{}
-		cmd = node.Command("sh", "-c", "clusterctl move -n "+capiClustersNamespace+" --to-kubeconfig "+kubeconfigPath)
+		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "20m", "--all", "md")
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to pivot management role to worker cluster")
+			return errors.Wrap(err, "failed to create the Machines")
 		}
 
-		ctx.Status.End(true) // End Transfering the management role
+		ctx.Status.Start("Installing CAPx in workload cluster 🎖️")
+		defer ctx.Status.End(false)
+
+		err = provider.installCAPXWorker(node, kubeconfigPath, allowAllEgressNetPolPath)
+		if err != nil {
+			return err
+		}
+
+		// Scale CAPI to 2 replicas
+		raw = bytes.Buffer{}
+		cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capi-system", "scale", "--replicas", "2", "deploy", "capi-controller-manager")
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to scale the CAPI Deployment")
+		}
+
+		// Allow egress in CAPI's Namespaces
+		raw = bytes.Buffer{}
+		cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capi-system", "apply", "-f", allowAllEgressNetPolPath)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to apply CAPI's NetworkPolicy")
+		}
+		raw = bytes.Buffer{}
+		cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capi-kubeadm-bootstrap-system", "apply", "-f", allowAllEgressNetPolPath)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to apply CAPI's NetworkPolicy")
+		}
+		raw = bytes.Buffer{}
+		cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capi-kubeadm-control-plane-system", "apply", "-f", allowAllEgressNetPolPath)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to apply CAPI's NetworkPolicy")
+		}
+
+		// Allow egress in cert-manager Namespace
+		raw = bytes.Buffer{}
+		cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "cert-manager", "apply", "-f", allowAllEgressNetPolPath)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to apply cert-manager's NetworkPolicy")
+		}
+
+		ctx.Status.End(true) // End Installing CAPx in workload cluster
+
+		if descriptorFile.DeployAutoscaler {
+			ctx.Status.Start("Adding Cluster-Autoescaler 🗚")
+			defer ctx.Status.End(false)
+
+			raw = bytes.Buffer{}
+			cmd = integrateClusterAutoscaler(node, kubeconfigPath, descriptorFile.ClusterID, "clusterapi")
+			if err := cmd.SetStdout(&raw).Run(); err != nil {
+				return errors.Wrap(err, "failed to install chart cluster-autoscaler")
+			}
+
+			ctx.Status.End(true)
+		}
+
+		if !a.moveManagement {
+			ctx.Status.Start("Moving the management role 🗝️")
+			defer ctx.Status.End(false)
+
+			// Get worker cluster's kubeconfig file (in EKS the token last 10m, which should be enough)
+			raw = bytes.Buffer{}
+			cmd = node.Command("sh", "-c", "clusterctl -n "+capiClustersNamespace+" get kubeconfig "+descriptorFile.ClusterID+" > "+kubeconfigPath)
+			if err := cmd.SetStdout(&raw).Run(); err != nil {
+				return errors.Wrap(err, "failed to get the kubeconfig file")
+			}
+
+			// Create namespace for CAPI clusters (it must exists) in worker cluster
+			raw = bytes.Buffer{}
+			cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "create", "ns", capiClustersNamespace)
+			if err := cmd.SetStdout(&raw).Run(); err != nil {
+				return errors.Wrap(err, "failed to create manifests Namespace")
+			}
+
+			// EKS specific: Pivot management role to worker cluster
+			raw = bytes.Buffer{}
+			cmd = node.Command("sh", "-c", "clusterctl move -n "+capiClustersNamespace+" --to-kubeconfig "+kubeconfigPath)
+
+			if err := cmd.SetStdout(&raw).Run(); err != nil {
+				return errors.Wrap(err, "failed to pivot management role to worker cluster")
+			}
+
+			ctx.Status.End(true)
+		}
+
 	}
 
 	return nil
