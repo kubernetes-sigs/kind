@@ -199,6 +199,22 @@ func commonArgs(cluster string, cfg *config.Cluster, networkName string, nodeNam
 	if mountFuse() {
 		args = append(args, "--device", "/dev/fuse")
 	}
+
+	if cfg.Networking.DNSSearch != nil {
+		if len(*cfg.Networking.DNSSearch) == 0 {
+			return nil, errors.New("docker provider requires a non-empty dnsSearch")
+		}
+		for _, s := range *cfg.Networking.DNSSearch {
+			args = append(args, "--dns-search", s)
+		}
+		args = append(args, "--dns", "8.8.8.8")
+		args = append(args, "--dns", "8.8.4.4")
+		if config.ClusterHasIPv6(cfg) {
+			args = append(args, "--dns", "2001:4860:4860::8888")
+			args = append(args, "--dns", "2001:4860:4860::8844")
+		}
+	}
+
 	return args, nil
 }
 

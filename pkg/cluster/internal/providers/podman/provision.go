@@ -164,6 +164,15 @@ func commonArgs(cfg *config.Cluster, networkName string, nodeNames []string) ([]
 		args = append(args, "--device", "/dev/fuse")
 	}
 
+	if cfg.Networking.DNSSearch != nil {
+		if len(*cfg.Networking.DNSSearch) == 0 {
+			args = append(args, "--dns-search", "")
+		}
+		for _, s := range *cfg.Networking.DNSSearch {
+			args = append(args, "--dns-search", s)
+		}
+	}
+
 	return args, nil
 }
 
