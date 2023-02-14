@@ -21,6 +21,7 @@ import (
 	"embed"
 	"errors"
 	"os"
+	"reflect"
 	"strings"
 	"text/template"
 
@@ -50,40 +51,66 @@ type DescriptorFile struct {
 	SSHKey       string `yaml:"ssh_key"`
 	FullyPrivate bool   `yaml:"fully_private" validate:"boolean"`
 
-	Networks struct {
-		VPCID   string `yaml:"vpc_id" validate:"required_with=Subnets"`
-		Subnets []struct {
-			AvailabilityZone string `yaml:"availability_zone"`
-			Name             string `yaml:"name"`
-			PrivateCIDR      string `yaml:"private_cidr"`
-			PublicCIDR       string `yaml:"public_cidr"`
-		} `yaml:"subnets"`
-	} `yaml:"networks"`
+	Networks Networks `yaml:"networks"`
 
-	ExternalRegistry struct {
-		AuthRequired bool   `yaml:"auth_required" validate:"boolean"`
-		Type         string `yaml:"type"`
-		URL          string `yaml:"url" validate:"required"`
-	} `yaml:"external_registry"`
+	ExternalRegistry ExternalRegistry `yaml:"external_registry"`
 
-	Keos struct {
-		Domain         string `yaml:"domain" validate:"required,hostname"`
-		ExternalDomain string `yaml:"external_domain" validate:"required,hostname"`
-		Flavour        string `yaml:"flavour"`
-		Version        string `yaml:"version"`
-	} `yaml:"keos"`
+	Keos Keos `yaml:"keos"`
 
-	ControlPlane struct {
-		Managed         bool   `yaml:"managed" validate:"boolean"`
-		Name            string `yaml:"name"`
-		AmiID           string `yaml:"ami_id"`
-		HighlyAvailable bool   `yaml:"highly_available" validate:"boolean"`
-		Size            string `yaml:"size" validate:"required_if=Managed false"`
-		Image           string `yaml:"image" validate:"required_if=InfraProvider gcp"`
-		AWS             AWS    `yaml:"aws"`
-	} `yaml:"control_plane"`
+	ControlPlane ControlPlane `yaml:"control_plane"`
 
 	WorkerNodes WorkerNodes `yaml:"worker_nodes"`
+}
+
+type ControlPlane struct {
+	Managed         bool   `yaml:"managed" validate:"boolean"`
+	Name            string `yaml:"name"`
+	AmiID           string `yaml:"ami_id"`
+	HighlyAvailable bool   `yaml:"highly_available" validate:"boolean"`
+	Size            string `yaml:"size" validate:"required_if=Managed false"`
+	Image           string `yaml:"image" validate:"required_if=InfraProvider gcp"`
+	AWS             AWS    `yaml:"aws"`
+}
+
+type ExternalRegistry struct {
+	AuthRequired bool   `yaml:"auth_required" validate:"boolean"`
+	Type         string `yaml:"type"`
+	URL          string `yaml:"url" validate:"required"`
+}
+
+type Keos struct {
+	Domain         string `yaml:"domain" validate:"required,hostname"`
+	ExternalDomain string `yaml:"external_domain" validate:"required,hostname"`
+	Flavour        string `yaml:"flavour"`
+	Version        string `yaml:"version"`
+}
+
+type Networks struct {
+	VPCID                      string            `yaml:"vpc_id" validate:"required_with=Subnets"`
+	CidrBlock                  string            `yaml:"cidr,omitempty"`
+	Tags                       map[string]string `yaml:"tags,omitempty"`
+	AvailabilityZoneUsageLimit int               `yaml:"az_usage_limit" validate:"numeric"`
+	AvailabilityZoneSelection  string            `yaml:"az_selection" validate:"oneof='Ordered' 'Random' '' "`
+	IPv6                       IPv6              `yaml:"ipv6,omitempty"`
+	Subnets                    []Subnets         `yaml:"subnets" validate:"required_with=VPCID"`
+}
+
+type IPv6 struct {
+	CidrBlock                   string `yaml:"cidr,omitempty"`
+	PoolId                      string `yaml:"pool_id,omitempty"`
+	EgressOnlyInternetGatewayId string `yaml:"egress_internet_gw_id,omitempty"`
+}
+
+type Subnets struct {
+	SubnetId         string            `yaml:"subnet_id"`
+	AvailabilityZone string            `yaml:"az,omitempty"`
+	CidrBlock        string            `yaml:"cidr,omitempty"`
+	Ipv6CidrBlock    string            `yaml:"ipv6_cidr,omitempty"`
+	IsPublic         *bool             `yaml:"is_public,omitempty"`
+	RouteTableId     string            `yaml:"route_table_id,omitempty"`
+	NatGatewayId     string            `yaml:"nat_id,omitempty"`
+	IsIPv6           *bool             `yaml:"is_ipv6,omitempty"`
+	Tags             map[string]string `yaml:"tags,omitempty"`
 }
 
 type AWS struct {
@@ -191,6 +218,26 @@ func getTemplateFile(d DescriptorFile) (string, error) {
 	return t, nil
 }
 
+func hasField(v interface{}, name string) bool {
+	rv := reflect.ValueOf(v)
+	if rv.Kind() == reflect.Ptr {
+		rv = rv.Elem()
+	}
+	if rv.Kind() != reflect.Struct {
+		return false
+	}
+	return rv.FieldByName(name).IsValid()
+}
+
+func isNotEmpty(v interface{}) bool {
+	return !reflect.ValueOf(v).IsZero()
+}
+
+func checkReference(v interface{}) bool {
+	defer func() { recover() }()
+	return v != nil && !reflect.ValueOf(v).IsNil() && v != "nil" && v != "<nil>"
+}
+
 func GetClusterManifest(d DescriptorFile) (string, error) {
 
 	funcMap := template.FuncMap{
@@ -227,7 +274,7 @@ func GetClusterManifest(d DescriptorFile) (string, error) {
 	}
 
 	var tpl bytes.Buffer
-	t, err := template.New("").Funcs(funcMap).ParseFS(ctel, flavor)
+	t, err := template.New("").Funcs(funcMap).Funcs(template.FuncMap{"isNotEmpty": isNotEmpty}).Funcs(template.FuncMap{"checkReference": checkReference}).ParseFS(ctel, flavor)
 	if err != nil {
 		return "", err
 	}

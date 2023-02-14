@@ -46,14 +46,62 @@ spec:
     scheduler: {{ .ControlPlane.AWS.Logging.Scheduler }}
   network:
     vpc:
-      availabilityZoneSelection: Ordered
-      availabilityZoneUsageLimit: 3
+      availabilityZoneSelection: {{- if ne .Networks.AvailabilityZoneSelection "" }} {{ .Networks.AvailabilityZoneSelection }} {{ else }} Ordered {{ end }}
+      availabilityZoneUsageLimit: {{- if ne .Networks.AvailabilityZoneUsageLimit 0 }} {{ .Networks.AvailabilityZoneUsageLimit }} {{ else }} 3 {{ end }}
+  {{- if ne .Networks.CidrBlock "" }}
+      cidrBlock: {{ .Networks.CidrBlock }}
+  {{- end }}
+  {{- if isNotEmpty .Networks.IPv6 }}
+      ipv6:
+      {{- if ne .Networks.IPv6.CidrBlock ""}}
+        cidrBlock: {{ .Networks.IPv6.CidrBlock }}
+      {{- end }}
+      {{- if ne .Networks.IPv6.PoolId ""}}
+        poolId: {{ .Networks.IPv6.PoolId }}
+      {{- end }}
+      {{- if ne .Networks.IPv6.EgressOnlyInternetGatewayId ""}}
+        egressOnlyInternetGatewayId: {{ .Networks.IPv6.EgressOnlyInternetGatewayId }}
+      {{- end }}
+  {{- end }}
+  {{- if isNotEmpty .Networks.Tags }}
+      tags:
+    {{- range $key,$value := .Networks.Tags }}
+      - $key: $value
+    {{- end}}
+  {{- end }}
 {{- if ne .Networks.VPCID "" }}
       id: {{ .Networks.VPCID }}
     {{- if ne .Networks.Subnets nil }}
     subnets:
     {{- range .Networks.Subnets }}
-      - id: {{ .Name }}
+      - id: {{ .SubnetId }}
+      {{- if ne .AvailabilityZone "" }}
+        availabilityZone:  {{ .AvailabilityZone }} 
+      {{- end }}
+      {{- if ne .CidrBlock "" }}
+        cidrBlock:  {{ .CidrBlock }} 
+      {{- end }}
+      {{- if ne .Ipv6CidrBlock "" }}
+        ipv6CidrBlock:  {{ .Ipv6CidrBlock }} 
+      {{- end }}
+      {{- if ne .RouteTableId "" }}
+        routeTableId:  {{ .RouteTableId }} 
+      {{- end }}
+      {{- if ne .NatGatewayId "" }}
+        natGatewayId:  {{ .NatGatewayId }} 
+      {{- end }}
+      {{- if checkReference .IsIPv6 }}
+        isIpv6: {{ .IsIPv6 }}
+      {{- end }}
+      {{- if checkReference .IsPublic }}
+        isPublic: {{ .IsPublic }}
+      {{- end }}
+      {{- if isNotEmpty .Tags }}
+        tags:
+      {{- range $key,$value := .Tags }}
+        - $key: $value
+      {{- end}}
+      {{- end }}
     {{- end }}
     {{- end }}
 {{- end }}
