@@ -164,13 +164,17 @@ func (d DescriptorFile) Init() DescriptorFile {
 	// Autoscaler
 	d.DeployAutoscaler = true
 
-	// AWS
+	// EKS
 	d.ControlPlane.AWS.AssociateOIDCProvider = true
 	d.ControlPlane.AWS.Logging.ApiServer = false
 	d.ControlPlane.AWS.Logging.Audit = false
 	d.ControlPlane.AWS.Logging.Authenticator = false
 	d.ControlPlane.AWS.Logging.ControllerManager = false
 	d.ControlPlane.AWS.Logging.Scheduler = false
+
+	// GCP
+	d.Networks.VPCID = "default"
+
 	return d
 }
 
