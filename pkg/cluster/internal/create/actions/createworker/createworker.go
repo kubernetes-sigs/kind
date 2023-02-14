@@ -65,6 +65,7 @@ spec:
   - Egress`
 
 const kubeconfigPath = "/kind/worker-cluster.kubeconfig"
+const workKubeconfigPath = ".kube/config"
 
 // NewAction returns a new action for installing default CAPI
 func NewAction(vaultPassword string, descriptorName string, moveManagement bool, avoidCreation bool) actions.Action {
@@ -253,20 +254,39 @@ spec:
 		}
 
 		// Wait for the workload cluster control plane to be ready
-		command := "kubectl -n " + capiClustersNamespace + " wait --for=condition=ControlPlaneReady --timeout 20m cluster " + descriptorFile.ClusterID
-		err = executeCommand(node, command)
-		if err != nil {
+		raw = bytes.Buffer{}
+		cmd = node.Command("sh", "-c", "kubectl -n "+capiClustersNamespace+" wait --for=condition=ControlPlaneReady --timeout 20m cluster "+descriptorFile.ClusterID)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
 			return errors.Wrap(err, "failed to wait for workload cluster Control Plane to be ready")
 		}
 
 		// Get the workload cluster kubeconfig
-		command = "clusterctl -n " + capiClustersNamespace + " get kubeconfig " + descriptorFile.ClusterID + " > " + kubeconfigPath
-		err = executeCommand(node, command)
-		if err != nil {
+		raw = bytes.Buffer{}
+		cmd = node.Command("sh", "-c", "clusterctl -n "+capiClustersNamespace+" get kubeconfig "+descriptorFile.ClusterID+" | tee "+kubeconfigPath)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
 			return errors.Wrap(err, "failed to get workload cluster kubeconfig")
 		}
+		kubeconfig := raw.String()
 
 		ctx.Status.End(true) // End Creating the workload cluster
+
+		ctx.Status.Start("Saving the workload cluster kubeconfig 📝")
+		defer ctx.Status.End(false)
+
+		workKubeconfigBasePath := strings.Split(workKubeconfigPath, "/")[0]
+		_, err = os.Stat(workKubeconfigBasePath)
+		if err != nil {
+			err := os.Mkdir(workKubeconfigBasePath, os.ModePerm)
+			if err != nil {
+				return err
+			}
+		}
+		err = writeFile(workKubeconfigPath, []string{kubeconfig})
+		if err != nil {
+			return errors.Wrap(err, "failed to save the workload cluster kubeconfig")
+		}
+
+		ctx.Status.End(true) // End Saving the workload cluster kubeconfig
 
 		// Install unmanaged cluster addons
 		if !descriptorFile.ControlPlane.Managed {
