@@ -253,7 +253,7 @@ spec:
 		}
 
 		// Wait for the workload cluster control plane to be ready
-		command := "kubectl -n " + capiClustersNamespace + " wait --for=condition=ControlPlaneReady --timeout 15m cluster " + descriptorFile.ClusterID
+		command := "kubectl -n " + capiClustersNamespace + " wait --for=condition=ControlPlaneReady --timeout 20m cluster " + descriptorFile.ClusterID
 		err = executeCommand(node, command)
 		if err != nil {
 			return errors.Wrap(err, "failed to wait for workload cluster Control Plane to be ready")
@@ -285,14 +285,14 @@ spec:
 
 		// Wait for the worker cluster creation
 		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "25m", "cluster", descriptorFile.ClusterID)
+		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "10m", "cluster", descriptorFile.ClusterID)
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
 			return errors.Wrap(err, "failed to create the worker Cluster")
 		}
 
 		// Wait for machines creation
 		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "20m", "--all", "md")
+		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "15m", "--all", "md")
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
 			return errors.Wrap(err, "failed to create the Machines")
 		}
@@ -353,7 +353,7 @@ spec:
 		ctx.Status.End(true) // End Installing CAPx in workload cluster
 
 		if descriptorFile.DeployAutoscaler {
-			ctx.Status.Start("Adding Cluster-Autoescaler 🗚")
+			ctx.Status.Start("Adding Cluster-Autoescaler ⚙")
 			defer ctx.Status.End(false)
 
 			raw = bytes.Buffer{}
