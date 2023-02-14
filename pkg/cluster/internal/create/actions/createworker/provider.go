@@ -42,6 +42,7 @@ type PBuilder interface {
 	setCapxName()
 	setCapxTemplate(managed bool)
 	setCapxEnvVars(p ProviderParams)
+	setStorageClass()
 	getProvider() Provider
 }
 
@@ -50,6 +51,7 @@ type Provider struct {
 	capxName     string
 	capxTemplate string
 	capxEnvVars  []string
+	storageClass string
 }
 
 type ProviderParams struct {
@@ -89,6 +91,7 @@ func (i *Infra) buildProvider(p ProviderParams) Provider {
 	i.builder.setCapxName()
 	i.builder.setCapxTemplate(p.managed)
 	i.builder.setCapxEnvVars(p)
+	i.builder.setStorageClass()
 	return i.builder.getProvider()
 }
 

@@ -37,7 +37,6 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installcni"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installstorage"
-	"sigs.k8s.io/kind/pkg/cluster/internal/create/keosinstaller"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/kubeadminit"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/kubeadmjoin"
@@ -171,16 +170,6 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 	if err != nil {
 		return err
 	}
-
-	// add Stratio action: generate the KEOS descriptor
-	actionsContext.Status.Start("Generating the KEOS descriptor 📝")
-	defer actionsContext.Status.End(false)
-
-	err = keosinstaller.CreateKEOSDescriptor(opts.DescriptorName)
-	if err != nil {
-		return err
-	}
-	actionsContext.Status.End(true) // End Generating KEOS descriptor
 
 	// add Stratio action: delete the local cluster
 	if !opts.Retain {

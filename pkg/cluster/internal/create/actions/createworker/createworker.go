@@ -407,6 +407,15 @@ spec:
 			ctx.Status.End(true)
 		}
 
+		ctx.Status.Start("Generating the KEOS descriptor 📝")
+		defer ctx.Status.End(false)
+
+		err = createKEOSDescriptor(*descriptorFile, provider.storageClass)
+		if err != nil {
+			return err
+		}
+		ctx.Status.End(true) // End Generating KEOS descriptor
+
 	}
 
 	return nil
