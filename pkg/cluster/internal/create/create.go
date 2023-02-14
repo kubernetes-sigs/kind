@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	configaction "sigs.k8s.io/kind/pkg/cluster/internal/create/actions/config"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/createworker"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/validation"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installcni"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installstorage"
@@ -138,6 +139,7 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 
 		// add Stratio step
 		actionsToRun = append(actionsToRun,
+			validation.NewAction(opts.DescriptorName, "secrets.yml"),
 			createworker.NewAction(opts.VaultPassword, opts.DescriptorName, opts.MoveManagement, opts.AvoidCreation), // create worker k8s cluster
 		)
 	}
