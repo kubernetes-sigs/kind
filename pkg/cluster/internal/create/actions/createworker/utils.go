@@ -170,7 +170,7 @@ func rewriteDescriptorFile(descriptorName string) error {
 
 		d, err := yaml.Marshal(&descriptorMap)
 		if err != nil {
-			fmt.Println("error: %v", err)
+			fmt.Println("error: ", err)
 			return err
 		}
 
@@ -183,7 +183,7 @@ func rewriteDescriptorFile(descriptorName string) error {
 
 		err = ioutil.WriteFile(descriptorName, d, 0755)
 		if err != nil {
-			fmt.Println("error: %v", err)
+			fmt.Println("error: ", err)
 			return err
 		}
 

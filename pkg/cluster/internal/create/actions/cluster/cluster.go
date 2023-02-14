@@ -218,17 +218,6 @@ func getTemplateFile(d DescriptorFile) (string, error) {
 	return t, nil
 }
 
-func hasField(v interface{}, name string) bool {
-	rv := reflect.ValueOf(v)
-	if rv.Kind() == reflect.Ptr {
-		rv = rv.Elem()
-	}
-	if rv.Kind() != reflect.Struct {
-		return false
-	}
-	return rv.FieldByName(name).IsValid()
-}
-
 func isNotEmpty(v interface{}) bool {
 	return !reflect.ValueOf(v).IsZero()
 }
