@@ -91,6 +91,8 @@ spec:
         k8s-app: kindnet
     spec:
       hostNetwork: true
+      nodeSelector:
+        kubernetes.io/os: linux
       tolerations:
       - operator: Exists
       serviceAccountName: kindnet
