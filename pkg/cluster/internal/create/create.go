@@ -139,7 +139,7 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 
 		// add Stratio step
 		actionsToRun = append(actionsToRun,
-			validation.NewAction(opts.DescriptorName, "secrets.yml"),
+			validation.NewAction(opts.DescriptorName, "secrets.yml", opts.VaultPassword),
 			createworker.NewAction(opts.VaultPassword, opts.DescriptorName, opts.MoveManagement, opts.AvoidCreation), // create worker k8s cluster
 		)
 	}

@@ -35,12 +35,12 @@ type action struct {
 }
 
 // // SecretsFile represents the YAML structure in the secrets.yml file
-type SecretsFile struct {
-	Secret struct {
-		AWSCredentials cluster.AWSCredentials `yaml:"aws"`
-		GithubToken    string                 `yaml:"github_token"`
-	} `yaml:"secrets"`
-}
+// type SecretsFile struct {
+// 	Secret struct {
+// 		AWSCredentials cluster.AWSCredentials `yaml:"aws"`
+// 		GithubToken    string                 `yaml:"github_token"`
+// 	} `yaml:"secrets"`
+// }
 
 const allowAllEgressNetPol = `
 apiVersion: networking.k8s.io/v1

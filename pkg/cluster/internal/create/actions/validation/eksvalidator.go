@@ -1,22 +1,26 @@
 package validation
 
+import "sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
+
 type EKSValidator struct {
-	descriptorPath string
-	secretsPath    string
+	descriptor cluster.DescriptorFile
+	secrets    cluster.SecretsFile
 }
 
 func newEKSValidator() *EKSValidator {
 	return &EKSValidator{}
 }
 
-func (v *EKSValidator) setDescriptorPath(descriptorPath string) {
-	v.descriptorPath = descriptorPath
+func (v *EKSValidator) descriptorFile(descriptor cluster.DescriptorFile) {
+	v.descriptor = descriptor
 }
 
-func (v *EKSValidator) setSecretsPath(secretsPath string) {
-	v.secretsPath = secretsPath
+func (v *EKSValidator) secretsFile(secrets cluster.SecretsFile) {
+	v.secrets = secrets
 }
 
 func (v *EKSValidator) validate() error {
-	panic("UnImplemented")
+	//panic("UnImplemented")
+
+	return nil
 }

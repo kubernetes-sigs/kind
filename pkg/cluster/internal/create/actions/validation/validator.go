@@ -2,11 +2,13 @@ package validation
 
 import (
 	"errors"
+
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 )
 
 type Validator interface {
-	setDescriptorPath(descriptorpath string)
-	setSecretsPath(secretPath string)
+	descriptorFile(descriptorFile cluster.DescriptorFile)
+	secretsFile(secretsFile cluster.SecretsFile)
 	validate() error
 }
 

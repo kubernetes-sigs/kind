@@ -20,21 +20,22 @@ package validation
 import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/createworker"
 )
 
 type action struct {
-	provider       string
-	managed        bool
 	descriptorPath string
 	secretsPath    string
+	vaultPassword  string
 }
 
 var validator Validator
 
-func NewAction(descriptorPath string, secretsPath string) actions.Action {
+func NewAction(descriptorPath string, secretsPath string, vaultPassword string) actions.Action {
 	return &action{
 		descriptorPath: descriptorPath,
 		secretsPath:    secretsPath,
+		vaultPassword:  vaultPassword,
 	}
 }
 
@@ -44,6 +45,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	if err != nil {
 		return err
 	}
+	secretsFile, err := createworker.GetSecretsFile(a.secretsPath, a.vaultPassword)
 
 	infraProvider := descriptorFile.InfraProvider
 	managed := descriptorFile.ControlPlane.Managed
@@ -52,15 +54,15 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	if managed {
 		managedStr = "unmanaged"
 	}
-	ctx.Status.Start("Validating " + a.provider + " " + managedStr + " descriptor file: " + a.descriptorPath + " and secrets file " + a.secretsPath)
+	ctx.Status.Start("Validating " + infraProvider + " " + managedStr + " descriptor file: " + a.descriptorPath + " and secrets file " + a.secretsPath)
 	defer ctx.Status.End(false)
 
 	validator, err := getValidator(infraProvider, managed)
 	if err != nil {
 		return err
 	}
-	validator.setDescriptorPath(a.descriptorPath)
-	validator.setSecretsPath(a.secretsPath)
+	validator.descriptorFile(*descriptorFile)
+	validator.secretsFile(*secretsFile)
 	err = validator.validate()
 
 	if err != nil {

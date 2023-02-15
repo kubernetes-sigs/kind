@@ -156,6 +156,13 @@ func (d DescriptorFile) Init() DescriptorFile {
 	return d
 }
 
+type SecretsFile struct {
+	Secret struct {
+		AWSCredentials AWSCredentials `yaml:"aws"`
+		GithubToken    string         `yaml:"github_token"`
+	} `yaml:"secrets"`
+}
+
 // Read descriptor file
 func GetClusterDescriptor(descriptorName string) (*DescriptorFile, error) {
 	descriptorRAW, err := os.ReadFile("./" + descriptorName)

@@ -119,7 +119,7 @@ func getCredentials(descriptorFile cluster.DescriptorFile, vaultPassword string)
 
 	} else {
 		secretRaw, err := decryptFile("./secrets.yml", vaultPassword)
-		var secretFile SecretsFile
+		var secretFile cluster.SecretsFile
 		if err != nil {
 			err := errors.New("The vaultPassword is incorrect")
 			return aws, "", err
@@ -212,4 +212,18 @@ func integrateClusterAutoscaler(node nodes.Node, kubeconfigPath string, clusterI
 		"--set", "clusterAPIMode=incluster-incluster")
 
 	return cmd
+}
+
+func GetSecretsFile(secretsPath string, vaultPassword string) (*cluster.SecretsFile, error) {
+	secretRaw, err := decryptFile(secretsPath, vaultPassword)
+	var secretFile cluster.SecretsFile
+	if err != nil {
+		err := errors.New("The vaultPassword is incorrect")
+		return nil, err
+	}
+	err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
+	if err != nil {
+		return nil, err
+	}
+	return &secretFile, nil
 }
