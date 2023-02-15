@@ -281,7 +281,7 @@ spec:
 				return err
 			}
 		}
-		err = writeFile(workKubeconfigPath, []string{kubeconfig})
+		err = os.WriteFile(workKubeconfigPath, []byte(kubeconfig), 0600)
 		if err != nil {
 			return errors.Wrap(err, "failed to save the workload cluster kubeconfig")
 		}
