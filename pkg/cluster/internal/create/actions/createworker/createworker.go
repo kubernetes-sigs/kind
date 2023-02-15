@@ -181,7 +181,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		filelines = append(filelines, "    user: "+externalRegistry["User"]+"\n")
 		filelines = append(filelines, "    pass: "+externalRegistry["Pass"]+"\n")
 
-		basepath, err := currentdir()
+		basepath, _ := currentdir()
 		err = createDirectory(basepath)
 		if err != nil {
 			return err
@@ -298,6 +298,15 @@ spec:
 				return errors.Wrap(err, "failed to install CNI in workload cluster")
 			}
 			ctx.Status.End(true) // End Installing CNI in workload cluster
+
+			ctx.Status.Start("Installing StorageClass in workload cluster 💾")
+			defer ctx.Status.End(false)
+
+			err = infra.installCSI(node, kubeconfigPath)
+			if err != nil {
+				return errors.Wrap(err, "failed to install StorageClass in workload cluster")
+			}
+			ctx.Status.End(true) // End Installing StorageClass in workload cluster
 		}
 
 		ctx.Status.Start("Preparing nodes in workload cluster 📦")

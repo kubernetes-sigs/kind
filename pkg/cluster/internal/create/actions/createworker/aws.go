@@ -30,25 +30,23 @@ type AWSBuilder struct {
 	capxTemplate string
 	capxEnvVars  []string
 	storageClass string
+	csiNamespace string
 }
 
 func newAWSBuilder() *AWSBuilder {
 	return &AWSBuilder{}
 }
 
-func (b *AWSBuilder) setCapxProvider() {
+func (b *AWSBuilder) setCapx(managed bool) {
 	b.capxProvider = "aws:v2.0.2"
-}
-
-func (b *AWSBuilder) setCapxName() {
 	b.capxName = "capa"
-}
-
-func (b *AWSBuilder) setCapxTemplate(managed bool) {
+	b.storageClass = "gp2"
 	if managed {
 		b.capxTemplate = "aws.eks.tmpl"
+		b.csiNamespace = ""
 	} else {
 		b.capxTemplate = "aws.tmpl"
+		b.csiNamespace = ""
 	}
 }
 
@@ -64,10 +62,6 @@ func (b *AWSBuilder) setCapxEnvVars(p ProviderParams) {
 	}
 }
 
-func (b *AWSBuilder) setStorageClass() {
-	b.storageClass = "gp2"
-}
-
 func (b *AWSBuilder) getProvider() Provider {
 	return Provider{
 		capxProvider: b.capxProvider,
@@ -75,7 +69,12 @@ func (b *AWSBuilder) getProvider() Provider {
 		capxTemplate: b.capxTemplate,
 		capxEnvVars:  b.capxEnvVars,
 		storageClass: b.storageClass,
+		csiNamespace: b.csiNamespace,
 	}
+}
+
+func (b *AWSBuilder) installCSI(n nodes.Node, k string) error {
+	return nil
 }
 
 func createCloudFormationStack(node nodes.Node, envVars []string) error {
