@@ -165,12 +165,7 @@ func commonArgs(cfg *config.Cluster, networkName string, nodeNames []string) ([]
 	}
 
 	if cfg.Networking.DNSSearch != nil {
-		if len(*cfg.Networking.DNSSearch) == 0 {
-			args = append(args, "--dns-search", "")
-		}
-		for _, s := range *cfg.Networking.DNSSearch {
-			args = append(args, "--dns-search", s)
-		}
+		args = append(args, "-e", "KIND_DNS_SEARCH="+strings.Join(*cfg.Networking.DNSSearch, " "))
 	}
 
 	return args, nil
