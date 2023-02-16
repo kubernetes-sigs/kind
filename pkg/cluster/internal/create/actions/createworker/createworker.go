@@ -66,6 +66,7 @@ spec:
 
 const kubeconfigPath = "/kind/worker-cluster.kubeconfig"
 const workKubeconfigPath = ".kube/config"
+const secretsFile = "secrets.yml"
 
 // NewAction returns a new action for installing default CAPI
 func NewAction(vaultPassword string, descriptorName string, moveManagement bool, avoidCreation bool) actions.Action {
@@ -155,7 +156,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	ctx.Status.End(true) // End Generating worker cluster manifests
 
-	_, err = os.Stat("./secrets.yml")
+	_, err = os.Stat(secretsFile)
 	if err != nil {
 		ctx.Status.Start("Generating secrets file 📝🗝️")
 		defer ctx.Status.End(false)
@@ -186,7 +187,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		if err != nil {
 			return err
 		}
-		filename := basepath + "/secrets.yml"
+		filename := basepath + "/" + secretsFile
 		err = writeFile(filename, filelines)
 		if err != nil {
 			return errors.Wrap(err, "failed to write the secrets file")
