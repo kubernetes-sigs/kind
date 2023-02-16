@@ -19,9 +19,7 @@ package cluster
 import (
 	"bytes"
 	"embed"
-	"errors"
 	"os"
-	"strings"
 	"text/template"
 
 	"github.com/go-playground/validator/v10"
@@ -40,12 +38,12 @@ type DescriptorFile struct {
 
 	Bastion Bastion `yaml:"bastion"`
 
-	AWSCredentials AWSCredentials `yaml:"aws"`
-	GithubToken    string         `yaml:"github_token"`
+	Credentials Credentials `yaml:"credentials"`
+	GithubToken string      `yaml:"github_token"`
 
 	InfraProvider string `yaml:"infra_provider" validate:"required,oneof='aws' 'gcp' 'azure'"`
 
-	K8SVersion   string `yaml:"k8s_version" validate:"required,startswith=v,len=7"`
+	K8SVersion   string `yaml:"k8s_version" validate:"required,startswith=v,min=7,max=8"`
 	Region       string `yaml:"region" validate:"required"`
 	SSHKey       string `yaml:"ssh_key"`
 	FullyPrivate bool   `yaml:"fully_private" validate:"boolean"`
@@ -64,6 +62,8 @@ type DescriptorFile struct {
 		AuthRequired bool   `yaml:"auth_required" validate:"boolean"`
 		Type         string `yaml:"type"`
 		URL          string `yaml:"url" validate:"required"`
+		User         string `yaml:"user"`
+		Pass         string `yaml:"pass"`
 	} `yaml:"external_registry"`
 
 	Keos struct {
@@ -80,7 +80,12 @@ type DescriptorFile struct {
 		HighlyAvailable bool   `yaml:"highly_available" validate:"boolean"`
 		Size            string `yaml:"size" validate:"required_if=Managed false"`
 		Image           string `yaml:"image" validate:"required_if=InfraProvider gcp"`
-		AWS             AWS    `yaml:"aws"`
+		RootVolume      struct {
+			Size      int    `yaml:"size" validate:"numeric"`
+			Type      string `yaml:"type"`
+			Encrypted bool   `yaml:"encrypted" validate:"boolean"`
+		} `yaml:"root_volume"`
+		AWS AWS `yaml:"aws"`
 	} `yaml:"control_plane"`
 
 	WorkerNodes WorkerNodes `yaml:"worker_nodes"`
@@ -129,13 +134,26 @@ type Node struct {
 	MaxSize int
 	MinSize int
 }
-type AWSCredentials struct {
-	Credentials struct {
-		AccessKey string `yaml:"access_key"`
-		SecretKey string `yaml:"secret_key"`
-		Region    string `yaml:"region"`
-		AccountID string `yaml:"account_id"`
-	} `yaml:"credentials"`
+
+type Credentials struct {
+	// AWS
+	AccessKey string `yaml:"access_key"`
+	SecretKey string `yaml:"secret_key"`
+	Region    string `yaml:"region"`
+	Account   string `yaml:"account"`
+
+	// GCP
+	ProjectID    string `yaml:"project_id"`
+	PrivateKeyID string `yaml:"private_key_id"`
+	PrivateKey   string `yaml:"private_key"`
+	ClientEmail  string `yaml:"client_email"`
+	ClientID     string `yaml:"client_id"`
+}
+
+type TemplateParams struct {
+	Descriptor       DescriptorFile
+	Credentials      map[string]string
+	ExternalRegistry map[string]string
 }
 
 // Init sets default values for the DescriptorFile
@@ -146,13 +164,17 @@ func (d DescriptorFile) Init() DescriptorFile {
 	// Autoscaler
 	d.DeployAutoscaler = true
 
-	// AWS
+	// EKS
 	d.ControlPlane.AWS.AssociateOIDCProvider = true
 	d.ControlPlane.AWS.Logging.ApiServer = false
 	d.ControlPlane.AWS.Logging.Audit = false
 	d.ControlPlane.AWS.Logging.Authenticator = false
 	d.ControlPlane.AWS.Logging.ControllerManager = false
 	d.ControlPlane.AWS.Logging.Scheduler = false
+
+	// GCP
+	d.Networks.VPCID = "default"
+
 	return d
 }
 
@@ -176,22 +198,7 @@ func GetClusterDescriptor(descriptorName string) (*DescriptorFile, error) {
 	return &descriptorFile, nil
 }
 
-func getTemplateFile(d DescriptorFile) (string, error) {
-	var t string
-	switch d.InfraProvider {
-	case "aws":
-		if d.ControlPlane.Managed {
-			t = "templates/aws.eks.tmpl"
-		} else {
-			return "", errors.New("AWS not supported yet")
-		}
-	case "gcp":
-		return "", errors.New("GCP not supported yet")
-	}
-	return t, nil
-}
-
-func GetClusterManifest(d DescriptorFile) (string, error) {
+func GetClusterManifest(flavor string, params TemplateParams) (string, error) {
 
 	funcMap := template.FuncMap{
 		"loop": func(az string, qa int, maxsize int, minsize int) <-chan Node {
@@ -221,18 +228,13 @@ func GetClusterManifest(d DescriptorFile) (string, error) {
 		},
 	}
 
-	flavor, err := getTemplateFile(d)
-	if err != nil {
-		return "", err
-	}
-
 	var tpl bytes.Buffer
-	t, err := template.New("").Funcs(funcMap).ParseFS(ctel, flavor)
+	t, err := template.New("").Funcs(funcMap).ParseFS(ctel, "templates/"+flavor)
 	if err != nil {
 		return "", err
 	}
 
-	err = t.ExecuteTemplate(&tpl, strings.Split(flavor, "/")[1], d)
+	err = t.ExecuteTemplate(&tpl, flavor, params)
 	if err != nil {
 		return "", err
 	}

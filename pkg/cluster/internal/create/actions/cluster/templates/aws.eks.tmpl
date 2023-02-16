@@ -2,8 +2,8 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  name: "{{ .ClusterID }}"
-  namespace: "cluster-{{ .ClusterID }}"
+  name: "{{ .Descriptor.ClusterID }}"
+  namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec:
   clusterNetwork:
     pods:
@@ -11,24 +11,24 @@ spec:
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta2
     kind: AWSManagedControlPlane
-    name: "{{ .ClusterID }}-control-plane"
+    name: "{{ .Descriptor.ClusterID }}-control-plane"
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
     kind: AWSManagedCluster
-    name: "{{ .ClusterID }}"
+    name: "{{ .Descriptor.ClusterID }}"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSManagedCluster
 metadata:
-  name: "{{ .ClusterID }}"
-  namespace: "cluster-{{ .ClusterID }}"
+  name: "{{ .Descriptor.ClusterID }}"
+  namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec: {}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: AWSManagedControlPlane
 metadata:
-  name: "{{ .ClusterID }}-control-plane"
-  namespace: "cluster-{{ .ClusterID }}"
+  name: "{{ .Descriptor.ClusterID }}-control-plane"
+  namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec:
   addons:
     - name: "aws-ebs-csi-driver"
@@ -36,61 +36,61 @@ spec:
     - name: "vpc-cni"
       version: "v1.12.1-eksbuild.1"
       conflictResolution: "overwrite"
-  associateOIDCProvider: {{ .ControlPlane.AWS.AssociateOIDCProvider }}
-  eksClusterName: "{{ .ClusterID }}"
+  associateOIDCProvider: {{ .Descriptor.ControlPlane.AWS.AssociateOIDCProvider }}
+  eksClusterName: "{{ .Descriptor.ClusterID }}"
   logging:
-    apiServer: {{ .ControlPlane.AWS.Logging.ApiServer }}
-    audit: {{ .ControlPlane.AWS.Logging.Audit }}
-    authenticator: {{ .ControlPlane.AWS.Logging.Authenticator }}
-    controllerManager: {{ .ControlPlane.AWS.Logging.ControllerManager }}
-    scheduler: {{ .ControlPlane.AWS.Logging.Scheduler }}
+    apiServer: {{ .Descriptor.ControlPlane.AWS.Logging.ApiServer }}
+    audit: {{ .Descriptor.ControlPlane.AWS.Logging.Audit }}
+    authenticator: {{ .Descriptor.ControlPlane.AWS.Logging.Authenticator }}
+    controllerManager: {{ .Descriptor.ControlPlane.AWS.Logging.ControllerManager }}
+    scheduler: {{ .Descriptor.ControlPlane.AWS.Logging.Scheduler }}
   network:
     vpc:
       availabilityZoneSelection: Ordered
       availabilityZoneUsageLimit: 3
-{{- if ne .Networks.VPCID "" }}
-      id: {{ .Networks.VPCID }}
-    {{- if ne .Networks.Subnets nil }}
+{{- if ne .Descriptor.Networks.VPCID "" }}
+      id: {{ .Descriptor.Networks.VPCID }}
+    {{- if ne .Descriptor.Networks.Subnets nil }}
     subnets:
-    {{- range .Networks.Subnets }}
+      {{- range .Descriptor.Networks.Subnets }}
       - id: {{ .Name }}
-    {{- end }}
+      {{- end }}
     {{- end }}
 {{- end }}
-  region: "{{ .Region }}"
-  sshKeyName: \"{{ .SSHKey }}\"
-  version: "{{ .K8SVersion }}"
+  region: "{{ .Descriptor.Region }}"
+  sshKeyName: \"{{ .Descriptor.SSHKey }}\"
+  version: "{{ .Descriptor.K8SVersion }}"
   vpcCni:
     env:
       - name: ANNOTATE_POD_IP
         value: \"true\"
-{{- range $node := .WorkerNodes }}
-{{- range $index, $n := loop .AZ .Quantity .NodeGroupMaxSize .NodeGroupMinSize}}
+{{- range $node := .Descriptor.WorkerNodes }}
+{{- range $index, $n := loop .AZ .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
-{{- if $.DeployAutoscaler }}
+{{- if $.Descriptor.DeployAutoscaler }}
   annotations:
-  {{- if $node.NodeGroupMaxSize }} 
+  {{- if $node.NodeGroupMaxSize }}
     cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: '{{ $n.MaxSize }}'
   {{- end }}
-  {{- if $node.NodeGroupMinSize }} 
-    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: '{{ $n.MinSize }}' 
+  {{- if $node.NodeGroupMinSize }}
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: '{{ $n.MinSize }}'
   {{- end }}
 {{- end }}
   name: "{{ $node.Name }}-md-{{ $index }}"
-  namespace: "cluster-{{ $.ClusterID }}"
+  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
 spec:
-  clusterName: "{{ $.ClusterID }}"
+  clusterName: "{{ $.Descriptor.ClusterID }}"
   replicas: {{ $n.QA }}
   selector:
     matchLabels:
   template:
     spec:
-      clusterName: "{{ $.ClusterID }}"
-      version: "{{ $.K8SVersion }}"
-      failureDomain: "{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ $.Region }}{{ $n.AZ }} {{- end }}"
+      clusterName: "{{ $.Descriptor.ClusterID }}"
+      version: "{{ $.Descriptor.K8SVersion }}"
+      failureDomain: "{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ $.Descriptor.Region }}{{ $n.AZ }} {{- end }}"
       bootstrap:
         configRef:
           name: "{{ $node.Name }}-md-{{ $index }}"
@@ -105,30 +105,35 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSMachineTemplate
 metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
-  namespace: "cluster-{{ $.ClusterID }}"
+  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
 spec:
   template:
     spec:
-    {{- if $node.Spot }}
+      {{- if $node.Spot }}
       spotMarketOptions:
-        maxPrice: \"\"    {{ end }}
-    {{- if ne $node.AmiID "" }}
+        maxPrice: \"\"
+      {{- end }}
+      {{- if ne $node.AmiID "" }}
       ami:
         id: {{ $node.AmiID }}
-    {{- end }}
+      {{- end }}
       iamInstanceProfile: "nodes.cluster-api-provider-aws.sigs.k8s.io"
       instanceType: "{{ $node.Size }}"
       sshKeyName: \"{{ $node.SSHKey }}\"
       rootVolume:
-        size: {{- if $node.RootVolume.Size }} {{ $node.RootVolume.Size }} {{ else }} 20 {{ end }}
-        type: {{- if $node.RootVolume.Type }} {{ $node.RootVolume.Type }} {{ else }} gp2 {{ end }}
+        {{- if $node.RootVolume.Size }}
+        size: {{ $node.RootVolume.Size }}
+        {{- end }}
+        {{- if $node.RootVolume.Type }}
+        type: {{ $node.RootVolume.Type }}
+        {{- end }}
         encrypted: {{ $node.RootVolume.Encrypted }}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: EKSConfigTemplate
 metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
-  namespace: "cluster-{{ $.ClusterID }}"
+  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
 spec:
   template: {}
 {{- end }}

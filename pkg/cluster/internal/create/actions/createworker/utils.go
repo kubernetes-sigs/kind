@@ -23,13 +23,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
-	b64 "encoding/base64"
-
+	"github.com/fatih/structs"
+	"github.com/oleiade/reflections"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/exec"
 
 	vault "github.com/sosedoff/ansible-vault-go"
@@ -81,12 +84,10 @@ func writeFile(filePath string, contentLines []string) error {
 func encryptFile(filePath string, vaultPassword string) error {
 	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		fmt.Println(err)
 		return nil
 	}
 	err = vault.EncryptFile(filePath, string(data), vaultPassword)
 	if err != nil {
-		fmt.Println(err)
 		return nil
 	}
 	return nil
@@ -95,44 +96,51 @@ func encryptFile(filePath string, vaultPassword string) error {
 func decryptFile(filePath string, vaultPassword string) (string, error) {
 	data, err := vault.DecryptFile(filePath, vaultPassword)
 	if err != nil {
-		fmt.Println(err)
 		return "", err
 	}
 	return data, nil
 }
 
-func generateB64Credentials(access_key string, secret_key string, region string) string {
-	credentialsINIlines := "[default]\naws_access_key_id = " + access_key + "\naws_secret_access_key = " + secret_key + "\nregion = " + region + "\n\n"
-	return b64.StdEncoding.EncodeToString([]byte(credentialsINIlines))
+func convertToMapStringString(m map[string]interface{}) map[string]string {
+	var m2 = map[string]string{}
+	for k, v := range m {
+		m2[k] = v.(string)
+	}
+	return m2
 }
 
-func getCredentials(descriptorFile cluster.DescriptorFile, vaultPassword string) (cluster.AWSCredentials, string, error) {
-	aws := cluster.AWSCredentials{}
+func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (map[string]string, map[string]string, string, error) {
+
+	var c = map[string]string{}
+	var r = map[string]string{}
 
 	_, err := os.Stat("./secrets.yml")
 	if err != nil {
-		if aws != descriptorFile.AWSCredentials {
-			return descriptorFile.AWSCredentials, descriptorFile.GithubToken, nil
+		if descriptorFile.Credentials == (cluster.Credentials{}) {
+			return c, r, "", errors.New("Incorrect credentials in descriptor file")
 		}
-		err := errors.New("Incorrect AWS credentials in descriptor file")
-		return aws, "", err
-
+		m := structs.Map(descriptorFile.Credentials)
+		r := map[string]string{"User": descriptorFile.ExternalRegistry.User, "Pass": descriptorFile.ExternalRegistry.Pass, "Url": descriptorFile.ExternalRegistry.URL}
+		return convertToMapStringString(m), r, descriptorFile.GithubToken, nil
 	} else {
-		secretRaw, err := decryptFile("./secrets.yml", vaultPassword)
 		var secretFile SecretsFile
+		secretRaw, err := decryptFile("./secrets.yml", vaultPassword)
 		if err != nil {
-			err := errors.New("The vaultPassword is incorrect")
-			return aws, "", err
+			return c, r, "", errors.New("The Vault password is incorrect")
 		} else {
 			err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
 			if err != nil {
-				fmt.Println(err)
-				return aws, "", err
+				return c, r, "", err
 			}
-			return secretFile.Secret.AWSCredentials, secretFile.Secret.GithubToken, nil
+			f, err := reflections.GetField(secretFile.Secrets, strings.ToUpper(descriptorFile.InfraProvider))
+			if err != nil {
+				return c, r, "", errors.New("No " + descriptorFile.InfraProvider + " credentials found in secrets file")
+			}
+			m := structs.Map(f)
+			r := map[string]string{"User": secretFile.Secrets.ExternalRegistry.User, "Pass": secretFile.Secrets.ExternalRegistry.Pass, "Url": descriptorFile.ExternalRegistry.URL}
+			return convertToMapStringString(m["Credentials"].(map[string]interface{})), r, secretFile.Secrets.GithubToken, nil
 		}
 	}
-
 }
 
 func stringToBytes(str string) []byte {
@@ -164,8 +172,8 @@ func rewriteDescriptorFile(descriptorName string) error {
 		return err
 	}
 
-	if descriptorMap["aws"] != nil || descriptorMap["github_token"] != nil {
-		deleteKey("aws", descriptorMap)
+	if descriptorMap["credentials"] != nil || descriptorMap["github_token"] != nil {
+		deleteKey("credentials", descriptorMap)
 		deleteKey("github_token", descriptorMap)
 
 		d, err := yaml.Marshal(&descriptorMap)
@@ -212,4 +220,30 @@ func integrateClusterAutoscaler(node nodes.Node, kubeconfigPath string, clusterI
 		"--set", "clusterAPIMode=incluster-incluster")
 
 	return cmd
+}
+
+// getNode returns the first control plane
+func getNode(ctx *actions.ActionContext) (nodes.Node, error) {
+	allNodes, err := ctx.Nodes()
+	if err != nil {
+		return nil, err
+	}
+
+	controlPlanes, err := nodeutils.ControlPlaneNodes(allNodes)
+	if err != nil {
+		return nil, err
+	}
+	return controlPlanes[0], nil
+}
+
+func executeCommand(node nodes.Node, command string, envVars ...[]string) error {
+	raw := bytes.Buffer{}
+	cmd := node.Command("sh", "-c", command)
+	if len(envVars) > 0 {
+		cmd.SetEnv(envVars[0]...)
+	}
+	if err := cmd.SetStdout(&raw).Run(); err != nil {
+		return err
+	}
+	return nil
 }
