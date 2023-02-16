@@ -35,7 +35,7 @@ description: |-
 * [Windows Containers](#windows-containers) (unsupported / infeasible)
 * [Non-AMD64 Architectures](#nonamd64-architectures) (images not pre-built yet)
 * [Unable to Pull Images](#unable-to-pull-images) (various)
-* [Chrome OS](#chrome-os) (unsupported)
+* [Chrome OS](#chrome-os) (needs KubeletInUserNamespace)
 * [AppArmor](#apparmor) (may break things, consider disabling)
 * [IPv6 Port Forwarding](#ipv6-port-forwarding) (docker doesn't seem to implement this correctly)
 * [Couldn't find an alternative telinit implementation to spawn](#docker-init-daemon-config)
@@ -294,11 +294,22 @@ Re-run the command this time adding the `--name my-cluster-name` param:
 
 ## Chrome OS
 
-Kubernetes does not work in the Chrome OS Linux sandbox.
+To run Kubernetes inside Chrome OS the LXC container must allow nesting. In Crosh session (ctrl+alt+t):
 
-Please see the upstream issue https://bugs.chromium.org/p/chromium/issues/detail?id=878034
+```
+crosh> vmc launch termina
+(termina) chronos@localhost ~ $ lxc config set penguin security.nesting true
+(termina) chronos@localhost ~ $ lxc restart penguin
+```
 
-For previous discussion see: https://github.com/kubernetes-sigs/kind/issues/763
+Then KIND cluster must use KubeletInUserNamespace feature gate (available since Kubernetes 1.22):
+
+```
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+featureGates:
+  KubeletInUserNamespace: true
+```
 
 ## AppArmor
 
