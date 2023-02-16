@@ -81,11 +81,17 @@ func CreateWithRetain(retain bool) CreateOption {
 }
 
 func CreateWithMove(move bool) CreateOption {
-	return CreateWithRetain(move)
+	return createOptionAdapter(func(o *internalcreate.ClusterOptions) error {
+		o.Retain = move || o.Retain
+		return nil
+	})
 }
 
 func CreateWithAvoidCreation(avoidCreation bool) CreateOption {
-	return CreateWithRetain(avoidCreation)
+	return createOptionAdapter(func(o *internalcreate.ClusterOptions) error {
+		o.Retain = avoidCreation || o.Retain
+		return nil
+	})
 }
 
 // CreateWithWaitForReady configures a maximum wait time for the control plane
