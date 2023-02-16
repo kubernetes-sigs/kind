@@ -383,7 +383,7 @@ spec:
 		ctx.Status.End(true) // End Installing CAPx in workload cluster
 
 		if descriptorFile.DeployAutoscaler {
-			ctx.Status.Start("Adding Cluster-Autoescaler ⚙")
+			ctx.Status.Start("Adding Cluster-Autoescaler 🗚")
 			defer ctx.Status.End(false)
 
 			raw = bytes.Buffer{}
