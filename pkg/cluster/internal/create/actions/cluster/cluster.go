@@ -138,6 +138,13 @@ type AWSCredentials struct {
 	} `yaml:"credentials"`
 }
 
+type SecretsFile struct {
+	Secret struct {
+		AWSCredentials AWSCredentials `yaml:"aws"`
+		GithubToken    string         `yaml:"github_token"`
+	} `yaml:"secrets"`
+}
+
 // Init sets default values for the DescriptorFile
 func (d DescriptorFile) Init() DescriptorFile {
 	d.FullyPrivate = false
@@ -154,13 +161,6 @@ func (d DescriptorFile) Init() DescriptorFile {
 	d.ControlPlane.AWS.Logging.ControllerManager = false
 	d.ControlPlane.AWS.Logging.Scheduler = false
 	return d
-}
-
-type SecretsFile struct {
-	Secret struct {
-		AWSCredentials AWSCredentials `yaml:"aws"`
-		GithubToken    string         `yaml:"github_token"`
-	} `yaml:"secrets"`
 }
 
 // Read descriptor file

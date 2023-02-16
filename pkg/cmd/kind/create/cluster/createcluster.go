@@ -30,6 +30,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
+	"sigs.k8s.io/kind/pkg/cmd/kind/create/cluster/validation"
+
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/log"
@@ -137,6 +139,15 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		runtime.GetDefault(logger),
 	)
 
+	if flags.Descriptor == "" {
+		flags.Descriptor = "cluster.yaml"
+	}
+
+	infra, managed, err := validation.ExecuteDescriptorValidations(flags.Descriptor)
+	if err != nil {
+		return err
+	}
+
 	// handle config flag, we might need to read from stdin
 	withConfig, err := configOption(flags.Config, streams.In)
 	if err != nil {
@@ -150,9 +161,7 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		}
 	}
 
-	if flags.Descriptor == "" {
-		flags.Descriptor = "cluster.yaml"
-	}
+	validation.ExecuteSecretsValidations(*infra, *managed, "./secrets.yml", flags.VaultPassword)
 
 	// create the cluster
 	if err = provider.Create(

@@ -2,14 +2,18 @@ package validation
 
 import (
 	"errors"
-
-	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 )
 
+// type Validator interface {
+// 	descriptorFile(descriptorFile cluster.DescriptorFile)
+// 	secretsFile(secretsFile cluster.SecretsFile)
+// 	validate() error
+// }
+
 type Validator interface {
-	descriptorFile(descriptorFile cluster.DescriptorFile)
-	secretsFile(secretsFile cluster.SecretsFile)
-	validate() error
+	descriptorFile(descriptor map[string]interface{})
+	secretsFile(descriptor map[string]interface{})
+	validate(fileType string) error
 }
 
 func getValidator(provider string, managed bool) (Validator, error) {
