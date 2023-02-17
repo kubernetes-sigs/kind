@@ -186,42 +186,31 @@ func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword stri
 func rewriteDescriptorFile(descriptorName string) error {
 
 	descriptorRAW, err := os.ReadFile("./" + descriptorName)
+
 	if err != nil {
 		return err
 	}
 
-	descriptorMap := map[string]interface{}{}
-
-	err = yaml.Unmarshal(descriptorRAW, &descriptorMap)
+	var data yaml.Node
+	err = yaml.Unmarshal(descriptorRAW, &data)
 	if err != nil {
 		return err
 	}
 
-	if descriptorMap["aws"] != nil || descriptorMap["github_token"] != nil {
-		deleteKey("aws", descriptorMap)
-		deleteKey("github_token", descriptorMap)
+	nodes := removeNode(data.Content, "aws")
+	nodes = removeNode(data.Content, "github_token")
 
-		d, err := yaml.Marshal(&descriptorMap)
-		if err != nil {
-			return err
-		}
+	b, err := yaml.Marshal(nodes[0])
 
-		err = ioutil.WriteFile(descriptorName, d, 0755)
-		if err != nil {
-			return err
-		}
+	fmt.Println(string(b))
 
+	err = ioutil.WriteFile(descriptorName, b, 0755)
+	if err != nil {
+		return err
 	}
 
 	return nil
 
-}
-
-func deleteKey(key string, descriptorMap map[string]interface{}) {
-	value := descriptorMap[key]
-	if value != nil {
-		delete(descriptorMap, key)
-	}
 }
 
 func integrateClusterAutoscaler(node nodes.Node, kubeconfigPath string, clusterID string, provider string) exec.Cmd {
@@ -265,4 +254,32 @@ func encryptSecret(secretMap map[string]map[string]interface{}, vaultPassword st
 	}
 
 	return nil
+}
+
+func removeNode(nodes []*yaml.Node, key string) []*yaml.Node {
+	newNodes := []*yaml.Node{}
+	for i, node := range nodes {
+		if node.Kind == yaml.MappingNode {
+			j := 0
+			for j < len(node.Content)/2 {
+				if node.Content[j*2].Value == key {
+					if i == 0 {
+						// This is a root key, so remove it and its value.
+						node.Content = append(node.Content[:j*2], node.Content[j*2+2:]...)
+						continue
+					}
+					// This is not a root key, so keep it.
+					j += 2
+					continue
+				}
+				j++
+			}
+			node.Content = removeNode(node.Content, key)
+		}
+		if node.Kind == yaml.SequenceNode {
+			node.Content = removeNode(node.Content, key)
+		}
+		newNodes = append(newNodes, node)
+	}
+	return newNodes
 }
