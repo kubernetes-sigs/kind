@@ -204,7 +204,7 @@ func rewriteDescriptorFile(descriptorName string) error {
 
 	fmt.Println(string(b))
 
-	err = ioutil.WriteFile(descriptorName, b, 0755)
+	err = ioutil.WriteFile(descriptorName, b, 0644)
 	if err != nil {
 		return err
 	}
