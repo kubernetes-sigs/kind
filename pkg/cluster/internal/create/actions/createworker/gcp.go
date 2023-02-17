@@ -27,6 +27,7 @@ type GCPBuilder struct {
 	capxName     string
 	capxTemplate string
 	capxEnvVars  []string
+	storageClass string
 }
 
 func newGCPBuilder() *GCPBuilder {
@@ -70,11 +71,16 @@ func (b *GCPBuilder) setCapxEnvVars(p ProviderParams) {
 	}
 }
 
+func (b *GCPBuilder) setStorageClass() {
+	b.storageClass = "csi-gcp-pd"
+}
+
 func (b *GCPBuilder) getProvider() Provider {
 	return Provider{
 		capxProvider: b.capxProvider,
 		capxName:     b.capxName,
 		capxTemplate: b.capxTemplate,
 		capxEnvVars:  b.capxEnvVars,
+		storageClass: b.storageClass,
 	}
 }

@@ -29,6 +29,7 @@ type AWSBuilder struct {
 	capxName     string
 	capxTemplate string
 	capxEnvVars  []string
+	storageClass string
 }
 
 func newAWSBuilder() *AWSBuilder {
@@ -63,12 +64,17 @@ func (b *AWSBuilder) setCapxEnvVars(p ProviderParams) {
 	}
 }
 
+func (b *AWSBuilder) setStorageClass() {
+	b.storageClass = "gp2"
+}
+
 func (b *AWSBuilder) getProvider() Provider {
 	return Provider{
 		capxProvider: b.capxProvider,
 		capxName:     b.capxName,
 		capxTemplate: b.capxTemplate,
 		capxEnvVars:  b.capxEnvVars,
+		storageClass: b.storageClass,
 	}
 }
 
