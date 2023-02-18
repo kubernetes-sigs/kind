@@ -150,6 +150,8 @@ type Networking struct {
 	DisableDefaultCNI bool
 	// KubeProxyMode defines if kube-proxy should operate in iptables or ipvs mode
 	KubeProxyMode ProxyMode
+	// EnableCCM enables the Kind Cloud Provider that handles Load Balancers for Services
+	EnableCCM bool
 }
 
 // ClusterIPFamily defines cluster network IP family

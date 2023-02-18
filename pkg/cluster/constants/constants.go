@@ -31,6 +31,9 @@ const (
 	// WorkerNodeRoleValue identifies a node that hosts a Kubernetes worker
 	WorkerNodeRoleValue string = "worker"
 
+	// CloudControllerManagerNodeRoleValue identifies a node that hosts the cluster cloud controller manager
+	CloudControllerManagerNodeRoleValue string = "cloud-controller"
+
 	// ExternalLoadBalancerNodeRoleValue identifies a node that hosts an
 	// external load balancer for the API server in HA configurations.
 	//

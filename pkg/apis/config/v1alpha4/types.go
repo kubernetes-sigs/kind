@@ -189,6 +189,8 @@ type Networking struct {
 	// KubeProxyMode defines if kube-proxy should operate in iptables or ipvs mode
 	// Defaults to 'iptables' mode
 	KubeProxyMode ProxyMode `yaml:"kubeProxyMode,omitempty" json:"kubeProxyMode,omitempty"`
+	// EnableCCM enables the Kind Cloud Provider that handles Load Balancers for Services
+	EnableCCM bool `yaml:"enableCCM,omitempty" json:"enableCCM,omitempty"`
 }
 
 // ClusterIPFamily defines cluster network IP family

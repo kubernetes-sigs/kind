@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/kind/pkg/log"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cloudprovider"
 	configaction "sigs.k8s.io/kind/pkg/cluster/internal/create/actions/config"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installcni"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installstorage"
@@ -119,6 +120,12 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 		if !opts.Config.Networking.DisableDefaultCNI {
 			actionsToRun = append(actionsToRun,
 				installcni.NewAction(), // install CNI
+			)
+		}
+		// run the cloud-controller if configured
+		if opts.Config.Networking.EnableCCM {
+			actionsToRun = append(actionsToRun,
+				cloudprovider.NewAction(),
 			)
 		}
 		// add remaining steps
