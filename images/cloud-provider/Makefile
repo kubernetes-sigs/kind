@@ -1,0 +1,1 @@
+include $(CURDIR)/../Makefile.common.in
