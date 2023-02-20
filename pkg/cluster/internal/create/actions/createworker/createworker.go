@@ -254,11 +254,11 @@ spec:
 			return errors.Wrap(err, "failed to apply manifests")
 		}
 
-		// Wait for the workload cluster control plane to be ready
+		// Wait for the worker cluster creation
 		raw = bytes.Buffer{}
-		cmd = node.Command("sh", "-c", "kubectl -n "+capiClustersNamespace+" wait --for=condition=ControlPlaneReady --timeout 20m cluster "+descriptorFile.ClusterID)
+		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "25m", "cluster", descriptorFile.ClusterID)
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to wait for workload cluster Control Plane to be ready")
+			return errors.Wrap(err, "failed to create the worker Cluster")
 		}
 
 		// Get the workload cluster kubeconfig
@@ -315,16 +315,18 @@ spec:
 
 		// Wait for the worker cluster creation
 		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "10m", "cluster", descriptorFile.ClusterID)
+		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "15m", "--all", "md")
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
 			return errors.Wrap(err, "failed to create the worker Cluster")
 		}
 
-		// Wait for machines creation
-		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "15m", "--all", "md")
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to create the Machines")
+		if !descriptorFile.ControlPlane.Managed {
+			// Wait for the control plane creation
+			raw = bytes.Buffer{}
+			cmd = node.Command("sh", "-c", "kubectl -n "+capiClustersNamespace+" wait --for=jsonpath=\"{.status.unavailableReplicas}\"=0 --timeout 10m --all kubeadmcontrolplanes")
+			if err := cmd.SetStdout(&raw).Run(); err != nil {
+				return errors.Wrap(err, "failed to create the worker Cluster")
+			}
 		}
 
 		ctx.Status.End(true) // End Preparing nodes in workload cluster
