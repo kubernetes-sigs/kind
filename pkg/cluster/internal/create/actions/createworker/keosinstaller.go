@@ -39,8 +39,9 @@ type KEOSDescriptor struct {
 	} `yaml:"gcp,omitempty"`
 	Keos struct {
 		Calico struct {
-			Ipip bool   `yaml:"ipip"`
-			Pool string `yaml:"pool"`
+			Ipip                 bool   `yaml:"ipip"`
+			Pool                 string `yaml:"pool"`
+			DeployTigeraOperator bool   `yaml:"deploy_tigera_operator"`
 		} `yaml:"calico,omitempty"`
 		ClusterID       string `yaml:"cluster_id"`
 		Domain          string `yaml:"domain"`
@@ -85,6 +86,7 @@ func createKEOSDescriptor(descriptorFile cluster.DescriptorFile, storageClass st
 	if !descriptorFile.ControlPlane.Managed {
 		keosDescriptor.Keos.Calico.Ipip = true
 		keosDescriptor.Keos.Calico.Pool = "192.168.0.0/16"
+		keosDescriptor.Keos.Calico.DeployTigeraOperator = true
 	}
 
 	// Keos - Storage
