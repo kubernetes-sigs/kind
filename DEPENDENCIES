@@ -17,3 +17,9 @@ aws:
 gcp:
   cluster-api-gcp: v1.2.1
   cluster-api-gcp-templates: v1.2.1
+  gcp-compute-persistent-disk-csi-driver: v1.7.1
+  csi-node-driver-registrar: v2.5.0
+  csi-snapshotter: v4.0.1
+  csi-resizer: v1.4.0
+  csi-attacher: v3.4.0
+  csi-provisioner: v3.1.0
