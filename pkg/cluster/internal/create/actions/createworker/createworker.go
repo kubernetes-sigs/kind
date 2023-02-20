@@ -182,7 +182,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		filelines = append(filelines, "    user: "+externalRegistry["User"]+"\n")
 		filelines = append(filelines, "    pass: "+externalRegistry["Pass"]+"\n")
 
-		basepath, err := currentdir()
+		basepath, _ := currentdir()
 		err = createDirectory(basepath)
 		if err != nil {
 			return err
@@ -254,11 +254,11 @@ spec:
 			return errors.Wrap(err, "failed to apply manifests")
 		}
 
-		// Wait for the workload cluster control plane to be ready
+		// Wait for the worker cluster creation
 		raw = bytes.Buffer{}
-		cmd = node.Command("sh", "-c", "kubectl -n "+capiClustersNamespace+" wait --for=condition=ControlPlaneReady --timeout 20m cluster "+descriptorFile.ClusterID)
+		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "25m", "cluster", descriptorFile.ClusterID)
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to wait for workload cluster Control Plane to be ready")
+			return errors.Wrap(err, "failed to create the worker Cluster")
 		}
 
 		// Get the workload cluster kubeconfig
@@ -299,6 +299,15 @@ spec:
 				return errors.Wrap(err, "failed to install CNI in workload cluster")
 			}
 			ctx.Status.End(true) // End Installing CNI in workload cluster
+
+			ctx.Status.Start("Installing StorageClass in workload cluster 💾")
+			defer ctx.Status.End(false)
+
+			err = infra.installCSI(node, kubeconfigPath)
+			if err != nil {
+				return errors.Wrap(err, "failed to install StorageClass in workload cluster")
+			}
+			ctx.Status.End(true) // End Installing StorageClass in workload cluster
 		}
 
 		ctx.Status.Start("Preparing nodes in workload cluster 📦")
@@ -306,16 +315,18 @@ spec:
 
 		// Wait for the worker cluster creation
 		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "10m", "cluster", descriptorFile.ClusterID)
+		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "15m", "--all", "md")
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
 			return errors.Wrap(err, "failed to create the worker Cluster")
 		}
 
-		// Wait for machines creation
-		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "15m", "--all", "md")
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to create the Machines")
+		if !descriptorFile.ControlPlane.Managed {
+			// Wait for the control plane creation
+			raw = bytes.Buffer{}
+			cmd = node.Command("sh", "-c", "kubectl -n "+capiClustersNamespace+" wait --for=jsonpath=\"{.status.unavailableReplicas}\"=0 --timeout 10m --all kubeadmcontrolplanes")
+			if err := cmd.SetStdout(&raw).Run(); err != nil {
+				return errors.Wrap(err, "failed to create the worker Cluster")
+			}
 		}
 
 		ctx.Status.End(true) // End Preparing nodes in workload cluster
@@ -411,7 +422,7 @@ spec:
 		ctx.Status.Start("Generating the KEOS descriptor 📝")
 		defer ctx.Status.End(false)
 
-		err = createKEOSDescriptor(*descriptorFile, provider.storageClass)
+		err = createKEOSDescriptor(*descriptorFile, provider.stClassName)
 		if err != nil {
 			return err
 		}

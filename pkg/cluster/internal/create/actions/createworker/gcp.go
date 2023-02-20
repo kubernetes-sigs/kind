@@ -17,36 +17,43 @@ limitations under the License.
 package createworker
 
 import (
+	_ "embed"
 	b64 "encoding/base64"
 	"encoding/json"
 	"net/url"
+	"strings"
+
+	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/exec"
 )
+
+//go:embed files/gcp-compute-persistent-disk-csi-driver.yaml
+var csiManifest string
 
 type GCPBuilder struct {
 	capxProvider string
 	capxName     string
 	capxTemplate string
 	capxEnvVars  []string
-	storageClass string
+	stClassName  string
+	csiNamespace string
 }
 
 func newGCPBuilder() *GCPBuilder {
 	return &GCPBuilder{}
 }
 
-func (b *GCPBuilder) setCapxProvider() {
+func (b *GCPBuilder) setCapx(managed bool) {
 	b.capxProvider = "gcp:v1.2.1"
-}
-
-func (b *GCPBuilder) setCapxName() {
 	b.capxName = "capg"
-}
-
-func (b *GCPBuilder) setCapxTemplate(managed bool) {
+	b.stClassName = "csi-gcp-pd"
 	if managed {
 		b.capxTemplate = "gcp.gke.tmpl"
+		b.csiNamespace = ""
 	} else {
 		b.capxTemplate = "gcp.tmpl"
+		b.csiNamespace = "gce-pd-csi-driver"
 	}
 }
 
@@ -71,16 +78,59 @@ func (b *GCPBuilder) setCapxEnvVars(p ProviderParams) {
 	}
 }
 
-func (b *GCPBuilder) setStorageClass() {
-	b.storageClass = "csi-gcp-pd"
-}
-
 func (b *GCPBuilder) getProvider() Provider {
 	return Provider{
 		capxProvider: b.capxProvider,
 		capxName:     b.capxName,
 		capxTemplate: b.capxTemplate,
 		capxEnvVars:  b.capxEnvVars,
-		storageClass: b.storageClass,
+		stClassName:  b.stClassName,
+		csiNamespace: b.csiNamespace,
 	}
+}
+
+func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
+	var c string
+	var cmd exec.Cmd
+	var err error
+	var storageClass = `
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  annotations:
+    storageclass.kubernetes.io/is-default-class: 'true'
+  name: csi-gce-pd
+provisioner: pd.csi.storage.gke.io
+parameters:
+  type: pd-standard
+volumeBindingMode: WaitForFirstConsumer`
+
+	// Create CSI namespace
+	c = "kubectl --kubeconfig " + k + " create namespace " + b.csiNamespace
+	err = executeCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to create CSI namespace")
+	}
+
+	// Create CSI secret in CSI namespace
+	secret, _ := b64.StdEncoding.DecodeString(strings.Split(b.capxEnvVars[0], "GCP_B64ENCODED_CREDENTIALS=")[1])
+	c = "kubectl --kubeconfig " + k + " -n " + b.csiNamespace + " create secret generic cloud-sa --from-literal=cloud-sa.json='" + string(secret) + "'"
+	err = executeCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to create CSI secret in CSI namespace")
+	}
+
+	// Deploy CSI driver
+	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
+	if err = cmd.SetStdin(strings.NewReader(csiManifest)).Run(); err != nil {
+		return errors.Wrap(err, "failed to deploy CSI driver")
+	}
+
+	// Create StorageClass
+	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
+	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
+		return errors.Wrap(err, "failed to create StorageClass")
+	}
+
+	return nil
 }

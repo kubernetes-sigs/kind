@@ -18,8 +18,6 @@ package createworker
 
 import (
 	"bytes"
-	gob "encoding/gob"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -33,6 +31,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
+	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 
 	vault "github.com/sosedoff/ansible-vault-go"
@@ -42,7 +41,6 @@ func createDirectory(directory string) error {
 	if _, err := os.Stat(directory); os.IsNotExist(err) {
 		err = os.Mkdir(directory, 0777)
 		if err != nil {
-			fmt.Println(err)
 			return err
 		}
 	}
@@ -52,8 +50,7 @@ func createDirectory(directory string) error {
 func currentdir() (string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
-		fmt.Println(err)
-		return "", nil
+		return "", err
 	}
 
 	return cwd, nil
@@ -84,11 +81,11 @@ func writeFile(filePath string, contentLines []string) error {
 func encryptFile(filePath string, vaultPassword string) error {
 	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return nil
+		return err
 	}
 	err = vault.EncryptFile(filePath, string(data), vaultPassword)
 	if err != nil {
-		return nil
+		return err
 	}
 	return nil
 }
@@ -117,7 +114,7 @@ func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (ma
 	_, err := os.Stat("./secrets.yml")
 	if err != nil {
 		if descriptorFile.Credentials == (cluster.Credentials{}) {
-			return c, r, "", errors.New("Incorrect credentials in descriptor file")
+			return c, r, "", errors.Wrap(err, "Incorrect credentials in descriptor file")
 		}
 		m := structs.Map(descriptorFile.Credentials)
 		r := map[string]string{"User": descriptorFile.ExternalRegistry.User, "Pass": descriptorFile.ExternalRegistry.Pass, "Url": descriptorFile.ExternalRegistry.URL}
@@ -126,7 +123,7 @@ func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (ma
 		var secretFile SecretsFile
 		secretRaw, err := decryptFile("./secrets.yml", vaultPassword)
 		if err != nil {
-			return c, r, "", errors.New("The Vault password is incorrect")
+			return c, r, "", errors.Wrap(err, "The Vault password is incorrect")
 		} else {
 			err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
 			if err != nil {
@@ -134,21 +131,13 @@ func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (ma
 			}
 			f, err := reflections.GetField(secretFile.Secrets, strings.ToUpper(descriptorFile.InfraProvider))
 			if err != nil {
-				return c, r, "", errors.New("No " + descriptorFile.InfraProvider + " credentials found in secrets file")
+				return c, r, "", errors.Wrap(err, "No "+descriptorFile.InfraProvider+" credentials found in secrets file")
 			}
 			m := structs.Map(f)
 			r := map[string]string{"User": secretFile.Secrets.ExternalRegistry.User, "Pass": secretFile.Secrets.ExternalRegistry.Pass, "Url": descriptorFile.ExternalRegistry.URL}
 			return convertToMapStringString(m["Credentials"].(map[string]interface{})), r, secretFile.Secrets.GithubToken, nil
 		}
 	}
-}
-
-func stringToBytes(str string) []byte {
-	buf := &bytes.Buffer{}
-	gob.NewEncoder(buf).Encode(str)
-	bytes := buf.Bytes()
-
-	return bytes
 }
 
 func rewriteDescriptorFile(descriptorName string) error {
@@ -162,7 +151,6 @@ func rewriteDescriptorFile(descriptorName string) error {
 	viper.SetConfigName(descriptorName)
 	currentDir, err := currentdir()
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	viper.AddConfigPath(currentDir)
@@ -178,25 +166,13 @@ func rewriteDescriptorFile(descriptorName string) error {
 
 		d, err := yaml.Marshal(&descriptorMap)
 		if err != nil {
-			fmt.Println("error: %v", err)
 			return err
 		}
 
-		// write to file
-		f, err := os.Create(currentDir + descriptorName)
+		err = os.WriteFile(descriptorName, []byte(d), 0600)
 		if err != nil {
-			fmt.Println(err)
-			return nil
-		}
-
-		err = ioutil.WriteFile(descriptorName, d, 0755)
-		if err != nil {
-			fmt.Println("error: %v", err)
 			return err
 		}
-
-		f.Close()
-
 	}
 
 	return nil
