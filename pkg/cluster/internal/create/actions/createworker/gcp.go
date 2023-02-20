@@ -25,6 +25,7 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/exec"
 )
 
 //go:embed files/gcp-compute-persistent-disk-csi-driver.yaml
@@ -35,7 +36,7 @@ type GCPBuilder struct {
 	capxName     string
 	capxTemplate string
 	capxEnvVars  []string
-	storageClass string
+	stClassName  string
 	csiNamespace string
 }
 
@@ -46,7 +47,7 @@ func newGCPBuilder() *GCPBuilder {
 func (b *GCPBuilder) setCapx(managed bool) {
 	b.capxProvider = "gcp:v1.2.1"
 	b.capxName = "capg"
-	b.storageClass = "csi-gcp-pd"
+	b.stClassName = "csi-gcp-pd"
 	if managed {
 		b.capxTemplate = "gcp.gke.tmpl"
 		b.csiNamespace = ""
@@ -83,14 +84,26 @@ func (b *GCPBuilder) getProvider() Provider {
 		capxName:     b.capxName,
 		capxTemplate: b.capxTemplate,
 		capxEnvVars:  b.capxEnvVars,
-		storageClass: b.storageClass,
+		stClassName:  b.stClassName,
 		csiNamespace: b.csiNamespace,
 	}
 }
 
 func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
 	var c string
+	var cmd exec.Cmd
 	var err error
+	var storageClass = `
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  annotations:
+    storageclass.kubernetes.io/is-default-class: 'true'
+  name: csi-gce-pd
+provisioner: pd.csi.storage.gke.io
+parameters:
+  type: pd-standard
+volumeBindingMode: WaitForFirstConsumer`
 
 	// Create CSI namespace
 	c = "kubectl --kubeconfig " + k + " create namespace " + b.csiNamespace
@@ -107,10 +120,17 @@ func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
 		return errors.Wrap(err, "failed to create CSI secret in CSI namespace")
 	}
 
-	// Apply CSI manifest
-	in := strings.NewReader(csiManifest)
-	cmd := n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
-	cmd.SetStdin(in)
+	// Deploy CSI driver
+	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
+	if err = cmd.SetStdin(strings.NewReader(csiManifest)).Run(); err != nil {
+		return errors.Wrap(err, "failed to deploy CSI driver")
+	}
 
-	return cmd.Run()
+	// Create StorageClass
+	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
+	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
+		return errors.Wrap(err, "failed to create StorageClass")
+	}
+
+	return nil
 }

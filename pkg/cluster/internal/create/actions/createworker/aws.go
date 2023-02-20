@@ -29,7 +29,7 @@ type AWSBuilder struct {
 	capxName     string
 	capxTemplate string
 	capxEnvVars  []string
-	storageClass string
+	stClassName  string
 	csiNamespace string
 }
 
@@ -40,7 +40,7 @@ func newAWSBuilder() *AWSBuilder {
 func (b *AWSBuilder) setCapx(managed bool) {
 	b.capxProvider = "aws:v2.0.2"
 	b.capxName = "capa"
-	b.storageClass = "gp2"
+	b.stClassName = "gp2"
 	if managed {
 		b.capxTemplate = "aws.eks.tmpl"
 		b.csiNamespace = ""
@@ -68,7 +68,7 @@ func (b *AWSBuilder) getProvider() Provider {
 		capxName:     b.capxName,
 		capxTemplate: b.capxTemplate,
 		capxEnvVars:  b.capxEnvVars,
-		storageClass: b.storageClass,
+		stClassName:  b.stClassName,
 		csiNamespace: b.csiNamespace,
 	}
 }

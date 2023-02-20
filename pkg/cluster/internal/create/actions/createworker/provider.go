@@ -49,7 +49,7 @@ type Provider struct {
 	capxName     string
 	capxTemplate string
 	capxEnvVars  []string
-	storageClass string
+	stClassName  string
 	csiNamespace string
 }
 
