@@ -172,9 +172,6 @@ func (d DescriptorFile) Init() DescriptorFile {
 	d.ControlPlane.AWS.Logging.ControllerManager = false
 	d.ControlPlane.AWS.Logging.Scheduler = false
 
-	// GCP
-	d.Networks.VPCID = "default"
-
 	return d
 }
 
