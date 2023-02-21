@@ -99,7 +99,7 @@ kind: StorageClass
 metadata:
   annotations:
     storageclass.kubernetes.io/is-default-class: 'true'
-  name: csi-gce-pd
+  name: ` + b.stClassName + `
 provisioner: pd.csi.storage.gke.io
 parameters:
   type: pd-standard
