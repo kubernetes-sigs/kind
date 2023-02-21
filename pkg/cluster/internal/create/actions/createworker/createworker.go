@@ -22,7 +22,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gobeam/stringy"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -37,19 +36,27 @@ type action struct {
 
 // SecretsFile represents the YAML structure in the secrets.yml file
 type SecretsFile struct {
-	Secrets struct {
-		AWS struct {
-			Credentials cluster.Credentials `yaml:"credentials"`
-		} `yaml:"aws"`
-		GCP struct {
-			Credentials cluster.Credentials `yaml:"credentials"`
-		} `yaml:"gcp"`
-		GithubToken      string `yaml:"github_token"`
-		ExternalRegistry struct {
-			User string `yaml:"user"`
-			Pass string `yaml:"pass"`
-		} `yaml:"external_registry"`
-	} `yaml:"secrets"`
+	Secrets Secrets `yaml:"secrets"`
+}
+
+type Secrets struct {
+	AWS              AWS              `yaml:"aws"`
+	GCP              GCP              `yaml:"gcp"`
+	GithubToken      string           `yaml:"github_token"`
+	ExternalRegistry ExternalRegistry `yaml:"external_registry"`
+}
+
+type AWS struct {
+	Credentials cluster.Credentials `yaml:"credentials"`
+}
+
+type GCP struct {
+	Credentials cluster.Credentials `yaml:"credentials"`
+}
+
+type ExternalRegistry struct {
+	User string `yaml:"user"`
+	Pass string `yaml:"pass"`
 }
 
 const allowAllEgressNetPol = `
@@ -94,7 +101,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// Get the secrets
-	credentials, externalRegistry, githubToken, err := getSecrets(*descriptorFile, a.vaultPassword)
+	credentialsMap, externalRegistryMap, githubToken, err := getSecrets(*descriptorFile, a.vaultPassword)
 	if err != nil {
 		return err
 	}
@@ -102,7 +109,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	providerParams := ProviderParams{
 		region:      descriptorFile.Region,
 		managed:     descriptorFile.ControlPlane.Managed,
-		credentials: credentials,
+		credentials: credentialsMap,
 		githubToken: githubToken,
 	}
 
@@ -136,8 +143,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	templateParams := cluster.TemplateParams{
 		Descriptor:       *descriptorFile,
-		Credentials:      credentials,
-		ExternalRegistry: externalRegistry,
+		Credentials:      credentialsMap,
+		ExternalRegistry: externalRegistryMap,
 	}
 
 	// Generate the cluster manifest
@@ -156,49 +163,14 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	ctx.Status.End(true) // End Generating worker cluster manifests
 
-	_, err = os.Stat(secretsFile)
-	if err != nil {
-		ctx.Status.Start("Generating secrets file 📝🗝️")
-		defer ctx.Status.End(false)
+	ctx.Status.Start("Generating secrets file 📝🗝️")
+	defer ctx.Status.End(false)
 
-		rewriteDescriptorFile(a.descriptorName)
+	ensureSecretsFile(*descriptorFile, a.vaultPassword)
 
-		filelines := []string{
-			"secrets:\n",
-			"  github_token: " + githubToken + "\n",
-			"  " + descriptorFile.InfraProvider + ":\n",
-			"    credentials:\n",
-		}
+	rewriteDescriptorFile(a.descriptorName)
 
-		for k, v := range credentials {
-			if v != "" {
-				v = strings.Replace(v, "\n", `\n`, -1)
-				field := stringy.New(k)
-				filelines = append(filelines, "      "+field.SnakeCase().ToLower()+": \""+v+"\"\n")
-			}
-		}
-
-		filelines = append(filelines, "  external_registry:\n")
-		filelines = append(filelines, "    user: "+externalRegistry["User"]+"\n")
-		filelines = append(filelines, "    pass: "+externalRegistry["Pass"]+"\n")
-
-		basepath, _ := currentdir()
-		err = createDirectory(basepath)
-		if err != nil {
-			return err
-		}
-		filename := basepath + "/" + secretsFile
-		err = writeFile(filename, filelines)
-		if err != nil {
-			return errors.Wrap(err, "failed to write the secrets file")
-		}
-		err = encryptFile(filename, a.vaultPassword)
-		if err != nil {
-			return errors.Wrap(err, "failed to cipher the secrets file")
-		}
-
-		defer ctx.Status.End(true) // End Generating secrets file
-	}
+	defer ctx.Status.End(true) // End Generating secrets file
 
 	// Create namespace for CAPI clusters (it must exists)
 	raw = bytes.Buffer{}

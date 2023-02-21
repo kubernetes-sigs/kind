@@ -58,13 +58,7 @@ type DescriptorFile struct {
 		} `yaml:"subnets"`
 	} `yaml:"networks"`
 
-	ExternalRegistry struct {
-		AuthRequired bool   `yaml:"auth_required" validate:"boolean"`
-		Type         string `yaml:"type"`
-		URL          string `yaml:"url" validate:"required"`
-		User         string `yaml:"user"`
-		Pass         string `yaml:"pass"`
-	} `yaml:"external_registry"`
+	ExternalRegistry ExternalRegistry `yaml:"external_registry"`
 
 	Keos struct {
 		Domain         string `yaml:"domain" validate:"required,hostname"`
@@ -148,6 +142,14 @@ type Credentials struct {
 	PrivateKey   string `yaml:"private_key"`
 	ClientEmail  string `yaml:"client_email"`
 	ClientID     string `yaml:"client_id"`
+}
+
+type ExternalRegistry struct {
+	AuthRequired bool   `yaml:"auth_required" validate:"boolean"`
+	Type         string `yaml:"type"`
+	URL          string `yaml:"url" validate:"required"`
+	User         string `yaml:"user"`
+	Pass         string `yaml:"pass"`
 }
 
 type TemplateParams struct {
