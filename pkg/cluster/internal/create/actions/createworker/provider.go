@@ -38,11 +38,9 @@ const (
 var calicoHelmValues string
 
 type PBuilder interface {
-	setCapxProvider()
-	setCapxName()
-	setCapxTemplate(managed bool)
+	setCapx(managed bool)
 	setCapxEnvVars(p ProviderParams)
-	setStorageClass()
+	installCSI(n nodes.Node, k string) error
 	getProvider() Provider
 }
 
@@ -51,7 +49,8 @@ type Provider struct {
 	capxName     string
 	capxTemplate string
 	capxEnvVars  []string
-	storageClass string
+	stClassName  string
+	csiNamespace string
 }
 
 type ProviderParams struct {
@@ -82,17 +81,40 @@ func newInfra(b PBuilder) *Infra {
 	}
 }
 
-func (i *Infra) setBuilder(b PBuilder) {
-	i.builder = b
+func (i *Infra) buildProvider(p ProviderParams) Provider {
+	i.builder.setCapx(p.managed)
+	i.builder.setCapxEnvVars(p)
+	return i.builder.getProvider()
 }
 
-func (i *Infra) buildProvider(p ProviderParams) Provider {
-	i.builder.setCapxProvider()
-	i.builder.setCapxName()
-	i.builder.setCapxTemplate(p.managed)
-	i.builder.setCapxEnvVars(p)
-	i.builder.setStorageClass()
-	return i.builder.getProvider()
+func (i *Infra) installCSI(n nodes.Node, k string) error {
+	return i.builder.installCSI(n, k)
+}
+
+func installCNI(n nodes.Node, k string) error {
+	var c string
+	var err error
+
+	c = "kubectl --kubeconfig " + k + " create namespace " + CNINamespace
+	err = executeCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to create CNI namespace")
+	}
+
+	c = "echo '" + calicoHelmValues + "' > " + CNITemplate
+	err = executeCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to create CNI Helm chart values file")
+	}
+
+	c = "helm install --kubeconfig " + k + " " + CNIName + " " + CNIHelmChart +
+		" --namespace " + CNINamespace + " --values " + CNITemplate
+	err = executeCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to deploy CNI Helm Chart")
+	}
+
+	return nil
 }
 
 // installCAPXWorker installs CAPX in the worker cluster
@@ -141,32 +163,6 @@ func (p *Provider) installCAPXLocal(node nodes.Node) error {
 	err = executeCommand(node, command, p.capxEnvVars)
 	if err != nil {
 		return errors.Wrap(err, "failed to install CAPX in local cluster")
-	}
-
-	return nil
-}
-
-func installCNI(node nodes.Node, kubeconfigPath string) error {
-	var command string
-	var err error
-
-	command = "echo '" + calicoHelmValues + "' > " + CNITemplate
-	err = executeCommand(node, command)
-	if err != nil {
-		return errors.Wrap(err, "failed to create CNI Helm chart values file")
-	}
-
-	command = "kubectl --kubeconfig " + kubeconfigPath + " create namespace " + CNINamespace
-	err = executeCommand(node, command)
-	if err != nil {
-		return errors.Wrap(err, "failed to create CNI namespace")
-	}
-
-	command = "helm install --kubeconfig " + kubeconfigPath + " " + CNIName + " " + CNIHelmChart +
-		" --namespace " + CNINamespace + " --values " + CNITemplate
-	err = executeCommand(node, command)
-	if err != nil {
-		return errors.Wrap(err, "failed to deploy CNI Helm Chart")
 	}
 
 	return nil

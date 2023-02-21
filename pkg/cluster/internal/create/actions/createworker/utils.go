@@ -18,7 +18,8 @@ package createworker
 
 import (
 	"bytes"
-	"errors"
+	"fmt"
+
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -31,6 +32,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
+	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 
 	vault "github.com/sosedoff/ansible-vault-go"
@@ -39,14 +41,55 @@ import (
 const secretName = "secrets.yml"
 const secretPath = "./" + secretName
 
+func createDirectory(directory string) error {
+	if _, err := os.Stat(directory); os.IsNotExist(err) {
+		err = os.Mkdir(directory, 0777)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func currentdir() (string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	return cwd, nil
+}
+
+func writeFile(filePath string, contentLines []string) error {
+	f, err := os.Create(filePath)
+	if err != nil {
+		fmt.Println(err)
+		f.Close()
+		return nil
+	}
+	for _, v := range contentLines {
+		fmt.Fprintf(f, v)
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
+	}
+	err = f.Close()
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	return nil
+}
+
 func encryptFile(filePath string, vaultPassword string) error {
 	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return nil
+		return err
 	}
 	err = vault.EncryptFile(filePath, string(data), vaultPassword)
 	if err != nil {
-		return nil
+		return err
 	}
 	return nil
 }
@@ -78,7 +121,7 @@ func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (ma
 	_, err := os.Stat("./secrets.yml")
 	if err != nil {
 		if descriptorFile.Credentials == (cluster.Credentials{}) {
-			return c, r, "", errors.New("Incorrect credentials in descriptor file")
+			return c, r, "", errors.Wrap(err, "Incorrect credentials in descriptor file")
 		}
 		m := structs.Map(descriptorFile.Credentials)
 		r := map[string]string{"User": descriptorFile.ExternalRegistry.User, "Pass": descriptorFile.ExternalRegistry.Pass, "Url": descriptorFile.ExternalRegistry.URL}
@@ -105,6 +148,9 @@ func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (ma
 			}
 			resultCredsMap := structs.Map(descriptorFile.Credentials)
 			resultCreds = convertToMapStringString(resultCredsMap)
+
+			return c, r, "", errors.Wrap(err, "The Vault password is incorrect")
+
 		} else {
 			m := structs.Map(f)
 			resultCreds = convertToMapStringString(m["Credentials"].(map[string]interface{}))
@@ -113,6 +159,7 @@ func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (ma
 			if descriptorFile.GithubToken == "" {
 				return c, r, "", errors.New("No Github Token found in secrets file and descriptor file")
 			}
+
 			resultGHT = descriptorFile.GithubToken
 		} else {
 			resultGHT = secretFile.Secrets.GithubToken
@@ -121,6 +168,7 @@ func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (ma
 			// TODO: Adaptar para que puedan ser multiples
 			if descriptorFile.ExternalRegistry != (cluster.ExternalRegistry{}) {
 				resultReg = map[string]string{"User": descriptorFile.ExternalRegistry.User, "Pass": descriptorFile.ExternalRegistry.Pass, "Url": descriptorFile.ExternalRegistry.URL}
+
 			}
 		} else {
 			resultReg = map[string]string{"User": secretFile.Secrets.ExternalRegistry.User, "Pass": secretFile.Secrets.ExternalRegistry.Pass, "Url": descriptorFile.ExternalRegistry.URL}
@@ -176,7 +224,6 @@ func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword stri
 		return nil
 	}
 	// En caso de que exista
-
 	secretRaw, err := decryptFile(secretPath, vaultPassword)
 	if err != nil {
 		return err

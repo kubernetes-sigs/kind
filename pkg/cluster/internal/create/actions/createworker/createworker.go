@@ -121,12 +121,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	if err != nil {
 		return err
 	}
-	// var credentialsMap map[string]string
-	// credentialsBytes, err := yaml.Marshal(credentials)
-	// yaml.Unmarshal(credentialsBytes, &credentialsMap)
-	// var externalRegistryMap map[string]string
-	// externalRegistryBytes, err := yaml.Marshal(externalRegistry)
-	// yaml.Unmarshal(externalRegistryBytes, &externalRegistryMap)
 
 	providerParams := ProviderParams{
 		region:      descriptorFile.Region,
@@ -185,48 +179,12 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	ctx.Status.End(true) // End Generating worker cluster manifests
 
-	//_, err = os.Stat(secretsFile)
-
 	ctx.Status.Start("Generating secrets file 📝🗝️")
 	defer ctx.Status.End(false)
 
 	ensureSecretsFile(*descriptorFile, a.vaultPassword)
 
 	rewriteDescriptorFile(a.descriptorName)
-
-	// filelines := []string{
-	// 	"secrets:\n",
-	// 	"  github_token: " + githubToken + "\n",
-	// 	"  " + descriptorFile.InfraProvider + ":\n",
-	// 	"    credentials:\n",
-	// }
-
-	// for k, v := range credentials {
-	// 	if v != "" {
-	// 		v = strings.Replace(v, "\n", `\n`, -1)
-	// 		field := stringy.New(k)
-	// 		filelines = append(filelines, "      "+field.SnakeCase().ToLower()+": \""+v+"\"\n")
-	// 	}
-	// }
-
-	// filelines = append(filelines, "  external_registry:\n")
-	// filelines = append(filelines, "    user: "+externalRegistry["User"]+"\n")
-	// filelines = append(filelines, "    pass: "+externalRegistry["Pass"]+"\n")
-
-	// basepath, err := currentdir()
-	// err = createDirectory(basepath)
-	// if err != nil {
-	// 	return err
-	// }
-	// filename := basepath + "/" + secretsFile
-	// err = writeFile(filename, filelines)
-	// if err != nil {
-	// 	return errors.Wrap(err, "failed to write the secrets file")
-	// }
-	// err = encryptFile(filename, a.vaultPassword)
-	// if err != nil {
-	// 	return errors.Wrap(err, "failed to cipher the secrets file")
-	// }
 
 	defer ctx.Status.End(true) // End Generating secrets file
 
@@ -284,11 +242,11 @@ spec:
 			return errors.Wrap(err, "failed to apply manifests")
 		}
 
-		// Wait for the workload cluster control plane to be ready
+		// Wait for the worker cluster creation
 		raw = bytes.Buffer{}
-		cmd = node.Command("sh", "-c", "kubectl -n "+capiClustersNamespace+" wait --for=condition=ControlPlaneReady --timeout 20m cluster "+descriptorFile.ClusterID)
+		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "25m", "cluster", descriptorFile.ClusterID)
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to wait for workload cluster Control Plane to be ready")
+			return errors.Wrap(err, "failed to create the worker Cluster")
 		}
 
 		// Get the workload cluster kubeconfig
@@ -329,6 +287,15 @@ spec:
 				return errors.Wrap(err, "failed to install CNI in workload cluster")
 			}
 			ctx.Status.End(true) // End Installing CNI in workload cluster
+
+			ctx.Status.Start("Installing StorageClass in workload cluster 💾")
+			defer ctx.Status.End(false)
+
+			err = infra.installCSI(node, kubeconfigPath)
+			if err != nil {
+				return errors.Wrap(err, "failed to install StorageClass in workload cluster")
+			}
+			ctx.Status.End(true) // End Installing StorageClass in workload cluster
 		}
 
 		ctx.Status.Start("Preparing nodes in workload cluster 📦")
@@ -336,16 +303,18 @@ spec:
 
 		// Wait for the worker cluster creation
 		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "10m", "cluster", descriptorFile.ClusterID)
+		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "15m", "--all", "md")
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
 			return errors.Wrap(err, "failed to create the worker Cluster")
 		}
 
-		// Wait for machines creation
-		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "15m", "--all", "md")
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to create the Machines")
+		if !descriptorFile.ControlPlane.Managed {
+			// Wait for the control plane creation
+			raw = bytes.Buffer{}
+			cmd = node.Command("sh", "-c", "kubectl -n "+capiClustersNamespace+" wait --for=jsonpath=\"{.status.unavailableReplicas}\"=0 --timeout 10m --all kubeadmcontrolplanes")
+			if err := cmd.SetStdout(&raw).Run(); err != nil {
+				return errors.Wrap(err, "failed to create the worker Cluster")
+			}
 		}
 
 		ctx.Status.End(true) // End Preparing nodes in workload cluster
@@ -441,7 +410,7 @@ spec:
 		ctx.Status.Start("Generating the KEOS descriptor 📝")
 		defer ctx.Status.End(false)
 
-		err = createKEOSDescriptor(*descriptorFile, provider.storageClass)
+		err = createKEOSDescriptor(*descriptorFile, provider.stClassName)
 		if err != nil {
 			return err
 		}

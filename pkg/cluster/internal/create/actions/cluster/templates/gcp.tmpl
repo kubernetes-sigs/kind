@@ -36,6 +36,9 @@ spec:
       - id: {{ .Name }}
     {{- end }}
     {{- end }}
+{{- else }}
+  network:
+    name: default
 {{- end }}
 ---
 kind: KubeadmControlPlane
