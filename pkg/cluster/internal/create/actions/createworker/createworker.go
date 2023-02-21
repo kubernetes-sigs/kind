@@ -22,7 +22,6 @@ import (
 	"os"
 	"strings"
 
-	// "gopkg.in/yaml.v3"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 	"sigs.k8s.io/kind/pkg/errors"

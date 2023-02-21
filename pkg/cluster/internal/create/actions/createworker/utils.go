@@ -18,7 +18,6 @@ package createworker
 
 import (
 	"bytes"
-	"fmt"
 
 	"io/ioutil"
 	"os"
@@ -40,47 +39,6 @@ import (
 
 const secretName = "secrets.yml"
 const secretPath = "./" + secretName
-
-func createDirectory(directory string) error {
-	if _, err := os.Stat(directory); os.IsNotExist(err) {
-		err = os.Mkdir(directory, 0777)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func currentdir() (string, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-
-	return cwd, nil
-}
-
-func writeFile(filePath string, contentLines []string) error {
-	f, err := os.Create(filePath)
-	if err != nil {
-		fmt.Println(err)
-		f.Close()
-		return nil
-	}
-	for _, v := range contentLines {
-		fmt.Fprintf(f, v)
-		if err != nil {
-			fmt.Println(err)
-			return nil
-		}
-	}
-	err = f.Close()
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-	return nil
-}
 
 func encryptFile(filePath string, vaultPassword string) error {
 	data, err := ioutil.ReadFile(filePath)
@@ -148,8 +106,6 @@ func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (ma
 			}
 			resultCredsMap := structs.Map(descriptorFile.Credentials)
 			resultCreds = convertToMapStringString(resultCredsMap)
-
-			return c, r, "", errors.Wrap(err, "The Vault password is incorrect")
 
 		} else {
 			m := structs.Map(f)
