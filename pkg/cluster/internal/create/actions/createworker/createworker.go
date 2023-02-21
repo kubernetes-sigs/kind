@@ -40,20 +40,6 @@ type SecretsFile struct {
 	Secrets Secrets `yaml:"secrets"`
 }
 
-// type Secrets struct {
-// 		AWS struct {
-// 			Credentials cluster.Credentials `yaml:"credentials"`
-// 		} `yaml:"aws"`
-// 		GCP struct {
-// 			Credentials cluster.Credentials `yaml:"credentials"`
-// 		} `yaml:"gcp"`
-// 		GithubToken      string `yaml:"github_token"`
-// 		ExternalRegistry struct {
-// 			User string `yaml:"user"`
-// 			Pass string `yaml:"pass"`
-// 		} `yaml:"external_registry"`
-// }
-
 type Secrets struct {
 	AWS              AWS              `yaml:"aws"`
 	GCP              GCP              `yaml:"gcp"`
@@ -117,7 +103,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	// Get the secrets
 	credentialsMap, externalRegistryMap, githubToken, err := getSecrets(*descriptorFile, a.vaultPassword)
-	//credentials, externalRegistry, githubToken, err := getCredentials(*descriptorFile, a.vaultPassword)
 	if err != nil {
 		return err
 	}
