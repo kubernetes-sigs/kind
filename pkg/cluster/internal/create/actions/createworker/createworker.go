@@ -40,24 +40,24 @@ type SecretsFile struct {
 }
 
 type Secrets struct {
-	AWS              AWS              `yaml:"aws"`
-	GCP              GCP              `yaml:"gcp"`
-	GithubToken      string           `yaml:"github_token"`
-	ExternalRegistry ExternalRegistry `yaml:"external_registry"`
+	AWS                         cluster.AWSCredentials              `yaml:"aws"`
+	GCP                         cluster.GCPCredentials              `yaml:"gcp"`
+	GithubToken                 string                              `yaml:"github_token"`
+	ExternalRegistryCredentials cluster.ExternalRegistryCredentials `yaml:"external_registry"`
 }
 
-type AWS struct {
-	Credentials cluster.Credentials `yaml:"credentials"`
-}
+// type AWS struct {
+// 	Credentials cluster.Credentials `yaml:"credentials"`
+// }
 
-type GCP struct {
-	Credentials cluster.Credentials `yaml:"credentials"`
-}
+// type GCP struct {
+// 	Credentials cluster.Credentials `yaml:"credentials"`
+// }
 
-type ExternalRegistry struct {
-	User string `yaml:"user"`
-	Pass string `yaml:"pass"`
-}
+// type ExternalRegistry struct {
+// 	User string `yaml:"user"`
+// 	Pass string `yaml:"pass"`
+// }
 
 const allowAllEgressNetPol = `
 apiVersion: networking.k8s.io/v1
