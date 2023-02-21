@@ -192,11 +192,13 @@ func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword stri
 
 	if secretMap["secrets"]["aws"] == nil {
 		edited = true
-		secretMap["secrets"]["aws"] = awsCredentials
+		secretMap["secrets"]["aws"] = map[string]interface{}{
+			"credentials": awsCredentials}
 	}
 	if secretMap["secrets"]["gcp"] == nil {
 		edited = true
-		secretMap["secrets"]["gcp"] = gcpCredentials
+		secretMap["secrets"]["gcp"] = map[string]interface{}{
+			"credentials": gcpCredentials}
 	}
 	if secretMap["secrets"]["external_registry"] == nil {
 		edited = true
