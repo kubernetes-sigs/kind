@@ -22,12 +22,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"reflect"
+	"strings"
 
-	b64 "encoding/base64"
-
+	"github.com/fatih/structs"
+	"github.com/oleiade/reflections"
 	"gopkg.in/yaml.v3"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/exec"
 
 	vault "github.com/sosedoff/ansible-vault-go"
@@ -39,12 +43,10 @@ const secretPath = "./" + secretName
 func encryptFile(filePath string, vaultPassword string) error {
 	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		fmt.Println(err)
 		return nil
 	}
 	err = vault.EncryptFile(filePath, string(data), vaultPassword)
 	if err != nil {
-		fmt.Println(err)
 		return nil
 	}
 	return nil
@@ -53,101 +55,241 @@ func encryptFile(filePath string, vaultPassword string) error {
 func decryptFile(filePath string, vaultPassword string) (string, error) {
 	data, err := vault.DecryptFile(filePath, vaultPassword)
 	if err != nil {
-		fmt.Println(err)
 		return "", err
 	}
 	return data, nil
 }
 
-func generateB64Credentials(access_key string, secret_key string, region string) string {
-	credentialsINIlines := "[default]\naws_access_key_id = " + access_key + "\naws_secret_access_key = " + secret_key + "\nregion = " + region + "\n\n"
-	return b64.StdEncoding.EncodeToString([]byte(credentialsINIlines))
+func convertToMapStringString(m map[string]interface{}) map[string]string {
+	var m2 = map[string]string{}
+	for k, v := range m {
+		m2[k] = v.(string)
+	}
+	return m2
 }
 
-func getCredentials(descriptorFile cluster.DescriptorFile, vaultPassword string) (cluster.AWSCredentials, string, error) {
-	awsEmptyCreds := cluster.AWSCredentials{}
-	descriptorEmptyCreds := checkAWSCreds(descriptorFile.AWSCredentials)
-	descriptorEmptyGHT := checkGHToken(descriptorFile.GithubToken)
-	_, err := os.Stat(secretPath)
+// func getCredentials(descriptorFile cluster.DescriptorFile, vaultPassword string) (cluster.Credentials, cluster.ExternalRegistry, string, error) {
+// 	emptyCreds := cluster.Credentials{}
+// 	emptyExternalRegistry := cluster.ExternalRegistry{}
+// 	descriptorEmptyCreds := checkInfraCreds(descriptorFile.Credentials)
+// 	descriptorEmptyGHT := checkGHToken(descriptorFile.GithubToken)
+// 	//descriptorEmptyExternalRegistry := checkExternalRegistry(descriptorFile.ExternalRegistry)
+
+// 	_, err := os.Stat(secretPath)
+// 	if err != nil {
+// 		// Si no existe secrets.yml
+
+// 		if !descriptorEmptyCreds && !descriptorEmptyGHT {
+// 			fmt.Println("NO EXISTE SECRETS, DEVOLVEMOS: ")
+// 			fmt.Println(descriptorFile.Credentials)
+// 			return descriptorFile.Credentials, descriptorFile.ExternalRegistry, descriptorFile.GithubToken, nil
+
+// 		}
+// 		err := errors.New("Incorrect Credentials or GithubToken in descriptor file")
+
+// 		return emptyCreds, emptyExternalRegistry, "", err
+
+// 	} else {
+// 		secretFile, err := getDecryptedSecret(vaultPassword)
+// 		if err != nil {
+// 			return cluster.Credentials{}, emptyExternalRegistry, "", err
+
+// 		}
+// 		creds, externalRegistry, githubToken := chooseCredentials(descriptorFile, secretFile)
+// 		EmptyCreds := checkCreds(creds, githubToken)
+// 		if EmptyCreds {
+// 			return creds, externalRegistry, githubToken, errors.New("It is not possible to find the AWSCredentials or GithubToken in the descriptor or in secrets.yml")
+// 		}
+// 		return creds, externalRegistry, githubToken, nil
+
+// 	}
+// }
+
+func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (map[string]string, map[string]string, string, error) {
+
+	var c = map[string]string{}
+	var r = map[string]string{}
+	var resultCreds = map[string]string{}
+	var resultReg = map[string]string{}
+	var resultGHT string
+
+	_, err := os.Stat("./secrets.yml")
 	if err != nil {
-
-		if !descriptorEmptyCreds && !descriptorEmptyGHT {
-			return descriptorFile.AWSCredentials, descriptorFile.GithubToken, nil
+		if descriptorFile.Credentials == (cluster.Credentials{}) {
+			return c, r, "", errors.New("Incorrect credentials in descriptor file")
 		}
-		err := errors.New("Incorrect AWS credentials or GithubToken in descriptor file")
-		return awsEmptyCreds, "", err
-
+		m := structs.Map(descriptorFile.Credentials)
+		r := map[string]string{"User": descriptorFile.ExternalRegistry.User, "Pass": descriptorFile.ExternalRegistry.Pass, "Url": descriptorFile.ExternalRegistry.URL}
+		resultCreds = convertToMapStringString(m)
+		resultReg = r
+		resultGHT = descriptorFile.GithubToken
+		fmt.Println("NO E SECRETS:")
+		fmt.Println("resultCreds")
+		fmt.Println(resultCreds)
+		fmt.Println("resultReg")
+		fmt.Println(resultReg)
+		fmt.Println("resultGHT")
+		fmt.Println(resultGHT)
+		//return convertToMapStringString(m), r, descriptorFile.GithubToken, nil
 	} else {
-		secretFile, err := getDecryptedSecret(vaultPassword)
+		var secretFile SecretsFile
+		secretRaw, err := decryptFile("./secrets.yml", vaultPassword)
 		if err != nil {
-			return cluster.AWSCredentials{}, "", err
+			return c, r, "", errors.New("The Vault password is incorrect")
 		}
-		awsCreds, githubToken := chooseCredentials(descriptorFile, secretFile)
-		EmptyCreds := checkCreds(awsCreds, githubToken)
-		if EmptyCreds {
-			return awsCreds, githubToken, errors.New("It is not possible to find the AWSCredentials or GithubToken in the descriptor or in secrets.yml")
+		err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
+		if err != nil {
+			return c, r, "", err
 		}
-		return awsCreds, githubToken, nil
+		f, err := reflections.GetField(secretFile.Secrets, strings.ToUpper(descriptorFile.InfraProvider))
+		if err != nil {
+			return c, r, "", err
+		}
+		if reflect.DeepEqual(f, reflect.Zero(reflect.TypeOf(f)).Interface()) {
+			fmt.Println("secrets no tiene campo: ", descriptorFile.InfraProvider)
+			if descriptorFile.Credentials == (cluster.Credentials{}) {
+				return c, r, "", errors.New("No " + descriptorFile.InfraProvider + " credentials found in secrets file and descriptor file")
+			}
+			resultCredsMap := structs.Map(descriptorFile.Credentials)
+			fmt.Println(resultCredsMap)
+			resultCreds = convertToMapStringString(resultCredsMap)
+		} else {
+			m := structs.Map(f)
+			resultCreds = convertToMapStringString(m["Credentials"].(map[string]interface{}))
+		}
+		if secretFile.Secrets.GithubToken == "" {
+			if descriptorFile.GithubToken == "" {
+				return c, r, "", errors.New("No Github Token found in secrets file and descriptor file")
+			}
+			resultGHT = descriptorFile.GithubToken
+		} else {
+			resultGHT = secretFile.Secrets.GithubToken
+		}
+		if secretFile.Secrets.ExternalRegistry == (ExternalRegistry{}) {
+			// TODO: Adaptar para que puedan ser multiples
+			if descriptorFile.ExternalRegistry != (cluster.ExternalRegistry{}) {
+				resultReg = map[string]string{"User": descriptorFile.ExternalRegistry.User, "Pass": descriptorFile.ExternalRegistry.Pass, "Url": descriptorFile.ExternalRegistry.URL}
+			}
+		} else {
+			resultReg = map[string]string{"User": secretFile.Secrets.ExternalRegistry.User, "Pass": secretFile.Secrets.ExternalRegistry.Pass, "Url": descriptorFile.ExternalRegistry.URL}
+		}
 
+		fmt.Println("SI E SECRETS:")
+		fmt.Println("resultCreds")
+		fmt.Println(resultCreds)
+		fmt.Println("resultReg")
+		fmt.Println(resultReg)
+		fmt.Println("resultGHT")
+		fmt.Println(resultGHT)
+		//return convertToMapStringString(m["Credentials"].(map[string]interface{})), r, secretFile.Secrets.GithubToken, nil
 	}
-
+	return resultCreds, resultReg, resultGHT, nil
 }
 
-func chooseCredentials(descriptorFile cluster.DescriptorFile, secretFile SecretsFile) (cluster.AWSCredentials, string) {
-	awsCreds := cluster.AWSCredentials{}
-	githubToken := ""
-	descriptorEmptyCreds := checkAWSCreds(descriptorFile.AWSCredentials)
-	descriptorEmptyGHT := checkGHToken(descriptorFile.GithubToken)
-	secretsEmptyCreds := checkAWSCreds(secretFile.Secret.AWSCredentials)
-	secretEmptyGHT := checkGHToken(secretFile.Secret.GithubToken)
-	if !secretsEmptyCreds {
-		awsCreds = secretFile.Secret.AWSCredentials
-	} else if !descriptorEmptyCreds {
-		awsCreds = descriptorFile.AWSCredentials
-	}
+// func chooseCredentials(descriptorFile cluster.DescriptorFile, secretFile SecretsFile) (cluster.Credentials, cluster.ExternalRegistry, string) {
+// 	creds := cluster.Credentials{}
+// 	externalRegistry := cluster.ExternalRegistry{}
+// 	githubToken := ""
+// 	descriptorEmptyCreds := checkInfraCreds(descriptorFile.Credentials)
+// 	descriptorEmptyGHT := checkGHToken(descriptorFile.GithubToken)
+// 	descriptorEmptyExternalRegistry := checkExternalRegistry(descriptorFile.ExternalRegistry.User, descriptorFile.ExternalRegistry.Pass)
+// 	secretsAWSEmptyCreds := checkInfraCreds(secretFile.Secrets.AWS.Credentials)
+// 	secretsGCPEmptyCreds := checkInfraCreds(secretFile.Secrets.GCP.Credentials)
+// 	secretEmptyGHT := checkGHToken(secretFile.Secrets.GithubToken)
+// 	secretEmptyExternalRegistry := checkExternalRegistry(secretFile.Secrets.ExternalRegistry.User, secretFile.Secrets.ExternalRegistry.Pass)
 
-	if !secretEmptyGHT {
-		githubToken = secretFile.Secret.GithubToken
-	} else if !descriptorEmptyGHT {
-		githubToken = descriptorFile.GithubToken
-	}
-	return awsCreds, githubToken
-}
+// 	if !secretsAWSEmptyCreds || !secretsGCPEmptyCreds {
+// 		creds.AccessKey = secretFile.Secrets.AWS.Credentials.AccessKey
+// 		creds.SecretKey = secretFile.Secrets.AWS.Credentials.SecretKey
+// 		creds.Region = secretFile.Secrets.AWS.Credentials.Region
+// 		creds.Account = secretFile.Secrets.AWS.Credentials.Account
 
-func checkCreds(awsCreds cluster.AWSCredentials, github_token string) bool {
-	awsEmptyCreds := cluster.AWSCredentials{}
-	return awsCreds == awsEmptyCreds || github_token == ""
-}
+// 		creds.ClientEmail = secretFile.Secrets.GCP.Credentials.ClientEmail
+// 		creds.ClientID = secretFile.Secrets.GCP.Credentials.ClientID
+// 		creds.ProjectID = secretFile.Secrets.GCP.Credentials.ProjectID
+// 		creds.PrivateKeyID = secretFile.Secrets.GCP.Credentials.PrivateKeyID
+// 		creds.PrivateKey = secretFile.Secrets.GCP.Credentials.PrivateKey
+// 	} else if !descriptorEmptyCreds {
+// 		creds = descriptorFile.Credentials
+// 	}
 
-func checkAWSCreds(awsCreds cluster.AWSCredentials) bool {
-	awsEmptyCreds := cluster.AWSCredentials{}
-	return awsCreds == awsEmptyCreds
-}
+// 	if !secretEmptyGHT {
+// 		githubToken = secretFile.Secrets.GithubToken
+// 	} else if !descriptorEmptyGHT {
+// 		githubToken = descriptorFile.GithubToken
+// 	}
 
-func checkGHToken(github_token string) bool {
-	return github_token == ""
-}
+// 	if !secretEmptyExternalRegistry {
+// 		externalRegistry.User = secretFile.Secrets.ExternalRegistry.User
+// 		externalRegistry.Pass = secretFile.Secrets.ExternalRegistry.Pass
+// 	} else if !descriptorEmptyExternalRegistry {
+// 		externalRegistry = descriptorFile.ExternalRegistry
+// 	}
+
+// 	return creds, externalRegistry, githubToken
+// }
+
+// func checkCreds(creds cluster.Credentials, github_token string) bool {
+// 	emptyCreds := cluster.Credentials{}
+// 	return creds == emptyCreds || github_token == ""
+// }
+
+// func checkInfraCreds(awsCreds cluster.Credentials) bool {
+// 	awsEmptyCreds := cluster.Credentials{}
+// 	return awsCreds == awsEmptyCreds
+// }
+
+// func checkGHToken(github_token string) bool {
+// 	return github_token == ""
+// }
+
+// func checkExternalRegistry(user string, pass string) bool {
+
+// 	return user == "" && pass == ""
+// }
 
 func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword string) error {
 	edited := false
-
-	awsCredentials, github_token, err := getCredentials(descriptorFile, vaultPassword)
+	credentials, externalRegistry, github_token, err := getSecrets(descriptorFile, vaultPassword)
+	if err != nil {
+		return err
+	}
+	awsCredentials, gcpCredentials, secretExternalRegistry, err := fillCredentials(credentials, externalRegistry)
 	if err != nil {
 		return err
 	}
 
 	_, err = os.Stat(secretPath)
 	if err != nil {
-		secret := Secret{awsCredentials, github_token}
-		secretFile := SecretsFile{secret}
-		secretRaw, err := yaml.Marshal(secretFile)
-		secretMap := map[string]map[string]interface{}{}
-		err = yaml.Unmarshal([]byte(secretRaw), &secretMap)
-		if err != nil {
-			return err
+		fmt.Println("no exite secrets (ensureSecretsFile)")
+		secretMap := map[string]interface{}{}
+		if github_token != "" {
+			secretMap["github_token"] = github_token
+		}
+		if len(gcpCredentials) > 0 {
+			secretMap["gcp"] = map[string]interface{}{
+				"credentials": gcpCredentials,
+			}
+		}
+		if len(awsCredentials) > 0 {
+			secretMap["aws"] = map[string]interface{}{
+				"credentials": awsCredentials,
+			}
+		}
+		if secretExternalRegistry["user"] != "" && secretExternalRegistry["pass"] != "" {
+			externalRegistryMap := map[string]interface{}{
+				"user": secretExternalRegistry["user"],
+				"pass": secretExternalRegistry["pass"],
+				"url":  externalRegistry["url"],
+			}
+			secretMap["external_registry"] = externalRegistryMap
 		}
 
-		err = encryptSecret(secretMap, vaultPassword)
+		secretFileMap := map[string]map[string]interface{}{
+			"secrets": secretMap,
+		}
+
+		err = encryptSecret(secretFileMap, vaultPassword)
 		if err != nil {
 			return err
 		}
@@ -165,9 +307,19 @@ func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword stri
 		return err
 	}
 
+	fmt.Println("secretMap: >>>>>")
+	fmt.Println(secretMap)
 	if secretMap["secrets"]["aws"] == nil {
 		edited = true
 		secretMap["secrets"]["aws"] = awsCredentials
+	}
+	if secretMap["secrets"]["gcp"] == nil {
+		edited = true
+		secretMap["secrets"]["gcp"] = gcpCredentials
+	}
+	if secretMap["secrets"]["external_registry"] == nil {
+		edited = true
+		secretMap["secrets"]["external_registry"] = secretExternalRegistry
 	}
 	if secretMap["secrets"]["github_token"] == nil {
 		edited = true
@@ -181,6 +333,60 @@ func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword stri
 		return nil
 	}
 	return nil
+}
+
+func fillCredentials(credentials map[string]string, externalRegistry map[string]string) (map[string]string, map[string]string, map[string]string, error) {
+	awsCredentials := cluster.Credentials{}
+	awsCredentials.AccessKey = credentials["AccessKey"]
+	awsCredentials.SecretKey = credentials["SecretKey"]
+	awsCredentials.Region = credentials["Region"]
+	awsCredentials.Account = credentials["Account"]
+	awsMap, err := getMap(awsCredentials)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	awsMap = cleanStruct(awsMap)
+
+	gcpCredentials := cluster.Credentials{}
+	gcpCredentials.ProjectID = credentials["ProjectID"]
+	gcpCredentials.PrivateKeyID = credentials["PrivateKeyID"]
+	gcpCredentials.PrivateKey = credentials["PrivateKey"]
+	gcpCredentials.ClientEmail = credentials["ClientEmail"]
+	gcpCredentials.ClientID = credentials["ClientID"]
+	gcpMap, err := getMap(gcpCredentials)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	gcpMap = cleanStruct(gcpMap)
+
+	secretExternalRegistry := ExternalRegistry{externalRegistry["User"], externalRegistry["Pass"]}
+	fmt.Println("externalRegistry: ")
+	fmt.Println(secretExternalRegistry)
+	secretExternalRegistryMap, err := getMap(secretExternalRegistry)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return awsMap, gcpMap, secretExternalRegistryMap, nil
+}
+
+func getMap(s interface{}) (map[string]string, error) {
+	var resultMap map[string]string
+	resultBytes, err := yaml.Marshal(s)
+	if err != nil {
+		return nil, err
+	}
+	yaml.Unmarshal(resultBytes, &resultMap)
+	return resultMap, nil
+
+}
+func cleanStruct(m map[string]string) map[string]string {
+	for k, v := range m {
+		if v == "" {
+			delete(m, k)
+		}
+	}
+	return m
 }
 
 func rewriteDescriptorFile(descriptorName string) error {
@@ -197,10 +403,10 @@ func rewriteDescriptorFile(descriptorName string) error {
 		return err
 	}
 
-	nodes := removeNode(data.Content, "aws")
-	nodes = removeNode(data.Content, "github_token")
+	yamlNodes := removeKey(data.Content, "credentials")
+	yamlNodes = removeKey(yamlNodes, "github_token")
 
-	b, err := yaml.Marshal(nodes[0])
+	b, err := yaml.Marshal(yamlNodes[0])
 
 	fmt.Println(string(b))
 
@@ -256,7 +462,7 @@ func encryptSecret(secretMap map[string]map[string]interface{}, vaultPassword st
 	return nil
 }
 
-func removeNode(nodes []*yaml.Node, key string) []*yaml.Node {
+func removeKey(nodes []*yaml.Node, key string) []*yaml.Node {
 	newNodes := []*yaml.Node{}
 	for i, node := range nodes {
 		if node.Kind == yaml.MappingNode {
@@ -274,12 +480,38 @@ func removeNode(nodes []*yaml.Node, key string) []*yaml.Node {
 				}
 				j++
 			}
-			node.Content = removeNode(node.Content, key)
+			node.Content = removeKey(node.Content, key)
 		}
 		if node.Kind == yaml.SequenceNode {
-			node.Content = removeNode(node.Content, key)
+			node.Content = removeKey(node.Content, key)
 		}
 		newNodes = append(newNodes, node)
 	}
 	return newNodes
+}
+
+// getNode returns the first control plane
+func getNode(ctx *actions.ActionContext) (nodes.Node, error) {
+	allNodes, err := ctx.Nodes()
+	if err != nil {
+		return nil, err
+	}
+
+	controlPlanes, err := nodeutils.ControlPlaneNodes(allNodes)
+	if err != nil {
+		return nil, err
+	}
+	return controlPlanes[0], nil
+}
+
+func executeCommand(node nodes.Node, command string, envVars ...[]string) error {
+	raw := bytes.Buffer{}
+	cmd := node.Command("sh", "-c", command)
+	if len(envVars) > 0 {
+		cmd.SetEnv(envVars[0]...)
+	}
+	if err := cmd.SetStdout(&raw).Run(); err != nil {
+		return err
+	}
+	return nil
 }
