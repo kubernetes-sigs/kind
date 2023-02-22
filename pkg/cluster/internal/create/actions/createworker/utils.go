@@ -140,13 +140,11 @@ func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (ma
 			if descriptorFile.Credentials.ExternalRegistry != (cluster.ExternalRegistryCredentials{}) {
 				resultRegMap := structs.Map(descriptorFile.Credentials.ExternalRegistry)
 				resultReg = convertToMapStringString(resultRegMap)
-				//resultReg = map[string]string{"User": descriptorFile.ExternalRegistry.User, "Pass": descriptorFile.ExternalRegistry.Pass, "Url": descriptorFile.ExternalRegistry.URL}
 
 			}
 		} else {
 			resultRegMap := structs.Map(secretFile.Secrets.ExternalRegistryCredentials)
 			resultReg = convertToMapStringString(resultRegMap)
-			//resultReg = map[string]string{"User": secretFile.Secrets.ExternalRegistry.User, "Pass": secretFile.Secrets.ExternalRegistry.Pass, "Url": descriptorFile.ExternalRegistry.URL}
 		}
 	}
 	return resultCreds, resultReg, resultGHT, nil
@@ -158,10 +156,6 @@ func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword stri
 	if err != nil {
 		return err
 	}
-	// awsCredentials, gcpCredentials, secretExternalRegistry, err := fillCredentials(credentials, externalRegistry, descriptorFile.InfraProvider)
-	// if err != nil {
-	// 	return err
-	// }
 
 	_, err = os.Stat(secretPath)
 	if err != nil {
@@ -174,22 +168,7 @@ func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword stri
 				"credentials": credentials,
 			}
 		}
-		// if len(gcpCredentials) > 0 {
-		// 	secretMap["gcp"] = map[string]interface{}{
-		// 		"credentials": gcpCredentials,
-		// 	}
-		// }
-		// if len(awsCredentials) > 0 {
-		// 	secretMap["aws"] = map[string]interface{}{
-		// 		"credentials": awsCredentials,
-		// 	}
-		// }
-		//if externalRegistry["user"] != "" && externalRegistry["pass"] != "" {
-		// externalRegistryMap := map[string]interface{}{
-		// 	"user": externalRegistry["user"],
-		// 	"pass": externalRegistry["pass"],
-		// 	"url":  externalRegistry["url"],
-		// }
+
 		if len(externalRegistry) > 0 {
 			secretMap["external_registry"] = externalRegistry
 		}
@@ -220,11 +199,7 @@ func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword stri
 		secretMap["secrets"][descriptorFile.InfraProvider] = map[string]interface{}{
 			"credentials": credentials}
 	}
-	// if secretMap["secrets"]["gcp"] == nil {
-	// 	edited = true
-	// 	secretMap["secrets"]["gcp"] = map[string]interface{}{
-	// 		"credentials": gcpCredentials}
-	// }
+
 	if secretMap["secrets"]["external_registry"] == nil && len(externalRegistry) > 0 {
 		edited = true
 		secretMap["secrets"]["external_registry"] = externalRegistry
@@ -242,40 +217,6 @@ func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword stri
 	}
 	return nil
 }
-
-// func fillCredentials(credentials map[string]string, externalRegistry map[string]string, infraProvider string) (map[string]string, map[string]string, map[string]string, error) {
-
-// 	awsCredentials := cluster.Credentials{}
-// 	awsCredentials.AccessKey = credentials["AccessKey"]
-// 	awsCredentials.SecretKey = credentials["SecretKey"]
-// 	awsCredentials.Region = credentials["Region"]
-// 	awsCredentials.Account = credentials["Account"]
-// 	awsMap, err := getMap(awsCredentials)
-// 	if err != nil {
-// 		return nil, nil, nil, err
-// 	}
-// 	awsMap = cleanStruct(awsMap)
-
-// 	gcpCredentials := cluster.Credentials{}
-// 	gcpCredentials.ProjectID = credentials["ProjectID"]
-// 	gcpCredentials.PrivateKeyID = credentials["PrivateKeyID"]
-// 	gcpCredentials.PrivateKey = credentials["PrivateKey"]
-// 	gcpCredentials.ClientEmail = credentials["ClientEmail"]
-// 	gcpCredentials.ClientID = credentials["ClientID"]
-// 	gcpMap, err := getMap(gcpCredentials)
-// 	if err != nil {
-// 		return nil, nil, nil, err
-// 	}
-// 	gcpMap = cleanStruct(gcpMap)
-
-// 	secretExternalRegistry := ExternalRegistry{externalRegistry["User"], externalRegistry["Pass"]}
-// 	secretExternalRegistryMap, err := getMap(secretExternalRegistry)
-// 	if err != nil {
-// 		return nil, nil, nil, err
-// 	}
-
-// 	return awsMap, gcpMap, secretExternalRegistryMap, nil
-// }
 
 func convertMapToStruct(m map[string]interface{}, s interface{}) error {
 	stValue := reflect.ValueOf(s).Elem()
@@ -299,6 +240,7 @@ func getMap(s interface{}) (map[string]string, error) {
 	return resultMap, nil
 
 }
+
 func cleanStruct(m map[string]string) map[string]string {
 	for k, v := range m {
 		if v == "" {
