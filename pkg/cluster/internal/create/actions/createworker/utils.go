@@ -18,6 +18,8 @@ package createworker
 
 import (
 	"bytes"
+	"fmt"
+	"unicode"
 
 	"io/ioutil"
 	"os"
@@ -164,12 +166,18 @@ func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword stri
 			secretMap["github_token"] = github_token
 		}
 		if len(credentials) > 0 {
+			fmt.Println("credentials antes:")
+			fmt.Println(credentials)
+			credentials = convertMapKeysToSnakeCase(credentials)
+			fmt.Println("credentials despues:")
+			fmt.Println(credentials)
 			secretMap[descriptorFile.InfraProvider] = map[string]interface{}{
 				"credentials": credentials,
 			}
 		}
 
 		if len(externalRegistry) > 0 {
+			externalRegistry = convertMapKeysToSnakeCase(externalRegistry)
 			secretMap["external_registry"] = externalRegistry
 		}
 
@@ -196,12 +204,14 @@ func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword stri
 
 	if secretMap["secrets"][descriptorFile.InfraProvider] == nil && len(credentials) > 0 {
 		edited = true
+		credentials = convertMapKeysToSnakeCase(credentials)
 		secretMap["secrets"][descriptorFile.InfraProvider] = map[string]interface{}{
 			"credentials": credentials}
 	}
 
 	if secretMap["secrets"]["external_registry"] == nil && len(externalRegistry) > 0 {
 		edited = true
+		externalRegistry = convertMapKeysToSnakeCase(externalRegistry)
 		secretMap["secrets"]["external_registry"] = externalRegistry
 	}
 	if secretMap["secrets"]["github_token"] == nil && github_token != "" {
@@ -371,4 +381,28 @@ func executeCommand(node nodes.Node, command string, envVars ...[]string) error 
 		return err
 	}
 	return nil
+}
+
+func snakeCase(s string) string {
+	var result []rune
+	for i, c := range s {
+		if unicode.IsUpper(c) {
+			if i > 0 && !unicode.IsUpper(rune(s[i-1])) {
+				result = append(result, '_')
+			}
+			result = append(result, unicode.ToLower(c))
+		} else {
+			result = append(result, c)
+		}
+	}
+	return string(result)
+}
+
+func convertMapKeysToSnakeCase(m map[string]string) map[string]string {
+	newMap := make(map[string]string)
+	for k, v := range m {
+		newKey := snakeCase(k)
+		newMap[newKey] = v
+	}
+	return newMap
 }
