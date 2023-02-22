@@ -199,6 +199,11 @@ func commonArgs(cluster string, cfg *config.Cluster, networkName string, nodeNam
 	if mountFuse() {
 		args = append(args, "--device", "/dev/fuse")
 	}
+
+	if cfg.Networking.DNSSearch != nil {
+		args = append(args, "-e", "KIND_DNS_SEARCH="+strings.Join(*cfg.Networking.DNSSearch, " "))
+	}
+
 	return args, nil
 }
 
