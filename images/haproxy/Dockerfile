@@ -15,7 +15,7 @@
 # This image is a haproxy image + minimal config so the container will not exit
 # while we rewrite the config at runtime and signal haproxy to reload.
 
-ARG BASE="registry.k8s.io/build-image/debian-base:bullseye-v1.3.0"
+ARG BASE="registry.k8s.io/build-image/debian-base:bullseye-v1.4.3"
 FROM ${BASE} as build
 
 # NOTE: copyrights.tar.gz is a quirk of Kubernetes's debian-base image
