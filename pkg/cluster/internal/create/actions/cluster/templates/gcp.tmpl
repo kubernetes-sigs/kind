@@ -4,8 +4,6 @@ kind: Cluster
 metadata:
   name: "{{ .Descriptor.ClusterID }}"
   namespace: "cluster-{{ .Descriptor.ClusterID }}"
-  labels:
-    cni: calico
 spec:
   clusterNetwork:
     pods:
