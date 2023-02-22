@@ -57,7 +57,7 @@ type DescriptorFile struct {
 		} `yaml:"subnets"`
 	} `yaml:"networks"`
 
-	ExternalRegistry ExternalRegistry `yaml:"external_registry"`
+	DockerRegistries []DockerRegistries `yaml:"docker_registries"`
 
 	Keos struct {
 		Domain         string `yaml:"domain" validate:"required,hostname"`
@@ -129,10 +129,11 @@ type Node struct {
 }
 
 type Credentials struct {
-	AWS              AWSCredentials              `yaml:"aws"`
-	GCP              GCPCredentials              `yaml:"gcp"`
-	GithubToken      string                      `yaml:"github_token"`
-	ExternalRegistry ExternalRegistryCredentials `yaml:"external_registry"`
+	AWS              AWSCredentials                `yaml:"aws"`
+	GCP              GCPCredentials                `yaml:"gcp"`
+	GithubToken      string                        `yaml:"github_token"`
+	ExternalRegistry ExternalRegistryCredentials   `yaml:"external_registry"`
+	DockerRegistries []ExternalRegistryCredentials `yaml:"docker_registries"`
 }
 
 type AWSCredentials struct {
@@ -156,10 +157,11 @@ type ExternalRegistryCredentials struct {
 	Pass string `yaml:"pass"`
 }
 
-type ExternalRegistry struct {
+type DockerRegistries struct {
 	AuthRequired bool   `yaml:"auth_required" validate:"boolean"`
 	Type         string `yaml:"type"`
 	URL          string `yaml:"url" validate:"required"`
+	KeosRegistry bool   `yaml:"keos_registry" validate:"boolean"`
 }
 
 type TemplateParams struct {

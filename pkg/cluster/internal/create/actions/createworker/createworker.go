@@ -40,10 +40,11 @@ type SecretsFile struct {
 }
 
 type Secrets struct {
-	AWS                         cluster.AWSCredentials              `yaml:"aws"`
-	GCP                         cluster.GCPCredentials              `yaml:"gcp"`
-	GithubToken                 string                              `yaml:"github_token"`
-	ExternalRegistryCredentials cluster.ExternalRegistryCredentials `yaml:"external_registry"`
+	AWS                         cluster.AWSCredentials                `yaml:"aws"`
+	GCP                         cluster.GCPCredentials                `yaml:"gcp"`
+	GithubToken                 string                                `yaml:"github_token"`
+	ExternalRegistryCredentials cluster.ExternalRegistryCredentials   `yaml:"external_registry"`
+	DockerRegistries            []cluster.ExternalRegistryCredentials `yaml:"docker_registries"`
 }
 
 const allowAllEgressNetPol = `
@@ -88,7 +89,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// Get the secrets
-	credentialsMap, externalRegistryMap, githubToken, err := getSecrets(*descriptorFile, a.vaultPassword)
+	credentialsMap, externalRegistryMap, githubToken, _, err := getSecrets(*descriptorFile, a.vaultPassword)
 	if err != nil {
 		return err
 	}
