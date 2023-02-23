@@ -58,6 +58,8 @@ func decryptFile(filePath string, vaultPassword string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	var secret SecretsFile
+	_ = yaml.Unmarshal([]byte(data), &secret)
 	return data, nil
 }
 
@@ -123,14 +125,18 @@ func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (ma
 		if err != nil {
 			return c, r, "", dr, errors.New("The Vault password is incorrect")
 		}
+
 		err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
+
 		if err != nil {
 			return c, r, "", dr, err
 		}
+
 		f, err := reflections.GetField(secretFile.Secrets, strings.ToUpper(descriptorFile.InfraProvider))
 		if err != nil {
 			return c, r, "", dr, err
 		}
+
 		if reflect.DeepEqual(f, reflect.Zero(reflect.TypeOf(f)).Interface()) {
 			dc, err := reflections.GetField(descriptorFile.Credentials, strings.ToUpper(infraProvider))
 			if err != nil {

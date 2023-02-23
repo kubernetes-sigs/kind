@@ -34,18 +34,47 @@ type action struct {
 	avoidCreation  bool
 }
 
+type AWS struct {
+	Credentials cluster.AWSCredentials `yaml:"credentials"`
+}
+
+type GCP struct {
+	Credentials cluster.GCPCredentials `yaml:"credentials"`
+}
+
+type ExternalRegistryCredentials struct {
+	URL  string `yaml:"url"`
+	User string `yaml:"user"`
+	Pass string `yaml:"pass"`
+}
+
 // SecretsFile represents the YAML structure in the secrets.yml file
 type SecretsFile struct {
 	Secrets Secrets `yaml:"secrets"`
 }
 
 type Secrets struct {
-	AWS                         cluster.AWSCredentials                `yaml:"aws"`
-	GCP                         cluster.GCPCredentials                `yaml:"gcp"`
+	AWS                         AWS                                   `yaml:"aws"`
+	GCP                         GCP                                   `yaml:"gcp"`
 	GithubToken                 string                                `yaml:"github_token"`
 	ExternalRegistryCredentials cluster.ExternalRegistryCredentials   `yaml:"external_registry"`
 	DockerRegistries            []cluster.ExternalRegistryCredentials `yaml:"docker_registries"`
 }
+
+// type AWSCredentials struct {
+// 	AccessKey string `yaml:"access_key"`
+// 	SecretKey string `yaml:"secret_key"`
+// 	Region    string `yaml:"region"`
+// 	Account   string `yaml:"account"`
+// }
+
+// type GCPCredentials struct {
+// 	ProjectID    string `yaml:"project_id"`
+// 	PrivateKeyID string `yaml:"private_key_id"`
+// 	PrivateKey   string `yaml:"private_key"`
+// 	ClientEmail  string `yaml:"client_email"`
+// 	ClientID     string `yaml:"client_id"`
+// }
 
 const allowAllEgressNetPol = `
 apiVersion: networking.k8s.io/v1
