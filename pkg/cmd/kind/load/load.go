@@ -25,6 +25,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cmd"
 	dockerimage "sigs.k8s.io/kind/pkg/cmd/kind/load/docker-image"
 	imagearchive "sigs.k8s.io/kind/pkg/cmd/kind/load/image-archive"
+	imageload "sigs.k8s.io/kind/pkg/cmd/kind/load/image-load"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
@@ -46,5 +47,6 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	// add subcommands
 	cmd.AddCommand(dockerimage.NewCommand(logger, streams))
 	cmd.AddCommand(imagearchive.NewCommand(logger, streams))
+	cmd.AddCommand(imageload.NewCommand(logger, streams))
 	return cmd
 }
