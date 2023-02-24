@@ -150,7 +150,7 @@ type GCPCredentials struct {
 	ClientID     string `yaml:"client_id"`
 }
 
-type ExternalRegistryCredentials struct {
+type DockerRegistryCredentials struct {
 	URL  string `yaml:"url"`
 	User string `yaml:"user"`
 	Pass string `yaml:"pass"`
