@@ -57,7 +57,7 @@ type DescriptorFile struct {
 		} `yaml:"subnets"`
 	} `yaml:"networks"`
 
-	DockerRegistries []DockerRegistries `yaml:"docker_registries"`
+	DockerRegistries []DockerRegistry `yaml:"docker_registries"`
 
 	Keos struct {
 		Domain         string `yaml:"domain" validate:"required,hostname"`
@@ -129,9 +129,9 @@ type Node struct {
 }
 
 type Credentials struct {
-	AWS              AWSCredentials                `yaml:"aws"`
-	GCP              GCPCredentials                `yaml:"gcp"`
-	GithubToken      string                        `yaml:"github_token"`
+	AWS              AWSCredentials              `yaml:"aws"`
+	GCP              GCPCredentials              `yaml:"gcp"`
+	GithubToken      string                      `yaml:"github_token"`
 	DockerRegistries []DockerRegistryCredentials `yaml:"docker_registries"`
 }
 
@@ -156,7 +156,7 @@ type DockerRegistryCredentials struct {
 	Pass string `yaml:"pass"`
 }
 
-type DockerRegistries struct {
+type DockerRegistry struct {
 	AuthRequired bool   `yaml:"auth_required" validate:"boolean"`
 	Type         string `yaml:"type"`
 	URL          string `yaml:"url" validate:"required"`

@@ -42,7 +42,7 @@ type GCP struct {
 	Credentials cluster.GCPCredentials `yaml:"credentials"`
 }
 
-type ExternalRegistryCredentials struct {
+type DockerRegistryCredentials struct {
 	URL  string `yaml:"url"`
 	User string `yaml:"user"`
 	Pass string `yaml:"pass"`
@@ -54,11 +54,11 @@ type SecretsFile struct {
 }
 
 type Secrets struct {
-	AWS                         AWS                                   `yaml:"aws"`
-	GCP                         GCP                                   `yaml:"gcp"`
-	GithubToken                 string                                `yaml:"github_token"`
-	ExternalRegistryCredentials cluster.ExternalRegistryCredentials   `yaml:"external_registry"`
-	DockerRegistries            []cluster.ExternalRegistryCredentials `yaml:"docker_registries"`
+	AWS              AWS                                 `yaml:"aws"`
+	GCP              GCP                                 `yaml:"gcp"`
+	GithubToken      string                              `yaml:"github_token"`
+	ExternalRegistry cluster.DockerRegistryCredentials   `yaml:"external_registry"`
+	DockerRegistries []cluster.DockerRegistryCredentials `yaml:"docker_registries"`
 }
 
 // type AWSCredentials struct {

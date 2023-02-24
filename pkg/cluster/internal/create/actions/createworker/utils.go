@@ -104,7 +104,7 @@ func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (ma
 		}
 		for _, reg := range descriptorFile.DockerRegistries {
 			for _, regCreds := range descriptorFile.Credentials.DockerRegistries {
-				if reg.URL == regCreds.URL && regCreds.User != "" && regCreds.Pass != "" && reg.AuthRequired {
+				if reg.URL == regCreds.URL {
 					dockerReg := structs.Map(regCreds)
 					resultDockerRegistries = append(resultDockerRegistries, convertMapKeysToSnakeCase(dockerReg))
 					if reg.KeosRegistry {
@@ -161,16 +161,16 @@ func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (ma
 		} else {
 			resultGHT = secretFile.Secrets.GithubToken
 		}
-		if secretFile.Secrets.ExternalRegistryCredentials == (cluster.ExternalRegistryCredentials{}) {
-			if descriptorFile.Credentials.ExternalRegistry != (cluster.ExternalRegistryCredentials{}) {
-				resultRegMap := structs.Map(descriptorFile.Credentials.ExternalRegistry)
-				resultExternalReg = convertToMapStringString(resultRegMap)
+		// if secretFile.Secrets.ExternalRegistry == (cluster.ExternalRegistryCredentials{}) {
+		// 	if descriptorFile.Credentials.ExternalRegistry != (cluster.ExternalRegistryCredentials{}) {
+		// 		resultRegMap := structs.Map(descriptorFile.Credentials.ExternalRegistry)
+		// 		resultExternalReg = convertToMapStringString(resultRegMap)
 
-			}
-		} else {
-			resultRegMap := structs.Map(secretFile.Secrets.ExternalRegistryCredentials)
-			resultExternalReg = convertToMapStringString(resultRegMap)
-		}
+		// 	}
+		// } else {
+		// 	resultRegMap := structs.Map(secretFile.Secrets.ExternalRegistryCredentials)
+		// 	resultExternalReg = convertToMapStringString(resultRegMap)
+		// }
 
 		if len(secretFile.Secrets.DockerRegistries) == 0 {
 			if len(descriptorFile.DockerRegistries) > 0 {
