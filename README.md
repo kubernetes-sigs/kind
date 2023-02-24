@@ -2,9 +2,7 @@
 
 # Please see [Our Documentation](https://kind.sigs.k8s.io/docs/user/quick-start/) for more in-depth installation etc.
 
-[![Cgroup v2](https://github.com/kubernetes-sigs/kind/actions/workflows/cgroup2.yaml/badge.svg)](https://github.com/kubernetes-sigs/kind/actions/workflows/cgroup2.yaml)
 [![Docker](https://github.com/kubernetes-sigs/kind/actions/workflows/docker.yaml/badge.svg)](https://github.com/kubernetes-sigs/kind/actions/workflows/docker.yaml)
-[![Podman](https://github.com/kubernetes-sigs/kind/actions/workflows/podman.yml/badge.svg)](https://github.com/kubernetes-sigs/kind/actions/workflows/podman.yml)
 
 <br/>
 
