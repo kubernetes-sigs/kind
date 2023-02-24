@@ -132,8 +132,7 @@ type Credentials struct {
 	AWS              AWSCredentials                `yaml:"aws"`
 	GCP              GCPCredentials                `yaml:"gcp"`
 	GithubToken      string                        `yaml:"github_token"`
-	ExternalRegistry ExternalRegistryCredentials   `yaml:"external_registry"`
-	DockerRegistries []ExternalRegistryCredentials `yaml:"docker_registries"`
+	DockerRegistries []DockerRegistryCredentials `yaml:"docker_registries"`
 }
 
 type AWSCredentials struct {
