@@ -42,9 +42,15 @@ type KEOSDescriptor struct {
 			Ipip                 bool   `yaml:"ipip"`
 			Pool                 string `yaml:"pool"`
 			DeployTigeraOperator bool   `yaml:"deploy_tigera_operator"`
-		} `yaml:"calico,omitempty"`
+		} `yaml:"calico"`
 		ClusterID       string `yaml:"cluster_id"`
+		Dns struct {
+			ExternalDns  struct {
+				Enabled bool `yaml: "enabled,omitempty"`
+			} `yaml:"external_dns,omitempty"`
+		} `yaml:"dns,omitempty"`
 		Domain          string `yaml:"domain"`
+		ExternalDomain  string `yaml:"external_domain"`
 		Flavour         string `yaml:"flavour"`
 		K8sInstallation bool   `yaml:"k8s_installation"`
 		Storage         struct {
@@ -78,20 +84,28 @@ func createKEOSDescriptor(descriptorFile cluster.DescriptorFile, storageClass st
 
 	// Keos
 	keosDescriptor.Keos.ClusterID = descriptorFile.ClusterID
-	keosDescriptor.Keos.K8sInstallation = false
 	keosDescriptor.Keos.Domain = descriptorFile.Keos.Domain
+	keosDescriptor.Keos.ExternalDomain = descriptorFile.ExternalDomain
 	keosDescriptor.Keos.Flavour = descriptorFile.Keos.Flavour
 
 	// Keos - Calico
 	if !descriptorFile.ControlPlane.Managed {
 		keosDescriptor.Keos.Calico.Ipip = true
 		keosDescriptor.Keos.Calico.Pool = "192.168.0.0/16"
-		keosDescriptor.Keos.Calico.DeployTigeraOperator = true
+	}
+
+	if descriptorFile.InfraProvider == "gcp" {
+		keosDescriptor.Keos.Calico.DeployTigeraOperator = false
 	}
 
 	// Keos - Storage
 	keosDescriptor.Keos.Storage.DefaultStorageClass = storageClass
 	keosDescriptor.Keos.Storage.Providers = []string{"custom"}
+
+	// Keos - External dns
+	if !descriptorFile.Dns.HostedZones {
+		keosDescriptor.Keos.Dns.ExternalDns.Enabled = descriptorFile.Dns.HostedZones
+	}
 
 	keosYAMLData, err := yaml.Marshal(keosDescriptor)
 	if err != nil {
