@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.18
+FROM golang:1.20
 RUN git clone https://github.com/rancher/local-path-provisioner
 ARG VERSION
 RUN cd local-path-provisioner && \
