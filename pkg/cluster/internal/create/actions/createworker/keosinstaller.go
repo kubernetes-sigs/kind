@@ -42,7 +42,7 @@ type KEOSDescriptor struct {
 			Ipip                 bool   `yaml:"ipip"`
 			Pool                 string `yaml:"pool"`
 			DeployTigeraOperator bool   `yaml:"deploy_tigera_operator"`
-		} `yaml:"calico"`
+		} `yaml:"calico,omitempty"`
 		ClusterID       string `yaml:"cluster_id"`
 		Dns struct {
 			ExternalDns  struct {
