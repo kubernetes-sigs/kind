@@ -26,7 +26,7 @@ NOTE: we have customized it in the following ways:
 */
 
 const storageProvisionerImage = "docker.io/kindest/local-path-provisioner:v0.0.22-kind.0"
-const storageHelperImage = "docker.io/kindest/local-path-helper:v20220607-9a4d8d2a"
+const storageHelperImage = "docker.io/kindest/local-path-helper:v20230227-8863bcd1"
 
 // image we need to preload
 var defaultStorageImages = []string{storageProvisionerImage, storageHelperImage}
