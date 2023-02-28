@@ -19,11 +19,11 @@ package createworker
 
 import (
 	"bytes"
-	"fmt"
+	"os"
+	"strings"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
-	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
@@ -34,12 +34,29 @@ type action struct {
 	avoidCreation  bool
 }
 
-// // SecretsFile represents the YAML structure in the secrets.yml file
+// SecretsFile represents the YAML structure in the secrets.yml file
 type SecretsFile struct {
-	Secret struct {
-		AWSCredentials cluster.AWSCredentials `yaml:"aws"`
-		GithubToken    string                 `yaml:"github_token"`
-	} `yaml:"secrets"`
+	Secrets Secrets `yaml:"secrets"`
+}
+
+type Secrets struct {
+	AWS              AWS              `yaml:"aws"`
+	GCP              GCP              `yaml:"gcp"`
+	GithubToken      string           `yaml:"github_token"`
+	ExternalRegistry ExternalRegistry `yaml:"external_registry"`
+}
+
+type AWS struct {
+	Credentials cluster.Credentials `yaml:"credentials"`
+}
+
+type GCP struct {
+	Credentials cluster.Credentials `yaml:"credentials"`
+}
+
+type ExternalRegistry struct {
+	User string `yaml:"user"`
+	Pass string `yaml:"pass"`
 }
 
 const allowAllEgressNetPol = `
@@ -55,6 +72,8 @@ spec:
   - Egress`
 
 const kubeconfigPath = "/kind/worker-cluster.kubeconfig"
+const workKubeconfigPath = ".kube/config"
+const secretsFile = "secrets.yml"
 
 // NewAction returns a new action for installing default CAPI
 func NewAction(vaultPassword string, descriptorName string, moveManagement bool, avoidCreation bool) actions.Action {
@@ -69,33 +88,11 @@ func NewAction(vaultPassword string, descriptorName string, moveManagement bool,
 // Execute runs the action
 func (a *action) Execute(ctx *actions.ActionContext) error {
 
-	var aws cluster.AWSCredentials
-
-	ctx.Status.Start("Installing CAPx in local 🎖️")
-	defer ctx.Status.End(false)
-
-	err := installCAPALocal(ctx, a.vaultPassword, a.descriptorName)
+	// Get the target node
+	node, err := getNode(ctx)
 	if err != nil {
 		return err
 	}
-
-	// mark success
-	ctx.Status.End(true) // End Installing CAPx in local
-
-	ctx.Status.Start("Generating worker cluster manifests 📝")
-	defer ctx.Status.End(false)
-
-	allNodes, err := ctx.Nodes()
-	if err != nil {
-		return err
-	}
-
-	// get the target node for this task
-	controlPlanes, err := nodeutils.ControlPlaneNodes(allNodes)
-	if err != nil {
-		return err
-	}
-	node := controlPlanes[0] // kind expects at least one always
 
 	// Parse the cluster descriptor
 	descriptorFile, err := cluster.GetClusterDescriptor(a.descriptorName)
@@ -103,18 +100,55 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to parse cluster descriptor")
 	}
 
-	aws, github_token, err := getCredentials(*descriptorFile, a.vaultPassword)
+	// Get the secrets
+	credentialsMap, externalRegistryMap, githubToken, err := getSecrets(*descriptorFile, a.vaultPassword)
 	if err != nil {
 		return err
 	}
 
-	// TODO STG: make k8s version configurable?
+	providerParams := ProviderParams{
+		region:      descriptorFile.Region,
+		managed:     descriptorFile.ControlPlane.Managed,
+		credentials: credentialsMap,
+		githubToken: githubToken,
+	}
+
+	providerBuilder := getBuilder(descriptorFile.InfraProvider)
+	infra := newInfra(providerBuilder)
+	provider := infra.buildProvider(providerParams)
+
+	if descriptorFile.InfraProvider == "aws" {
+		ctx.Status.Start("[CAPA] Ensuring IAM security 👮")
+		defer ctx.Status.End(false)
+
+		createCloudFormationStack(node, provider.capxEnvVars)
+
+		ctx.Status.End(true) // End Ensuring CAPx requirements
+	}
+
+	ctx.Status.Start("Installing CAPx 🎖️")
+	defer ctx.Status.End(false)
+
+	err = provider.installCAPXLocal(node)
+	if err != nil {
+		return err
+	}
+
+	ctx.Status.End(true) // End Installing CAPx
+
+	ctx.Status.Start("Generating workload cluster manifests 📝")
+	defer ctx.Status.End(false)
 
 	capiClustersNamespace := "cluster-" + descriptorFile.ClusterID
 
-	// Generate the cluster manifest
-	descriptorData, err := cluster.GetClusterManifest(*descriptorFile)
+	templateParams := cluster.TemplateParams{
+		Descriptor:       *descriptorFile,
+		Credentials:      credentialsMap,
+		ExternalRegistry: externalRegistryMap,
+	}
 
+	// Generate the cluster manifest
+	descriptorData, err := cluster.GetClusterManifest(provider.capxTemplate, templateParams)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate cluster manifests")
 	}
@@ -132,31 +166,11 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Generating secrets file 📝🗝️")
 	defer ctx.Status.End(false)
 
+	ensureSecretsFile(*descriptorFile, a.vaultPassword)
+
 	rewriteDescriptorFile(a.descriptorName)
 
-	filelines := []string{"secrets:\n", "  github_token: " + github_token + "\n", "  aws:\n", "    credentials:\n", "      access_key: " + aws.Credentials.AccessKey + "\n",
-		"      account_id: " + aws.Credentials.AccountID + "\n", "      region: " + descriptorFile.Region + "\n",
-		"      secret_key: " + aws.Credentials.SecretKey + "\n"}
-
-	basepath, err := currentdir()
-	err = createDirectory(basepath)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	filename := basepath + "/secrets.yml"
-	err = writeFile(filename, filelines)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-	err = encryptFile(filename, a.vaultPassword)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	defer ctx.Status.End(true)
+	defer ctx.Status.End(true) // End Generating secrets file
 
 	// Create namespace for CAPI clusters (it must exists)
 	raw = bytes.Buffer{}
@@ -202,7 +216,7 @@ spec:
 
 	if !a.avoidCreation {
 
-		ctx.Status.Start("Creating the worker cluster 💥")
+		ctx.Status.Start("Creating the workload cluster 💥")
 		defer ctx.Status.End(false)
 
 		// Apply cluster manifests
@@ -212,13 +226,6 @@ spec:
 			return errors.Wrap(err, "failed to apply manifests")
 		}
 
-		// Enable the cluster's self-healing
-		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "apply", "-f", machineHealthCheckPath)
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
-		}
-
 		// Wait for the worker cluster creation
 		raw = bytes.Buffer{}
 		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "25m", "cluster", descriptorFile.ClusterID)
@@ -226,32 +233,97 @@ spec:
 			return errors.Wrap(err, "failed to create the worker Cluster")
 		}
 
-		// Wait for machines creation
+		// Get the workload cluster kubeconfig
 		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "20m", "--all", "md")
+		cmd = node.Command("sh", "-c", "clusterctl -n "+capiClustersNamespace+" get kubeconfig "+descriptorFile.ClusterID+" | tee "+kubeconfigPath)
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to create the Machines")
+			return errors.Wrap(err, "failed to get workload cluster kubeconfig")
 		}
+		kubeconfig := raw.String()
 
-		ctx.Status.End(true) // End Creating the worker cluster
+		ctx.Status.End(true) // End Creating the workload cluster
 
-		ctx.Status.Start("Installing CAPx in EKS 🎖️")
+		ctx.Status.Start("Saving the workload cluster kubeconfig 📝")
 		defer ctx.Status.End(false)
 
-		// Get worker cluster's kubeconfig file (in EKS the token last 10m, which should be enough)
-		raw = bytes.Buffer{}
-		cmd = node.Command("sh", "-c", "clusterctl -n "+capiClustersNamespace+" get kubeconfig "+descriptorFile.ClusterID+" > "+kubeconfigPath)
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to get the kubeconfig file")
+		workKubeconfigBasePath := strings.Split(workKubeconfigPath, "/")[0]
+		_, err = os.Stat(workKubeconfigBasePath)
+		if err != nil {
+			err := os.Mkdir(workKubeconfigBasePath, os.ModePerm)
+			if err != nil {
+				return err
+			}
+		}
+		err = os.WriteFile(workKubeconfigPath, []byte(kubeconfig), 0600)
+		if err != nil {
+			return errors.Wrap(err, "failed to save the workload cluster kubeconfig")
 		}
 
-		// AWS/EKS specific
-		err = installCAPAWorker(aws, github_token, node, kubeconfigPath, allowAllEgressNetPolPath)
+		ctx.Status.End(true) // End Saving the workload cluster kubeconfig
+
+		// Install unmanaged cluster addons
+		if !descriptorFile.ControlPlane.Managed {
+			ctx.Status.Start("Installing CNI in workload cluster 🔌")
+			defer ctx.Status.End(false)
+
+			err = installCNI(node, kubeconfigPath)
+			if err != nil {
+				return errors.Wrap(err, "failed to install CNI in workload cluster")
+			}
+			ctx.Status.End(true) // End Installing CNI in workload cluster
+
+			ctx.Status.Start("Installing StorageClass in workload cluster 💾")
+			defer ctx.Status.End(false)
+
+			err = infra.installCSI(node, kubeconfigPath)
+			if err != nil {
+				return errors.Wrap(err, "failed to install StorageClass in workload cluster")
+			}
+			ctx.Status.End(true) // End Installing StorageClass in workload cluster
+		}
+
+		ctx.Status.Start("Preparing nodes in workload cluster 📦")
+		defer ctx.Status.End(false)
+
+		// Wait for the worker cluster creation
+		raw = bytes.Buffer{}
+		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "15m", "--all", "md")
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to create the worker Cluster")
+		}
+
+		if !descriptorFile.ControlPlane.Managed {
+			// Wait for the control plane creation
+			raw = bytes.Buffer{}
+			cmd = node.Command("sh", "-c", "kubectl -n "+capiClustersNamespace+" wait --for=jsonpath=\"{.status.unavailableReplicas}\"=0 --timeout 10m --all kubeadmcontrolplanes")
+			if err := cmd.SetStdout(&raw).Run(); err != nil {
+				return errors.Wrap(err, "failed to create the worker Cluster")
+			}
+		}
+
+		ctx.Status.End(true) // End Preparing nodes in workload cluster
+
+		ctx.Status.Start("Enabling workload cluster's self-healing 🏥")
+		defer ctx.Status.End(false)
+
+		// Enable the cluster's self-healing
+		raw = bytes.Buffer{}
+		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "apply", "-f", machineHealthCheckPath)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
+		}
+
+		ctx.Status.End(true) // End Enabling workload cluster's self-healing
+
+		ctx.Status.Start("Installing CAPx in workload cluster 🎖️")
+		defer ctx.Status.End(false)
+
+		err = provider.installCAPXWorker(node, kubeconfigPath, allowAllEgressNetPolPath)
 		if err != nil {
 			return err
 		}
 
-		//Scale CAPI to 2 replicas
+		// Scale CAPI to 2 replicas
 		raw = bytes.Buffer{}
 		cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capi-system", "scale", "--replicas", "2", "deploy", "capi-controller-manager")
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
@@ -282,7 +354,7 @@ spec:
 			return errors.Wrap(err, "failed to apply cert-manager's NetworkPolicy")
 		}
 
-		ctx.Status.End(true) // End Installing CAPx in worker cluster
+		ctx.Status.End(true) // End Installing CAPx in workload cluster
 
 		if descriptorFile.DeployAutoscaler {
 			ctx.Status.Start("Adding Cluster-Autoescaler 🗚")
@@ -301,13 +373,6 @@ spec:
 			ctx.Status.Start("Moving the management role 🗝️")
 			defer ctx.Status.End(false)
 
-			// Get worker cluster's kubeconfig file (in EKS the token last 10m, which should be enough)
-			raw = bytes.Buffer{}
-			cmd = node.Command("sh", "-c", "clusterctl -n "+capiClustersNamespace+" get kubeconfig "+descriptorFile.ClusterID+" > "+kubeconfigPath)
-			if err := cmd.SetStdout(&raw).Run(); err != nil {
-				return errors.Wrap(err, "failed to get the kubeconfig file")
-			}
-
 			// Create namespace for CAPI clusters (it must exists) in worker cluster
 			raw = bytes.Buffer{}
 			cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "create", "ns", capiClustersNamespace)
@@ -315,7 +380,7 @@ spec:
 				return errors.Wrap(err, "failed to create manifests Namespace")
 			}
 
-			// EKS specific: Pivot management role to worker cluster
+			// Pivot management role to worker cluster
 			raw = bytes.Buffer{}
 			cmd = node.Command("sh", "-c", "clusterctl move -n "+capiClustersNamespace+" --to-kubeconfig "+kubeconfigPath)
 
@@ -325,6 +390,15 @@ spec:
 
 			ctx.Status.End(true)
 		}
+
+		ctx.Status.Start("Generating the KEOS descriptor 📝")
+		defer ctx.Status.End(false)
+
+		err = createKEOSDescriptor(*descriptorFile, provider.stClassName)
+		if err != nil {
+			return err
+		}
+		ctx.Status.End(true) // End Generating KEOS descriptor
 
 	}
 
