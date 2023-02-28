@@ -107,7 +107,7 @@ type WorkerNodes []struct {
 	SSHKey           string `yaml:"ssh_key"`
 	Spot             bool   `yaml:"spot" validate:"omitempty,boolean"`
 	NodeGroupMaxSize int    `yaml:"max_size" validate:"required,numeric"`
-	NodeGroupMinSize int    `yaml:"min_size" validate:"required,numeric"`
+	NodeGroupMinSize int    `yaml:"min_size" validate:"required,numeric,gt=0"`
 	RootVolume       struct {
 		Size      int    `yaml:"size" validate:"numeric"`
 		Type      string `yaml:"type"`
