@@ -315,6 +315,19 @@ spec:
 
 		ctx.Status.End(true) // End Enabling workload cluster's self-healing
 
+		// Rewrite Kubeconfig. try to remove once the OIDC and CAPA forks are integrated
+		raw = bytes.Buffer{}
+		cmd = node.Command("sh", "-c", "clusterctl -n "+capiClustersNamespace+" get kubeconfig "+descriptorFile.ClusterID+" | tee "+kubeconfigPath)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to get workload cluster kubeconfig")
+		}
+		kubeconfig = raw.String()
+
+		err = os.WriteFile(workKubeconfigPath, []byte(kubeconfig), 0600)
+		if err != nil {
+			return errors.Wrap(err, "failed to save the workload cluster kubeconfig")
+		}
+
 		ctx.Status.Start("Installing CAPx in workload cluster 🎖️")
 		defer ctx.Status.End(false)
 
