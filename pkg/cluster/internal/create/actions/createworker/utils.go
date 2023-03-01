@@ -270,9 +270,9 @@ func cleanStruct(m map[string]string) map[string]string {
 	return m
 }
 
-func rewriteDescriptorFile(descriptorName string) error {
+func rewriteDescriptorFile(descriptorPath string) error {
 
-	descriptorRAW, err := os.ReadFile("./" + descriptorName)
+	descriptorRAW, err := os.ReadFile(descriptorPath)
 
 	if err != nil {
 		return err
@@ -289,7 +289,7 @@ func rewriteDescriptorFile(descriptorName string) error {
 
 	b, err := yaml.Marshal(yamlNodes[0])
 
-	err = ioutil.WriteFile(descriptorName, b, 0644)
+	err = ioutil.WriteFile(descriptorPath, b, 0644)
 	if err != nil {
 		return err
 	}
