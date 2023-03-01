@@ -3,26 +3,38 @@ package validation
 import (
 	"errors"
 	"strings"
+
+	"sigs.k8s.io/kind/pkg/commons"
 )
 
+var instance *EKSValidator
+
 type EKSValidator struct {
-	descriptor map[string]interface{}
-	secrets    map[string]interface{}
+	descriptor commons.DescriptorFile
+	secrets    commons.SecretsFile
 }
 
-func newEKSValidator() *EKSValidator {
+func createInstance() *EKSValidator {
+	// inicialización del singleton
 	return &EKSValidator{}
 }
 
-func (v *EKSValidator) descriptorFile(descriptor map[string]interface{}) {
-	v.descriptor = descriptor
+func newEKSValidator() *EKSValidator {
+	if instance == nil {
+		instance = createInstance()
+	}
+	return instance
 }
 
-func (v *EKSValidator) secretsFile(secrets map[string]interface{}) {
+func (v *EKSValidator) DescriptorFile(descriptorFile commons.DescriptorFile) {
+	v.descriptor = descriptorFile
+}
+
+func (v *EKSValidator) SecretsFile(secrets commons.SecretsFile) {
 	v.secrets = secrets
 }
 
-func (v *EKSValidator) validate(fileType string) error {
+func (v *EKSValidator) Validate(fileType string) error {
 	switch fileType {
 	case "descriptor":
 		validateDescriptor(*v)
@@ -35,19 +47,17 @@ func (v *EKSValidator) validate(fileType string) error {
 }
 
 func validateDescriptor(v EKSValidator) error {
-	//panic("UnImplemented")
 	descriptorValidations(v.descriptor)
 	return nil
 }
 
 func validateSecrets(v EKSValidator) error {
-	//panic("UnImplemented")
 	secretsValidations(v.secrets)
 	return nil
 }
 
-func descriptorValidations(descriptorFile map[string]interface{}) error {
-	k8s_version_validator(descriptorFile["k8s_version"].(string))
+func descriptorValidations(descriptorFile commons.DescriptorFile) error {
+	k8s_version_validator(descriptorFile.K8SVersion)
 	return nil
 }
 
@@ -60,7 +70,7 @@ func k8s_version_validator(k8sVersion string) error {
 	return nil
 }
 
-func secretsValidations(secretsFile map[string]interface{}) error {
+func secretsValidations(secretsFile commons.SecretsFile) error {
 
 	return nil
 }

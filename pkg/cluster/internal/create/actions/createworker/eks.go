@@ -23,9 +23,9 @@ import (
 
 	"gopkg.in/yaml.v3"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
-	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
+	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
@@ -35,12 +35,12 @@ const CAPIControlPlaneProvider = "kubeadm:v1.3.2"
 const CAPIInfraProvider = "aws:v2.0.2"
 
 // installCAPAWorker generates and apply the EKS manifests
-func installCAPAWorker(aws cluster.AWSCredentials, githubToken string, node nodes.Node, kubeconfigPath string, allowAllEgressNetPolPath string) error {
+func installCAPAWorker(aws commons.AWSCredentials, githubToken string, node nodes.Node, kubeconfigPath string, allowAllEgressNetPolPath string) error {
 
 	// Install CAPA in worker cluster
 	raw := bytes.Buffer{}
-	cmd := node.Command("sh", "-c", "clusterctl --kubeconfig " + kubeconfigPath + " init --wait-providers --infrastructure " +
-	CAPIInfraProvider + " --core " + CAPICoreProvider + " --bootstrap " + CAPIBootstrapProvider + " --control-plane " + CAPIControlPlaneProvider)
+	cmd := node.Command("sh", "-c", "clusterctl --kubeconfig "+kubeconfigPath+" init --wait-providers --infrastructure "+
+		CAPIInfraProvider+" --core "+CAPICoreProvider+" --bootstrap "+CAPIBootstrapProvider+" --control-plane "+CAPIControlPlaneProvider)
 	cmd.SetEnv("AWS_REGION="+aws.Credentials.Region,
 		"AWS_ACCESS_KEY_ID="+aws.Credentials.AccessKey,
 		"AWS_SECRET_ACCESS_KEY="+aws.Credentials.SecretKey,
@@ -93,7 +93,7 @@ func installCAPALocal(ctx *actions.ActionContext, vaultPassword string, descript
 		return err
 	}
 
-	var descriptorFile cluster.DescriptorFile
+	var descriptorFile commons.DescriptorFile
 	err = yaml.Unmarshal(descriptorRAW, &descriptorFile)
 	if err != nil {
 		return err
@@ -144,8 +144,8 @@ spec:
 
 	// Install CAPA
 	raw = bytes.Buffer{}
-	cmd = node.Command("sh", "-c", "clusterctl init --wait-providers --infrastructure " +
-	 CAPIInfraProvider + " --core " + CAPICoreProvider + " --bootstrap " + CAPIBootstrapProvider + " --control-plane " + CAPIControlPlaneProvider)
+	cmd = node.Command("sh", "-c", "clusterctl init --wait-providers --infrastructure "+
+		CAPIInfraProvider+" --core "+CAPICoreProvider+" --bootstrap "+CAPIBootstrapProvider+" --control-plane "+CAPIControlPlaneProvider)
 	cmd.SetEnv("AWS_REGION="+aws.Credentials.Region,
 		"AWS_ACCESS_KEY_ID="+aws.Credentials.AccessKey,
 		"AWS_SECRET_ACCESS_KEY="+aws.Credentials.SecretKey,

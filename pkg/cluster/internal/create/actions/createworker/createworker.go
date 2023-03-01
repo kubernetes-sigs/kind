@@ -22,8 +22,8 @@ import (
 	"fmt"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
-	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
+	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
@@ -33,14 +33,6 @@ type action struct {
 	moveManagement bool
 	avoidCreation  bool
 }
-
-// // SecretsFile represents the YAML structure in the secrets.yml file
-// type SecretsFile struct {
-// 	Secret struct {
-// 		AWSCredentials cluster.AWSCredentials `yaml:"aws"`
-// 		GithubToken    string                 `yaml:"github_token"`
-// 	} `yaml:"secrets"`
-// }
 
 const allowAllEgressNetPol = `
 apiVersion: networking.k8s.io/v1
@@ -69,7 +61,7 @@ func NewAction(vaultPassword string, descriptorName string, moveManagement bool,
 // Execute runs the action
 func (a *action) Execute(ctx *actions.ActionContext) error {
 
-	var aws cluster.AWSCredentials
+	var aws commons.AWSCredentials
 
 	ctx.Status.Start("Installing CAPx in local 🎖️")
 	defer ctx.Status.End(false)
@@ -98,7 +90,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	node := controlPlanes[0] // kind expects at least one always
 
 	// Parse the cluster descriptor
-	descriptorFile, err := cluster.GetClusterDescriptor(a.descriptorName)
+	descriptorFile, err := commons.GetClusterDescriptor(a.descriptorName)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse cluster descriptor")
 	}
@@ -113,7 +105,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	capiClustersNamespace := "cluster-" + descriptorFile.ClusterID
 
 	// Generate the cluster manifest
-	descriptorData, err := cluster.GetClusterManifest(*descriptorFile)
+	descriptorData, err := commons.GetClusterManifest(*descriptorFile)
 
 	if err != nil {
 		return errors.Wrap(err, "failed to generate cluster manifests")

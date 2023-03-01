@@ -142,8 +142,12 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	if flags.Descriptor == "" {
 		flags.Descriptor = "cluster.yaml"
 	}
+	err := validation.InitValidator(flags.Descriptor)
+	if err != nil {
+		return err
+	}
+	err = validation.ExecuteDescriptorValidations()
 
-	infra, managed, err := validation.ExecuteDescriptorValidations(flags.Descriptor)
 	if err != nil {
 		return err
 	}
@@ -161,7 +165,11 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		}
 	}
 
-	validation.ExecuteSecretsValidations(*infra, *managed, "./secrets.yml", flags.VaultPassword)
+	//Probablemente fallo si no existe
+	err = validation.ExecuteSecretsValidations("./secrets.yaml", flags.VaultPassword)
+	if err != nil {
+		return err
+	}
 
 	// create the cluster
 	if err = provider.Create(

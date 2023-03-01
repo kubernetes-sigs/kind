@@ -28,8 +28,8 @@ import (
 
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
-	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/exec"
 
 	vault "github.com/sosedoff/ansible-vault-go"
@@ -92,22 +92,13 @@ func encryptFile(filePath string, vaultPassword string) error {
 	return nil
 }
 
-func decryptFile(filePath string, vaultPassword string) (string, error) {
-	data, err := vault.DecryptFile(filePath, vaultPassword)
-	if err != nil {
-		fmt.Println(err)
-		return "", err
-	}
-	return data, nil
-}
-
 func generateB64Credentials(access_key string, secret_key string, region string) string {
 	credentialsINIlines := "[default]\naws_access_key_id = " + access_key + "\naws_secret_access_key = " + secret_key + "\nregion = " + region + "\n\n"
 	return b64.StdEncoding.EncodeToString([]byte(credentialsINIlines))
 }
 
-func getCredentials(descriptorFile cluster.DescriptorFile, vaultPassword string) (cluster.AWSCredentials, string, error) {
-	aws := cluster.AWSCredentials{}
+func getCredentials(descriptorFile commons.DescriptorFile, vaultPassword string) (commons.AWSCredentials, string, error) {
+	aws := commons.AWSCredentials{}
 
 	_, err := os.Stat("./secrets.yml")
 	if err != nil {
@@ -118,21 +109,13 @@ func getCredentials(descriptorFile cluster.DescriptorFile, vaultPassword string)
 		return aws, "", err
 
 	} else {
-		secretRaw, err := decryptFile("./secrets.yml", vaultPassword)
-		var secretFile cluster.SecretsFile
+		secretFile, err := commons.GetSecretsFile("./secrets.yml", vaultPassword)
 		if err != nil {
-			err := errors.New("The vaultPassword is incorrect")
+			fmt.Println(err)
 			return aws, "", err
-		} else {
-			err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
-			if err != nil {
-				fmt.Println(err)
-				return aws, "", err
-			}
-			return secretFile.Secret.AWSCredentials, secretFile.Secret.GithubToken, nil
 		}
+		return secretFile.Secret.AWSCredentials, secretFile.Secret.GithubToken, nil
 	}
-
 }
 
 func stringToBytes(str string) []byte {
@@ -212,18 +195,4 @@ func integrateClusterAutoscaler(node nodes.Node, kubeconfigPath string, clusterI
 		"--set", "clusterAPIMode=incluster-incluster")
 
 	return cmd
-}
-
-func GetSecretsFile(secretsPath string, vaultPassword string) (*cluster.SecretsFile, error) {
-	secretRaw, err := decryptFile(secretsPath, vaultPassword)
-	var secretFile cluster.SecretsFile
-	if err != nil {
-		err := errors.New("The vaultPassword is incorrect")
-		return nil, err
-	}
-	err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
-	if err != nil {
-		return nil, err
-	}
-	return &secretFile, nil
 }

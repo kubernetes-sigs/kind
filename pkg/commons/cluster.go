@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package commons
 
 import (
 	"bytes"
@@ -25,6 +25,7 @@ import (
 	"text/template"
 
 	"github.com/go-playground/validator/v10"
+	vault "github.com/sosedoff/ansible-vault-go"
 	"gopkg.in/yaml.v3"
 )
 
@@ -61,9 +62,9 @@ type DescriptorFile struct {
 	} `yaml:"networks"`
 
 	ExternalRegistry struct {
-		AuthRequired bool   `yaml:"auth_required" validate:"boolean"`
+		AuthRequired bool   `yaml:"auth_required"`
 		Type         string `yaml:"type"`
-		URL          string `yaml:"url" validate:"required"`
+		URL          string `yaml:"url"`
 	} `yaml:"external_registry"`
 
 	Keos struct {
@@ -83,7 +84,7 @@ type DescriptorFile struct {
 		AWS             AWS    `yaml:"aws"`
 	} `yaml:"control_plane"`
 
-	WorkerNodes WorkerNodes `yaml:"worker_nodes"`
+	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"dive"`
 }
 
 type AWS struct {
@@ -103,7 +104,7 @@ type WorkerNodes []struct {
 	Quantity         int    `yaml:"quantity" validate:"required,numeric"`
 	Size             string `yaml:"size" validate:"required"`
 	Image            string `yaml:"image" validate:"required_if=InfraProvider gcp"`
-	ZoneDistribution string `yaml:"zone_distribution" validate:"oneof='balanced' 'unbalanced'"`
+	ZoneDistribution string `yaml:"zone_distribution" validate:"omitempty,oneof='balanced' 'unbalanced'"`
 	AZ               string `yaml:"az"`
 	SSHKey           string `yaml:"ssh_key"`
 	Spot             bool   `yaml:"spot" validate:"boolean"`
@@ -165,6 +166,10 @@ func (d DescriptorFile) Init() DescriptorFile {
 
 // Read descriptor file
 func GetClusterDescriptor(descriptorName string) (*DescriptorFile, error) {
+	_, err := os.Stat(descriptorName)
+	if err != nil {
+		return nil, errors.New("No exists any cluster descriptor as " + descriptorName)
+	}
 	descriptorRAW, err := os.ReadFile("./" + descriptorName)
 	if err != nil {
 		return nil, err
@@ -244,4 +249,26 @@ func GetClusterManifest(d DescriptorFile) (string, error) {
 		return "", err
 	}
 	return tpl.String(), nil
+}
+
+func DecryptFile(filePath string, vaultPassword string) (string, error) {
+	data, err := vault.DecryptFile(filePath, vaultPassword)
+	if err != nil {
+		return "", err
+	}
+	return data, nil
+}
+
+func GetSecretsFile(secretsPath string, vaultPassword string) (*SecretsFile, error) {
+	secretRaw, err := DecryptFile(secretsPath, vaultPassword)
+	var secretFile SecretsFile
+	if err != nil {
+		err := errors.New("The vaultPassword is incorrect")
+		return nil, err
+	}
+	err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
+	if err != nil {
+		return nil, err
+	}
+	return &secretFile, nil
 }

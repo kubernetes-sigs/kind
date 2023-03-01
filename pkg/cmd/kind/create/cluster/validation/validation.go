@@ -18,108 +18,56 @@ limitations under the License.
 package validation
 
 import (
-	"fmt"
 	"os"
 
-	vault "github.com/sosedoff/ansible-vault-go"
 	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/kind/pkg/commons"
 )
-
-type action struct {
-	descriptorPath string
-	secretsPath    string
-	vaultPassword  string
-}
 
 var validator Validator
 
-// func NewAction(descriptorPath string, secretsPath string, vaultPassword string) actions.Action {
-// 	return &action{
-// 		descriptorPath: descriptorPath,
-// 		secretsPath:    secretsPath,
-// 		vaultPassword:  vaultPassword,
-// 	}
-// }
-
-func ExecuteDescriptorValidations(descriptorPath string) (*string, *bool, error) {
-	descriptorFile, err := getClusterDescriptor(descriptorPath)
+func InitValidator(descriptorPath string) error {
+	descriptorFile, err := commons.GetClusterDescriptor(descriptorPath)
 	if err != nil {
-		return nil, nil, err
-	}
-	fmt.Println("validation descriptor: ")
-	//fmt.Println(descriptorFile)
-	fmt.Println((*descriptorFile)["control_plane"].(map[interface{}]interface{})["managed"].(bool))
-
-	infraProvider := (*descriptorFile)["infra_provider"].(string)
-	managed := (*descriptorFile)["control_plane"].(map[interface{}]interface{})["managed"].(bool)
-
-	validator, err := getValidator(infraProvider, managed)
-	if err != nil {
-		return nil, nil, err
-	}
-	validator.descriptorFile(*descriptorFile)
-	err = validator.validate("descriptor")
-
-	if err != nil {
-		return nil, nil, err
+		return err
 	}
 
-	return &infraProvider, &managed, nil
+	infraProvider := descriptorFile.InfraProvider
+	managed := descriptorFile.ControlPlane.Managed
+	validator, err = getValidator(infraProvider, managed)
+	if err != nil {
+		return err
+	}
+
+	validator.DescriptorFile(*descriptorFile)
+	return nil
 }
 
-func ExecuteSecretsValidations(infra string, managed bool, secretsPath string, vaultPassword string) error {
-	secretsFile, err := GetSecretsFile(secretsPath, vaultPassword)
-	if err != nil {
-		return err
-	}
-	validator, err := getValidator(infra, managed)
-	if err != nil {
-		return err
-	}
-	validator.secretsFile(*secretsFile)
-	err = validator.validate("secrets")
-	if err != nil {
+func ExecuteDescriptorValidations() error {
+
+	if err := validator.Validate("descriptor"); err != nil {
 		return err
 	}
 	return nil
 }
 
-// func ExecuteValidations2(descriptorPath string, secretsPath string, vaultPassword string) error {
-// 	//func (a *action) Execute(ctx *actions.ActionContext) error {
+func ExecuteSecretsValidations(secretsPath string, vaultPassword string) error {
+	_, err := os.Stat("./secrets.yml")
+	if err == nil {
+		secretsFile, err := commons.GetSecretsFile(secretsPath, vaultPassword)
+		if err != nil {
+			return err
+		}
 
-// 	descriptorFile, err := cluster.GetClusterDescriptor(descriptorPath)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	secretsFile, err := createworker.GetSecretsFile(secretsPath, vaultPassword)
+		validator.SecretsFile(*secretsFile)
+		err = validator.Validate("secrets")
+		if err != nil {
+			return err
+		}
+	}
 
-// 	infraProvider := descriptorFile.InfraProvider
-// 	managed := descriptorFile.ControlPlane.Managed
-
-// 	//managedStr := "managed"
-// 	// if managed {
-// 	// 	managedStr = "unmanaged"
-// 	// }
-// 	//ctx.Status.Start("Validating " + infraProvider + " " + managedStr + " descriptor file: " + a.descriptorPath + " and secrets file: " + a.secretsPath)
-// 	//defer ctx.Status.End(false)
-
-// 	validator, err := getValidator(infraProvider, managed)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	validator.descriptorFile(*descriptorFile)
-// 	validator.secretsFile(*secretsFile)
-// 	err = validator.validate()
-
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	//ctx.Status.End(true)
-
-// 	return nil
-
-// }
+	return nil
+}
 
 func getClusterDescriptor(filename string) (*map[string]interface{}, error) {
 	fileRAW, err := os.ReadFile("./" + filename)
@@ -132,35 +80,5 @@ func getClusterDescriptor(filename string) (*map[string]interface{}, error) {
 		return nil, err
 	}
 
-	// validate := val.New()
-	// err = validate.Struct(descriptorFile)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	return &file, nil
-}
-
-func decryptFile(filePath string, vaultPassword string) (string, error) {
-	data, err := vault.DecryptFile(filePath, vaultPassword)
-	if err != nil {
-		fmt.Println(err)
-		return "", err
-	}
-	return data, nil
-}
-
-func GetSecretsFile(secretsPath string, vaultPassword string) (*map[string]interface{}, error) {
-	secretRaw, err := decryptFile(secretsPath, vaultPassword)
-	file := make(map[string]interface{})
-	err = yaml.Unmarshal([]byte(secretRaw), &file)
-	if err != nil {
-		return nil, err
-	}
-
-	// validate := val.New()
-	// err = validate.Struct(descriptorFile)
-	// if err != nil {
-	// 	return nil, err
-	// }
 	return &file, nil
 }
