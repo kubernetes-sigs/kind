@@ -17,6 +17,8 @@ RUN git clone https://github.com/rancher/local-path-provisioner
 ARG VERSION
 RUN cd local-path-provisioner && \
     git fetch && git checkout "${VERSION}" && \
+    sed -i "s/go 1.17/go 1.19/" go.mod && \
+    go mod tidy && \
     scripts/build && \
     mv bin/local-path-provisioner /usr/local/bin/local-path-provisioner
 
