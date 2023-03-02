@@ -200,6 +200,19 @@ func commonArgs(cluster string, cfg *config.Cluster, networkName string, nodeNam
 		args = append(args, "--device", "/dev/fuse")
 	}
 
+
+    if len(cfg.ClusterResourceLimit.CPUSet) > 0 {
+        args = append(args, fmt.Sprintf("%s=%s", "--cpuset-cpus", cfg.ClusterResourceLimit.CPUSet))
+    }
+
+    if len(cfg.ClusterResourceLimit.CPU) > 0 {
+        args = append(args, fmt.Sprintf("%s=%s", "--cpus", cfg.ClusterResourceLimit.CPU))
+    }
+ 
+    if len(cfg.ClusterResourceLimit.Memory) > 0 {
+        args = append(args, fmt.Sprintf("%s=%s", "--memory", cfg.ClusterResourceLimit.Memory))
+    }
+
 	if cfg.Networking.DNSSearch != nil {
 		args = append(args, "-e", "KIND_DNS_SEARCH="+strings.Join(*cfg.Networking.DNSSearch, " "))
 	}
