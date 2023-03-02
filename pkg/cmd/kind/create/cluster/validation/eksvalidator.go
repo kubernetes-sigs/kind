@@ -2,28 +2,27 @@ package validation
 
 import (
 	"errors"
-	"strings"
 
 	"sigs.k8s.io/kind/pkg/commons"
 )
 
-var instance *EKSValidator
+var eksInstance *EKSValidator
 
 type EKSValidator struct {
 	descriptor commons.DescriptorFile
 	secrets    commons.SecretsFile
 }
 
-func createInstance() *EKSValidator {
+func createEksInstance() *EKSValidator {
 	// inicialización del singleton
 	return &EKSValidator{}
 }
 
 func newEKSValidator() *EKSValidator {
-	if instance == nil {
-		instance = createInstance()
+	if eksInstance == nil {
+		eksInstance = createEksInstance()
 	}
-	return instance
+	return eksInstance
 }
 
 func (v *EKSValidator) DescriptorFile(descriptorFile commons.DescriptorFile) {
@@ -37,36 +36,27 @@ func (v *EKSValidator) SecretsFile(secrets commons.SecretsFile) {
 func (v *EKSValidator) Validate(fileType string) error {
 	switch fileType {
 	case "descriptor":
-		validateDescriptor(*v)
+		validateEksDescriptor(*v)
 	case "secrets":
-		validateSecrets(*v)
+		validateEksSecrets(*v)
 	default:
 		return errors.New("Incorrect filetype validation")
 	}
 	return nil
 }
 
-func validateDescriptor(v EKSValidator) error {
-	descriptorValidations(v.descriptor)
+func validateEksDescriptor(v EKSValidator) error {
+	descriptorEksValidations(v.descriptor)
 	return nil
 }
 
-func validateSecrets(v EKSValidator) error {
+func validateEksSecrets(v EKSValidator) error {
 	secretsValidations(v.secrets)
 	return nil
 }
 
-func descriptorValidations(descriptorFile commons.DescriptorFile) error {
-	k8s_version_validator(descriptorFile.K8SVersion)
-	return nil
-}
-
-func k8s_version_validator(k8sVersion string) error {
-	start_with_v := strings.HasPrefix("v", k8sVersion)
-
-	if !start_with_v {
-		return nil
-	}
+func descriptorEksValidations(descriptorFile commons.DescriptorFile) error {
+	validateK8sVersion(descriptorFile.K8SVersion)
 	return nil
 }
 
