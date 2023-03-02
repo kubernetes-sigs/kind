@@ -44,7 +44,7 @@ func installCAPAWorker(aws commons.AWSCredentials, githubToken string, node node
 	cmd.SetEnv("AWS_REGION="+aws.Credentials.Region,
 		"AWS_ACCESS_KEY_ID="+aws.Credentials.AccessKey,
 		"AWS_SECRET_ACCESS_KEY="+aws.Credentials.SecretKey,
-		"AWS_B64ENCODED_CREDENTIALS="+generateB64Credentials(aws.Credentials.AccessKey, aws.Credentials.SecretKey, aws.Credentials.Region),
+		"AWS_B64ENCODED_CREDENTIALS="+commons.GenerateB64Credentials(aws.Credentials.AccessKey, aws.Credentials.SecretKey, aws.Credentials.Region),
 		"GITHUB_TOKEN="+githubToken,
 		"CAPA_EKS_IAM=true")
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
@@ -99,7 +99,7 @@ func installCAPALocal(ctx *actions.ActionContext, vaultPassword string, descript
 		return err
 	}
 
-	aws, github_token, err := getCredentials(descriptorFile, vaultPassword)
+	aws, github_token, err := commons.GetCredentials(descriptorFile, vaultPassword)
 	if err != nil {
 		return err
 	}
@@ -149,7 +149,7 @@ spec:
 	cmd.SetEnv("AWS_REGION="+aws.Credentials.Region,
 		"AWS_ACCESS_KEY_ID="+aws.Credentials.AccessKey,
 		"AWS_SECRET_ACCESS_KEY="+aws.Credentials.SecretKey,
-		"AWS_B64ENCODED_CREDENTIALS="+generateB64Credentials(aws.Credentials.AccessKey, aws.Credentials.SecretKey, aws.Credentials.Region),
+		"AWS_B64ENCODED_CREDENTIALS="+commons.GenerateB64Credentials(aws.Credentials.AccessKey, aws.Credentials.SecretKey, aws.Credentials.Region),
 		"GITHUB_TOKEN="+github_token,
 		"CAPA_EKS_IAM=true")
 	// "EXP_MACHINE_POOL=true")

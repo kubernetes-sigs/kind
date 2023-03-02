@@ -35,17 +35,34 @@ func (v *GCPValidator) SecretsFile(secrets commons.SecretsFile) {
 func (v *GCPValidator) Validate(fileType string) error {
 	switch fileType {
 	case "descriptor":
-		descriptorGcpValidations((*v).descriptor)
+		err := descriptorGcpValidations((*v).descriptor)
+		if err != nil {
+			return err
+		}
 	case "secrets":
-		secretsGcpValidations((*v).secrets)
+		err := secretsGcpValidations((*v).secrets)
+		if err != nil {
+			return err
+		}
 	default:
 		return errors.New("Incorrect filetype validation")
 	}
 	return nil
 }
 
+func (v *GCPValidator) CommonsValidations() error {
+	err := commonsValidations((*v).descriptor, (*v).secrets)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func descriptorGcpValidations(descriptorFile commons.DescriptorFile) error {
-	validateK8sVersion(descriptorFile.K8SVersion)
+	err := commonsDescriptorValidation(descriptorFile)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

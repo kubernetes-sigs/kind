@@ -11,6 +11,7 @@ type Validator interface {
 	DescriptorFile(descriptorFile commons.DescriptorFile)
 	SecretsFile(secretFile commons.SecretsFile)
 	Validate(fileType string) error
+	CommonsValidations() error
 }
 
 var validator Validator
@@ -55,6 +56,14 @@ func ExecuteSecretsValidations(secretsPath string, vaultPassword string) error {
 		}
 	}
 
+	return nil
+}
+
+func ExecuteCommonsValidations() error {
+	err := validator.CommonsValidations()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

@@ -104,7 +104,7 @@ type WorkerNodes []struct {
 	Quantity         int    `yaml:"quantity" validate:"required,numeric"`
 	Size             string `yaml:"size" validate:"required"`
 	Image            string `yaml:"image" validate:"required_if=InfraProvider gcp"`
-	ZoneDistribution string `yaml:"zone_distribution" validate:"omitempty,oneof='balanced' 'unbalanced'"`
+	ZoneDistribution string `yaml:"zone_distribution" validate:"oneof='balanced' 'unbalanced'"`
 	AZ               string `yaml:"az"`
 	SSHKey           string `yaml:"ssh_key"`
 	Spot             bool   `yaml:"spot" validate:"boolean"`

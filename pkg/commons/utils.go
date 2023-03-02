@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package createworker
+package commons
 
 import (
 	"bytes"
@@ -29,13 +29,12 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/exec"
 
 	vault "github.com/sosedoff/ansible-vault-go"
 )
 
-func createDirectory(directory string) error {
+func CreateDirectory(directory string) error {
 	if _, err := os.Stat(directory); os.IsNotExist(err) {
 		err = os.Mkdir(directory, 0777)
 		if err != nil {
@@ -46,7 +45,7 @@ func createDirectory(directory string) error {
 	return nil
 }
 
-func currentdir() (string, error) {
+func Currentdir() (string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		fmt.Println(err)
@@ -56,7 +55,7 @@ func currentdir() (string, error) {
 	return cwd, nil
 }
 
-func writeFile(filePath string, contentLines []string) error {
+func WriteFile(filePath string, contentLines []string) error {
 	f, err := os.Create(filePath)
 	if err != nil {
 		fmt.Println(err)
@@ -78,7 +77,7 @@ func writeFile(filePath string, contentLines []string) error {
 	return nil
 }
 
-func encryptFile(filePath string, vaultPassword string) error {
+func EncryptFile(filePath string, vaultPassword string) error {
 	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		fmt.Println(err)
@@ -92,13 +91,13 @@ func encryptFile(filePath string, vaultPassword string) error {
 	return nil
 }
 
-func generateB64Credentials(access_key string, secret_key string, region string) string {
+func GenerateB64Credentials(access_key string, secret_key string, region string) string {
 	credentialsINIlines := "[default]\naws_access_key_id = " + access_key + "\naws_secret_access_key = " + secret_key + "\nregion = " + region + "\n\n"
 	return b64.StdEncoding.EncodeToString([]byte(credentialsINIlines))
 }
 
-func getCredentials(descriptorFile commons.DescriptorFile, vaultPassword string) (commons.AWSCredentials, string, error) {
-	aws := commons.AWSCredentials{}
+func GetCredentials(descriptorFile DescriptorFile, vaultPassword string) (AWSCredentials, string, error) {
+	aws := AWSCredentials{}
 
 	_, err := os.Stat("./secrets.yml")
 	if err != nil {
@@ -109,7 +108,7 @@ func getCredentials(descriptorFile commons.DescriptorFile, vaultPassword string)
 		return aws, "", err
 
 	} else {
-		secretFile, err := commons.GetSecretsFile("./secrets.yml", vaultPassword)
+		secretFile, err := GetSecretsFile("./secrets.yml", vaultPassword)
 		if err != nil {
 			fmt.Println(err)
 			return aws, "", err
@@ -126,7 +125,7 @@ func stringToBytes(str string) []byte {
 	return bytes
 }
 
-func rewriteDescriptorFile(descriptorName string) error {
+func RewriteDescriptorFile(descriptorName string) error {
 
 	descriptorRAW, err := os.ReadFile("./" + descriptorName)
 	if err != nil {
@@ -135,7 +134,7 @@ func rewriteDescriptorFile(descriptorName string) error {
 
 	descriptorMap := map[string]interface{}{}
 	viper.SetConfigName(descriptorName)
-	currentDir, err := currentdir()
+	currentDir, err := Currentdir()
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -153,7 +152,6 @@ func rewriteDescriptorFile(descriptorName string) error {
 
 		d, err := yaml.Marshal(&descriptorMap)
 		if err != nil {
-			fmt.Println("error: %v", err)
 			return err
 		}
 
@@ -166,7 +164,6 @@ func rewriteDescriptorFile(descriptorName string) error {
 
 		err = ioutil.WriteFile(descriptorName, d, 0755)
 		if err != nil {
-			fmt.Println("error: %v", err)
 			return err
 		}
 
@@ -185,7 +182,7 @@ func deleteKey(key string, descriptorMap map[string]interface{}) {
 	}
 }
 
-func integrateClusterAutoscaler(node nodes.Node, kubeconfigPath string, clusterID string, provider string) exec.Cmd {
+func IntegrateClusterAutoscaler(node nodes.Node, kubeconfigPath string, clusterID string, provider string) exec.Cmd {
 	cmd := node.Command("helm", "install", "cluster-autoscaler", "autoscaler/cluster-autoscaler",
 		"--kubeconfig", kubeconfigPath,
 		"--namespace", "kube-system",

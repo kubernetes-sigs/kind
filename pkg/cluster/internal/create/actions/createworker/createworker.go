@@ -95,7 +95,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to parse cluster descriptor")
 	}
 
-	aws, github_token, err := getCredentials(*descriptorFile, a.vaultPassword)
+	aws, github_token, err := commons.GetCredentials(*descriptorFile, a.vaultPassword)
 	if err != nil {
 		return err
 	}
@@ -124,25 +124,25 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Generating secrets file 📝🗝️")
 	defer ctx.Status.End(false)
 
-	rewriteDescriptorFile(a.descriptorName)
+	commons.RewriteDescriptorFile(a.descriptorName)
 
 	filelines := []string{"secrets:\n", "  github_token: " + github_token + "\n", "  aws:\n", "    credentials:\n", "      access_key: " + aws.Credentials.AccessKey + "\n",
 		"      account_id: " + aws.Credentials.AccountID + "\n", "      region: " + descriptorFile.Region + "\n",
 		"      secret_key: " + aws.Credentials.SecretKey + "\n"}
 
-	basepath, err := currentdir()
-	err = createDirectory(basepath)
+	basepath, err := commons.Currentdir()
+	err = commons.CreateDirectory(basepath)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 	filename := basepath + "/secrets.yml"
-	err = writeFile(filename, filelines)
+	err = commons.WriteFile(filename, filelines)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
-	err = encryptFile(filename, a.vaultPassword)
+	err = commons.EncryptFile(filename, a.vaultPassword)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -281,7 +281,7 @@ spec:
 			defer ctx.Status.End(false)
 
 			raw = bytes.Buffer{}
-			cmd = integrateClusterAutoscaler(node, kubeconfigPath, descriptorFile.ClusterID, "clusterapi")
+			cmd = commons.IntegrateClusterAutoscaler(node, kubeconfigPath, descriptorFile.ClusterID, "clusterapi")
 			if err := cmd.SetStdout(&raw).Run(); err != nil {
 				return errors.Wrap(err, "failed to install chart cluster-autoscaler")
 			}

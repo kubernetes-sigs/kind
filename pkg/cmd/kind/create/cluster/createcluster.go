@@ -134,6 +134,9 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 }
 
 func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
+
+	validateFlags(flags)
+
 	provider := cluster.NewProvider(
 		cluster.ProviderWithLogger(logger),
 		runtime.GetDefault(logger),
@@ -147,7 +150,6 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		return err
 	}
 	err = validation.ExecuteDescriptorValidations()
-
 	if err != nil {
 		return err
 	}
@@ -167,6 +169,11 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 
 	//Probablemente fallo si no existe
 	err = validation.ExecuteSecretsValidations("./secrets.yaml", flags.VaultPassword)
+	if err != nil {
+		return err
+	}
+
+	err = validation.ExecuteCommonsValidations()
 	if err != nil {
 		return err
 	}
@@ -233,4 +240,21 @@ func requestPassword(request string) (string, error) {
 	}
 	fmt.Print("\n")
 	return string(bytePassword), nil
+}
+
+func validateFlags(flags *flagpole) error {
+	count := 0
+	if flags.AvoidCreation {
+		count++
+	}
+	if flags.Retain {
+		count++
+	}
+	if flags.MoveManagement {
+		count++
+	}
+	if count > 1 {
+		return errors.New("Flags --retain, --avoid-creation, and --keep-mgmt are mutually exclusive")
+	}
+	return nil
 }

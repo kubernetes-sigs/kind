@@ -36,31 +36,32 @@ func (v *EKSValidator) SecretsFile(secrets commons.SecretsFile) {
 func (v *EKSValidator) Validate(fileType string) error {
 	switch fileType {
 	case "descriptor":
-		validateEksDescriptor(*v)
+		descriptorEksValidations((*v).descriptor)
 	case "secrets":
-		validateEksSecrets(*v)
+		secretsEksValidations((*v).secrets)
 	default:
 		return errors.New("Incorrect filetype validation")
 	}
 	return nil
 }
 
-func validateEksDescriptor(v EKSValidator) error {
-	descriptorEksValidations(v.descriptor)
-	return nil
-}
-
-func validateEksSecrets(v EKSValidator) error {
-	secretsValidations(v.secrets)
+func (v *EKSValidator) CommonsValidations() error {
+	err := commonsValidations((*v).descriptor, (*v).secrets)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func descriptorEksValidations(descriptorFile commons.DescriptorFile) error {
-	validateK8sVersion(descriptorFile.K8SVersion)
+	err := commonsDescriptorValidation(descriptorFile)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func secretsValidations(secretsFile commons.SecretsFile) error {
+func secretsEksValidations(secretsFile commons.SecretsFile) error {
 
 	return nil
 }
