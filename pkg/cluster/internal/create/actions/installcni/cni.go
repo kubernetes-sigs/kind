@@ -122,7 +122,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	// install the manifest
 	if err := node.Command(
-		"kubectl", "create", "--kubeconfig=/etc/kubernetes/admin.conf",
+		"kubectl", "apply", "--kubeconfig=/etc/kubernetes/admin.conf",
 		"-f", "-",
 	).SetStdin(strings.NewReader(manifest)).Run(); err != nil {
 		return errors.Wrap(err, "failed to apply overlay network")

@@ -69,6 +69,21 @@ type Cluster struct {
 	// in the order listed.
 	// These should be YAML or JSON formatting RFC 6902 JSON patches
 	ContainerdConfigPatchesJSON6902 []string
+
+	// ClusterResourceLimit defines the resource limits for the cluster
+	ClusterResourceLimit ClusterResourceLimit
+}
+
+type ClusterResourceLimit struct {
+	// CPU will define how much of the available CPU resources the cluster can use.
+	CPU string
+	// CPUSet will limit the specific CPUs or cores the cluster can use. A comma-separated list
+	// or hyphen-separated range of CPUs the cluster can use, if you have more than one CPU.
+	// The first CPU is numbered 0. A valid value might be 0-3 (to use the first, second,
+	// third, and fourth CPU) or 1,3 (to use the second and fourth CPU).
+	CPUSet string
+	// Memory will define the maximum amount of memory the cluster can use.
+	Memory string
 }
 
 // Node contains settings for a node in the `kind` Cluster.

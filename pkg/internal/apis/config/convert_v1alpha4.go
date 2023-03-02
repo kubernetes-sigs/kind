@@ -38,6 +38,8 @@ func Convertv1alpha4(in *v1alpha4.Cluster) *Cluster {
 		convertv1alpha4Node(&in.Nodes[i], &out.Nodes[i])
 	}
 
+	convertv1alpha4ClusterResourceLimit(&in.ClusterResourceLimit, &out.ClusterResourceLimit)
+
 	convertv1alpha4Networking(&in.Networking, &out.Networking)
 
 	for i := range in.KubeadmConfigPatchesJSON6902 {
@@ -75,6 +77,12 @@ func convertv1alpha4PatchJSON6902(in *v1alpha4.PatchJSON6902, out *PatchJSON6902
 	out.Version = in.Version
 	out.Kind = in.Kind
 	out.Patch = in.Patch
+}
+
+func convertv1alpha4ClusterResourceLimit(in *v1alpha4.ClusterResourceLimit, out *ClusterResourceLimit) {
+	out.CPU = in.CPU
+	out.CPUSet = in.CPUSet
+	out.Memory = in.Memory
 }
 
 func convertv1alpha4Networking(in *v1alpha4.Networking, out *Networking) {

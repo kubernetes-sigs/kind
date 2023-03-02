@@ -138,7 +138,10 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		if err := node.Command(
 			"kubectl", taintArgs...,
 		).Run(); err != nil {
-			return errors.Wrap(err, "failed to remove control plane taint")
+			/*
+				#Skipping master taint removal error as intermittently kind clutser creation fails while removing taints
+			*/
+			//return errors.Wrap(err, "failed to remove master taint")
 		}
 	}
 
