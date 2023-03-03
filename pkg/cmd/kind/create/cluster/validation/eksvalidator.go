@@ -2,6 +2,7 @@ package validation
 
 import (
 	"errors"
+	"fmt"
 
 	"sigs.k8s.io/kind/pkg/commons"
 )
@@ -19,6 +20,7 @@ func createEksInstance() *EKSValidator {
 }
 
 func newEKSValidator() *EKSValidator {
+	fmt.Println("EKSValidator")
 	if eksInstance == nil {
 		eksInstance = createEksInstance()
 	}
@@ -36,9 +38,15 @@ func (v *EKSValidator) SecretsFile(secrets commons.SecretsFile) {
 func (v *EKSValidator) Validate(fileType string) error {
 	switch fileType {
 	case "descriptor":
-		descriptorEksValidations((*v).descriptor)
+		err := descriptorEksValidations((*v).descriptor)
+		if err != nil {
+			return err
+		}
 	case "secrets":
-		secretsEksValidations((*v).secrets)
+		err := secretsEksValidations((*v).secrets)
+		if err != nil {
+			return err
+		}
 	default:
 		return errors.New("Incorrect filetype validation")
 	}

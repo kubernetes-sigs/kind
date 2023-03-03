@@ -2,6 +2,7 @@ package validation
 
 import (
 	"errors"
+	"strconv"
 
 	"sigs.k8s.io/kind/pkg/commons"
 )
@@ -78,7 +79,7 @@ func validateMaxSizeIsGtMinSize(workerNodes commons.WorkerNodes) error {
 		minSize := wn.NodeGroupMinSize
 		maxSize := wn.NodeGroupMaxSize
 		if minSize > maxSize {
-			return errors.New("max_size (" + string(maxSize) + ") must be greater than min_size" + string(minSize))
+			return errors.New("max_size (" + strconv.Itoa(maxSize) + ") must be equal or greater than min_size (" + strconv.Itoa(minSize) + ")")
 		}
 	}
 	return nil
@@ -87,9 +88,8 @@ func validateMaxSizeIsGtMinSize(workerNodes commons.WorkerNodes) error {
 func ifBalancedQuantityValidations(workerNodes commons.WorkerNodes) error {
 	for _, wn := range workerNodes {
 		if wn.ZoneDistribution == "balanced" {
-			r := wn.Quantity % 3
-			if r != 0 {
-				return errors.New("Quantity in WorkerNodes " + wn.Name + ", must be multiplot of 3 when HA is required")
+			if wn.Quantity < 3 {
+				return errors.New("Quantity in WorkerNodes " + wn.Name + ", must be equal or greater than 3 when HA is required")
 			}
 		}
 	}
