@@ -2,7 +2,6 @@ package validation
 
 import (
 	"errors"
-	"fmt"
 
 	"sigs.k8s.io/kind/pkg/commons"
 )
@@ -19,7 +18,6 @@ func createGCPInstance() *GCPValidator {
 }
 
 func NewGCPValidator() *GCPValidator {
-	fmt.Println("GCPValidator")
 	if gcpInstance == nil {
 		gcpInstance = createGCPInstance()
 	}

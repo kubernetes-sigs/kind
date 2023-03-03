@@ -2,7 +2,6 @@ package validation
 
 import (
 	"errors"
-	"fmt"
 
 	"sigs.k8s.io/kind/pkg/commons"
 )
@@ -20,7 +19,6 @@ func createEksInstance() *EKSValidator {
 }
 
 func newEKSValidator() *EKSValidator {
-	fmt.Println("EKSValidator")
 	if eksInstance == nil {
 		eksInstance = createEksInstance()
 	}
