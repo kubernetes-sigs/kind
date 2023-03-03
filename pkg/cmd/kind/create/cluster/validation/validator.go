@@ -14,6 +14,11 @@ type Validator interface {
 	CommonsValidations() error
 }
 
+type commonValidator struct {
+	descriptor commons.DescriptorFile
+	secrets    commons.SecretsFile
+}
+
 var validator Validator
 
 func InitValidator(descriptorPath string) error {

@@ -9,17 +9,12 @@ import (
 var gcpInstance *GCPValidator
 
 type GCPValidator struct {
-	descriptor commons.DescriptorFile
-	secrets    commons.SecretsFile
-}
-
-func createGCPInstance() *GCPValidator {
-	return &GCPValidator{}
+	commonValidator
 }
 
 func NewGCPValidator() *GCPValidator {
 	if gcpInstance == nil {
-		gcpInstance = createGCPInstance()
+		gcpInstance = new(GCPValidator)
 	}
 	return gcpInstance
 }

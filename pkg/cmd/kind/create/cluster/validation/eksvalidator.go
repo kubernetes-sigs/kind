@@ -9,18 +9,12 @@ import (
 var eksInstance *EKSValidator
 
 type EKSValidator struct {
-	descriptor commons.DescriptorFile
-	secrets    commons.SecretsFile
-}
-
-func createEksInstance() *EKSValidator {
-	// inicialización del singleton
-	return &EKSValidator{}
+	commonValidator
 }
 
 func newEKSValidator() *EKSValidator {
 	if eksInstance == nil {
-		eksInstance = createEksInstance()
+		eksInstance = new(EKSValidator)
 	}
 	return eksInstance
 }
