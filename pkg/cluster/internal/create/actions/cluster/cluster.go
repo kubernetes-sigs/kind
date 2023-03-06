@@ -189,8 +189,8 @@ func (d DescriptorFile) Init() DescriptorFile {
 }
 
 // Read descriptor file
-func GetClusterDescriptor(descriptorName string) (*DescriptorFile, error) {
-	descriptorRAW, err := os.ReadFile("./" + descriptorName)
+func GetClusterDescriptor(descriptorPath string) (*DescriptorFile, error) {
+	descriptorRAW, err := os.ReadFile(descriptorPath)
 	if err != nil {
 		return nil, err
 	}

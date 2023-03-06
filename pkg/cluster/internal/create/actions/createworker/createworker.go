@@ -29,7 +29,7 @@ import (
 
 type action struct {
 	vaultPassword  string
-	descriptorName string
+	descriptorPath string
 	moveManagement bool
 	avoidCreation  bool
 }
@@ -72,10 +72,10 @@ const workKubeconfigPath = ".kube/config"
 const secretsFile = "secrets.yml"
 
 // NewAction returns a new action for installing default CAPI
-func NewAction(vaultPassword string, descriptorName string, moveManagement bool, avoidCreation bool) actions.Action {
+func NewAction(vaultPassword string, descriptorPath string, moveManagement bool, avoidCreation bool) actions.Action {
 	return &action{
 		vaultPassword:  vaultPassword,
-		descriptorName: descriptorName,
+		descriptorPath: descriptorPath,
 		moveManagement: moveManagement,
 		avoidCreation:  avoidCreation,
 	}
@@ -91,7 +91,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// Parse the cluster descriptor
-	descriptorFile, err := cluster.GetClusterDescriptor(a.descriptorName)
+	descriptorFile, err := cluster.GetClusterDescriptor(a.descriptorPath)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse cluster descriptor")
 	}
@@ -112,15 +112,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	providerBuilder := getBuilder(descriptorFile.InfraProvider)
 	infra := newInfra(providerBuilder)
 	provider := infra.buildProvider(providerParams)
-
-	if descriptorFile.InfraProvider == "aws" {
-		ctx.Status.Start("[CAPA] Ensuring IAM security 👮")
-		defer ctx.Status.End(false)
-
-		createCloudFormationStack(node, provider.capxEnvVars)
-
-		ctx.Status.End(true) // End Ensuring CAPx requirements
-	}
 
 	ctx.Status.Start("Installing CAPx 🎖️")
 	defer ctx.Status.End(false)
@@ -164,7 +155,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	ensureSecretsFile(*descriptorFile, a.vaultPassword)
 
-	rewriteDescriptorFile(a.descriptorName)
+	rewriteDescriptorFile(a.descriptorPath)
 
 	defer ctx.Status.End(true) // End Generating secrets file
 
@@ -211,6 +202,14 @@ spec:
 	}
 
 	if !a.avoidCreation {
+
+		if descriptorFile.InfraProvider == "aws" {
+			ctx.Status.Start("[CAPA] Ensuring IAM security 👮")
+			defer ctx.Status.End(false)
+
+			createCloudFormationStack(node, provider.capxEnvVars)
+			ctx.Status.End(true) // End Ensuring CAPx requirements
+		}
 
 		ctx.Status.Start("Creating the workload cluster 💥")
 		defer ctx.Status.End(false)
