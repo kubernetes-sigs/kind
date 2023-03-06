@@ -61,21 +61,6 @@ type Secrets struct {
 	DockerRegistries []cluster.DockerRegistryCredentials `yaml:"docker_registries"`
 }
 
-// type AWSCredentials struct {
-// 	AccessKey string `yaml:"access_key"`
-// 	SecretKey string `yaml:"secret_key"`
-// 	Region    string `yaml:"region"`
-// 	Account   string `yaml:"account"`
-// }
-
-// type GCPCredentials struct {
-// 	ProjectID    string `yaml:"project_id"`
-// 	PrivateKeyID string `yaml:"private_key_id"`
-// 	PrivateKey   string `yaml:"private_key"`
-// 	ClientEmail  string `yaml:"client_email"`
-// 	ClientID     string `yaml:"client_id"`
-// }
-
 const allowAllEgressNetPol = `
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
