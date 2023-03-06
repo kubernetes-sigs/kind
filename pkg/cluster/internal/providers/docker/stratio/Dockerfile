@@ -1,4 +1,4 @@
-FROM kindest/node:v1.24.6
+FROM kindest/node:v1.24.7
 
 # Tools versions
 ENV CLUSTERCTL=v1.3.2
