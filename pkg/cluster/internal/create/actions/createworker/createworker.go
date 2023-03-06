@@ -29,9 +29,17 @@ import (
 
 type action struct {
 	vaultPassword  string
-	descriptorName string
+	descriptorPath string
 	moveManagement bool
 	avoidCreation  bool
+}
+
+type AWS struct {
+	Credentials cluster.AWSCredentials `yaml:"credentials"`
+}
+
+type GCP struct {
+	Credentials cluster.GCPCredentials `yaml:"credentials"`
 }
 
 // SecretsFile represents the YAML structure in the secrets.yml file
@@ -40,23 +48,11 @@ type SecretsFile struct {
 }
 
 type Secrets struct {
-	AWS              AWS              `yaml:"aws"`
-	GCP              GCP              `yaml:"gcp"`
-	GithubToken      string           `yaml:"github_token"`
-	ExternalRegistry ExternalRegistry `yaml:"external_registry"`
-}
-
-type AWS struct {
-	Credentials cluster.Credentials `yaml:"credentials"`
-}
-
-type GCP struct {
-	Credentials cluster.Credentials `yaml:"credentials"`
-}
-
-type ExternalRegistry struct {
-	User string `yaml:"user"`
-	Pass string `yaml:"pass"`
+	AWS              AWS                                 `yaml:"aws"`
+	GCP              GCP                                 `yaml:"gcp"`
+	GithubToken      string                              `yaml:"github_token"`
+	ExternalRegistry cluster.DockerRegistryCredentials   `yaml:"external_registry"`
+	DockerRegistries []cluster.DockerRegistryCredentials `yaml:"docker_registries"`
 }
 
 const allowAllEgressNetPol = `
@@ -76,10 +72,10 @@ const workKubeconfigPath = ".kube/config"
 const secretsFile = "secrets.yml"
 
 // NewAction returns a new action for installing default CAPI
-func NewAction(vaultPassword string, descriptorName string, moveManagement bool, avoidCreation bool) actions.Action {
+func NewAction(vaultPassword string, descriptorPath string, moveManagement bool, avoidCreation bool) actions.Action {
 	return &action{
 		vaultPassword:  vaultPassword,
-		descriptorName: descriptorName,
+		descriptorPath: descriptorPath,
 		moveManagement: moveManagement,
 		avoidCreation:  avoidCreation,
 	}
@@ -95,13 +91,13 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// Parse the cluster descriptor
-	descriptorFile, err := cluster.GetClusterDescriptor(a.descriptorName)
+	descriptorFile, err := cluster.GetClusterDescriptor(a.descriptorPath)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse cluster descriptor")
 	}
 
 	// Get the secrets
-	credentialsMap, externalRegistryMap, githubToken, err := getSecrets(*descriptorFile, a.vaultPassword)
+	credentialsMap, externalRegistryMap, githubToken, _, err := getSecrets(*descriptorFile, a.vaultPassword)
 	if err != nil {
 		return err
 	}
@@ -116,15 +112,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	providerBuilder := getBuilder(descriptorFile.InfraProvider)
 	infra := newInfra(providerBuilder)
 	provider := infra.buildProvider(providerParams)
-
-	if descriptorFile.InfraProvider == "aws" {
-		ctx.Status.Start("[CAPA] Ensuring IAM security 👮")
-		defer ctx.Status.End(false)
-
-		createCloudFormationStack(node, provider.capxEnvVars)
-
-		ctx.Status.End(true) // End Ensuring CAPx requirements
-	}
 
 	ctx.Status.Start("Installing CAPx 🎖️")
 	defer ctx.Status.End(false)
@@ -168,7 +155,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	ensureSecretsFile(*descriptorFile, a.vaultPassword)
 
-	rewriteDescriptorFile(a.descriptorName)
+	rewriteDescriptorFile(a.descriptorPath)
 
 	defer ctx.Status.End(true) // End Generating secrets file
 
@@ -215,6 +202,14 @@ spec:
 	}
 
 	if !a.avoidCreation {
+
+		if descriptorFile.InfraProvider == "aws" {
+			ctx.Status.Start("[CAPA] Ensuring IAM security 👮")
+			defer ctx.Status.End(false)
+
+			createCloudFormationStack(node, provider.capxEnvVars)
+			ctx.Status.End(true) // End Ensuring CAPx requirements
+		}
 
 		ctx.Status.Start("Creating the workload cluster 💥")
 		defer ctx.Status.End(false)
@@ -404,16 +399,16 @@ spec:
 			ctx.Status.End(true)
 		}
 
-		ctx.Status.Start("Generating the KEOS descriptor 📝")
-		defer ctx.Status.End(false)
-
-		err = createKEOSDescriptor(*descriptorFile, provider.stClassName)
-		if err != nil {
-			return err
-		}
-		ctx.Status.End(true) // End Generating KEOS descriptor
-
 	}
+
+	ctx.Status.Start("Generating the KEOS descriptor 📝")
+	defer ctx.Status.End(false)
+
+	err = createKEOSDescriptor(*descriptorFile, provider.stClassName)
+	if err != nil {
+		return err
+	}
+	ctx.Status.End(true) // End Generating KEOS descriptor
 
 	return nil
 }
