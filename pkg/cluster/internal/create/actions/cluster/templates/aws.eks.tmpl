@@ -79,7 +79,6 @@ metadata:
   namespace: "cluster-{{ $.Descriptor.ClusterID }}"
 spec:
   clusterName: "{{ $.Descriptor.ClusterID }}"
-{{- if and $node.NodeGroupMaxSize $node.NodeGroupMinSize }}
   {{- if  gt $n.QA $n.MaxSize }} 
   replicas: {{ $n.MaxSize }}
   {{- else if lt $n.QA $n.MinSize}}
@@ -87,9 +86,6 @@ spec:
   {{- else }}
   replicas: {{ $n.QA }}
   {{- end }}
-{{- else }}
-  replicas: {{ $n.QA }}
-{{- end }}
   selector:
     matchLabels:
   template:
