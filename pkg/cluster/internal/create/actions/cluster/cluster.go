@@ -88,25 +88,16 @@ type Networks struct {
 	Tags                       map[string]string `yaml:"tags,omitempty"`
 	AvailabilityZoneUsageLimit int               `yaml:"az_usage_limit" validate:"numeric"`
 	AvailabilityZoneSelection  string            `yaml:"az_selection" validate:"oneof='Ordered' 'Random' '' "`
-	IPv6                       IPv6              `yaml:"ipv6,omitempty"`
 	Subnets                    []Subnets         `yaml:"subnets" validate:"required_with=VPCID"`
-}
-
-type IPv6 struct {
-	CidrBlock                   string `yaml:"cidr,omitempty"`
-	PoolId                      string `yaml:"pool_id,omitempty"`
-	EgressOnlyInternetGatewayId string `yaml:"egress_internet_gw_id,omitempty"`
 }
 
 type Subnets struct {
 	SubnetId         string            `yaml:"subnet_id"`
 	AvailabilityZone string            `yaml:"az,omitempty"`
 	CidrBlock        string            `yaml:"cidr,omitempty"`
-	Ipv6CidrBlock    string            `yaml:"ipv6_cidr,omitempty"`
 	IsPublic         *bool             `yaml:"is_public,omitempty"`
 	RouteTableId     string            `yaml:"route_table_id,omitempty"`
 	NatGatewayId     string            `yaml:"nat_id,omitempty"`
-	IsIPv6           *bool             `yaml:"is_ipv6,omitempty"`
 	Tags             map[string]string `yaml:"tags,omitempty"`
 }
 

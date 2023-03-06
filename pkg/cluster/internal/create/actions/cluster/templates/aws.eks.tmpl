@@ -51,18 +51,6 @@ spec:
   {{- if ne .Descriptor.Networks.CidrBlock "" }}
       cidrBlock: {{ .Descriptor.Networks.CidrBlock }}
   {{- end }}
-  {{- if isNotEmpty .Descriptor.Networks.IPv6 }}
-      ipv6:
-      {{- if ne .Descriptor.Networks.IPv6.CidrBlock ""}}
-        cidrBlock: {{ .Descriptor.Networks.IPv6.CidrBlock }}
-      {{- end }}
-      {{- if ne .Descriptor.Networks.IPv6.PoolId ""}}
-        poolId: {{ .Descriptor.Networks.IPv6.PoolId }}
-      {{- end }}
-      {{- if ne .Descriptor.Networks.IPv6.EgressOnlyInternetGatewayId ""}}
-        egressOnlyInternetGatewayId: {{ .Descriptor.Networks.IPv6.EgressOnlyInternetGatewayId }}
-      {{- end }}
-  {{- end }}
   {{- if isNotEmpty .Descriptor.Networks.Tags }}
       tags:
     {{- range $key,$value := .Descriptor.Networks.Tags }}
@@ -81,17 +69,11 @@ spec:
       {{- if ne .CidrBlock "" }}
         cidrBlock:  {{ .CidrBlock }} 
       {{- end }}
-      {{- if ne .Ipv6CidrBlock "" }}
-        ipv6CidrBlock:  {{ .Ipv6CidrBlock }} 
-      {{- end }}
       {{- if ne .RouteTableId "" }}
         routeTableId:  {{ .RouteTableId }} 
       {{- end }}
       {{- if ne .NatGatewayId "" }}
         natGatewayId:  {{ .NatGatewayId }} 
-      {{- end }}
-      {{- if checkReference .IsIPv6 }}
-        isIpv6: {{ .IsIPv6 }}
       {{- end }}
       {{- if checkReference .IsPublic }}
         isPublic: {{ .IsPublic }}
