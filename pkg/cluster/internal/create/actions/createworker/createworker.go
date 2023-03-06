@@ -42,12 +42,6 @@ type GCP struct {
 	Credentials cluster.GCPCredentials `yaml:"credentials"`
 }
 
-type DockerRegistryCredentials struct {
-	URL  string `yaml:"url"`
-	User string `yaml:"user"`
-	Pass string `yaml:"pass"`
-}
-
 // SecretsFile represents the YAML structure in the secrets.yml file
 type SecretsFile struct {
 	Secrets Secrets `yaml:"secrets"`
