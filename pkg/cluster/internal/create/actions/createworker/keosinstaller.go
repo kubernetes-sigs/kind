@@ -50,7 +50,7 @@ type KEOSDescriptor struct {
 			} `yaml:"external_dns,omitempty"`
 		} `yaml:"dns,omitempty"`
 		Domain          string `yaml:"domain"`
-		ExternalDomain  string `yaml:"external_domain"`
+		ExternalDomain  string `yaml:"external_domain,omitempty"`
 		Flavour         string `yaml:"flavour"`
 		K8sInstallation bool   `yaml:"k8s_installation"`
 		Storage         struct {
