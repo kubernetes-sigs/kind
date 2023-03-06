@@ -46,7 +46,7 @@ type flagpole struct {
 	Wait           time.Duration
 	Kubeconfig     string
 	VaultPassword  string
-	Descriptor     string
+	DescriptorPath string
 	MoveManagement bool
 	AvoidCreation  bool
 }
@@ -109,7 +109,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		"sets vault password to encrypt secrets",
 	)
 	cmd.Flags().StringVarP(
-		&flags.Descriptor,
+		&flags.DescriptorPath,
 		"descriptor",
 		"d",
 		"",
@@ -150,15 +150,15 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		}
 	}
 
-	if flags.Descriptor == "" {
-		flags.Descriptor = "cluster.yaml"
+	if flags.DescriptorPath == "" {
+		flags.DescriptorPath = "./cluster.yaml"
 	}
 
 	// create the cluster
 	if err = provider.Create(
 		flags.Name,
 		flags.VaultPassword,
-		flags.Descriptor,
+		flags.DescriptorPath,
 		flags.MoveManagement,
 		flags.AvoidCreation,
 		withConfig,
