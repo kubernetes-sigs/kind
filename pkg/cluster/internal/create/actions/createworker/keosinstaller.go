@@ -96,9 +96,6 @@ func createKEOSDescriptor(descriptorFile cluster.DescriptorFile, storageClass st
 	if !descriptorFile.ControlPlane.Managed {
 		keosDescriptor.Keos.Calico.Ipip = true
 		keosDescriptor.Keos.Calico.Pool = "192.168.0.0/16"
-	}
-
-	if descriptorFile.InfraProvider == "gcp" {
 		keosDescriptor.Keos.Calico.DeployTigeraOperator = false
 	}
 
