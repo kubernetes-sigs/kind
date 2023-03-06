@@ -43,10 +43,10 @@ type KEOSDescriptor struct {
 			Pool                 string `yaml:"pool"`
 			DeployTigeraOperator bool   `yaml:"deploy_tigera_operator"`
 		} `yaml:"calico,omitempty"`
-		ClusterID       string `yaml:"cluster_id"`
-		Dns struct {
-			ExternalDns  struct {
-				Enabled bool `yaml: "enabled,omitempty"`
+		ClusterID string `yaml:"cluster_id"`
+		Dns       struct {
+			ExternalDns struct {
+				Enabled *bool `yaml:"enabled,omitempty"`
 			} `yaml:"external_dns,omitempty"`
 		} `yaml:"dns,omitempty"`
 		Domain          string `yaml:"domain"`
@@ -85,16 +85,15 @@ func createKEOSDescriptor(descriptorFile cluster.DescriptorFile, storageClass st
 	// Keos
 	keosDescriptor.Keos.ClusterID = descriptorFile.ClusterID
 	keosDescriptor.Keos.Domain = descriptorFile.Keos.Domain
-	keosDescriptor.Keos.ExternalDomain = descriptorFile.ExternalDomain
+	if descriptorFile.ExternalDomain != "" {
+		keosDescriptor.Keos.ExternalDomain = descriptorFile.ExternalDomain
+	}
 	keosDescriptor.Keos.Flavour = descriptorFile.Keos.Flavour
 
 	// Keos - Calico
 	if !descriptorFile.ControlPlane.Managed {
 		keosDescriptor.Keos.Calico.Ipip = true
 		keosDescriptor.Keos.Calico.Pool = "192.168.0.0/16"
-	}
-
-	if descriptorFile.InfraProvider == "gcp" {
 		keosDescriptor.Keos.Calico.DeployTigeraOperator = false
 	}
 
@@ -104,7 +103,7 @@ func createKEOSDescriptor(descriptorFile cluster.DescriptorFile, storageClass st
 
 	// Keos - External dns
 	if !descriptorFile.Dns.HostedZones {
-		keosDescriptor.Keos.Dns.ExternalDns.Enabled = descriptorFile.Dns.HostedZones
+		keosDescriptor.Keos.Dns.ExternalDns.Enabled = &descriptorFile.Dns.HostedZones
 	}
 
 	keosYAMLData, err := yaml.Marshal(keosDescriptor)

@@ -62,14 +62,14 @@ type DescriptorFile struct {
 		HostedZones bool `yaml:"hosted_zones" validate:"boolean"`
 	} `yaml:"dns"`
 
-	ExternalDomain string `yaml:"external_domain" validate:"hostname"`
+	ExternalDomain string `yaml:"external_domain" validate:"omitempty,hostname"`
 
 	ExternalRegistry ExternalRegistry `yaml:"external_registry"`
 
 	Keos struct {
-		Domain         string `yaml:"domain" validate:"required,hostname"`
-		Flavour        string `yaml:"flavour"`
-		Version        string `yaml:"version"`
+		Domain  string `yaml:"domain" validate:"required,hostname"`
+		Flavour string `yaml:"flavour"`
+		Version string `yaml:"version"`
 	} `yaml:"keos"`
 
 	ControlPlane struct {
@@ -179,16 +179,9 @@ func (d DescriptorFile) Init() DescriptorFile {
 	d.ControlPlane.AWS.Logging.ControllerManager = false
 	d.ControlPlane.AWS.Logging.Scheduler = false
 
-    // Hosted zones
-    d.Dns.HostedZones = true
+	// Hosted zones
+	d.Dns.HostedZones = true
 
-	return d
-}
-
-func  fillDefaultValues(d DescriptorFile) DescriptorFile {
-	if d.ExternalDomain == "" {
-		d.ExternalDomain = d.ClusterID + ".ext"
-	}
 	return d
 }
 
@@ -204,7 +197,6 @@ func GetClusterDescriptor(descriptorName string) (*DescriptorFile, error) {
 		return nil, err
 	}
 
-	descriptorFile = fillDefaultValues(descriptorFile)
 	validate := validator.New()
 	err = validate.Struct(descriptorFile)
 	if err != nil {
