@@ -39,7 +39,6 @@ type DescriptorFile struct {
 	Bastion Bastion `yaml:"bastion"`
 
 	Credentials Credentials `yaml:"credentials"`
-	GithubToken string      `yaml:"github_token"`
 
 	InfraProvider string `yaml:"infra_provider" validate:"required,oneof='aws' 'gcp' 'azure'"`
 
@@ -58,7 +57,7 @@ type DescriptorFile struct {
 		} `yaml:"subnets"`
 	} `yaml:"networks"`
 
-	ExternalRegistry ExternalRegistry `yaml:"external_registry" validate:"dive"`
+	DockerRegistries []DockerRegistry `yaml:"docker_registries" validate:"dive"`
 
 	Keos struct {
 		Domain         string `yaml:"domain" validate:"required,hostname"`
@@ -130,13 +129,20 @@ type Node struct {
 }
 
 type Credentials struct {
-	// AWS
+	AWS              AWSCredentials              `yaml:"aws"`
+	GCP              GCPCredentials              `yaml:"gcp"`
+	GithubToken      string                      `yaml:"github_token"`
+	DockerRegistries []DockerRegistryCredentials `yaml:"docker_registries"`
+}
+
+type AWSCredentials struct {
 	AccessKey string `yaml:"access_key"`
 	SecretKey string `yaml:"secret_key"`
 	Region    string `yaml:"region"`
 	Account   string `yaml:"account"`
+}
 
-	// GCP
+type GCPCredentials struct {
 	ProjectID    string `yaml:"project_id"`
 	PrivateKeyID string `yaml:"private_key_id"`
 	PrivateKey   string `yaml:"private_key"`
@@ -144,12 +150,17 @@ type Credentials struct {
 	ClientID     string `yaml:"client_id"`
 }
 
-type ExternalRegistry struct {
+type DockerRegistryCredentials struct {
+	URL  string `yaml:"url"`
+	User string `yaml:"user"`
+	Pass string `yaml:"pass"`
+}
+
+type DockerRegistry struct {
 	AuthRequired bool   `yaml:"auth_required" validate:"boolean"`
 	Type         string `yaml:"type"`
 	URL          string `yaml:"url" validate:"required"`
-	User         string `yaml:"user"`
-	Pass         string `yaml:"pass"`
+	KeosRegistry bool   `yaml:"keos_registry" validate:"boolean"`
 }
 
 type TemplateParams struct {
@@ -188,7 +199,6 @@ func GetClusterDescriptor(descriptorPath string) (*DescriptorFile, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	validate := validator.New()
 	err = validate.Struct(descriptorFile)
 	if err != nil {

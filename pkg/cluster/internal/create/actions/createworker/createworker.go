@@ -34,29 +34,25 @@ type action struct {
 	avoidCreation  bool
 }
 
+type AWS struct {
+	Credentials cluster.AWSCredentials `yaml:"credentials"`
+}
+
+type GCP struct {
+	Credentials cluster.GCPCredentials `yaml:"credentials"`
+}
+
 // SecretsFile represents the YAML structure in the secrets.yml file
 type SecretsFile struct {
 	Secrets Secrets `yaml:"secrets"`
 }
 
 type Secrets struct {
-	AWS              AWS              `yaml:"aws"`
-	GCP              GCP              `yaml:"gcp"`
-	GithubToken      string           `yaml:"github_token"`
-	ExternalRegistry ExternalRegistry `yaml:"external_registry"`
-}
-
-type AWS struct {
-	Credentials cluster.Credentials `yaml:"credentials"`
-}
-
-type GCP struct {
-	Credentials cluster.Credentials `yaml:"credentials"`
-}
-
-type ExternalRegistry struct {
-	User string `yaml:"user"`
-	Pass string `yaml:"pass"`
+	AWS              AWS                                 `yaml:"aws"`
+	GCP              GCP                                 `yaml:"gcp"`
+	GithubToken      string                              `yaml:"github_token"`
+	ExternalRegistry cluster.DockerRegistryCredentials   `yaml:"external_registry"`
+	DockerRegistries []cluster.DockerRegistryCredentials `yaml:"docker_registries"`
 }
 
 const allowAllEgressNetPol = `
@@ -101,7 +97,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// Get the secrets
-	credentialsMap, externalRegistryMap, githubToken, err := getSecrets(*descriptorFile, a.vaultPassword)
+	credentialsMap, externalRegistryMap, githubToken, _, err := getSecrets(*descriptorFile, a.vaultPassword)
 	if err != nil {
 		return err
 	}
@@ -390,16 +386,16 @@ spec:
 			ctx.Status.End(true)
 		}
 
-		ctx.Status.Start("Generating the KEOS descriptor 📝")
-		defer ctx.Status.End(false)
-
-		err = createKEOSDescriptor(*descriptorFile, provider.stClassName)
-		if err != nil {
-			return err
-		}
-		ctx.Status.End(true) // End Generating KEOS descriptor
-
 	}
+
+	ctx.Status.Start("Generating the KEOS descriptor 📝")
+	defer ctx.Status.End(false)
+
+	err = createKEOSDescriptor(*descriptorFile, provider.stClassName)
+	if err != nil {
+		return err
+	}
+	ctx.Status.End(true) // End Generating KEOS descriptor
 
 	return nil
 }

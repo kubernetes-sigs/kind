@@ -18,6 +18,7 @@ package createworker
 
 import (
 	"bytes"
+	"unicode"
 
 	"io/ioutil"
 	"os"
@@ -57,6 +58,8 @@ func decryptFile(filePath string, vaultPassword string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	var secret SecretsFile
+	_ = yaml.Unmarshal([]byte(data), &secret)
 	return data, nil
 }
 
@@ -68,43 +71,81 @@ func convertToMapStringString(m map[string]interface{}) map[string]string {
 	return m2
 }
 
-func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (map[string]string, map[string]string, string, error) {
+func convertStringMapToInterfaceMap(inputMap map[string]string) map[string]interface{} {
+	outputMap := make(map[string]interface{})
+	for key, value := range inputMap {
+		outputMap[key] = value
+	}
+	return outputMap
+}
+
+func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (map[string]string, map[string]string, string, []map[string]interface{}, error) {
 
 	var c = map[string]string{}
 	var r = map[string]string{}
+	var dr = []map[string]interface{}{}
 	var resultCreds = map[string]string{}
-	var resultReg = map[string]string{}
+	var resultExternalReg = map[string]string{}
 	var resultGHT string
+	var infraProvider = descriptorFile.InfraProvider
+	var resultDockerRegistries = []map[string]interface{}{}
 
 	_, err := os.Stat("./secrets.yml")
 	if err != nil {
-		if descriptorFile.Credentials == (cluster.Credentials{}) {
-			return c, r, "", errors.Wrap(err, "Incorrect credentials in descriptor file")
+		dc, err := reflections.GetField(descriptorFile.Credentials, strings.ToUpper(infraProvider))
+		if err != nil {
+			return c, r, "", dr, err
 		}
-		m := structs.Map(descriptorFile.Credentials)
-		r := map[string]string{"User": descriptorFile.ExternalRegistry.User, "Pass": descriptorFile.ExternalRegistry.Pass, "Url": descriptorFile.ExternalRegistry.URL}
+		if reflect.DeepEqual(dc, reflect.Zero(reflect.TypeOf(dc)).Interface()) {
+			return c, r, "", dr, errors.New("No " + infraProvider + " credentials found in secrets file and descriptor file")
+		}
+		if descriptorFile.Credentials.GithubToken == "" {
+			return c, r, "", dr, errors.New("No GithubToken credentials found in secrets file and descriptor file")
+		}
+		for _, reg := range descriptorFile.DockerRegistries {
+			for _, regCreds := range descriptorFile.Credentials.DockerRegistries {
+				if reg.URL == regCreds.URL {
+					dockerReg := structs.Map(regCreds)
+					resultDockerRegistries = append(resultDockerRegistries, convertMapKeysToSnakeCase(dockerReg))
+					if reg.KeosRegistry {
+						r = map[string]string{"User": regCreds.User, "Pass": regCreds.Pass, "Url": regCreds.URL}
+					}
+				}
+			}
+		}
+
+		m := structs.Map(dc)
 		resultCreds = convertToMapStringString(m)
-		resultReg = r
-		resultGHT = descriptorFile.GithubToken
+		resultExternalReg = r
+		resultGHT = descriptorFile.Credentials.GithubToken
+
 	} else {
 		var secretFile SecretsFile
 		secretRaw, err := decryptFile("./secrets.yml", vaultPassword)
 		if err != nil {
-			return c, r, "", errors.New("The Vault password is incorrect")
+			return c, r, "", dr, errors.New("The Vault password is incorrect")
 		}
+
 		err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
+
 		if err != nil {
-			return c, r, "", err
+			return c, r, "", dr, err
 		}
+
 		f, err := reflections.GetField(secretFile.Secrets, strings.ToUpper(descriptorFile.InfraProvider))
 		if err != nil {
-			return c, r, "", err
+			return c, r, "", dr, err
 		}
+
 		if reflect.DeepEqual(f, reflect.Zero(reflect.TypeOf(f)).Interface()) {
-			if descriptorFile.Credentials == (cluster.Credentials{}) {
-				return c, r, "", errors.New("No " + descriptorFile.InfraProvider + " credentials found in secrets file and descriptor file")
+			dc, err := reflections.GetField(descriptorFile.Credentials, strings.ToUpper(infraProvider))
+			if err != nil {
+				return c, r, "", dr, err
 			}
-			resultCredsMap := structs.Map(descriptorFile.Credentials)
+			if reflect.DeepEqual(dc, reflect.Zero(reflect.TypeOf(dc)).Interface()) {
+				return c, r, "", dr, errors.New("No " + infraProvider + " credentials found in secrets file and descriptor file")
+			}
+			resultCredsMap := structs.Map(dc)
 			resultCreds = convertToMapStringString(resultCredsMap)
 
 		} else {
@@ -112,34 +153,45 @@ func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (ma
 			resultCreds = convertToMapStringString(m["Credentials"].(map[string]interface{}))
 		}
 		if secretFile.Secrets.GithubToken == "" {
-			if descriptorFile.GithubToken == "" {
-				return c, r, "", errors.New("No Github Token found in secrets file and descriptor file")
+			if descriptorFile.Credentials.GithubToken == "" {
+				return c, r, "", dr, errors.New("No Github Token found in secrets file and descriptor file")
 			}
 
-			resultGHT = descriptorFile.GithubToken
+			resultGHT = descriptorFile.Credentials.GithubToken
 		} else {
 			resultGHT = secretFile.Secrets.GithubToken
 		}
-		if secretFile.Secrets.ExternalRegistry == (ExternalRegistry{}) {
-			// TODO: Adaptar para que puedan ser multiples
-			if descriptorFile.ExternalRegistry != (cluster.ExternalRegistry{}) {
-				resultReg = map[string]string{"User": descriptorFile.ExternalRegistry.User, "Pass": descriptorFile.ExternalRegistry.Pass, "Url": descriptorFile.ExternalRegistry.URL}
-
+		if secretFile.Secrets.ExternalRegistry == (cluster.DockerRegistryCredentials{}) {
+			if len(descriptorFile.Credentials.DockerRegistries) > 0 &&
+				descriptorFile.Credentials.DockerRegistries[0] != (cluster.DockerRegistryCredentials{}) {
+				resultRegMap := structs.Map(descriptorFile.Credentials.DockerRegistries)
+				resultExternalReg = convertToMapStringString(resultRegMap)
 			}
 		} else {
-			resultReg = map[string]string{"User": secretFile.Secrets.ExternalRegistry.User, "Pass": secretFile.Secrets.ExternalRegistry.Pass, "Url": descriptorFile.ExternalRegistry.URL}
+			resultRegMap := structs.Map(secretFile.Secrets.ExternalRegistry)
+			resultExternalReg = convertToMapStringString(resultRegMap)
+		}
+
+		if len(secretFile.Secrets.DockerRegistries) == 0 {
+			if len(descriptorFile.DockerRegistries) > 0 {
+				for _, registry := range descriptorFile.DockerRegistries {
+					dockerReg := structs.Map(registry)
+					resultDockerRegistries = append(resultDockerRegistries, convertMapKeysToSnakeCase(dockerReg))
+				}
+			}
+		} else {
+			for _, registry := range secretFile.Secrets.DockerRegistries {
+				dockerReg := structs.Map(registry)
+				resultDockerRegistries = append(resultDockerRegistries, convertMapKeysToSnakeCase(dockerReg))
+			}
 		}
 	}
-	return resultCreds, resultReg, resultGHT, nil
+	return resultCreds, resultExternalReg, resultGHT, resultDockerRegistries, nil
 }
 
 func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword string) error {
 	edited := false
-	credentials, externalRegistry, github_token, err := getSecrets(descriptorFile, vaultPassword)
-	if err != nil {
-		return err
-	}
-	awsCredentials, gcpCredentials, secretExternalRegistry, err := fillCredentials(credentials, externalRegistry)
+	credentials, externalRegistry, github_token, dockerRegistries, err := getSecrets(descriptorFile, vaultPassword)
 	if err != nil {
 		return err
 	}
@@ -150,23 +202,25 @@ func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword stri
 		if github_token != "" {
 			secretMap["github_token"] = github_token
 		}
-		if len(gcpCredentials) > 0 {
-			secretMap["gcp"] = map[string]interface{}{
-				"credentials": gcpCredentials,
+		if len(credentials) > 0 {
+			creds := convertStringMapToInterfaceMap(credentials)
+			creds = convertMapKeysToSnakeCase(creds)
+			secretMap[descriptorFile.InfraProvider] = map[string]interface{}{
+				"credentials": creds,
 			}
 		}
-		if len(awsCredentials) > 0 {
-			secretMap["aws"] = map[string]interface{}{
-				"credentials": awsCredentials,
-			}
+
+		if len(externalRegistry) > 0 {
+			externalReg := convertStringMapToInterfaceMap(externalRegistry)
+			externalReg = convertMapKeysToSnakeCase(externalReg)
+			secretMap["external_registry"] = externalReg
 		}
-		if secretExternalRegistry["user"] != "" && secretExternalRegistry["pass"] != "" {
-			externalRegistryMap := map[string]interface{}{
-				"user": secretExternalRegistry["user"],
-				"pass": secretExternalRegistry["pass"],
-				"url":  externalRegistry["url"],
+
+		if len(dockerRegistries) > 0 {
+			for i, dockerReg := range dockerRegistries {
+				dockerRegistries[i] = convertMapKeysToSnakeCase(dockerReg)
 			}
-			secretMap["external_registry"] = externalRegistryMap
+			secretMap["docker_registries"] = dockerRegistries
 		}
 
 		secretFileMap := map[string]map[string]interface{}{
@@ -190,23 +244,30 @@ func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword stri
 		return err
 	}
 
-	if secretMap["secrets"]["aws"] == nil {
+	if secretMap["secrets"][descriptorFile.InfraProvider] == nil && len(credentials) > 0 {
 		edited = true
-		secretMap["secrets"]["aws"] = map[string]interface{}{
-			"credentials": awsCredentials}
+		creds := convertStringMapToInterfaceMap(credentials)
+		creds = convertMapKeysToSnakeCase(creds)
+		secretMap["secrets"][descriptorFile.InfraProvider] = map[string]interface{}{
+			"credentials": creds}
 	}
-	if secretMap["secrets"]["gcp"] == nil {
+
+	if secretMap["secrets"]["external_registry"] == nil && len(externalRegistry) > 0 {
 		edited = true
-		secretMap["secrets"]["gcp"] = map[string]interface{}{
-			"credentials": gcpCredentials}
+		externalReg := convertStringMapToInterfaceMap(externalRegistry)
+		externalReg = convertMapKeysToSnakeCase(externalReg)
+		secretMap["secrets"]["external_registry"] = externalReg
 	}
-	if secretMap["secrets"]["external_registry"] == nil {
-		edited = true
-		secretMap["secrets"]["external_registry"] = secretExternalRegistry
-	}
-	if secretMap["secrets"]["github_token"] == nil {
+	if secretMap["secrets"]["github_token"] == nil && github_token != "" {
 		edited = true
 		secretMap["secrets"]["github_token"] = github_token
+	}
+	if secretMap["secrets"]["docker_registries"] == nil && len(dockerRegistries) > 0 {
+		edited = true
+		for i, dockerReg := range dockerRegistries {
+			dockerRegistries[i] = convertMapKeysToSnakeCase(dockerReg)
+		}
+		secretMap["secrets"]["docker_registries"] = dockerRegistries
 	}
 	if edited {
 		err = encryptSecret(secretMap, vaultPassword)
@@ -218,37 +279,16 @@ func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword stri
 	return nil
 }
 
-func fillCredentials(credentials map[string]string, externalRegistry map[string]string) (map[string]string, map[string]string, map[string]string, error) {
-	awsCredentials := cluster.Credentials{}
-	awsCredentials.AccessKey = credentials["AccessKey"]
-	awsCredentials.SecretKey = credentials["SecretKey"]
-	awsCredentials.Region = credentials["Region"]
-	awsCredentials.Account = credentials["Account"]
-	awsMap, err := getMap(awsCredentials)
-	if err != nil {
-		return nil, nil, nil, err
+func convertMapToStruct(m map[string]interface{}, s interface{}) error {
+	stValue := reflect.ValueOf(s).Elem()
+	sType := stValue.Type()
+	for i := 0; i < sType.NumField(); i++ {
+		field := sType.Field(i)
+		if value, ok := m[field.Name]; ok {
+			stValue.Field(i).Set(reflect.ValueOf(value))
+		}
 	}
-	awsMap = cleanStruct(awsMap)
-
-	gcpCredentials := cluster.Credentials{}
-	gcpCredentials.ProjectID = credentials["ProjectID"]
-	gcpCredentials.PrivateKeyID = credentials["PrivateKeyID"]
-	gcpCredentials.PrivateKey = credentials["PrivateKey"]
-	gcpCredentials.ClientEmail = credentials["ClientEmail"]
-	gcpCredentials.ClientID = credentials["ClientID"]
-	gcpMap, err := getMap(gcpCredentials)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	gcpMap = cleanStruct(gcpMap)
-
-	secretExternalRegistry := ExternalRegistry{externalRegistry["User"], externalRegistry["Pass"]}
-	secretExternalRegistryMap, err := getMap(secretExternalRegistry)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	return awsMap, gcpMap, secretExternalRegistryMap, nil
+	return nil
 }
 
 func getMap(s interface{}) (map[string]string, error) {
@@ -261,6 +301,7 @@ func getMap(s interface{}) (map[string]string, error) {
 	return resultMap, nil
 
 }
+
 func cleanStruct(m map[string]string) map[string]string {
 	for k, v := range m {
 		if v == "" {
@@ -285,7 +326,6 @@ func rewriteDescriptorFile(descriptorPath string) error {
 	}
 
 	yamlNodes := removeKey(data.Content, "credentials")
-	yamlNodes = removeKey(yamlNodes, "github_token")
 
 	b, err := yaml.Marshal(yamlNodes[0])
 
@@ -392,4 +432,29 @@ func executeCommand(node nodes.Node, command string, envVars ...[]string) error 
 		return err
 	}
 	return nil
+}
+
+func snakeCase(s string) string {
+	var result []rune
+	for i, c := range s {
+		if unicode.IsUpper(c) {
+			if i > 0 && !unicode.IsUpper(rune(s[i-1])) {
+				result = append(result, '_')
+			}
+			result = append(result, unicode.ToLower(c))
+		} else {
+			result = append(result, c)
+		}
+	}
+	return string(result)
+}
+
+func convertMapKeysToSnakeCase(m map[string]interface{}) map[string]interface{} {
+
+	newMap := make(map[string]interface{})
+	for k, v := range m {
+		newKey := snakeCase(k)
+		newMap[newKey] = v
+	}
+	return newMap
 }
