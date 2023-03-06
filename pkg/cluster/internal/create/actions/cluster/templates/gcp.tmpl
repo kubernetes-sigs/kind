@@ -137,13 +137,7 @@ metadata:
   namespace: "cluster-{{ $.Descriptor.ClusterID }}"
 spec:
   clusterName: "{{ $.Descriptor.ClusterID }}"
-  {{- if  gt $n.QA $n.MaxSize }} 
-  replicas: {{ $n.MaxSize }}
-  {{- else if lt $n.QA $n.MinSize}}
-  replicas: {{ $n.MinSize }}
-  {{- else }}
   replicas: {{ $n.QA }}
-  {{- end }}
   selector:
     matchLabels:
   template:
