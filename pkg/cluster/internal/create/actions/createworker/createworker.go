@@ -117,15 +117,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	infra := newInfra(providerBuilder)
 	provider := infra.buildProvider(providerParams)
 
-	if descriptorFile.InfraProvider == "aws" {
-		ctx.Status.Start("[CAPA] Ensuring IAM security 👮")
-		defer ctx.Status.End(false)
-
-		createCloudFormationStack(node, provider.capxEnvVars)
-
-		ctx.Status.End(true) // End Ensuring CAPx requirements
-	}
-
 	ctx.Status.Start("Installing CAPx 🎖️")
 	defer ctx.Status.End(false)
 
@@ -215,6 +206,14 @@ spec:
 	}
 
 	if !a.avoidCreation {
+
+		if descriptorFile.InfraProvider == "aws" {
+			ctx.Status.Start("[CAPA] Ensuring IAM security 👮")
+			defer ctx.Status.End(false)
+
+			createCloudFormationStack(node, provider.capxEnvVars)
+			ctx.Status.End(true) // End Ensuring CAPx requirements
+		}
 
 		ctx.Status.Start("Creating the workload cluster 💥")
 		defer ctx.Status.End(false)
