@@ -1,0 +1,61 @@
+imagePullSecrets: {}
+
+installation:
+  enabled: true
+  kubernetesProvider: ""
+  registry: docker.io
+  calicoNetwork:
+    bgp: Enabled
+    ipPools:
+      - cidr: "192.168.0.0/16"
+        encapsulation: IPIP
+        blockSize: 25
+  cni:
+    type: Calico
+    ipam:
+      type: Calico
+  nodeMetricsPort: 9191
+  typhaMetricsPort: 9093
+
+apiServer:
+  enabled: false
+
+certs:
+  node:
+    key:
+    cert:
+    commonName:
+  typha:
+    key:
+    cert:
+    commonName:
+    caBundle:
+
+# Resource requests and limits for the tigera/operator pod.
+resources: {}
+
+# Tolerations for the tigera/operator pod.
+tolerations:
+- effect: NoExecute
+  operator: Exists
+- effect: NoSchedule
+  operator: Exists
+
+# NodeSelector for the tigera/operator pod.
+nodeSelector:
+  kubernetes.io/os: linux
+
+# Custom annotations for the tigera/operator pod.
+podAnnotations: {}
+
+# Custom labels for the tigera/operator pod.
+podLabels: {}
+
+# Image and registry configuration for the tigera/operator pod.
+tigeraOperator:
+  image: tigera/operator
+  version: v1.25.9
+  registry: quay.io
+calicoctl:
+  image: docker.io/calico/ctl
+  tag: v3.22.3
