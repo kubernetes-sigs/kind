@@ -62,9 +62,9 @@ type DescriptorFile struct {
 		HostedZones bool `yaml:"hosted_zones" validate:"boolean"`
 	} `yaml:"dns"`
 
-	ExternalDomain string `yaml:"external_domain" validate:"omitempty,hostname"`
+	DockerRegistries []DockerRegistry `yaml:"docker_registries" validate:"dive"`
 
-	ExternalRegistry ExternalRegistry `yaml:"external_registry"`
+	ExternalDomain string `yaml:"external_domain" validate:"omitempty,hostname"`
 
 	Keos struct {
 		Domain  string `yaml:"domain" validate:"required,hostname"`
