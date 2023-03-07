@@ -17,19 +17,13 @@ limitations under the License.
 package commons
 
 import (
-	"bytes"
-	"embed"
 	"errors"
 	"os"
-	"text/template"
 
 	"github.com/go-playground/validator/v10"
 	vault "github.com/sosedoff/ansible-vault-go"
 	"gopkg.in/yaml.v3"
 )
-
-//go:embed templates/*
-var ctel embed.FS
 
 // DescriptorFile represents the YAML structure in the descriptor file
 type DescriptorFile struct {
@@ -121,13 +115,6 @@ type Bastion struct {
 	AmiID             string   `yaml:"ami_id"`
 	VMSize            string   `yaml:"vm_size"`
 	AllowedCIDRBlocks []string `yaml:"allowedCIDRBlocks"`
-}
-
-type Node struct {
-	AZ      string
-	QA      int
-	MaxSize int
-	MinSize int
 }
 
 type Credentials struct {
@@ -231,49 +218,6 @@ func GetClusterDescriptor(descriptorName string) (*DescriptorFile, error) {
 		return nil, err
 	}
 	return &descriptorFile, nil
-}
-
-func GetClusterManifest(flavor string, params TemplateParams) (string, error) {
-
-	funcMap := template.FuncMap{
-		"loop": func(az string, qa int, maxsize int, minsize int) <-chan Node {
-			ch := make(chan Node)
-			go func() {
-				var azs []string
-				var q int
-				var mx int
-				var mn int
-				if az != "" {
-					azs = []string{az}
-					q = qa
-					mx = maxsize
-					mn = minsize
-				} else {
-					azs = []string{"a", "b", "c"}
-					q = qa / 3
-					mx = maxsize / 3
-					mn = minsize / 3
-				}
-				for _, a := range azs {
-					ch <- Node{AZ: a, QA: q, MaxSize: mx, MinSize: mn}
-				}
-				close(ch)
-			}()
-			return ch
-		},
-	}
-
-	var tpl bytes.Buffer
-	t, err := template.New("").Funcs(funcMap).ParseFS(ctel, "templates/"+flavor)
-	if err != nil {
-		return "", err
-	}
-
-	err = t.ExecuteTemplate(&tpl, flavor, params)
-	if err != nil {
-		return "", err
-	}
-	return tpl.String(), nil
 }
 
 func DecryptFile(filePath string, vaultPassword string) (string, error) {

@@ -114,7 +114,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// Generate the cluster manifest
-	descriptorData, err := commons.GetClusterManifest(provider.capxTemplate, templateParams)
+	descriptorData, err := getClusterManifest(provider.capxTemplate, templateParams)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate cluster manifests")
 	}
