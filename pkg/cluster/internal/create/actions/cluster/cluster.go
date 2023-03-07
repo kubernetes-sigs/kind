@@ -57,7 +57,7 @@ type DescriptorFile struct {
 		} `yaml:"subnets"`
 	} `yaml:"networks"`
 
-	DockerRegistries []DockerRegistry `yaml:"docker_registries"`
+	DockerRegistries []DockerRegistry `yaml:"docker_registries" validate:"dive"`
 
 	Keos struct {
 		Domain         string `yaml:"domain" validate:"required,hostname"`
@@ -81,7 +81,7 @@ type DescriptorFile struct {
 		AWS AWS `yaml:"aws"`
 	} `yaml:"control_plane"`
 
-	WorkerNodes WorkerNodes `yaml:"worker_nodes"`
+	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
 }
 
 type AWS struct {
@@ -98,15 +98,15 @@ type AWS struct {
 type WorkerNodes []struct {
 	Name             string `yaml:"name" validate:"required"`
 	AmiID            string `yaml:"ami_id"`
-	Quantity         int    `yaml:"quantity" validate:"required,numeric"`
+	Quantity         int    `yaml:"quantity" validate:"required,numeric,gt=0"`
 	Size             string `yaml:"size" validate:"required"`
 	Image            string `yaml:"image" validate:"required_if=InfraProvider gcp"`
-	ZoneDistribution string `yaml:"zone_distribution" validate:"oneof='balanced' 'unbalanced'"`
+	ZoneDistribution string `yaml:"zone_distribution" validate:"omitempty,oneof='balanced' 'unbalanced'"`
 	AZ               string `yaml:"az"`
 	SSHKey           string `yaml:"ssh_key"`
-	Spot             bool   `yaml:"spot" validate:"boolean"`
-	NodeGroupMaxSize int    `yaml:"max_size"`
-	NodeGroupMinSize int    `yaml:"min_size"`
+	Spot             bool   `yaml:"spot" validate:"omitempty,boolean"`
+	NodeGroupMaxSize int    `yaml:"max_size" validate:"required,numeric,gtefield=Quantity,gt=0"`
+	NodeGroupMinSize int    `yaml:"min_size" validate:"required,numeric,ltefield=Quantity,gt=0"`
 	RootVolume       struct {
 		Size      int    `yaml:"size" validate:"numeric"`
 		Type      string `yaml:"type"`
