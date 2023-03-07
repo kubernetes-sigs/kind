@@ -66,9 +66,13 @@ func createKEOSDescriptor(descriptorFile cluster.DescriptorFile, storageClass st
 	var err error
 
 	// External registry
-	keosDescriptor.ExternalRegistry.URL = descriptorFile.ExternalRegistry.URL
-	keosDescriptor.ExternalRegistry.AuthRequired = descriptorFile.ExternalRegistry.AuthRequired
-	keosDescriptor.ExternalRegistry.Type = descriptorFile.ExternalRegistry.Type
+	for _, registry := range descriptorFile.DockerRegistries {
+		if registry.KeosRegistry {
+			keosDescriptor.ExternalRegistry.URL = registry.URL
+			keosDescriptor.ExternalRegistry.AuthRequired = registry.AuthRequired
+			keosDescriptor.ExternalRegistry.Type = registry.Type
+		}
+	}
 
 	// AWS
 	if descriptorFile.InfraProvider == "aws" {

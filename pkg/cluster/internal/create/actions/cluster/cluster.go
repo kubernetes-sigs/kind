@@ -39,7 +39,6 @@ type DescriptorFile struct {
 	Bastion Bastion `yaml:"bastion"`
 
 	Credentials Credentials `yaml:"credentials"`
-	GithubToken string      `yaml:"github_token"`
 
 	InfraProvider string `yaml:"infra_provider" validate:"required,oneof='aws' 'gcp' 'azure'"`
 
@@ -87,7 +86,7 @@ type DescriptorFile struct {
 		AWS AWS `yaml:"aws"`
 	} `yaml:"control_plane"`
 
-	WorkerNodes WorkerNodes `yaml:"worker_nodes"`
+	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
 }
 
 type AWS struct {
@@ -104,15 +103,15 @@ type AWS struct {
 type WorkerNodes []struct {
 	Name             string `yaml:"name" validate:"required"`
 	AmiID            string `yaml:"ami_id"`
-	Quantity         int    `yaml:"quantity" validate:"required,numeric"`
+	Quantity         int    `yaml:"quantity" validate:"required,numeric,gt=0"`
 	Size             string `yaml:"size" validate:"required"`
 	Image            string `yaml:"image" validate:"required_if=InfraProvider gcp"`
-	ZoneDistribution string `yaml:"zone_distribution" validate:"oneof='balanced' 'unbalanced'"`
+	ZoneDistribution string `yaml:"zone_distribution" validate:"omitempty,oneof='balanced' 'unbalanced'"`
 	AZ               string `yaml:"az"`
 	SSHKey           string `yaml:"ssh_key"`
-	Spot             bool   `yaml:"spot" validate:"boolean"`
-	NodeGroupMaxSize int    `yaml:"max_size"`
-	NodeGroupMinSize int    `yaml:"min_size"`
+	Spot             bool   `yaml:"spot" validate:"omitempty,boolean"`
+	NodeGroupMaxSize int    `yaml:"max_size" validate:"required,numeric,gtefield=Quantity,gt=0"`
+	NodeGroupMinSize int    `yaml:"min_size" validate:"required,numeric,ltefield=Quantity,gt=0"`
 	RootVolume       struct {
 		Size      int    `yaml:"size" validate:"numeric"`
 		Type      string `yaml:"type"`
@@ -135,13 +134,20 @@ type Node struct {
 }
 
 type Credentials struct {
-	// AWS
+	AWS              AWSCredentials              `yaml:"aws"`
+	GCP              GCPCredentials              `yaml:"gcp"`
+	GithubToken      string                      `yaml:"github_token"`
+	DockerRegistries []DockerRegistryCredentials `yaml:"docker_registries"`
+}
+
+type AWSCredentials struct {
 	AccessKey string `yaml:"access_key"`
 	SecretKey string `yaml:"secret_key"`
 	Region    string `yaml:"region"`
 	Account   string `yaml:"account"`
+}
 
-	// GCP
+type GCPCredentials struct {
 	ProjectID    string `yaml:"project_id"`
 	PrivateKeyID string `yaml:"private_key_id"`
 	PrivateKey   string `yaml:"private_key"`
@@ -149,12 +155,17 @@ type Credentials struct {
 	ClientID     string `yaml:"client_id"`
 }
 
-type ExternalRegistry struct {
+type DockerRegistryCredentials struct {
+	URL  string `yaml:"url"`
+	User string `yaml:"user"`
+	Pass string `yaml:"pass"`
+}
+
+type DockerRegistry struct {
 	AuthRequired bool   `yaml:"auth_required" validate:"boolean"`
 	Type         string `yaml:"type"`
 	URL          string `yaml:"url" validate:"required"`
-	User         string `yaml:"user"`
-	Pass         string `yaml:"pass"`
+	KeosRegistry bool   `yaml:"keos_registry" validate:"boolean"`
 }
 
 type TemplateParams struct {
@@ -186,8 +197,8 @@ func (d DescriptorFile) Init() DescriptorFile {
 }
 
 // Read descriptor file
-func GetClusterDescriptor(descriptorName string) (*DescriptorFile, error) {
-	descriptorRAW, err := os.ReadFile("./" + descriptorName)
+func GetClusterDescriptor(descriptorPath string) (*DescriptorFile, error) {
+	descriptorRAW, err := os.ReadFile(descriptorPath)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +207,6 @@ func GetClusterDescriptor(descriptorName string) (*DescriptorFile, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	validate := validator.New()
 	err = validate.Struct(descriptorFile)
 	if err != nil {
