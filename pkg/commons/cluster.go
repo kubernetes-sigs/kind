@@ -34,7 +34,7 @@ type DescriptorFile struct {
 
 	Bastion Bastion `yaml:"bastion"`
 
-	Credentials Credentials `yaml:"credentials"`
+	Credentials Credentials `yaml:"credentials" validate:"dive"`
 
 	InfraProvider string `yaml:"infra_provider" validate:"required,oneof='aws' 'gcp' 'azure'"`
 
