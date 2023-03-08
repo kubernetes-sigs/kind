@@ -106,8 +106,8 @@ type WorkerNodes []struct {
 	AZ               string `yaml:"az"`
 	SSHKey           string `yaml:"ssh_key"`
 	Spot             bool   `yaml:"spot" validate:"omitempty,boolean"`
-	NodeGroupMaxSize int    `yaml:"max_size" validate:"omitempty,numeric,required_with=NodeGroupMinSize,gtefield=Quantity,gt=0"`
-	NodeGroupMinSize int    `yaml:"min_size" validate:"omitempty,numeric,required_with=NodeGroupMaxSize,ltefield=Quantity,gt=0"`
+	NodeGroupMaxSize int    `yaml:"max_size" validate:"omitempty,numeric,required_if=DeployAutoscaler true,required_with=NodeGroupMinSize,gtefield=Quantity,gt=0"`
+	NodeGroupMinSize int    `yaml:"min_size" validate:"omitempty,numeric,required_if=DeployAutoscaler true,required_with=NodeGroupMaxSize,ltefield=Quantity,gt=0"`
 	RootVolume       struct {
 		Size      int    `yaml:"size" validate:"numeric"`
 		Type      string `yaml:"type"`
