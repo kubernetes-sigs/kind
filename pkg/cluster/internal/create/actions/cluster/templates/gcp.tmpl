@@ -88,7 +88,8 @@ spec:
               [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors]
                 [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]
                   endpoint = [\"https://registry-1.docker.io\"]
-              [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ .ExternalRegistry.Url }}\".auth]
+              {{- $url := hostname .ExternalRegistry.Url }}
+              [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ $url }}\".auth]
                 password = \"{{ .ExternalRegistry.Pass }}\"
                 username = \"{{ .ExternalRegistry.User }}\"
         path: /etc/containerd/config.toml
@@ -196,7 +197,8 @@ spec:
                 [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors]
                   [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]
                     endpoint = [\"https://registry-1.docker.io\"]
-                [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ $.ExternalRegistry.Url }}\".auth]
+                {{- $url := hostname $.ExternalRegistry.Url }}
+                [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ $url }}\".auth]
                   password = \"{{ $.ExternalRegistry.Pass }}\"
                   username = \"{{ $.ExternalRegistry.User }}\"
           path: /etc/containerd/config.toml
