@@ -48,10 +48,10 @@ type DescriptorFile struct {
 		Subnets []struct {
 			AvailabilityZone string `yaml:"availability_zone"`
 			Name             string `yaml:"name"`
-			PrivateCIDR      string `yaml:"private_cidr"`
-			PublicCIDR       string `yaml:"public_cidr"`
-		} `yaml:"subnets"`
-	} `yaml:"networks"`
+			PrivateCIDR      string `yaml:"private_cidr" validate:"cidrv4"`
+			PublicCIDR       string `yaml:"public_cidr" validate:"cidrv4"`
+		} `yaml:"subnets" validate:"dive"`
+	} `yaml:"networks" validate:"dive"`
 
 	Dns struct {
 		HostedZones bool `yaml:"hosted_zones" validate:"boolean"`
