@@ -23,6 +23,10 @@ func commonsDescriptorValidation(descriptor commons.DescriptorFile) error {
 	if err != nil {
 		return err
 	}
+	err = validateSingleRegistry(descriptor.DockerRegistries)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -117,6 +121,17 @@ func validateSingleCredentialsRegistry(dockerRegistries []commons.DockerRegistry
 		for _, c2 := range dockerRegistries {
 			if c1.URL == c2.URL {
 				return errors.New("There is more than one credential for the registry: " + c1.URL + ", in file: " + fileName)
+			}
+		}
+	}
+	return nil
+}
+
+func validateSingleRegistry(dockerRegistries []commons.DockerRegistry) error {
+	for _, c1 := range dockerRegistries {
+		for _, c2 := range dockerRegistries {
+			if c1.URL == c2.URL {
+				return errors.New("There is more than one docker_registry with url: " + c1.URL)
 			}
 		}
 	}
