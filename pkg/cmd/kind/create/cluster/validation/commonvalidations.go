@@ -19,11 +19,11 @@ func commonsDescriptorValidation(descriptor commons.DescriptorFile) error {
 	if err != nil {
 		return err
 	}
-	err = validateSingleCredentialsRegistry(descriptor.Credentials.DockerRegistries, "descriptor")
+	err = validateUniqueCredentialsRegistry(descriptor.Credentials.DockerRegistries, "descriptor")
 	if err != nil {
 		return err
 	}
-	err = validateSingleRegistry(descriptor.DockerRegistries)
+	err = validateUniqueRegistry(descriptor.DockerRegistries)
 	if err != nil {
 		return err
 	}
@@ -43,7 +43,7 @@ func commonsValidations(descriptor commons.DescriptorFile, secrets commons.Secre
 }
 
 func commonsSecretsValidations(secrets commons.SecretsFile) error {
-	err := validateSingleCredentialsRegistry(secrets.Secrets.DockerRegistries, "secrets")
+	err := validateUniqueCredentialsRegistry(secrets.Secrets.DockerRegistries, "secrets")
 	if err != nil {
 		return err
 	}
@@ -116,7 +116,7 @@ func ifBalancedQuantityValidations(workerNodes commons.WorkerNodes) error {
 	return nil
 }
 
-func validateSingleCredentialsRegistry(dockerRegistries []commons.DockerRegistryCredentials, fileName string) error {
+func validateUniqueCredentialsRegistry(dockerRegistries []commons.DockerRegistryCredentials, fileName string) error {
 	for _, c1 := range dockerRegistries {
 		for _, c2 := range dockerRegistries {
 			if c1.URL == c2.URL {
@@ -127,7 +127,7 @@ func validateSingleCredentialsRegistry(dockerRegistries []commons.DockerRegistry
 	return nil
 }
 
-func validateSingleRegistry(dockerRegistries []commons.DockerRegistry) error {
+func validateUniqueRegistry(dockerRegistries []commons.DockerRegistry) error {
 	for _, c1 := range dockerRegistries {
 		for _, c2 := range dockerRegistries {
 			if c1.URL == c2.URL {
