@@ -126,13 +126,11 @@ spec:
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
+{{- if and (gt $node.NodeGroupMaxSize 0) (gt $node.NodeGroupMinSize 0) }}
   annotations:
-  {{- if $node.NodeGroupMaxSize }}
     cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: '{{ $n.MaxSize }}'
-  {{- end }}
-  {{- if $node.NodeGroupMinSize }}
     cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: '{{ $n.MinSize }}'
-  {{- end }}
+{{- end }}
   name: "{{ $node.Name }}-md-{{ $index }}"
   namespace: "cluster-{{ $.Descriptor.ClusterID }}"
 spec:
