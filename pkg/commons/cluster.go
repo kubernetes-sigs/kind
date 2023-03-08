@@ -34,7 +34,7 @@ type DescriptorFile struct {
 
 	Bastion Bastion `yaml:"bastion"`
 
-	Credentials Credentials `yaml:"credentials" validate:"dive"`
+	Credentials Credentials `yaml:"credentials" validate:"omitempty,dive"`
 
 	InfraProvider string `yaml:"infra_provider" validate:"required,oneof='aws' 'gcp' 'azure'"`
 
@@ -48,10 +48,10 @@ type DescriptorFile struct {
 		Subnets []struct {
 			AvailabilityZone string `yaml:"availability_zone"`
 			Name             string `yaml:"name"`
-			PrivateCIDR      string `yaml:"private_cidr" validate:"cidrv4"`
-			PublicCIDR       string `yaml:"public_cidr" validate:"cidrv4"`
-		} `yaml:"subnets" validate:"dive"`
-	} `yaml:"networks" validate:"dive"`
+			PrivateCIDR      string `yaml:"private_cidr" validate:"omitempty,cidrv4"`
+			PublicCIDR       string `yaml:"public_cidr" validate:"omitempty,cidrv4"`
+		} `yaml:"subnets" validate:"omitempty,dive"`
+	} `yaml:"networks" validate:"omitempty,dive"`
 
 	Dns struct {
 		HostedZones bool `yaml:"hosted_zones" validate:"boolean"`
@@ -154,7 +154,7 @@ type DockerRegistry struct {
 	AuthRequired bool   `yaml:"auth_required" validate:"boolean"`
 	Type         string `yaml:"type"`
 	URL          string `yaml:"url" validate:"required"`
-	KeosRegistry bool   `yaml:"keos_registry" validate:"boolean"`
+	KeosRegistry bool   `yaml:"keos_registry" validate:"omitempty,boolean"`
 }
 
 type TemplateParams struct {
