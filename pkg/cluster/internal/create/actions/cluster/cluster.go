@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"embed"
 	"os"
+	"strings"
 	"text/template"
 
 	"github.com/go-playground/validator/v10"
@@ -242,6 +243,9 @@ func GetClusterManifest(flavor string, params TemplateParams) (string, error) {
 				close(ch)
 			}()
 			return ch
+		},
+		"hostname": func(s string) string {
+			return strings.Split(s, "/")[0]
 		},
 	}
 
