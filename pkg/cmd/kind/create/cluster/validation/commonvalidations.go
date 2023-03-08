@@ -19,6 +19,10 @@ func commonsDescriptorValidation(descriptor commons.DescriptorFile) error {
 	if err != nil {
 		return err
 	}
+	err = validateSingleCredentialsRegistry(descriptor.Credentials.DockerRegistries, "descriptor")
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -28,6 +32,14 @@ func commonsValidations(descriptor commons.DescriptorFile, secrets commons.Secre
 		return err
 	}
 	err = validateRegistryCredentials(descriptor, secrets)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func commonsSecretsValidations(secrets commons.SecretsFile) error {
+	err := validateSingleCredentialsRegistry(secrets.Secrets.DockerRegistries, "secrets")
 	if err != nil {
 		return err
 	}
@@ -99,3 +111,16 @@ func ifBalancedQuantityValidations(workerNodes commons.WorkerNodes) error {
 	}
 	return nil
 }
+
+func validateSingleCredentialsRegistry(dockerRegistries []commons.DockerRegistryCredentials, fileName string) error {
+	for _, c1 := range dockerRegistries {
+		for _, c2 := range dockerRegistries {
+			if c1.URL == c2.URL {
+				return errors.New("There is more than one credential for the registry: " + c1.URL + ", in file: " + fileName)
+			}
+		}
+	}
+	return nil
+}
+
+//az de subnets vs az workers

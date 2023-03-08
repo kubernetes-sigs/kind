@@ -62,6 +62,9 @@ func descriptorEksValidations(descriptorFile commons.DescriptorFile) error {
 }
 
 func secretsEksValidations(secretsFile commons.SecretsFile) error {
-
+	err := commonsSecretsValidations(secretsFile)
+	if err != nil {
+		return err
+	}
 	return nil
 }

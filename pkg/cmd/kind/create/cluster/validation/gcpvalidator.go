@@ -62,6 +62,9 @@ func descriptorGcpValidations(descriptorFile commons.DescriptorFile) error {
 }
 
 func secretsGcpValidations(secretsFile commons.SecretsFile) error {
-
+	err := commonsSecretsValidations(secretsFile)
+	if err != nil {
+		return err
+	}
 	return nil
 }
