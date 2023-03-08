@@ -206,5 +206,6 @@ spec:
           name: {{`'{{ ds.meta_data.local_hostname.split(\".\")[0] }}'`}}
           kubeletExtraArgs:
             cloud-provider: gce
+            node-labels: \"{{ if $node.Labels }}{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}{{- end }}\"
 {{- end }}
 {{- end }}

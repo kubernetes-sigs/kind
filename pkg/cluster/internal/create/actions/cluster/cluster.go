@@ -96,17 +96,18 @@ type AWS struct {
 }
 
 type WorkerNodes []struct {
-	Name             string `yaml:"name" validate:"required"`
-	AmiID            string `yaml:"ami_id"`
-	Quantity         int    `yaml:"quantity" validate:"required,numeric"`
-	Size             string `yaml:"size" validate:"required"`
-	Image            string `yaml:"image" validate:"required_if=InfraProvider gcp"`
-	ZoneDistribution string `yaml:"zone_distribution" validate:"oneof='balanced' 'unbalanced'"`
-	AZ               string `yaml:"az"`
-	SSHKey           string `yaml:"ssh_key"`
-	Spot             bool   `yaml:"spot" validate:"boolean"`
-	NodeGroupMaxSize int    `yaml:"max_size"`
-	NodeGroupMinSize int    `yaml:"min_size"`
+	Name             string            `yaml:"name" validate:"required"`
+	AmiID            string            `yaml:"ami_id"`
+	Quantity         int               `yaml:"quantity" validate:"required,numeric"`
+	Size             string            `yaml:"size" validate:"required"`
+	Image            string            `yaml:"image" validate:"required_if=InfraProvider gcp"`
+	ZoneDistribution string            `yaml:"zone_distribution" validate:"oneof='balanced' 'unbalanced'"`
+	AZ               string            `yaml:"az"`
+	SSHKey           string            `yaml:"ssh_key"`
+	Spot             bool              `yaml:"spot" validate:"boolean"`
+	Labels           map[string]string `yaml:"labels"`
+	NodeGroupMaxSize int               `yaml:"max_size"`
+	NodeGroupMinSize int               `yaml:"min_size"`
 	RootVolume       struct {
 		Size      int    `yaml:"size" validate:"numeric"`
 		Type      string `yaml:"type"`
