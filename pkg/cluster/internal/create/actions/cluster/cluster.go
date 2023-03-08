@@ -57,13 +57,18 @@ type DescriptorFile struct {
 		} `yaml:"subnets"`
 	} `yaml:"networks"`
 
-	DockerRegistries []DockerRegistry `yaml:"docker_registries"`
+	Dns struct {
+		HostedZones bool `yaml:"hosted_zones" validate:"boolean"`
+	} `yaml:"dns"`
+
+	DockerRegistries []DockerRegistry `yaml:"docker_registries" validate:"dive"`
+
+	ExternalDomain string `yaml:"external_domain" validate:"omitempty,hostname"`
 
 	Keos struct {
-		Domain         string `yaml:"domain" validate:"required,hostname"`
-		ExternalDomain string `yaml:"external_domain" validate:"required,hostname"`
-		Flavour        string `yaml:"flavour"`
-		Version        string `yaml:"version"`
+		Domain  string `yaml:"domain" validate:"required,hostname"`
+		Flavour string `yaml:"flavour"`
+		Version string `yaml:"version"`
 	} `yaml:"keos"`
 
 	ControlPlane struct {
@@ -81,7 +86,7 @@ type DescriptorFile struct {
 		AWS AWS `yaml:"aws"`
 	} `yaml:"control_plane"`
 
-	WorkerNodes WorkerNodes `yaml:"worker_nodes"`
+	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
 }
 
 type AWS struct {
@@ -98,16 +103,16 @@ type AWS struct {
 type WorkerNodes []struct {
 	Name             string            `yaml:"name" validate:"required"`
 	AmiID            string            `yaml:"ami_id"`
-	Quantity         int               `yaml:"quantity" validate:"required,numeric"`
+	Quantity         int               `yaml:"quantity" validate:"required,numeric,gt=0"`
 	Size             string            `yaml:"size" validate:"required"`
 	Image            string            `yaml:"image" validate:"required_if=InfraProvider gcp"`
-	ZoneDistribution string            `yaml:"zone_distribution" validate:"oneof='balanced' 'unbalanced'"`
+	ZoneDistribution string            `yaml:"zone_distribution" validate:"omitempty,oneof='balanced' 'unbalanced'"`
 	AZ               string            `yaml:"az"`
 	SSHKey           string            `yaml:"ssh_key"`
-	Spot             bool              `yaml:"spot" validate:"boolean"`
+	Spot             bool              `yaml:"spot" validate:"omitempty,boolean"`
 	Labels           map[string]string `yaml:"labels"`
-	NodeGroupMaxSize int               `yaml:"max_size"`
-	NodeGroupMinSize int               `yaml:"min_size"`
+	NodeGroupMaxSize int               `yaml:"max_size" validate:"required,numeric,gtefield=Quantity,gt=0"`
+	NodeGroupMinSize int               `yaml:"min_size" validate:"required,numeric,ltefield=Quantity,gt=0"`
 	RootVolume       struct {
 		Size      int    `yaml:"size" validate:"numeric"`
 		Type      string `yaml:"type"`
@@ -185,6 +190,9 @@ func (d DescriptorFile) Init() DescriptorFile {
 	d.ControlPlane.AWS.Logging.Authenticator = false
 	d.ControlPlane.AWS.Logging.ControllerManager = false
 	d.ControlPlane.AWS.Logging.Scheduler = false
+
+	// Hosted zones
+	d.Dns.HostedZones = true
 
 	return d
 }
