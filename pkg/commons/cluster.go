@@ -106,8 +106,8 @@ type WorkerNodes []struct {
 	AZ               string `yaml:"az"`
 	SSHKey           string `yaml:"ssh_key"`
 	Spot             bool   `yaml:"spot" validate:"omitempty,boolean"`
-	NodeGroupMaxSize int    `yaml:"max_size" validate:"required,numeric,gtefield=Quantity,gt=0"`
-	NodeGroupMinSize int    `yaml:"min_size" validate:"required,numeric,ltefield=Quantity,gt=0"`
+	NodeGroupMaxSize int    `yaml:"max_size" validate:"omitempty,numeric,required_with=NodeGroupMinSize,gtefield=Quantity,gt=0"`
+	NodeGroupMinSize int    `yaml:"min_size" validate:"omitempty,numeric,required_with=NodeGroupMaxSize,ltefield=Quantity,gt=0"`
 	RootVolume       struct {
 		Size      int    `yaml:"size" validate:"numeric"`
 		Type      string `yaml:"type"`
@@ -123,8 +123,8 @@ type Bastion struct {
 }
 
 type Credentials struct {
-	AWS              AWSCredentials              `yaml:"aws"`
-	GCP              GCPCredentials              `yaml:"gcp"`
+	AWS              AWSCredentials              `yaml:"aws" validate:"excluded_with=GCP"`
+	GCP              GCPCredentials              `yaml:"gcp" validate:"excluded_with=AWS"`
 	GithubToken      string                      `yaml:"github_token"`
 	DockerRegistries []DockerRegistryCredentials `yaml:"docker_registries"`
 }
@@ -230,6 +230,7 @@ func GetClusterDescriptor(descriptorName string) (*DescriptorFile, error) {
 
 func DecryptFile(filePath string, vaultPassword string) (string, error) {
 	data, err := vault.DecryptFile(filePath, vaultPassword)
+
 	if err != nil {
 		return "", err
 	}

@@ -2,25 +2,20 @@ package validation
 
 import (
 	"errors"
-	"strconv"
+	"reflect"
+	"strings"
 
+	"github.com/oleiade/reflections"
 	"sigs.k8s.io/kind/pkg/commons"
 )
 
 func commonsDescriptorValidation(descriptor commons.DescriptorFile) error {
-	err := validateK8sVersion(descriptor.K8SVersion)
+
+	err := ifBalancedQuantityValidations(descriptor.WorkerNodes)
 	if err != nil {
 		return err
 	}
-	err = validateMaxSizeIsGtMinSize(descriptor.WorkerNodes)
-	if err != nil {
-		return err
-	}
-	err = ifBalancedQuantityValidations(descriptor.WorkerNodes)
-	if err != nil {
-		return err
-	}
-	err = singleKeosInstaller()
+	err = singleKeosInstaller(descriptor)
 	if err != nil {
 		return err
 	}
@@ -39,28 +34,32 @@ func commonsValidations(descriptor commons.DescriptorFile, secrets commons.Secre
 	return nil
 }
 
-func validateK8sVersion(k8sVersion string) error {
-	return nil
-	//eksctl version -o json | jq -r '.EKSServerSupportedVersions[]'
-}
-
-func singleKeosInstaller() error {
-	// Cuando se merge refactor credentials. Solo un registry con keos_installer
-	// count := 0
-	// for _, dr := range dockerRegistries {
-	//     if dr.KeosRegistry {
-	//         count++
-	//         if count > 1 {
-	//             return errors.New("There is more than 1 docker_registry defined as keos_registry")
-	//         }
-	//     }
-	// }
-	// return nil
+func singleKeosInstaller(descriptor commons.DescriptorFile) error {
+	// Solo un registry con keos_installer
+	count := 0
+	for _, dr := range descriptor.DockerRegistries {
+		if dr.KeosRegistry {
+			count++
+			if count > 1 {
+				return errors.New("There is more than 1 docker_registry defined as keos_registry")
+			}
+		}
+	}
 	return nil
 }
 
 func validateExistsCredentials(descriptor commons.DescriptorFile, secrets commons.SecretsFile) error {
 	//Existen credenciales en el secrets o descriptor
+	infraProvider := descriptor.InfraProvider
+	credentialsProvider, err := reflections.GetField(secrets.Secrets, strings.ToUpper(infraProvider))
+	if err != nil || reflect.DeepEqual(credentialsProvider, reflect.Zero(reflect.TypeOf(credentialsProvider)).Interface()) {
+		credentialsProvider, err = reflections.GetField(descriptor.Credentials, strings.ToUpper(infraProvider))
+		if err != nil || reflect.DeepEqual(credentialsProvider, reflect.Zero(reflect.TypeOf(credentialsProvider)).Interface()) {
+			return errors.New("There is not " + infraProvider + " credentials in descriptor or secrets file")
+		}
+		return nil
+	}
+
 	return nil
 }
 
@@ -71,15 +70,20 @@ func validateSingleRegistryInDomain() error {
 
 func validateRegistryCredentials(descriptor commons.DescriptorFile, secrets commons.SecretsFile) error {
 	//Si auth_required=true deben existir las credenciales del registry en secrets o descriptor
-	return nil
-}
+	for _, dockerRegistry := range descriptor.DockerRegistries {
+		if dockerRegistry.AuthRequired {
 
-func validateMaxSizeIsGtMinSize(workerNodes commons.WorkerNodes) error {
-	for _, wn := range workerNodes {
-		minSize := wn.NodeGroupMinSize
-		maxSize := wn.NodeGroupMaxSize
-		if minSize > maxSize {
-			return errors.New("max_size (" + strconv.Itoa(maxSize) + ") must be equal or greater than min_size (" + strconv.Itoa(minSize) + ")")
+			for _, dockerRegistryCredential := range secrets.Secrets.DockerRegistries {
+				if dockerRegistryCredential.URL == dockerRegistry.URL {
+					continue
+				}
+			}
+			for _, dockerRegistryCredential := range descriptor.Credentials.DockerRegistries {
+				if dockerRegistryCredential.URL == dockerRegistry.URL {
+					continue
+				}
+			}
+			return errors.New("There is no credential in either the descriptor or the secret for the url: " + dockerRegistry.URL)
 		}
 	}
 	return nil
