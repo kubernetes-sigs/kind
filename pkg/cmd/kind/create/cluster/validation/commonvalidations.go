@@ -2,6 +2,7 @@ package validation
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -27,6 +28,11 @@ func commonsDescriptorValidation(descriptor commons.DescriptorFile) error {
 	if err != nil {
 		return err
 	}
+	err = validateMinSizeMaxSizeIfAutoscaler(descriptor.WorkerNodes, descriptor.DeployAutoscaler)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -43,6 +49,7 @@ func commonsValidations(descriptor commons.DescriptorFile, secrets commons.Secre
 }
 
 func commonsSecretsValidations(secrets commons.SecretsFile) error {
+
 	err := validateUniqueCredentialsRegistry(secrets.Secrets.DockerRegistries, "secrets")
 	if err != nil {
 		return err
@@ -84,17 +91,25 @@ func validateRegistryCredentials(descriptor commons.DescriptorFile, secrets comm
 	for _, dockerRegistry := range descriptor.DockerRegistries {
 		if dockerRegistry.AuthRequired {
 
+			existCredentials := false
 			for _, dockerRegistryCredential := range secrets.Secrets.DockerRegistries {
 				if dockerRegistryCredential.URL == dockerRegistry.URL {
-					continue
+					existCredentials = true
+					break
 				}
 			}
-			for _, dockerRegistryCredential := range descriptor.Credentials.DockerRegistries {
-				if dockerRegistryCredential.URL == dockerRegistry.URL {
-					continue
+			if !existCredentials {
+				for _, dockerRegistryCredential := range descriptor.Credentials.DockerRegistries {
+					if dockerRegistryCredential.URL == dockerRegistry.URL {
+						existCredentials = true
+						break
+					}
 				}
 			}
-			return errors.New("There is no credential in either the descriptor or the secret for the url: " + dockerRegistry.URL)
+			if existCredentials {
+				continue
+			}
+			return errors.New("There is no credential in either the descriptor or the secret for the registry with url: " + dockerRegistry.URL)
 		}
 	}
 	return nil
@@ -102,9 +117,15 @@ func validateRegistryCredentials(descriptor commons.DescriptorFile, secrets comm
 
 func ifBalancedQuantityValidations(workerNodes commons.WorkerNodes) error {
 	for _, wn := range workerNodes {
-		if wn.ZoneDistribution == "balanced" {
+		if wn.ZoneDistribution == "balanced" || wn.ZoneDistribution == "" {
 			if wn.Quantity < 3 {
 				return errors.New("Quantity in WorkerNodes " + wn.Name + ", must be equal or greater than 3 when HA is required")
+			}
+			if wn.NodeGroupMinSize < 3 {
+				return errors.New("min_size in WorkerNodes " + wn.Name + ", must be equal or greater than 3 when HA is required")
+			}
+			if wn.NodeGroupMaxSize < 3 {
+				return errors.New("max_size in WorkerNodes " + wn.Name + ", must be equal or greater than 3 when HA is required")
 			}
 		}
 	}
@@ -112,8 +133,12 @@ func ifBalancedQuantityValidations(workerNodes commons.WorkerNodes) error {
 }
 
 func validateUniqueCredentialsRegistry(dockerRegistries []commons.DockerRegistryCredentials, fileName string) error {
-	for _, c1 := range dockerRegistries {
-		for _, c2 := range dockerRegistries {
+	for i, c1 := range dockerRegistries {
+		for j, c2 := range dockerRegistries {
+
+			if i == j {
+				continue
+			}
 			if c1.URL == c2.URL {
 				return errors.New("There is more than one credential for the registry: " + c1.URL + ", in file: " + fileName)
 			}
@@ -123,8 +148,11 @@ func validateUniqueCredentialsRegistry(dockerRegistries []commons.DockerRegistry
 }
 
 func validateUniqueRegistry(dockerRegistries []commons.DockerRegistry) error {
-	for _, c1 := range dockerRegistries {
-		for _, c2 := range dockerRegistries {
+	for i, c1 := range dockerRegistries {
+		for j, c2 := range dockerRegistries {
+			if i == j {
+				continue
+			}
 			if c1.URL == c2.URL {
 				return errors.New("There is more than one docker_registry with url: " + c1.URL)
 			}
@@ -136,4 +164,20 @@ func validateUniqueRegistry(dockerRegistries []commons.DockerRegistry) error {
 func validateWnAZWithSubnetsAZ() {
 	// az de subnets vs az workers
 	// Cuando se mergee VPC custom
+}
+
+func validateMinSizeMaxSizeIfAutoscaler(workerNodes commons.WorkerNodes, deployAutoscaler bool) error {
+	err := errors.New("")
+	if deployAutoscaler {
+		for _, wn := range workerNodes {
+			if wn.NodeGroupMaxSize == 0 || wn.NodeGroupMinSize == 0 {
+				s := fmt.Sprintf("%sNodeGroupMaxSize and NodeGroupMinSize must be indicated in %s and must be greater than 0, when deploy_autoscaler is required", err.Error(), wn.Name)
+				err = errors.New(s)
+			}
+		}
+	}
+	if err.Error() == "" {
+		return nil
+	}
+	return err
 }

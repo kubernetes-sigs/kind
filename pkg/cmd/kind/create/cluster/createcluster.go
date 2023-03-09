@@ -135,7 +135,10 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 
 func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 
-	validateFlags(flags)
+	err := validateFlags(flags)
+	if err != nil {
+		return err
+	}
 
 	provider := cluster.NewProvider(
 		cluster.ProviderWithLogger(logger),
@@ -145,7 +148,7 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	if flags.DescriptorPath == "" {
 		flags.DescriptorPath = "./cluster.yaml"
 	}
-	err := validation.InitValidator(flags.DescriptorPath)
+	err = validation.InitValidator(flags.DescriptorPath)
 	if err != nil {
 		return err
 	}
@@ -168,7 +171,7 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	}
 
 	//Probablemente fallo si no existe
-	err = validation.ExecuteSecretsValidations("./secrets.yaml", flags.VaultPassword)
+	err = validation.ExecuteSecretsValidations("./secrets.yml", flags.VaultPassword)
 	if err != nil {
 		return err
 	}

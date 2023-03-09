@@ -18,7 +18,11 @@ package commons
 
 import (
 	"errors"
+	"fmt"
 	"os"
+	"reflect"
+	"strconv"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 	vault "github.com/sosedoff/ansible-vault-go"
@@ -34,7 +38,7 @@ type DescriptorFile struct {
 
 	Bastion Bastion `yaml:"bastion"`
 
-	Credentials Credentials `yaml:"credentials" validate:"omitempty,dive"`
+	Credentials Credentials `yaml:"credentials" validate:"dive"`
 
 	InfraProvider string `yaml:"infra_provider" validate:"required,oneof='aws' 'gcp' 'azure'"`
 
@@ -72,7 +76,7 @@ type DescriptorFile struct {
 		Name            string `yaml:"name"`
 		AmiID           string `yaml:"ami_id"`
 		HighlyAvailable bool   `yaml:"highly_available" validate:"boolean"`
-		Size            string `yaml:"size" validate:"required_if=Managed false"`
+		Size            string `yaml:"size" validate:"required_if_for_bool=Managed false"`
 		Image           string `yaml:"image" validate:"required_if=InfraProvider gcp"`
 		RootVolume      struct {
 			Size      int    `yaml:"size" validate:"numeric"`
@@ -106,8 +110,8 @@ type WorkerNodes []struct {
 	AZ               string `yaml:"az"`
 	SSHKey           string `yaml:"ssh_key"`
 	Spot             bool   `yaml:"spot" validate:"omitempty,boolean"`
-	NodeGroupMaxSize int    `yaml:"max_size" validate:"omitempty,numeric,required_if=DeployAutoscaler true,required_with=NodeGroupMinSize,gtefield=Quantity,gt=0"`
-	NodeGroupMinSize int    `yaml:"min_size" validate:"omitempty,numeric,required_if=DeployAutoscaler true,required_with=NodeGroupMaxSize,ltefield=Quantity,gt=0"`
+	NodeGroupMaxSize int    `yaml:"max_size" validate:"gt=0,required_with=NodeGroupMinSize,gte_param_if_exists=Quantity"` //required_if_for_bool=DeployAutoscaler true
+	NodeGroupMinSize int    `yaml:"min_size" validate:"gt=0,required_with=NodeGroupMaxSize,lte_param_if_exists=Quantity"` //required_if_for_bool=DeployAutoscaler true,
 	RootVolume       struct {
 		Size      int    `yaml:"size" validate:"numeric"`
 		Type      string `yaml:"type"`
@@ -221,6 +225,12 @@ func GetClusterDescriptor(descriptorName string) (*DescriptorFile, error) {
 		return nil, err
 	}
 	validate := validator.New()
+
+	validate.RegisterCustomTypeFunc(CustomTypeAWSCredsFunc, AWSCredentials{})
+	validate.RegisterCustomTypeFunc(CustomTypeGCPCredsFunc, GCPCredentials{})
+	validate.RegisterValidation("gte_param_if_exists", gteParamIfExists)
+	validate.RegisterValidation("lte_param_if_exists", lteParamIfExists)
+	validate.RegisterValidation("required_if_for_bool", requiredIfForBool)
 	err = validate.Struct(descriptorFile)
 	if err != nil {
 		return nil, err
@@ -244,9 +254,153 @@ func GetSecretsFile(secretsPath string, vaultPassword string) (*SecretsFile, err
 		err := errors.New("The vaultPassword is incorrect")
 		return nil, err
 	}
+
 	err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
 	if err != nil {
 		return nil, err
 	}
 	return &secretFile, nil
+}
+
+func IfExistsStructField(fl validator.FieldLevel) bool {
+	structValue := reflect.ValueOf(fl.Parent().Interface())
+
+	excludeFieldName := fl.Param()
+
+	// Get the value of the exclude field
+	excludeField := structValue.FieldByName(excludeFieldName)
+	if !reflect.DeepEqual(excludeField, reflect.Zero(reflect.TypeOf(excludeField)).Interface()) {
+		return false
+	}
+
+	// Exclude field is set to false or invalid, so don't exclude this field
+	return true
+}
+
+func excludedIfExistsStructField(fl validator.FieldLevel) bool {
+	fieldName := fl.Param()
+	structValue := fl.Top().Elem()
+
+	// Check if the field specified in the tag exists
+	field := structValue.FieldByName(fieldName)
+	if !field.IsValid() {
+		return true
+	}
+
+	// Get the value of the field specified in the tag
+	fieldValue := reflect.ValueOf(field.Interface())
+
+	// Check if the field value is the zero value for its type
+	// This assumes that the field is not a pointer or an interface
+	return !fieldValue.IsZero()
+}
+
+func CustomTypeAWSCredsFunc(field reflect.Value) interface{} {
+	if value, ok := field.Interface().(AWSCredentials); ok {
+		return value.AccessKey
+	}
+	return nil
+}
+
+func CustomTypeGCPCredsFunc(field reflect.Value) interface{} {
+	if value, ok := field.Interface().(GCPCredentials); ok {
+		return value.ClientEmail
+	}
+	return nil
+}
+
+func gteParamIfExists(fl validator.FieldLevel) bool {
+	field := fl.Field()
+	fieldCompared := fl.Param()
+
+	//omitEmpty
+	if field.Kind() == reflect.Int && field.Int() == 0 {
+		return true
+	}
+
+	var paramFieldValue reflect.Value
+
+	if fl.Parent().Kind() == reflect.Ptr {
+		paramFieldValue = fl.Parent().Elem().FieldByName(fieldCompared)
+	} else {
+		paramFieldValue = fl.Parent().FieldByName(fieldCompared)
+	}
+
+	if paramFieldValue.Kind() != reflect.Int {
+		return false
+	}
+	//QUe no rompa cuando quantity no se indica, se romperá en otra validación
+	if paramFieldValue.Int() == 0 {
+		return true
+	}
+
+	if paramFieldValue.Int() > 0 {
+		return field.Int() >= paramFieldValue.Int()
+	}
+	return false
+}
+
+func lteParamIfExists(fl validator.FieldLevel) bool {
+	field := fl.Field()
+	fieldCompared := fl.Param()
+
+	//omitEmpty
+	if field.Kind() == reflect.Int && field.Int() == 0 {
+		return true
+	}
+
+	var paramFieldValue reflect.Value
+
+	if fl.Parent().Kind() == reflect.Ptr {
+		paramFieldValue = fl.Parent().Elem().FieldByName(fieldCompared)
+	} else {
+		paramFieldValue = fl.Parent().FieldByName(fieldCompared)
+	}
+
+	if paramFieldValue.Kind() != reflect.Int {
+		return false
+	}
+
+	if paramFieldValue.Int() == 0 {
+		return true
+	}
+
+	if paramFieldValue.Int() > 0 {
+		return field.Int() <= paramFieldValue.Int()
+	}
+
+	return false
+}
+
+func requiredIfForBool(fl validator.FieldLevel) bool {
+	params := strings.Split(fl.Param(), " ")
+	if len(params) != 2 {
+		panic(fmt.Sprintf("Bad param number for required_if %s", fl.FieldName()))
+	}
+
+	if !requireCheckFieldValue(fl, params[0], params[1], false) {
+		return true
+	}
+	field := fl.Field()
+	fl.Parent()
+	return field.IsValid() && field.Interface() != reflect.Zero(field.Type()).Interface()
+}
+
+func requireCheckFieldValue(fl validator.FieldLevel, param string, value string, defaultNotFoundValue bool) bool {
+	field, kind, _, found := fl.GetStructFieldOKAdvanced2(fl.Parent(), param)
+	if !found {
+		return defaultNotFoundValue
+	}
+
+	if kind == reflect.Bool {
+		val, err := strconv.ParseBool(value)
+		if err != nil {
+			return false
+		}
+
+		return field.Bool() == val
+	}
+
+	return false
+
 }
