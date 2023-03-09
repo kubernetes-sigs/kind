@@ -115,7 +115,6 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 
 	// TODO(bentheelder): make this controllable from the command line?
 	actionsToRun := []actions.Action{
-		//validation.NewAction(opts.DescriptorName, "secrets.yml", opts.VaultPassword),
 		loadbalancer.NewAction(), // setup external loadbalancer
 		configaction.NewAction(), // setup kubeadm config
 	}

@@ -170,7 +170,6 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		}
 	}
 
-	//Probablemente fallo si no existe
 	err = validation.ExecuteSecretsValidations("./secrets.yml", flags.VaultPassword)
 	if err != nil {
 		return err
