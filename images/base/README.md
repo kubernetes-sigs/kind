@@ -49,8 +49,8 @@ ARG CNI_PLUGINS_PPC64LE_SHA256SUM=d37829b5eeca0c941b4478203c75c6cc26d9cfc1d6c8bb
 Kind frequently picks up new releases of dependent projects including
 containerd, runc, cni, and crictl. If you choose to use the provided Dockerfile
 but use build arguments to specify a different base image or application version
-for dependencies, be aware that you may possibly encounter bugs and undesired
-behavior.
+for dependencies, be aware that you may encounter bugs and undesired
+behavior possibly.
 
 ## Design
 
