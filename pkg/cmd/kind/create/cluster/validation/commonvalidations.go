@@ -51,7 +51,7 @@ func commonsSecretsValidations(secrets commons.SecretsFile) error {
 }
 
 func singleKeosInstaller(descriptor commons.DescriptorFile) error {
-	// Solo un registry con keos_installer
+	// Only one registry with keos_installer
 	count := 0
 	for _, dr := range descriptor.DockerRegistries {
 		if dr.KeosRegistry {
@@ -65,7 +65,7 @@ func singleKeosInstaller(descriptor commons.DescriptorFile) error {
 }
 
 func validateExistsCredentials(descriptor commons.DescriptorFile, secrets commons.SecretsFile) error {
-	//Existen credenciales en el secrets o descriptor
+	// Credentials must exist in the secrets or descriptor
 	infraProvider := descriptor.InfraProvider
 	credentialsProvider, err := reflections.GetField(secrets.Secrets, strings.ToUpper(infraProvider))
 	if err != nil || reflect.DeepEqual(credentialsProvider, reflect.Zero(reflect.TypeOf(credentialsProvider)).Interface()) {
@@ -79,13 +79,8 @@ func validateExistsCredentials(descriptor commons.DescriptorFile, secrets common
 	return nil
 }
 
-func validateSingleRegistryInDomain() error {
-	//Solo un registry por dominio
-	return nil
-}
-
 func validateRegistryCredentials(descriptor commons.DescriptorFile, secrets commons.SecretsFile) error {
-	//Si auth_required=true deben existir las credenciales del registry en secrets o descriptor
+	//If auth_required=true, the registry credentials must exist in secrets or descriptor.
 	for _, dockerRegistry := range descriptor.DockerRegistries {
 		if dockerRegistry.AuthRequired {
 
@@ -138,4 +133,7 @@ func validateUniqueRegistry(dockerRegistries []commons.DockerRegistry) error {
 	return nil
 }
 
-//az de subnets vs az workers
+func validateWnAZWithSubnetsAZ() {
+	// az de subnets vs az workers
+	// Cuando se mergee VPC custom
+}
