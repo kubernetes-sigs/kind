@@ -21,6 +21,7 @@ import (
 	"embed"
 	"os"
 	"reflect"
+	"strings"
 	"text/template"
 
 	"github.com/go-playground/validator/v10"
@@ -50,35 +51,36 @@ type DescriptorFile struct {
 
 	Networks Networks `yaml:"networks"`
 
-	DockerRegistries []DockerRegistry `yaml:"docker_registries"`
+	Dns struct {
+		HostedZones bool `yaml:"hosted_zones" validate:"boolean"`
+	} `yaml:"dns"`
 
-	Keos Keos `yaml:"keos"`
+	DockerRegistries []DockerRegistry `yaml:"docker_registries" validate:"dive"`
 
-	ControlPlane ControlPlane `yaml:"control_plane"`
+	ExternalDomain string `yaml:"external_domain" validate:"omitempty,hostname"`
 
-	WorkerNodes WorkerNodes `yaml:"worker_nodes"`
-}
+	Keos struct {
+		Domain  string `yaml:"domain" validate:"required,hostname"`
+		Flavour string `yaml:"flavour"`
+		Version string `yaml:"version"`
+	} `yaml:"keos"`
 
-type ControlPlane struct {
-	Managed         bool   `yaml:"managed" validate:"boolean"`
-	Name            string `yaml:"name"`
-	AmiID           string `yaml:"ami_id"`
-	HighlyAvailable bool   `yaml:"highly_available" validate:"boolean"`
-	Size            string `yaml:"size" validate:"required_if=Managed false"`
-	Image           string `yaml:"image" validate:"required_if=InfraProvider gcp"`
-	RootVolume      struct {
-		Size      int    `yaml:"size" validate:"numeric"`
-		Type      string `yaml:"type"`
-		Encrypted bool   `yaml:"encrypted" validate:"boolean"`
-	} `yaml:"root_volume"`
-	AWS AWS `yaml:"aws"`
-}
+	ControlPlane struct {
+		Managed         bool   `yaml:"managed" validate:"boolean"`
+		Name            string `yaml:"name"`
+		AmiID           string `yaml:"ami_id"`
+		HighlyAvailable bool   `yaml:"highly_available" validate:"boolean"`
+		Size            string `yaml:"size" validate:"required_if=Managed false"`
+		Image           string `yaml:"image" validate:"required_if=InfraProvider gcp"`
+		RootVolume      struct {
+			Size      int    `yaml:"size" validate:"numeric"`
+			Type      string `yaml:"type"`
+			Encrypted bool   `yaml:"encrypted" validate:"boolean"`
+		} `yaml:"root_volume"`
+		AWS AWS `yaml:"aws"`
+	} `yaml:"control_plane"`
 
-type Keos struct {
-	Domain         string `yaml:"domain" validate:"required,hostname"`
-	ExternalDomain string `yaml:"external_domain" validate:"required,hostname"`
-	Flavour        string `yaml:"flavour"`
-	Version        string `yaml:"version"`
+	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
 }
 
 type Networks struct {
@@ -114,15 +116,15 @@ type AWS struct {
 type WorkerNodes []struct {
 	Name             string `yaml:"name" validate:"required"`
 	AmiID            string `yaml:"ami_id"`
-	Quantity         int    `yaml:"quantity" validate:"required,numeric"`
+	Quantity         int    `yaml:"quantity" validate:"required,numeric,gt=0"`
 	Size             string `yaml:"size" validate:"required"`
 	Image            string `yaml:"image" validate:"required_if=InfraProvider gcp"`
-	ZoneDistribution string `yaml:"zone_distribution" validate:"oneof='balanced' 'unbalanced'"`
+	ZoneDistribution string `yaml:"zone_distribution" validate:"omitempty,oneof='balanced' 'unbalanced'"`
 	AZ               string `yaml:"az"`
 	SSHKey           string `yaml:"ssh_key"`
-	Spot             bool   `yaml:"spot" validate:"boolean"`
-	NodeGroupMaxSize int    `yaml:"max_size"`
-	NodeGroupMinSize int    `yaml:"min_size"`
+	Spot             bool   `yaml:"spot" validate:"omitempty,boolean"`
+	NodeGroupMaxSize int    `yaml:"max_size" validate:"omitempty,numeric,required_with=NodeGroupMinSize,gtefield=Quantity,gt=0"`
+	NodeGroupMinSize int    `yaml:"min_size" validate:"omitempty,numeric,required_with=NodeGroupMaxSize,ltefield=Quantity,gt=0"`
 	RootVolume       struct {
 		Size      int    `yaml:"size" validate:"numeric"`
 		Type      string `yaml:"type"`
@@ -201,6 +203,9 @@ func (d DescriptorFile) Init() DescriptorFile {
 	d.ControlPlane.AWS.Logging.ControllerManager = false
 	d.ControlPlane.AWS.Logging.Scheduler = false
 
+	// Hosted zones
+	d.Dns.HostedZones = true
+
 	return d
 }
 
@@ -259,6 +264,9 @@ func GetClusterManifest(flavor string, params TemplateParams) (string, error) {
 				close(ch)
 			}()
 			return ch
+		},
+		"hostname": func(s string) string {
+			return strings.Split(s, "/")[0]
 		},
 	}
 
