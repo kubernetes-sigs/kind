@@ -104,6 +104,10 @@ type Node struct {
 	// This should be an inline yaml blob-string
 	KubeadmConfigPatches []string
 
+	// Limit the specific CPUs or cores a container can use.
+	// A comma-separated list or hyphen-separated range of CPUs a container can use, if you have more than one CPU.
+	CPUSet string
+
 	// KubeadmConfigPatchesJSON6902 are applied to the generated kubeadm config
 	// as patchesJson6902 to `kustomize build`
 	KubeadmConfigPatchesJSON6902 []PatchJSON6902

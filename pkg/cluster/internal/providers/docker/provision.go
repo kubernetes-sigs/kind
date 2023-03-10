@@ -204,6 +204,7 @@ func commonArgs(cluster string, cfg *config.Cluster, networkName string, nodeNam
 
 func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, name string, args []string) ([]string, error) {
 	args = append([]string{
+		"--cpuset-cpus", node.CPUSet,
 		"--hostname", name, // make hostname match container name
 		// label the node with the role ID
 		"--label", fmt.Sprintf("%s=%s", nodeRoleLabelKey, node.Role),

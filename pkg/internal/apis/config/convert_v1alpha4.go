@@ -53,6 +53,7 @@ func convertv1alpha4Node(in *v1alpha4.Node, out *Node) {
 
 	out.Labels = in.Labels
 	out.KubeadmConfigPatches = in.KubeadmConfigPatches
+	out.CPUSet = in.CPUSet
 	out.ExtraMounts = make([]Mount, len(in.ExtraMounts))
 	out.ExtraPortMappings = make([]PortMapping, len(in.ExtraPortMappings))
 	out.KubeadmConfigPatchesJSON6902 = make([]PatchJSON6902, len(in.KubeadmConfigPatchesJSON6902))
