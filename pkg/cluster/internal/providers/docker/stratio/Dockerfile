@@ -1,14 +1,15 @@
 FROM kindest/node:v1.24.7
 
+# Init feature gates
+ENV CLUSTER_TOPOLOGY=true
+
 # Tools versions
 ENV CLUSTERCTL=v1.3.2
 ENV CLUSTERAWSADM=v2.0.2
 ENV HELM_VERSION=v3.11.0
 
-# Init feature gates
-ENV CLUSTER_TOPOLOGY=true
-
 # Helm charts
+ENV CLUSTER_AUTOSCALER=9.25.0
 ENV TIGERA_OPERATOR=v3.22.3
 
 # Download clusterctl (61.5M)
@@ -29,5 +30,5 @@ RUN curl -L https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz -o /root
   && chmod +x /usr/local/bin/helm
 
 RUN mkdir -p /stratio/helm \
-  && /usr/local/bin/helm repo add autoscaler https://kubernetes.github.io/autoscaler \
+  && until timeout 5 helm pull cluster-autoscaler --version ${CLUSTER_AUTOSCALER} --repo https://kubernetes.github.io/autoscaler --untar --untardir /stratio/helm; do sleep 2; done \
   && helm pull tigera-operator --version ${TIGERA_OPERATOR} --repo https://docs.projectcalico.org/charts --untar --untardir /stratio/helm
