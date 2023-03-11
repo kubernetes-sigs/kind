@@ -455,5 +455,48 @@ nodes:
         node-labels: "my-label3=true"
 {{< /codeFromInline >}}
 
+If you need more control over patching, strategic merge and JSON6092 patches can
+be used as well. These are specified using files in a directory, for example
+`./patches/kube-controller-manager.yaml` could be the following.
+
+{{< codeFromInline lang="yaml" >}}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kube-controller-manager
+  namespace: kube-system
+spec:
+  containers:
+  - name: kube-controller-manager
+    env:
+    - name: KUBE_CACHE_MUTATION_DETECTOR
+      value: "true"
+{{< /codeFromInline >}}
+
+Then in your kind YAML configuration use the following.
+
+{{< codeFromInline lang="yaml" >}}
+nodes:
+- role: control-plane
+  extraMounts:
+  - hostPath: ./patches
+    containerPath: /patches
+
+kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    patches:
+      directory: /patches
+{{< codeFromInline >}}
+
+Note the `extraMounts` stanza. The node is a container created by
+`kind`. `kubeadm` is run inside this node container, and the local directory
+that contains the patches has to be accessible to `kubeadm`. `extraMounts`
+plumbs a local directory through to this node container.
+
+This example was for changing the manager in the control plane. To use a patch
+for a worker node, use a `JoinConfiguration` patch and an `extraMounts` stanza
+for the `worker` role.
+
 [YAML]: https://yaml.org/
 [feature gates]: https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/
