@@ -173,7 +173,7 @@ type DockerRegistry struct {
 type TemplateParams struct {
 	Descriptor       DescriptorFile
 	Credentials      map[string]string
-	ExternalRegistry map[string]string
+	DockerRegistries []map[string]interface{}
 }
 
 // Init sets default values for the DescriptorFile
