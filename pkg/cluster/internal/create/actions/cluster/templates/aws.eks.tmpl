@@ -163,5 +163,9 @@ spec:
           - {{ $vol.MountPath }}
         {{- end }}
       {{- end }}
+      {{- if $node.Labels }}
+      kubeletExtraArgs:
+        node-labels: \"{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}\"
+      {{- end }}
 {{- end }}
 {{- end }}
