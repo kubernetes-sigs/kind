@@ -102,17 +102,18 @@ type AWS struct {
 }
 
 type WorkerNodes []struct {
-	Name             string `yaml:"name" validate:"required"`
-	AmiID            string `yaml:"ami_id"`
-	Quantity         int    `yaml:"quantity" validate:"required,numeric,gt=0"`
-	Size             string `yaml:"size" validate:"required"`
-	Image            string `yaml:"image" validate:"required_if=InfraProvider gcp"`
-	ZoneDistribution string `yaml:"zone_distribution" validate:"omitempty,oneof='balanced' 'unbalanced'"`
-	AZ               string `yaml:"az"`
-	SSHKey           string `yaml:"ssh_key"`
-	Spot             bool   `yaml:"spot" validate:"omitempty,boolean"`
-	NodeGroupMaxSize int    `yaml:"max_size" validate:"omitempty,numeric,required_with=NodeGroupMinSize,gtefield=Quantity,gt=0"`
-	NodeGroupMinSize int    `yaml:"min_size" validate:"omitempty,numeric,required_with=NodeGroupMaxSize,ltefield=Quantity,gt=0"`
+	Name             string            `yaml:"name" validate:"required"`
+	AmiID            string            `yaml:"ami_id"`
+	Quantity         int               `yaml:"quantity" validate:"required,numeric,gt=0"`
+	Size             string            `yaml:"size" validate:"required"`
+	Image            string            `yaml:"image" validate:"required_if=InfraProvider gcp"`
+	ZoneDistribution string            `yaml:"zone_distribution" validate:"omitempty,oneof='balanced' 'unbalanced'"`
+	AZ               string            `yaml:"az"`
+	SSHKey           string            `yaml:"ssh_key"`
+	Spot             bool              `yaml:"spot" validate:"omitempty,boolean"`
+	Labels           map[string]string `yaml:"labels"`
+	NodeGroupMaxSize int               `yaml:"max_size" validate:"omitempty,numeric,required_with=NodeGroupMinSize,gtefield=Quantity,gt=0"`
+	NodeGroupMinSize int               `yaml:"min_size" validate:"omitempty,numeric,required_with=NodeGroupMaxSize,ltefield=Quantity,gt=0"`
 	RootVolume       struct {
 		Size      int    `yaml:"size" validate:"numeric"`
 		Type      string `yaml:"type"`

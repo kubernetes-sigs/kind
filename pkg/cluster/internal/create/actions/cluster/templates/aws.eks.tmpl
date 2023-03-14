@@ -131,6 +131,10 @@ metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
   namespace: "cluster-{{ $.Descriptor.ClusterID }}"
 spec:
-  template: {}
+  template: {{ if not $node.Labels }}{}{{- else }}
+    spec:
+      kubeletExtraArgs:
+        node-labels: \"{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}\"
+{{- end }}
 {{- end }}
 {{- end }}
