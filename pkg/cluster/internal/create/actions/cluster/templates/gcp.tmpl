@@ -88,7 +88,8 @@ spec:
               [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors]
                 [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]
                   endpoint = [\"https://registry-1.docker.io\"]
-              [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ .ExternalRegistry.Url }}\".auth]
+              {{- $url := hostname .ExternalRegistry.Url }}
+              [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ $url }}\".auth]
                 password = \"{{ .ExternalRegistry.Pass }}\"
                 username = \"{{ .ExternalRegistry.User }}\"
         path: /etc/containerd/config.toml
@@ -121,18 +122,16 @@ spec:
       rootDeviceType: {{ .Descriptor.ControlPlane.RootVolume.Type }}
       {{- end }}
 {{- range $node := .Descriptor.WorkerNodes }}
-{{- range $index, $n := loop .AZ .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
+{{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
+{{- if and (gt $node.NodeGroupMaxSize 0) (gt $node.NodeGroupMinSize 0) }}
   annotations:
-  {{- if $node.NodeGroupMaxSize }}
     cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: '{{ $n.MaxSize }}'
-  {{- end }}
-  {{- if $node.NodeGroupMinSize }}
     cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: '{{ $n.MinSize }}'
-  {{- end }}
+{{- end }}
   name: "{{ $node.Name }}-md-{{ $index }}"
   namespace: "cluster-{{ $.Descriptor.ClusterID }}"
 spec:
@@ -196,7 +195,8 @@ spec:
                 [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors]
                   [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]
                     endpoint = [\"https://registry-1.docker.io\"]
-                [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ $.ExternalRegistry.Url }}\".auth]
+                {{- $url := hostname $.ExternalRegistry.Url }}
+                [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ $url }}\".auth]
                   password = \"{{ $.ExternalRegistry.Pass }}\"
                   username = \"{{ $.ExternalRegistry.User }}\"
           path: /etc/containerd/config.toml
