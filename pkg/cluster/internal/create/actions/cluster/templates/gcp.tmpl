@@ -29,11 +29,27 @@ spec:
   network:
     name: {{ .Descriptor.Networks.VPCID }}
     {{- if ne .Descriptor.Networks.Subnets nil }}
+    autoCreateSubnetworks: false
     subnets:
     {{- range .Descriptor.Networks.Subnets }}
-      - id: {{ .Name }}
+    - name: {{ .SubnetId }}
+    {{- if ne .Region "" }}
+      region: {{ .Region }}
     {{- end }}
+    {{- if ne .Description "" }}
+      description: {{ .Description }}
     {{- end }}
+    {{- if checkReference .PrivateGoogleAccess }}
+      privateGoogleAccess: {{ .PrivateGoogleAccess }}
+    {{- end }}
+    {{- if ne .CidrBlock "" }}
+      cidrBlock: {{ .CidrBlock }}
+    {{- end }} 
+    {{- end }}
+    {{- else }}
+    autoCreateSubnetworks: true
+    {{- end }}
+    
 {{- else }}
   network:
     name: default
