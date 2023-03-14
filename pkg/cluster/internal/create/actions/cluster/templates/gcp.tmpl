@@ -150,7 +150,7 @@ spec:
         {{- end }}
       {{- end }}
 {{- range $node := .Descriptor.WorkerNodes }}
-{{- range $index, $n := loop .AZ .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
+{{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
