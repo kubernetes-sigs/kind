@@ -98,6 +98,27 @@ spec:
           [Global]
           multizone=true
         path: /etc/kubernetes/gce.conf
+    {{- if .Descriptor.ControlPlane.ExtraVolumes }}
+    diskSetup:
+      filesystems:
+        {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+        - device: /dev/disk/by-id/google-persistent-disk-{{ len (printf "a%*s" $index "") }}
+          filesystem: ext4
+          label: {{ $vol.Label }}
+        {{- end }}
+      partitions:
+        {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+        - device: /dev/disk/by-id/google-persistent-disk-{{ len (printf "a%*s" $index "") }}
+          layout: true
+          overwrite: false
+          tableType: gpt
+        {{- end }}
+    mounts:
+      {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+      - - LABEL={{ $vol.Label }}
+        - {{ $vol.MountPath }}
+      {{- end }}
+    {{- end }}
     joinConfiguration:
       nodeRegistration:
         name: {{`'{{ ds.meta_data.local_hostname.split(\".\")[0] }}'`}}
@@ -120,6 +141,13 @@ spec:
       {{- end }}
       {{- if .Descriptor.ControlPlane.RootVolume.Type }}
       rootDeviceType: {{ .Descriptor.ControlPlane.RootVolume.Type }}
+      {{- end }}
+      {{- if .Descriptor.ControlPlane.ExtraVolumes }}
+      additionalDisks:
+        {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+        - deviceType: {{ $vol.Type }}
+          size: {{ $vol.Size }}
+        {{- end }}
       {{- end }}
 {{- range $node := .Descriptor.WorkerNodes }}
 {{- range $index, $n := loop .AZ .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
@@ -170,6 +198,13 @@ spec:
       {{- if $node.RootVolume.Type }}
       rootDeviceType: {{ $node.RootVolume.Type }}
       {{- end }}
+      {{- if $node.ExtraVolumes }}
+      additionalDisks:
+        {{- range $index, $vol := $node.ExtraVolumes }}
+        - deviceType: {{ $vol.Type }}
+          size: {{ $vol.Size }}
+        {{- end }}
+      {{- end }}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
@@ -201,6 +236,27 @@ spec:
                   username = \"{{ $.ExternalRegistry.User }}\"
           path: /etc/containerd/config.toml
         {{- end }}
+      {{- if $node.ExtraVolumes }}
+      diskSetup:
+        filesystems:
+          {{- range $index, $vol := $node.ExtraVolumes }}
+          - device: /dev/disk/by-id/google-persistent-disk-{{ len (printf "a%*s" $index "") }}
+            filesystem: ext4
+            label: {{ $vol.Label }}
+          {{- end }}
+        partitions:
+          {{- range $index, $vol := $node.ExtraVolumes }}
+          - device: /dev/disk/by-id/google-persistent-disk-{{ len (printf "a%*s" $index "") }}
+            layout: true
+            overwrite: false
+            tableType: gpt
+          {{- end }}
+      mounts:
+        {{- range $index, $vol := $node.ExtraVolumes }}
+        - - LABEL={{ $vol.Label }}
+          - {{ $vol.MountPath }}
+        {{- end }}
+      {{- end }}
       joinConfiguration:
         nodeRegistration:
           name: {{`'{{ ds.meta_data.local_hostname.split(\".\")[0] }}'`}}

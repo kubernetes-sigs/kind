@@ -124,6 +124,15 @@ spec:
         type: {{ $node.RootVolume.Type }}
         {{- end }}
         encrypted: {{ $node.RootVolume.Encrypted }}
+      {{- if $node.ExtraVolumes }}
+      nonRootVolumes:
+        {{- range $index, $vol := $node.ExtraVolumes }}
+        - deviceName: {{ $vol.DeviceName }}
+          size: {{ $vol.Size }}
+          type: {{ $vol.Type }}
+          encrypted: {{ $vol.Encrypted }}
+        {{- end }}
+      {{- end }}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: EKSConfigTemplate
@@ -131,6 +140,28 @@ metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
   namespace: "cluster-{{ $.Descriptor.ClusterID }}"
 spec:
-  template: {}
+  template:
+    spec:
+      {{- if $node.ExtraVolumes }}
+      diskSetup:
+        filesystems:
+          {{- range $index, $vol := $node.ExtraVolumes }}
+          - device: /dev/nvme{{ len (printf "a%*s" $index "") }}n1
+            filesystem: xfs
+            label: {{ $vol.Label }}
+          {{- end }}
+        partitions:
+          {{- range $index, $vol := $node.ExtraVolumes }}
+          - device: /dev/nvme{{ len (printf "a%*s" $index "") }}n1
+            layout: true
+            overwrite: false
+            tableType: gpt
+          {{- end }}
+      mounts:
+        {{- range $index, $vol := $node.ExtraVolumes }}
+        - - /dev/nvme{{ len (printf "a%*s" $index "") }}n1
+          - {{ $vol.MountPath }}
+        {{- end }}
+      {{- end }}
 {{- end }}
 {{- end }}
