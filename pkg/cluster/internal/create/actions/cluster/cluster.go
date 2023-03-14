@@ -102,17 +102,18 @@ type AWS struct {
 }
 
 type WorkerNodes []struct {
-	Name             string `yaml:"name" validate:"required"`
-	AmiID            string `yaml:"ami_id"`
-	Quantity         int    `yaml:"quantity" validate:"required,numeric,gt=0"`
-	Size             string `yaml:"size" validate:"required"`
-	Image            string `yaml:"image" validate:"required_if=InfraProvider gcp"`
-	ZoneDistribution string `yaml:"zone_distribution" validate:"omitempty,oneof='balanced' 'unbalanced'"`
-	AZ               string `yaml:"az"`
-	SSHKey           string `yaml:"ssh_key"`
-	Spot             bool   `yaml:"spot" validate:"omitempty,boolean"`
-	NodeGroupMaxSize int    `yaml:"max_size" validate:"omitempty,numeric,required_with=NodeGroupMinSize,gtefield=Quantity,gt=0"`
-	NodeGroupMinSize int    `yaml:"min_size" validate:"omitempty,numeric,required_with=NodeGroupMaxSize,ltefield=Quantity,gt=0"`
+	Name             string            `yaml:"name" validate:"required"`
+	AmiID            string            `yaml:"ami_id"`
+	Quantity         int               `yaml:"quantity" validate:"required,numeric,gt=0"`
+	Size             string            `yaml:"size" validate:"required"`
+	Image            string            `yaml:"image" validate:"required_if=InfraProvider gcp"`
+	ZoneDistribution string            `yaml:"zone_distribution" validate:"omitempty,oneof='balanced' 'unbalanced'"`
+	AZ               string            `yaml:"az"`
+	SSHKey           string            `yaml:"ssh_key"`
+	Spot             bool              `yaml:"spot" validate:"omitempty,boolean"`
+	Labels           map[string]string `yaml:"labels"`
+	NodeGroupMaxSize int               `yaml:"max_size" validate:"omitempty,numeric,required_with=NodeGroupMinSize,gtefield=Quantity,gt=0"`
+	NodeGroupMinSize int               `yaml:"min_size" validate:"omitempty,numeric,required_with=NodeGroupMaxSize,ltefield=Quantity,gt=0"`
 	RootVolume       struct {
 		Size      int    `yaml:"size" validate:"numeric"`
 		Type      string `yaml:"type"`
@@ -216,29 +217,37 @@ func GetClusterDescriptor(descriptorPath string) (*DescriptorFile, error) {
 	return &descriptorFile, nil
 }
 
+func resto(n int, i int) int {
+	var r int
+	r = (n % 3) / (i + 1)
+	if r > 1 {
+		r = 1
+	}
+	return r
+}
+
 func GetClusterManifest(flavor string, params TemplateParams) (string, error) {
 
 	funcMap := template.FuncMap{
-		"loop": func(az string, qa int, maxsize int, minsize int) <-chan Node {
+		"loop": func(az string, zd string, qa int, maxsize int, minsize int) <-chan Node {
 			ch := make(chan Node)
 			go func() {
-				var azs []string
 				var q int
 				var mx int
 				var mn int
 				if az != "" {
-					azs = []string{az}
-					q = qa
-					mx = maxsize
-					mn = minsize
+					ch <- Node{AZ: az, QA: qa, MaxSize: maxsize, MinSize: minsize}
 				} else {
-					azs = []string{"a", "b", "c"}
-					q = qa / 3
-					mx = maxsize / 3
-					mn = minsize / 3
-				}
-				for _, a := range azs {
-					ch <- Node{AZ: a, QA: q, MaxSize: mx, MinSize: mn}
+					for i, a := range []string{"a", "b", "c"} {
+						if zd == "unbalanced" {
+							q = qa/3 + resto(qa, i)
+							mx = maxsize/3 + resto(maxsize, i)
+							mn = minsize/3 + resto(minsize, i)
+							ch <- Node{AZ: a, QA: q, MaxSize: mx, MinSize: mn}
+						} else {
+							ch <- Node{AZ: a, QA: qa / 3, MaxSize: maxsize / 3, MinSize: minsize / 3}
+						}
+					}
 				}
 				close(ch)
 			}()
