@@ -17,7 +17,7 @@
 # get image name from directory we're building
 IMAGE_NAME=$(notdir $(CURDIR))
 # docker image registry, default to upstream
-REGISTRY?=kindest
+REGISTRY?=gcr.io/k8s-staging-kind
 # tag based on date-sha
 TAG?=$(shell echo "$$(date +v%Y%m%d)-$$(git describe --always --dirty)")
 # the full image tag
