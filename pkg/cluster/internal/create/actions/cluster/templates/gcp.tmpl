@@ -73,7 +73,7 @@ spec:
             name: gce-conf
             pathType: FileOrCreate
     files:
-      {{- if .ExternalRegistry.User }}
+      {{- if .DockerRegistries }}
       - content: |
           version = 2
           imports = [\"/etc/containerd/conf.d/*.toml\"]
@@ -88,10 +88,12 @@ spec:
               [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors]
                 [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]
                   endpoint = [\"https://registry-1.docker.io\"]
-              {{- $url := hostname .ExternalRegistry.Url }}
+              {{- range $reg := .DockerRegistries }}
+              {{- $url := hostname $reg.url }}
               [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ $url }}\".auth]
-                password = \"{{ .ExternalRegistry.Pass }}\"
-                username = \"{{ .ExternalRegistry.User }}\"
+                password = \"{{ $reg.pass }}\"
+                username = \"{{ $reg.user }}\"
+              {{- end }}
         path: /etc/containerd/config.toml
       {{- end }}
       - content: |
@@ -122,7 +124,7 @@ spec:
       rootDeviceType: {{ .Descriptor.ControlPlane.RootVolume.Type }}
       {{- end }}
 {{- range $node := .Descriptor.WorkerNodes }}
-{{- range $index, $n := loop .AZ .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
+{{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
@@ -179,7 +181,7 @@ metadata:
 spec:
   template:
     spec:
-      {{- if $.ExternalRegistry.User }}
+      {{- if $.DockerRegistries }}
       files:
         - content: |
             version = 2
@@ -195,10 +197,12 @@ spec:
                 [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors]
                   [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]
                     endpoint = [\"https://registry-1.docker.io\"]
-                {{- $url := hostname $.ExternalRegistry.Url }}
+                {{- range $reg := $.DockerRegistries }}
+                {{- $url := hostname $reg.url }}
                 [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ $url }}\".auth]
-                  password = \"{{ $.ExternalRegistry.Pass }}\"
-                  username = \"{{ $.ExternalRegistry.User }}\"
+                  password = \"{{ $reg.pass }}\"
+                  username = \"{{ $reg.user }}\"
+                {{- end }}
           path: /etc/containerd/config.toml
         {{- end }}
       joinConfiguration:
@@ -206,5 +210,6 @@ spec:
           name: {{`'{{ ds.meta_data.local_hostname.split(\".\")[0] }}'`}}
           kubeletExtraArgs:
             cloud-provider: gce
+            node-labels: \"{{ if $node.Labels }}{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}{{- end }}\"
 {{- end }}
 {{- end }}

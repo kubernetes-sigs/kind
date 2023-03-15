@@ -65,7 +65,7 @@ spec:
       - name: ANNOTATE_POD_IP
         value: \"true\"
 {{- range $node := .Descriptor.WorkerNodes }}
-{{- range $index, $n := loop .AZ .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
+{{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
@@ -131,6 +131,10 @@ metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
   namespace: "cluster-{{ $.Descriptor.ClusterID }}"
 spec:
-  template: {}
+  template: {{ if not $node.Labels }}{}{{- else }}
+    spec:
+      kubeletExtraArgs:
+        node-labels: \"{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}\"
+{{- end }}
 {{- end }}
 {{- end }}

@@ -97,7 +97,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// Get the secrets
-	credentialsMap, externalRegistryMap, githubToken, _, err := getSecrets(*descriptorFile, a.vaultPassword)
+	credentialsMap, _, githubToken, dockerRegistries, err := getSecrets(*descriptorFile, a.vaultPassword)
 	if err != nil {
 		return err
 	}
@@ -131,7 +131,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	templateParams := cluster.TemplateParams{
 		Descriptor:       *descriptorFile,
 		Credentials:      credentialsMap,
-		ExternalRegistry: externalRegistryMap,
+		DockerRegistries: dockerRegistries,
 	}
 
 	// Generate the cluster manifest
