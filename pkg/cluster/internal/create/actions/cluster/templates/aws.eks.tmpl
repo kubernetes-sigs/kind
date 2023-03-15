@@ -83,6 +83,9 @@ spec:
   selector:
     matchLabels:
   template:
+    metadata:
+      labels: 
+        stratio/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
     spec:
       clusterName: "{{ $.Descriptor.ClusterID }}"
       version: "{{ $.Descriptor.K8SVersion }}"
@@ -101,9 +104,10 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSMachineTemplate
 metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
-  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
+  namespace: "cluster-{{ $.Descriptor.ClusterID }}"    
 spec:
   template:
+    metadata:
     spec:
       {{- if $node.Spot }}
       spotMarketOptions:
@@ -138,3 +142,21 @@ spec:
 {{- end }}
 {{- end }}
 {{- end }}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineHealthCheck
+metadata:
+  name: "{{ $.Descriptor.ClusterID }}-wn-node-unhealthy"
+spec:
+  clusterName: "{{ $.Descriptor.ClusterID }}"
+  nodeStartupTimeout: 300s
+  selector:
+    matchLabels:
+      stratio/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
+  unhealthyConditions:
+    - type: Ready
+      status: Unknown
+      timeout: 60s
+    - type: Ready
+      status: 'False'
+      timeout: 60s

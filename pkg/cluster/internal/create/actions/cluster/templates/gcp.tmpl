@@ -47,6 +47,9 @@ metadata:
 spec:
   replicas: {{- if .Descriptor.ControlPlane.HighlyAvailable }} 3 {{- else }} 1 {{- end }}
   machineTemplate:
+    metadata:
+      labels: 
+        stratio/machine-role: "{{ $.Descriptor.ClusterID }}-control-plane-node"
     infrastructureRef:
       kind: GCPMachineTemplate
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -122,7 +125,7 @@ spec:
       {{- end }}
       {{- if .Descriptor.ControlPlane.RootVolume.Type }}
       rootDeviceType: {{ .Descriptor.ControlPlane.RootVolume.Type }}
-      {{- end }}
+      {{- end }}        
 {{- range $node := .Descriptor.WorkerNodes }}
 {{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
@@ -142,6 +145,9 @@ spec:
   selector:
     matchLabels:
   template:
+    metadata:
+      labels: 
+        stratio/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
     spec:
       clusterName: "{{ $.Descriptor.ClusterID }}"
       version: "{{ $.Descriptor.K8SVersion }}"
@@ -213,3 +219,39 @@ spec:
             node-labels: \"{{ if $node.Labels }}{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}{{- end }}\"
 {{- end }}
 {{- end }}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineHealthCheck
+metadata:
+  name: "{{ $.Descriptor.ClusterID }}-controlplane-node-unhealthy"
+spec:
+  clusterName: "{{ $.Descriptor.ClusterID }}"
+  nodeStartupTimeout: 300s
+  selector:
+    matchLabels:
+      stratio/machine-role: "{{ $.Descriptor.ClusterID }}-control-plane"
+  unhealthyConditions:
+    - type: Ready
+      status: Unknown
+      timeout: 60s
+    - type: Ready
+      status: 'False'
+      timeout: 60s
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineHealthCheck
+metadata:
+  name: "{{ $.Descriptor.ClusterID }}-wn-node-unhealthy"
+spec:
+  clusterName: "{{ $.Descriptor.ClusterID }}"
+  nodeStartupTimeout: 300s
+  selector:
+    matchLabels:
+      stratio/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
+  unhealthyConditions:
+    - type: Ready
+      status: Unknown
+      timeout: 60s
+    - type: Ready
+      status: 'False'
+      timeout: 60s
