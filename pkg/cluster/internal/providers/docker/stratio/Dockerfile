@@ -30,5 +30,5 @@ RUN curl -L https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz -o /root
   && chmod +x /usr/local/bin/helm
 
 RUN mkdir -p /stratio/helm \
-  && for i in 1 2 3; do timeout 5 helm pull cluster-autoscaler --version ${CLUSTER_AUTOSCALER} --repo https://kubernetes.github.io/autoscaler --untar --untardir /stratio/helm; done \
+  && for i in "1 2 3"; do timeout 5 helm pull cluster-autoscaler --version ${CLUSTER_AUTOSCALER} --repo https://kubernetes.github.io/autoscaler --untar --untardir /stratio/helm; done \
   && helm pull tigera-operator --version ${TIGERA_OPERATOR} --repo https://docs.projectcalico.org/charts --untar --untardir /stratio/helm
