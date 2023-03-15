@@ -125,7 +125,7 @@ spec:
       {{- end }}
       {{- if .Descriptor.ControlPlane.RootVolume.Type }}
       rootDeviceType: {{ .Descriptor.ControlPlane.RootVolume.Type }}
-      {{- end }}        
+      {{- end }}
 {{- range $node := .Descriptor.WorkerNodes }}
 {{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
