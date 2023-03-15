@@ -339,7 +339,7 @@ func rewriteDescriptorFile(descriptorPath string) error {
 }
 
 func integrateClusterAutoscaler(node nodes.Node, kubeconfigPath string, clusterID string, provider string) exec.Cmd {
-	cmd := node.Command("helm", "install", "cluster-autoscaler", "/stratio/helm/tigera-operator",
+	cmd := node.Command("helm", "install", "cluster-autoscaler", "/stratio/helm/cluster-autoscaler",
 		"--kubeconfig", kubeconfigPath,
 		"--namespace", "kube-system",
 		"--set", "autoDiscovery.clusterName="+clusterID,
