@@ -3,5 +3,5 @@ options:
   substitution_option: ALLOW_LOOSE
 steps:
 - name: gcr.io/k8s-testimages/krte:latest-master
-  env:
-  entrypoint: make -C images/local-path-provisioner push
+  entrypoint: make
+  args: ['-C', 'images/local-path-provisioner', 'push']
