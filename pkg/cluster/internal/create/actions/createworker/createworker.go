@@ -70,6 +70,8 @@ spec:
 const kubeconfigPath = "/kind/worker-cluster.kubeconfig"
 const workKubeconfigPath = ".kube/config"
 const secretsFile = "secrets.yml"
+const CAPILocalRepository = "/root/.cluster-api/local-repository"
+const CAPAStratioVersion = "2.0.2-0.1.0-M2"
 
 // NewAction returns a new action for installing default CAPI
 func NewAction(vaultPassword string, descriptorPath string, moveManagement bool, avoidCreation bool) actions.Action {
@@ -115,6 +117,57 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	ctx.Status.Start("Installing CAPx 🎖️")
 	defer ctx.Status.End(false)
+
+	if provider.capxVersion != provider.capxImageVersion {
+		var command string
+		var registryUrl string
+		var registryUser string
+		var registryPass string
+
+		if descriptorFile.ControlPlane.Managed {
+			ecrToken, err := getEcrAuthToken(providerParams)
+			if err != nil {
+				return errors.Wrap(err, "failed to get ECR auth token")
+			}
+			registryUrl = descriptorFile.DockerRegistries[0].URL
+			registryUser = "AWS"
+			registryPass = ecrToken
+		}
+
+		// Change image in infrastructure-components.yaml
+		infraComponents := CAPILocalRepository + "/infrastructure-" + provider.capxProvider + "/" + provider.capxVersion + "/infrastructure-components.yaml"
+		infraImage := registryUrl + "/stratio/cluster-api-provider-" + provider.capxProvider + ":" + provider.capxImageVersion
+		command = "sed -i 's%image:.*%image: " + infraImage + "%' " + infraComponents
+		err = executeCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to change image in infrastructure-components.yaml")
+		}
+
+		// Create provider-system namespace
+		command = "kubectl create namespace " + provider.capxName + "-system"
+		err = executeCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to create "+provider.capxName+"-system namespace")
+		}
+
+		// Create docker-registry secret
+		command = "kubectl create secret docker-registry regcred" +
+			" --docker-server=" + registryUrl +
+			" --docker-username=" + registryUser +
+			" --docker-password=" + registryPass +
+			" --namespace=" + provider.capxName + "-system"
+		err = executeCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to create docker-registry secret")
+		}
+
+		// Add imagePullSecrets to infrastructure-components.yaml
+		command = "sed -i '/securityContext:/i\\      imagePullSecrets:\\n      - name: regcred' " + infraComponents
+		err = executeCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to add imagePullSecrets to infrastructure-components.yaml")
+		}
+	}
 
 	err = provider.installCAPXLocal(node)
 	if err != nil {

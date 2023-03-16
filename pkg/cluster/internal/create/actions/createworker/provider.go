@@ -27,6 +27,7 @@ const (
 	CAPICoreProvider         = "cluster-api:v1.3.2"
 	CAPIBootstrapProvider    = "kubeadm:v1.3.2"
 	CAPIControlPlaneProvider = "kubeadm:v1.3.2"
+	//CAPILocalRepository      = "/root/.cluster-api/local-repository"
 
 	CNIName      = "calico"
 	CNINamespace = "calico-system"
@@ -45,12 +46,14 @@ type PBuilder interface {
 }
 
 type Provider struct {
-	capxProvider string
-	capxName     string
-	capxTemplate string
-	capxEnvVars  []string
-	stClassName  string
-	csiNamespace string
+	capxProvider     string
+	capxVersion      string
+	capxImageVersion string
+	capxName         string
+	capxTemplate     string
+	capxEnvVars      []string
+	stClassName      string
+	csiNamespace     string
 }
 
 type ProviderParams struct {
@@ -127,7 +130,7 @@ func (p *Provider) installCAPXWorker(node nodes.Node, kubeconfigPath string, all
 		" --core " + CAPICoreProvider +
 		" --bootstrap " + CAPIBootstrapProvider +
 		" --control-plane " + CAPIControlPlaneProvider +
-		" --infrastructure " + p.capxProvider
+		" --infrastructure " + p.capxProvider + ":" + p.capxVersion
 	err = executeCommand(node, command, p.capxEnvVars)
 	if err != nil {
 		return errors.Wrap(err, "failed to install CAPX in workload cluster")
@@ -159,7 +162,7 @@ func (p *Provider) installCAPXLocal(node nodes.Node) error {
 		" --core " + CAPICoreProvider +
 		" --bootstrap " + CAPIBootstrapProvider +
 		" --control-plane " + CAPIControlPlaneProvider +
-		" --infrastructure " + p.capxProvider
+		" --infrastructure " + p.capxProvider + ":" + p.capxVersion
 	err = executeCommand(node, command, p.capxEnvVars)
 	if err != nil {
 		return errors.Wrap(err, "failed to install CAPX in local cluster")
