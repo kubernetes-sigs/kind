@@ -71,7 +71,6 @@ const kubeconfigPath = "/kind/worker-cluster.kubeconfig"
 const workKubeconfigPath = ".kube/config"
 const secretsFile = "secrets.yml"
 const CAPILocalRepository = "/root/.cluster-api/local-repository"
-const CAPAStratioVersion = "2.0.2-0.1.0-M2"
 
 // NewAction returns a new action for installing default CAPI
 func NewAction(vaultPassword string, descriptorPath string, moveManagement bool, avoidCreation bool) actions.Action {
