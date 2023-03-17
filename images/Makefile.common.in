@@ -27,12 +27,12 @@ IMAGE?=$(REGISTRY)/$(IMAGE_NAME):$(TAG)
 export DOCKER_CLI_EXPERIMENTAL=enabled
 
 # build with buildx
-PLATFORMS?=linux/amd64,linux/arm64,linux/s390x,linux/ppc64le
+PLATFORMS?=linux/amd64,linux/arm64
 OUTPUT?=
 PROGRESS=auto
 EXTRA_BUILD_OPT?=
 build: ensure-buildx
-	docker buildx build --platform=${PLATFORMS} $(OUTPUT) --progress=$(PROGRESS) -t ${IMAGE} --pull $(EXTRA_BUILD_OPT) .
+	docker buildx build $(if $(PLATFORMS),--platform=$(PLATFORMS),) $(OUTPUT) --progress=$(PROGRESS) -t ${IMAGE} --pull $(EXTRA_BUILD_OPT) .
 
 # push the cross built image
 push: OUTPUT=--push
@@ -42,7 +42,7 @@ push: build
 # for sanity checking before doing a cross build push
 # cross builds cannot be imported locally at the moment
 # https://github.com/docker/buildx/issues/59
-quick: PLATFORMS=linux/amd64
+quick: PLATFORMS=
 quick: OUTPUT=--load
 quick: build
 
