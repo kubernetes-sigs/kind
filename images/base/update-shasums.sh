@@ -38,8 +38,6 @@ fi
 ARCHITECTURES=(
     "amd64"
     "arm64"
-    "ppc64le"
-    "s390x"
 )
 
 CONTAINERD_BASE_URL="https://github.com/kind-ci/containerd-nightlies/releases/download/containerd-${CONTAINERD_VERSION}"
