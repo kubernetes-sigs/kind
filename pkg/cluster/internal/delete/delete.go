@@ -33,17 +33,25 @@ func Cluster(logger log.Logger, p providers.Provider, name, explicitKubeconfigPa
 		return errors.Wrap(err, "error listing nodes")
 	}
 
-	kerr := kubeconfig.Remove(name, explicitKubeconfigPath)
+	l, kerr := kubeconfig.Remove(name, explicitKubeconfigPath)
+	if l {
+		logger.V(0).Infof("Removed context %q from kubeconfig", name)
+	}
 	if kerr != nil {
 		logger.Errorf("failed to update kubeconfig: %v", kerr)
 	}
 
-	err = p.DeleteNodes(n)
-	if err != nil {
-		return err
+	if len(n) > 0 {
+		err = p.DeleteNodes(n)
+		if err != nil {
+			return err
+		}
+		logger.V(0).Infof("Deleted nodes: %q", n)
 	}
+
 	if kerr != nil {
-		return err
+		return kerr
 	}
+
 	return nil
 }

@@ -183,7 +183,7 @@ users:
 	}
 
 	// ensure that we can write this merged config
-	if err := RemoveKIND("foo", existingConfigPath); err != nil {
+	if _, err := RemoveKIND("foo", existingConfigPath); err != nil {
 		t.Fatalf("Failed to remove kind from kubeconfig: %v", err)
 	}
 
@@ -251,7 +251,7 @@ users:
 	}
 
 	// ensure that we can write this merged config
-	if err := RemoveKIND("foo", existingConfigPath); err != nil {
+	if _, err := RemoveKIND("foo", existingConfigPath); err != nil {
 		t.Fatalf("Failed to remove kind from kubeconfig: %v", err)
 	}
 

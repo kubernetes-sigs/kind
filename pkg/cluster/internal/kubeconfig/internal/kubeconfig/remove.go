@@ -24,7 +24,7 @@ import (
 
 // RemoveKIND removes the kind cluster kindClusterName from the KUBECONFIG
 // files at configPaths
-func RemoveKIND(kindClusterName string, explicitPath string) error {
+func RemoveKIND(kindClusterName string, explicitPath string) (bool, error) {
 	// remove kind from each if present
 	for _, configPath := range paths(explicitPath, os.Getenv) {
 		if err := func(configPath string) error {
@@ -52,10 +52,10 @@ func RemoveKIND(kindClusterName string, explicitPath string) error {
 
 			return nil
 		}(configPath); err != nil {
-			return err
+			return false, err
 		}
 	}
-	return nil
+	return true, nil
 }
 
 // remove drops kindClusterName entries from the cfg

@@ -44,7 +44,7 @@ func Export(p providers.Provider, name, explicitPath string, external bool) erro
 // either explicitPath being set or $KUBECONFIG or $HOME/.kube/config, following
 // the rules set by kubectl
 // clusterName must identify a kind cluster.
-func Remove(clusterName, explicitPath string) error {
+func Remove(clusterName, explicitPath string) (bool, error) {
 	return kubeconfig.RemoveKIND(clusterName, explicitPath)
 }
 
