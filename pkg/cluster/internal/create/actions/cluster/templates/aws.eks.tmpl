@@ -95,7 +95,7 @@ spec:
       - name: ANNOTATE_POD_IP
         value: \"true\"
 {{- range $node := .Descriptor.WorkerNodes }}
-{{- range $index, $n := loop .AZ .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
+{{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
@@ -147,9 +147,7 @@ spec:
       instanceType: "{{ $node.Size }}"
       sshKeyName: \"{{ $node.SSHKey }}\"
       rootVolume:
-        {{- if $node.RootVolume.Size }}
-        size: {{ $node.RootVolume.Size }}
-        {{- end }}
+        size: {{- if $node.RootVolume.Size }} {{ $node.RootVolume.Size }} {{ else }} 30 {{ end }}
         {{- if $node.RootVolume.Type }}
         type: {{ $node.RootVolume.Type }}
         {{- end }}
@@ -161,6 +159,10 @@ metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
   namespace: "cluster-{{ $.Descriptor.ClusterID }}"
 spec:
-  template: {}
+  template: {{ if not $node.Labels }}{}{{- else }}
+    spec:
+      kubeletExtraArgs:
+        node-labels: \"{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}\"
+{{- end }}
 {{- end }}
 {{- end }}
