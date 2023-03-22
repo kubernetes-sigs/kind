@@ -361,15 +361,14 @@ spec:
 			// Create the allow and deny (global) network policy file in the container
 			if descriptorFile.InfraProvider == "aws" {
 				denyallEgressIMDSGNetPolPath := "/kind/deny-all-egress-imds_gnetpol.yaml"
-				// allowControlPlaneIngressGNetPolPath := "/kind/allow-controlplane-ingress_gnetpol.yaml"
 				allowCAPAEgressIMDSGNetPolPath := "/kind/allow-capa-egress-imds_gnetpol.yaml"
 
-                // Allow egress in kube-system Namespace
-                raw = bytes.Buffer{}
-                cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "kube-system", "apply", "-f", allowCommonEgressNetPolPath)
-                if err := cmd.SetStdout(&raw).Run(); err != nil {
-                    return errors.Wrap(err, "failed to apply kube-system egress NetworkPolicy")
-                }
+				// Allow egress in kube-system Namespace
+				raw = bytes.Buffer{}
+				cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "kube-system", "apply", "-f", allowCommonEgressNetPolPath)
+				if err := cmd.SetStdout(&raw).Run(); err != nil {
+					return errors.Wrap(err, "failed to apply kube-system egress NetworkPolicy")
+				}
 
 				raw = bytes.Buffer{}
 				cmd = node.Command("sh", "-c", "echo \""+denyallEgressIMDSGNetPol+"\" > "+denyallEgressIMDSGNetPolPath)
