@@ -467,9 +467,7 @@ func convertMapKeysToSnakeCase(m map[string]interface{}) map[string]interface{} 
 
 func getEcrAuthToken(p ProviderParams) (string, error) {
 	customProvider := credentials.NewStaticCredentialsProvider(
-		p.credentials["AccessKey"],
-		p.credentials["SecretKey"],
-		os.Getenv("AWS_SESSION_TOKEN"),
+		p.credentials["AccessKey"], p.credentials["SecretKey"], "",
 	)
 	cfg, err := config.LoadDefaultConfig(
 		context.TODO(),
