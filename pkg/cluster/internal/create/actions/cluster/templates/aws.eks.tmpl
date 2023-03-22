@@ -85,7 +85,7 @@ spec:
   template:
     metadata:
       labels: 
-        stratio/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
+        keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
     spec:
       clusterName: "{{ $.Descriptor.ClusterID }}"
       version: "{{ $.Descriptor.K8SVersion }}"
@@ -151,7 +151,7 @@ spec:
   nodeStartupTimeout: 300s
   selector:
     matchLabels:
-      stratio/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
+      keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
   unhealthyConditions:
     - type: Ready
       status: Unknown

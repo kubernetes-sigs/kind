@@ -49,7 +49,7 @@ spec:
   machineTemplate:
     metadata:
       labels: 
-        stratio/machine-role: "{{ $.Descriptor.ClusterID }}-control-plane-node"
+        keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-control-plane-node"
     infrastructureRef:
       kind: GCPMachineTemplate
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -147,7 +147,7 @@ spec:
   template:
     metadata:
       labels: 
-        stratio/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
+        keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
     spec:
       clusterName: "{{ $.Descriptor.ClusterID }}"
       version: "{{ $.Descriptor.K8SVersion }}"
@@ -229,7 +229,7 @@ spec:
   nodeStartupTimeout: 300s
   selector:
     matchLabels:
-      stratio/machine-role: "{{ $.Descriptor.ClusterID }}-control-plane"
+      keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-control-plane"
   unhealthyConditions:
     - type: Ready
       status: Unknown
@@ -247,7 +247,7 @@ spec:
   nodeStartupTimeout: 300s
   selector:
     matchLabels:
-      stratio/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
+      keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
   unhealthyConditions:
     - type: Ready
       status: Unknown
