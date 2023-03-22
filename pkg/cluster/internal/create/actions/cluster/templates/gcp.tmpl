@@ -229,7 +229,7 @@ spec:
   nodeStartupTimeout: 300s
   selector:
     matchLabels:
-      keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-control-plane"
+      keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-control-plane-node"
   unhealthyConditions:
     - type: Ready
       status: Unknown
