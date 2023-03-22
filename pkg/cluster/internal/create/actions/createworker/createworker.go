@@ -94,7 +94,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	// Get the secrets
-	credentialsMap, externalRegistryMap, githubToken, _, err := getSecrets(*descriptorFile, a.vaultPassword)
+	credentialsMap, _, githubToken, dockerRegistries, err := getSecrets(*descriptorFile, a.vaultPassword)
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	templateParams := cluster.TemplateParams{
 		Descriptor:       *descriptorFile,
 		Credentials:      credentialsMap,
-		ExternalRegistry: externalRegistryMap,
+		DockerRegistries: dockerRegistries,
 	}
 
 	// Generate the cluster manifest
@@ -161,33 +161,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	cmd = node.Command("kubectl", "create", "ns", capiClustersNamespace)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to create cluster's Namespace")
-	}
-
-	var machineHealthCheck = `
-apiVersion: cluster.x-k8s.io/v1beta1
-kind: MachineHealthCheck
-metadata:
-  name: ` + descriptorFile.ClusterID + `-node-unhealthy
-spec:
-  clusterName: ` + descriptorFile.ClusterID + `
-  nodeStartupTimeout: 300s
-  selector:
-    matchLabels:
-      cluster.x-k8s.io/cluster-name: ` + descriptorFile.ClusterID + `
-  unhealthyConditions:
-    - type: Ready
-      status: Unknown
-      timeout: 60s
-    - type: Ready
-      status: 'False'
-      timeout: 60s`
-
-	// Create the MachineHealthCheck manifest file in the container
-	machineHealthCheckPath := "/kind/manifests/machinehealthcheck.yaml"
-	raw = bytes.Buffer{}
-	cmd = node.Command("sh", "-c", "echo \""+machineHealthCheck+"\" > "+machineHealthCheckPath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to write the MachineHealthCheck manifest")
 	}
 
 	// Create the allow-all-egress network policy file in the container
@@ -292,20 +265,6 @@ spec:
 				return errors.Wrap(err, "failed to create the worker Cluster")
 			}
 		}
-
-		ctx.Status.End(true) // End Preparing nodes in workload cluster
-
-		ctx.Status.Start("Enabling workload cluster's self-healing 🏥")
-		defer ctx.Status.End(false)
-
-		// Enable the cluster's self-healing
-		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "apply", "-f", machineHealthCheckPath)
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
-		}
-
-		ctx.Status.End(true) // End Enabling workload cluster's self-healing
 
 		ctx.Status.Start("Installing CAPx in workload cluster 🎖️")
 		defer ctx.Status.End(false)
