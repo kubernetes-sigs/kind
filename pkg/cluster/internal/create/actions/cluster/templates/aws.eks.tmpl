@@ -113,6 +113,9 @@ spec:
   selector:
     matchLabels:
   template:
+    metadata:
+      labels: 
+        keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
     spec:
       clusterName: "{{ $.Descriptor.ClusterID }}"
       version: "{{ $.Descriptor.K8SVersion }}"
@@ -166,3 +169,21 @@ spec:
 {{- end }}
 {{- end }}
 {{- end }}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineHealthCheck
+metadata:
+  name: "{{ $.Descriptor.ClusterID }}-worker-node-unhealthy"
+spec:
+  clusterName: "{{ $.Descriptor.ClusterID }}"
+  nodeStartupTimeout: 300s
+  selector:
+    matchLabels:
+      keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
+  unhealthyConditions:
+    - type: Ready
+      status: Unknown
+      timeout: 60s
+    - type: Ready
+      status: 'False'
+      timeout: 60s

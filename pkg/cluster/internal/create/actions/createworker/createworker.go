@@ -166,33 +166,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to create cluster's Namespace")
 	}
 
-	var machineHealthCheck = `
-apiVersion: cluster.x-k8s.io/v1beta1
-kind: MachineHealthCheck
-metadata:
-  name: ` + descriptorFile.ClusterID + `-node-unhealthy
-spec:
-  clusterName: ` + descriptorFile.ClusterID + `
-  nodeStartupTimeout: 300s
-  selector:
-    matchLabels:
-      cluster.x-k8s.io/cluster-name: ` + descriptorFile.ClusterID + `
-  unhealthyConditions:
-    - type: Ready
-      status: Unknown
-      timeout: 60s
-    - type: Ready
-      status: 'False'
-      timeout: 60s`
-
-	// Create the MachineHealthCheck manifest file in the container
-	machineHealthCheckPath := "/kind/manifests/machinehealthcheck.yaml"
-	raw = bytes.Buffer{}
-	cmd = node.Command("sh", "-c", "echo \""+machineHealthCheck+"\" > "+machineHealthCheckPath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to write the MachineHealthCheck manifest")
-	}
-
 	// Create the allow-all-egress network policy file in the container
 	allowAllEgressNetPolPath := "/kind/allow-all-egress_netpol.yaml"
 	raw = bytes.Buffer{}
@@ -294,33 +267,6 @@ spec:
 			if err := cmd.SetStdout(&raw).Run(); err != nil {
 				return errors.Wrap(err, "failed to create the worker Cluster")
 			}
-		}
-
-		ctx.Status.End(true) // End Preparing nodes in workload cluster
-
-		ctx.Status.Start("Enabling workload cluster's self-healing 🏥")
-		defer ctx.Status.End(false)
-
-		// Enable the cluster's self-healing
-		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "apply", "-f", machineHealthCheckPath)
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
-		}
-
-		ctx.Status.End(true) // End Enabling workload cluster's self-healing
-
-		// Rewrite Kubeconfig. try to remove once the OIDC and CAPA forks are integrated
-		raw = bytes.Buffer{}
-		cmd = node.Command("sh", "-c", "clusterctl -n "+capiClustersNamespace+" get kubeconfig "+descriptorFile.ClusterID+" | tee "+kubeconfigPath)
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to get workload cluster kubeconfig")
-		}
-		kubeconfig = raw.String()
-
-		err = os.WriteFile(workKubeconfigPath, []byte(kubeconfig), 0600)
-		if err != nil {
-			return errors.Wrap(err, "failed to save the workload cluster kubeconfig")
 		}
 
 		ctx.Status.Start("Installing CAPx in workload cluster 🎖️")
