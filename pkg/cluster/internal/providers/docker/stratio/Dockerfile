@@ -31,3 +31,10 @@ RUN curl -L https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz -o /root
 RUN mkdir -p /stratio/helm \
   && /usr/local/bin/helm repo add autoscaler https://kubernetes.github.io/autoscaler \
   && helm pull tigera-operator --version ${TIGERA_OPERATOR} --repo https://docs.projectcalico.org/charts --untar --untardir /stratio/helm
+
+RUN mkdir -p /root/.cluster-api && echo "\
+providers:\n\
+  - name: "aws"\n\
+    url: "https://github.com/Stratio/cluster-api-provider-aws/releases/latest/infrastructure-components.yaml"\n\
+    type: "InfrastructureProvider"\n\
+" > /root/.cluster-api/clusterctl.yaml
