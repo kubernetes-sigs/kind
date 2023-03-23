@@ -18,8 +18,8 @@ limitations under the License.
 package createworker
 
 import (
-	_ "embed"
 	"bytes"
+	_ "embed"
 	"os"
 	"strings"
 
@@ -58,9 +58,12 @@ type Secrets struct {
 
 //go:embed files/allow-all-egress_netpol.yaml
 var allowCommonEgressNetPol string
+
 // In common with keos installer
+//
 //go:embed files/deny-all-egress-imds_gnetpol.yaml
 var denyallEgressIMDSGNetPol string
+
 //go:embed files/allow-capa-egress-imds_gnetpol.yaml
 var allowCAPAEgressIMDSGNetPol string
 
@@ -265,6 +268,17 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				return errors.Wrap(err, "failed to create the worker Cluster")
 			}
 		}
+		ctx.Status.End(true) // End Preparing nodes in workload cluster
+
+		ctx.Status.Start("Enabling workload cluster's self-healing 🏥")
+		defer ctx.Status.End(false)
+
+		err = enableSelfHealing(node, *descriptorFile, capiClustersNamespace)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to enable workload cluster's self-healing")
+		}
+
+		ctx.Status.End(true) // End Enabling workload cluster's self-healing
 
 		ctx.Status.Start("Installing CAPx in workload cluster 🎖️")
 		defer ctx.Status.End(false)
@@ -355,7 +369,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				}
 			}
 		}
-			
+
 		ctx.Status.End(true) // End Installing Network Policy Engine in workload cluster
 
 		if descriptorFile.DeployAutoscaler {
