@@ -77,7 +77,8 @@ type DescriptorFile struct {
 			Type      string `yaml:"type"`
 			Encrypted bool   `yaml:"encrypted" validate:"boolean"`
 		} `yaml:"root_volume"`
-		AWS AWS `yaml:"aws"`
+		AWS          AWS           `yaml:"aws"`
+		ExtraVolumes []ExtraVolume `yaml:"extra_volumes"`
 	} `yaml:"control_plane"`
 
 	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
@@ -131,6 +132,7 @@ type WorkerNodes []struct {
 		Type      string `yaml:"type"`
 		Encrypted bool   `yaml:"encrypted" validate:"boolean"`
 	} `yaml:"root_volume"`
+	ExtraVolumes []ExtraVolume `yaml:"extra_volumes"`
 }
 
 // Bastion represents the bastion VM
@@ -145,6 +147,15 @@ type Node struct {
 	QA      int
 	MaxSize int
 	MinSize int
+}
+
+type ExtraVolume struct {
+	DeviceName string `yaml:"device_name"`
+	Size       int    `yaml:"size" validate:"numeric"`
+	Type       string `yaml:"type"`
+	Label      string `yaml:"label"`
+	Encrypted  bool   `yaml:"encrypted" validate:"boolean"`
+	MountPath  string `yaml:"mount_path" validate:"omitempty,required_with=Name"`
 }
 
 type Credentials struct {
