@@ -11,6 +11,10 @@ ENV CLUSTER_TOPOLOGY=true
 # Helm charts
 ENV TIGERA_OPERATOR=v3.22.3
 
+# Cluster-api artifacts
+ENV CAPI_REPO=/root/.cluster-api/local-repository
+ENV CAPA=v2.0.2
+
 # Download clusterctl (61.5M)
 RUN curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/${CLUSTERCTL}/clusterctl-linux-amd64 -o /usr/local/bin/clusterctl \
     && chmod +x /usr/local/bin/clusterctl
@@ -32,9 +36,14 @@ RUN mkdir -p /stratio/helm \
   && /usr/local/bin/helm repo add autoscaler https://kubernetes.github.io/autoscaler \
   && helm pull tigera-operator --version ${TIGERA_OPERATOR} --repo https://docs.projectcalico.org/charts --untar --untardir /stratio/helm
 
-RUN mkdir -p /root/.cluster-api && echo "\
+RUN mkdir -p ${CAPI_REPO}/infrastructure-aws/${CAPA} \
+  && echo "\
 providers:\n\
   - name: "aws"\n\
-    url: "https://github.com/Stratio/cluster-api-provider-aws/releases/latest/infrastructure-components.yaml"\n\
+    url: ${CAPI_REPO}/infrastructure-aws/${CAPA}/infrastructure-components.yaml\n\
     type: "InfrastructureProvider"\n\
-" > /root/.cluster-api/clusterctl.yaml
+" > /root/.cluster-api/clusterctl.yaml \
+  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/download/${CAPA}/metadata.yaml \
+    -o ${CAPI_REPO}/infrastructure-aws/${CAPA}/metadata.yaml \
+  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/download/${CAPA}/infrastructure-components.yaml \
+    -o ${CAPI_REPO}/infrastructure-aws/${CAPA}/infrastructure-components.yaml

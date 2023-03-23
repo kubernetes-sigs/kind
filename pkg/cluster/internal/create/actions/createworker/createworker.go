@@ -18,8 +18,8 @@ limitations under the License.
 package createworker
 
 import (
-	_ "embed"
 	"bytes"
+	_ "embed"
 	"os"
 	"strings"
 
@@ -58,15 +58,19 @@ type Secrets struct {
 
 //go:embed files/allow-all-egress_netpol.yaml
 var allowCommonEgressNetPol string
+
 // In common with keos installer
+//
 //go:embed files/deny-all-egress-imds_gnetpol.yaml
 var denyallEgressIMDSGNetPol string
+
 //go:embed files/allow-capa-egress-imds_gnetpol.yaml
 var allowCAPAEgressIMDSGNetPol string
 
 const kubeconfigPath = "/kind/worker-cluster.kubeconfig"
 const workKubeconfigPath = ".kube/config"
 const secretsFile = "secrets.yml"
+const CAPILocalRepository = "/root/.cluster-api/local-repository"
 
 // NewAction returns a new action for installing default CAPI
 func NewAction(vaultPassword string, descriptorPath string, moveManagement bool, avoidCreation bool) actions.Action {
@@ -112,6 +116,57 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	ctx.Status.Start("Installing CAPx 🎖️")
 	defer ctx.Status.End(false)
+
+	if provider.capxVersion != provider.capxImageVersion {
+		var command string
+		var registryUrl string
+		var registryUser string
+		var registryPass string
+
+		if descriptorFile.ControlPlane.Managed {
+			ecrToken, err := getEcrAuthToken(providerParams)
+			if err != nil {
+				return errors.Wrap(err, "failed to get ECR auth token")
+			}
+			registryUrl = descriptorFile.DockerRegistries[0].URL
+			registryUser = "AWS"
+			registryPass = ecrToken
+		}
+
+		// Change image in infrastructure-components.yaml
+		infraComponents := CAPILocalRepository + "/infrastructure-" + provider.capxProvider + "/" + provider.capxVersion + "/infrastructure-components.yaml"
+		infraImage := registryUrl + "/stratio/cluster-api-provider-" + provider.capxProvider + ":" + provider.capxImageVersion
+		command = "sed -i 's%image:.*%image: " + infraImage + "%' " + infraComponents
+		err = executeCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to change image in infrastructure-components.yaml")
+		}
+
+		// Create provider-system namespace
+		command = "kubectl create namespace " + provider.capxName + "-system"
+		err = executeCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to create "+provider.capxName+"-system namespace")
+		}
+
+		// Create docker-registry secret
+		command = "kubectl create secret docker-registry regcred" +
+			" --docker-server=" + registryUrl +
+			" --docker-username=" + registryUser +
+			" --docker-password=" + registryPass +
+			" --namespace=" + provider.capxName + "-system"
+		err = executeCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to create docker-registry secret")
+		}
+
+		// Add imagePullSecrets to infrastructure-components.yaml
+		command = "sed -i '/securityContext:/i\\      imagePullSecrets:\\n      - name: regcred' " + infraComponents
+		err = executeCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to add imagePullSecrets to infrastructure-components.yaml")
+		}
+	}
 
 	err = provider.installCAPXLocal(node)
 	if err != nil {
@@ -265,6 +320,17 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				return errors.Wrap(err, "failed to create the worker Cluster")
 			}
 		}
+		ctx.Status.End(true) // End Preparing nodes in workload cluster
+
+		ctx.Status.Start("Enabling workload cluster's self-healing 🏥")
+		defer ctx.Status.End(false)
+
+		err = enableSelfHealing(node, *descriptorFile, capiClustersNamespace)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to enable workload cluster's self-healing")
+		}
+
+		ctx.Status.End(true) // End Enabling workload cluster's self-healing
 
 		ctx.Status.Start("Installing CAPx in workload cluster 🎖️")
 		defer ctx.Status.End(false)
@@ -355,7 +421,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				}
 			}
 		}
-			
+
 		ctx.Status.End(true) // End Installing Network Policy Engine in workload cluster
 
 		if descriptorFile.DeployAutoscaler {
