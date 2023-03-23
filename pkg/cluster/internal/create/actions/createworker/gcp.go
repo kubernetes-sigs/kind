@@ -32,12 +32,14 @@ import (
 var csiManifest string
 
 type GCPBuilder struct {
-	capxProvider string
-	capxName     string
-	capxTemplate string
-	capxEnvVars  []string
-	stClassName  string
-	csiNamespace string
+	capxProvider     string
+	capxVersion      string
+	capxImageVersion string
+	capxName         string
+	capxTemplate     string
+	capxEnvVars      []string
+	stClassName      string
+	csiNamespace     string
 }
 
 func newGCPBuilder() *GCPBuilder {
@@ -45,7 +47,9 @@ func newGCPBuilder() *GCPBuilder {
 }
 
 func (b *GCPBuilder) setCapx(managed bool) {
-	b.capxProvider = "gcp:v1.2.1"
+	b.capxProvider = "gcp"
+	b.capxVersion = "v1.2.1"
+	b.capxImageVersion = "v1.2.1"
 	b.capxName = "capg"
 	b.stClassName = "csi-gcp-pd"
 	if managed {
@@ -80,12 +84,14 @@ func (b *GCPBuilder) setCapxEnvVars(p ProviderParams) {
 
 func (b *GCPBuilder) getProvider() Provider {
 	return Provider{
-		capxProvider: b.capxProvider,
-		capxName:     b.capxName,
-		capxTemplate: b.capxTemplate,
-		capxEnvVars:  b.capxEnvVars,
-		stClassName:  b.stClassName,
-		csiNamespace: b.csiNamespace,
+		capxProvider:     b.capxProvider,
+		capxVersion:      b.capxVersion,
+		capxImageVersion: b.capxImageVersion,
+		capxName:         b.capxName,
+		capxTemplate:     b.capxTemplate,
+		capxEnvVars:      b.capxEnvVars,
+		stClassName:      b.stClassName,
+		csiNamespace:     b.csiNamespace,
 	}
 }
 
