@@ -200,21 +200,3 @@ spec:
       {{- end }}
 {{- end }}
 {{- end }}
----
-apiVersion: cluster.x-k8s.io/v1beta1
-kind: MachineHealthCheck
-metadata:
-  name: "{{ $.Descriptor.ClusterID }}-worker-node-unhealthy"
-spec:
-  clusterName: "{{ $.Descriptor.ClusterID }}"
-  nodeStartupTimeout: 300s
-  selector:
-    matchLabels:
-      keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
-  unhealthyConditions:
-    - type: Ready
-      status: Unknown
-      timeout: 60s
-    - type: Ready
-      status: 'False'
-      timeout: 60s
