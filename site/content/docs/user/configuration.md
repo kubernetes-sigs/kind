@@ -487,7 +487,7 @@ kubeadmConfigPatches:
     kind: InitConfiguration
     patches:
       directory: /patches
-{{< codeFromInline >}}
+{{< /codeFromInline >}}
 
 Note the `extraMounts` stanza. The node is a container created by
 `kind`. `kubeadm` is run inside this node container, and the local directory
