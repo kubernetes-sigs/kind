@@ -21,6 +21,7 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 )
 
 const (
@@ -29,14 +30,11 @@ const (
 	CAPIControlPlaneProvider = "kubeadm:v1.3.2"
 	//CAPILocalRepository      = "/root/.cluster-api/local-repository"
 
-	CNIName      = "calico"
-	CNINamespace = "calico-system"
-	CNIHelmChart = "/stratio/helm/tigera-operator"
-	CNITemplate  = "/kind/calico-helm-values.yaml"
+	CalicoName      = "calico"
+	CalicoNamespace = "calico-system"
+	CalicoHelmChart = "/stratio/helm/tigera-operator"
+	CalicoTemplate  = "/kind/calico-helm-values.yaml"
 )
-
-//go:embed files/calico-helm-values.yaml
-var calicoHelmValues string
 
 type PBuilder interface {
 	setCapx(managed bool)
@@ -94,27 +92,33 @@ func (i *Infra) installCSI(n nodes.Node, k string) error {
 	return i.builder.installCSI(n, k)
 }
 
-func installCNI(n nodes.Node, k string) error {
+func installCalico(n nodes.Node, k string, descriptorFile cluster.DescriptorFile) error {
 	var c string
 	var err error
 
-	c = "kubectl --kubeconfig " + k + " create namespace " + CNINamespace
-	err = executeCommand(n, c)
+	// Generate the calico helm values
+	calicoHelmValues, err := getCalicoManifest(descriptorFile)
 	if err != nil {
-		return errors.Wrap(err, "failed to create CNI namespace")
+		return errors.Wrap(err, "failed to generate calico helm values")
 	}
 
-	c = "echo '" + calicoHelmValues + "' > " + CNITemplate
+	c = "kubectl --kubeconfig " + k + " create namespace " + CalicoNamespace
 	err = executeCommand(n, c)
 	if err != nil {
-		return errors.Wrap(err, "failed to create CNI Helm chart values file")
+		return errors.Wrap(err, "failed to create Calico namespace")
 	}
 
-	c = "helm install --kubeconfig " + k + " " + CNIName + " " + CNIHelmChart +
-		" --namespace " + CNINamespace + " --values " + CNITemplate
+	c = "echo '" + calicoHelmValues + "' > " + CalicoTemplate
 	err = executeCommand(n, c)
 	if err != nil {
-		return errors.Wrap(err, "failed to deploy CNI Helm Chart")
+		return errors.Wrap(err, "failed to create Calico Helm chart values file")
+	}
+
+	c = "helm install --kubeconfig " + k + " " + CalicoName + " " + CalicoHelmChart +
+		" --namespace " + CalicoNamespace + " --values " + CalicoTemplate
+	err = executeCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to deploy Calico Helm Chart")
 	}
 
 	return nil

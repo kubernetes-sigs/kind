@@ -18,6 +18,7 @@ limitations under the License.
 package createworker
 
 import (
+	_ "embed"
 	"bytes"
 	"os"
 	"strings"
@@ -55,17 +56,13 @@ type Secrets struct {
 	DockerRegistries []cluster.DockerRegistryCredentials `yaml:"docker_registries"`
 }
 
-const allowAllEgressNetPol = `
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-all-egress
-spec:
-  egress:
-  - {}
-  podSelector: {}
-  policyTypes:
-  - Egress`
+//go:embed files/allow-all-egress_netpol.yaml
+var allowCommonEgressNetPol string
+// In common with keos installer
+//go:embed files/deny-all-egress-imds_gnetpol.yaml
+var denyallEgressIMDSGNetPol string
+//go:embed files/allow-capa-egress-imds_gnetpol.yaml
+var allowCAPAEgressIMDSGNetPol string
 
 const kubeconfigPath = "/kind/worker-cluster.kubeconfig"
 const workKubeconfigPath = ".kube/config"
@@ -218,37 +215,10 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to create cluster's Namespace")
 	}
 
-	var machineHealthCheck = `
-apiVersion: cluster.x-k8s.io/v1beta1
-kind: MachineHealthCheck
-metadata:
-  name: ` + descriptorFile.ClusterID + `-node-unhealthy
-spec:
-  clusterName: ` + descriptorFile.ClusterID + `
-  nodeStartupTimeout: 300s
-  selector:
-    matchLabels:
-      cluster.x-k8s.io/cluster-name: ` + descriptorFile.ClusterID + `
-  unhealthyConditions:
-    - type: Ready
-      status: Unknown
-      timeout: 60s
-    - type: Ready
-      status: 'False'
-      timeout: 60s`
-
-	// Create the MachineHealthCheck manifest file in the container
-	machineHealthCheckPath := "/kind/manifests/machinehealthcheck.yaml"
-	raw = bytes.Buffer{}
-	cmd = node.Command("sh", "-c", "echo \""+machineHealthCheck+"\" > "+machineHealthCheckPath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return errors.Wrap(err, "failed to write the MachineHealthCheck manifest")
-	}
-
 	// Create the allow-all-egress network policy file in the container
-	allowAllEgressNetPolPath := "/kind/allow-all-egress_netpol.yaml"
+	allowCommonEgressNetPolPath := "/kind/allow-all-egress_netpol.yaml"
 	raw = bytes.Buffer{}
-	cmd = node.Command("sh", "-c", "echo \""+allowAllEgressNetPol+"\" > "+allowAllEgressNetPolPath)
+	cmd = node.Command("sh", "-c", "echo \""+allowCommonEgressNetPol+"\" > "+allowCommonEgressNetPolPath)
 	if err := cmd.SetStdout(&raw).Run(); err != nil {
 		return errors.Wrap(err, "failed to write the allow-all-egress network policy")
 	}
@@ -310,14 +280,14 @@ spec:
 
 		// Install unmanaged cluster addons
 		if !descriptorFile.ControlPlane.Managed {
-			ctx.Status.Start("Installing CNI in workload cluster 🔌")
+			ctx.Status.Start("Installing Calico in workload cluster 🔌")
 			defer ctx.Status.End(false)
 
-			err = installCNI(node, kubeconfigPath)
+			err = installCalico(node, kubeconfigPath, *descriptorFile)
 			if err != nil {
-				return errors.Wrap(err, "failed to install CNI in workload cluster")
+				return errors.Wrap(err, "failed to install Calico in workload cluster")
 			}
-			ctx.Status.End(true) // End Installing CNI in workload cluster
+			ctx.Status.End(true) // End Installing Calico in workload cluster
 
 			ctx.Status.Start("Installing StorageClass in workload cluster 💾")
 			defer ctx.Status.End(false)
@@ -348,24 +318,10 @@ spec:
 			}
 		}
 
-		ctx.Status.End(true) // End Preparing nodes in workload cluster
-
-		ctx.Status.Start("Enabling workload cluster's self-healing 🏥")
-		defer ctx.Status.End(false)
-
-		// Enable the cluster's self-healing
-		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "apply", "-f", machineHealthCheckPath)
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
-		}
-
-		ctx.Status.End(true) // End Enabling workload cluster's self-healing
-
 		ctx.Status.Start("Installing CAPx in workload cluster 🎖️")
 		defer ctx.Status.End(false)
 
-		err = provider.installCAPXWorker(node, kubeconfigPath, allowAllEgressNetPolPath)
+		err = provider.installCAPXWorker(node, kubeconfigPath, allowCommonEgressNetPolPath)
 		if err != nil {
 			return err
 		}
@@ -379,29 +335,80 @@ spec:
 
 		// Allow egress in CAPI's Namespaces
 		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capi-system", "apply", "-f", allowAllEgressNetPolPath)
+		cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capi-system", "apply", "-f", allowCommonEgressNetPolPath)
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to apply CAPI's NetworkPolicy")
+			return errors.Wrap(err, "failed to apply CAPI's egress NetworkPolicy")
 		}
 		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capi-kubeadm-bootstrap-system", "apply", "-f", allowAllEgressNetPolPath)
+		cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capi-kubeadm-bootstrap-system", "apply", "-f", allowCommonEgressNetPolPath)
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to apply CAPI's NetworkPolicy")
+			return errors.Wrap(err, "failed to apply CAPI's egress NetworkPolicy")
 		}
 		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capi-kubeadm-control-plane-system", "apply", "-f", allowAllEgressNetPolPath)
+		cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capi-kubeadm-control-plane-system", "apply", "-f", allowCommonEgressNetPolPath)
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to apply CAPI's NetworkPolicy")
+			return errors.Wrap(err, "failed to apply CAPI's egress NetworkPolicy")
 		}
 
 		// Allow egress in cert-manager Namespace
 		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "cert-manager", "apply", "-f", allowAllEgressNetPolPath)
+		cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "cert-manager", "apply", "-f", allowCommonEgressNetPolPath)
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
 			return errors.Wrap(err, "failed to apply cert-manager's NetworkPolicy")
 		}
 
 		ctx.Status.End(true) // End Installing CAPx in workload cluster
+
+		// Use Calico as network policy engine in managed systems
+		if descriptorFile.ControlPlane.Managed {
+			ctx.Status.Start("Installing Network Policy Engine in workload cluster 🚧")
+			defer ctx.Status.End(false)
+
+			err = installCalico(node, kubeconfigPath, *descriptorFile)
+			if err != nil {
+				return errors.Wrap(err, "failed to install Network Policy Engine in workload cluster")
+			}
+
+			// Create the allow and deny (global) network policy file in the container
+			if descriptorFile.InfraProvider == "aws" {
+				denyallEgressIMDSGNetPolPath := "/kind/deny-all-egress-imds_gnetpol.yaml"
+				allowCAPAEgressIMDSGNetPolPath := "/kind/allow-capa-egress-imds_gnetpol.yaml"
+
+				// Allow egress in kube-system Namespace
+				raw = bytes.Buffer{}
+				cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "kube-system", "apply", "-f", allowCommonEgressNetPolPath)
+				if err := cmd.SetStdout(&raw).Run(); err != nil {
+					return errors.Wrap(err, "failed to apply kube-system egress NetworkPolicy")
+				}
+
+				raw = bytes.Buffer{}
+				cmd = node.Command("sh", "-c", "echo \""+denyallEgressIMDSGNetPol+"\" > "+denyallEgressIMDSGNetPolPath)
+				if err := cmd.SetStdout(&raw).Run(); err != nil {
+					return errors.Wrap(err, "failed to write the deny-all-traffic-to-aws-imds global network policy")
+				}
+				raw = bytes.Buffer{}
+				cmd = node.Command("sh", "-c", "echo \""+allowCAPAEgressIMDSGNetPol+"\" > "+allowCAPAEgressIMDSGNetPolPath)
+				if err := cmd.SetStdout(&raw).Run(); err != nil {
+					return errors.Wrap(err, "failed to write the allow-traffic-to-aws-imds-capa global network policy")
+				}
+
+				// Deny CAPA egress to AWS IMDS
+				raw = bytes.Buffer{}
+				cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "apply", "-f", denyallEgressIMDSGNetPolPath)
+				if err := cmd.SetStdout(&raw).Run(); err != nil {
+					return errors.Wrap(err, "failed to apply deny IMDS traffic GlobalNetworkPolicy")
+				}
+
+				// Allow CAPA egress to AWS IMDS
+				raw = bytes.Buffer{}
+				cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "apply", "-f", allowCAPAEgressIMDSGNetPolPath)
+				if err := cmd.SetStdout(&raw).Run(); err != nil {
+					return errors.Wrap(err, "failed to apply allow CAPA as egress GlobalNetworkPolicy")
+				}
+			}
+		}
+			
+		ctx.Status.End(true) // End Installing Network Policy Engine in workload cluster
 
 		if descriptorFile.DeployAutoscaler {
 			ctx.Status.Start("Adding Cluster-Autoescaler 🗚")

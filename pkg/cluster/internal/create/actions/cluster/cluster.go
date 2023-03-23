@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"embed"
 	"os"
+	"reflect"
 	"strings"
 	"text/template"
 
@@ -48,15 +49,7 @@ type DescriptorFile struct {
 	SSHKey       string `yaml:"ssh_key"`
 	FullyPrivate bool   `yaml:"fully_private" validate:"boolean"`
 
-	Networks struct {
-		VPCID   string `yaml:"vpc_id" validate:"required_with=Subnets"`
-		Subnets []struct {
-			AvailabilityZone string `yaml:"availability_zone"`
-			Name             string `yaml:"name"`
-			PrivateCIDR      string `yaml:"private_cidr"`
-			PublicCIDR       string `yaml:"public_cidr"`
-		} `yaml:"subnets"`
-	} `yaml:"networks"`
+	Networks Networks `yaml:"networks"`
 
 	Dns struct {
 		HostedZones bool `yaml:"hosted_zones" validate:"boolean"`
@@ -84,10 +77,30 @@ type DescriptorFile struct {
 			Type      string `yaml:"type"`
 			Encrypted bool   `yaml:"encrypted" validate:"boolean"`
 		} `yaml:"root_volume"`
-		AWS AWS `yaml:"aws"`
+		AWS          AWS           `yaml:"aws"`
+		ExtraVolumes []ExtraVolume `yaml:"extra_volumes"`
 	} `yaml:"control_plane"`
 
 	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
+}
+
+type Networks struct {
+	VPCID                      string            `yaml:"vpc_id" validate:"required_with=Subnets"`
+	CidrBlock                  string            `yaml:"cidr,omitempty"`
+	Tags                       map[string]string `yaml:"tags,omitempty"`
+	AvailabilityZoneUsageLimit int               `yaml:"az_usage_limit" validate:"numeric"`
+	AvailabilityZoneSelection  string            `yaml:"az_selection" validate:"oneof='Ordered' 'Random' '' "`
+	Subnets                    []Subnets         `yaml:"subnets" validate:"required_with=VPCID"`
+}
+
+type Subnets struct {
+	SubnetId         string            `yaml:"subnet_id"`
+	AvailabilityZone string            `yaml:"az,omitempty"`
+	CidrBlock        string            `yaml:"cidr,omitempty"`
+	IsPublic         *bool             `yaml:"is_public,omitempty"`
+	RouteTableId     string            `yaml:"route_table_id,omitempty"`
+	NatGatewayId     string            `yaml:"nat_id,omitempty"`
+	Tags             map[string]string `yaml:"tags,omitempty"`
 }
 
 type AWS struct {
@@ -119,6 +132,7 @@ type WorkerNodes []struct {
 		Type      string `yaml:"type"`
 		Encrypted bool   `yaml:"encrypted" validate:"boolean"`
 	} `yaml:"root_volume"`
+	ExtraVolumes []ExtraVolume `yaml:"extra_volumes"`
 }
 
 // Bastion represents the bastion VM
@@ -133,6 +147,15 @@ type Node struct {
 	QA      int
 	MaxSize int
 	MinSize int
+}
+
+type ExtraVolume struct {
+	DeviceName string `yaml:"device_name"`
+	Size       int    `yaml:"size" validate:"numeric"`
+	Type       string `yaml:"type"`
+	Label      string `yaml:"label"`
+	Encrypted  bool   `yaml:"encrypted" validate:"boolean"`
+	MountPath  string `yaml:"mount_path" validate:"omitempty,required_with=Name"`
 }
 
 type Credentials struct {
@@ -255,6 +278,13 @@ func GetClusterManifest(flavor string, params TemplateParams) (string, error) {
 		},
 		"hostname": func(s string) string {
 			return strings.Split(s, "/")[0]
+		},
+		"checkReference": func(v interface{}) bool {
+			defer func() { recover() }()
+			return v != nil && !reflect.ValueOf(v).IsNil() && v != "nil" && v != "<nil>"
+		},
+		"isNotEmpty": func(v interface{}) bool {
+			return !reflect.ValueOf(v).IsZero()
 		},
 	}
 
