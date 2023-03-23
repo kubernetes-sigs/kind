@@ -180,7 +180,7 @@ func enableSelfHealing(node nodes.Node, descriptorFile cluster.DescriptorFile, n
 
 	if !descriptorFile.ControlPlane.Managed {
 
-		machineRole := descriptorFile.ClusterID + "-control-plane-node"
+		machineRole := "-control-plane-node"
 		generateMHCManifest(node, descriptorFile.ClusterID, namespace, machineHealthCheckControlPlaneNodePath, machineRole)
 
 		raw := bytes.Buffer{}
@@ -190,7 +190,7 @@ func enableSelfHealing(node nodes.Node, descriptorFile cluster.DescriptorFile, n
 		}
 	}
 
-	machineRole := descriptorFile.ClusterID + "-worker-node"
+	machineRole := "-worker-node"
 	generateMHCManifest(node, descriptorFile.ClusterID, namespace, machineHealthCheckWorkerNodePath, machineRole)
 
 	raw := bytes.Buffer{}
@@ -208,14 +208,14 @@ func generateMHCManifest(node nodes.Node, clusterID string, namespace string, ma
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineHealthCheck
 metadata:
-  name: ` + clusterID + `-` + machineRole + `-unhealthy
+  name: ` + clusterID + machineRole + `-unhealthy
   namespace: cluster-` + clusterID + `
 spec:
   clusterName: ` + clusterID + `
   nodeStartupTimeout: 300s
   selector:
     matchLabels:
-      keos.stratio.com/machine-role: ` + machineRole + `
+      keos.stratio.com/machine-role: ` + clusterID + machineRole + `
   unhealthyConditions:
     - type: Ready
       status: Unknown
