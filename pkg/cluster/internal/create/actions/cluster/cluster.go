@@ -94,20 +94,13 @@ type Networks struct {
 }
 
 type Subnets struct {
-	//EKS
 	SubnetId         string            `yaml:"subnet_id"`
 	AvailabilityZone string            `yaml:"az,omitempty"`
 	IsPublic         *bool             `yaml:"is_public,omitempty"`
 	RouteTableId     string            `yaml:"route_table_id,omitempty"`
 	NatGatewayId     string            `yaml:"nat_id,omitempty"`
 	Tags             map[string]string `yaml:"tags,omitempty"`
-
-	//GCE
-	Description         string `yaml:"description"`
-	PrivateGoogleAccess *bool  `yaml:"private_google_access"`
-	Region              string `yaml:"region"`
-
-	CidrBlock string `yaml:"cidr,omitempty"`
+	CidrBlock        string            `yaml:"cidr,omitempty"`
 }
 
 type AWS struct {

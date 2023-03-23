@@ -25,35 +25,24 @@ metadata:
 spec:
   project: {{ .Credentials.ProjectID }}
   region: "{{ .Descriptor.Region }}"
-{{- if ne .Descriptor.Networks.VPCID "" }}
+  {{- if ne .Descriptor.Networks.VPCID "" }}
   network:
     name: {{ .Descriptor.Networks.VPCID }}
     {{- if ne .Descriptor.Networks.Subnets nil }}
     autoCreateSubnetworks: false
     subnets:
-    {{- range .Descriptor.Networks.Subnets }}
+    {{- with (index .Descriptor.Networks.Subnets 0) }}
     - name: {{ .SubnetId }}
-    {{- if ne .Region "" }}
-      region: {{ .Region }}
-    {{- end }}
-    {{- if ne .Description "" }}
-      description: {{ .Description }}
-    {{- end }}
-    {{- if checkReference .PrivateGoogleAccess }}
-      privateGoogleAccess: {{ .PrivateGoogleAccess }}
-    {{- end }}
-    {{- if ne .CidrBlock "" }}
+      region: "{{ $.Descriptor.Region }}"
+      {{- if ne .CidrBlock "" }}
       cidrBlock: {{ .CidrBlock }}
-    {{- end }} 
+      {{- end }} 
     {{- end }}
-    {{- else }}
-    autoCreateSubnetworks: true
-    {{- end }}
-    
-{{- else }}
+  {{- end }}
+  {{- else }}
   network:
     name: default
-{{- end }}
+  {{- end }}
 ---
 kind: KubeadmControlPlane
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
@@ -142,6 +131,9 @@ spec:
       {{- if .Descriptor.ControlPlane.RootVolume.Type }}
       rootDeviceType: {{ .Descriptor.ControlPlane.RootVolume.Type }}
       {{- end }}
+      {{- if ne .Descriptor.Networks.Subnets nil }}
+      subnet: {{ with (index .Descriptor.Networks.Subnets 0) }}{{ .SubnetId }}{{ end }}
+      {{- end }}
 {{- range $node := .Descriptor.WorkerNodes }}
 {{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
@@ -193,6 +185,9 @@ spec:
       {{- end }}
       {{- if $node.RootVolume.Type }}
       rootDeviceType: {{ $node.RootVolume.Type }}
+      {{- end }}
+      {{- if ne .Descriptor.Networks.Subnets nil }}
+      subnet: {{ with (index .Descriptor.Networks.Subnets 0) }}{{ .SubnetId }}{{ end }}
       {{- end }}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
