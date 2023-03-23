@@ -186,8 +186,8 @@ spec:
       {{- if $node.RootVolume.Type }}
       rootDeviceType: {{ $node.RootVolume.Type }}
       {{- end }}
-      {{- if ne .Descriptor.Networks.Subnets nil }}
-      subnet: {{ with (index .Descriptor.Networks.Subnets 0) }}{{ .SubnetId }}{{ end }}
+      {{- if ne $.Descriptor.Networks.Subnets nil }}
+      subnet: {{ with (index $.Descriptor.Networks.Subnets 0) }}{{ .SubnetId }}{{ end }}
       {{- end }}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
