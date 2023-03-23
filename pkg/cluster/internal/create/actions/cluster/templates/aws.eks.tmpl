@@ -46,15 +46,45 @@ spec:
     scheduler: {{ .Descriptor.ControlPlane.AWS.Logging.Scheduler }}
   network:
     vpc:
-      availabilityZoneSelection: Ordered
-      availabilityZoneUsageLimit: 3
+      availabilityZoneSelection: {{- if ne .Descriptor.Networks.AvailabilityZoneSelection "" }} {{ .Descriptor.Networks.AvailabilityZoneSelection }} {{ else }} Ordered {{ end }}
+      availabilityZoneUsageLimit: {{- if ne .Descriptor.Networks.AvailabilityZoneUsageLimit 0 }} {{ .Descriptor.Networks.AvailabilityZoneUsageLimit }} {{ else }} 3 {{ end }}
+  {{- if ne .Descriptor.Networks.CidrBlock "" }}
+      cidrBlock: {{ .Descriptor.Networks.CidrBlock }}
+  {{- end }}
+  {{- if isNotEmpty .Descriptor.Networks.Tags }}
+      tags:
+    {{- range $key,$value := .Descriptor.Networks.Tags }}
+      - $key: $value
+    {{- end}}
+  {{- end }}
 {{- if ne .Descriptor.Networks.VPCID "" }}
       id: {{ .Descriptor.Networks.VPCID }}
     {{- if ne .Descriptor.Networks.Subnets nil }}
     subnets:
-      {{- range .Descriptor.Networks.Subnets }}
-      - id: {{ .Name }}
+    {{- range .Descriptor.Networks.Subnets }}
+      - id: {{ .SubnetId }}
+      {{- if ne .AvailabilityZone "" }}
+        availabilityZone:  {{ .AvailabilityZone }} 
       {{- end }}
+      {{- if ne .CidrBlock "" }}
+        cidrBlock:  {{ .CidrBlock }} 
+      {{- end }}
+      {{- if ne .RouteTableId "" }}
+        routeTableId:  {{ .RouteTableId }} 
+      {{- end }}
+      {{- if ne .NatGatewayId "" }}
+        natGatewayId:  {{ .NatGatewayId }} 
+      {{- end }}
+      {{- if checkReference .IsPublic }}
+        isPublic: {{ .IsPublic }}
+      {{- end }}
+      {{- if isNotEmpty .Tags }}
+        tags:
+      {{- range $key,$value := .Tags }}
+        - $key: $value
+      {{- end }}
+      {{- end }}
+    {{- end }}
     {{- end }}
 {{- end }}
   region: "{{ .Descriptor.Region }}"
@@ -83,6 +113,9 @@ spec:
   selector:
     matchLabels:
   template:
+    metadata:
+      labels: 
+        keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
     spec:
       clusterName: "{{ $.Descriptor.ClusterID }}"
       version: "{{ $.Descriptor.K8SVersion }}"
@@ -117,9 +150,7 @@ spec:
       instanceType: "{{ $node.Size }}"
       sshKeyName: \"{{ $node.SSHKey }}\"
       rootVolume:
-        {{- if $node.RootVolume.Size }}
-        size: {{ $node.RootVolume.Size }}
-        {{- end }}
+        size: {{- if $node.RootVolume.Size }} {{ $node.RootVolume.Size }} {{ else }} 30 {{ end }}
         {{- if $node.RootVolume.Type }}
         type: {{ $node.RootVolume.Type }}
         {{- end }}
@@ -138,3 +169,21 @@ spec:
 {{- end }}
 {{- end }}
 {{- end }}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineHealthCheck
+metadata:
+  name: "{{ $.Descriptor.ClusterID }}-worker-node-unhealthy"
+spec:
+  clusterName: "{{ $.Descriptor.ClusterID }}"
+  nodeStartupTimeout: 300s
+  selector:
+    matchLabels:
+      keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
+  unhealthyConditions:
+    - type: Ready
+      status: Unknown
+      timeout: 60s
+    - type: Ready
+      status: 'False'
+      timeout: 60s
