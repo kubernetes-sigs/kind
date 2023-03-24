@@ -17,11 +17,12 @@ limitations under the License.
 package createworker
 
 import (
+	"bytes"
 	_ "embed"
 
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
-	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 )
 
 const (
@@ -35,6 +36,9 @@ const (
 	CalicoHelmChart = "/stratio/helm/tigera-operator"
 	CalicoTemplate  = "/kind/calico-helm-values.yaml"
 )
+
+const machineHealthCheckWorkerNodePath = "/kind/manifests/machinehealthcheckworkernode.yaml"
+const machineHealthCheckControlPlaneNodePath = "/kind/manifests/machinehealthcheckcontrolplane.yaml"
 
 type PBuilder interface {
 	setCapx(managed bool)
@@ -172,5 +176,61 @@ func (p *Provider) installCAPXLocal(node nodes.Node) error {
 		return errors.Wrap(err, "failed to install CAPX in local cluster")
 	}
 
+	return nil
+}
+
+func enableSelfHealing(node nodes.Node, descriptorFile cluster.DescriptorFile, namespace string) error {
+
+	if !descriptorFile.ControlPlane.Managed {
+
+		machineRole := "-control-plane-node"
+		generateMHCManifest(node, descriptorFile.ClusterID, namespace, machineHealthCheckControlPlaneNodePath, machineRole)
+
+		raw := bytes.Buffer{}
+		cmd := node.Command("kubectl", "-n", namespace, "apply", "-f", machineHealthCheckControlPlaneNodePath)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
+		}
+	}
+
+	machineRole := "-worker-node"
+	generateMHCManifest(node, descriptorFile.ClusterID, namespace, machineHealthCheckWorkerNodePath, machineRole)
+
+	raw := bytes.Buffer{}
+	cmd := node.Command("kubectl", "-n", namespace, "apply", "-f", machineHealthCheckWorkerNodePath)
+	if err := cmd.SetStdout(&raw).Run(); err != nil {
+		return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
+	}
+
+	return nil
+}
+
+func generateMHCManifest(node nodes.Node, clusterID string, namespace string, manifestPath string, machineRole string) error {
+
+	var machineHealthCheck = `
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineHealthCheck
+metadata:
+  name: ` + clusterID + machineRole + `-unhealthy
+  namespace: cluster-` + clusterID + `
+spec:
+  clusterName: ` + clusterID + `
+  nodeStartupTimeout: 300s
+  selector:
+    matchLabels:
+      keos.stratio.com/machine-role: ` + clusterID + machineRole + `
+  unhealthyConditions:
+    - type: Ready
+      status: Unknown
+      timeout: 60s
+    - type: Ready
+      status: 'False'
+      timeout: 60s`
+
+	raw := bytes.Buffer{}
+	cmd := node.Command("sh", "-c", "echo \""+machineHealthCheck+"\" > "+manifestPath)
+	if err := cmd.SetStdout(&raw).Run(); err != nil {
+		return errors.Wrap(err, "failed to write the MachineHealthCheck manifest")
+	}
 	return nil
 }
