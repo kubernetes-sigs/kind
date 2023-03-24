@@ -34,7 +34,7 @@ var ctel embed.FS
 type K8sObject struct {
 	APIVersion string         `yaml:"apiVersion" validate:"required"`
 	Kind       string         `yaml:"kind" validate:"required"`
-	Spec       DescriptorFile `yaml:"spec" validate:"required"`
+	Spec       DescriptorFile `yaml:"spec" validate:"required,dive"`
 }
 
 // DescriptorFile represents the YAML structure in the descriptor file
