@@ -250,8 +250,7 @@ func resto(n int, i int) int {
 	return r
 }
 
-func GetClusterManifest(flavor string, params TemplateParams) (string, error) {
-
+func GetClusterManifest(flavor string, params TemplateParams, azs []string) (string, error) {
 	funcMap := template.FuncMap{
 		"loop": func(az string, zd string, qa int, maxsize int, minsize int) <-chan Node {
 			ch := make(chan Node)
@@ -262,7 +261,7 @@ func GetClusterManifest(flavor string, params TemplateParams) (string, error) {
 				if az != "" {
 					ch <- Node{AZ: az, QA: qa, MaxSize: maxsize, MinSize: minsize}
 				} else {
-					for i, a := range []string{"a", "b", "c"} {
+					for i, a := range azs {
 						if zd == "unbalanced" {
 							q = qa/3 + resto(qa, i)
 							mx = maxsize/3 + resto(maxsize, i)

@@ -45,6 +45,7 @@ type PBuilder interface {
 	setCapxEnvVars(p ProviderParams)
 	installCSI(n nodes.Node, k string) error
 	getProvider() Provider
+	getAzs(n nodes.Node, maxAzs int) ([]string, error)
 }
 
 type Provider struct {
@@ -94,6 +95,14 @@ func (i *Infra) buildProvider(p ProviderParams) Provider {
 
 func (i *Infra) installCSI(n nodes.Node, k string) error {
 	return i.builder.installCSI(n, k)
+}
+
+func (i *Infra) getAzs(n nodes.Node, maxAzs int) ([]string, error) {
+	azs, err := i.builder.getAzs(n, maxAzs)
+	if err != nil {
+		return nil, err
+	}
+	return azs, nil
 }
 
 func installCalico(n nodes.Node, k string, descriptorFile cluster.DescriptorFile) error {

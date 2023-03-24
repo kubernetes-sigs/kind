@@ -186,8 +186,13 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		DockerRegistries: dockerRegistries,
 	}
 
+	//azs, err := infra.getAzs(node, descriptorFile.Networks.AvailabilityZoneUsageLimit)
+	azs, err := infra.getAzs(node, 3)
+	if err != nil {
+		return errors.Wrap(err, "failed to get AZs")
+	}
 	// Generate the cluster manifest
-	descriptorData, err := cluster.GetClusterManifest(provider.capxTemplate, templateParams)
+	descriptorData, err := cluster.GetClusterManifest(provider.capxTemplate, templateParams, azs)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate cluster manifests")
 	}
