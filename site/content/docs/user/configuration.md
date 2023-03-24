@@ -181,6 +181,8 @@ networking:
   podSubnet: "10.244.0.0/16"
 {{< /codeFromInline >}}
 
+By default, kind uses ```10.244.0.0/16``` pod subnet for IPv4 and ```fd00:10:244::/56``` pod subnet for IPv6.
+
 #### Service Subnet
 
 You can configure the Kubernetes service subnet used for service IPs by setting
@@ -191,6 +193,8 @@ apiVersion: kind.x-k8s.io/v1alpha4
 networking:
   serviceSubnet: "10.96.0.0/12"
 {{< /codeFromInline >}}
+
+By default, kind uses ```10.96.0.0/16``` service subnet for IPv4 and ```fd00:10:96::/112``` service subnet for IPv6.
 
 #### Disable Default CNI
 
