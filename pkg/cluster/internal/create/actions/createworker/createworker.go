@@ -186,8 +186,11 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		DockerRegistries: dockerRegistries,
 	}
 
-	//azs, err := infra.getAzs(node, descriptorFile.Networks.AvailabilityZoneUsageLimit)
-	azs, err := infra.getAzs(node, 3)
+	maxAzs := 3
+	if descriptorFile.Networks.AvailabilityZoneUsageLimit != 0 {
+		maxAzs = descriptorFile.Networks.AvailabilityZoneUsageLimit
+	}
+	azs, err := infra.getAzs(node, maxAzs)
 	if err != nil {
 		return errors.Wrap(err, "failed to get AZs")
 	}
