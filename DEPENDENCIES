@@ -7,7 +7,7 @@ core:
   calico:
     calicoctl: v3.22.3
     tigera-operator: v1.25.9
-  cluster-autoscaler: -
+  cluster-autoscaler: 9.25.0
 aws:
   clusterawsadm: v2.0.2
   cluster-api-aws: v2.0.2
