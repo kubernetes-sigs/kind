@@ -85,22 +85,23 @@ type DescriptorFile struct {
 }
 
 type Networks struct {
-	VPCID                      string            `yaml:"vpc_id" validate:"required_with=Subnets"`
+	VPCID                      string            `yaml:"vpc_id"`
 	CidrBlock                  string            `yaml:"cidr,omitempty"`
 	Tags                       map[string]string `yaml:"tags,omitempty"`
 	AvailabilityZoneUsageLimit int               `yaml:"az_usage_limit" validate:"numeric"`
 	AvailabilityZoneSelection  string            `yaml:"az_selection" validate:"oneof='Ordered' 'Random' '' "`
-	Subnets                    []Subnets         `yaml:"subnets" validate:"required_with=VPCID"`
+
+	Subnets []Subnets `yaml:"subnets"`
 }
 
 type Subnets struct {
 	SubnetId         string            `yaml:"subnet_id"`
 	AvailabilityZone string            `yaml:"az,omitempty"`
-	CidrBlock        string            `yaml:"cidr,omitempty"`
 	IsPublic         *bool             `yaml:"is_public,omitempty"`
 	RouteTableId     string            `yaml:"route_table_id,omitempty"`
 	NatGatewayId     string            `yaml:"nat_id,omitempty"`
 	Tags             map[string]string `yaml:"tags,omitempty"`
+	CidrBlock        string            `yaml:"cidr,omitempty"`
 }
 
 type AWS struct {
