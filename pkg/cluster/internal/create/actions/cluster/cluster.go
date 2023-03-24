@@ -32,9 +32,9 @@ import (
 var ctel embed.FS
 
 type K8sObject struct {
-	APIVersion string         `yaml:"apiVersion"`
-	Kind       string         `yaml:"kind"`
-	Spec       DescriptorFile `yaml:"spec"`
+	APIVersion string         `yaml:"apiVersion" validate:"required"`
+	Kind       string         `yaml:"kind" validate:"required"`
+	Spec       DescriptorFile `yaml:"spec" validate:"required"`
 }
 
 // DescriptorFile represents the YAML structure in the descriptor file
@@ -243,7 +243,7 @@ func GetClusterDescriptor(descriptorPath string) (*DescriptorFile, error) {
 	descriptorFile := k8sStruct.Spec
 
 	validate := validator.New()
-	err = validate.Struct(descriptorFile)
+	err = validate.Struct(k8sStruct)
 	if err != nil {
 		return nil, err
 	}
