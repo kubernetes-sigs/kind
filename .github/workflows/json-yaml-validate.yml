@@ -22,3 +22,4 @@ jobs:
         uses: GrantBirki/json-yaml-validate@v1.2.0
         with:
           comment: "true" # enable comment mode
+          yaml_exclude_regex: "(/static/examples/.*(usage|metallb-config).yaml|.*invalid-yaml)"
