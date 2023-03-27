@@ -252,9 +252,9 @@ func GetClusterDescriptor(descriptorPath string) (*DescriptorFile, error) {
 	return &descriptorFile, nil
 }
 
-func resto(n int, i int) int {
+func resto(n int, i int, azs int) int {
 	var r int
-	r = (n % 3) / (i + 1)
+	r = (n % azs) / (i + 1)
 	if r > 1 {
 		r = 1
 	}
@@ -274,12 +274,12 @@ func GetClusterManifest(flavor string, params TemplateParams, azs []string) (str
 				} else {
 					for i, a := range azs {
 						if zd == "unbalanced" {
-							q = qa/3 + resto(qa, i)
-							mx = maxsize/3 + resto(maxsize, i)
-							mn = minsize/3 + resto(minsize, i)
+							q = qa/len(azs) + resto(qa, i, len(azs))
+							mx = maxsize/len(azs) + resto(maxsize, i, len(azs))
+							mn = minsize/len(azs) + resto(minsize, i, len(azs))
 							ch <- Node{AZ: a, QA: q, MaxSize: mx, MinSize: mn}
 						} else {
-							ch <- Node{AZ: a, QA: qa / 3, MaxSize: maxsize / 3, MinSize: minsize / 3}
+							ch <- Node{AZ: a, QA: qa / len(azs), MaxSize: maxsize / len(azs), MinSize: minsize / len(azs)}
 						}
 					}
 				}

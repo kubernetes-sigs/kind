@@ -19,6 +19,7 @@ package createworker
 import (
 	"bytes"
 	b64 "encoding/base64"
+	"math"
 	"os"
 	"strings"
 
@@ -127,9 +128,8 @@ spec:
 
 func (b *AWSBuilder) getAzs(n nodes.Node, maxAzs int) ([]string, error) {
 	if len(b.capxEnvVars) == 0 {
-		return nil, errors.New("ERROR de credenciales.")
+		return nil, errors.New("Insufficient credentials.")
 	}
-	azs := make([]string, maxAzs)
 	for _, cred := range b.capxEnvVars {
 		c := strings.Split(cred, "=")
 		envVar := c[0]
@@ -146,8 +146,10 @@ func (b *AWSBuilder) getAzs(n nodes.Node, maxAzs int) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	numAzs := math.Min(float64(maxAzs), float64(len(result.AvailabilityZones)))
+	azs := make([]string, int(numAzs))
 	for i, az := range result.AvailabilityZones {
-		if i == maxAzs {
+		if i == int(numAzs) {
 			break
 		}
 		azs[i] = *az.ZoneName

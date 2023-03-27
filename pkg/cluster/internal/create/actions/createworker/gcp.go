@@ -21,6 +21,7 @@ import (
 	_ "embed"
 	b64 "encoding/base64"
 	"encoding/json"
+	"math"
 	"net/url"
 	"strings"
 
@@ -151,7 +152,7 @@ func (b *GCPBuilder) getAzs(n nodes.Node, maxAzs int) ([]string, error) {
 	if len(b.dataCreds) == 0 {
 		return nil, errors.New("Insufficient credentials.")
 	}
-	azs := make([]string, maxAzs)
+
 	ctx := context.Background()
 	jsonDataCreds, _ := json.Marshal(b.dataCreds)
 	creds := option.WithCredentialsJSON(jsonDataCreds)
@@ -166,9 +167,10 @@ func (b *GCPBuilder) getAzs(n nodes.Node, maxAzs int) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-
+		numAzs := math.Min(float64(maxAzs), float64(len(zones.Items)))
+		azs := make([]string, int(numAzs))
 		for i, zone := range zones.Items {
-			if i == maxAzs {
+			if i == int(numAzs) {
 				break
 			}
 			azs[i] = zone.Name
