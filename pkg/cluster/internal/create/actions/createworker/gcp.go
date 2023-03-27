@@ -149,7 +149,7 @@ volumeBindingMode: WaitForFirstConsumer`
 
 func (b *GCPBuilder) getAzs(n nodes.Node, maxAzs int) ([]string, error) {
 	if len(b.dataCreds) == 0 {
-		return nil, errors.New("ERROR de credenciales.")
+		return nil, errors.New("Insufficient credentials.")
 	}
 	azs := make([]string, maxAzs)
 	ctx := context.Background()
