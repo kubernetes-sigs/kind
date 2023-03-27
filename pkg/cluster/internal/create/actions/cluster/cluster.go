@@ -31,10 +31,14 @@ import (
 //go:embed templates/*
 var ctel embed.FS
 
+type K8sObject struct {
+	APIVersion string         `yaml:"apiVersion" validate:"required"`
+	Kind       string         `yaml:"kind" validate:"required"`
+	Spec       DescriptorFile `yaml:"spec" validate:"required,dive"`
+}
+
 // DescriptorFile represents the YAML structure in the descriptor file
 type DescriptorFile struct {
-	APIVersion       string `yaml:"apiVersion"`
-	Kind             string `yaml:"kind"`
 	ClusterID        string `yaml:"cluster_id" validate:"required,min=3,max=100"`
 	DeployAutoscaler bool   `yaml:"deploy_autoscaler" validate:"boolean"`
 
@@ -224,20 +228,27 @@ func (d DescriptorFile) Init() DescriptorFile {
 
 // Read descriptor file
 func GetClusterDescriptor(descriptorPath string) (*DescriptorFile, error) {
+
+	var k8sStruct K8sObject
+
 	descriptorRAW, err := os.ReadFile(descriptorPath)
 	if err != nil {
 		return nil, err
 	}
-	descriptorFile := new(DescriptorFile).Init()
-	err = yaml.Unmarshal(descriptorRAW, &descriptorFile)
+
+	k8sStruct.Spec = new(DescriptorFile).Init()
+	err = yaml.Unmarshal(descriptorRAW, &k8sStruct)
 	if err != nil {
 		return nil, err
 	}
+	descriptorFile := k8sStruct.Spec
+
 	validate := validator.New()
-	err = validate.Struct(descriptorFile)
+	err = validate.Struct(k8sStruct)
 	if err != nil {
 		return nil, err
 	}
+
 	return &descriptorFile, nil
 }
 
