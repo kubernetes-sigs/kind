@@ -50,7 +50,6 @@ type DescriptorFile struct {
 
 	K8SVersion string `yaml:"k8s_version" validate:"required,startswith=v,min=7,max=8"`
 	Region     string `yaml:"region" validate:"required"`
-	SSHKey     string `yaml:"ssh_key"`
 
 	Networks Networks `yaml:"networks"`
 
@@ -142,6 +141,7 @@ type Bastion struct {
 	node_image        string   `yaml:"node_image"`
 	VMSize            string   `yaml:"vm_size"`
 	AllowedCIDRBlocks []string `yaml:"allowedCIDRBlocks"`
+	SSHKey            string   `yaml:"ssh_key"`
 }
 
 type Node struct {
