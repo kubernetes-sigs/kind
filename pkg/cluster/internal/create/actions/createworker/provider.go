@@ -45,7 +45,7 @@ type PBuilder interface {
 	setCapxEnvVars(p ProviderParams)
 	installCSI(n nodes.Node, k string) error
 	getProvider() Provider
-	getAzs(n nodes.Node, maxAzs int) ([]string, error)
+	getAzs() ([]string, error)
 }
 
 type Provider struct {
@@ -97,8 +97,8 @@ func (i *Infra) installCSI(n nodes.Node, k string) error {
 	return i.builder.installCSI(n, k)
 }
 
-func (i *Infra) getAzs(n nodes.Node, maxAzs int) ([]string, error) {
-	azs, err := i.builder.getAzs(n, maxAzs)
+func (i *Infra) getAzs() ([]string, error) {
+	azs, err := i.builder.getAzs()
 	if err != nil {
 		return nil, err
 	}

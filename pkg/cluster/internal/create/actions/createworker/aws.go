@@ -19,7 +19,6 @@ package createworker
 import (
 	"bytes"
 	b64 "encoding/base64"
-	"math"
 	"os"
 	"strings"
 
@@ -126,7 +125,7 @@ spec:
 	return nil
 }
 
-func (b *AWSBuilder) getAzs(n nodes.Node, maxAzs int) ([]string, error) {
+func (b *AWSBuilder) getAzs() ([]string, error) {
 	if len(b.capxEnvVars) == 0 {
 		return nil, errors.New("Insufficient credentials.")
 	}
@@ -146,10 +145,12 @@ func (b *AWSBuilder) getAzs(n nodes.Node, maxAzs int) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	numAzs := math.Min(float64(maxAzs), float64(len(result.AvailabilityZones)))
-	azs := make([]string, int(numAzs))
+	if len(result.AvailabilityZones) < 3 {
+		return nil, errors.New("Insufficient Availability Zones in this region. Must have at least 3")
+	}
+	azs := make([]string, 3)
 	for i, az := range result.AvailabilityZones {
-		if i == int(numAzs) {
+		if i == 3 {
 			break
 		}
 		azs[i] = *az.ZoneName

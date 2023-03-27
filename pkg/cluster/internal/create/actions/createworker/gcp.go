@@ -21,7 +21,6 @@ import (
 	_ "embed"
 	b64 "encoding/base64"
 	"encoding/json"
-	"math"
 	"net/url"
 	"strings"
 
@@ -148,7 +147,7 @@ volumeBindingMode: WaitForFirstConsumer`
 	return nil
 }
 
-func (b *GCPBuilder) getAzs(n nodes.Node, maxAzs int) ([]string, error) {
+func (b *GCPBuilder) getAzs() ([]string, error) {
 	if len(b.dataCreds) == 0 {
 		return nil, errors.New("Insufficient credentials.")
 	}
@@ -167,10 +166,12 @@ func (b *GCPBuilder) getAzs(n nodes.Node, maxAzs int) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		numAzs := math.Min(float64(maxAzs), float64(len(zones.Items)))
-		azs := make([]string, int(numAzs))
+		if len(zones.Items) < 3 {
+			return nil, errors.New("Insufficient Availability Zones in this region. Must have at least 3")
+		}
+		azs := make([]string, 3)
 		for i, zone := range zones.Items {
-			if i == int(numAzs) {
+			if i == 3 {
 				break
 			}
 			azs[i] = zone.Name
