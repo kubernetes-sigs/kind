@@ -331,7 +331,7 @@ func rewriteDescriptorFile(descriptorPath string) error {
 		return err
 	}
 
-	yamlNodes := removeKey(data.Content, "credentials")
+	yamlNodes := removeNodesUnderKey(data.Content, "spec", "credentials")
 
 	b, err := yaml.Marshal(yamlNodes[0])
 
@@ -490,4 +490,36 @@ func getEcrAuthToken(p ProviderParams) (string, error) {
 	}
 	parts := strings.SplitN(string(data), ":", 2)
 	return parts[1], nil
+}
+
+func removeNodesUnderKey(nodes []*yaml.Node, parentKey string, childKey string) []*yaml.Node {
+	for i, node := range nodes {
+		if node.Kind == yaml.MappingNode {
+			for j := 0; j < len(node.Content); j += 2 {
+				keyNode := node.Content[j]
+				valueNode := node.Content[j+1]
+				if keyNode.Value == parentKey {
+					// Se encontró el nodo padre.
+					if valueNode.Kind == yaml.MappingNode {
+						// Eliminar todos los nodos que coincidan con la key debajo del nodo padre.
+						for k := 0; k < len(valueNode.Content); k += 2 {
+							childKeyNode := valueNode.Content[k]
+							if childKeyNode.Value == childKey {
+								valueNode.Content = append(valueNode.Content[:k], valueNode.Content[k+2:]...)
+								k -= 2 // Se elimina un par clave-valor, por lo que debemos retroceder el índice.
+							}
+						}
+					}
+					break // Ya no es necesario continuar buscando.
+				} else {
+					removeNodesUnderKey([]*yaml.Node{valueNode}, parentKey, childKey) // Buscar recursivamente en los nodos hijos.
+				}
+			}
+			nodes[i].Content = removeNodesUnderKey(node.Content, parentKey, childKey)
+		} else if node.Kind == yaml.SequenceNode {
+			// Buscar recursivamente en los elementos de la secuencia.
+			nodes[i].Content = removeNodesUnderKey(node.Content, parentKey, childKey)
+		}
+	}
+	return nodes
 }
