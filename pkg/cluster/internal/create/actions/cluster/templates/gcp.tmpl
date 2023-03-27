@@ -207,7 +207,7 @@ spec:
   template:
     spec:
       instanceType: "{{ $node.Size }}"
-      image: "{{ $node.Image }}"
+      image: "{{ $node.NodeImage }}"
       {{- if $node.RootVolume.Size }}
       rootDeviceSize: {{ $node.RootVolume.Size }}
       {{- end }}
