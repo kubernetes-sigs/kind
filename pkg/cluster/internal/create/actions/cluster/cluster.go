@@ -166,7 +166,7 @@ type ExtraVolume struct {
 type Credentials struct {
 	AWS              AWSCredentials              `yaml:"aws"`
 	GCP              GCPCredentials              `yaml:"gcp"`
-	Azure            AzureCredentials            `yaml:"azure"`
+	AZURE            AzureCredentials            `yaml:"azure"`
 	GithubToken      string                      `yaml:"github_token"`
 	DockerRegistries []DockerRegistryCredentials `yaml:"docker_registries"`
 }

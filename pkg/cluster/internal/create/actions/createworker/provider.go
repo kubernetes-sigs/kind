@@ -77,6 +77,10 @@ func getBuilder(builderType string) PBuilder {
 	if builderType == "gcp" {
 		return newGCPBuilder()
 	}
+
+	if builderType == "azure" {
+		return newAzureBuilder()
+	}
 	return nil
 }
 
