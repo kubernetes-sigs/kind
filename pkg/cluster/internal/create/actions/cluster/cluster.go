@@ -55,7 +55,7 @@ type DescriptorFile struct {
 	Networks Networks `yaml:"networks"`
 
 	Dns struct {
-		HostedZones bool `yaml:"hosted_zones" validate:"boolean"`
+		ManageZone bool `yaml:"manage_zone" validate:"boolean"`
 	} `yaml:"dns"`
 
 	DockerRegistries []DockerRegistry `yaml:"docker_registries" validate:"dive"`
@@ -216,8 +216,8 @@ func (d DescriptorFile) Init() DescriptorFile {
 	d.ControlPlane.AWS.Logging.ControllerManager = false
 	d.ControlPlane.AWS.Logging.Scheduler = false
 
-	// Hosted zones
-	d.Dns.HostedZones = true
+	// Managed zones
+	d.Dns.ManageZone = true
 
 	return d
 }
