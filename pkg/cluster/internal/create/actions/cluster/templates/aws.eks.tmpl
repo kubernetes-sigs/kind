@@ -119,7 +119,7 @@ spec:
     spec:
       clusterName: "{{ $.Descriptor.ClusterID }}"
       version: "{{ $.Descriptor.K8SVersion }}"
-      failureDomain: "{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ $.Descriptor.Region }}{{ $n.AZ }} {{- end }}"
+      failureDomain: "{{ $n.AZ }}"
       bootstrap:
         configRef:
           name: "{{ $node.Name }}-md-{{ $index }}"
