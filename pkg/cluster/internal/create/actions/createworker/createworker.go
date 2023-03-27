@@ -43,6 +43,10 @@ type GCP struct {
 	Credentials cluster.GCPCredentials `yaml:"credentials"`
 }
 
+type Azure struct {
+	Credentials cluster.AzureCredentials `yaml:"credentials"`
+}
+
 // SecretsFile represents the YAML structure in the secrets.yml file
 type SecretsFile struct {
 	Secrets Secrets `yaml:"secrets"`
@@ -51,6 +55,7 @@ type SecretsFile struct {
 type Secrets struct {
 	AWS              AWS                                 `yaml:"aws"`
 	GCP              GCP                                 `yaml:"gcp"`
+	Azure            Azure                               `yaml:"azure"`
 	GithubToken      string                              `yaml:"github_token"`
 	ExternalRegistry cluster.DockerRegistryCredentials   `yaml:"external_registry"`
 	DockerRegistries []cluster.DockerRegistryCredentials `yaml:"docker_registries"`

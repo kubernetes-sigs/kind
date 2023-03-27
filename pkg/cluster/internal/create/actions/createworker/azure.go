@@ -42,7 +42,7 @@ func (b *AzureBuilder) setCapx(managed bool) {
 	b.capxVersion = "v1.8.1"
 	b.capxImageVersion = "v1.8.1"
 	b.capxName = "capz"
-	b.stClassName = "gp2"
+	b.stClassName = "managed-csi"
 	if managed {
 		b.capxTemplate = "azure.aks.tmpl"
 		b.csiNamespace = ""
@@ -53,14 +53,12 @@ func (b *AzureBuilder) setCapx(managed bool) {
 }
 
 func (b *AzureBuilder) setCapxEnvVars(p ProviderParams) {
-	awsCredentials := "[default]\naws_access_key_id = " + p.credentials["AccessKey"] + "\naws_secret_access_key = " + p.credentials["SecretKey"] + "\nregion = " + p.region + "\n"
 	b.capxEnvVars = []string{
-		"AWS_REGION=" + p.region,
-		"AWS_ACCESS_KEY_ID=" + p.credentials["AccessKey"],
-		"AWS_SECRET_ACCESS_KEY=" + p.credentials["SecretKey"],
-		"AWS_B64ENCODED_CREDENTIALS=" + b64.StdEncoding.EncodeToString([]byte(awsCredentials)),
+		"AZURE_SUBSCRIPTION_ID_B64=" + b64.StdEncoding.EncodeToString([]byte(p.credentials["SubscriptionID"])),
+		"AZURE_TENANT_ID_B64=" + b64.StdEncoding.EncodeToString([]byte(p.credentials["TenantID"])),
+		"AZURE_CLIENT_SECRET_B64=" + b64.StdEncoding.EncodeToString([]byte(p.credentials["ClientSecret"])),
+		"AZURE_CLIENT_ID_B64=" + b64.StdEncoding.EncodeToString([]byte(p.credentials["ClientID"])),
 		"GITHUB_TOKEN=" + p.githubToken,
-		"CAPA_EKS_IAM=true",
 	}
 }
 

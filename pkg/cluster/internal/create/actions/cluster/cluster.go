@@ -166,6 +166,7 @@ type ExtraVolume struct {
 type Credentials struct {
 	AWS              AWSCredentials              `yaml:"aws"`
 	GCP              GCPCredentials              `yaml:"gcp"`
+	Azure            AzureCredentials            `yaml:"azure"`
 	GithubToken      string                      `yaml:"github_token"`
 	DockerRegistries []DockerRegistryCredentials `yaml:"docker_registries"`
 }
@@ -183,6 +184,13 @@ type GCPCredentials struct {
 	PrivateKey   string `yaml:"private_key"`
 	ClientEmail  string `yaml:"client_email"`
 	ClientID     string `yaml:"client_id"`
+}
+
+type AzureCredentials struct {
+	SubscriptionID string `yaml:"subscription_id"`
+	TenantID       string `yaml:"tenant_id"`
+	ClientID       string `yaml:"client_id"`
+	ClientSecret   string `yaml:"client_secret"`
 }
 
 type DockerRegistryCredentials struct {
