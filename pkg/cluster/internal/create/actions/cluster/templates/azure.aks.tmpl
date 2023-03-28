@@ -36,7 +36,7 @@ spec:
   location: "{{ .Descriptor.Region }}"
   resourceGroupName: "{{ .Descriptor.ClusterID }}"
   sshPublicKey: \"\"
-  subscriptionID: ${AZURE_SUBSCRIPTION_ID}
+  subscriptionID: "{{ .Credentials.SubscriptionID }}"
   version: "{{ .Descriptor.K8SVersion }}"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -48,11 +48,11 @@ metadata:
   namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec:
   allowedNamespaces: {}
-  clientID: ${AZURE_CLIENT_ID}
+  clientID: "{{ .Credentials.ClientID }}"
   clientSecret:
     name: "{{ .Descriptor.ClusterID }}-identity-secret"
     namespace: "cluster-{{ .Descriptor.ClusterID }}"
-  tenantID: ${AZURE_TENANT_ID}
+  tenantID: "{{ .Credentials.TenantID }}"
   type: ServicePrincipal
 {{- range $node := .Descriptor.WorkerNodes }}
 {{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
@@ -71,11 +71,14 @@ spec:
   clusterName: "{{ $.Descriptor.ClusterID }}"
   replicas: {{ $n.QA }}
   template:
-    metadata: {}
+    metadata:
+      labels:
+        keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
     spec:
       bootstrap:
         dataSecretName: ""
       clusterName: "{{ $.Descriptor.ClusterID }}"
+      failureDomain: "{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ inc $index }} {{- end }}"
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureManagedMachinePool
@@ -92,5 +95,14 @@ spec:
   name: "{{ $node.Name }}-mp-{{ $index }}"
   sku: "{{ $node.Size }}"
   osDiskSizeGB: {{- if $node.RootVolume.Size }} {{ $node.RootVolume.Size }} {{ else }} 30 {{ end }}
+  {{- if $node.RootVolume.Type }}
+  osDiskType: {{ $node.RootVolume.Type }}
+  {{- end }}
+  {{- if $node.Labels }}
+  nodeLabels:
+  {{ range $key, $value := $node.Labels }}
+    {{ $key }}: {{ $value }}
+  {{- end }}
+  {{- end }}
 {{- end }}
 {{- end }}

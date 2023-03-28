@@ -165,8 +165,8 @@ type ExtraVolume struct {
 
 type Credentials struct {
 	AWS              AWSCredentials              `yaml:"aws"`
-	GCP              GCPCredentials              `yaml:"gcp"`
 	AZURE            AzureCredentials            `yaml:"azure"`
+	GCP              GCPCredentials              `yaml:"gcp"`
 	GithubToken      string                      `yaml:"github_token"`
 	DockerRegistries []DockerRegistryCredentials `yaml:"docker_registries"`
 }
@@ -178,19 +178,19 @@ type AWSCredentials struct {
 	Account   string `yaml:"account"`
 }
 
+type AzureCredentials struct {
+	SubscriptionID string `yaml:"subscription_id"`
+	TenantID       string `yaml:"tenant_id"`
+	ClientID       string `yaml:"client_id"`
+	ClientSecret   string `yaml:"client_secret"`
+}
+
 type GCPCredentials struct {
 	ProjectID    string `yaml:"project_id"`
 	PrivateKeyID string `yaml:"private_key_id"`
 	PrivateKey   string `yaml:"private_key"`
 	ClientEmail  string `yaml:"client_email"`
 	ClientID     string `yaml:"client_id"`
-}
-
-type AzureCredentials struct {
-	SubscriptionID string `yaml:"subscription_id"`
-	TenantID       string `yaml:"tenant_id"`
-	ClientID       string `yaml:"client_id"`
-	ClientSecret   string `yaml:"client_secret"`
 }
 
 type DockerRegistryCredentials struct {
@@ -305,6 +305,9 @@ func GetClusterManifest(flavor string, params TemplateParams) (string, error) {
 		},
 		"isNotEmpty": func(v interface{}) bool {
 			return !reflect.ValueOf(v).IsZero()
+		},
+		"inc": func(i int) int {
+			return i + 1
 		},
 	}
 
