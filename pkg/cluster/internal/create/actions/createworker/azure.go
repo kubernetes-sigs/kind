@@ -59,6 +59,7 @@ func (b *AzureBuilder) setCapxEnvVars(p ProviderParams) {
 		"AZURE_CLIENT_SECRET_B64=" + b64.StdEncoding.EncodeToString([]byte(p.credentials["ClientSecret"])),
 		"AZURE_CLIENT_ID_B64=" + b64.StdEncoding.EncodeToString([]byte(p.credentials["ClientID"])),
 		"GITHUB_TOKEN=" + p.githubToken,
+		"EXP_MACHINE_POOL=true",
 	}
 }
 
