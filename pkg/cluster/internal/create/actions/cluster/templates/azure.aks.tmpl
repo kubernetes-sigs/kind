@@ -7,7 +7,7 @@ metadata:
 spec:
   clusterNetwork:
     pods:
-      cidrBlocks: ["192.168.0.0/16"]
+      cidrBlocks: [\"192.168.0.0/16\"]
   controlPlaneRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureManagedControlPlane
@@ -34,6 +34,8 @@ spec:
     kind: AzureClusterIdentity
     name: "{{ .Descriptor.ClusterID }}-identity"
   location: "{{ .Descriptor.Region }}"
+  sku:
+    tier: Free
   resourceGroupName: "{{ .Descriptor.ClusterID }}"
   sshPublicKey: \"\"
   subscriptionID: "{{ .Credentials.SubscriptionID }}"
@@ -43,7 +45,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureClusterIdentity
 metadata:
   labels:
-    clusterctl.cluster.x-k8s.io/move-hierarchy: "true"
+    clusterctl.cluster.x-k8s.io/move-hierarchy: \"true\"
   name: "{{ .Descriptor.ClusterID }}-identity"
   namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec:
@@ -76,9 +78,9 @@ spec:
         keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
     spec:
       bootstrap:
-        dataSecretName: ""
+        dataSecretName: \"\"
       clusterName: "{{ $.Descriptor.ClusterID }}"
-      failureDomain: "{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ inc $index }} {{- end }}"
+      failureDomain: \"{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ inc $index }} {{- end }}\"
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureManagedMachinePool
