@@ -138,7 +138,7 @@ type WorkerNodes []struct {
 
 // Bastion represents the bastion VM
 type Bastion struct {
-	node_image        string   `yaml:"node_image"`
+	NodeImage         string   `yaml:"node_image"`
 	VMSize            string   `yaml:"vm_size"`
 	AllowedCIDRBlocks []string `yaml:"allowedCIDRBlocks"`
 	SSHKey            string   `yaml:"ssh_key"`
