@@ -70,7 +70,7 @@ type DescriptorFile struct {
 	ControlPlane struct {
 		Managed         bool   `yaml:"managed" validate:"boolean"`
 		Name            string `yaml:"name"`
-		NodeImage       string `yaml:"node_image" validate:"required"`
+		NodeImage       string `yaml:"node_image" validate:"required_if=InfraProvider gcp"`
 		HighlyAvailable bool   `yaml:"highly_available" validate:"boolean"`
 		Size            string `yaml:"size" validate:"required_if=Managed false"`
 		RootVolume      struct {
@@ -118,7 +118,7 @@ type AWS struct {
 
 type WorkerNodes []struct {
 	Name             string            `yaml:"name" validate:"required"`
-	NodeImage        string            `yaml:"node_image" validate:"required"`
+	NodeImage        string            `yaml:"node_image" validate:"required_if=InfraProvider gcp"`
 	Quantity         int               `yaml:"quantity" validate:"required,numeric,gt=0"`
 	Size             string            `yaml:"size" validate:"required"`
 	ZoneDistribution string            `yaml:"zone_distribution" validate:"omitempty,oneof='balanced' 'unbalanced'"`
