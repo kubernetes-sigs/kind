@@ -81,7 +81,7 @@ func (b *GCPBuilder) setCapxEnvVars(p commons.ProviderParams) {
 		"client_x509_cert_url":        "https://www.googleapis.com/robot/v1/metadata/x509/" + url.QueryEscape(p.Credentials["ClientEmail"]),
 	}
 	b.dataCreds = data
-	b.region = p.region
+	b.region = p.Region
 	jsonData, _ := json.Marshal(data)
 	b.capxEnvVars = []string{
 		"GCP_B64ENCODED_CREDENTIALS=" + b64.StdEncoding.EncodeToString([]byte(jsonData)),
