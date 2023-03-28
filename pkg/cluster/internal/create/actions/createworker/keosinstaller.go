@@ -98,8 +98,8 @@ func createKEOSDescriptor(descriptorFile commons.DescriptorFile, storageClass st
 	if !descriptorFile.ControlPlane.Managed {
 		keosDescriptor.Keos.Calico.Ipip = true
 		keosDescriptor.Keos.Calico.Pool = "192.168.0.0/16"
-		keosDescriptor.Keos.Calico.DeployTigeraOperator = false
 	}
+	keosDescriptor.Keos.Calico.DeployTigeraOperator = false
 
 	// Keos - Storage
 	keosDescriptor.Keos.Storage.DefaultStorageClass = storageClass

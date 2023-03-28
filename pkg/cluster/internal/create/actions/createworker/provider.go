@@ -18,8 +18,9 @@ package createworker
 
 import (
 	"bytes"
-	"embed"
-	_ "embed"
+	"reflect"
+	"strings"
+
 	"text/template"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
@@ -31,40 +32,33 @@ const (
 	CAPICoreProvider         = "cluster-api:v1.3.2"
 	CAPIBootstrapProvider    = "kubeadm:v1.3.2"
 	CAPIControlPlaneProvider = "kubeadm:v1.3.2"
+	//CAPILocalRepository      = "/root/.cluster-api/local-repository"
 
-	CNIName      = "calico"
-	CNINamespace = "calico-system"
-	CNIHelmChart = "/stratio/helm/tigera-operator"
-	CNITemplate  = "/kind/calico-helm-values.yaml"
+	CalicoName      = "calico"
+	CalicoNamespace = "calico-system"
+	CalicoHelmChart = "/stratio/helm/tigera-operator"
+	CalicoTemplate  = "/kind/calico-helm-values.yaml"
 )
 
-//go:embed files/calico-helm-values.yaml
-var calicoHelmValues string
-
-//go:embed templates/*
-var ctel embed.FS
+const machineHealthCheckWorkerNodePath = "/kind/manifests/machinehealthcheckworkernode.yaml"
+const machineHealthCheckControlPlaneNodePath = "/kind/manifests/machinehealthcheckcontrolplane.yaml"
 
 type PBuilder interface {
 	setCapx(managed bool)
-	setCapxEnvVars(p ProviderParams)
+	setCapxEnvVars(p commons.ProviderParams)
 	installCSI(n nodes.Node, k string) error
 	getProvider() Provider
 }
 
 type Provider struct {
-	capxProvider string
-	capxName     string
-	capxTemplate string
-	capxEnvVars  []string
-	stClassName  string
-	csiNamespace string
-}
-
-type ProviderParams struct {
-	region      string
-	managed     bool
-	credentials map[string]string
-	githubToken string
+	capxProvider     string
+	capxVersion      string
+	capxImageVersion string
+	capxName         string
+	capxTemplate     string
+	capxEnvVars      []string
+	stClassName      string
+	csiNamespace     string
 }
 
 type Node struct {
@@ -95,8 +89,8 @@ func newInfra(b PBuilder) *Infra {
 	}
 }
 
-func (i *Infra) buildProvider(p ProviderParams) Provider {
-	i.builder.setCapx(p.managed)
+func (i *Infra) buildProvider(p commons.ProviderParams) Provider {
+	i.builder.setCapx(p.Managed)
 	i.builder.setCapxEnvVars(p)
 	return i.builder.getProvider()
 }
@@ -105,27 +99,33 @@ func (i *Infra) installCSI(n nodes.Node, k string) error {
 	return i.builder.installCSI(n, k)
 }
 
-func installCNI(n nodes.Node, k string) error {
+func installCalico(n nodes.Node, k string, descriptorFile commons.DescriptorFile) error {
 	var c string
 	var err error
 
-	c = "kubectl --kubeconfig " + k + " create namespace " + CNINamespace
-	err = commons.ExecuteCommand(n, c)
+	// Generate the calico helm values
+	calicoHelmValues, err := getCalicoManifest(descriptorFile)
 	if err != nil {
-		return errors.Wrap(err, "failed to create CNI namespace")
+		return errors.Wrap(err, "failed to generate calico helm values")
 	}
 
-	c = "echo '" + calicoHelmValues + "' > " + CNITemplate
+	c = "kubectl --kubeconfig " + k + " create namespace " + CalicoNamespace
 	err = commons.ExecuteCommand(n, c)
 	if err != nil {
-		return errors.Wrap(err, "failed to create CNI Helm chart values file")
+		return errors.Wrap(err, "failed to create Calico namespace")
 	}
 
-	c = "helm install --kubeconfig " + k + " " + CNIName + " " + CNIHelmChart +
-		" --namespace " + CNINamespace + " --values " + CNITemplate
+	c = "echo '" + calicoHelmValues + "' > " + CalicoTemplate
 	err = commons.ExecuteCommand(n, c)
 	if err != nil {
-		return errors.Wrap(err, "failed to deploy CNI Helm Chart")
+		return errors.Wrap(err, "failed to create Calico Helm chart values file")
+	}
+
+	c = "helm install --kubeconfig " + k + " " + CalicoName + " " + CalicoHelmChart +
+		" --namespace " + CalicoNamespace + " --values " + CalicoTemplate
+	err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to deploy Calico Helm Chart")
 	}
 
 	return nil
@@ -141,7 +141,7 @@ func (p *Provider) installCAPXWorker(node nodes.Node, kubeconfigPath string, all
 		" --core " + CAPICoreProvider +
 		" --bootstrap " + CAPIBootstrapProvider +
 		" --control-plane " + CAPIControlPlaneProvider +
-		" --infrastructure " + p.capxProvider
+		" --infrastructure " + p.capxProvider + ":" + p.capxVersion
 	err = commons.ExecuteCommand(node, command, p.capxEnvVars)
 	if err != nil {
 		return errors.Wrap(err, "failed to install CAPX in workload cluster")
@@ -173,7 +173,8 @@ func (p *Provider) installCAPXLocal(node nodes.Node) error {
 		" --core " + CAPICoreProvider +
 		" --bootstrap " + CAPIBootstrapProvider +
 		" --control-plane " + CAPIControlPlaneProvider +
-		" --infrastructure " + p.capxProvider
+
+		" --infrastructure " + p.capxProvider + ":" + p.capxVersion
 	err = commons.ExecuteCommand(node, command, p.capxEnvVars)
 	if err != nil {
 		return errors.Wrap(err, "failed to install CAPX in local cluster")
@@ -182,33 +183,107 @@ func (p *Provider) installCAPXLocal(node nodes.Node) error {
 	return nil
 }
 
-func getClusterManifest(flavor string, params commons.TemplateParams) (string, error) {
+func enableSelfHealing(node nodes.Node, descriptorFile commons.DescriptorFile, namespace string) error {
+
+	if !descriptorFile.ControlPlane.Managed {
+
+		machineRole := "-control-plane-node"
+		generateMHCManifest(node, descriptorFile.ClusterID, namespace, machineHealthCheckControlPlaneNodePath, machineRole)
+
+		raw := bytes.Buffer{}
+		cmd := node.Command("kubectl", "-n", namespace, "apply", "-f", machineHealthCheckControlPlaneNodePath)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
+		}
+	}
+
+	machineRole := "-worker-node"
+	generateMHCManifest(node, descriptorFile.ClusterID, namespace, machineHealthCheckWorkerNodePath, machineRole)
+
+	raw := bytes.Buffer{}
+	cmd := node.Command("kubectl", "-n", namespace, "apply", "-f", machineHealthCheckWorkerNodePath)
+	if err := cmd.SetStdout(&raw).Run(); err != nil {
+		return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
+	}
+
+	return nil
+}
+
+func generateMHCManifest(node nodes.Node, clusterID string, namespace string, manifestPath string, machineRole string) error {
+
+	var machineHealthCheck = `
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineHealthCheck
+metadata:
+  name: ` + clusterID + machineRole + `-unhealthy
+  namespace: cluster-` + clusterID + `
+spec:
+  clusterName: ` + clusterID + `
+  nodeStartupTimeout: 300s
+  selector:
+    matchLabels:
+      keos.stratio.com/machine-role: ` + clusterID + machineRole + `
+  unhealthyConditions:
+    - type: Ready
+      status: Unknown
+      timeout: 60s
+    - type: Ready
+      status: 'False'
+      timeout: 60s`
+
+	raw := bytes.Buffer{}
+	cmd := node.Command("sh", "-c", "echo \""+machineHealthCheck+"\" > "+manifestPath)
+	if err := cmd.SetStdout(&raw).Run(); err != nil {
+		return errors.Wrap(err, "failed to write the MachineHealthCheck manifest")
+	}
+	return nil
+}
+
+func resto(n int, i int) int {
+	var r int
+	r = (n % 3) / (i + 1)
+	if r > 1 {
+		r = 1
+	}
+	return r
+}
+
+func GetClusterManifest(flavor string, params commons.TemplateParams) (string, error) {
 
 	funcMap := template.FuncMap{
-		"loop": func(az string, qa int, maxsize int, minsize int) <-chan Node {
+		"loop": func(az string, zd string, qa int, maxsize int, minsize int) <-chan Node {
 			ch := make(chan Node)
 			go func() {
-				var azs []string
 				var q int
 				var mx int
 				var mn int
 				if az != "" {
-					azs = []string{az}
-					q = qa
-					mx = maxsize
-					mn = minsize
+					ch <- Node{AZ: az, QA: qa, MaxSize: maxsize, MinSize: minsize}
 				} else {
-					azs = []string{"a", "b", "c"}
-					q = qa / 3
-					mx = maxsize / 3
-					mn = minsize / 3
-				}
-				for _, a := range azs {
-					ch <- Node{AZ: a, QA: q, MaxSize: mx, MinSize: mn}
+					for i, a := range []string{"a", "b", "c"} {
+						if zd == "unbalanced" {
+							q = qa/3 + resto(qa, i)
+							mx = maxsize/3 + resto(maxsize, i)
+							mn = minsize/3 + resto(minsize, i)
+							ch <- Node{AZ: a, QA: q, MaxSize: mx, MinSize: mn}
+						} else {
+							ch <- Node{AZ: a, QA: qa / 3, MaxSize: maxsize / 3, MinSize: minsize / 3}
+						}
+					}
 				}
 				close(ch)
 			}()
 			return ch
+		},
+		"hostname": func(s string) string {
+			return strings.Split(s, "/")[0]
+		},
+		"checkReference": func(v interface{}) bool {
+			defer func() { recover() }()
+			return v != nil && !reflect.ValueOf(v).IsNil() && v != "nil" && v != "<nil>"
+		},
+		"isNotEmpty": func(v interface{}) bool {
+			return !reflect.ValueOf(v).IsZero()
 		},
 	}
 

@@ -18,6 +18,9 @@ package commons
 
 import (
 	"bytes"
+	"context"
+	"encoding/base64"
+	"log"
 	"unicode"
 
 	"io/ioutil"
@@ -25,6 +28,9 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/fatih/structs"
 	"github.com/oleiade/reflections"
 	"gopkg.in/yaml.v3"
@@ -38,18 +44,6 @@ import (
 
 const secretName = "secrets.yml"
 const secretPath = "./" + secretName
-
-func EncryptFile(filePath string, vaultPassword string) error {
-	data, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		return err
-	}
-	err = vault.EncryptFile(filePath, string(data), vaultPassword)
-	if err != nil {
-		return err
-	}
-	return nil
-}
 
 func decryptFile(filePath string, vaultPassword string) (string, error) {
 	data, err := vault.DecryptFile(filePath, vaultPassword)
@@ -278,38 +272,6 @@ func EnsureSecretsFile(descriptorFile DescriptorFile, vaultPassword string) erro
 	return nil
 }
 
-func convertMapToStruct(m map[string]interface{}, s interface{}) error {
-	stValue := reflect.ValueOf(s).Elem()
-	sType := stValue.Type()
-	for i := 0; i < sType.NumField(); i++ {
-		field := sType.Field(i)
-		if value, ok := m[field.Name]; ok {
-			stValue.Field(i).Set(reflect.ValueOf(value))
-		}
-	}
-	return nil
-}
-
-func getMap(s interface{}) (map[string]string, error) {
-	var resultMap map[string]string
-	resultBytes, err := yaml.Marshal(s)
-	if err != nil {
-		return nil, err
-	}
-	yaml.Unmarshal(resultBytes, &resultMap)
-	return resultMap, nil
-
-}
-
-func cleanStruct(m map[string]string) map[string]string {
-	for k, v := range m {
-		if v == "" {
-			delete(m, k)
-		}
-	}
-	return m
-}
-
 func RewriteDescriptorFile(descriptorPath string) error {
 
 	descriptorRAW, err := os.ReadFile(descriptorPath)
@@ -338,7 +300,7 @@ func RewriteDescriptorFile(descriptorPath string) error {
 }
 
 func IntegrateClusterAutoscaler(node nodes.Node, kubeconfigPath string, clusterID string, provider string) exec.Cmd {
-	cmd := node.Command("helm", "install", "cluster-autoscaler", "autoscaler/cluster-autoscaler",
+	cmd := node.Command("helm", "install", "cluster-autoscaler", "/stratio/helm/cluster-autoscaler",
 		"--kubeconfig", kubeconfigPath,
 		"--namespace", "kube-system",
 		"--set", "autoDiscovery.clusterName="+clusterID,
@@ -347,21 +309,6 @@ func IntegrateClusterAutoscaler(node nodes.Node, kubeconfigPath string, clusterI
 		"--set", "clusterAPIMode=incluster-incluster")
 
 	return cmd
-}
-
-func getDecryptedSecret(vaultPassword string) (SecretsFile, error) {
-	secretRaw, err := decryptFile("./secrets.yml", vaultPassword)
-	secretFile := new(SecretsFile)
-	if err != nil {
-		err := errors.New("The vaultPassword is incorrect")
-		return *secretFile, err
-	} else {
-		err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
-		if err != nil {
-			return *secretFile, err
-		}
-		return *secretFile, nil
-	}
 }
 
 func encryptSecret(secretMap map[string]map[string]interface{}, vaultPassword string) error {
@@ -442,4 +389,31 @@ func convertMapKeysToSnakeCase(m map[string]interface{}) map[string]interface{} 
 		newMap[newKey] = v
 	}
 	return newMap
+}
+
+func GetEcrAuthToken(p ProviderParams) (string, error) {
+	customProvider := credentials.NewStaticCredentialsProvider(
+		p.Credentials["AccessKey"], p.Credentials["SecretKey"], "",
+	)
+	cfg, err := config.LoadDefaultConfig(
+		context.TODO(),
+		config.WithCredentialsProvider(customProvider),
+		config.WithRegion(p.Region),
+	)
+	if err != nil {
+		panic("unable to load SDK config, " + err.Error())
+	}
+
+	svc := ecr.NewFromConfig(cfg)
+	token, err := svc.GetAuthorizationToken(context.TODO(), &ecr.GetAuthorizationTokenInput{})
+	if err != nil {
+		log.Fatal(err)
+	}
+	authData := token.AuthorizationData[0].AuthorizationToken
+	data, err := base64.StdEncoding.DecodeString(*authData)
+	if err != nil {
+		log.Fatal(err)
+	}
+	parts := strings.SplitN(string(data), ":", 2)
+	return parts[1], nil
 }

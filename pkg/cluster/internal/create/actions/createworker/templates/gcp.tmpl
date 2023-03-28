@@ -25,19 +25,24 @@ metadata:
 spec:
   project: {{ .Credentials.ProjectID }}
   region: "{{ .Descriptor.Region }}"
-{{- if ne .Descriptor.Networks.VPCID "" }}
+  {{- if ne .Descriptor.Networks.VPCID "" }}
   network:
     name: {{ .Descriptor.Networks.VPCID }}
     {{- if ne .Descriptor.Networks.Subnets nil }}
+    autoCreateSubnetworks: false
     subnets:
-    {{- range .Descriptor.Networks.Subnets }}
-      - id: {{ .Name }}
+    {{- with (index .Descriptor.Networks.Subnets 0) }}
+    - name: {{ .SubnetId }}
+      region: "{{ $.Descriptor.Region }}"
+      {{- if ne .CidrBlock "" }}
+      cidrBlock: {{ .CidrBlock }}
+      {{- end }} 
     {{- end }}
-    {{- end }}
-{{- else }}
+  {{- end }}
+  {{- else }}
   network:
     name: default
-{{- end }}
+  {{- end }}
 ---
 kind: KubeadmControlPlane
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
@@ -47,6 +52,9 @@ metadata:
 spec:
   replicas: {{- if .Descriptor.ControlPlane.HighlyAvailable }} 3 {{- else }} 1 {{- end }}
   machineTemplate:
+    metadata:
+      labels: 
+        keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-control-plane-node"
     infrastructureRef:
       kind: GCPMachineTemplate
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -73,7 +81,7 @@ spec:
             name: gce-conf
             pathType: FileOrCreate
     files:
-      {{- if .ExternalRegistry.User }}
+      {{- if .DockerRegistries }}
       - content: |
           version = 2
           imports = [\"/etc/containerd/conf.d/*.toml\"]
@@ -88,16 +96,39 @@ spec:
               [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors]
                 [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]
                   endpoint = [\"https://registry-1.docker.io\"]
-              {{- $url := hostname .ExternalRegistry.Url }}
+              {{- range $reg := .DockerRegistries }}
+              {{- $url := hostname $reg.url }}
               [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ $url }}\".auth]
-                password = \"{{ .ExternalRegistry.Pass }}\"
-                username = \"{{ .ExternalRegistry.User }}\"
+                password = \"{{ $reg.pass }}\"
+                username = \"{{ $reg.user }}\"
+              {{- end }}
         path: /etc/containerd/config.toml
       {{- end }}
       - content: |
           [Global]
           multizone=true
         path: /etc/kubernetes/gce.conf
+    {{- if .Descriptor.ControlPlane.ExtraVolumes }}
+    diskSetup:
+      filesystems:
+        {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+        - device: /dev/disk/by-id/google-persistent-disk-{{ len (printf "a%*s" $index "") }}
+          filesystem: ext4
+          label: {{ $vol.Label }}
+        {{- end }}
+      partitions:
+        {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+        - device: /dev/disk/by-id/google-persistent-disk-{{ len (printf "a%*s" $index "") }}
+          layout: true
+          overwrite: false
+          tableType: gpt
+        {{- end }}
+    mounts:
+      {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+      - - LABEL={{ $vol.Label }}
+        - {{ $vol.MountPath }}
+      {{- end }}
+    {{- end }}
     joinConfiguration:
       nodeRegistration:
         name: {{`'{{ ds.meta_data.local_hostname.split(\".\")[0] }}'`}}
@@ -121,8 +152,18 @@ spec:
       {{- if .Descriptor.ControlPlane.RootVolume.Type }}
       rootDeviceType: {{ .Descriptor.ControlPlane.RootVolume.Type }}
       {{- end }}
+      {{- if ne .Descriptor.Networks.Subnets nil }}
+      subnet: {{ with (index .Descriptor.Networks.Subnets 0) }}{{ .SubnetId }}{{ end }}
+      {{- end }}
+      {{- if .Descriptor.ControlPlane.ExtraVolumes }}
+      additionalDisks:
+        {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+        - deviceType: {{ $vol.Type }}
+          size: {{ $vol.Size }}
+        {{- end }}
+      {{- end }}
 {{- range $node := .Descriptor.WorkerNodes }}
-{{- range $index, $n := loop .AZ .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
+{{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
@@ -140,6 +181,9 @@ spec:
   selector:
     matchLabels:
   template:
+    metadata:
+      labels: 
+        keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
     spec:
       clusterName: "{{ $.Descriptor.ClusterID }}"
       version: "{{ $.Descriptor.K8SVersion }}"
@@ -170,6 +214,16 @@ spec:
       {{- if $node.RootVolume.Type }}
       rootDeviceType: {{ $node.RootVolume.Type }}
       {{- end }}
+      {{- if ne $.Descriptor.Networks.Subnets nil }}
+      subnet: {{ with (index $.Descriptor.Networks.Subnets 0) }}{{ .SubnetId }}{{ end }}
+      {{- end }}
+      {{- if $node.ExtraVolumes }}
+      additionalDisks:
+        {{- range $index, $vol := $node.ExtraVolumes }}
+        - deviceType: {{ $vol.Type }}
+          size: {{ $vol.Size }}
+        {{- end }}
+      {{- end }}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
@@ -179,7 +233,7 @@ metadata:
 spec:
   template:
     spec:
-      {{- if $.ExternalRegistry.User }}
+      {{- if $.DockerRegistries }}
       files:
         - content: |
             version = 2
@@ -195,16 +249,42 @@ spec:
                 [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors]
                   [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]
                     endpoint = [\"https://registry-1.docker.io\"]
-                {{- $url := hostname $.ExternalRegistry.Url }}
+                {{- range $reg := $.DockerRegistries }}
+                {{- $url := hostname $reg.url }}
                 [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ $url }}\".auth]
-                  password = \"{{ $.ExternalRegistry.Pass }}\"
-                  username = \"{{ $.ExternalRegistry.User }}\"
+                  password = \"{{ $reg.pass }}\"
+                  username = \"{{ $reg.user }}\"
+                {{- end }}
           path: /etc/containerd/config.toml
         {{- end }}
+      {{- if $node.ExtraVolumes }}
+      diskSetup:
+        filesystems:
+          {{- range $index, $vol := $node.ExtraVolumes }}
+          - device: /dev/disk/by-id/google-persistent-disk-{{ len (printf "a%*s" $index "") }}
+            filesystem: ext4
+            label: {{ $vol.Label }}
+          {{- end }}
+        partitions:
+          {{- range $index, $vol := $node.ExtraVolumes }}
+          - device: /dev/disk/by-id/google-persistent-disk-{{ len (printf "a%*s" $index "") }}
+            layout: true
+            overwrite: false
+            tableType: gpt
+          {{- end }}
+      mounts:
+        {{- range $index, $vol := $node.ExtraVolumes }}
+        - - LABEL={{ $vol.Label }}
+          - {{ $vol.MountPath }}
+        {{- end }}
+      {{- end }}
       joinConfiguration:
         nodeRegistration:
           name: {{`'{{ ds.meta_data.local_hostname.split(\".\")[0] }}'`}}
           kubeletExtraArgs:
             cloud-provider: gce
+            {{- if $node.Labels }}
+            node-labels: \"{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}\"
+            {{- end }}
 {{- end }}
 {{- end }}

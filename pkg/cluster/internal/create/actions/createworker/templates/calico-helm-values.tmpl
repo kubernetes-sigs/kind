@@ -1,0 +1,61 @@
+---
+apiServer:
+  enabled: false
+calicoctl:
+  image: docker.io/calico/ctl
+  tag: v3.22.3
+certs:
+  node:
+    cert:
+    commonName:
+    key:
+  typha:
+    caBundle:
+    cert:
+    commonName:
+    key:
+imagePullSecrets: {}
+installation:
+  calicoNetwork:
+    bgp: "{{- if $.ControlPlane.Managed -}} Disabled {{- else -}} Enabled {{- end }}"
+    {{- if not $.ControlPlane.Managed }}
+    ipPools:
+      - blockSize: 25
+        cidr: 192.168.0.0/16
+        encapsulation: IPIP
+    {{- end }}
+  cni:
+    {{- if eq $.InfraProvider "aws" }}
+    ipam:
+      type: AmazonVPC
+    type: AmazonVPC
+    {{- else }}
+    ipam: 
+      type: Calico
+    type: Calico
+    {{- end }}
+  enabled: true
+  kubernetesProvider: "{{- if eq $.InfraProvider "aws" -}} EKS {{- end }}"
+  nodeMetricsPort: 9191
+  registry: docker.io
+  typhaMetricsPort: 9093
+# NodeSelector for the tigera/operator pod.
+nodeSelector:
+  kubernetes.io/os: linux
+# Custom annotations for the tigera/operator pod.
+podAnnotations: {}
+# Custom labels for the tigera/operator pod.
+podLabels: {}
+# Resource requests and limits for the tigera/operator pod.
+resources: {}
+# Image and registry configuration for the tigera/operator pod.
+tigeraOperator:
+  image: tigera/operator
+  registry: quay.io
+  version: v1.25.9
+# Tolerations for the tigera/operator pod.
+tolerations:
+  - effect: NoExecute
+    operator: Exists
+  - effect: NoSchedule
+    operator: Exists

@@ -46,15 +46,45 @@ spec:
     scheduler: {{ .Descriptor.ControlPlane.AWS.Logging.Scheduler }}
   network:
     vpc:
-      availabilityZoneSelection: Ordered
-      availabilityZoneUsageLimit: 3
+      availabilityZoneSelection: {{- if ne .Descriptor.Networks.AvailabilityZoneSelection "" }} {{ .Descriptor.Networks.AvailabilityZoneSelection }} {{ else }} Ordered {{ end }}
+      availabilityZoneUsageLimit: {{- if ne .Descriptor.Networks.AvailabilityZoneUsageLimit 0 }} {{ .Descriptor.Networks.AvailabilityZoneUsageLimit }} {{ else }} 3 {{ end }}
+  {{- if ne .Descriptor.Networks.CidrBlock "" }}
+      cidrBlock: {{ .Descriptor.Networks.CidrBlock }}
+  {{- end }}
+  {{- if isNotEmpty .Descriptor.Networks.Tags }}
+      tags:
+    {{- range $key,$value := .Descriptor.Networks.Tags }}
+      - $key: $value
+    {{- end}}
+  {{- end }}
 {{- if ne .Descriptor.Networks.VPCID "" }}
       id: {{ .Descriptor.Networks.VPCID }}
     {{- if ne .Descriptor.Networks.Subnets nil }}
     subnets:
-      {{- range .Descriptor.Networks.Subnets }}
-      - id: {{ .Name }}
+    {{- range .Descriptor.Networks.Subnets }}
+      - id: {{ .SubnetId }}
+      {{- if ne .AvailabilityZone "" }}
+        availabilityZone:  {{ .AvailabilityZone }} 
       {{- end }}
+      {{- if ne .CidrBlock "" }}
+        cidrBlock:  {{ .CidrBlock }} 
+      {{- end }}
+      {{- if ne .RouteTableId "" }}
+        routeTableId:  {{ .RouteTableId }} 
+      {{- end }}
+      {{- if ne .NatGatewayId "" }}
+        natGatewayId:  {{ .NatGatewayId }} 
+      {{- end }}
+      {{- if checkReference .IsPublic }}
+        isPublic: {{ .IsPublic }}
+      {{- end }}
+      {{- if isNotEmpty .Tags }}
+        tags:
+      {{- range $key,$value := .Tags }}
+        - $key: $value
+      {{- end }}
+      {{- end }}
+    {{- end }}
     {{- end }}
 {{- end }}
   region: "{{ .Descriptor.Region }}"
@@ -65,7 +95,7 @@ spec:
       - name: ANNOTATE_POD_IP
         value: \"true\"
 {{- range $node := .Descriptor.WorkerNodes }}
-{{- range $index, $n := loop .AZ .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
+{{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
@@ -83,6 +113,9 @@ spec:
   selector:
     matchLabels:
   template:
+    metadata:
+      labels: 
+        keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
     spec:
       clusterName: "{{ $.Descriptor.ClusterID }}"
       version: "{{ $.Descriptor.K8SVersion }}"
@@ -117,13 +150,20 @@ spec:
       instanceType: "{{ $node.Size }}"
       sshKeyName: \"{{ $node.SSHKey }}\"
       rootVolume:
-        {{- if $node.RootVolume.Size }}
-        size: {{ $node.RootVolume.Size }}
-        {{- end }}
+        size: {{- if $node.RootVolume.Size }} {{ $node.RootVolume.Size }} {{ else }} 30 {{ end }}
         {{- if $node.RootVolume.Type }}
         type: {{ $node.RootVolume.Type }}
         {{- end }}
         encrypted: {{ $node.RootVolume.Encrypted }}
+      {{- if $node.ExtraVolumes }}
+      nonRootVolumes:
+        {{- range $index, $vol := $node.ExtraVolumes }}
+        - deviceName: {{ $vol.DeviceName }}
+          size: {{ $vol.Size }}
+          type: {{ $vol.Type }}
+          encrypted: {{ $vol.Encrypted }}
+        {{- end }}
+      {{- end }}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: EKSConfigTemplate
@@ -131,6 +171,32 @@ metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
   namespace: "cluster-{{ $.Descriptor.ClusterID }}"
 spec:
-  template: {}
+  template:
+    spec:
+      {{- if $node.ExtraVolumes }}
+      diskSetup:
+        filesystems:
+          {{- range $index, $vol := $node.ExtraVolumes }}
+          - device: /dev/nvme{{ len (printf "a%*s" $index "") }}n1
+            filesystem: xfs
+            label: {{ $vol.Label }}
+          {{- end }}
+        partitions:
+          {{- range $index, $vol := $node.ExtraVolumes }}
+          - device: /dev/nvme{{ len (printf "a%*s" $index "") }}n1
+            layout: true
+            overwrite: false
+            tableType: gpt
+          {{- end }}
+      mounts:
+        {{- range $index, $vol := $node.ExtraVolumes }}
+        - - /dev/nvme{{ len (printf "a%*s" $index "") }}n1
+          - {{ $vol.MountPath }}
+        {{- end }}
+      {{- end }}
+      {{- if $node.Labels }}
+      kubeletExtraArgs:
+        node-labels: \"{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}\"
+      {{- end }}
 {{- end }}
 {{- end }}

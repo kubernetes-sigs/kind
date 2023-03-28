@@ -21,16 +21,19 @@ import (
 	b64 "encoding/base64"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
 type AWSBuilder struct {
-	capxProvider string
-	capxName     string
-	capxTemplate string
-	capxEnvVars  []string
-	stClassName  string
-	csiNamespace string
+	capxProvider     string
+	capxVersion      string
+	capxImageVersion string
+	capxName         string
+	capxTemplate     string
+	capxEnvVars      []string
+	stClassName      string
+	csiNamespace     string
 }
 
 func newAWSBuilder() *AWSBuilder {
@@ -38,7 +41,9 @@ func newAWSBuilder() *AWSBuilder {
 }
 
 func (b *AWSBuilder) setCapx(managed bool) {
-	b.capxProvider = "aws:v2.0.2"
+	b.capxProvider = "aws"
+	b.capxVersion = "v2.0.2"
+	b.capxImageVersion = "2.0.2-0.1.0-abc39a5"
 	b.capxName = "capa"
 	b.stClassName = "gp2"
 	if managed {
@@ -50,26 +55,28 @@ func (b *AWSBuilder) setCapx(managed bool) {
 	}
 }
 
-func (b *AWSBuilder) setCapxEnvVars(p ProviderParams) {
-	awsCredentials := "[default]\naws_access_key_id = " + p.credentials["AccessKey"] + "\naws_secret_access_key = " + p.credentials["SecretKey"] + "\nregion = " + p.region + "\n"
+func (b *AWSBuilder) setCapxEnvVars(p commons.ProviderParams) {
+	awsCredentials := "[default]\naws_access_key_id = " + p.Credentials["AccessKey"] + "\naws_secret_access_key = " + p.Credentials["SecretKey"] + "\nregion = " + p.Region + "\n"
 	b.capxEnvVars = []string{
-		"AWS_REGION=" + p.region,
-		"AWS_ACCESS_KEY_ID=" + p.credentials["AccessKey"],
-		"AWS_SECRET_ACCESS_KEY=" + p.credentials["SecretKey"],
+		"AWS_REGION=" + p.Region,
+		"AWS_ACCESS_KEY_ID=" + p.Credentials["AccessKey"],
+		"AWS_SECRET_ACCESS_KEY=" + p.Credentials["SecretKey"],
 		"AWS_B64ENCODED_CREDENTIALS=" + b64.StdEncoding.EncodeToString([]byte(awsCredentials)),
-		"GITHUB_TOKEN=" + p.githubToken,
+		"GITHUB_TOKEN=" + p.GithubToken,
 		"CAPA_EKS_IAM=true",
 	}
 }
 
 func (b *AWSBuilder) getProvider() Provider {
 	return Provider{
-		capxProvider: b.capxProvider,
-		capxName:     b.capxName,
-		capxTemplate: b.capxTemplate,
-		capxEnvVars:  b.capxEnvVars,
-		stClassName:  b.stClassName,
-		csiNamespace: b.csiNamespace,
+		capxProvider:     b.capxProvider,
+		capxVersion:      b.capxVersion,
+		capxImageVersion: b.capxImageVersion,
+		capxName:         b.capxName,
+		capxTemplate:     b.capxTemplate,
+		capxEnvVars:      b.capxEnvVars,
+		stClassName:      b.stClassName,
+		csiNamespace:     b.csiNamespace,
 	}
 }
 

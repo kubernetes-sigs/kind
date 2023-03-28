@@ -33,12 +33,14 @@ import (
 var csiManifest string
 
 type GCPBuilder struct {
-	capxProvider string
-	capxName     string
-	capxTemplate string
-	capxEnvVars  []string
-	stClassName  string
-	csiNamespace string
+	capxProvider     string
+	capxVersion      string
+	capxImageVersion string
+	capxName         string
+	capxTemplate     string
+	capxEnvVars      []string
+	stClassName      string
+	csiNamespace     string
 }
 
 func newGCPBuilder() *GCPBuilder {
@@ -46,7 +48,9 @@ func newGCPBuilder() *GCPBuilder {
 }
 
 func (b *GCPBuilder) setCapx(managed bool) {
-	b.capxProvider = "gcp:v1.2.1"
+	b.capxProvider = "gcp"
+	b.capxVersion = "v1.2.1"
+	b.capxImageVersion = "v1.2.1"
 	b.capxName = "capg"
 	b.stClassName = "csi-gcp-pd"
 	if managed {
@@ -58,35 +62,37 @@ func (b *GCPBuilder) setCapx(managed bool) {
 	}
 }
 
-func (b *GCPBuilder) setCapxEnvVars(p ProviderParams) {
+func (b *GCPBuilder) setCapxEnvVars(p commons.ProviderParams) {
 	data := map[string]interface{}{
 		"type":                        "service_account",
-		"project_id":                  p.credentials["ProjectID"],
-		"private_key_id":              p.credentials["PrivateKeyID"],
-		"private_key":                 p.credentials["PrivateKey"],
-		"client_email":                p.credentials["ClientEmail"],
-		"client_id":                   p.credentials["ClientID"],
+		"project_id":                  p.Credentials["ProjectID"],
+		"private_key_id":              p.Credentials["PrivateKeyID"],
+		"private_key":                 p.Credentials["PrivateKey"],
+		"client_email":                p.Credentials["ClientEmail"],
+		"client_id":                   p.Credentials["ClientID"],
 		"auth_uri":                    "https://accounts.google.com/o/oauth2/auth",
 		"token_uri":                   "https://accounts.google.com/o/oauth2/token",
 		"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-		"client_x509_cert_url":        "https://www.googleapis.com/robot/v1/metadata/x509/" + url.QueryEscape(p.credentials["ClientEmail"]),
+		"client_x509_cert_url":        "https://www.googleapis.com/robot/v1/metadata/x509/" + url.QueryEscape(p.Credentials["ClientEmail"]),
 	}
 
 	jsonData, _ := json.Marshal(data)
 	b.capxEnvVars = []string{
 		"GCP_B64ENCODED_CREDENTIALS=" + b64.StdEncoding.EncodeToString([]byte(jsonData)),
-		"GITHUB_TOKEN=" + p.githubToken,
+		"GITHUB_TOKEN=" + p.GithubToken,
 	}
 }
 
 func (b *GCPBuilder) getProvider() Provider {
 	return Provider{
-		capxProvider: b.capxProvider,
-		capxName:     b.capxName,
-		capxTemplate: b.capxTemplate,
-		capxEnvVars:  b.capxEnvVars,
-		stClassName:  b.stClassName,
-		csiNamespace: b.csiNamespace,
+		capxProvider:     b.capxProvider,
+		capxVersion:      b.capxVersion,
+		capxImageVersion: b.capxImageVersion,
+		capxName:         b.capxName,
+		capxTemplate:     b.capxTemplate,
+		capxEnvVars:      b.capxEnvVars,
+		stClassName:      b.stClassName,
+		csiNamespace:     b.csiNamespace,
 	}
 }
 

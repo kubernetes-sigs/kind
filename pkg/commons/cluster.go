@@ -29,10 +29,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type K8sObject struct {
+	APIVersion string         `yaml:"apiVersion" validate:"required"`
+	Kind       string         `yaml:"kind" validate:"required"`
+	Spec       DescriptorFile `yaml:"spec" validate:"required,dive"`
+}
+
 // DescriptorFile represents the YAML structure in the descriptor file
 type DescriptorFile struct {
-	APIVersion       string `yaml:"apiVersion"`
-	Kind             string `yaml:"kind"`
 	ClusterID        string `yaml:"cluster_id" validate:"required,min=3,max=100"`
 	DeployAutoscaler bool   `yaml:"deploy_autoscaler" validate:"boolean"`
 
@@ -47,15 +51,17 @@ type DescriptorFile struct {
 	SSHKey       string `yaml:"ssh_key"`
 	FullyPrivate bool   `yaml:"fully_private" validate:"boolean"`
 
-	Networks struct {
-		VPCID   string `yaml:"vpc_id" validate:"required_with=Subnets"`
-		Subnets []struct {
-			AvailabilityZone string `yaml:"availability_zone"`
-			Name             string `yaml:"name"`
-			PrivateCIDR      string `yaml:"private_cidr" validate:"omitempty,cidrv4"`
-			PublicCIDR       string `yaml:"public_cidr" validate:"omitempty,cidrv4"`
-		} `yaml:"subnets" validate:"omitempty,dive"`
-	} `yaml:"networks" validate:"omitempty,dive"`
+	Networks Networks `yaml:"networks" validate:"omitempty,dive"`
+
+	// Networks struct {
+	// 	VPCID   string `yaml:"vpc_id" validate:"required_with=Subnets"`
+	// 	Subnets []struct {
+	// 		AvailabilityZone string `yaml:"availability_zone"`
+	// 		Name             string `yaml:"name"`
+	// 		PrivateCIDR      string `yaml:"private_cidr" validate:"omitempty,cidrv4"`
+	// 		PublicCIDR       string `yaml:"public_cidr" validate:"omitempty,cidrv4"`
+	// 	} `yaml:"subnets" validate:"omitempty,dive"`
+	// } `yaml:"networks" validate:"omitempty,dive"`
 
 	Dns struct {
 		HostedZones bool `yaml:"hosted_zones" validate:"boolean"`
@@ -83,10 +89,31 @@ type DescriptorFile struct {
 			Type      string `yaml:"type"`
 			Encrypted bool   `yaml:"encrypted" validate:"boolean"`
 		} `yaml:"root_volume"`
-		AWS AWSCP `yaml:"aws"`
+		AWS          AWSCP         `yaml:"aws"`
+		ExtraVolumes []ExtraVolume `yaml:"extra_volumes"`
 	} `yaml:"control_plane"`
 
 	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
+}
+
+type Networks struct {
+	VPCID                      string            `yaml:"vpc_id"`
+	CidrBlock                  string            `yaml:"cidr,omitempty"`
+	Tags                       map[string]string `yaml:"tags,omitempty"`
+	AvailabilityZoneUsageLimit int               `yaml:"az_usage_limit" validate:"numeric"`
+	AvailabilityZoneSelection  string            `yaml:"az_selection" validate:"oneof='Ordered' 'Random' '' "`
+
+	Subnets []Subnets `yaml:"subnets"`
+}
+
+type Subnets struct {
+	SubnetId         string            `yaml:"subnet_id"`
+	AvailabilityZone string            `yaml:"az,omitempty"`
+	IsPublic         *bool             `yaml:"is_public,omitempty"`
+	RouteTableId     string            `yaml:"route_table_id,omitempty"`
+	NatGatewayId     string            `yaml:"nat_id,omitempty"`
+	Tags             map[string]string `yaml:"tags,omitempty"`
+	CidrBlock        string            `yaml:"cidr,omitempty"`
 }
 
 type AWSCP struct {
@@ -101,22 +128,24 @@ type AWSCP struct {
 }
 
 type WorkerNodes []struct {
-	Name             string `yaml:"name" validate:"required"`
-	AmiID            string `yaml:"ami_id"`
-	Quantity         int    `yaml:"quantity" validate:"required,numeric,gt=0"`
-	Size             string `yaml:"size" validate:"required"`
-	Image            string `yaml:"image" validate:"required_if=InfraProvider gcp"`
-	ZoneDistribution string `yaml:"zone_distribution" validate:"omitempty,oneof='balanced' 'unbalanced'"`
-	AZ               string `yaml:"az"`
-	SSHKey           string `yaml:"ssh_key"`
-	Spot             bool   `yaml:"spot" validate:"omitempty,boolean"`
-	NodeGroupMaxSize int    `yaml:"max_size" validate:"gt=0,required_with=NodeGroupMinSize,gte_param_if_exists=Quantity"` //required_if_for_bool=DeployAutoscaler true
-	NodeGroupMinSize int    `yaml:"min_size" validate:"gt=0,required_with=NodeGroupMaxSize,lte_param_if_exists=Quantity"` //required_if_for_bool=DeployAutoscaler true,
+	Name             string            `yaml:"name" validate:"required"`
+	AmiID            string            `yaml:"ami_id"`
+	Quantity         int               `yaml:"quantity" validate:"required,numeric,gt=0"`
+	Size             string            `yaml:"size" validate:"required"`
+	Image            string            `yaml:"image" validate:"required_if=InfraProvider gcp"`
+	ZoneDistribution string            `yaml:"zone_distribution" validate:"omitempty,oneof='balanced' 'unbalanced'"`
+	AZ               string            `yaml:"az"`
+	SSHKey           string            `yaml:"ssh_key"`
+	Spot             bool              `yaml:"spot" validate:"omitempty,boolean"`
+	Labels           map[string]string `yaml:"labels"`
+	NodeGroupMaxSize int               `yaml:"max_size" validate:"omitempty,gt=0,required_with=NodeGroupMinSize,gte_param_if_exists=Quantity"` //required_if_for_bool=DeployAutoscaler true
+	NodeGroupMinSize int               `yaml:"min_size" validate:"omitempty,gt=0,required_with=NodeGroupMaxSize,lte_param_if_exists=Quantity"` //required_if_for_bool=DeployAutoscaler true,
 	RootVolume       struct {
 		Size      int    `yaml:"size" validate:"numeric"`
 		Type      string `yaml:"type"`
 		Encrypted bool   `yaml:"encrypted" validate:"boolean"`
 	} `yaml:"root_volume"`
+	ExtraVolumes []ExtraVolume `yaml:"extra_volumes"`
 }
 
 // Bastion represents the bastion VM
@@ -124,6 +153,15 @@ type Bastion struct {
 	AmiID             string   `yaml:"ami_id"`
 	VMSize            string   `yaml:"vm_size"`
 	AllowedCIDRBlocks []string `yaml:"allowedCIDRBlocks"`
+}
+
+type ExtraVolume struct {
+	DeviceName string `yaml:"device_name"`
+	Size       int    `yaml:"size" validate:"numeric"`
+	Type       string `yaml:"type"`
+	Label      string `yaml:"label"`
+	Encrypted  bool   `yaml:"encrypted" validate:"boolean"`
+	MountPath  string `yaml:"mount_path" validate:"omitempty,required_with=Name"`
 }
 
 type Credentials struct {
@@ -164,7 +202,7 @@ type DockerRegistry struct {
 type TemplateParams struct {
 	Descriptor       DescriptorFile
 	Credentials      map[string]string
-	ExternalRegistry map[string]string
+	DockerRegistries []map[string]interface{}
 }
 
 type AWS struct {
@@ -185,6 +223,13 @@ type Secrets struct {
 	GithubToken      string                      `yaml:"github_token"`
 	ExternalRegistry DockerRegistryCredentials   `yaml:"external_registry"`
 	DockerRegistries []DockerRegistryCredentials `yaml:"docker_registries"`
+}
+
+type ProviderParams struct {
+	Region      string
+	Managed     bool
+	Credentials map[string]string
+	GithubToken string
 }
 
 // Init sets default values for the DescriptorFile
@@ -210,20 +255,24 @@ func (d DescriptorFile) Init() DescriptorFile {
 }
 
 // Read descriptor file
-func GetClusterDescriptor(descriptorName string) (*DescriptorFile, error) {
-	_, err := os.Stat(descriptorName)
+func GetClusterDescriptor(descriptorPath string) (*DescriptorFile, error) {
+	_, err := os.Stat(descriptorPath)
 	if err != nil {
-		return nil, errors.New("No exists any cluster descriptor as " + descriptorName)
+		return nil, errors.New("No exists any cluster descriptor as " + descriptorPath)
 	}
-	descriptorRAW, err := os.ReadFile("./" + descriptorName)
-	if err != nil {
-		return nil, err
-	}
-	descriptorFile := new(DescriptorFile).Init()
-	err = yaml.Unmarshal(descriptorRAW, &descriptorFile)
+	var k8sStruct K8sObject
+
+	descriptorRAW, err := os.ReadFile(descriptorPath)
 	if err != nil {
 		return nil, err
 	}
+
+	k8sStruct.Spec = new(DescriptorFile).Init()
+	err = yaml.Unmarshal(descriptorRAW, &k8sStruct)
+	if err != nil {
+		return nil, err
+	}
+	descriptorFile := k8sStruct.Spec
 	validate := validator.New()
 
 	validate.RegisterCustomTypeFunc(CustomTypeAWSCredsFunc, AWSCredentials{})
