@@ -187,8 +187,13 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		DockerRegistries: dockerRegistries,
 	}
 
+	azs, err := infra.getAzs()
+	if err != nil {
+		return errors.Wrap(err, "failed to get AZs")
+	}
 	// Generate the cluster manifest
-	descriptorData, err := GetClusterManifest(provider.capxTemplate, templateParams)
+
+	descriptorData, err := cluster.GetClusterManifest(provider.capxTemplate, templateParams, azs)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate cluster manifests")
 	}

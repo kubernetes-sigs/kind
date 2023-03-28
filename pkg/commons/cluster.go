@@ -287,21 +287,68 @@ func GetClusterDescriptor(descriptorPath string) (*DescriptorFile, error) {
 	return &descriptorFile, nil
 }
 
+<<<<<<< HEAD:pkg/commons/cluster.go
 func DecryptFile(filePath string, vaultPassword string) (string, error) {
 	data, err := vault.DecryptFile(filePath, vaultPassword)
 
 	if err != nil {
 		return "", err
+=======
+func resto(n int, i int, azs int) int {
+	var r int
+	r = (n % azs) / (i + 1)
+	if r > 1 {
+		r = 1
+>>>>>>> branch-0.17.0-0.2:pkg/cluster/internal/create/actions/cluster/cluster.go
 	}
 	return data, nil
 }
 
+<<<<<<< HEAD:pkg/commons/cluster.go
 func GetSecretsFile(secretsPath string, vaultPassword string) (*SecretsFile, error) {
 	secretRaw, err := DecryptFile(secretsPath, vaultPassword)
 	var secretFile SecretsFile
 	if err != nil {
 		err := errors.New("The vaultPassword is incorrect")
 		return nil, err
+=======
+func GetClusterManifest(flavor string, params TemplateParams, azs []string) (string, error) {
+	funcMap := template.FuncMap{
+		"loop": func(az string, zd string, qa int, maxsize int, minsize int) <-chan Node {
+			ch := make(chan Node)
+			go func() {
+				var q int
+				var mx int
+				var mn int
+				if az != "" {
+					ch <- Node{AZ: az, QA: qa, MaxSize: maxsize, MinSize: minsize}
+				} else {
+					for i, a := range azs {
+						if zd == "unbalanced" {
+							q = qa/len(azs) + resto(qa, i, len(azs))
+							mx = maxsize/len(azs) + resto(maxsize, i, len(azs))
+							mn = minsize/len(azs) + resto(minsize, i, len(azs))
+							ch <- Node{AZ: a, QA: q, MaxSize: mx, MinSize: mn}
+						} else {
+							ch <- Node{AZ: a, QA: qa / len(azs), MaxSize: maxsize / len(azs), MinSize: minsize / len(azs)}
+						}
+					}
+				}
+				close(ch)
+			}()
+			return ch
+		},
+		"hostname": func(s string) string {
+			return strings.Split(s, "/")[0]
+		},
+		"checkReference": func(v interface{}) bool {
+			defer func() { recover() }()
+			return v != nil && !reflect.ValueOf(v).IsNil() && v != "nil" && v != "<nil>"
+		},
+		"isNotEmpty": func(v interface{}) bool {
+			return !reflect.ValueOf(v).IsZero()
+		},
+>>>>>>> branch-0.17.0-0.2:pkg/cluster/internal/create/actions/cluster/cluster.go
 	}
 
 	err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
