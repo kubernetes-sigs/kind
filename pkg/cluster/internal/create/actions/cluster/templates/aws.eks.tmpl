@@ -88,7 +88,7 @@ spec:
     {{- end }}
 {{- end }}
   region: "{{ .Descriptor.Region }}"
-  sshKeyName: \"{{ .Descriptor.SSHKey }}\"
+  sshKeyName: \"{{ .Descriptor.Bastion.SSHKey }}\"
   version: "{{ .Descriptor.K8SVersion }}"
   vpcCni:
     env:
@@ -142,9 +142,9 @@ spec:
       spotMarketOptions:
         maxPrice: \"\"
       {{- end }}
-      {{- if ne $node.AmiID "" }}
+      {{- if ne $node.NodeImage "" }}
       ami:
-        id: {{ $node.AmiID }}
+        id: {{ $node.NodeImage }}
       {{- end }}
       iamInstanceProfile: "nodes.cluster-api-provider-aws.sigs.k8s.io"
       instanceType: "{{ $node.Size }}"
