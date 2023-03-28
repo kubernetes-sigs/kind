@@ -53,16 +53,6 @@ type DescriptorFile struct {
 
 	Networks Networks `yaml:"networks" validate:"omitempty,dive"`
 
-	// Networks struct {
-	// 	VPCID   string `yaml:"vpc_id" validate:"required_with=Subnets"`
-	// 	Subnets []struct {
-	// 		AvailabilityZone string `yaml:"availability_zone"`
-	// 		Name             string `yaml:"name"`
-	// 		PrivateCIDR      string `yaml:"private_cidr" validate:"omitempty,cidrv4"`
-	// 		PublicCIDR       string `yaml:"public_cidr" validate:"omitempty,cidrv4"`
-	// 	} `yaml:"subnets" validate:"omitempty,dive"`
-	// } `yaml:"networks" validate:"omitempty,dive"`
-
 	Dns struct {
 		HostedZones bool `yaml:"hosted_zones" validate:"boolean"`
 	} `yaml:"dns"`
