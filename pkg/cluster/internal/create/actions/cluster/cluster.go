@@ -82,6 +82,7 @@ type DescriptorFile struct {
 			Encrypted bool   `yaml:"encrypted" validate:"boolean"`
 		} `yaml:"root_volume"`
 		AWS          AWS           `yaml:"aws"`
+		Azure        Azure         `yaml:"azure"`
 		ExtraVolumes []ExtraVolume `yaml:"extra_volumes"`
 	} `yaml:"control_plane"`
 
@@ -117,6 +118,10 @@ type AWS struct {
 		ControllerManager bool `yaml:"controller_manager" validate:"boolean"`
 		Scheduler         bool `yaml:"scheduler" validate:"boolean"`
 	} `yaml:"logging"`
+}
+
+type Azure struct {
+	Tier string `yaml:"tier" validate:"oneof='Free' 'Paid'"`
 }
 
 type WorkerNodes []struct {
@@ -227,6 +232,9 @@ func (d DescriptorFile) Init() DescriptorFile {
 	d.ControlPlane.AWS.Logging.Authenticator = false
 	d.ControlPlane.AWS.Logging.ControllerManager = false
 	d.ControlPlane.AWS.Logging.Scheduler = false
+
+	// AKS
+	d.ControlPlane.Azure.Tier = "Paid"
 
 	// Hosted zones
 	d.Dns.HostedZones = true
