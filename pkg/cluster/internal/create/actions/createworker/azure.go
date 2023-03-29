@@ -17,8 +17,6 @@ limitations under the License.
 package createworker
 
 import (
-	b64 "encoding/base64"
-
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 )
 
@@ -54,10 +52,7 @@ func (b *AzureBuilder) setCapx(managed bool) {
 
 func (b *AzureBuilder) setCapxEnvVars(p ProviderParams) {
 	b.capxEnvVars = []string{
-		"AZURE_SUBSCRIPTION_ID_B64=" + b64.StdEncoding.EncodeToString([]byte(p.credentials["SubscriptionID"])),
-		"AZURE_TENANT_ID_B64=" + b64.StdEncoding.EncodeToString([]byte(p.credentials["TenantID"])),
-		"AZURE_CLIENT_SECRET_B64=" + b64.StdEncoding.EncodeToString([]byte(p.credentials["ClientSecret"])),
-		"AZURE_CLIENT_ID_B64=" + b64.StdEncoding.EncodeToString([]byte(p.credentials["ClientID"])),
+		"AZURE_CLIENT_SECRET=" + p.credentials["ClientSecret"],
 		"GITHUB_TOKEN=" + p.githubToken,
 		"EXP_MACHINE_POOL=true",
 	}

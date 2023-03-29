@@ -19,6 +19,7 @@ package createworker
 import (
 	"bytes"
 	_ "embed"
+	"strings"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
@@ -169,6 +170,23 @@ func (p *Provider) installCAPXWorker(node nodes.Node, kubeconfigPath string, all
 func (p *Provider) installCAPXLocal(node nodes.Node) error {
 	var command string
 	var err error
+
+	if p.capxProvider == "azure" {
+		// Create capx namespace
+		command = "kubectl create namespace " + p.capxName + "-system"
+		err = executeCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to create CAPx namespace")
+		}
+
+		// Create capx secret
+		secret := strings.Split(p.capxEnvVars[0], "AZURE_CLIENT_SECRET=")[1]
+		command = "kubectl -n " + p.capxName + "-system create secret generic cluster-identity-secret --from-literal=clientSecret='" + string(secret) + "'"
+		err = executeCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to create CAPx secret")
+		}
+	}
 
 	command = "clusterctl init --wait-providers" +
 		" --core " + CAPICoreProvider +

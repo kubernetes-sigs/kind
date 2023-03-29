@@ -35,7 +35,7 @@ spec:
     name: "{{ .Descriptor.ClusterID }}-identity"
   location: "{{ .Descriptor.Region }}"
   sku:
-    tier: Free
+    tier: "{{ .Descriptor.ControlPlane.Azure.Tier }}"
   resourceGroupName: "{{ .Descriptor.ClusterID }}"
   sshPublicKey: \"\"
   subscriptionID: "{{ .Credentials.SubscriptionID }}"
@@ -52,8 +52,8 @@ spec:
   allowedNamespaces: {}
   clientID: "{{ .Credentials.ClientID }}"
   clientSecret:
-    name: "{{ .Descriptor.ClusterID }}-identity-secret"
-    namespace: "cluster-{{ .Descriptor.ClusterID }}"
+    name: "cluster-identity-secret"
+    namespace: "capz-system"
   tenantID: "{{ .Credentials.TenantID }}"
   type: ServicePrincipal
 {{- range $node := .Descriptor.WorkerNodes }}
@@ -94,7 +94,7 @@ metadata:
   namespace: "cluster-{{ $.Descriptor.ClusterID }}"
 spec:
   mode: System
-  name: "{{ $node.Name }}-mp-{{ $index }}"
+  name: "{{ $node.Name }}mp{{ $index }}"
   sku: "{{ $node.Size }}"
   osDiskSizeGB: {{- if $node.RootVolume.Size }} {{ $node.RootVolume.Size }} {{ else }} 30 {{ end }}
   {{- if $node.RootVolume.Type }}
