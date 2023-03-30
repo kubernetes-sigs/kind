@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-VERSION=v0.0.22
+VERSION=v0.0.23
 TAG=$(VERSION)-kind.0
 EXTRA_BUILD_OPT=--build-arg=VERSION=$(VERSION)
 include $(CURDIR)/../Makefile.common.in
