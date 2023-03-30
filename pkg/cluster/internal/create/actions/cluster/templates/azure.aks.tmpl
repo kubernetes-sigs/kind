@@ -11,7 +11,7 @@ spec:
   controlPlaneRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureManagedControlPlane
-    name: "{{ .Descriptor.ClusterID }}-control-plane"
+    name: "{{ .Descriptor.ClusterID }}"
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureManagedCluster
@@ -26,7 +26,7 @@ metadata:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedControlPlane
 metadata:
-  name: "{{ .Descriptor.ClusterID }}-control-plane"
+  name: "{{ .Descriptor.ClusterID }}"
   namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec:
   identityRef:

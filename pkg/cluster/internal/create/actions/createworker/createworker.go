@@ -255,7 +255,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 		// Wait for the worker cluster creation
 		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "25m", "cluster", descriptorFile.ClusterID)
+		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "15m", "cluster", descriptorFile.ClusterID)
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
 			return errors.Wrap(err, "failed to create the worker Cluster")
 		}
@@ -312,11 +312,13 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Preparing nodes in workload cluster 📦")
 		defer ctx.Status.End(false)
 
-		// Wait for the worker cluster creation
-		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "20m", "--all", "md")
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to create the worker Cluster")
+		if provider.capxName != "azure" || !descriptorFile.ControlPlane.Managed {
+			// Wait for the worker cluster creation
+			raw = bytes.Buffer{}
+			cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "25m", "--all", "md")
+			if err := cmd.SetStdout(&raw).Run(); err != nil {
+				return errors.Wrap(err, "failed to create the worker Cluster")
+			}
 		}
 
 		if !descriptorFile.ControlPlane.Managed {
@@ -327,6 +329,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				return errors.Wrap(err, "failed to create the worker Cluster")
 			}
 		}
+
 		ctx.Status.End(true) // End Preparing nodes in workload cluster
 
 		ctx.Status.Start("Enabling workload cluster's self-healing 🏥")
