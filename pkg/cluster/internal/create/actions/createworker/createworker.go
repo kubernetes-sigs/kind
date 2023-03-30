@@ -22,7 +22,6 @@ import (
 	_ "embed"
 	"os"
 	"strings"
-	"time"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
@@ -254,25 +253,23 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			return errors.Wrap(err, "failed to create the worker Cluster")
 		}
 
+		// Wait for the control plane initialization
+		raw = bytes.Buffer{}
+		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ControlPlaneInitialized", "--timeout", "5m", "cluster", descriptorFile.ClusterID)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to create the worker Cluster")
+		}
+
 		ctx.Status.End(true) // End Creating the workload cluster
 
 		ctx.Status.Start("Saving the workload cluster kubeconfig 📝")
 		defer ctx.Status.End(false)
 
 		// Get the workload cluster kubeconfig
+		raw = bytes.Buffer{}
 		cmd = node.Command("sh", "-c", "clusterctl -n "+capiClustersNamespace+" get kubeconfig "+descriptorFile.ClusterID+" | tee "+kubeconfigPath)
-		for i := 0; i < 3; i++ {
-			raw = bytes.Buffer{}
-			if err := cmd.SetStdout(&raw).SetStderr(&raw).Run(); err != nil {
-				return errors.Wrap(err, "failed to get workload cluster kubeconfig")
-			}
-			if !strings.Contains(raw.String(), "Error:") && raw.String() != "" {
-				continue
-			}
-			if i == 2 {
-				return errors.New(raw.String() + " failed to get workload cluster kubeconfig")
-			}
-			time.Sleep(3 * time.Second)
+		if err := cmd.SetStdout(&raw).SetStderr(&raw).Run(); err != nil || strings.Contains(raw.String(), "Error:") || raw.String() == "" {
+			return errors.Wrap(err, "failed to get workload cluster kubeconfig")
 		}
 		kubeconfig := raw.String()
 
