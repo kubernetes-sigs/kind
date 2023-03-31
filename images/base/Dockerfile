@@ -133,6 +133,7 @@ RUN echo "Installing containerd ..." \
     && echo "${RUNC_AMD64_SHA256SUM}  /tmp/runc.amd64" | tee /tmp/runc.sha256 \
     && echo "${RUNC_ARM64_SHA256SUM}  /tmp/runc.arm64" | tee -a /tmp/runc.sha256 \
     && sha256sum --ignore-missing -c /tmp/runc.sha256 \
+    && rm -f /tmp/runc.sha256 \
     && mv /tmp/runc.${TARGETARCH} /usr/local/sbin/runc \
     && chmod 755 /usr/local/sbin/runc \
     && ctr oci spec \
