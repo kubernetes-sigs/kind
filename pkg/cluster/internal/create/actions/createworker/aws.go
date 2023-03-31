@@ -42,7 +42,7 @@ func newAWSBuilder() *AWSBuilder {
 func (b *AWSBuilder) setCapx(managed bool) {
 	b.capxProvider = "aws"
 	b.capxVersion = "v2.0.2"
-	b.capxImageVersion = "2.0.2-0.1.0-abc39a5"
+	b.capxImageVersion = "2.0.2-0.1.0"
 	b.capxName = "capa"
 	b.stClassName = "gp2"
 	if managed {
