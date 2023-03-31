@@ -145,7 +145,7 @@ spec:
   template:
     spec:
       instanceType: "{{ .Descriptor.ControlPlane.Size }}"
-      image: "{{ .Descriptor.ControlPlane.Image }}"
+      image: "{{ .Descriptor.ControlPlane.NodeImage }}"
       {{- if .Descriptor.ControlPlane.RootVolume.Size }}
       rootDeviceSize: {{ .Descriptor.ControlPlane.RootVolume.Size }}
       {{- end }}
@@ -207,7 +207,7 @@ spec:
   template:
     spec:
       instanceType: "{{ $node.Size }}"
-      image: "{{ $node.Image }}"
+      image: "{{ $node.NodeImage }}"
       {{- if $node.RootVolume.Size }}
       rootDeviceSize: {{ $node.RootVolume.Size }}
       {{- end }}
