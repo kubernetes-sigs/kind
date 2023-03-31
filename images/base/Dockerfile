@@ -27,15 +27,15 @@ ARG TARGETARCH
 
 # Configure containerd and runc binaries from kind-ci/containerd-nightlies repository
 # The repository contains latest stable releases and nightlies built for multiple architectures
-ARG CONTAINERD_VERSION="1.6.19-46-g941215f49"
+ARG CONTAINERD_VERSION="1.6.20"
 ARG CONTAINERD_BASE_URL="https://github.com/kind-ci/containerd-nightlies/releases/download"
 ARG CONTAINERD_URL="${CONTAINERD_BASE_URL}/containerd-${CONTAINERD_VERSION}/containerd-${CONTAINERD_VERSION}-linux-${TARGETARCH}.tar.gz"
-ARG CONTAINERD_AMD64_SHA256SUM="df182a12d9108042df7dc449506be43f2fed8b3babde5bb9a72e5554e055a085"
-ARG CONTAINERD_ARM64_SHA256SUM="2c76703c81ddaee5295911b8d8816dc84bcd8c5f78e48ea6f03b00a86148694e"
+ARG CONTAINERD_AMD64_SHA256SUM="a6432bbdb0573887a6b2b91d8a1e2cc00c97c59b6210dbacd52919a4c815b5b2"
+ARG CONTAINERD_ARM64_SHA256SUM="16014836cbd93f833d4f58c9d02952d373bcc4c9f8e3b0ad778d625106264cca"
 
 ARG RUNC_URL="${CONTAINERD_BASE_URL}/containerd-${CONTAINERD_VERSION}/runc.${TARGETARCH}"
-ARG RUNC_AMD64_SHA256SUM="76acadf30309b3e36aeb1bdb69238e52be2dd12e7a3557641e6f25415c1cb29b"
-ARG RUNC_ARM64_SHA256SUM="2216c944455b4664113ce0af8b4a6ddc3beb7bacecc06b45b03b004995c822c1"
+ARG RUNC_AMD64_SHA256SUM="415d6e654754b51e907088cea751da45784abcba748938636471d3016e546385"
+ARG RUNC_ARM64_SHA256SUM="6c37b993e2a14bcfe18789ab0e80d0ce5f24e19aa95ba8607b1152f7bd6bceca"
 
 # Configure crictl binary from upstream
 ARG CRICTL_VERSION="v1.26.1"
@@ -78,6 +78,7 @@ COPY --chmod=0644 files/etc/systemd/system/kubelet.service.d/* /etc/systemd/syst
 # Packages installed are broken down into (each on a line):
 # - packages needed to run services (systemd)
 # - packages needed for kubernetes components
+# - packages needed for networked backed storage with kubernetes
 # - packages needed by the container runtime
 # - misc packages kind uses itself
 # - packages that provide semi-core kubernetes functionality
@@ -102,11 +103,10 @@ COPY --chmod=0644 files/etc/systemd/system/kubelet.service.d/* /etc/systemd/syst
 RUN echo "Installing Packages ..." \
     && DEBIAN_FRONTEND=noninteractive clean-install \
       systemd \
-      conntrack iptables iproute2 ethtool socat util-linux mount ebtables kmod \
-      libseccomp2 pigz \
-      bash ca-certificates curl rsync \
-      nfs-common fuse-overlayfs open-iscsi \
-      jq \
+      conntrack iptables iproute2 ethtool util-linux mount ebtables kmod \
+      libseccomp2 pigz fuse-overlayfs \
+      nfs-common open-iscsi \
+      bash ca-certificates curl jq \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
     && rm -f /lib/systemd/system/multi-user.target.wants/* \
     && rm -f /etc/systemd/system/*.wants/* \
@@ -133,6 +133,7 @@ RUN echo "Installing containerd ..." \
     && echo "${RUNC_AMD64_SHA256SUM}  /tmp/runc.amd64" | tee /tmp/runc.sha256 \
     && echo "${RUNC_ARM64_SHA256SUM}  /tmp/runc.arm64" | tee -a /tmp/runc.sha256 \
     && sha256sum --ignore-missing -c /tmp/runc.sha256 \
+    && rm -f /tmp/runc.sha256 \
     && mv /tmp/runc.${TARGETARCH} /usr/local/sbin/runc \
     && chmod 755 /usr/local/sbin/runc \
     && ctr oci spec \
