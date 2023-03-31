@@ -286,5 +286,8 @@ spec:
             {{- if $node.Labels }}
             node-labels: \"{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}\"
             {{- end }}
+            {{- if gt (len $node.Taints) 0 }}
+            register-with-taints: \"{{ range $i, $taint := $node.Taints }}{{$taint.Key}}={{$taint.Value}}:{{$taint.Effect}}{{ $len := len $node.Taints }}{{- if lastElement $i $len }}{{- else }},{{- end }}{{- end }}\"
+            {{- end }}
 {{- end }}
 {{- end }}

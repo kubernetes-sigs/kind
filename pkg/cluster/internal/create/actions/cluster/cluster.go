@@ -130,6 +130,7 @@ type WorkerNodes []struct {
 	SSHKey           string            `yaml:"ssh_key"`
 	Spot             bool              `yaml:"spot" validate:"omitempty,boolean"`
 	Labels           map[string]string `yaml:"labels"`
+	Taints           []Taint           `yaml:"taints" validate:"omitempty,dive"`
 	NodeGroupMaxSize int               `yaml:"max_size" validate:"omitempty,numeric,required_with=NodeGroupMinSize,gtefield=Quantity,gt=0"`
 	NodeGroupMinSize int               `yaml:"min_size" validate:"omitempty,numeric,required_with=NodeGroupMaxSize,ltefield=Quantity,gt=0"`
 	RootVolume       struct {
@@ -202,6 +203,12 @@ type TemplateParams struct {
 	Descriptor       DescriptorFile
 	Credentials      map[string]string
 	DockerRegistries []map[string]interface{}
+}
+
+type Taint struct {
+	Key    string `yaml:"key" validate:"required"`
+	Value  string `yaml:"value" validate:"required"`
+	Effect string `yaml:"effect" validate:"required,oneof='NoSchedule' 'NoExecute' 'PreferNoSchedule'"`
 }
 
 // Init sets default values for the DescriptorFile
@@ -296,6 +303,10 @@ func GetClusterManifest(flavor string, params TemplateParams, azs []string) (str
 		},
 		"isNotEmpty": func(v interface{}) bool {
 			return !reflect.ValueOf(v).IsZero()
+		},
+		"lastElement": func(element int, len int) bool {
+			element += element
+			return element == len
 		},
 	}
 
