@@ -78,6 +78,7 @@ COPY --chmod=0644 files/etc/systemd/system/kubelet.service.d/* /etc/systemd/syst
 # Packages installed are broken down into (each on a line):
 # - packages needed to run services (systemd)
 # - packages needed for kubernetes components
+# - packages needed for networked backed storage with kubernetes
 # - packages needed by the container runtime
 # - misc packages kind uses itself
 # - packages that provide semi-core kubernetes functionality
@@ -103,10 +104,9 @@ RUN echo "Installing Packages ..." \
     && DEBIAN_FRONTEND=noninteractive clean-install \
       systemd \
       conntrack iptables iproute2 ethtool socat util-linux mount ebtables kmod \
-      libseccomp2 pigz \
-      bash ca-certificates curl rsync \
-      nfs-common fuse-overlayfs open-iscsi \
-      jq \
+      libseccomp2 pigz fuse-overlayfs \
+      nfs-common open-iscsi \
+      bash ca-certificates curl jq \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
     && rm -f /lib/systemd/system/multi-user.target.wants/* \
     && rm -f /etc/systemd/system/*.wants/* \
