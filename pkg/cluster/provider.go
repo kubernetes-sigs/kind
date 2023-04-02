@@ -17,7 +17,6 @@ limitations under the License.
 package cluster
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -235,7 +234,7 @@ func (p *Provider) CollectLogs(name, dir string) error {
 		return errors.Wrap(err, "failed to create logs directory")
 	}
 	// write kind version
-	if err := ioutil.WriteFile(
+	if err := os.WriteFile(
 		filepath.Join(dir, "kind-version.txt"),
 		[]byte(version.DisplayVersion()),
 		0666, // match os.Create
