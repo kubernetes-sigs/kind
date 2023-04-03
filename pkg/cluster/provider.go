@@ -144,7 +144,7 @@ func ProviderWithLogger(logger log.Logger) ProviderOption {
 	})
 }
 
-// providerLoggerOption is a trivial ProviderOption adapter
+// providerRuntimeOption is a trivial ProviderOption adapter
 // we use a type specific to logging options so we can handle them first
 type providerRuntimeOption func(p *Provider)
 
