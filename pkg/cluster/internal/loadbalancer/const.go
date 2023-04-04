@@ -17,7 +17,7 @@ limitations under the License.
 package loadbalancer
 
 // Image defines the loadbalancer image:tag
-const Image = "docker.io/kindest/haproxy:v20230227-d46f45b6"
+const Image = "docker.io/kindest/haproxy:v20230330-2f738c2@sha256:57f219951c0734d931e345b57c063e03e9cdcbb3aef02cfb5fa8c81a80f560f0"
 
 // ConfigPath defines the path to the config file in the image
 const ConfigPath = "/usr/local/etc/haproxy/haproxy.cfg"
