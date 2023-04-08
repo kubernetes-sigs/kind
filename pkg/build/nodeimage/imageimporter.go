@@ -47,10 +47,8 @@ func (c *containerdImporter) End() error {
 }
 
 func (c *containerdImporter) Pull(image, platform string) error {
-	// TODO: this should exist with a --no-unpack and some way to operate quietly
-	// without discarding output
 	return c.containerCmder.Command(
-		"ctr", "--namespace=k8s.io", "images", "pull", "--platform="+platform, image,
+		"ctr", "--namespace=k8s.io", "content", "fetch", "--platform="+platform, image,
 	).SetStdout(ioutil.Discard).SetStderr(ioutil.Discard).Run()
 }
 
