@@ -262,17 +262,11 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVers
 		image := image // https://golang.org/doc/faq#closures_and_goroutines
 		fns = append(fns, func() error {
 			if !builtImages.Has(image) {
-				/*
-					TODO: show errors when we have real errors. See comments in
-					importer implementation
-					err := importer.Pull(image, dockerBuildOsAndArch(c.arch))
-					if err != nil {
-						c.logger.Warnf("Failed to pull %s with error: %v", image, err)
-						runE := exec.RunErrorForError(err)
-						c.logger.Warn(string(runE.Output))
-					}
-				*/
-				_ = importer.Pull(image, dockerBuildOsAndArch(c.arch))
+				if err = importer.Pull(image, dockerBuildOsAndArch(c.arch)); err != nil {
+					c.logger.Warnf("Failed to pull %s with error: %v", image, err)
+					runE := exec.RunErrorForError(err)
+					c.logger.Warn(string(runE.Output))
+				}
 			}
 			return nil
 		})
