@@ -312,7 +312,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Preparing nodes in workload cluster 📦")
 		defer ctx.Status.End(false)
 
-		if provider.capxName != "azure" || !descriptorFile.ControlPlane.Managed {
+		if provider.capxProvider != "azure" || !descriptorFile.ControlPlane.Managed {
 			// Wait for the worker cluster creation
 			raw = bytes.Buffer{}
 			cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "25m", "--all", "md")
@@ -384,7 +384,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.End(true) // End Installing CAPx in workload cluster
 
 		// Use Calico as network policy engine in managed systems
-		if descriptorFile.ControlPlane.Managed {
+		if provider.capxProvider != "azure" && descriptorFile.ControlPlane.Managed {
 			ctx.Status.Start("Installing Network Policy Engine in workload cluster 🚧")
 			defer ctx.Status.End(false)
 
