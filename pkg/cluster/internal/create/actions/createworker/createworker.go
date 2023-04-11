@@ -105,8 +105,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to parse cluster descriptor")
 	}
 
-	capiClustersNamespace := "cluster-" + descriptorFile.ClusterID
-
 	// Get the secrets
 	credentialsMap, _, githubToken, dockerRegistries, err := getSecrets(*descriptorFile, a.vaultPassword)
 	if err != nil {
@@ -187,6 +185,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Generating workload cluster manifests 📝")
 	defer ctx.Status.End(false)
 
+	capiClustersNamespace := "cluster-" + descriptorFile.ClusterID
+
 	templateParams := cluster.TemplateParams{
 		Descriptor:       *descriptorFile,
 		Credentials:      credentialsMap,
@@ -255,7 +255,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 		// Wait for the worker cluster creation
 		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "15m", "cluster", descriptorFile.ClusterID)
+		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "25m", "cluster", descriptorFile.ClusterID)
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
 			return errors.Wrap(err, "failed to create the worker Cluster")
 		}
@@ -315,7 +315,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		if provider.capxProvider != "azure" || !descriptorFile.ControlPlane.Managed {
 			// Wait for the worker cluster creation
 			raw = bytes.Buffer{}
-			cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "25m", "--all", "md")
+			cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "15m", "--all", "md")
 			if err := cmd.SetStdout(&raw).Run(); err != nil {
 				return errors.Wrap(err, "failed to create the worker Cluster")
 			}
