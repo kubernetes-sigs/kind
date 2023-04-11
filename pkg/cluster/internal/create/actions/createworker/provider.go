@@ -138,6 +138,23 @@ func (p *Provider) installCAPXWorker(node nodes.Node, kubeconfigPath string, all
 	var command string
 	var err error
 
+	if p.capxProvider == "azure" {
+		// Create capx namespace
+		command = "kubectl --kubeconfig " + kubeconfigPath + " create namespace " + p.capxName + "-system"
+		err = executeCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to create CAPx namespace")
+		}
+
+		// Create capx secret
+		secret := strings.Split(p.capxEnvVars[0], "AZURE_CLIENT_SECRET=")[1]
+		command = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system create secret generic cluster-identity-secret --from-literal=clientSecret='" + string(secret) + "'"
+		err = executeCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to create CAPx secret")
+		}
+	}
+
 	// Install CAPX in worker cluster
 	command = "clusterctl --kubeconfig " + kubeconfigPath + " init --wait-providers" +
 		" --core " + CAPICoreProvider +
