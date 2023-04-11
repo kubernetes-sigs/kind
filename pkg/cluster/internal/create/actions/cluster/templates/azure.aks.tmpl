@@ -37,6 +37,7 @@ spec:
   sku:
     tier: "{{ .Descriptor.ControlPlane.Azure.Tier }}"
   resourceGroupName: "{{ .Descriptor.ClusterID }}"
+  networkPolicy: calico
   sshPublicKey: \"\"
   subscriptionID: "{{ .Credentials.SubscriptionID }}"
   version: "{{ .Descriptor.K8SVersion }}"
@@ -80,7 +81,6 @@ spec:
       bootstrap:
         dataSecretName: \"\"
       clusterName: "{{ $.Descriptor.ClusterID }}"
-      failureDomain: \"{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ inc $index }} {{- end }}\"
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureManagedMachinePool
@@ -100,11 +100,13 @@ spec:
   {{- if $node.RootVolume.Type }}
   osDiskType: {{ $node.RootVolume.Type }}
   {{- end }}
-  {{- if $node.Labels }}
+  availabilityZones:
+    - \"{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ inc $index }} {{- end }}\"
+  {{- if gt (len $node.Labels) 0 }}
   nodeLabels:
-  {{ range $key, $value := $node.Labels }}
-    {{ $key }}: {{ $value }}
-  {{- end }}
+    {{- range $key, $value := $node.Labels }}
+    {{ $key }}: \"{{ $value }}\"
+    {{- end }}
   {{- end }}
 {{- end }}
 {{- end }}
