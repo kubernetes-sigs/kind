@@ -15,6 +15,7 @@ aws:
   aws-ebs-csi-driver: v1.14.1-eksbuild.1
   vpc-cni: v1.12.1-eksbuild.1
 azure:
+  azuredisk-csi-driver: v1.27.1
   cluster-api-azure: v1.8.2
   cluster-api-azure-templates: v1.8.2
 gcp:

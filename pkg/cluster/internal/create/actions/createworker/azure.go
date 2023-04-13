@@ -18,6 +18,7 @@ package createworker
 
 import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/errors"
 )
 
 type AzureBuilder struct {
@@ -41,12 +42,11 @@ func (b *AzureBuilder) setCapx(managed bool) {
 	b.capxImageVersion = "v1.8.2"
 	b.capxName = "capz"
 	b.stClassName = "managed-csi"
+	b.csiNamespace = "kube-system"
 	if managed {
 		b.capxTemplate = "azure.aks.tmpl"
-		b.csiNamespace = ""
 	} else {
 		b.capxTemplate = "azure.tmpl"
-		b.csiNamespace = ""
 	}
 }
 
@@ -72,5 +72,16 @@ func (b *AzureBuilder) getProvider() Provider {
 }
 
 func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
+	var c string
+	var err error
+
+	c = "helm install azuredisk-csi-driver /stratio/helm/azuredisk-csi-driver" +
+		" --kubeconfig " + k +
+		" --namespace " + b.csiNamespace
+	err = executeCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to deploy Azure Disk CSI driver Helm Chart")
+	}
+
 	return nil
 }
