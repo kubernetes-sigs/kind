@@ -106,8 +106,8 @@ func createKEOSDescriptor(descriptorFile cluster.DescriptorFile, storageClass st
 	keosDescriptor.Keos.Storage.Providers = []string{"custom"}
 
 	// Keos - External dns
-	if !descriptorFile.Dns.HostedZones {
-		keosDescriptor.Keos.Dns.ExternalDns.Enabled = &descriptorFile.Dns.HostedZones
+	if !descriptorFile.Dns.ManageZone {
+		keosDescriptor.Keos.Dns.ExternalDns.Enabled = &descriptorFile.Dns.ManageZone
 	}
 
 	keosYAMLData, err := yaml.Marshal(keosDescriptor)
