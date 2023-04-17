@@ -39,10 +39,10 @@ type KEOSDescriptor struct {
 	} `yaml:"gcp,omitempty"`
 	Keos struct {
 		Calico struct {
-			Ipip                 bool   `yaml:"ipip"`
-			Pool                 string `yaml:"pool"`
+			Ipip                 bool   `yaml:"ipip,omitempty"`
+			Pool                 string `yaml:"pool,omitempty"`
 			DeployTigeraOperator bool   `yaml:"deploy_tigera_operator"`
-		} `yaml:"calico,omitempty"`
+		} `yaml:"calico"`
 		ClusterID string `yaml:"cluster_id"`
 		Dns       struct {
 			ExternalDns struct {
@@ -106,8 +106,8 @@ func createKEOSDescriptor(descriptorFile cluster.DescriptorFile, storageClass st
 	keosDescriptor.Keos.Storage.Providers = []string{"custom"}
 
 	// Keos - External dns
-	if !descriptorFile.Dns.HostedZones {
-		keosDescriptor.Keos.Dns.ExternalDns.Enabled = &descriptorFile.Dns.HostedZones
+	if !descriptorFile.Dns.ManageZone {
+		keosDescriptor.Keos.Dns.ExternalDns.Enabled = &descriptorFile.Dns.ManageZone
 	}
 
 	keosYAMLData, err := yaml.Marshal(keosDescriptor)
