@@ -58,7 +58,7 @@ Editar el fichero images/capi/packer/ami/packer.json y modificar el valor de la 
 
 image:https://drive.google.com/uc?export=view&id=1TFNYaYN71tUpRWT0dFlKppCaLvkW5SFR[]
 
-image:https://drive.google.com/uc?export=view&id=1KGcy7ppDs2F7FO7UgLF_1JwzTfuicphM[+]
+image:https://drive.google.com/uc?export=view&id=1KGcy7ppDs2F7FO7UgLF_1JwzTfuicphM[]
 
 .Error: subnet_id or subnet_filter must be provided for non-default VPCs
 Editar el fichero images/capi/packer/ami/packer.json y modificar el valor de la variable "subnet_id" por el id de una subnet de la VPC especificada en la variable "vpc_id".
