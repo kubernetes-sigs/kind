@@ -143,15 +143,7 @@ image:https://user-images.githubusercontent.com/112587171/232500916-6d39cb1b-d6e
 
 image:https://user-images.githubusercontent.com/112587171/232500986-ec972a0a-7866-40a4-b945-ec5b9f0bdd2a.png[Make build, width=100%]
 
-++++
-
-<div>
-  <div style="position:relative;padding-top:56.25%;">
-    <iframe src="https://drive.google.com/file/d/1OuaZu_Eenz2agIBJsZXZoFPVUSp4Rhoe/preview" frameborder="0" allowfullscreen
-      style="position:absolute;top:0;left:0;width:100%;height:100%;"></iframe>
-  </div>
-</div>
-++++
+video::olyxIscthfM[youtube]
 
 Para compilar todos los sistemas operativos disponibles, utiliza el objetivo -all. Si desea compilarlos en paralelo, use make -j.
 [source,shell]
