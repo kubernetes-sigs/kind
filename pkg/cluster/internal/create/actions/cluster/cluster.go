@@ -19,6 +19,7 @@ package cluster
 import (
 	"bytes"
 	"embed"
+	"encoding/base64"
 	"os"
 	"reflect"
 	"strings"
@@ -292,6 +293,9 @@ func GetClusterManifest(flavor string, params TemplateParams, azs []string) (str
 		},
 		"isNotEmpty": func(v interface{}) bool {
 			return !reflect.ValueOf(v).IsZero()
+		},
+		"base64": func(u string, p string) string {
+			return base64.StdEncoding.EncodeToString([]byte(u + ":" + p))
 		},
 	}
 
