@@ -151,6 +151,9 @@ apiVersion: kind.x-k8s.io/v1alpha4
 networking:
   ipFamily: ${IP_FAMILY:-ipv4}
   kubeProxyMode: ${KUBE_PROXY_MODE:-iptables}
+  # don't pass through host search paths
+  # TODO: possibly a reasonable default in the future for kind ...
+  dnsSearch: []
 nodes:
 - role: control-plane
 - role: worker
