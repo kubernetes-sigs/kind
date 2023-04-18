@@ -173,6 +173,38 @@ metadata:
 spec:
   template:
     spec:
+      {{- if gt (len $.DockerRegistries) 0 }}
+      files:
+        - content: |
+            version = 2
+            imports = [\"/etc/containerd/conf.d/*.toml\"]
+            [plugins]
+              [plugins.\"io.containerd.grpc.v1.cri\"]
+                sandbox_image = \"k8s.gcr.io/pause:3.9\"
+              [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc]
+                runtime_type = \"io.containerd.runc.v2\"
+                [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc.options]
+                  SystemdCgroup = true
+              [plugins.\"io.containerd.grpc.v1.cri\".registry]
+                [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors]
+                  [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]
+                    endpoint = [\"https://registry-1.docker.io\"]
+                  {{- range $reg := $.DockerRegistries }}
+                  {{- $url := hostname $reg.url }}
+                  [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"{{ $url }}\"]
+                    endpoint = [\"https://{{ $url }}\"]
+                  {{- end }}
+              [plugins.\"io.containerd.grpc.v1.cri\".registry.configs]
+                {{- range $reg := $.DockerRegistries }}
+                {{- $url := hostname $reg.url }}
+                [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ $url }}\".auth]
+                  password = \"{{ $reg.pass }}\"
+                  username = \"{{ $reg.user }}\"
+                {{- end }}
+          path: /etc/containerd/config.toml
+      postBootstrapCommands:
+        - systemctl restart containerd
+      {{- end }}
       {{- if $node.ExtraVolumes }}
       diskSetup:
         filesystems:
