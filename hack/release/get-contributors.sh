@@ -32,7 +32,7 @@ for contributor in "${contributors[@]}"; do
     # lookup the  commit info to get the login
     contributor_logins+=("$(curl \
         -sG \
-        ${GITHUB_OAUTH_TOKEN:+-H="Authorization: token ${GITHUB_OAUTH_TOKEN:?}"} \
+        ${GITHUB_OAUTH_TOKEN:+-H "Authorization: Bearer ${GITHUB_OAUTH_TOKEN:?}"} \
         --data-urlencode "q=${contributor}" \
         "https://api.github.com/repos/${ORG}/${REPO}/commits/${commit_for_contributor}" \
     | jq -r .author.login
