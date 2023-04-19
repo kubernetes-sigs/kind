@@ -37,7 +37,7 @@ type K8sObject struct {
 	Spec       DescriptorFile `yaml:"spec" validate:"required,dive"`
 }
 
-// DescriptorFile represents the YAML structure in the descriptor file
+// DescriptorFile represents the YAML structure in the spec field of the descriptor file
 type DescriptorFile struct {
 	ClusterID        string `yaml:"cluster_id" validate:"required,min=3,max=100"`
 	DeployAutoscaler bool   `yaml:"deploy_autoscaler" validate:"boolean"`
@@ -48,15 +48,13 @@ type DescriptorFile struct {
 
 	InfraProvider string `yaml:"infra_provider" validate:"required,oneof='aws' 'gcp' 'azure'"`
 
-	K8SVersion   string `yaml:"k8s_version" validate:"required,startswith=v,min=7,max=8"`
-	Region       string `yaml:"region" validate:"required"`
-	SSHKey       string `yaml:"ssh_key"`
-	FullyPrivate bool   `yaml:"fully_private" validate:"boolean"`
+	K8SVersion string `yaml:"k8s_version" validate:"required,startswith=v,min=7,max=8"`
+	Region     string `yaml:"region" validate:"required"`
 
 	Networks Networks `yaml:"networks"`
 
 	Dns struct {
-		HostedZones bool `yaml:"hosted_zones" validate:"boolean"`
+		ManageZone bool `yaml:"manage_zone" validate:"boolean"`
 	} `yaml:"dns"`
 
 	DockerRegistries []DockerRegistry `yaml:"docker_registries" validate:"dive"`
@@ -64,7 +62,8 @@ type DescriptorFile struct {
 	ExternalDomain string `yaml:"external_domain" validate:"omitempty,hostname"`
 
 	Keos struct {
-		Domain  string `yaml:"domain" validate:"required,hostname"`
+		// PR fixing exclude_if behaviour https://github.com/go-playground/validator/pull/939
+		Domain  string `yaml:"domain" validate:"omitempty,hostname"`
 		Flavour string `yaml:"flavour"`
 		Version string `yaml:"version"`
 	} `yaml:"keos"`
@@ -72,10 +71,9 @@ type DescriptorFile struct {
 	ControlPlane struct {
 		Managed         bool   `yaml:"managed" validate:"boolean"`
 		Name            string `yaml:"name"`
-		AmiID           string `yaml:"ami_id"`
+		NodeImage       string `yaml:"node_image" validate:"required_if=InfraProvider gcp"`
 		HighlyAvailable bool   `yaml:"highly_available" validate:"boolean"`
 		Size            string `yaml:"size" validate:"required_if=Managed false"`
-		Image           string `yaml:"image" validate:"required_if=InfraProvider gcp"`
 		RootVolume      struct {
 			Size      int    `yaml:"size" validate:"numeric"`
 			Type      string `yaml:"type"`
@@ -126,10 +124,9 @@ type Azure struct {
 
 type WorkerNodes []struct {
 	Name             string            `yaml:"name" validate:"required"`
-	AmiID            string            `yaml:"ami_id"`
+	NodeImage        string            `yaml:"node_image" validate:"required_if=InfraProvider gcp"`
 	Quantity         int               `yaml:"quantity" validate:"required,numeric,gt=0"`
 	Size             string            `yaml:"size" validate:"required"`
-	Image            string            `yaml:"image" validate:"required_if=InfraProvider gcp"`
 	ZoneDistribution string            `yaml:"zone_distribution" validate:"omitempty,oneof='balanced' 'unbalanced'"`
 	AZ               string            `yaml:"az"`
 	SSHKey           string            `yaml:"ssh_key"`
@@ -147,9 +144,10 @@ type WorkerNodes []struct {
 
 // Bastion represents the bastion VM
 type Bastion struct {
-	AmiID             string   `yaml:"ami_id"`
+	NodeImage         string   `yaml:"node_image"`
 	VMSize            string   `yaml:"vm_size"`
 	AllowedCIDRBlocks []string `yaml:"allowedCIDRBlocks"`
+	SSHKey            string   `yaml:"ssh_key"`
 }
 
 type Node struct {
@@ -219,8 +217,10 @@ type TemplateParams struct {
 
 // Init sets default values for the DescriptorFile
 func (d DescriptorFile) Init() DescriptorFile {
-	d.FullyPrivate = false
 	d.ControlPlane.HighlyAvailable = true
+
+	// AKS
+	d.ControlPlane.Azure.Tier = "Paid"
 
 	// Autoscaler
 	d.DeployAutoscaler = true
@@ -233,11 +233,8 @@ func (d DescriptorFile) Init() DescriptorFile {
 	d.ControlPlane.AWS.Logging.ControllerManager = false
 	d.ControlPlane.AWS.Logging.Scheduler = false
 
-	// AKS
-	d.ControlPlane.Azure.Tier = "Paid"
-
-	// Hosted zones
-	d.Dns.HostedZones = true
+	// Managed zones
+	d.Dns.ManageZone = true
 
 	return d
 }
@@ -268,17 +265,16 @@ func GetClusterDescriptor(descriptorPath string) (*DescriptorFile, error) {
 	return &descriptorFile, nil
 }
 
-func resto(n int, i int) int {
+func resto(n int, i int, azs int) int {
 	var r int
-	r = (n % 3) / (i + 1)
+	r = (n % azs) / (i + 1)
 	if r > 1 {
 		r = 1
 	}
 	return r
 }
 
-func GetClusterManifest(flavor string, params TemplateParams) (string, error) {
-
+func GetClusterManifest(flavor string, params TemplateParams, azs []string) (string, error) {
 	funcMap := template.FuncMap{
 		"loop": func(az string, zd string, qa int, maxsize int, minsize int) <-chan Node {
 			ch := make(chan Node)
@@ -289,14 +285,14 @@ func GetClusterManifest(flavor string, params TemplateParams) (string, error) {
 				if az != "" {
 					ch <- Node{AZ: az, QA: qa, MaxSize: maxsize, MinSize: minsize}
 				} else {
-					for i, a := range []string{"a", "b", "c"} {
+					for i, a := range azs {
 						if zd == "unbalanced" {
-							q = qa/3 + resto(qa, i)
-							mx = maxsize/3 + resto(maxsize, i)
-							mn = minsize/3 + resto(minsize, i)
+							q = qa/len(azs) + resto(qa, i, len(azs))
+							mx = maxsize/len(azs) + resto(maxsize, i, len(azs))
+							mn = minsize/len(azs) + resto(minsize, i, len(azs))
 							ch <- Node{AZ: a, QA: q, MaxSize: mx, MinSize: mn}
 						} else {
-							ch <- Node{AZ: a, QA: qa / 3, MaxSize: maxsize / 3, MinSize: minsize / 3}
+							ch <- Node{AZ: a, QA: qa / len(azs), MaxSize: maxsize / len(azs), MinSize: minsize / len(azs)}
 						}
 					}
 				}

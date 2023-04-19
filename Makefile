@@ -87,7 +87,7 @@ test:
 # ================================= Cleanup ====================================
 # standard cleanup target
 clean:
-	rm -rf "$(OUT_DIR)/"
+	find $(OUT_DIR)/ -name 'cloud-provisioner*' -delete && rm -rf "$(OUT_DIR)/.gimme"
 ################################################################################
 # ============================== Auto-Update ===================================
 # update generated code, gofmt, etc.
@@ -111,16 +111,14 @@ lint:
 shellcheck:
 	hack/make-rules/verify/shellcheck.sh
 
-
-
 package:
-	go build -v -o "$(OUT_DIR)/$(KIND_BINARY_NAME)" $(KIND_BUILD_FLAGS)
+	make build && bin/package.sh $(version)
 
 deploy:
-	hack/custom/deploy.sh
+	bin/deploy.sh $(version)
 
 change-version:
-	hack/custom/change-version.sh $(version)
+	bin/change-version.sh $(version)
 
 #################################################################################
 .PHONY: all kind build install unit clean update generate gofmt verify lint shellcheck
