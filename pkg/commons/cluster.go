@@ -124,8 +124,8 @@ type WorkerNodes []struct {
 	SSHKey           string            `yaml:"ssh_key"`
 	Spot             bool              `yaml:"spot" validate:"omitempty,boolean"`
 	Labels           map[string]string `yaml:"labels"`
-	NodeGroupMaxSize int               `yaml:"max_size" validate:"omitempty,gt=0,required_with=NodeGroupMinSize,gte_param_if_exists=Quantity"` //required_if_for_bool=DeployAutoscaler true
-	NodeGroupMinSize int               `yaml:"min_size" validate:"omitempty,gt=0,required_with=NodeGroupMaxSize,lte_param_if_exists=Quantity"` //required_if_for_bool=DeployAutoscaler true,
+	NodeGroupMaxSize int               `yaml:"max_size" validate:"required_with=NodeGroupMinSize,omitempty,gt=0,gte_param_if_exists=Quantity"` //required_if_for_bool=DeployAutoscaler true
+	NodeGroupMinSize int               `yaml:"min_size" validate:"required_with=NodeGroupMaxSize,omitempty,gt=0,lte_param_if_exists=Quantity"` //required_if_for_bool=DeployAutoscaler true,
 	RootVolume       struct {
 		Size      int    `yaml:"size" validate:"numeric"`
 		Type      string `yaml:"type"`
