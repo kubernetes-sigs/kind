@@ -23,3 +23,4 @@ gcp:
   csi-resizer: v1.4.0
   csi-attacher: v3.4.0
   csi-provisioner: v3.1.0
+  pause: v3.9

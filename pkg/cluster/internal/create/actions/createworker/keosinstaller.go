@@ -39,17 +39,18 @@ type KEOSDescriptor struct {
 	} `yaml:"gcp,omitempty"`
 	Keos struct {
 		Calico struct {
-			Ipip                 bool   `yaml:"ipip"`
-			Pool                 string `yaml:"pool"`
+			Ipip                 bool   `yaml:"ipip,omitempty"`
+			Pool                 string `yaml:"pool,omitempty"`
 			DeployTigeraOperator bool   `yaml:"deploy_tigera_operator"`
-		} `yaml:"calico,omitempty"`
+		} `yaml:"calico"`
 		ClusterID string `yaml:"cluster_id"`
 		Dns       struct {
 			ExternalDns struct {
 				Enabled *bool `yaml:"enabled,omitempty"`
 			} `yaml:"external_dns,omitempty"`
 		} `yaml:"dns,omitempty"`
-		Domain          string `yaml:"domain"`
+		// PR fixing exclude_if behaviour https://github.com/go-playground/validator/pull/939
+		Domain          string `yaml:"domain,omitempty"`
 		ExternalDomain  string `yaml:"external_domain,omitempty"`
 		Flavour         string `yaml:"flavour"`
 		K8sInstallation bool   `yaml:"k8s_installation"`
@@ -88,7 +89,11 @@ func createKEOSDescriptor(descriptorFile cluster.DescriptorFile, storageClass st
 
 	// Keos
 	keosDescriptor.Keos.ClusterID = descriptorFile.ClusterID
-	keosDescriptor.Keos.Domain = descriptorFile.Keos.Domain
+        if descriptorFile.InfraProvider == "aws" {
+                keosDescriptor.Keos.Domain = "cluster.local"
+        } else if descriptorFile.Keos.Domain != "" {
+                keosDescriptor.Keos.Domain = descriptorFile.Keos.Domain
+        }
 	if descriptorFile.ExternalDomain != "" {
 		keosDescriptor.Keos.ExternalDomain = descriptorFile.ExternalDomain
 	}
@@ -106,8 +111,8 @@ func createKEOSDescriptor(descriptorFile cluster.DescriptorFile, storageClass st
 	keosDescriptor.Keos.Storage.Providers = []string{"custom"}
 
 	// Keos - External dns
-	if !descriptorFile.Dns.HostedZones {
-		keosDescriptor.Keos.Dns.ExternalDns.Enabled = &descriptorFile.Dns.HostedZones
+	if !descriptorFile.Dns.ManageZone {
+		keosDescriptor.Keos.Dns.ExternalDns.Enabled = &descriptorFile.Dns.ManageZone
 	}
 
 	keosYAMLData, err := yaml.Marshal(keosDescriptor)
