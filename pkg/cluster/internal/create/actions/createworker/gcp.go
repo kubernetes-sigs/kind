@@ -54,8 +54,8 @@ func newGCPBuilder() *GCPBuilder {
 
 func (b *GCPBuilder) setCapx(managed bool) {
 	b.capxProvider = "gcp"
-	b.capxVersion = "v1.2.1"
-	b.capxImageVersion = "v1.2.1"
+	b.capxVersion = "v1.3.0"
+	b.capxImageVersion = "v1.3.0"
 	b.capxName = "capg"
 	b.stClassName = "csi-gcp-pd"
 	if managed {
