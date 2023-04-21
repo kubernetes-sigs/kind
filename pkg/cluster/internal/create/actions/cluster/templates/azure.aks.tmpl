@@ -6,7 +6,7 @@ metadata:
   namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec:
   clusterNetwork:
-    pods:
+    services:
       cidrBlocks: [\"192.168.0.0/16\"]
   controlPlaneRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1

@@ -74,3 +74,7 @@ func (b *AzureBuilder) getProvider() Provider {
 func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	return nil
 }
+
+func (b *AzureBuilder) getAzs() ([]string, error) {
+	return []string{"1", "2", "3"}, nil
+}
