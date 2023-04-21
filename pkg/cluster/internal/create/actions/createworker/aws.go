@@ -26,6 +26,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
@@ -59,14 +60,14 @@ func (b *AWSBuilder) setCapx(managed bool) {
 	}
 }
 
-func (b *AWSBuilder) setCapxEnvVars(p ProviderParams) {
-	awsCredentials := "[default]\naws_access_key_id = " + p.credentials["AccessKey"] + "\naws_secret_access_key = " + p.credentials["SecretKey"] + "\nregion = " + p.region + "\n"
+func (b *AWSBuilder) setCapxEnvVars(p commons.ProviderParams) {
+	awsCredentials := "[default]\naws_access_key_id = " + p.Credentials["AccessKey"] + "\naws_secret_access_key = " + p.Credentials["SecretKey"] + "\nregion = " + p.Region + "\n"
 	b.capxEnvVars = []string{
-		"AWS_REGION=" + p.region,
-		"AWS_ACCESS_KEY_ID=" + p.credentials["AccessKey"],
-		"AWS_SECRET_ACCESS_KEY=" + p.credentials["SecretKey"],
+		"AWS_REGION=" + p.Region,
+		"AWS_ACCESS_KEY_ID=" + p.Credentials["AccessKey"],
+		"AWS_SECRET_ACCESS_KEY=" + p.Credentials["SecretKey"],
 		"AWS_B64ENCODED_CREDENTIALS=" + b64.StdEncoding.EncodeToString([]byte(awsCredentials)),
-		"GITHUB_TOKEN=" + p.githubToken,
+		"GITHUB_TOKEN=" + p.GithubToken,
 		"CAPA_EKS_IAM=true",
 	}
 }
