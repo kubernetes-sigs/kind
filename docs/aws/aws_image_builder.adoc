@@ -27,7 +27,7 @@ AWS IMAGE BUILDER
 :source-highlighter: rouge
 :rouge-style: monokai
 
-== https://image-builder.sigs.k8s.io/capi/capi.html[Introducción]
+== https://image-builder.sigs.k8s.io/capi/providers/aws.html[Introducción]
 
 Image Builder se puede utilizar para crear imágenes destinadas a su uso con proveedores de CAPI de Kubernetes. Cada proveedor tiene su propio formato de imágenes con el que puede trabajar. Por ejemplo, las instancias de AWS utilizan AMI.
 
@@ -41,7 +41,7 @@ Complemento de Goss para la versión de Packer >= 1.2.0
 
 Versión de Ansible >= 2.10.0
 
-Si los archivos binarios necesarios no están presentes, se pueden instalar en images/capi/.bin con el comando make deps. Este directorio deberá agregarse a su $PATH.
+Si los archivos binarios necesarios no están presentes, se pueden instalar en images/capi/.bin con el comando make deps-ami. Este directorio deberá agregarse a su $PATH.
 
 === Prerequisitos de AWS
 
@@ -81,7 +81,7 @@ image:https://user-images.githubusercontent.com/112587171/232501134-2aac0dda-dad
 * Aañadir la variable ssh_interface = "public_ip" en la sección "builders" del fichero images/capi/packer/ami/packer.json para que se conecte a la instancia creada a partir de la imagen por la ip privada.
 "ssh_interface": "public_ip"
 
-* Crear un "internet gateway" y una "route table" para la VPC de su cuenta de AWS y asociarlos.
+* Crear un "internet gateway" y una "route table (o usar la de defecto)" para la VPC de su cuenta de AWS y asociarlos.
 
 image:https://user-images.githubusercontent.com/112587171/232501256-7383320b-cc49-4966-bd99-00f407be09bb.png[]
 
