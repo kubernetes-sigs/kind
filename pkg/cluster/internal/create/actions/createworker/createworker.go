@@ -24,7 +24,7 @@ import (
 	"strings"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
-	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
+	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
@@ -36,11 +36,11 @@ type action struct {
 }
 
 type AWS struct {
-	Credentials cluster.AWSCredentials `yaml:"credentials"`
+	Credentials commons.AWSCredentials `yaml:"credentials"`
 }
 
 type GCP struct {
-	Credentials cluster.GCPCredentials `yaml:"credentials"`
+	Credentials commons.GCPCredentials `yaml:"credentials"`
 }
 
 // SecretsFile represents the YAML structure in the secrets.yml file
@@ -52,8 +52,8 @@ type Secrets struct {
 	AWS              AWS                                 `yaml:"aws"`
 	GCP              GCP                                 `yaml:"gcp"`
 	GithubToken      string                              `yaml:"github_token"`
-	ExternalRegistry cluster.DockerRegistryCredentials   `yaml:"external_registry"`
-	DockerRegistries []cluster.DockerRegistryCredentials `yaml:"docker_registries"`
+	ExternalRegistry commons.DockerRegistryCredentials   `yaml:"external_registry"`
+	DockerRegistries []commons.DockerRegistryCredentials `yaml:"docker_registries"`
 }
 
 //go:embed files/allow-all-egress_netpol.yaml
@@ -69,7 +69,6 @@ var allowCAPAEgressIMDSGNetPol string
 
 const kubeconfigPath = "/kind/worker-cluster.kubeconfig"
 const workKubeconfigPath = ".kube/config"
-const secretsFile = "secrets.yml"
 const CAPILocalRepository = "/root/.cluster-api/local-repository"
 
 // NewAction returns a new action for installing default CAPI
@@ -86,28 +85,29 @@ func NewAction(vaultPassword string, descriptorPath string, moveManagement bool,
 func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	// Get the target node
-	node, err := getNode(ctx)
+	node, err := ctx.GetNode()
 	if err != nil {
 		return err
 	}
 
 	// Parse the cluster descriptor
-	descriptorFile, err := cluster.GetClusterDescriptor(a.descriptorPath)
+	descriptorFile, err := commons.GetClusterDescriptor(a.descriptorPath)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse cluster descriptor")
 	}
 
 	// Get the secrets
-	credentialsMap, _, githubToken, dockerRegistries, err := getSecrets(*descriptorFile, a.vaultPassword)
+
+	credentialsMap, _, githubToken, dockerRegistries, err := commons.GetSecrets(*descriptorFile, a.vaultPassword)
 	if err != nil {
 		return err
 	}
 
-	providerParams := ProviderParams{
-		region:      descriptorFile.Region,
-		managed:     descriptorFile.ControlPlane.Managed,
-		credentials: credentialsMap,
-		githubToken: githubToken,
+	providerParams := commons.ProviderParams{
+		Region:      descriptorFile.Region,
+		Managed:     descriptorFile.ControlPlane.Managed,
+		Credentials: credentialsMap,
+		GithubToken: githubToken,
 	}
 
 	providerBuilder := getBuilder(descriptorFile.InfraProvider)
@@ -124,7 +124,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		var registryPass string
 
 		if descriptorFile.ControlPlane.Managed {
-			ecrToken, err := getEcrAuthToken(providerParams)
+			ecrToken, err := commons.GetEcrAuthToken(providerParams)
 			if err != nil {
 				return errors.Wrap(err, "failed to get ECR auth token")
 			}
@@ -137,14 +137,14 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		infraComponents := CAPILocalRepository + "/infrastructure-" + provider.capxProvider + "/" + provider.capxVersion + "/infrastructure-components.yaml"
 		infraImage := registryUrl + "/stratio/cluster-api-provider-" + provider.capxProvider + ":" + provider.capxImageVersion
 		command = "sed -i 's%image:.*%image: " + infraImage + "%' " + infraComponents
-		err = executeCommand(node, command)
+		err = commons.ExecuteCommand(node, command)
 		if err != nil {
 			return errors.Wrap(err, "failed to change image in infrastructure-components.yaml")
 		}
 
 		// Create provider-system namespace
 		command = "kubectl create namespace " + provider.capxName + "-system"
-		err = executeCommand(node, command)
+		err = commons.ExecuteCommand(node, command)
 		if err != nil {
 			return errors.Wrap(err, "failed to create "+provider.capxName+"-system namespace")
 		}
@@ -155,14 +155,14 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			" --docker-username=" + registryUser +
 			" --docker-password=" + registryPass +
 			" --namespace=" + provider.capxName + "-system"
-		err = executeCommand(node, command)
+		err = commons.ExecuteCommand(node, command)
 		if err != nil {
 			return errors.Wrap(err, "failed to create docker-registry secret")
 		}
 
 		// Add imagePullSecrets to infrastructure-components.yaml
 		command = "sed -i '/securityContext:/i\\      imagePullSecrets:\\n      - name: regcred' " + infraComponents
-		err = executeCommand(node, command)
+		err = commons.ExecuteCommand(node, command)
 		if err != nil {
 			return errors.Wrap(err, "failed to add imagePullSecrets to infrastructure-components.yaml")
 		}
@@ -180,7 +180,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	capiClustersNamespace := "cluster-" + descriptorFile.ClusterID
 
-	templateParams := cluster.TemplateParams{
+	templateParams := commons.TemplateParams{
 		Descriptor:       *descriptorFile,
 		Credentials:      credentialsMap,
 		DockerRegistries: dockerRegistries,
@@ -191,7 +191,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to get AZs")
 	}
 	// Generate the cluster manifest
-	descriptorData, err := cluster.GetClusterManifest(provider.capxTemplate, templateParams, azs)
+
+	descriptorData, err := GetClusterManifest(provider.capxTemplate, templateParams, azs)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate cluster manifests")
 	}
@@ -209,9 +210,9 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Generating secrets file 📝🗝️")
 	defer ctx.Status.End(false)
 
-	ensureSecretsFile(*descriptorFile, a.vaultPassword)
+	commons.EnsureSecretsFile(*descriptorFile, a.vaultPassword)
 
-	rewriteDescriptorFile(a.descriptorPath)
+	commons.RewriteDescriptorFile(a.descriptorPath)
 
 	defer ctx.Status.End(true) // End Generating secrets file
 
@@ -440,7 +441,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			defer ctx.Status.End(false)
 
 			raw = bytes.Buffer{}
-			cmd = integrateClusterAutoscaler(node, kubeconfigPath, descriptorFile.ClusterID, "clusterapi")
+			cmd = commons.IntegrateClusterAutoscaler(node, kubeconfigPath, descriptorFile.ClusterID, "clusterapi")
 			if err := cmd.SetStdout(&raw).Run(); err != nil {
 				return errors.Wrap(err, "failed to install chart cluster-autoscaler")
 			}
