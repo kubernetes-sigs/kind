@@ -32,9 +32,9 @@ metadata:
 spec:
   addons:
     - name: "aws-ebs-csi-driver"
-      version: "v1.14.1-eksbuild.1"
+      version: "v1.17.0-eksbuild.1"
     - name: "vpc-cni"
-      version: "v1.12.1-eksbuild.1"
+      version: "v1.12.6-eksbuild.1"
       conflictResolution: "overwrite"
   associateOIDCProvider: {{ .Descriptor.ControlPlane.AWS.AssociateOIDCProvider }}
   eksClusterName: "{{ .Descriptor.ClusterID }}"
@@ -88,7 +88,7 @@ spec:
     {{- end }}
 {{- end }}
   region: "{{ .Descriptor.Region }}"
-  sshKeyName: \"{{ .Descriptor.SSHKey }}\"
+  sshKeyName: \"{{ .Descriptor.Bastion.SSHKey }}\"
   version: "{{ .Descriptor.K8SVersion }}"
   vpcCni:
     env:
@@ -142,9 +142,9 @@ spec:
       spotMarketOptions:
         maxPrice: \"\"
       {{- end }}
-      {{- if ne $node.AmiID "" }}
+      {{- if ne $node.NodeImage "" }}
       ami:
-        id: {{ $node.AmiID }}
+        id: {{ $node.NodeImage }}
       {{- end }}
       iamInstanceProfile: "nodes.cluster-api-provider-aws.sigs.k8s.io"
       instanceType: "{{ $node.Size }}"
