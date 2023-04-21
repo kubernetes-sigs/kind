@@ -163,7 +163,7 @@ type AWSCredentials struct {
 	AccessKey string `yaml:"access_key"`
 	SecretKey string `yaml:"secret_key"`
 	Region    string `yaml:"region"`
-	Account   string `yaml:"account"`
+	Account   string `yaml:"account_id"`
 }
 
 type GCPCredentials struct {
