@@ -302,8 +302,7 @@ func GetClusterManifest(flavor string, params TemplateParams, azs []string) (str
 			return !reflect.ValueOf(v).IsZero()
 		},
 		"lastElement": func(element int, len int) bool {
-			element += element
-			return element == len
+			return element < len
 		},
 	}
 

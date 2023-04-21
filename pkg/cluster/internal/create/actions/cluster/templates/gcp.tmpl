@@ -299,11 +299,11 @@ spec:
           name: {{`'{{ ds.meta_data.local_hostname.split(\".\")[0] }}'`}}
           kubeletExtraArgs:
             cloud-provider: gce
-            {{- if $node.Labels }}
+            {{- if gt (len $node.Labels) 0 }}
             node-labels: \"{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}\"
             {{- end }}
             {{- if gt (len $node.Taints) 0 }}
-            register-with-taints: \"{{ range $i, $taint := $node.Taints }}{{$taint.Key}}={{$taint.Value}}:{{$taint.Effect}}{{ $len := len $node.Taints }}{{- if lastElement $i $len }}{{- else }},{{- end }}{{- end }}\"
+            register-with-taints: \"{{ range $i, $taint := $node.Taints }}{{ $taint.Key }}={{ $taint.Value }}:{{ $taint.Effect }}{{ $len := len $node.Taints }}{{- if lastElement $i $len }}{{- else }},{{- end }}{{- end }}\"
             {{- end }}
 {{- end }}
 {{- end }}

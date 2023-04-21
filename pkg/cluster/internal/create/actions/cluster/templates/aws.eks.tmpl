@@ -194,12 +194,14 @@ spec:
           - {{ $vol.MountPath }}
         {{- end }}
       {{- end }}
+      {{- if or (gt (len $node.Labels) 0) (gt (len $node.Taints) 0) }}
       kubeletExtraArgs:
-      {{- if or $node.Labels ( gt (len $node.Taints) 0)}}
+        {{- if gt (len $node.Labels) 0 }}
         node-labels: \"{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}\"
-      {{- end }}
-      {{- if gt (len $node.Taints) 0 }}
-        register-with-taints: \"{{ range $i, $taint := $node.Taints }}{{$taint.Key}}={{$taint.Value}}:{{$taint.Effect}}{{ $len := len $node.Taints }}{{- if lastElement $i $len }}{{- else }},{{- end }}{{- end }}\"
+        {{- end }}
+        {{- if gt (len $node.Taints) 0 }}
+        register-with-taints: \"{{ range $i, $taint := $node.Taints }}{{ $taint.Key }}={{ $taint.Value }}:{{ $taint.Effect }}{{ $len := len $node.Taints }}{{- if lastElement $i $len }}{{- else }},{{- end }}{{- end }}\"
+        {{- end }}
       {{- end }}
 {{- end }}
 {{- end }}
