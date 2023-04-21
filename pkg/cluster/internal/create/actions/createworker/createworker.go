@@ -69,7 +69,6 @@ var allowCAPAEgressIMDSGNetPol string
 
 const kubeconfigPath = "/kind/worker-cluster.kubeconfig"
 const workKubeconfigPath = ".kube/config"
-const secretsFile = "secrets.yml"
 const CAPILocalRepository = "/root/.cluster-api/local-repository"
 
 // NewAction returns a new action for installing default CAPI

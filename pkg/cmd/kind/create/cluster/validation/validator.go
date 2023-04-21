@@ -47,7 +47,7 @@ func ExecuteDescriptorValidations() error {
 }
 
 func ExecuteSecretsValidations(secretsPath string, vaultPassword string) error {
-	_, err := os.Stat("./secrets.yml")
+	_, err := os.Stat(secretsPath)
 	if err == nil {
 		secretsFile, err := commons.GetSecretsFile(secretsPath, vaultPassword)
 		if err != nil {

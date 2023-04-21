@@ -53,6 +53,9 @@ type flagpole struct {
 	AvoidCreation  bool
 }
 
+const clusterDefaultPath = "./cluster.yaml"
+const secretsDefaultPath = "./secrets.yml"
+
 // NewCommand returns a new cobra.Command for cluster creation
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	flags := &flagpole{}
@@ -146,7 +149,7 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	)
 
 	if flags.DescriptorPath == "" {
-		flags.DescriptorPath = "./cluster.yaml"
+		flags.DescriptorPath = clusterDefaultPath
 	}
 	err = validation.InitValidator(flags.DescriptorPath)
 	if err != nil {
@@ -170,7 +173,7 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		}
 	}
 
-	err = validation.ExecuteSecretsValidations("./secrets.yml", flags.VaultPassword)
+	err = validation.ExecuteSecretsValidations(secretsDefaultPath, flags.VaultPassword)
 	if err != nil {
 		return err
 	}
