@@ -1,7 +1,5 @@
 # Scripts
 
-# Create a markdown table for all scripts with name and a small brief description
-
 | Script Name | Description |
 |-------------|-------------|
 | aws_images_vpc.py | Vpc creation for images building (if no default vpc exists) |
