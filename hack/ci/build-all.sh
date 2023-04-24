@@ -24,7 +24,3 @@ cd "${REPO_ROOT}"
 
 # build kind
 hack/release/build/cross.sh
-
-# build kindnetd
-cd "${REPO_ROOT}/images/kindnetd"
-make build
