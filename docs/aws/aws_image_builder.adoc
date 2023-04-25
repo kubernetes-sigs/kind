@@ -107,10 +107,18 @@ Para crear/modificar la configuración de la imagen, puede editar el archivo ima
 📂 https://github.com/kubernetes-sigs/image-builder/blob/3b70f45036617ba8752b0711ee6d212f9591a514/images/capi/packer/ami/packer.json[Tipo de instancia]::
 [%autowidth]
 .Cambiar el tipo de instancia de la imagen
-Editar el archivo images/capi/packer/ami/packer.json y modificar el valor de la variable "builder_instance_type" por el tipo de instancia 
+Editar el archivo images/capi/packer/ami/packer.json y modificar el valor de la variable "builder_instance_type" por el tipo de instancia (sección "builders")
 deseado.
 
 "builder_instance_type": "t3.mmedium"
+
+.Modificar la región donde crear la instancia para la construcción de la imagen
+Editar el archivo images/capi/packer/ami/packer.json y modificar el valor de la variable "region" por la región donde se creará la instancia. (sección "builders")
+
+"region": "eu-west-1"
+
+.Limitar las regiones donde disponibilizar la imagen
+"ami_regions": ["eu-west-1", "eu-west-2"]
 ====
 
 == Construcción de la imagen
