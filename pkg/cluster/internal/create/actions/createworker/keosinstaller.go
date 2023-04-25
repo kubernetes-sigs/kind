@@ -20,7 +20,7 @@ import (
 	"os"
 
 	"gopkg.in/yaml.v3"
-	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
+	"sigs.k8s.io/kind/pkg/commons"
 )
 
 type KEOSDescriptor struct {
@@ -65,7 +65,7 @@ type KEOSDescriptor struct {
 	} `yaml:"keos"`
 }
 
-func createKEOSDescriptor(descriptorFile cluster.DescriptorFile, storageClass string) error {
+func createKEOSDescriptor(descriptorFile commons.DescriptorFile, storageClass string) error {
 
 	var keosDescriptor KEOSDescriptor
 	var err error

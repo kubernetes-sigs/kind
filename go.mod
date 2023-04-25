@@ -23,6 +23,7 @@ require (
 	github.com/sosedoff/ansible-vault-go v0.1.1
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
+	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
 	golang.org/x/term v0.6.0
 	google.golang.org/api v0.114.0
 	gopkg.in/yaml.v3 v3.0.1
