@@ -73,20 +73,23 @@ func ExecuteCommonsValidations() error {
 }
 
 func getValidator(provider string, managed bool) (Validator, error) {
-
 	switch provider {
 	case "aws":
 		if managed {
 			return newEKSValidator(), nil
 		}
 		return nil, errors.New("WIP in not manage AWS")
+	case "azure":
+		if managed {
+			return newAKSValidator(), nil
+		}
+		return nil, errors.New("WIP in not manage Azure")
 	case "gcp":
 		if managed {
 			return nil, errors.New("WIP in manage GCP")
 		}
 		return NewGCPValidator(), nil
 	default:
-		return nil, errors.New("WIP in GCP and others providers")
+		return nil, errors.New("WIP in others providers")
 	}
-
 }
