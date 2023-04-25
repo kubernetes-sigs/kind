@@ -211,6 +211,10 @@ type AWS struct {
 	Credentials AWSCredentials `yaml:"credentials"`
 }
 
+type AZURE struct {
+	Credentials AzureCredentials `yaml:"credentials"`
+}
+
 type GCP struct {
 	Credentials GCPCredentials `yaml:"credentials"`
 }

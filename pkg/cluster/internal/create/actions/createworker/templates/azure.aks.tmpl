@@ -30,7 +30,7 @@ metadata:
   namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec:
   addonProfiles:
-    - name: metrics-server
+    - name: omsagent
       enabled: false
   identityRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
