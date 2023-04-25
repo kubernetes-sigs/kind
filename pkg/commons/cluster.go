@@ -116,7 +116,7 @@ type AWSCP struct {
 	} `yaml:"logging"`
 }
 
-type Azure struct {
+type AzureCP struct {
 	IdentityID string `yaml:"identity_id"`
 	Tier       string `yaml:"tier" validate:"oneof='Free' 'Paid'"`
 }

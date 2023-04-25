@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"reflect"
 	"strings"
+	"text/template"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
@@ -150,7 +151,7 @@ func (p *Provider) installCAPXWorker(node nodes.Node, kubeconfigPath string, all
 	if p.capxProvider == "azure" {
 		// Create capx namespace
 		command = "kubectl --kubeconfig " + kubeconfigPath + " create namespace " + p.capxName + "-system"
-		err = executeCommand(node, command)
+		err = commons.ExecuteCommand(node, command)
 		if err != nil {
 			return errors.Wrap(err, "failed to create CAPx namespace")
 		}
@@ -158,7 +159,7 @@ func (p *Provider) installCAPXWorker(node nodes.Node, kubeconfigPath string, all
 		// Create capx secret
 		secret := strings.Split(p.capxEnvVars[0], "AZURE_CLIENT_SECRET=")[1]
 		command = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system create secret generic cluster-identity-secret --from-literal=clientSecret='" + string(secret) + "'"
-		err = executeCommand(node, command)
+		err = commons.ExecuteCommand(node, command)
 		if err != nil {
 			return errors.Wrap(err, "failed to create CAPx secret")
 		}
@@ -200,7 +201,7 @@ func (p *Provider) installCAPXLocal(node nodes.Node) error {
 	if p.capxProvider == "azure" {
 		// Create capx namespace
 		command = "kubectl create namespace " + p.capxName + "-system"
-		err = executeCommand(node, command)
+		err = commons.ExecuteCommand(node, command)
 		if err != nil {
 			return errors.Wrap(err, "failed to create CAPx namespace")
 		}
@@ -208,7 +209,7 @@ func (p *Provider) installCAPXLocal(node nodes.Node) error {
 		// Create capx secret
 		secret := strings.Split(p.capxEnvVars[0], "AZURE_CLIENT_SECRET=")[1]
 		command = "kubectl -n " + p.capxName + "-system create secret generic cluster-identity-secret --from-literal=clientSecret='" + string(secret) + "'"
-		err = executeCommand(node, command)
+		err = commons.ExecuteCommand(node, command)
 		if err != nil {
 			return errors.Wrap(err, "failed to create CAPx secret")
 		}

@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v2"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/commons"
 )
 
 type AzureBuilder struct {
@@ -55,10 +56,10 @@ func (b *AzureBuilder) setCapx(managed bool) {
 	}
 }
 
-func (b *AzureBuilder) setCapxEnvVars(p ProviderParams) {
+func (b *AzureBuilder) setCapxEnvVars(p commons.ProviderParams) {
 	b.capxEnvVars = []string{
-		"AZURE_CLIENT_SECRET=" + p.credentials["ClientSecret"],
-		"GITHUB_TOKEN=" + p.githubToken,
+		"AZURE_CLIENT_SECRET=" + p.Credentials["ClientSecret"],
+		"GITHUB_TOKEN=" + p.GithubToken,
 		"EXP_MACHINE_POOL=true",
 	}
 }

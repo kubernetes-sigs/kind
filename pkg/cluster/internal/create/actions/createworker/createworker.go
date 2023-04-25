@@ -40,7 +40,7 @@ type AWS struct {
 }
 
 type Azure struct {
-	Credentials cluster.AzureCredentials `yaml:"credentials"`
+	Credentials commons.AzureCredentials `yaml:"credentials"`
 }
 
 type GCP struct {
