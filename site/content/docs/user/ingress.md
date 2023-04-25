@@ -98,7 +98,7 @@ Apply kind specific patches to forward the `hostPorts` to the ingress controller
 Apply it by running:
 
 {{< codeFromInline lang="bash" >}}
-kubectl patch deployment -n kong ingress-kong -p '{{< minify file="static/examples/ingress/kong/deployment.patch.json" >}}'
+kubectl patch deployment -n kong proxy-kong -p '{{< minify file="static/examples/ingress/kong/deployment.patch.json" >}}'
 {{< /codeFromInline >}}
 
 Apply kind specific patch to change service type to `NodePort`:
