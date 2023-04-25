@@ -2,8 +2,6 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  labels:
-    metrics-server: disabled
   name: "{{ .Descriptor.ClusterID }}"
   namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec:
@@ -31,6 +29,9 @@ metadata:
   name: "{{ .Descriptor.ClusterID }}"
   namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec:
+  addonProfiles:
+    - name: metrics-server
+      enabled: false
   identityRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureClusterIdentity
