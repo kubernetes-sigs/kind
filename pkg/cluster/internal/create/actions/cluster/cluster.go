@@ -119,7 +119,8 @@ type AWS struct {
 }
 
 type Azure struct {
-	Tier string `yaml:"tier" validate:"oneof='Free' 'Paid'"`
+	IdentityID string `yaml:"identity_id"`
+	Tier       string `yaml:"tier" validate:"oneof='Free' 'Paid'"`
 }
 
 type WorkerNodes []struct {

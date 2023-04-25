@@ -17,6 +17,11 @@ limitations under the License.
 package createworker
 
 import (
+	"context"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v2"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 )
 
@@ -40,7 +45,7 @@ func (b *AzureBuilder) setCapx(managed bool) {
 	b.capxVersion = "v1.8.2"
 	b.capxImageVersion = "v1.8.2"
 	b.capxName = "capz"
-	b.stClassName = "managed-csi"
+	b.stClassName = "default"
 	if managed {
 		b.capxTemplate = "azure.aks.tmpl"
 		b.csiNamespace = ""
@@ -77,4 +82,49 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 
 func (b *AzureBuilder) getAzs() ([]string, error) {
 	return []string{"1", "2", "3"}, nil
+}
+
+func assignUserIdentity(i string, c string, r string, s map[string]string) error {
+	creds, err := azidentity.NewClientSecretCredential(s["TenantID"], s["ClientID"], s["ClientSecret"], nil)
+	if err != nil {
+		return err
+	}
+	ctx := context.Background()
+
+	containerserviceClientFactory, err := armcontainerservice.NewClientFactory(s["SubscriptionID"], creds, nil)
+	if err != nil {
+		return err
+	}
+	managedClustersClient := containerserviceClientFactory.NewManagedClustersClient()
+
+	pollerResp, err := managedClustersClient.BeginCreateOrUpdate(
+		ctx, c, c,
+		armcontainerservice.ManagedCluster{
+			Location: to.Ptr(r),
+			Identity: &armcontainerservice.ManagedClusterIdentity{
+				Type: to.Ptr(armcontainerservice.ResourceIdentityTypeUserAssigned),
+				UserAssignedIdentities: map[string]*armcontainerservice.ManagedServiceIdentityUserAssignedIdentitiesValue{
+					i: {},
+				},
+			},
+			Properties: &armcontainerservice.ManagedClusterProperties{
+				IdentityProfile: map[string]*armcontainerservice.UserAssignedIdentity{
+					"kubeletidentity": {
+						ResourceID: to.Ptr(i),
+					},
+				},
+			},
+		},
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = pollerResp.PollUntilDone(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

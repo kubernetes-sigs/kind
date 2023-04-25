@@ -341,6 +341,14 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			}
 		}
 
+		if provider.capxProvider == "azure" && descriptorFile.ControlPlane.Managed && descriptorFile.ControlPlane.Azure.IdentityID != "" {
+			// Update AKS cluster with the user kubelet identity until the provider supports it
+			err := assignUserIdentity(descriptorFile.ControlPlane.Azure.IdentityID, descriptorFile.ClusterID, descriptorFile.Region, credentialsMap)
+			if err != nil {
+				return errors.Wrap(err, "failed to assign user identity to the workload Cluster")
+			}
+		}
+
 		ctx.Status.End(true) // End Preparing nodes in workload cluster
 
 		ctx.Status.Start("Enabling workload cluster's self-healing 🏥")
