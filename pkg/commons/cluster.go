@@ -225,6 +225,7 @@ type SecretsFile struct {
 
 type Secrets struct {
 	AWS              AWS                         `yaml:"aws"`
+	AZURE            AZURE                       `yaml:"azure"`
 	GCP              GCP                         `yaml:"gcp"`
 	GithubToken      string                      `yaml:"github_token"`
 	ExternalRegistry DockerRegistryCredentials   `yaml:"external_registry"`
