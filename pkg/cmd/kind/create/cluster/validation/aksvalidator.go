@@ -64,7 +64,11 @@ func descriptorAksValidations(descriptorFile commons.DescriptorFile, secretsFile
 	if err != nil {
 		return err
 	}
-	err = k8sAksVersionValidation(descriptorFile.K8SVersion, descriptorFile.Region, secretsFile)
+	err = aksVersionValidation(descriptorFile.K8SVersion, descriptorFile.Region, secretsFile)
+	if err != nil {
+		return err
+	}
+	err = aksNodesValidation(descriptorFile.WorkerNodes)
 	if err != nil {
 		return err
 	}
@@ -79,7 +83,7 @@ func secretsAksValidations(secretsFile commons.SecretsFile) error {
 	return nil
 }
 
-func k8sAksVersionValidation(k8sVersion string, region string, secretsFile commons.SecretsFile) error {
+func aksVersionValidation(k8sVersion string, region string, secretsFile commons.SecretsFile) error {
 	var availableVersions []string
 
 	azureSecrets := secretsFile.Secrets.AZURE.Credentials
@@ -107,6 +111,15 @@ func k8sAksVersionValidation(k8sVersion string, region string, secretsFile commo
 	if !slices.Contains(availableVersions, strings.ReplaceAll(k8sVersion, "v", "")) {
 		a, _ := json.Marshal(availableVersions)
 		return errors.New("AKS only supports Kubernetes versions: " + string(a))
+	}
+	return nil
+}
+
+func aksNodesValidation(workerNodes commons.WorkerNodes) error {
+	for _, node := range workerNodes {
+		if strings.ToLower(node.Name) != node.Name || len(node.Name) >= 9 {
+			return errors.New("node name must be 9 characters or less & contain only lowercase alphanumeric characters")
+		}
 	}
 	return nil
 }
