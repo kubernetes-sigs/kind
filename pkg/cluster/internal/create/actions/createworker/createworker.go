@@ -39,10 +39,6 @@ type AWS struct {
 	Credentials commons.AWSCredentials `yaml:"credentials"`
 }
 
-type AZURE struct {
-	Credentials commons.AzureCredentials `yaml:"credentials"`
-}
-
 type GCP struct {
 	Credentials commons.GCPCredentials `yaml:"credentials"`
 }
@@ -54,7 +50,6 @@ type SecretsFile struct {
 
 type Secrets struct {
 	AWS              AWS                                 `yaml:"aws"`
-	AZURE            AZURE                               `yaml:"azure"`
 	GCP              GCP                                 `yaml:"gcp"`
 	GithubToken      string                              `yaml:"github_token"`
 	ExternalRegistry commons.DockerRegistryCredentials   `yaml:"external_registry"`
