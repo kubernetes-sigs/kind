@@ -29,9 +29,6 @@ metadata:
   name: "{{ .Descriptor.ClusterID }}"
   namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec:
-  addonProfiles:
-    - name: omsagent
-      enabled: false
   identityRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureClusterIdentity
