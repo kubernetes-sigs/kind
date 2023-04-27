@@ -46,7 +46,7 @@ func (v *AKSValidator) Validate(fileType string) error {
 			return err
 		}
 	default:
-		return errors.New("Incorrect filetype validation")
+		return errors.New("incorrect filetype validation")
 	}
 	return nil
 }
