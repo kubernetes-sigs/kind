@@ -309,7 +309,7 @@ func GetSecretsFile(secretsPath string, vaultPassword string) (*SecretsFile, err
 	secretRaw, err := DecryptFile(secretsPath, vaultPassword)
 	var secretFile SecretsFile
 	if err != nil {
-		err := errors.New("The vaultPassword is incorrect")
+		err := errors.New("the vaultPassword is incorrect")
 		return nil, err
 	}
 
@@ -320,15 +320,6 @@ func GetSecretsFile(secretsPath string, vaultPassword string) (*SecretsFile, err
 	return &secretFile, nil
 }
 
-func resto(n int, i int, azs int) int {
-	var r int
-	r = (n % azs) / (i + 1)
-	if r > 1 {
-		r = 1
-	}
-	return r
-}
-
 func IfExistsStructField(fl validator.FieldLevel) bool {
 	structValue := reflect.ValueOf(fl.Parent().Interface())
 
@@ -336,30 +327,9 @@ func IfExistsStructField(fl validator.FieldLevel) bool {
 
 	// Get the value of the exclude field
 	excludeField := structValue.FieldByName(excludeFieldName)
-	if !reflect.DeepEqual(excludeField, reflect.Zero(reflect.TypeOf(excludeField)).Interface()) {
-		return false
-	}
 
 	// Exclude field is set to false or invalid, so don't exclude this field
-	return true
-}
-
-func excludedIfExistsStructField(fl validator.FieldLevel) bool {
-	fieldName := fl.Param()
-	structValue := fl.Top().Elem()
-
-	// Check if the field specified in the tag exists
-	field := structValue.FieldByName(fieldName)
-	if !field.IsValid() {
-		return true
-	}
-
-	// Get the value of the field specified in the tag
-	fieldValue := reflect.ValueOf(field.Interface())
-
-	// Check if the field value is the zero value for its type
-	// This assumes that the field is not a pointer or an interface
-	return !fieldValue.IsZero()
+	return reflect.DeepEqual(excludeField, reflect.Zero(reflect.TypeOf(excludeField)).Interface())
 }
 
 func CustomTypeAWSCredsFunc(field reflect.Value) interface{} {

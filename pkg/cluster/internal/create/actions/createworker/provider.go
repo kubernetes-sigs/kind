@@ -31,7 +31,6 @@ const (
 	CAPICoreProvider         = "cluster-api:v1.4.1"
 	CAPIBootstrapProvider    = "kubeadm:v1.4.1"
 	CAPIControlPlaneProvider = "kubeadm:v1.4.1"
-	//CAPILocalRepository      = "/root/.cluster-api/local-repository"
 
 	CalicoName      = "calico"
 	CalicoNamespace = "calico-system"
