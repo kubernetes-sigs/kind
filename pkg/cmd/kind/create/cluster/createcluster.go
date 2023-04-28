@@ -30,6 +30,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
+	"sigs.k8s.io/kind/pkg/cmd/kind/create/cluster/validation"
+
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/log"
@@ -50,6 +52,9 @@ type flagpole struct {
 	MoveManagement bool
 	AvoidCreation  bool
 }
+
+const clusterDefaultPath = "./cluster.yaml"
+const secretsDefaultPath = "./secrets.yml"
 
 // NewCommand returns a new cobra.Command for cluster creation
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
@@ -132,10 +137,24 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 }
 
 func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
+
+	err := validateFlags(flags)
+	if err != nil {
+		return err
+	}
+
 	provider := cluster.NewProvider(
 		cluster.ProviderWithLogger(logger),
 		runtime.GetDefault(logger),
 	)
+
+	if flags.DescriptorPath == "" {
+		flags.DescriptorPath = clusterDefaultPath
+	}
+	err = validation.InitValidator(flags.DescriptorPath)
+	if err != nil {
+		return err
+	}
 
 	// handle config flag, we might need to read from stdin
 	withConfig, err := configOption(flags.Config, streams.In)
@@ -150,8 +169,20 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		}
 	}
 
-	if flags.DescriptorPath == "" {
-		flags.DescriptorPath = "./cluster.yaml"
+	err = validation.ExecuteSecretsValidations(secretsDefaultPath, flags.VaultPassword)
+	if err != nil {
+		return err
+	}
+
+	err = validation.ExecuteDescriptorValidations()
+	if err != nil {
+		return err
+	}
+
+	err = validation.ExecuteCommonsValidations()
+	if err != nil {
+		return err
+
 	}
 
 	// create the cluster
@@ -216,4 +247,21 @@ func requestPassword(request string) (string, error) {
 	}
 	fmt.Print("\n")
 	return string(bytePassword), nil
+}
+
+func validateFlags(flags *flagpole) error {
+	count := 0
+	if flags.AvoidCreation {
+		count++
+	}
+	if flags.Retain {
+		count++
+	}
+	if flags.MoveManagement {
+		count++
+	}
+	if count > 1 {
+		return errors.New("Flags --retain, --avoid-creation, and --keep-mgmt are mutually exclusive")
+	}
+	return nil
 }

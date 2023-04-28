@@ -17,7 +17,13 @@ limitations under the License.
 package createworker
 
 import (
+	"context"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v3"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
@@ -41,7 +47,7 @@ func (b *AzureBuilder) setCapx(managed bool) {
 	b.capxVersion = "v1.8.2"
 	b.capxImageVersion = "v1.8.2"
 	b.capxName = "capz"
-	b.stClassName = "managed-csi"
+	b.stClassName = "default"
 	b.csiNamespace = "kube-system"
 	if managed {
 		b.capxTemplate = "azure.aks.tmpl"
@@ -50,10 +56,10 @@ func (b *AzureBuilder) setCapx(managed bool) {
 	}
 }
 
-func (b *AzureBuilder) setCapxEnvVars(p ProviderParams) {
+func (b *AzureBuilder) setCapxEnvVars(p commons.ProviderParams) {
 	b.capxEnvVars = []string{
-		"AZURE_CLIENT_SECRET=" + p.credentials["ClientSecret"],
-		"GITHUB_TOKEN=" + p.githubToken,
+		"AZURE_CLIENT_SECRET=" + p.Credentials["ClientSecret"],
+		"GITHUB_TOKEN=" + p.GithubToken,
 		"EXP_MACHINE_POOL=true",
 	}
 }
@@ -78,9 +84,58 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	c = "helm install azuredisk-csi-driver /stratio/helm/azuredisk-csi-driver" +
 		" --kubeconfig " + k +
 		" --namespace " + b.csiNamespace
-	err = executeCommand(n, c)
+	err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy Azure Disk CSI driver Helm Chart")
+	}
+
+	return nil
+}
+
+func (b *AzureBuilder) getAzs() ([]string, error) {
+	return []string{"1", "2", "3"}, nil
+}
+
+func assignUserIdentity(i string, c string, r string, s map[string]string) error {
+	creds, err := azidentity.NewClientSecretCredential(s["TenantID"], s["ClientID"], s["ClientSecret"], nil)
+	if err != nil {
+		return err
+	}
+	ctx := context.Background()
+
+	containerserviceClientFactory, err := armcontainerservice.NewClientFactory(s["SubscriptionID"], creds, nil)
+	if err != nil {
+		return err
+	}
+	managedClustersClient := containerserviceClientFactory.NewManagedClustersClient()
+
+	pollerResp, err := managedClustersClient.BeginCreateOrUpdate(
+		ctx, c, c,
+		armcontainerservice.ManagedCluster{
+			Location: to.Ptr(r),
+			Identity: &armcontainerservice.ManagedClusterIdentity{
+				Type: to.Ptr(armcontainerservice.ResourceIdentityTypeUserAssigned),
+				UserAssignedIdentities: map[string]*armcontainerservice.ManagedServiceIdentityUserAssignedIdentitiesValue{
+					i: {},
+				},
+			},
+			Properties: &armcontainerservice.ManagedClusterProperties{
+				IdentityProfile: map[string]*armcontainerservice.UserAssignedIdentity{
+					"kubeletidentity": {
+						ResourceID: to.Ptr(i),
+					},
+				},
+			},
+		},
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = pollerResp.PollUntilDone(ctx, nil)
+	if err != nil {
+		return err
 	}
 
 	return nil

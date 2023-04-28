@@ -18,18 +18,19 @@ package createworker
 
 import (
 	"bytes"
-	_ "embed"
+	"reflect"
 	"strings"
+	"text/template"
 
-	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
 const (
-	CAPICoreProvider         = "cluster-api:v1.3.2"
-	CAPIBootstrapProvider    = "kubeadm:v1.3.2"
-	CAPIControlPlaneProvider = "kubeadm:v1.3.2"
+	CAPICoreProvider         = "cluster-api:v1.4.1"
+	CAPIBootstrapProvider    = "kubeadm:v1.4.1"
+	CAPIControlPlaneProvider = "kubeadm:v1.4.1"
 	//CAPILocalRepository      = "/root/.cluster-api/local-repository"
 
 	CalicoName      = "calico"
@@ -43,9 +44,10 @@ const machineHealthCheckControlPlaneNodePath = "/kind/manifests/machinehealthche
 
 type PBuilder interface {
 	setCapx(managed bool)
-	setCapxEnvVars(p ProviderParams)
+	setCapxEnvVars(p commons.ProviderParams)
 	installCSI(n nodes.Node, k string) error
 	getProvider() Provider
+	getAzs() ([]string, error)
 }
 
 type Provider struct {
@@ -59,11 +61,11 @@ type Provider struct {
 	csiNamespace     string
 }
 
-type ProviderParams struct {
-	region      string
-	managed     bool
-	credentials map[string]string
-	githubToken string
+type Node struct {
+	AZ      string
+	QA      int
+	MaxSize int
+	MinSize int
 }
 
 type Infra struct {
@@ -91,8 +93,8 @@ func newInfra(b PBuilder) *Infra {
 	}
 }
 
-func (i *Infra) buildProvider(p ProviderParams) Provider {
-	i.builder.setCapx(p.managed)
+func (i *Infra) buildProvider(p commons.ProviderParams) Provider {
+	i.builder.setCapx(p.Managed)
 	i.builder.setCapxEnvVars(p)
 	return i.builder.getProvider()
 }
@@ -101,7 +103,15 @@ func (i *Infra) installCSI(n nodes.Node, k string) error {
 	return i.builder.installCSI(n, k)
 }
 
-func installCalico(n nodes.Node, k string, descriptorFile cluster.DescriptorFile) error {
+func (i *Infra) getAzs() ([]string, error) {
+	azs, err := i.builder.getAzs()
+	if err != nil {
+		return nil, err
+	}
+	return azs, nil
+}
+
+func installCalico(n nodes.Node, k string, descriptorFile commons.DescriptorFile) error {
 	var c string
 	var err error
 
@@ -112,20 +122,20 @@ func installCalico(n nodes.Node, k string, descriptorFile cluster.DescriptorFile
 	}
 
 	c = "kubectl --kubeconfig " + k + " create namespace " + CalicoNamespace
-	err = executeCommand(n, c)
+	err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to create Calico namespace")
 	}
 
 	c = "echo '" + calicoHelmValues + "' > " + CalicoTemplate
-	err = executeCommand(n, c)
+	err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to create Calico Helm chart values file")
 	}
 
 	c = "helm install --kubeconfig " + k + " " + CalicoName + " " + CalicoHelmChart +
 		" --namespace " + CalicoNamespace + " --values " + CalicoTemplate
-	err = executeCommand(n, c)
+	err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy Calico Helm Chart")
 	}
@@ -141,7 +151,7 @@ func (p *Provider) installCAPXWorker(node nodes.Node, kubeconfigPath string, all
 	if p.capxProvider == "azure" {
 		// Create capx namespace
 		command = "kubectl --kubeconfig " + kubeconfigPath + " create namespace " + p.capxName + "-system"
-		err = executeCommand(node, command)
+		err = commons.ExecuteCommand(node, command)
 		if err != nil {
 			return errors.Wrap(err, "failed to create CAPx namespace")
 		}
@@ -149,7 +159,7 @@ func (p *Provider) installCAPXWorker(node nodes.Node, kubeconfigPath string, all
 		// Create capx secret
 		secret := strings.Split(p.capxEnvVars[0], "AZURE_CLIENT_SECRET=")[1]
 		command = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system create secret generic cluster-identity-secret --from-literal=clientSecret='" + string(secret) + "'"
-		err = executeCommand(node, command)
+		err = commons.ExecuteCommand(node, command)
 		if err != nil {
 			return errors.Wrap(err, "failed to create CAPx secret")
 		}
@@ -161,21 +171,21 @@ func (p *Provider) installCAPXWorker(node nodes.Node, kubeconfigPath string, all
 		" --bootstrap " + CAPIBootstrapProvider +
 		" --control-plane " + CAPIControlPlaneProvider +
 		" --infrastructure " + p.capxProvider + ":" + p.capxVersion
-	err = executeCommand(node, command, p.capxEnvVars)
+	err = commons.ExecuteCommand(node, command, p.capxEnvVars)
 	if err != nil {
 		return errors.Wrap(err, "failed to install CAPX in workload cluster")
 	}
 
 	// Scale CAPX to 2 replicas
 	command = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system scale --replicas 2 deploy " + p.capxName + "-controller-manager"
-	err = executeCommand(node, command)
+	err = commons.ExecuteCommand(node, command)
 	if err != nil {
 		return errors.Wrap(err, "failed to scale CAPX in workload cluster")
 	}
 
 	// Allow egress in CAPX's Namespace
 	command = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system apply -f " + allowAllEgressNetPolPath
-	err = executeCommand(node, command)
+	err = commons.ExecuteCommand(node, command)
 	if err != nil {
 		return errors.Wrap(err, "failed to apply CAPX's NetworkPolicy in workload cluster")
 	}
@@ -191,7 +201,7 @@ func (p *Provider) installCAPXLocal(node nodes.Node) error {
 	if p.capxProvider == "azure" {
 		// Create capx namespace
 		command = "kubectl create namespace " + p.capxName + "-system"
-		err = executeCommand(node, command)
+		err = commons.ExecuteCommand(node, command)
 		if err != nil {
 			return errors.Wrap(err, "failed to create CAPx namespace")
 		}
@@ -199,7 +209,7 @@ func (p *Provider) installCAPXLocal(node nodes.Node) error {
 		// Create capx secret
 		secret := strings.Split(p.capxEnvVars[0], "AZURE_CLIENT_SECRET=")[1]
 		command = "kubectl -n " + p.capxName + "-system create secret generic cluster-identity-secret --from-literal=clientSecret='" + string(secret) + "'"
-		err = executeCommand(node, command)
+		err = commons.ExecuteCommand(node, command)
 		if err != nil {
 			return errors.Wrap(err, "failed to create CAPx secret")
 		}
@@ -209,8 +219,9 @@ func (p *Provider) installCAPXLocal(node nodes.Node) error {
 		" --core " + CAPICoreProvider +
 		" --bootstrap " + CAPIBootstrapProvider +
 		" --control-plane " + CAPIControlPlaneProvider +
+
 		" --infrastructure " + p.capxProvider + ":" + p.capxVersion
-	err = executeCommand(node, command, p.capxEnvVars)
+	err = commons.ExecuteCommand(node, command, p.capxEnvVars)
 	if err != nil {
 		return errors.Wrap(err, "failed to install CAPX in local cluster")
 	}
@@ -218,7 +229,7 @@ func (p *Provider) installCAPXLocal(node nodes.Node) error {
 	return nil
 }
 
-func enableSelfHealing(node nodes.Node, descriptorFile cluster.DescriptorFile, namespace string) error {
+func enableSelfHealing(node nodes.Node, descriptorFile commons.DescriptorFile, namespace string) error {
 
 	if !descriptorFile.ControlPlane.Managed {
 
@@ -272,4 +283,67 @@ spec:
 		return errors.Wrap(err, "failed to write the MachineHealthCheck manifest")
 	}
 	return nil
+}
+
+func resto(n int, i int, azs int) int {
+	var r int
+	r = (n % azs) / (i + 1)
+	if r > 1 {
+		r = 1
+	}
+	return r
+}
+
+func GetClusterManifest(flavor string, params commons.TemplateParams, azs []string) (string, error) {
+	funcMap := template.FuncMap{
+		"loop": func(az string, zd string, qa int, maxsize int, minsize int) <-chan Node {
+			ch := make(chan Node)
+			go func() {
+				var q int
+				var mx int
+				var mn int
+				if az != "" {
+					ch <- Node{AZ: az, QA: qa, MaxSize: maxsize, MinSize: minsize}
+				} else {
+					for i, a := range azs {
+						if zd == "unbalanced" {
+							q = qa/len(azs) + resto(qa, i, len(azs))
+							mx = maxsize/len(azs) + resto(maxsize, i, len(azs))
+							mn = minsize/len(azs) + resto(minsize, i, len(azs))
+							ch <- Node{AZ: a, QA: q, MaxSize: mx, MinSize: mn}
+						} else {
+							ch <- Node{AZ: a, QA: qa / len(azs), MaxSize: maxsize / len(azs), MinSize: minsize / len(azs)}
+						}
+					}
+				}
+				close(ch)
+			}()
+			return ch
+		},
+		"hostname": func(s string) string {
+			return strings.Split(s, "/")[0]
+		},
+		"checkReference": func(v interface{}) bool {
+			defer func() { recover() }()
+			return v != nil && !reflect.ValueOf(v).IsNil() && v != "nil" && v != "<nil>"
+		},
+		"isNotEmpty": func(v interface{}) bool {
+			return !reflect.ValueOf(v).IsZero()
+		},
+		"inc": func(i int) int {
+			return i + 1
+		},
+	}
+
+	var tpl bytes.Buffer
+	t, err := template.New("").Funcs(funcMap).ParseFS(ctel, "templates/"+flavor)
+	if err != nil {
+		return "", err
+	}
+
+	err = t.ExecuteTemplate(&tpl, flavor, params)
+	if err != nil {
+		return "", err
+	}
+	return tpl.String(), nil
 }

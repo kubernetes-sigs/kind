@@ -17,29 +17,28 @@ limitations under the License.
 package createworker
 
 import (
-        "embed"
-        "bytes"
-        "text/template"
+	"bytes"
+	"embed"
+	"text/template"
 
-        "sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
-
+	"sigs.k8s.io/kind/pkg/commons"
 )
 
 //go:embed templates/*
 var ctel embed.FS
 
-func getCalicoManifest(descriptorFile cluster.DescriptorFile) (string, error) {
+func getCalicoManifest(descriptorFile commons.DescriptorFile) (string, error) {
 
-    var tpl bytes.Buffer
+	var tpl bytes.Buffer
 	var helmValuesFilename string = "calico-helm-values.tmpl"
-    t, err := template.New("").ParseFS(ctel, "templates/"+helmValuesFilename)
-    if err != nil {
-        return "", err
+	t, err := template.New("").ParseFS(ctel, "templates/"+helmValuesFilename)
+	if err != nil {
+		return "", err
 	}
 
-    err = t.ExecuteTemplate(&tpl, helmValuesFilename, descriptorFile)
-    if err != nil {
-        return "", err
-    }
-    return tpl.String(), nil
+	err = t.ExecuteTemplate(&tpl, helmValuesFilename, descriptorFile)
+	if err != nil {
+		return "", err
+	}
+	return tpl.String(), nil
 }
