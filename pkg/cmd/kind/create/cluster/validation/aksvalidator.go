@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"regexp"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
@@ -116,8 +117,9 @@ func aksVersionValidation(k8sVersion string, region string, secretsFile commons.
 }
 
 func aksNodesValidation(workerNodes commons.WorkerNodes) error {
+	var IsLetter = regexp.MustCompile(`^[a-z0-9]+$`).MatchString
 	for _, node := range workerNodes {
-		if strings.ToLower(node.Name) != node.Name || len(node.Name) >= 9 {
+		if !IsLetter(node.Name) || len(node.Name) >= 9 {
 			return errors.New("node name must be 9 characters or less & contain only lowercase alphanumeric characters")
 		}
 	}
