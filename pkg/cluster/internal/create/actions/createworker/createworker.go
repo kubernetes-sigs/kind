@@ -35,27 +35,6 @@ type action struct {
 	avoidCreation  bool
 }
 
-type AWS struct {
-	Credentials commons.AWSCredentials `yaml:"credentials"`
-}
-
-type GCP struct {
-	Credentials commons.GCPCredentials `yaml:"credentials"`
-}
-
-// SecretsFile represents the YAML structure in the secrets.yml file
-type SecretsFile struct {
-	Secrets Secrets `yaml:"secrets"`
-}
-
-type Secrets struct {
-	AWS              AWS                                 `yaml:"aws"`
-	GCP              GCP                                 `yaml:"gcp"`
-	GithubToken      string                              `yaml:"github_token"`
-	ExternalRegistry commons.DockerRegistryCredentials   `yaml:"external_registry"`
-	DockerRegistries []commons.DockerRegistryCredentials `yaml:"docker_registries"`
-}
-
 //go:embed files/allow-all-egress_netpol.yaml
 var allowCommonEgressNetPol string
 
@@ -346,7 +325,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		defer ctx.Status.End(false)
 
 		err = enableSelfHealing(node, *descriptorFile, capiClustersNamespace)
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
+		if err != nil {
 			return errors.Wrap(err, "failed to enable workload cluster's self-healing")
 		}
 
