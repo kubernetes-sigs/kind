@@ -23,7 +23,6 @@ import (
 	"log"
 	"unicode"
 
-	"io/ioutil"
 	"os"
 	"reflect"
 	"strings"
@@ -241,8 +240,7 @@ func EnsureSecretsFile(descriptorFile DescriptorFile, vaultPassword string) erro
 		edited = true
 		creds := convertStringMapToInterfaceMap(credentials)
 		creds = convertMapKeysToSnakeCase(creds)
-		secretMap["secrets"][descriptorFile.InfraProvider] = map[string]interface{}{
-			"credentials": creds}
+		secretMap["secrets"][descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds}
 	}
 
 	if secretMap["secrets"]["external_registry"] == nil && len(externalRegistry) > 0 {
@@ -289,8 +287,10 @@ func RewriteDescriptorFile(descriptorPath string) error {
 	yamlNodes := removeKey(data.Content, "credentials")
 
 	b, err := yaml.Marshal(yamlNodes[0])
-
-	err = ioutil.WriteFile(descriptorPath, b, 0644)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(descriptorPath, []byte(b), 0644)
 	if err != nil {
 		return err
 	}
@@ -318,7 +318,7 @@ func encryptSecret(secretMap map[string]map[string]interface{}, vaultPassword st
 	yamlEncoder.SetIndent(2)
 	yamlEncoder.Encode(&secretMap)
 
-	err := vault.EncryptFile(secretPath, string(b.Bytes()), vaultPassword)
+	err := vault.EncryptFile(secretPath, b.String(), vaultPassword)
 	if err != nil {
 		return err
 	}
@@ -333,7 +333,7 @@ func removeKey(nodes []*yaml.Node, key string) []*yaml.Node {
 			j := 0
 			for j < len(node.Content)/2 {
 				if node.Content[j*2].Value == key {
-					if i == 0 {
+					if i == 5 {
 						// This is a root key, so remove it and its value.
 						node.Content = append(node.Content[:j*2], node.Content[j*2+2:]...)
 						continue
