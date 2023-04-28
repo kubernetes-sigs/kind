@@ -12,7 +12,6 @@ require (
 	github.com/evanphx/json-patch/v5 v5.6.0
 	github.com/fatih/structs v1.1.0
 	github.com/go-playground/validator/v10 v10.11.1
-	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/safetext v0.0.0-20220905092116-b49f7bc46da2
 	github.com/mattn/go-isatty v0.0.18
 	github.com/oleiade/reflections v1.0.1
@@ -21,7 +20,6 @@ require (
 	github.com/sosedoff/ansible-vault-go v0.1.1
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.8.1 // indirect
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
 	golang.org/x/term v0.6.0
 	google.golang.org/api v0.114.0

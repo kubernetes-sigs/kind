@@ -1,16 +1,16 @@
-FROM kindest/node:v1.24.7
+FROM kindest/node:v1.27.0
 
 # Init feature gates
 ENV CLUSTER_TOPOLOGY=true
 
 # Tools versions
-ENV CLUSTERCTL=v1.3.2
+ENV CLUSTERCTL=v1.4.1
 ENV CLUSTERAWSADM=v2.0.2
-ENV HELM_VERSION=v3.11.0
+ENV HELM_VERSION=v3.11.3
 
 # Helm charts
-ENV CLUSTER_AUTOSCALER=9.25.0
-ENV TIGERA_OPERATOR=v3.22.3
+ENV CLUSTER_AUTOSCALER=9.28.0
+ENV TIGERA_OPERATOR=v3.25.1
 
 # Cluster-api artifacts
 ENV CAPI_REPO=/root/.cluster-api/local-repository

@@ -32,9 +32,9 @@ metadata:
 spec:
   addons:
     - name: "aws-ebs-csi-driver"
-      version: "v1.14.1-eksbuild.1"
+      version: "v1.17.0-eksbuild.1"
     - name: "vpc-cni"
-      version: "v1.12.1-eksbuild.1"
+      version: "v1.12.6-eksbuild.1"
       conflictResolution: "overwrite"
   associateOIDCProvider: {{ .Descriptor.ControlPlane.AWS.AssociateOIDCProvider }}
   eksClusterName: "{{ .Descriptor.ClusterID }}"

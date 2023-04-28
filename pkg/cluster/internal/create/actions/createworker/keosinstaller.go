@@ -20,7 +20,7 @@ import (
 	"os"
 
 	"gopkg.in/yaml.v3"
-	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
+	"sigs.k8s.io/kind/pkg/commons"
 )
 
 type KEOSDescriptor struct {
@@ -49,7 +49,8 @@ type KEOSDescriptor struct {
 				Enabled *bool `yaml:"enabled,omitempty"`
 			} `yaml:"external_dns,omitempty"`
 		} `yaml:"dns,omitempty"`
-		Domain          string `yaml:"domain"`
+		// PR fixing exclude_if behaviour https://github.com/go-playground/validator/pull/939
+		Domain          string `yaml:"domain,omitempty"`
 		ExternalDomain  string `yaml:"external_domain,omitempty"`
 		Flavour         string `yaml:"flavour"`
 		K8sInstallation bool   `yaml:"k8s_installation"`
@@ -60,7 +61,7 @@ type KEOSDescriptor struct {
 	} `yaml:"keos"`
 }
 
-func createKEOSDescriptor(descriptorFile cluster.DescriptorFile, storageClass string) error {
+func createKEOSDescriptor(descriptorFile commons.DescriptorFile, storageClass string) error {
 
 	var keosDescriptor KEOSDescriptor
 	var err error
@@ -88,7 +89,11 @@ func createKEOSDescriptor(descriptorFile cluster.DescriptorFile, storageClass st
 
 	// Keos
 	keosDescriptor.Keos.ClusterID = descriptorFile.ClusterID
-	keosDescriptor.Keos.Domain = descriptorFile.Keos.Domain
+        if descriptorFile.InfraProvider == "aws" {
+                keosDescriptor.Keos.Domain = "cluster.local"
+        } else if descriptorFile.Keos.Domain != "" {
+                keosDescriptor.Keos.Domain = descriptorFile.Keos.Domain
+        }
 	if descriptorFile.ExternalDomain != "" {
 		keosDescriptor.Keos.ExternalDomain = descriptorFile.ExternalDomain
 	}

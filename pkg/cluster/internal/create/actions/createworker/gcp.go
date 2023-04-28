@@ -27,6 +27,7 @@ import (
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 )
@@ -53,8 +54,8 @@ func newGCPBuilder() *GCPBuilder {
 
 func (b *GCPBuilder) setCapx(managed bool) {
 	b.capxProvider = "gcp"
-	b.capxVersion = "v1.2.1"
-	b.capxImageVersion = "v1.2.1"
+	b.capxVersion = "v1.3.0"
+	b.capxImageVersion = "v1.3.0"
 	b.capxName = "capg"
 	b.stClassName = "csi-gcp-pd"
 	if managed {
@@ -66,25 +67,25 @@ func (b *GCPBuilder) setCapx(managed bool) {
 	}
 }
 
-func (b *GCPBuilder) setCapxEnvVars(p ProviderParams) {
+func (b *GCPBuilder) setCapxEnvVars(p commons.ProviderParams) {
 	data := map[string]interface{}{
 		"type":                        "service_account",
-		"project_id":                  p.credentials["ProjectID"],
-		"private_key_id":              p.credentials["PrivateKeyID"],
-		"private_key":                 p.credentials["PrivateKey"],
-		"client_email":                p.credentials["ClientEmail"],
-		"client_id":                   p.credentials["ClientID"],
+		"project_id":                  p.Credentials["ProjectID"],
+		"private_key_id":              p.Credentials["PrivateKeyID"],
+		"private_key":                 p.Credentials["PrivateKey"],
+		"client_email":                p.Credentials["ClientEmail"],
+		"client_id":                   p.Credentials["ClientID"],
 		"auth_uri":                    "https://accounts.google.com/o/oauth2/auth",
 		"token_uri":                   "https://accounts.google.com/o/oauth2/token",
 		"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-		"client_x509_cert_url":        "https://www.googleapis.com/robot/v1/metadata/x509/" + url.QueryEscape(p.credentials["ClientEmail"]),
+		"client_x509_cert_url":        "https://www.googleapis.com/robot/v1/metadata/x509/" + url.QueryEscape(p.Credentials["ClientEmail"]),
 	}
 	b.dataCreds = data
-	b.region = p.region
+	b.region = p.Region
 	jsonData, _ := json.Marshal(data)
 	b.capxEnvVars = []string{
 		"GCP_B64ENCODED_CREDENTIALS=" + b64.StdEncoding.EncodeToString([]byte(jsonData)),
-		"GITHUB_TOKEN=" + p.githubToken,
+		"GITHUB_TOKEN=" + p.GithubToken,
 	}
 }
 
@@ -119,7 +120,7 @@ volumeBindingMode: WaitForFirstConsumer`
 
 	// Create CSI namespace
 	c = "kubectl --kubeconfig " + k + " create namespace " + b.csiNamespace
-	err = executeCommand(n, c)
+	err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to create CSI namespace")
 	}
@@ -127,7 +128,7 @@ volumeBindingMode: WaitForFirstConsumer`
 	// Create CSI secret in CSI namespace
 	secret, _ := b64.StdEncoding.DecodeString(strings.Split(b.capxEnvVars[0], "GCP_B64ENCODED_CREDENTIALS=")[1])
 	c = "kubectl --kubeconfig " + k + " -n " + b.csiNamespace + " create secret generic cloud-sa --from-literal=cloud-sa.json='" + string(secret) + "'"
-	err = executeCommand(n, c)
+	err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to create CSI secret in CSI namespace")
 	}
