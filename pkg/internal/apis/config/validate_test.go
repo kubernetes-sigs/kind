@@ -17,6 +17,8 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
+	"sigs.k8s.io/kind/pkg/internal/assert"
 	"testing"
 
 	"sigs.k8s.io/kind/pkg/errors"
@@ -425,6 +427,122 @@ func TestPortValidate(t *testing.T) {
 			if err != nil && err.Error() != tc.ExpectError {
 				t.Errorf("Test failed, error: %s expected error: %s", err, tc.ExpectError)
 			}
+		})
+	}
+}
+
+func TestValidatePortMappings(t *testing.T) {
+	newPortMapping := func(addr string, port int, protocol string) PortMapping {
+		return PortMapping{
+			HostPort:      int32(port),
+			ListenAddress: addr,
+			Protocol:      PortMappingProtocol(protocol),
+		}
+	}
+	errMsg := "port mapping with same listen address, port and protocol already configured"
+	cases := []struct {
+		testName     string
+		portMappings []PortMapping
+		expectErr    string
+	}{
+		{
+			testName: "unique port mappings ipv4",
+			portMappings: []PortMapping{
+				newPortMapping("127.0.0.1", 80, "UDP"),
+				newPortMapping("127.0.0.1", 80, "TCP"),
+				newPortMapping("0.0.0.0", 3000, "UDP"),
+				newPortMapping("0.0.0.0", 5000, "TCP"),
+			},
+			expectErr: "",
+		},
+		{
+			testName: "unique port mappings ipv6",
+			portMappings: []PortMapping{
+				newPortMapping("::1", 80, "UDP"),
+				newPortMapping("::1", 80, "TCP"),
+				newPortMapping("1e3d:6e85:424d:a011:a72e:9780:5f6f:a6fc", 3000, "UDP"),
+				newPortMapping("6516:944d:e070:a1d1:2e91:8437:a6b3:edf9", 5000, "TCP"),
+			},
+			expectErr: "",
+		},
+		{
+			testName: "exact duplicate port mappings ipv4",
+			portMappings: []PortMapping{
+				newPortMapping("127.0.0.1", 80, "TCP"),
+				newPortMapping("127.0.0.1", 80, "UDP"),
+				newPortMapping("127.0.0.1", 80, "TCP"),
+			},
+			// error expected: exact duplicate
+			expectErr: fmt.Sprintf("%s: 127.0.0.1:80/TCP", errMsg),
+		},
+
+		{
+			testName: "exact duplicate port mappings ipv6",
+			portMappings: []PortMapping{
+				newPortMapping("::1", 80, "TCP"),
+				newPortMapping("::1", 80, "UDP"),
+				newPortMapping("::1", 80, "TCP"),
+			},
+			// error expected: exact duplicate
+			expectErr: fmt.Sprintf("%s: [::1]:80/TCP", errMsg),
+		},
+		{
+			testName: "wildcard ipv4 & ipv6",
+			portMappings: []PortMapping{
+				newPortMapping("127.0.0.1", 80, "TCP"),
+				newPortMapping("0.0.0.0", 80, "UDP"),
+				newPortMapping("::1", 80, "TCP"),
+				newPortMapping("::", 80, "UDP"),
+			},
+			// error expected: 0.0.0.0 & [::] are same in golang
+			// https://github.com/golang/go/issues/48723
+			expectErr: fmt.Sprintf("%s: [::]:80/UDP", errMsg),
+		},
+		{
+			testName: "subset already configured ipv4",
+			portMappings: []PortMapping{
+				newPortMapping("127.0.0.1", 80, "TCP"),
+				newPortMapping("0.0.0.0", 80, "TCP"),
+			},
+			// error expected: subset of 0.0.0.0 -> 127.0.0.1 is already defined for same port and protocol
+			expectErr: fmt.Sprintf("%s: 0.0.0.0:80/TCP", errMsg),
+		},
+		{
+			testName: "subset already configured ipv6",
+			portMappings: []PortMapping{
+				newPortMapping("::1", 80, "TCP"),
+				newPortMapping("::", 80, "TCP"),
+			},
+			// error expected: subset of :: -> ::1 is already defined for same port and protocol
+			expectErr: fmt.Sprintf("%s: [::]:80/TCP", errMsg),
+		},
+		{
+			testName: "port mapping already configured via wildcard ipv4",
+			portMappings: []PortMapping{
+				newPortMapping("0.0.0.0", 80, "TCP"),
+				newPortMapping("127.0.0.1", 80, "TCP"),
+			},
+			// error expected: port mapping is already defined for wildcard interface - 0.0.0.0
+			expectErr: fmt.Sprintf("%s: 127.0.0.1:80/TCP", errMsg),
+		},
+		{
+			testName: "port mapping already configured via wildcard ipv6",
+			portMappings: []PortMapping{
+				newPortMapping("::", 80, "SCTP"),
+				newPortMapping("::1", 80, "SCTP"),
+			},
+			// error expected: port mapping is already defined for wildcard interface - ::
+			expectErr: fmt.Sprintf("%s: [::1]:80/SCTP", errMsg),
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc //capture loop variable
+		t.Run(tc.testName, func(t *testing.T) {
+			t.Parallel()
+
+			err := validatePortMappings(tc.portMappings)
+			assert.ExpectError(t, len(tc.expectErr) > 0, err)
 		})
 	}
 }
