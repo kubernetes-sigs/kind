@@ -108,6 +108,10 @@ func (p *provider) ListClusters() ([]string, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list clusters")
 	}
+	// provide feedback to the user about cluster inexistence
+	if len(lines) == 0 {
+		return nil, errors.Errorf("cluster does not exist")
+	}
 	return sets.NewString(lines...).List(), nil
 }
 
@@ -124,6 +128,10 @@ func (p *provider) ListNodes(cluster string) ([]nodes.Node, error) {
 	lines, err := exec.OutputLines(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list nodes")
+	}
+	// provide feedback to the user about cluster inexistence
+	if len(lines) == 0 {
+		return nil, errors.Errorf("cluster does not exist")
 	}
 	// convert names to node handles
 	ret := make([]nodes.Node, 0, len(lines))
