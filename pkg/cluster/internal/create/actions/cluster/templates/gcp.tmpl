@@ -36,7 +36,7 @@ spec:
       region: "{{ $.Descriptor.Region }}"
       {{- if ne .CidrBlock "" }}
       cidrBlock: {{ .CidrBlock }}
-      {{- end }} 
+      {{- end }}
     {{- end }}
   {{- end }}
   {{- else }}
@@ -53,7 +53,7 @@ spec:
   replicas: {{- if .Descriptor.ControlPlane.HighlyAvailable }} 3 {{- else }} 1 {{- end }}
   machineTemplate:
     metadata:
-      labels: 
+      labels:
         keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-control-plane-node"
     infrastructureRef:
       kind: GCPMachineTemplate
@@ -81,21 +81,31 @@ spec:
             name: gce-conf
             pathType: FileOrCreate
     files:
-      {{- if .DockerRegistries }}
+      - content: |
+          [Global]
+          multizone=true
+        path: /etc/kubernetes/gce.conf
+    {{- if gt (len .DockerRegistries) 0 }}
       - content: |
           version = 2
           imports = [\"/etc/containerd/conf.d/*.toml\"]
           [plugins]
             [plugins.\"io.containerd.grpc.v1.cri\"]
-              sandbox_image = \"k8s.gcr.io/pause:3.6\"
+              sandbox_image = \"k8s.gcr.io/pause:3.9\"
             [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc]
               runtime_type = \"io.containerd.runc.v2\"
-            [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc.options]
-              SystemdCgroup = true
+              [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc.options]
+                SystemdCgroup = true
             [plugins.\"io.containerd.grpc.v1.cri\".registry]
               [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors]
                 [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]
                   endpoint = [\"https://registry-1.docker.io\"]
+                {{- range $reg := .DockerRegistries }}
+                {{- $url := hostname $reg.url }}
+                [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"{{ $url }}\"]
+                  endpoint = [\"https://{{ $url }}\"]
+                {{- end }}
+            [plugins.\"io.containerd.grpc.v1.cri\".registry.configs]
               {{- range $reg := .DockerRegistries }}
               {{- $url := hostname $reg.url }}
               [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ $url }}\".auth]
@@ -103,11 +113,9 @@ spec:
                 username = \"{{ $reg.user }}\"
               {{- end }}
         path: /etc/containerd/config.toml
-      {{- end }}
-      - content: |
-          [Global]
-          multizone=true
-        path: /etc/kubernetes/gce.conf
+    postKubeadmCommands:
+      - systemctl restart containerd
+    {{- end }}
     {{- if .Descriptor.ControlPlane.ExtraVolumes }}
     diskSetup:
       filesystems:
@@ -145,7 +153,7 @@ spec:
   template:
     spec:
       instanceType: "{{ .Descriptor.ControlPlane.Size }}"
-      image: "{{ .Descriptor.ControlPlane.Image }}"
+      image: "{{ .Descriptor.ControlPlane.NodeImage }}"
       {{- if .Descriptor.ControlPlane.RootVolume.Size }}
       rootDeviceSize: {{ .Descriptor.ControlPlane.RootVolume.Size }}
       {{- end }}
@@ -182,7 +190,7 @@ spec:
     matchLabels:
   template:
     metadata:
-      labels: 
+      labels:
         keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
     spec:
       clusterName: "{{ $.Descriptor.ClusterID }}"
@@ -207,7 +215,7 @@ spec:
   template:
     spec:
       instanceType: "{{ $node.Size }}"
-      image: "{{ $node.Image }}"
+      image: "{{ $node.NodeImage }}"
       {{- if $node.RootVolume.Size }}
       rootDeviceSize: {{ $node.RootVolume.Size }}
       {{- end }}
@@ -233,22 +241,28 @@ metadata:
 spec:
   template:
     spec:
-      {{- if $.DockerRegistries }}
+      {{- if gt (len $.DockerRegistries) 0 }}
       files:
         - content: |
             version = 2
             imports = [\"/etc/containerd/conf.d/*.toml\"]
             [plugins]
               [plugins.\"io.containerd.grpc.v1.cri\"]
-                sandbox_image = \"k8s.gcr.io/pause:3.6\"
+                sandbox_image = \"k8s.gcr.io/pause:3.9\"
               [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc]
                 runtime_type = \"io.containerd.runc.v2\"
-              [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc.options]
-                SystemdCgroup = true
+                [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc.options]
+                  SystemdCgroup = true
               [plugins.\"io.containerd.grpc.v1.cri\".registry]
                 [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors]
                   [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]
                     endpoint = [\"https://registry-1.docker.io\"]
+                  {{- range $reg := $.DockerRegistries }}
+                  {{- $url := hostname $reg.url }}
+                  [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"{{ $url }}\"]
+                    endpoint = [\"https://{{ $url }}\"]
+                  {{- end }}
+              [plugins.\"io.containerd.grpc.v1.cri\".registry.configs]
                 {{- range $reg := $.DockerRegistries }}
                 {{- $url := hostname $reg.url }}
                 [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ $url }}\".auth]
@@ -256,7 +270,9 @@ spec:
                   username = \"{{ $reg.user }}\"
                 {{- end }}
           path: /etc/containerd/config.toml
-        {{- end }}
+      postKubeadmCommands:
+        - systemctl restart containerd
+      {{- end }}
       {{- if $node.ExtraVolumes }}
       diskSetup:
         filesystems:
@@ -283,11 +299,11 @@ spec:
           name: {{`'{{ ds.meta_data.local_hostname.split(\".\")[0] }}'`}}
           kubeletExtraArgs:
             cloud-provider: gce
-            {{- if $node.Labels }}
+            {{- if gt (len $node.Labels) 0 }}
             node-labels: \"{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}\"
             {{- end }}
             {{- if gt (len $node.Taints) 0 }}
-            register-with-taints: \"{{ range $i, $taint := $node.Taints }}{{$taint.Key}}={{$taint.Value}}:{{$taint.Effect}}{{ $len := len $node.Taints }}{{- if lastElement $i $len }}{{- else }},{{- end }}{{- end }}\"
+            register-with-taints: \"{{ range $i, $taint := $node.Taints }}{{ $taint.Key }}={{ $taint.Value }}:{{ $taint.Effect }}{{ $len := len $node.Taints }}{{- if lastElement $i $len }}{{- else }},{{- end }}{{- end }}\"
             {{- end }}
 {{- end }}
 {{- end }}

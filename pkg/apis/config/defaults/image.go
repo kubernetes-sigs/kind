@@ -18,7 +18,7 @@ limitations under the License.
 package defaults
 
 // Image is the default for the Config.Image field, aka the default node image.
-const Image = "kindest/node:v1.24.7@sha256:5c015142d9b60a0f6c45573f809957076514e38ec973565e2b2fe828b91597f5"
+const Image = "kindest/node:v1.27.0@sha256:bac1b0e00322ba0269a5811fb574dab91f93176d9f00cec3b3eb0832beb1ce84"
 
 // StratioImage is the extended Image for Stratio KEOS
-const StratioImage = "stratio-capi:v1.24.7"
+const StratioImage = "stratio-capi:v1.27.0"
