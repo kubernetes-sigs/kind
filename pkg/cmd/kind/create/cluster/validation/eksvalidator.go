@@ -2,11 +2,18 @@ package validation
 
 import (
 	"errors"
+	"net"
 
+	"github.com/apparentlymart/go-cidr/cidr"
 	"sigs.k8s.io/kind/pkg/commons"
 )
 
 var eksInstance *EKSValidator
+
+const (
+	cidrSizeMax = 65536
+	cidrSizeMin = 16
+)
 
 type EKSValidator struct {
 	commonValidator
@@ -57,6 +64,29 @@ func descriptorEksValidations(descriptorFile commons.DescriptorFile) error {
 	err := commonsDescriptorValidation(descriptorFile)
 	if err != nil {
 		return err
+	}
+	if descriptorFile.Networks.PrimaryCidrBlock != "" {
+		_, ipv4Net, _ := net.ParseCIDR(descriptorFile.Networks.PrimaryCidrBlock)
+		cidrSize := cidr.AddressCount(ipv4Net)
+		if cidrSize > cidrSizeMax || cidrSize < cidrSizeMin {
+			return errors.New("Invalid parameter PrimaryCidrBlock, CIDR block sizes must be between a /16 netmask and /28 netmask")
+		}
+	}
+	if descriptorFile.Networks.SecondaryCidrBlock != "" {
+		_, validRange1, _ := net.ParseCIDR("100.64.0.0/10")
+		_, validRange2, _ := net.ParseCIDR("198.19.0.0/16")
+
+		_, ipv4Net, _ := net.ParseCIDR(descriptorFile.Networks.SecondaryCidrBlock)
+
+		cidrSize := cidr.AddressCount(ipv4Net)
+		if cidrSize > cidrSizeMax || cidrSize < cidrSizeMin {
+			return errors.New("Invalid parameter SecondaryCidrBlock, CIDR block sizes must be between a /16 netmask and /28 netmask")
+		}
+
+		start, end := cidr.AddressRange(ipv4Net)
+		if (!validRange1.Contains(start) || !validRange1.Contains(end)) && (!validRange2.Contains(start) || !validRange2.Contains(end)) {
+			return errors.New("Invalid parameter SecondaryCidrBlock, CIDR must be within the 100.64.0.0/10 or 198.19.0.0/16 range")
+		}
 	}
 	return nil
 }
