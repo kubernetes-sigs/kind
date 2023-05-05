@@ -65,7 +65,7 @@ func descriptorAksValidations(descriptorFile commons.DescriptorFile, secretsFile
 	if err != nil {
 		return err
 	}
-	err = aksVersionValidation(descriptorFile.K8SVersion, descriptorFile.Region, secretsFile)
+	err = aksVersionValidation(descriptorFile, secretsFile)
 	if err != nil {
 		return err
 	}
@@ -84,10 +84,15 @@ func secretsAksValidations(secretsFile commons.SecretsFile) error {
 	return nil
 }
 
-func aksVersionValidation(k8sVersion string, region string, secretsFile commons.SecretsFile) error {
+func aksVersionValidation(descriptorFile commons.DescriptorFile, secretsFile commons.SecretsFile) error {
 	var availableVersions []string
+	var azureSecrets commons.AzureCredentials
 
-	azureSecrets := secretsFile.Secrets.AZURE.Credentials
+	if secretsFile.Secrets.AZURE.Credentials != (commons.AzureCredentials{}) {
+		azureSecrets = secretsFile.Secrets.AZURE.Credentials
+	} else {
+		azureSecrets = descriptorFile.Credentials.AZURE
+	}
 
 	creds, err := azidentity.NewClientSecretCredential(azureSecrets.TenantID, azureSecrets.ClientID, azureSecrets.ClientSecret, nil)
 	if err != nil {
@@ -98,7 +103,7 @@ func aksVersionValidation(k8sVersion string, region string, secretsFile commons.
 	if err != nil {
 		return err
 	}
-	res, err := clientFactory.NewManagedClustersClient().ListKubernetesVersions(ctx, region, nil)
+	res, err := clientFactory.NewManagedClustersClient().ListKubernetesVersions(ctx, descriptorFile.Region, nil)
 	if err != nil {
 		return err
 	}
@@ -109,7 +114,7 @@ func aksVersionValidation(k8sVersion string, region string, secretsFile commons.
 			}
 		}
 	}
-	if !slices.Contains(availableVersions, strings.ReplaceAll(k8sVersion, "v", "")) {
+	if !slices.Contains(availableVersions, strings.ReplaceAll(descriptorFile.K8SVersion, "v", "")) {
 		a, _ := json.Marshal(availableVersions)
 		return errors.New("AKS only supports Kubernetes versions: " + string(a))
 	}
