@@ -86,7 +86,8 @@ type DescriptorFile struct {
 
 type Networks struct {
 	VPCID                      string            `yaml:"vpc_id"`
-	CidrBlock                  string            `yaml:"cidr,omitempty"`
+	PrimaryCidrBlock           string            `yaml:"primary_cidr" validate:"omitempty,cidrv4"`
+	SecondaryCidrBlock         string            `yaml:"secondary_cidr" validate:"omitempty,cidrv4"`
 	Tags                       map[string]string `yaml:"tags,omitempty"`
 	AvailabilityZoneUsageLimit int               `yaml:"az_usage_limit" validate:"numeric"`
 	AvailabilityZoneSelection  string            `yaml:"az_selection" validate:"oneof='Ordered' 'Random' '' "`
