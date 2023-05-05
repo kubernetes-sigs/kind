@@ -65,6 +65,22 @@ func descriptorEksValidations(descriptorFile commons.DescriptorFile) error {
 	if err != nil {
 		return err
 	}
+	err = validateVPCCidr(descriptorFile)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func secretsEksValidations(secretsFile commons.SecretsFile) error {
+	err := commonsSecretsValidations(secretsFile)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateVPCCidr(descriptorFile commons.DescriptorFile) error {
 	if descriptorFile.Networks.PrimaryCidrBlock != "" {
 		_, ipv4Net, _ := net.ParseCIDR(descriptorFile.Networks.PrimaryCidrBlock)
 		cidrSize := cidr.AddressCount(ipv4Net)
@@ -87,14 +103,6 @@ func descriptorEksValidations(descriptorFile commons.DescriptorFile) error {
 		if (!validRange1.Contains(start) || !validRange1.Contains(end)) && (!validRange2.Contains(start) || !validRange2.Contains(end)) {
 			return errors.New("Invalid parameter SecondaryCidrBlock, CIDR must be within the 100.64.0.0/10 or 198.19.0.0/16 range")
 		}
-	}
-	return nil
-}
-
-func secretsEksValidations(secretsFile commons.SecretsFile) error {
-	err := commonsSecretsValidations(secretsFile)
-	if err != nil {
-		return err
 	}
 	return nil
 }
