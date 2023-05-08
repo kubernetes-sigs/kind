@@ -240,6 +240,11 @@ spec:
            lun: {{ $index }}
         {{- end }}
       {{- end }}
+      {{- if $.Descriptor.ControlPlane.Azure.IdentityID }}
+      identity: UserAssigned
+      userAssignedIdentities:
+        - providerID: {{ $.Descriptor.ControlPlane.Azure.IdentityID }}
+      {{- end }}
       osDisk:
         {{- if $node.RootVolume.Size }}
         diskSizeGB: {{ $node.RootVolume.Size }}
