@@ -182,7 +182,7 @@ spec:
             [host.\"https://{{ $url }}\"]
               capabilities = [\"pull\", \"resolve\"]
               [host.\"https://{{ $url }}\".header]
-                {{- $auth := base64 $reg.user $reg.pass }}
+                {{- $auth := base64 (print $reg.user ":" $reg.pass) }}
                 authorization = \"Basic {{ $auth }}\"
           path: /etc/containerd/certs.d/{{ $url }}/hosts.toml
         {{- end }}

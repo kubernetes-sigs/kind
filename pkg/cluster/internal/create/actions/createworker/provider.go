@@ -293,8 +293,8 @@ func GetClusterManifest(flavor string, params commons.TemplateParams, azs []stri
 		"isNotEmpty": func(v interface{}) bool {
 			return !reflect.ValueOf(v).IsZero()
 		},
-		"base64": func(u string, p string) string {
-			return base64.StdEncoding.EncodeToString([]byte(u + ":" + p))
+		"base64": func(s string) string {
+			return base64.StdEncoding.EncodeToString([]byte(s))
 		},
 	}
 
