@@ -22,7 +22,7 @@ REGISTRY?=gcr.io/k8s-staging-kind
 TAG?=$(shell echo "$$(date +v%Y%m%d)-$$(git describe --always --dirty)")
 # the full image tag
 IMAGE?=$(REGISTRY)/$(IMAGE_NAME):$(TAG)
-# Go version to use, currently only respected by images/base
+# Go version to use, respected by images that build go binaries
 GO_VERSION=$(shell cat $(CURDIR)/../../.go-version | head -n1)
 
 # required to enable buildx
