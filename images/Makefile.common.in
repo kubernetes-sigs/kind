@@ -22,6 +22,8 @@ REGISTRY?=gcr.io/k8s-staging-kind
 TAG?=$(shell echo "$$(date +v%Y%m%d)-$$(git describe --always --dirty)")
 # the full image tag
 IMAGE?=$(REGISTRY)/$(IMAGE_NAME):$(TAG)
+# Go version to use, currently only respected by images/base
+GO_VERSION=$(shell cat $(CURDIR)/../../.go-version | head -n1)
 
 # required to enable buildx
 export DOCKER_CLI_EXPERIMENTAL=enabled
@@ -32,7 +34,7 @@ OUTPUT?=
 PROGRESS=auto
 EXTRA_BUILD_OPT?=
 build: ensure-buildx
-	docker buildx build $(if $(PLATFORMS),--platform=$(PLATFORMS),) $(OUTPUT) --progress=$(PROGRESS) -t ${IMAGE} --pull $(EXTRA_BUILD_OPT) .
+	docker buildx build $(if $(PLATFORMS),--platform=$(PLATFORMS),) $(OUTPUT) --progress=$(PROGRESS) -t ${IMAGE} --pull --build-arg GO_VERSION=$(GO_VERSION) $(EXTRA_BUILD_OPT) .
 
 # push the cross built image
 push: OUTPUT=--push
