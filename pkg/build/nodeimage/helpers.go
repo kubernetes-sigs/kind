@@ -29,7 +29,7 @@ import (
 // ensuring the directory exists and writing contents to the file
 func createFile(containerCmder exec.Cmder, filePath, contents string) error {
 	// NOTE: the paths inside the container should use the path package
-	// and not filepath (!), we want posixy paths in the linux container, NOT
+	// and not filepath (!), we want posix paths in the linux container, NOT
 	// whatever path format the host uses. For paths on the host we use filepath
 	if err := containerCmder.Command("mkdir", "-p", path.Dir(filePath)).Run(); err != nil {
 		return err
