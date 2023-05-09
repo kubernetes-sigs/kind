@@ -49,7 +49,7 @@ fi
 all_shell_scripts=()
 while IFS=$'\n' read -r script;
   do git check-ignore -q "$script" || all_shell_scripts+=("$script");
-done < <(grep -irl '#!.*sh' . | grep -Ev '(^\./\.git/)|(^\./vendor/)|(^\./hack/third_party/)|(^\./images/base/scripts/third_party/)|(^\./bin/)|(\.go$)')
+done < <(grep -irl '#!.*sh' . | grep -Ev '(^\./\.git/)|(^\./vendor/)|(^\./hack/third_party/)|(^\./images/.*/scripts/third_party/)|(^\./bin/)|(\.go$)')
 
 # common arguments we'll pass to shellcheck
 SHELLCHECK_OPTIONS=(
