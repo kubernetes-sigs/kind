@@ -77,7 +77,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	// Get the secrets
 
-	credentialsMap, _, githubToken, dockerRegistries, err := commons.GetSecrets(*descriptorFile, a.vaultPassword)
+	credentialsMap, keosRegistry, githubToken, dockerRegistries, err := commons.GetSecrets(*descriptorFile, a.vaultPassword)
 	if err != nil {
 		return err
 	}
@@ -118,6 +118,9 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			}
 			registryUser = "AWS"
 			registryPass = ecrToken
+		} else {
+			registryUser = keosRegistry["User"]
+			registryPass = keosRegistry["Pass"]
 		}
 
 		// Change image in infrastructure-components.yaml
