@@ -9,9 +9,9 @@ spec:
     pods:
       cidrBlocks: [\"192.168.0.0/16\"]
   controlPlaneRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: KubeadmControlPlane
-    name: "{{ .Descriptor.ClusterID }}"
+    name: "{{ .Descriptor.ClusterID }}-control-plane"
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureCluster
@@ -69,7 +69,7 @@ spec:
         timeoutForControlPlane: 20m
       controllerManager:
         extraArgs:
-          allocate-node-cidrs:  \"false\"
+          allocate-node-cidrs: \"false\"
           cloud-provider: external
           cluster-name: "{{ .Descriptor.ClusterID }}"
       etcd:
@@ -102,9 +102,9 @@ spec:
         path: /etc/containerd/config.toml
       {{- end }}
       - contentFrom:
-        secret:
-          key: control-plane-azure.json
-          name: "{{ .Descriptor.ClusterID }}-control-plane-azure-json"
+          secret:
+            key: control-plane-azure.json
+            name: "{{ .Descriptor.ClusterID }}-control-plane-azure-json"
         owner: root:root
         path: /etc/kubernetes/azure.json
         permissions: \"0644\"
@@ -168,11 +168,16 @@ spec:
          - nameSuffix: {{ $vol.DeviceName }}
            {{- if $vol.Type }}
            managedDisk:
-            storageAccountType: {{ $vol.Type }}
+             storageAccountType: {{ $vol.Type }}
            {{- end }}
            diskSizeGB: {{ $vol.Size }}
            lun: {{ $index }}
         {{- end }}
+      {{- end }}
+      {{- if .Descriptor.ControlPlane.Azure.IdentityID }}
+      identity: UserAssigned
+      userAssignedIdentities:
+        - providerID: {{ .Descriptor.ControlPlane.Azure.IdentityID }}
       {{- end }}
       osDisk:
         {{- if .Descriptor.ControlPlane.RootVolume.Size }}
@@ -292,9 +297,9 @@ spec:
           path: /etc/containerd/config.toml
         {{- end }}
         - contentFrom:
-          secret:
-            key: worker-node-azure.json
-            name: "{{ $node.Name }}-md-{{ $index }}-azure-json"
+            secret:
+              key: worker-node-azure.json
+              name: "{{ $node.Name }}-md-{{ $index }}-azure-json"
           owner: root:root
           path: /etc/kubernetes/azure.json
           permissions: \"0644\"
