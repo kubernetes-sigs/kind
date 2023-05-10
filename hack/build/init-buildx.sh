@@ -21,7 +21,7 @@ export DOCKER_CLI_EXPERIMENTAL=enabled
 # AND if it isn't the docker driver, which doesn't work
 current_builder="$(docker buildx inspect)"
 # linux/amd64, linux/arm64, linux/riscv64, linux/ppc64le, linux/s390x, linux/386, linux/arm/v7, linux/arm/v6
-if ! grep -q "^Driver: docker$"  <<<"${current_builder}" && \
+if ! grep -q "^Driver: docker$" <<<"${current_builder}" && \
      grep -q "linux/amd64" <<<"${current_builder}" && \
      grep -q "linux/arm64" <<<"${current_builder}"; then
   exit 0
@@ -32,7 +32,7 @@ fi
 # We only need to do this setup on linux hosts
 if [ "$(uname)" == 'Linux' ]; then
   # NOTE: this is pinned to a digest for a reason!
-  docker run --rm --privileged tonistiigi/binfmt:qemu-v6.2.0-26@sha256:5bf63a53ad6222538112b5ced0f1afb8509132773ea6dd3991a197464962854e --install all
+  docker run --rm --privileged tonistiigi/binfmt:qemu-v7.0.0-28@sha256:66e11bea77a5ea9d6f0fe79b57cd2b189b5d15b93a2bdb925be22949232e4e55 --install all
 fi
 
 # Ensure we use a builder that can leverage it (the default on linux will not)
