@@ -18,6 +18,7 @@ package createworker
 
 import (
 	"bytes"
+	"encoding/base64"
 	"reflect"
 	"strings"
 	"text/template"
@@ -331,6 +332,9 @@ func GetClusterManifest(flavor string, params commons.TemplateParams, azs []stri
 		},
 		"inc": func(i int) int {
 			return i + 1
+		},
+		"base64": func(s string) string {
+			return base64.StdEncoding.EncodeToString([]byte(s))
 		},
 	}
 
