@@ -20,7 +20,7 @@
 # start from ubuntu, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
 # this stage will install basic files and packages
-ARG BASE_IMAGE=ubuntu:22.04
+ARG BASE_IMAGE=debian:bullseye-slim
 FROM $BASE_IMAGE as base
 
 # copy in static files
@@ -90,15 +90,18 @@ RUN echo "Enabling kubelet and containerd services ... " \
 RUN echo "Ensuring /etc/kubernetes/manifests" \
     && mkdir -p /etc/kubernetes/manifests
 
-RUN echo "Adjusting systemd-tmpfiles timer" \
-    && sed -i /usr/lib/systemd/system/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#'
-
-
 # shared stage to setup go version for building binaries
-FROM base as go-build
+# NOTE we will be cross-compiling for performance reasons
+FROM --platform=$BUILDPLATFORM $BASE_IMAGE as go-build
+COPY --chmod=0755 files/usr/local/bin/* /usr/local/bin/
 COPY --chmod=0755 scripts/third_party/gimme/gimme /usr/local/bin/
+COPY --chmod=0755 scripts/target-cc /usr/local/bin/
 # tools needed at build-time only
-RUN clean-install git make libseccomp-dev gcc libc-dev pkg-config
+# first ensure we can install packages for both architectures
+RUN dpkg --add-architecture arm64 && dpkg --add-architecture amd64 \
+    && clean-install bash ca-certificates curl git make pkg-config \
+    crossbuild-essential-amd64 crossbuild-essential-arm64 \
+    libseccomp-dev:amd64 libseccomp-dev:arm64
 # set by makefile to .go-version
 ARG GO_VERSION
 RUN eval "$(gimme "${GO_VERSION}")" \
@@ -107,7 +110,7 @@ RUN eval "$(gimme "${GO_VERSION}")" \
 
 # stage for building containerd
 FROM go-build as build-containerd
-ARG GO_VERSION
+ARG TARGETARCH GO_VERSION
 ARG CONTAINERD_VERSION="v1.6.21"
 ARG CONTAINERD_CLONE_URL="https://github.com/containerd/containerd"
 # we don't build with optional snapshotters, we never select any of these
@@ -117,37 +120,40 @@ RUN git clone --filter=tree:0 "${CONTAINERD_CLONE_URL}" /containerd \
     && cd /containerd \
     && git checkout "${CONTAINERD_VERSION}" \
     && eval "$(gimme "${GO_VERSION}")" \
+    && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
     && make bin/ctr bin/containerd bin/containerd-shim-runc-v2 \
-    && go-licenses save --save_path=/_LICENSES \
+    && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES \
         ./cmd/ctr ./cmd/containerd ./cmd/containerd-shim-runc-v2
 
 # stage for building runc
 FROM go-build as build-runc
-ARG GO_VERSION
+ARG TARGETARCH GO_VERSION
 ARG RUNC_VERSION="v1.1.7"
 ARG RUNC_CLONE_URL="https://github.com/opencontainers/runc"
 RUN git clone --filter=tree:0 "${RUNC_CLONE_URL}" /runc \
     && cd /runc \
     && git checkout "${RUNC_VERSION}" \
     && eval "$(gimme "${GO_VERSION}")" \
+    && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
     && make runc \
-    && go-licenses save --save_path=/_LICENSES .
+    && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES .
 
 # stage for building crictl
 FROM go-build as build-crictl
-ARG GO_VERSION
+ARG TARGETARCH GO_VERSION
 ARG CRI_TOOLS_CLONE_URL="https://github.com/kubernetes-sigs/cri-tools"
 ARG CRICTL_VERSION="v1.26.1"
 RUN git clone --filter=tree:0 "${CRI_TOOLS_CLONE_URL}" /cri-tools \
     && cd /cri-tools \
     && git checkout "${CRICTL_VERSION}" \
     && eval "$(gimme "${GO_VERSION}")" \
+    && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
     && make BUILD_BIN_PATH=./build crictl \
-    && go-licenses save --save_path=/_LICENSES ./cmd/crictl
+    && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES ./cmd/crictl
 
 # stage for building cni-plugins
 FROM go-build as build-cni
-ARG GO_VERSION
+ARG TARGETARCH GO_VERSION
 ARG CNI_PLUGINS_VERSION="v1.2.0"
 ARG CNI_PLUGINS_CLONE_URL="https://github.com/containernetworking/plugins"
 RUN git clone --filter=tree:0 "${CNI_PLUGINS_CLONE_URL}" /cni-plugins \
@@ -155,26 +161,28 @@ RUN git clone --filter=tree:0 "${CNI_PLUGINS_CLONE_URL}" /cni-plugins \
     && git checkout "${CNI_PLUGINS_VERSION}" \
     && eval "$(gimme "${GO_VERSION}")" \
     && mkdir ./bin \
+    && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
     && go build -o ./bin/host-local -mod=vendor ./plugins/ipam/host-local \
     && go build -o ./bin/loopback -mod=vendor ./plugins/main/loopback \
     && go build -o ./bin/ptp -mod=vendor ./plugins/main/ptp \
     && go build -o ./bin/portmap -mod=vendor ./plugins/meta/portmap \
-    && go-licenses save --save_path=/_LICENSES \
+    && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES \
         ./plugins/ipam/host-local \
         ./plugins/main/loopback ./plugins/main/ptp \
         ./plugins/meta/portmap
 
 # stage for building containerd-fuse-overlayfs
 FROM go-build as build-fuse-overlayfs
-ARG GO_VERSION
+ARG TARGETARCH GO_VERSION
 ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="v1.0.5"
 ARG CONTAINERD_FUSE_OVERLAYFS_CLONE_URL="https://github.com/containerd/fuse-overlayfs-snapshotter"
 RUN git clone --filter=tree:0 "${CONTAINERD_FUSE_OVERLAYFS_CLONE_URL}" /fuse-overlayfs-snapshotter \
     && cd /fuse-overlayfs-snapshotter \
     && git checkout "${CONTAINERD_FUSE_OVERLAYFS_VERSION}" \
     && eval "$(gimme "${GO_VERSION}")" \
+    && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
     && make bin/containerd-fuse-overlayfs-grpc \
-    && go-licenses save --save_path=/_LICENSES ./cmd/containerd-fuse-overlayfs-grpc
+    && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES ./cmd/containerd-fuse-overlayfs-grpc
 
 
 # build final image layout from other stages
