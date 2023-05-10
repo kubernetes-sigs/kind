@@ -232,16 +232,9 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			return errors.Wrap(err, "failed to apply manifests")
 		}
 
-		// Wait for the worker cluster creation
-		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "25m", "cluster", descriptorFile.ClusterID)
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to create the worker Cluster")
-		}
-
 		// Wait for the control plane initialization
 		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ControlPlaneInitialized", "--timeout", "5m", "cluster", descriptorFile.ClusterID)
+		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ControlPlaneInitialized", "--timeout", "25m", "cluster", descriptorFile.ClusterID)
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
 			return errors.Wrap(err, "failed to create the worker Cluster")
 		}
@@ -276,6 +269,18 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 		// Install unmanaged cluster addons
 		if !descriptorFile.ControlPlane.Managed {
+
+			if descriptorFile.InfraProvider == "azure" {
+				ctx.Status.Start("Installing cloud-provider in workload cluster ☁️")
+				defer ctx.Status.End(false)
+
+				err = installCloudProvider(node, kubeconfigPath, descriptorFile.ClusterID)
+				if err != nil {
+					return errors.Wrap(err, "failed to install external cloud-provider in workload cluster")
+				}
+				ctx.Status.End(true) // End Installing Calico in workload cluster
+			}
+
 			ctx.Status.Start("Installing Calico in workload cluster 🔌")
 			defer ctx.Status.End(false)
 

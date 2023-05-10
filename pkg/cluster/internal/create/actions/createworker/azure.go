@@ -82,8 +82,7 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	var err error
 
 	c = "helm install azuredisk-csi-driver /stratio/helm/azuredisk-csi-driver" +
-		" --kubeconfig " + k +
-		" --namespace " + b.csiNamespace
+		" --kubeconfig " + k
 	err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy Azure Disk CSI driver Helm Chart")
@@ -94,6 +93,22 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 
 func (b *AzureBuilder) getAzs() ([]string, error) {
 	return []string{"1", "2", "3"}, nil
+}
+
+func installCloudProvider(n nodes.Node, k string, clusterName string) error {
+	var c string
+	var err error
+
+	c = "helm install cloud-provider-azure /stratio/helm/cloud-provider-azure" +
+		" --kubeconfig " + k +
+		" --set infra.clusterName=" + clusterName +
+		" --set 'cloudControllerManager.clusterCIDR=192.168.0.0/16'"
+	err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to deploy cloud-provider-azure Helm Chart")
+	}
+
+	return nil
 }
 
 func assignUserIdentity(i string, c string, r string, s map[string]string) error {
