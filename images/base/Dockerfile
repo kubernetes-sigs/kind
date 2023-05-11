@@ -142,7 +142,7 @@ RUN git clone --filter=tree:0 "${RUNC_CLONE_URL}" /runc \
 FROM go-build as build-crictl
 ARG TARGETARCH GO_VERSION
 ARG CRI_TOOLS_CLONE_URL="https://github.com/kubernetes-sigs/cri-tools"
-ARG CRICTL_VERSION="v1.26.1"
+ARG CRICTL_VERSION="v1.27.0"
 RUN git clone --filter=tree:0 "${CRI_TOOLS_CLONE_URL}" /cri-tools \
     && cd /cri-tools \
     && git checkout "${CRICTL_VERSION}" \
