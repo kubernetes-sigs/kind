@@ -154,7 +154,7 @@ RUN git clone --filter=tree:0 "${CRI_TOOLS_CLONE_URL}" /cri-tools \
 # stage for building cni-plugins
 FROM go-build as build-cni
 ARG TARGETARCH GO_VERSION
-ARG CNI_PLUGINS_VERSION="v1.2.0"
+ARG CNI_PLUGINS_VERSION="v1.3.0"
 ARG CNI_PLUGINS_CLONE_URL="https://github.com/containernetworking/plugins"
 RUN git clone --filter=tree:0 "${CNI_PLUGINS_CLONE_URL}" /cni-plugins \
     && cd /cni-plugins \
