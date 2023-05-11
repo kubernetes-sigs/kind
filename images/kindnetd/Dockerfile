@@ -14,7 +14,7 @@
 
 # first stage build kindnetd binary
 # NOTE: the actual go version will be overridden
-FROM golang:latest
+FROM --platform=$BUILDPLATFORM golang:latest
 WORKDIR /go/src
 COPY --chmod=0755 scripts/third_party/gimme/gimme /usr/local/bin/
 # make deps fetching cacheable
@@ -26,9 +26,10 @@ RUN eval "$(gimme "${GO_VERSION}")" \
     && GOBIN=/usr/local/bin go install github.com/google/go-licenses@latest
 # build
 COPY . .
+ARG TARGETARCH
 RUN eval "$(gimme "${GO_VERSION}")" \
-    && CGO_ENABLED=0 go build -o ./kindnetd ./cmd/kindnetd \
-    && go-licenses save --save_path=/_LICENSES ./cmd/kindnetd
+    && CGO_ENABLED=0 GOARCH=$TARGETARCH go build -o ./kindnetd ./cmd/kindnetd \
+    && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES ./cmd/kindnetd
 
 # build real kindnetd image
 FROM registry.k8s.io/build-image/distroless-iptables:v0.2.3
