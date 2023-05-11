@@ -72,7 +72,7 @@ RUN echo "Installing Packages ..." \
       conntrack iptables iproute2 ethtool util-linux mount ebtables kmod \
       libseccomp2 pigz fuse-overlayfs \
       nfs-common open-iscsi \
-      bash ca-certificates curl jq \
+      bash ca-certificates curl jq procps \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
     && rm -f /lib/systemd/system/multi-user.target.wants/* \
     && rm -f /etc/systemd/system/*.wants/* \
