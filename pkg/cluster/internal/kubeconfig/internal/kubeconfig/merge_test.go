@@ -17,7 +17,7 @@ limitations under the License.
 package kubeconfig
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -234,7 +234,7 @@ func TestWriteMerged(t *testing.T) {
 
 func testWriteMergedNormal(t *testing.T) {
 	t.Parallel()
-	dir, err := ioutil.TempDir("", "kind-testwritemerged")
+	dir, err := os.MkdirTemp("", "kind-testwritemerged")
 	if err != nil {
 		t.Fatalf("Failed to create tempdir: %d", err)
 	}
@@ -262,7 +262,7 @@ users:
     client-key-data: yep
 `
 	existingConfigPath := filepath.Join(dir, "existing-kubeconfig")
-	if err := ioutil.WriteFile(existingConfigPath, []byte(existingConfig), os.ModePerm); err != nil {
+	if err := os.WriteFile(existingConfigPath, []byte(existingConfig), os.ModePerm); err != nil {
 		t.Fatalf("Failed to create existing kubeconfig: %d", err)
 	}
 
@@ -313,7 +313,7 @@ users:
 	if err != nil {
 		t.Fatalf("Failed to open merged kubeconfig: %v", err)
 	}
-	contents, err := ioutil.ReadAll(f)
+	contents, err := io.ReadAll(f)
 	if err != nil {
 		t.Fatalf("Failed to read merged kubeconfig: %v", err)
 	}
@@ -354,7 +354,7 @@ users:
 
 func testWriteMergedBogusConfig(t *testing.T) {
 	t.Parallel()
-	dir, err := ioutil.TempDir("", "kind-testwritemerged")
+	dir, err := os.MkdirTemp("", "kind-testwritemerged")
 	if err != nil {
 		t.Fatalf("Failed to create tempdir: %d", err)
 	}
@@ -366,7 +366,7 @@ func testWriteMergedBogusConfig(t *testing.T) {
 
 func testWriteMergedNoExistingFile(t *testing.T) {
 	t.Parallel()
-	dir, err := ioutil.TempDir("", "kind-testwritemerged")
+	dir, err := os.MkdirTemp("", "kind-testwritemerged")
 	if err != nil {
 		t.Fatalf("Failed to create tempdir: %d", err)
 	}
@@ -419,7 +419,7 @@ func testWriteMergedNoExistingFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to open merged kubeconfig: %v", err)
 	}
-	contents, err := ioutil.ReadAll(f)
+	contents, err := io.ReadAll(f)
 	if err != nil {
 		t.Fatalf("Failed to read merged kubeconfig: %v", err)
 	}

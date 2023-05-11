@@ -19,7 +19,6 @@ package cluster
 
 import (
 	"io"
-	"io/ioutil"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -132,7 +131,7 @@ func configOption(rawConfigFlag string, stdin io.Reader) (cluster.CreateOption, 
 		return cluster.CreateWithConfigFile(rawConfigFlag), nil
 	}
 	// otherwise read from stdin
-	raw, err := ioutil.ReadAll(stdin)
+	raw, err := io.ReadAll(stdin)
 	if err != nil {
 		return nil, errors.Wrap(err, "error reading config from stdin")
 	}
