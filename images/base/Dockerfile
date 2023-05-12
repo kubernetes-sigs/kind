@@ -17,8 +17,8 @@
 # For systemd + docker configuration used below, see the following references:
 # https://systemd.io/CONTAINER_INTERFACE/
 
-# start from ubuntu, this image is reasonably small as a starting point
-# for a kubernetes node image, it doesn't contain much we don't need
+# start from debian slim, this image is reasonably small as a starting point
+# for a kubernetes node image, it doesn't contain much (anything?) we don't need
 # this stage will install basic files and packages
 ARG BASE_IMAGE=debian:bullseye-slim
 FROM $BASE_IMAGE as base
@@ -92,6 +92,9 @@ RUN echo "Ensuring /etc/kubernetes/manifests" \
 
 # shared stage to setup go version for building binaries
 # NOTE we will be cross-compiling for performance reasons
+# This is also why we start again FROM the same base image but a different
+# platform and only the files needed for building
+# We will copy the built binaries from later stages to the final stage(s)
 FROM --platform=$BUILDPLATFORM $BASE_IMAGE as go-build
 COPY --chmod=0755 files/usr/local/bin/* /usr/local/bin/
 COPY --chmod=0755 scripts/third_party/gimme/gimme /usr/local/bin/
@@ -215,10 +218,11 @@ COPY --from=build-cni /_LICENSES/* /LICENSES/
 COPY --from=build-fuse-overlayfs /fuse-overlayfs-snapshotter/bin/containerd-fuse-overlayfs-grpc /usr/local/bin/
 COPY --from=build-fuse-overlayfs /_LICENSES/* /LICENSES/
 
-# squash down to one layer
+# squash down to one compressed layer, without any lingering whiteout files etc
 FROM scratch
 COPY --from=build / /
-# tell systemd that it is in docker (it will check for the container env)
+# add metadata, must be done after the squashing
+# first tell systemd that it is in docker (it will check for the container env)
 # https://systemd.io/CONTAINER_INTERFACE/
 ENV container docker
 # systemd exits on SIGRTMIN+3, not SIGTERM (which re-executes it)
