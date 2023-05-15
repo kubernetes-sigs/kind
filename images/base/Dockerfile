@@ -118,7 +118,7 @@ ARG CONTAINERD_VERSION="v1.6.21"
 ARG CONTAINERD_CLONE_URL="https://github.com/containerd/containerd"
 # we don't build with optional snapshotters, we never select any of these
 # they're not ideal inside kind anyhow, and we save some disk space
-ARG BUILDTAGS=no_aufs,no_zfs,no_btrfs,no_devmapper
+ARG BUILDTAGS="no_aufs no_zfs no_btrfs no_devmapper"
 RUN git clone --filter=tree:0 "${CONTAINERD_CLONE_URL}" /containerd \
     && cd /containerd \
     && git checkout "${CONTAINERD_VERSION}" \
