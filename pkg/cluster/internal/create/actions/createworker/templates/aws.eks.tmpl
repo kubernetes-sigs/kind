@@ -55,8 +55,8 @@ spec:
     vpc:
       availabilityZoneSelection: {{- if ne .Descriptor.Networks.AvailabilityZoneSelection "" }} {{ .Descriptor.Networks.AvailabilityZoneSelection }} {{ else }} Ordered {{ end }}
       availabilityZoneUsageLimit: {{- if ne .Descriptor.Networks.AvailabilityZoneUsageLimit 0 }} {{ .Descriptor.Networks.AvailabilityZoneUsageLimit }} {{ else }} 3 {{ end }}
-  {{- if ne .Descriptor.Networks.CidrBlock "" }}
-      cidrBlock: {{ .Descriptor.Networks.CidrBlock }}
+  {{- if ne .Descriptor.Networks.VPCCidrBlock "" }}
+      cidrBlock: {{ .Descriptor.Networks.VPCCidrBlock }}
   {{- end }}
   {{- if isNotEmpty .Descriptor.Networks.Tags }}
       tags:
@@ -95,12 +95,21 @@ spec:
     {{- end }}
 {{- end }}
   region: "{{ .Descriptor.Region }}"
+{{- if ne .Descriptor.Networks.PodsCidrBlock "" }}
+  secondaryCidrBlock: {{ .Descriptor.Networks.PodsCidrBlock }}
+{{- end }}
   sshKeyName: \"{{ .Descriptor.Bastion.SSHKey }}\"
   version: "{{ .Descriptor.K8SVersion }}"
   vpcCni:
     env:
       - name: ANNOTATE_POD_IP
         value: \"true\"
+    {{- if ne .Descriptor.Networks.PodsCidrBlock "" }}
+      - name: AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG
+        value: \"true\"
+      - name: ENI_CONFIG_LABEL_DEF
+        value: \"topology.kubernetes.io/zone\"
+    {{- end }}
 {{- range $node := .Descriptor.WorkerNodes }}
 {{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---

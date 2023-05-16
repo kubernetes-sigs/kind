@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/BurntSushi/toml v1.0.0
 	github.com/alessio/shellescape v1.4.1
+	github.com/apparentlymart/go-cidr v1.1.0 // indirect
 	github.com/aws/aws-sdk-go v1.44.228
 	github.com/aws/aws-sdk-go-v2/config v1.18.17
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.17
