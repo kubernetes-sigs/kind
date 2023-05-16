@@ -9,6 +9,7 @@ kind: ServiceAccount
 metadata:
   name: csi-gce-pd-node-sa
   namespace: gce-pd-csi-driver
+{{- if lt . 1.25 }}
 ---
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
@@ -54,6 +55,74 @@ spec:
     rule: RunAsAny
   volumes:
   - '*'
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: csi-gce-pd-controller-deploy
+rules:
+- apiGroups:
+  - policy
+  resourceNames:
+  - csi-gce-pd-controller-psp
+  resources:
+  - podsecuritypolicies
+  verbs:
+  - use
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: csi-gce-pd-controller-deploy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: csi-gce-pd-controller-deploy
+subjects:
+- kind: ServiceAccount
+  name: csi-gce-pd-controller-sa
+  namespace: gce-pd-csi-driver
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: csi-gce-pd-node-deploy
+rules:
+- apiGroups:
+  - policy
+  resourceNames:
+  - csi-gce-pd-node-psp
+  resources:
+  - podsecuritypolicies
+  verbs:
+  - use
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: csi-gce-pd-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: csi-gce-pd-node-deploy
+subjects:
+- kind: ServiceAccount
+  name: csi-gce-pd-controller-sa
+  namespace: gce-pd-csi-driver
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: csi-gce-pd-node
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: csi-gce-pd-node-deploy
+subjects:
+- kind: ServiceAccount
+  name: csi-gce-pd-node-sa
+  namespace: gce-pd-csi-driver
+{{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -122,34 +191,6 @@ rules:
   - volumeattachments/status
   verbs:
   - patch
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: csi-gce-pd-controller-deploy
-rules:
-- apiGroups:
-  - policy
-  resourceNames:
-  - csi-gce-pd-controller-psp
-  resources:
-  - podsecuritypolicies
-  verbs:
-  - use
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: csi-gce-pd-node-deploy
-rules:
-- apiGroups:
-  - policy
-  resourceNames:
-  - csi-gce-pd-node-psp
-  resources:
-  - podsecuritypolicies
-  verbs:
-  - use
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -343,37 +384,11 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: csi-gce-pd-controller
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: csi-gce-pd-node-deploy
-subjects:
-- kind: ServiceAccount
-  name: csi-gce-pd-controller-sa
-  namespace: gce-pd-csi-driver
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
   name: csi-gce-pd-controller-attacher-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: csi-gce-pd-attacher-role
-subjects:
-- kind: ServiceAccount
-  name: csi-gce-pd-controller-sa
-  namespace: gce-pd-csi-driver
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: csi-gce-pd-controller-deploy
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: csi-gce-pd-controller-deploy
 subjects:
 - kind: ServiceAccount
   name: csi-gce-pd-controller-sa
@@ -403,19 +418,6 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: csi-gce-pd-controller-sa
-  namespace: gce-pd-csi-driver
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: csi-gce-pd-node
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: csi-gce-pd-node-deploy
-subjects:
-- kind: ServiceAccount
-  name: csi-gce-pd-node-sa
   namespace: gce-pd-csi-driver
 ---
 apiVersion: rbac.authorization.k8s.io/v1
