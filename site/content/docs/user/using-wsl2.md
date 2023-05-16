@@ -13,7 +13,7 @@ description: |-
 
 ## Getting Windows 10
 
-Download latest ISO at https://www.microsoft.com/en-us/software-download/windows10ISO. Choose "Windows 10 May 2020 Update". If there's a later update, that will work too.
+Download the latest ISO at https://www.microsoft.com/en-us/software-download/windows10ISO. Choose "Windows 10 May 2020 Update". If there's a later update, that will work too.
 
 ### Installing on a virtual machine
 
