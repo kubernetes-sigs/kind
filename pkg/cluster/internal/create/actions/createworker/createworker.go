@@ -77,7 +77,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	// Get the secrets
 
-	credentialsMap, _, githubToken, dockerRegistries, err := commons.GetSecrets(*descriptorFile, a.vaultPassword)
+	credentialsMap, keosRegistry, githubToken, dockerRegistries, err := commons.GetSecrets(*descriptorFile, a.vaultPassword)
 	if err != nil {
 		return err
 	}
@@ -99,17 +99,28 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	if provider.capxVersion != provider.capxImageVersion {
 		var command string
 		var registryUrl string
+		var registryType string
 		var registryUser string
 		var registryPass string
 
-		if descriptorFile.ControlPlane.Managed {
+		for _, registry := range descriptorFile.DockerRegistries {
+			if registry.KeosRegistry {
+				registryUrl = registry.URL
+				registryType = registry.Type
+				continue
+			}
+		}
+
+		if registryType == "ecr" {
 			ecrToken, err := commons.GetEcrAuthToken(providerParams)
 			if err != nil {
 				return errors.Wrap(err, "failed to get ECR auth token")
 			}
-			registryUrl = descriptorFile.DockerRegistries[0].URL
 			registryUser = "AWS"
 			registryPass = ecrToken
+		} else {
+			registryUser = keosRegistry["User"]
+			registryPass = keosRegistry["Pass"]
 		}
 
 		// Change image in infrastructure-components.yaml
