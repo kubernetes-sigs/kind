@@ -58,7 +58,10 @@ into your `$PATH` at your preferred binary installation directory.
 On Linux:
 
 {{< codeFromInline lang="bash" >}}
-curl -Lo ./kind https://kind.sigs.k8s.io/dl/{{< stableVersion >}}/kind-linux-amd64
+# For AMD64 / x86_64
+[ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/{{< stableVersion >}}/kind-linux-amd64
+# For ARM64
+[ $(uname -m) = aarch64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/{{< stableVersion >}}/kind-linux-arm64
 chmod +x ./kind
 sudo mv ./kind /usr/local/bin/kind
 {{< /codeFromInline >}}
@@ -66,9 +69,9 @@ sudo mv ./kind /usr/local/bin/kind
 On macOS:
 
 {{< codeFromInline lang="bash" >}}
-# for Intel Macs
-[ $(uname -m) = x86_64 ]&& curl -Lo ./kind https://kind.sigs.k8s.io/dl/{{< stableVersion >}}/kind-darwin-amd64
-# for M1 / ARM Macs
+# For Intel Macs
+[ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/{{< stableVersion >}}/kind-darwin-amd64
+# For M1 / ARM Macs
 [ $(uname -m) = arm64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/{{< stableVersion >}}/kind-darwin-arm64
 chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
@@ -100,20 +103,15 @@ use it as `kind` from the command line.
 
 `make install` will attempt to mimic `go install` and has the same path requirements as `go install` below.
 
-#### Installing with `go get` / `go install`
+#### Installing with `go install`
 
-When installing with [Go](https://golang.org/) please use the latest stable Go release, ideally go1.16 or greater.
+When installing with [Go](https://golang.org/) please use the latest stable Go release. At least go1.16 or greater is required.
 
-For Go versions go1.17 and higher, you should use to `go install sigs.k8s.io/kind@{{< stableVersion >}}` per https://tip.golang.org/doc/go1.17#go-get
+To install use: `go install sigs.k8s.io/kind@{{< stableVersion >}}`.
 
-For older versions use `GO111MODULE="on" go get sigs.k8s.io/kind@{{< stableVersion >}}`.
+If you are building from a local source clone, use `go install .` from the top-level directory of the clone.
 
-For either version if you are building from a local source clone, use `go install .` from the top-level directory of the clone.
-
-> **NOTE**: `go get` should not be run from a Go [modules] enabled project directory,
-> as go get inside a modules enabled project updates dependencies / behaves differently. Try for example `cd $HOME` first.
-
-`go get` / `go install` will typically put the `kind` binary inside the `bin` directory under `go env GOPATH`, see
+`go install` will typically put the `kind` binary inside the `bin` directory under `go env GOPATH`, see
 Go's ["Compile and install packages and dependencies"](https://golang.org/cmd/go/#hdr-Compile_and_install_packages_and_dependencies)
 for more on this.
 You may need to add that directory to your `$PATH` if you encounter the error
