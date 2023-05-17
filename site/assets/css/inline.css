@@ -11,12 +11,13 @@ html {
   margin: 0;
   padding: 0;
   font-size: 100%;
-  background-color: white;
-  color: black;
+  background-color: #326ce5;
+  color: white;
   font-family: -apple-system, BlinkMacSystemFont, Roboto, Droid Sans, Helvetica Neue, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
 }
 
-code, pre {
+code,
+pre {
   font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, Roboto Mono, Courier, monospace;
 }
 
@@ -30,6 +31,7 @@ body {
   /* sticky footer */
   display: flex;
   flex-direction: column;
+  color: black;
   background-color: white;
 }
 
@@ -42,11 +44,13 @@ body {
   margin: 0;
   margin-left: 240px;
 }
+
 .sidebar-collapsed #wrapper {
   margin-left: 0;
 }
 
-#content, #footer-content {
+#content,
+#footer-content {
   margin: 0 auto;
   padding: 0 1em;
   width: calc(100% - 2em);
@@ -54,17 +58,22 @@ body {
 }
 
 #footer {
-  background: #44a2f1;
+  background: #326ce5;
   color: white;
   padding: 1em;
   margin-top: 1em;
   border-top: .1em solid rgba(0, 0, 0, 0.1);
 }
+
 #footer a {
   color: white;
 }
+
 /* page footer*/
-.footer { text-align: center; }
+.footer {
+  text-align: center;
+}
+
 .footer>* {
   font-size: .8em;
   line-height: 1.4;
@@ -72,7 +81,7 @@ body {
 
 #content {
   /* clear navbar */
-  padding-top: 1em;
+  padding-top: 1.5em;
   /* push down footer */
   min-height: calc(100vh - 4em);
 }
@@ -84,97 +93,67 @@ body {
   padding: 2px 0;
   margin-left: .1em;
   /*background-color: #326ce5;*/
-  background-color: white;
+  background-color: #326ce5;
   border-bottom: .1em solid rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
   z-index: 99999;
 }
-.sidebar-collapsed #navbar{
+
+.sidebar-collapsed #navbar {
   width: 100%;
   margin-left: 0;
 }
+
 #navbar-title>a {
   font-weight: bold;
   font-size: 1.2em;
   padding: 0 4px;
   vertical-align: middle;
 }
-#navbar-title>a, #github>a{
+
+#navbar-title>a,
+#github>a {
   text-decoration: none;
+  color: white;
 }
+
+#navbar>#github {
+  filter: invert(1);
+}
+
 #sidebar-toggle {
-  color: black;
+  color: white;
   cursor: pointer;
   padding: .1em .5em;
   padding-bottom: 0;
   user-select: none;
 }
-#github { padding: 0 .5em; }
+
+#github {
+  padding: 0 .5em;
+}
+
 #github img {
   height: 1.4em;
   width: 1.4em;
   vertical-align: middle;
 }
 
-#noticebar{
+#noticebar {
   padding: 1.5em;
   padding-top: 2em;
   padding-bottom: 1em;
   margin-bottom: -1.5em;
   border-bottom: .1em solid rgba(0, 0, 0, 0.1);
 }
+
 #noticebar>* {
   max-width: 46rem;
   margin-left: auto;
   margin-right: auto;
   margin-block-end: 0;
   margin-block-start: 0.25em;
-}
-
-#noticebar.black {
-  color: white;
-  background: black;
-}
-#navbar.black {
-  color: white;
-  background: black;
-}
-#noticebar.ua {
-  background: #ffd700;
-  color: black;
-}
-#noticebar.docker-blue {
-  background: #44a2f1;
-  color: white;
-}
-#navbar.ua {
-  background: #0057b8;
-  color: white;
-}
-#navbar.docker-blue {
-  background: #44a2f1;
-  color: white;
-}
-/* invert colors on different background */
-.black a, .docker-blue a{
-  color: white;
-}
-#navbar.ua a {
-  color: #ffd700;
-}
-#noticebar.ua a {
-  color: blue;
-}
-#navbar.black>#sidebar-toggle,
-#navbar.docker-blue>#sidebar-toggle,
-#navbar.ua>#sidebar-toggle {
-  color: white;
-}
-#navbar.black>#github,
-#navbar.docker-blue>#github,
-#navbar.ua>#github {
-  filter: invert(1);
 }
 
 #sidebar {
@@ -188,13 +167,16 @@ body {
   z-index: 99999;
   overflow-y: auto;
 }
+
 .sidebar-collapsed #sidebar {
   display: none;
 }
+
 #sidebar-logo {
   padding: 16px 16px;
   padding-bottom: 10px;
 }
+
 #sidebar-title {
   display: none;
   margin-top: -16px;
@@ -210,23 +192,33 @@ body {
 #sidebar li.active :first-child {
   font-weight: bold;
 }
+
 #sidebar li.active-entry :first-child {
   color: black;
 }
 
 /* consistent link color */
-a { color: #326be5; }
+a {
+  color: #326be5;
+}
 
 p {
   margin-block-start: .5em;
 }
-h1, h2, h3, h4, h5 {
+
+h1,
+h2,
+h3,
+h4,
+h5 {
   margin-block-start: 1rem;
   margin-block-end: .25rem;
 }
 
 /* ensure images don't go off the page */
-#content img { max-width: 100%; }
+#content img {
+  max-width: 100%;
+}
 
 hr {
   background: #333;
@@ -261,12 +253,12 @@ table.includecode {
   max-width: 100%;
   width: 100%;
   table-layout: fixed;
-  border: 1px solid rgba(0,0,0,.125);
+  border: 1px solid rgba(0, 0, 0, .125);
   border-spacing: 0;
 }
 
 table.includecode thead th {
-  border-bottom: 1px solid rgba(0,0,0,.125);
+  border-bottom: 1px solid rgba(0, 0, 0, .125);
   font-weight: normal;
   font-size: 85%;
 }
@@ -296,12 +288,12 @@ table.includecode pre {
 
 /* don't display this, these are textareas needed to copy to clipboard */
 .hidden-copy-text {
- background: transparent;
- width: 2em;
- height: 2em;
- position: fixed;
- top: 0;
- left: 0;
+  background: transparent;
+  width: 2em;
+  height: 2em;
+  position: fixed;
+  top: 0;
+  left: 0;
 }
 
 /* heading anchors */
@@ -312,7 +304,11 @@ table.includecode pre {
   vertical-align: middle;
   text-decoration: none !important;
 }
-h1:hover a, h2:hover a, h3:hover a, h4:hover a {
+
+h1:hover a,
+h2:hover a,
+h3:hover a,
+h4:hover a {
   visibility: visible;
 }
 
@@ -320,18 +316,22 @@ h1:hover a, h2:hover a, h3:hover a, h4:hover a {
   margin-block-start: 0;
   margin-block-end: 0;
 }
+
 #content ul {
   padding-left: 1.75em;
   margin-block-start: .5em;
   margin-block-end: .5em;
 }
+
 #content ul ul {
   padding-left: 1em;
   margin-block-start: 0;
 }
+
 #sidebar ul {
   margin-bottom: 1em;
 }
+
 #sidebar ul ul {
   padding-left: 1.25em;
 }
@@ -345,9 +345,11 @@ h1:hover a, h2:hover a, h3:hover a, h4:hover a {
   margin-block-start: 0;
   margin-block-end: 0;
 }
+
 .page-description a {
   color: #0bd8ec;
 }
+
 .page-description code {
   color: black;
 }
@@ -373,6 +375,7 @@ blockquote p {
   height: 0;
   padding-bottom: 56.25%;
 }
+
 .video-wrapper iframe {
   position: absolute;
   top: 0;
@@ -401,15 +404,19 @@ blockquote p {
   #content {
     font-size: 16px;
   }
+
   #wrapper {
     margin-left: 0;
   }
+
   #wrapper #navbar {
     margin-left: 241px;
   }
+
   .sidebar-collapsed #wrapper #navbar {
     margin-left: 0;
   }
+
   #content ul {
     padding-left: 1.5em;
   }
