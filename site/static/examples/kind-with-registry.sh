@@ -16,6 +16,14 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 containerdConfigPatches:
 - |-
+  [plugins."io.containerd.grpc.v1.cri".registry]
+    # ensure config_path is disabled so the config below is respected
+    # TODO: kind will eventually migrate to using config_path
+    # see:
+    # https://github.com/kubernetes-sigs/kind/issues/2875
+    # https://github.com/containerd/containerd/blob/main/docs/cri/config.md#registry-configuration
+    config_path = ""
+
   [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:${reg_port}"]
     endpoint = ["http://${reg_name}:5000"]
 EOF
