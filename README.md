@@ -5,9 +5,9 @@
 kind is a tool for running local Kubernetes clusters using Docker container "nodes".
 kind was primarily designed for testing Kubernetes itself, but may be used for local development or CI.
 
-If you have [go] \([1.17+][go-supported]) and [docker] installed `go install sigs.k8s.io/kind@v0.18.0 && kind create cluster` is all you need!
+If you have [go] \([1.17+][go-supported]) and [docker] installed `go install sigs.k8s.io/kind@v0.19.0 && kind create cluster` is all you need!
 
-For older versions use `GO111MODULE="on" go get sigs.k8s.io/kind@v0.18.0`.
+For older versions use `GO111MODULE="on" go get sigs.k8s.io/kind@v0.19.0`.
 
 ![](site/static/images/kind-create-cluster.png)
 
@@ -25,7 +25,7 @@ kind bootstraps each "node" with [kubeadm][kubeadm]. For more details see [the d
 
 For a complete [install guide] see [the documentation here][install guide].
 
-You can install kind with `go install sigs.k8s.io/kind@v0.18.0`.
+You can install kind with `go install sigs.k8s.io/kind@v0.19.0`.
 
 **NOTE**: please use the latest go to do this. KIND is developed with the latest stable go, see [`.go-version`](./.go-version) for the exact version we're using.
 
@@ -44,7 +44,7 @@ into your `$PATH`:
 On Linux:
 
 ```console
-curl -Lo ./kind "https://kind.sigs.k8s.io/dl/v0.18.0/kind-$(uname)-amd64"
+curl -Lo ./kind "https://kind.sigs.k8s.io/dl/v0.19.0/kind-$(uname)-amd64"
 chmod +x ./kind
 sudo mv ./kind /usr/local/bin/kind
 ```
@@ -65,9 +65,9 @@ On macOS via Bash:
 
 ```console
 # for Intel Macs
-[ $(uname -m) = x86_64 ]&& curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.18.0/kind-darwin-amd64
+[ $(uname -m) = x86_64 ]&& curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.19.0/kind-darwin-amd64
 # for M1 / ARM Macs
-[ $(uname -m) = arm64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.18.0/kind-darwin-arm64
+[ $(uname -m) = arm64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.19.0/kind-darwin-arm64
 chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
 ```
@@ -75,7 +75,7 @@ mv ./kind /some-dir-in-your-PATH/kind
 On Windows:
 
 ```powershell
-curl.exe -Lo kind-windows-amd64.exe https://kind.sigs.k8s.io/dl/v0.18.0/kind-windows-amd64
+curl.exe -Lo kind-windows-amd64.exe https://kind.sigs.k8s.io/dl/v0.19.0/kind-windows-amd64
 Move-Item .\kind-windows-amd64.exe c:\some-dir-in-your-PATH\kind.exe
 
 # OR via Chocolatey (https://chocolatey.org/packages/kind)
