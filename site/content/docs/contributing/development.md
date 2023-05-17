@@ -100,8 +100,10 @@ Lints include:
 ## Documentation
 
 Our docs are built with [hugo] just like [kubernetes.io](https://kubernetes.io).
-We provide a makefile for development that uses hugo in docker so you don't need
-to install anything further, just [install docker](#install-docker).
+
+We provide a Makefile for development that automatically manages a go toolchain
+and uses that to build and run hugo. You only need `make`, `bash`,
+and `curl` or `wget` installed.
 
 Markdown content is under `site/content/` with a structure mirroring this site.
 
@@ -114,7 +116,7 @@ your pull request on GitHub.
 
 These are also predictable as `https://deploy-preview-$PR_NUMBER--k8s-kind.netlify.app/`, just replace `$PR_NUMBER` with the number of your Pull Request.
 
-For more involved site / documentation development, you can run `make -C site serve` from the kind repo to run a local instance of the documentation, browsable at [http://localhost:1313](http://localhost:1313). As mentioned previously, do this you'll need to [install docker](#install-docker).
+For more involved site / documentation development, you can run `make -C site serve` from the kind repo to run a local instance of the documentation, browsable at [http://localhost:1313](http://localhost:1313).
 
 This site has a custom hugo theme under `site/layouts` & `site/assets`. It's
 mostly relatively simple but it has a few extra features:
