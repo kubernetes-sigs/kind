@@ -17,14 +17,14 @@ certs:
 imagePullSecrets: {}
 installation:
   calicoNetwork:
-    bgp: "{{- if or ($.ControlPlane.Managed) (eq $.InfraProvider "azure") }} Disabled {{- else -}} Enabled {{- end }}"
+    bgp: {{- if or ($.ControlPlane.Managed) (eq $.InfraProvider "azure") }} Disabled {{- else }} Enabled {{- end }}
   {{- if not $.ControlPlane.Managed }}
-    {{- if eq $.InfraProvider "azure" -}}
+    {{- if eq $.InfraProvider "azure" }}
     mtu: 1350
     {{- end }}
     ipPools:
       - cidr: 192.168.0.0/16
-        encapsulation: {{- if eq $.InfraProvider "azure" -}} VXLAN {{- else -}} IPIP {{- end }}
+        encapsulation: {{- if eq $.InfraProvider "azure" }} VXLAN {{- else }} IPIP {{- end }}
   {{- end }}
   cni:
   {{- if and ($.ControlPlane.Managed) (eq $.InfraProvider "aws") }}
