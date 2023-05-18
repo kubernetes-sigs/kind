@@ -136,6 +136,8 @@ func commonArgs(cfg *config.Cluster, networkName string, nodeNames []string) ([]
 		"--label", fmt.Sprintf("%s=%s", clusterLabelKey, cfg.Name),
 		// specify container implementation to systemd
 		"-e", "container=podman",
+		// this is the default in cgroupsv2 but not in v1
+		"--cgroupns=private",
 	}
 
 	// enable IPv6 if necessary
