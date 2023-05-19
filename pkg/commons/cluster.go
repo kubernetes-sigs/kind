@@ -61,7 +61,6 @@ type DescriptorFile struct {
 
 	Keos struct {
 		// PR fixing exclude_if behaviour https://github.com/go-playground/validator/pull/939
-		Domain  string `yaml:"domain" validate:"omitempty,hostname"`
 		Flavour string `yaml:"flavour"`
 		Version string `yaml:"version"`
 	} `yaml:"keos"`
@@ -86,8 +85,8 @@ type DescriptorFile struct {
 
 type Networks struct {
 	VPCID                      string            `yaml:"vpc_id"`
-	VPCCidrBlock           string            `yaml:"vpc_cidr" validate:"omitempty,cidrv4"`
-	PodsCidrBlock         string            `yaml:"pods_cidr" validate:"omitempty,cidrv4"`
+	VPCCidrBlock               string            `yaml:"vpc_cidr" validate:"omitempty,cidrv4"`
+	PodsCidrBlock              string            `yaml:"pods_cidr" validate:"omitempty,cidrv4"`
 	Tags                       map[string]string `yaml:"tags,omitempty"`
 	AvailabilityZoneUsageLimit int               `yaml:"az_usage_limit" validate:"numeric"`
 	AvailabilityZoneSelection  string            `yaml:"az_selection" validate:"oneof='Ordered' 'Random' '' "`
