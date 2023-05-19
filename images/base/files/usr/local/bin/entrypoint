@@ -181,8 +181,8 @@ fix_mount() {
   mount --make-rshared /
 }
 
-# helper used by fix_cgroup
-mount_kubelet_cgroup_root() {
+# helper used by mount_kubelet_cgroup_root
+mount_kubelet_cgroup_root_subsystem() {
   local cgroup_root=$1
   local subsystem=$2
   if [ -z "${cgroup_root}" ]; then
@@ -199,6 +199,22 @@ mount_kubelet_cgroup_root() {
   # systemd might delete the cgroup unintentionally before the
   # kubelet starts.
   mount --bind "${subsystem}/${cgroup_root}" "${subsystem}/${cgroup_root}"
+}
+
+# helper used by fix_cgroup
+mount_kubelet_cgroup_root() {
+  local cgroup_subsystems=$1
+  echo "${cgroup_subsystems}" |
+  while IFS= read -r subsystem; do
+    mount_kubelet_cgroup_root_subsystem /kubelet "${subsystem}"
+    mount_kubelet_cgroup_root_subsystem /kubelet.slice "${subsystem}"
+  done
+  # workaround for hosts not running systemd
+  # we only do this for kubelet.slice because it's not relevant when not using
+  # the systemd cgroup driver
+  if [[ ! "${cgroup_subsystems}" = */sys/fs/cgroup/systemd* ]]; then
+    mount_kubelet_cgroup_root_subsystem /kubelet.slice /sys/fs/cgroup/systemd
+  fi
 }
 
 fix_cgroup() {
@@ -226,8 +242,17 @@ fix_cgroup() {
   # current process. this tells us what cgroup-path the container is in.
   local current_cgroup
   current_cgroup=$(grep -E '^[^:]*:([^:]*,)?cpu(,[^,:]*)?:.*' /proc/self/cgroup | cut -d: -f3)
+  local cgroup_subsystems
+  cgroup_subsystems=$(findmnt -lun -o source,target -t cgroup | grep -F "${current_cgroup}" | awk '{print $2}')
   if [ "$current_cgroup" = "/" ]; then
-    echo "INFO: cgroupns detected, no need to fix cgroups"
+    echo "INFO: detected cgroupns"
+    # kubelet will try to manage cgroups / pods that are not owned by it when
+    # "nesting" clusters, unless we instruct it to use a different cgroup root.
+    # We do this, and when doing so we must fixup this alternative root
+    # currently this is hardcoded to be /kubelet
+    # under systemd cgroup driver, kubelet appends .slice
+    mount --make-rprivate /sys/fs/cgroup
+    mount_kubelet_cgroup_root "${cgroup_subsystems}"
     return
   fi
 
@@ -310,17 +335,7 @@ fix_cgroup() {
   # currently this is hardcoded to be /kubelet
   # under systemd cgroup driver, kubelet appends .slice
   mount --make-rprivate /sys/fs/cgroup
-  echo "${cgroup_subsystems}" |
-  while IFS= read -r subsystem; do
-    mount_kubelet_cgroup_root /kubelet "${subsystem}"
-    mount_kubelet_cgroup_root /kubelet.slice "${subsystem}"
-  done
-  # workaround for hosts not running systemd
-  # we only do this for kubelet.slice because it's not relevant when not using
-  # the systemd cgroup driver
-  if [[ ! "${cgroup_subsystems}" = */sys/fs/cgroup/systemd* ]]; then
-    mount_kubelet_cgroup_root /kubelet.slice /sys/fs/cgroup/systemd
-  fi
+  mount_kubelet_cgroup_root "${cgroup_subsystems}"
 }
 
 fix_machine_id() {
