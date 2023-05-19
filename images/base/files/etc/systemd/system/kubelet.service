@@ -19,6 +19,7 @@ RestartSec=1s
 CPUAccounting=true
 MemoryAccounting=true
 Slice=kubelet.slice
+KillMode=process
 
 [Install]
 WantedBy=multi-user.target
