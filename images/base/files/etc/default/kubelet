@@ -1,1 +1,1 @@
-KUBELET_EXTRA_ARGS=--fail-swap-on=false
+KUBELET_EXTRA_ARGS=--runtime-cgroups=/system.slice/containerd.service
