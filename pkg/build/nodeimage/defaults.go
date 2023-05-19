@@ -22,4 +22,4 @@ const DefaultImage = "kindest/node:latest"
 // DefaultBaseImage is the default base image used
 // TODO: come up with a reasonable solution to digest pinning
 // https://github.com/moby/moby/issues/43188
-const DefaultBaseImage = "docker.io/kindest/base:v20230519-a1cfca4e"
+const DefaultBaseImage = "gcr.io/k8s-staging-kind/base:v20230519-a1cfca4e-runc_v1.1.7"
