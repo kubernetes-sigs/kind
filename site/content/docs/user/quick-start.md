@@ -19,7 +19,7 @@ description: |-
 > but you will not be able to perform some of the examples in our docs without it.
 > To install `kubectl` see the upstream [kubectl installation docs](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
 
-If you are a go developer you may find the [go get option](#installing-with-go-get--go-install) convenient.
+If you are a go developer you may find the [go install option](#installing-with-go-install) convenient.
 
 Otherwise we supply downloadable [release binaries](#installing-from-release-binaries), community-managed [packages](#installing-with-a-package-manager), and a [source installation guide](#installing-from-source).
 
@@ -87,7 +87,7 @@ Move-Item .\kind-windows-amd64.exe c:\some-dir-in-your-PATH\kind.exe
 ### Installing From Source
 
 In addition to the pre-built binary + package manager installation options listed
-above you can install kind from source with `GO111MODULE="on" go get sigs.k8s.io/kind@{{< stableVersion >}}` or clone this repo
+above you can install kind from source with `go install sigs.k8s.io/kind@{{< stableVersion >}}` or clone this repo
 and run `make build` from the repository.
 
 #### Installing With `make`
@@ -96,7 +96,7 @@ Using `make build` does not require installing Go and will build kind reproducib
 the binary will be in `bin/kind` inside your clone of the repo.
 
 You should only need `make` and standard userspace utilities to run this build,
-it will automatically obtain the correct go version with our vendored copy of [`gimmee`](https://github.com/travis-ci/gimme).
+it will automatically obtain the correct go version with our vendored copy of [`gimme`](https://github.com/travis-ci/gimme).
 
 You can then call `./bin/kind` to use it, or copy `bin/kind` into some directory in your system `PATH` to
 use it as `kind` from the command line.
