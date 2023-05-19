@@ -103,7 +103,7 @@ func (i *Infra) getAzs() ([]string, error) {
 	return azs, nil
 }
 
-func installCalico(n nodes.Node, k string, descriptorFile commons.DescriptorFile) error {
+func installCalico(n nodes.Node, k string, descriptorFile commons.DescriptorFile, allowCommonEgressNetPolPath string) error {
 	var c string
 	var err error
 
@@ -129,6 +129,20 @@ func installCalico(n nodes.Node, k string, descriptorFile commons.DescriptorFile
 	err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy Calico Helm Chart")
+	}
+
+	// Allow egress in tigera-operator namespace
+	c = "kubectl --kubeconfig " + kubeconfigPath + " -n tigera-operator apply -f " + allowCommonEgressNetPolPath
+	err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to apply tigera-operator egress NetworkPolicy")
+	}
+
+	// Allow egress in calico-system namespace
+	c = "kubectl --kubeconfig " + kubeconfigPath + " -n calico-system apply -f " + allowCommonEgressNetPolPath
+	err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to apply calico-system egress NetworkPolicy")
 	}
 
 	return nil
