@@ -12,8 +12,10 @@ aws:
   clusterawsadm: v2.0.2
   cluster-api-aws: v2.0.2
   cluster-api-aws-templates: v2.0.2
-  aws-ebs-csi-driver: v1.17.0-eksbuild.1
-  vpc-cni: v1.12.6-eksbuild.1
+  eks-addons:
+    aws-ebs-csi-driver: v1.17.0-eksbuild.1
+    coredns: v1.9.3-eksbuild.3
+    vpc-cni: v1.12.6-eksbuild.1
 gcp:
   cluster-api-gcp: v1.3.0
   cluster-api-gcp-templates: v1.3.0
