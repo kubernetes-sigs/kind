@@ -98,7 +98,7 @@ spec:
   {{- end }}
   availabilityZones:
     - \"{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ inc $index }} {{- end }}\"
-  {{- if and (gt $node.NodeGroupMaxSize 0) (gt $node.NodeGroupMinSize 0) }}
+  {{- if gt $node.NodeGroupMaxSize 0 }}
   scaling:
     minSize: {{ $n.MinSize }}
     maxSize: {{ $n.MaxSize }}
