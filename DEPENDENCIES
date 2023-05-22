@@ -15,6 +15,7 @@ aws:
   eks-addons:
     aws-ebs-csi-driver: v1.17.0-eksbuild.1
     coredns: v1.9.3-eksbuild.3
+    kube-proxy: v1.25.9-eksbuild.1
     vpc-cni: v1.12.6-eksbuild.1
 gcp:
   cluster-api-gcp: v1.3.0
