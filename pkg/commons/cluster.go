@@ -212,7 +212,8 @@ type AWS struct {
 }
 
 type AZURE struct {
-	Credentials AzureCredentials `yaml:"credentials"`
+	Credentials   AzureCredentials `yaml:"credentials"`
+	ResourceGroup string           `yaml:"resource_group"`
 }
 
 type GCP struct {
