@@ -290,7 +290,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.Start("Installing Calico in workload cluster 🔌")
 			defer ctx.Status.End(false)
 
-			err = installCalico(node, kubeconfigPath, *descriptorFile)
+			err = installCalico(node, kubeconfigPath, *descriptorFile, allowCommonEgressNetPolPath)
 			if err != nil {
 				return errors.Wrap(err, "failed to install Calico in workload cluster")
 			}
@@ -393,7 +393,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.Start("Installing Network Policy Engine in workload cluster 🚧")
 			defer ctx.Status.End(false)
 
-			err = installCalico(node, kubeconfigPath, *descriptorFile)
+			err = installCalico(node, kubeconfigPath, *descriptorFile, allowCommonEgressNetPolPath)
 			if err != nil {
 				return errors.Wrap(err, "failed to install Network Policy Engine in workload cluster")
 			}
