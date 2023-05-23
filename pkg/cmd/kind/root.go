@@ -46,9 +46,9 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
-		Use:   "kind",
-		Short: "kind is a tool for managing local Kubernetes clusters",
-		Long:  "kind creates and manages local Kubernetes clusters using Docker container 'nodes'",
+		Use:   "cloud-provisioner",
+		Short: "cloud-provisioner is a tool for managing local Kubernetes clusters",
+		Long:  "cloud-provisioner creates and manages cloud Kubernetes clusters using cloud providers",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return runE(logger, flags, cmd)
 		},
