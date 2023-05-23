@@ -126,7 +126,7 @@ type WorkerNodes []struct {
 	Spot             bool              `yaml:"spot" validate:"omitempty,boolean"`
 	Labels           map[string]string `yaml:"labels"`
 	NodeGroupMaxSize int               `yaml:"max_size" validate:"required_with=NodeGroupMinSize,omitempty"`
-	NodeGroupMinSize int               `yaml:"min_size" validate:"required_with=NodeGroupMaxSize,omitempty"`
+	NodeGroupMinSize int               `yaml:"min_size" validate:"required_with=NodeGroupMaxSize,omitempty,gt=0"`
 	RootVolume       struct {
 		Size      int    `yaml:"size" validate:"numeric"`
 		Type      string `yaml:"type"`
