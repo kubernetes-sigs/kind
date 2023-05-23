@@ -2,7 +2,6 @@ package validation
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 	"strings"
 
@@ -12,7 +11,9 @@ import (
 
 func commonsDescriptorValidation(descriptor commons.DescriptorFile) error {
 
-	err := ifBalancedQuantityValidations(descriptor.WorkerNodes)
+	var err error
+
+	err = quantityValidations(descriptor.WorkerNodes)
 	if err != nil {
 		return err
 	}
@@ -25,10 +26,6 @@ func commonsDescriptorValidation(descriptor commons.DescriptorFile) error {
 		return err
 	}
 	err = validateUniqueRegistry(descriptor.DockerRegistries)
-	if err != nil {
-		return err
-	}
-	err = validateMinSizeMaxSizeIfAutoscaler(descriptor.WorkerNodes, descriptor.DeployAutoscaler)
 	if err != nil {
 		return err
 	}
@@ -115,17 +112,21 @@ func validateRegistryCredentials(descriptor commons.DescriptorFile, secrets comm
 	return nil
 }
 
-func ifBalancedQuantityValidations(workerNodes commons.WorkerNodes) error {
+func quantityValidations(workerNodes commons.WorkerNodes) error {
 	for _, wn := range workerNodes {
+		// Cluster Autoscaler doesn't scale a managed node group lower than minSize or higher than maxSize.
+		if wn.NodeGroupMaxSize < wn.Quantity {
+			return errors.New("max_size in WorkerNodes " + wn.Name + ", must be equal or greater than quantity")
+		}
+		if wn.Quantity < wn.NodeGroupMinSize {
+			return errors.New("quantity in WorkerNodes " + wn.Name + ", must be equal or greater than min_size")
+		}
 		if wn.ZoneDistribution == "balanced" || wn.ZoneDistribution == "" {
+			if wn.AZ != "" {
+				return errors.New("az in WorkerNodes " + wn.Name + ", can not be set when HA is required")
+			}
 			if wn.Quantity < 3 {
-				return errors.New("Quantity in WorkerNodes " + wn.Name + ", must be equal or greater than 3 when HA is required")
-			}
-			if wn.NodeGroupMinSize < 3 {
-				return errors.New("min_size in WorkerNodes " + wn.Name + ", must be equal or greater than 3 when HA is required")
-			}
-			if wn.NodeGroupMaxSize < 3 {
-				return errors.New("max_size in WorkerNodes " + wn.Name + ", must be equal or greater than 3 when HA is required")
+				return errors.New("quantity in WorkerNodes " + wn.Name + ", must be equal or greater than 3 when HA is required")
 			}
 		}
 	}
@@ -164,20 +165,4 @@ func validateUniqueRegistry(dockerRegistries []commons.DockerRegistry) error {
 func validateWnAZWithSubnetsAZ() {
 	// az de subnets vs az workers
 	// Cuando se mergee VPC custom
-}
-
-func validateMinSizeMaxSizeIfAutoscaler(workerNodes commons.WorkerNodes, deployAutoscaler bool) error {
-	err := errors.New("")
-	if deployAutoscaler {
-		for _, wn := range workerNodes {
-			if wn.NodeGroupMaxSize == 0 || wn.NodeGroupMinSize == 0 {
-				s := fmt.Sprintf("%sNodeGroupMaxSize and NodeGroupMinSize must be indicated in %s and must be greater than 0, when deploy_autoscaler is required", err.Error(), wn.Name)
-				err = errors.New(s)
-			}
-		}
-	}
-	if err.Error() == "" {
-		return nil
-	}
-	return err
 }
