@@ -18,13 +18,24 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+# logging helpers
+log_info() {
+  echo "INFO: $1" >&2
+}
+log_warn() {
+  echo "WARN: $1" >&2
+}
+log_error() {
+  echo "ERROR: $1" >&2
+}
+
 # If /proc/self/uid_map 4294967295 mappings, we are in the initial user namespace, i.e. the host.
 # Otherwise we are in a non-initial user namespace.
 # https://github.com/opencontainers/runc/blob/v1.0.0-rc92/libcontainer/system/linux.go#L109-L118
 userns=""
 if grep -Eqv "0[[:space:]]+0[[:space:]]+4294967295" /proc/self/uid_map; then
   userns="1"
-  echo 'INFO: running in a user namespace (experimental)'
+  log_info 'running in a user namespace (experimental)'
 fi
 
 grep_allow_nomatch() {
@@ -46,13 +57,13 @@ validate_userns() {
   nofile_hard="$(ulimit -Hn)"
   local nofile_hard_expected="64000"
   if [[ "${nofile_hard}" -lt "${nofile_hard_expected}" ]]; then
-    echo "WARN: UserNS: expected RLIMIT_NOFILE to be at least ${nofile_hard_expected}, got ${nofile_hard}" >&2
+    log_warn "UserNS: expected RLIMIT_NOFILE to be at least ${nofile_hard_expected}, got ${nofile_hard}"
   fi
 
   if [[ -f "/sys/fs/cgroup/cgroup.controllers" ]]; then
     for f in cpu memory pids; do
       if ! grep -qw $f /sys/fs/cgroup/cgroup.controllers; then
-        echo "ERROR: UserNS: $f controller needs to be delegated" >&2
+        log_error "UserNS: $f controller needs to be delegated"
         exit 1
       fi
     done
@@ -68,7 +79,7 @@ overlayfs_preferrable() {
   # Debian 10 and 11 supports overlayfs in userns with a "permit_mount_in_userns" kernel patch,
   # but known to be unstable, so we avoid using it https://github.com/moby/moby/issues/42302
   if [[ -e "/sys/module/overlay/parameters/permit_mounts_in_userns" ]]; then
-    echo "INFO: UserNS: kernel seems supporting overlayfs with permit_mounts_in_userns, but avoiding due to instability."
+    log_info "UserNS: kernel seems supporting overlayfs with permit_mounts_in_userns, but avoiding due to instability."
     return 1
   fi
 
@@ -82,7 +93,7 @@ overlayfs_preferrable() {
   tmp=$(mktemp -d)
   mkdir -p "${tmp}/l" "${tmp}/u" "${tmp}/w" "${tmp}/m"
   if ! mount -t overlay -o lowerdir="${tmp}/l,upperdir=${tmp}/u,workdir=${tmp}/w" overlay "${tmp}/m"; then
-    echo "INFO: UserNS: kernel does not seem to support overlayfs."
+    log_info "UserNS: kernel does not seem to support overlayfs."
     rm -rf "${tmp}"
     return 1
   fi
@@ -94,7 +105,7 @@ overlayfs_preferrable() {
   if grep -q "_t:" "/proc/self/attr/current"; then
     # When the kernel is before v5.13 and SELinux is enforced, fuse-overlayfs might be safer, so we print a warning (but not an error).
     # https://github.com/torvalds/linux/commit/7fa2e79a6bb924fa4b2de5766dab31f0f47b5ab6
-    echo "WARN: UserNS: SELinux might be Enforcing. If you see an error related to overlayfs, try setting \`KIND_EXPERIMENTAL_CONTAINERD_SNAPSHOTTER=fuse-overlayfs\` ." >&2
+    log_warn "UserNS: SELinux might be Enforcing. If you see an error related to overlayfs, try setting \`KIND_EXPERIMENTAL_CONTAINERD_SNAPSHOTTER=fuse-overlayfs\` ."
   fi
   return 0
 }
@@ -127,10 +138,10 @@ configure_containerd() {
 
   # if we've overridden or auto-selected the snapshotter vs the default, update containerd
   if [[ -n "$snapshotter" ]]; then
-    echo "INFO: changing snapshotter from \"overlayfs\" to \"$snapshotter\""
+    log_info "changing snapshotter from \"overlayfs\" to \"$snapshotter\""
     sed -i "s/snapshotter = \"overlayfs\"/snapshotter = \"$snapshotter\"/" /etc/containerd/config.toml
     if [[ "$snapshotter" = "fuse-overlayfs" ]]; then
-      echo 'INFO: enabling containerd-fuse-overlayfs service'
+      log_info 'enabling containerd-fuse-overlayfs service'
       systemctl enable containerd-fuse-overlayfs
     fi
   fi
@@ -147,7 +158,7 @@ EOF
 }
 
 fix_mount() {
-  echo 'INFO: ensuring we can execute mount/umount even with userns-remap'
+  log_info 'ensuring we can execute mount/umount even with userns-remap'
   # necessary only when userns-remap is enabled on the host, but harmless
   # The binary /bin/mount should be owned by root and have the setuid bit
   chown root:root "$(which mount)" "$(which umount)"
@@ -157,11 +168,11 @@ fix_mount() {
   # busy` on `mount` command below. See more details in
   # https://github.com/moby/moby/issues/9547
   if [[ "$(stat -f -c %T "$(which mount)")" == 'aufs' ]]; then
-    echo 'INFO: detected aufs, calling sync' >&2
+    log_info 'detected aufs, calling sync'
     sync
   fi
 
-  echo 'INFO: remounting /sys read-only'
+  log_info 'remounting /sys read-only'
   # systemd-in-a-container should have read only /sys
   # https://systemd.io/CONTAINER_INTERFACE/
   # however, we need other things from `docker run --privileged` ...
@@ -170,13 +181,13 @@ fix_mount() {
   # This step is ignored when running inside UserNS, because it fails with EACCES.
   if ! mount -o remount,ro /sys; then
     if [[ -n "$userns" ]]; then
-      echo 'INFO: UserNS: ignoring mount fail' >&2
+      log_info 'UserNS: ignoring mount fail'
     else
       exit 1
     fi
   fi
 
-  echo 'INFO: making mounts shared' >&2
+  log_info 'making mounts shared'
   # for mount propagation
   mount --make-rshared /
 }
@@ -219,7 +230,7 @@ mount_kubelet_cgroup_root() {
 
 fix_cgroup() {
   if [[ -f "/sys/fs/cgroup/cgroup.controllers" ]]; then
-    echo 'INFO: detected cgroup v2'
+    log_info 'detected cgroup v2'
     # Both Docker and Podman enable CgroupNS on cgroup v2 hosts by default.
     #
     # So mostly we do not need to mess around with the cgroup path stuff,
@@ -237,7 +248,7 @@ fix_cgroup() {
     # group to "/init.scope" group, so we can write the root subtree_control and create "/kubelet" cgroup.
     return
   fi
-  echo 'INFO: detected cgroup v1'
+  log_info 'detected cgroup v1'
   # We're looking for the cgroup-path for the cpu controller for the
   # current process. this tells us what cgroup-path the container is in.
   local current_cgroup
@@ -245,7 +256,7 @@ fix_cgroup() {
   local cgroup_subsystems
   cgroup_subsystems=$(findmnt -lun -o source,target -t cgroup | grep -F "${current_cgroup}" | awk '{print $2}')
   if [ "$current_cgroup" = "/" ]; then
-    echo "INFO: detected cgroupns"
+    log_info 'detected cgroupns'
     # kubelet will try to manage cgroups / pods that are not owned by it when
     # "nesting" clusters, unless we instruct it to use a different cgroup root.
     # We do this, and when doing so we must fixup this alternative root
@@ -261,7 +272,7 @@ fix_cgroup() {
   # cgroupns enabled (or switch or cgroup v2 which has it enabled by default).
   # Once that happens, this function can be removed completely.
 
-  echo 'WARN: cgroupns not enabled! Please use cgroup v2, or cgroup v1 with cgroupns enabled.'
+  log_warn 'cgroupns not enabled! Please use cgroup v2, or cgroup v1 with cgroupns enabled.'
 
   # See: https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration
   # Capture initial state before modifying
@@ -271,7 +282,7 @@ fix_cgroup() {
   # and other controllers use the same sub-path.
   #
   # See: https://man7.org/linux/man-pages/man7/cgroups.7.html
-  echo 'INFO: fix cgroup mounts for all subsystems'
+  log_info 'fixing cgroup mounts for all subsystems'
   local cgroup_subsystems
   cgroup_subsystems=$(findmnt -lun -o source,target -t cgroup | grep -F "${current_cgroup}" | awk '{print $2}')
   # Unmount the cgroup subsystems that are not known to runtime used to
@@ -289,12 +300,11 @@ fix_cgroup() {
     local mnt
     echo "$unsupported_cgroups" |
     while IFS= read -r mnt; do
-      echo "INFO: unmounting and removing $mnt"
-      umount "$mnt" || true
-      rmdir "$mnt" || true
+      log_info "unmounting and removing $mnt"
+      umount "$mnt" || log_warn "failed to unmount $mnt"
+      rmdir "$mnt" || log_warn "failed to rmdir $mnt"
     done
   fi
-
 
   # For each cgroup subsystem, Docker does a bind mount from the current
   # cgroup to the root of the cgroup subsystem. For instance:
@@ -342,7 +352,7 @@ fix_machine_id() {
   # Deletes the machine-id embedded in the node image and generates a new one.
   # This is necessary because both kubelet and other components like weave net
   # use machine-id internally to distinguish nodes.
-  echo 'INFO: clearing and regenerating /etc/machine-id' >&2
+  log_info 'clearing and regenerating /etc/machine-id'
   rm -f /etc/machine-id
   systemd-machine-id-setup
 }
@@ -351,7 +361,7 @@ fix_product_name() {
   # this is a small fix to hide the underlying hardware and fix issue #426
   # https://github.com/kubernetes-sigs/kind/issues/426
   if [[ -f /sys/class/dmi/id/product_name ]]; then
-    echo 'INFO: faking /sys/class/dmi/id/product_name to be "kind"' >&2
+    log_info 'faking /sys/class/dmi/id/product_name to be "kind"'
     echo 'kind' > /kind/product_name
     mount -o ro,bind /kind/product_name /sys/class/dmi/id/product_name
   fi
@@ -367,11 +377,11 @@ fix_product_uuid() {
   # https://github.com/kubernetes-sigs/kind/issues/1027
   [[ ! -f /kind/product_uuid ]] && cat /proc/sys/kernel/random/uuid > /kind/product_uuid
   if [[ -f /sys/class/dmi/id/product_uuid ]]; then
-    echo 'INFO: faking /sys/class/dmi/id/product_uuid to be random' >&2
+    log_info 'faking /sys/class/dmi/id/product_uuid to be random'
     mount -o ro,bind /kind/product_uuid /sys/class/dmi/id/product_uuid
   fi
   if [[ -f /sys/devices/virtual/dmi/id/product_uuid ]]; then
-    echo 'INFO: faking /sys/devices/virtual/dmi/id/product_uuid as well' >&2
+    log_info 'faking /sys/devices/virtual/dmi/id/product_uuid as well'
     mount -o ro,bind /kind/product_uuid /sys/devices/virtual/dmi/id/product_uuid
   fi
 }
@@ -386,7 +396,7 @@ select_iptables() {
   else
     mode=nft
   fi
-  echo "INFO: setting iptables to detected mode: ${mode}" >&2
+  log_info "setting iptables to detected mode: ${mode}"
   update-alternatives --set iptables "/usr/sbin/iptables-${mode}" > /dev/null
   update-alternatives --set ip6tables "/usr/sbin/ip6tables-${mode}" > /dev/null
 }
@@ -402,7 +412,7 @@ fix_certificate() {
 
   # Deletes the certificate for kube-apiserver and generates a new one.
   # This is necessary because the old one doesn't match the current IP.
-  echo 'INFO: clearing and regenerating the certificate for serving the Kubernetes API' >&2
+  log_info 'clearing and regenerating the certificate for serving the Kubernetes API'
   rm -f ${apiserver_crt_file} ${apiserver_key_file}
   kubeadm init phase certs apiserver --config /kind/kubeadm.conf
 }
@@ -463,25 +473,25 @@ enable_network_magic(){
   local should_fix_certificate=false
   # fixup IPs in manifests ...
   curr_ipv4="$( (head -n1 <(timeout 5 getent ahostsv4 "$(hostname)") | cut -d' ' -f1) || true)"
-  echo "INFO: Detected IPv4 address: ${curr_ipv4}" >&2
+  log_info "detected IPv4 address: ${curr_ipv4}"
   if [ -f /kind/old-ipv4 ]; then
-      old_ipv4=$(cat /kind/old-ipv4)
-      echo "INFO: Detected old IPv4 address: ${old_ipv4}" >&2
-      # sanity check that we have a current address
-      if [[ -z $curr_ipv4 ]]; then
-        echo "ERROR: Have an old IPv4 address but no current IPv4 address (!)" >&2
-        exit 1
-      fi
-      if [[ "${old_ipv4}" != "${curr_ipv4}" ]]; then
-        should_fix_certificate=true
-        sed_ipv4_command="s#\b$(regex_escape_ip "${old_ipv4}")\b#${curr_ipv4}#g"
-        for f in "${files_to_update[@]}"; do
-          # kubernetes manifests are only present on control-plane nodes
-          if [[ -f "$f" ]]; then
-            sed -i "${sed_ipv4_command}" "$f"
-          fi
-        done
-      fi
+    old_ipv4=$(cat /kind/old-ipv4)
+    log_info "detected old IPv4 address: ${old_ipv4}"
+    # sanity check that we have a current address
+    if [[ -z $curr_ipv4 ]]; then
+      log_error "have an old IPv4 address but no current IPv4 address (!)"
+      exit 1
+    fi
+    if [[ "${old_ipv4}" != "${curr_ipv4}" ]]; then
+      should_fix_certificate=true
+      sed_ipv4_command="s#\b$(regex_escape_ip "${old_ipv4}")\b#${curr_ipv4}#g"
+      for f in "${files_to_update[@]}"; do
+        # kubernetes manifests are only present on control-plane nodes
+        if [[ -f "$f" ]]; then
+          sed -i "${sed_ipv4_command}" "$f"
+        fi
+      done
+    fi
   fi
   if [[ -n $curr_ipv4 ]]; then
     echo -n "${curr_ipv4}" >/kind/old-ipv4
@@ -489,24 +499,24 @@ enable_network_magic(){
 
   # do IPv6
   curr_ipv6="$( (head -n1 <(timeout 5 getent ahostsv6 "$(hostname)") | cut -d' ' -f1) || true)"
-  echo "INFO: Detected IPv6 address: ${curr_ipv6}" >&2
+  log_info "detected IPv6 address: ${curr_ipv6}"
   if [ -f /kind/old-ipv6 ]; then
-      old_ipv6=$(cat /kind/old-ipv6)
-      echo "INFO: Detected old IPv6 address: ${old_ipv6}" >&2
-      # sanity check that we have a current address
-      if [[ -z $curr_ipv6 ]]; then
-        echo "ERROR: Have an old IPv6 address but no current IPv6 address (!)" >&2
-      fi
-      if [[ "${old_ipv6}" != "${curr_ipv6}" ]]; then
-        should_fix_certificate=true
-        sed_ipv6_command="s#\b$(regex_escape_ip "${old_ipv6}")\b#${curr_ipv6}#g"
-        for f in "${files_to_update[@]}"; do
-          # kubernetes manifests are only present on control-plane nodes
-          if [[ -f "$f" ]]; then
-            sed -i "${sed_ipv6_command}" "$f"
-          fi
-        done
-      fi
+    old_ipv6=$(cat /kind/old-ipv6)
+    log_info "detected old IPv6 address: ${old_ipv6}"
+    # sanity check that we have a current address
+    if [[ -z $curr_ipv6 ]]; then
+      log_error "have an old IPv6 address but no current IPv6 address (!)"
+    fi
+    if [[ "${old_ipv6}" != "${curr_ipv6}" ]]; then
+      should_fix_certificate=true
+      sed_ipv6_command="s#\b$(regex_escape_ip "${old_ipv6}")\b#${curr_ipv6}#g"
+      for f in "${files_to_update[@]}"; do
+        # kubernetes manifests are only present on control-plane nodes
+        if [[ -f "$f" ]]; then
+          sed -i "${sed_ipv6_command}" "$f"
+        fi
+      done
+    fi
   fi
   if [[ -n $curr_ipv6 ]]; then
     echo -n "${curr_ipv6}" >/kind/old-ipv6
@@ -533,4 +543,5 @@ select_iptables
 enable_network_magic
 
 # we want the command (expected to be systemd) to be PID1, so exec to it
+log_info 'starting init'
 exec "$@"
