@@ -19,6 +19,8 @@ package kube
 import (
 	"fmt"
 	"go/build"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/alessio/shellescape"
@@ -27,25 +29,43 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
-// ImportPath is the canonical import path for the kubernetes root package
-// this is used by FindSource
-const ImportPath = "k8s.io/kubernetes"
-
 // FindSource attempts to locate a kubernetes checkout using go's build package
 func FindSource() (root string, err error) {
-	// look up the source the way go build would
-	pkg, err := build.Default.Import(ImportPath, build.Default.GOPATH, build.FindOnly|build.IgnoreVendor)
-	if err == nil && maybeKubeDir(pkg.Dir) {
-		return pkg.Dir, nil
+	// check current working directory first
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("failed to locate kubernetes source, could not current working directory: %w", err)
 	}
-	return "", fmt.Errorf("could not find %s module source under GOPATH=%s: %w", ImportPath, build.Default.GOPATH, err)
+	if probablyKubeDir(wd) {
+		return wd, nil
+	}
+	// then look under GOPATH
+	gopath := build.Default.GOPATH
+	if gopath == "" {
+		return "", errors.New("could not find Kubernetes source under current working directory and GOPATH is not set")
+	}
+	// try k8s.io/kubernetes first (old canonical GOPATH locaation)
+	if dir := filepath.Join(gopath, "src", "k8s.io", "kubernetes"); probablyKubeDir(dir) {
+		return dir, nil
+	}
+	// then try github.com/kubernetes/kubernetes (CI without path_alias set)
+	if dir := filepath.Join(gopath, "src", "github.com", "kubernetes", "kubernetes"); probablyKubeDir(dir) {
+		return dir, nil
+	}
+	return "", fmt.Errorf("could not find Kubernetes source under current working directory or GOPATH=%s", build.Default.GOPATH)
 }
 
-// maybeKubeDir returns true if the dir looks plausibly like a kubernetes
+// probablyKubeDir returns true if the dir looks plausibly like a kubernetes
 // source directory
-func maybeKubeDir(dir string) bool {
-	// TODO(bentheelder): consider adding other sanity checks
-	return dir != ""
+func probablyKubeDir(dir string) bool {
+	// TODO: should we do more checks?
+	// NOTE: go.mod with this line has existed since Kubernetes 1.15
+	const sentinelLine = "module k8s.io/kubernetes"
+	contents, err := os.ReadFile(filepath.Join(dir, "go.mod"))
+	if err != nil {
+		return false
+	}
+	return strings.Contains(string(contents), sentinelLine)
 }
 
 // sourceVersion the kubernetes git version based on hack/print-workspace-status.sh
