@@ -217,6 +217,40 @@ mount_kubelet_cgroup_root() {
   fi
 }
 
+# return 0 if $1 is >= $2
+version_gte() {
+  printf '%s\n' "$2" "$1" | sort -CV
+}
+
+# helper that attempts to unmount misc controller if on kubernetes versions
+# that aren't aware of it. only relevant for cgroups v1
+# see: https://github.com/opencontainers/runc/issues/3849
+fix_misc_before_k8s() {
+  if [[ ! -d '/sys/fs/cgroup/misc' ]]; then
+    return
+  fi
+  # guard against usage in minikube kic-base etc.
+  if [[ ! -f /kind/version ]]; then
+    return
+  fi
+  kube_version=$(cat /kind/version | sed -e 's/^v//')
+  if [[ $kube_version == 1.27.* ]] && ! version_gte "$kube_version" '1.27.2'; then
+    echo 'INFO: detected misc controller and kubernetes $kube_version without 1.27.2 runc patch' >&2
+  elif [[ $kube_version == 1.26.* ]] && ! version_gte "$kube_version" '1.26.5'; then
+    echo 'INFO: detected misc controller and kubernetes $kube_version without 1.26.5 runc patch' >&2
+  elif [[ $kube_version == 1.25.* ]] && ! version_gte "$kube_version" '1.25.10'; then
+    echo 'INFO: detected misc controller and kubernetes $kube_version without 1.25.10 runc patch' >&2
+  # this is the lowest patched version, will catch all other unpatched versions
+  elif ! version_gte "$kube_version" '1.24.12'; then
+    echo 'INFO: detected misc controller and kubernetes < 1.24.14' >&2
+  else
+    return
+  fi
+  echo 'INFO: attempting to unmount misc' >&2
+  umount '/sys/fs/cgroup/misc' || echo 'WARN: failed to unmount' >&2
+  rmdir '/sys/fs/cgroup/misc' || echo 'WARN: failed to rmdir' >&2
+}
+
 fix_cgroup() {
   if [[ -f "/sys/fs/cgroup/cgroup.controllers" ]]; then
     echo 'INFO: detected cgroup v2'
@@ -252,6 +286,7 @@ fix_cgroup() {
     # currently this is hardcoded to be /kubelet
     # under systemd cgroup driver, kubelet appends .slice
     mount --make-rprivate /sys/fs/cgroup
+    fix_misc_before_k8s
     mount_kubelet_cgroup_root "${cgroup_subsystems}"
     return
   fi
@@ -290,11 +325,11 @@ fix_cgroup() {
     echo "$unsupported_cgroups" |
     while IFS= read -r mnt; do
       echo "INFO: unmounting and removing $mnt"
-      umount "$mnt" || true
-      rmdir "$mnt" || true
+      umount "$mnt" || echo "failed to unmount $mnt" >&2
+      rmdir "$mnt" || echo "failed to rmdir $mnt" >&2
     done
   fi
-
+  fix_misc_before_k8s
 
   # For each cgroup subsystem, Docker does a bind mount from the current
   # cgroup to the root of the cgroup subsystem. For instance:
