@@ -18,10 +18,12 @@
 IMAGE_NAME=$(notdir $(CURDIR))
 # docker image registry, default to upstream
 REGISTRY?=gcr.io/k8s-staging-kind
+# for appending build-meta like "_containerd-v1.7.1"
+TAG_SUFFIX?=
 # tag based on date-sha
 TAG?=$(shell echo "$$(date +v%Y%m%d)-$$(git describe --always --dirty)")
 # the full image tag
-IMAGE?=$(REGISTRY)/$(IMAGE_NAME):$(TAG)
+IMAGE?=$(REGISTRY)/$(IMAGE_NAME):$(TAG)$(TAG_SUFFIX)
 # Go version to use, respected by images that build go binaries
 GO_VERSION=$(shell cat $(CURDIR)/../../.go-version | head -n1)
 
