@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.17.0-0.1.0 (Upcoming)
+## 0.17.0-0.2.0 (Upcoming)
 
 * Add clusterAPI capabilities for AKS
 
