@@ -114,12 +114,20 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 
 		if registryType == "ecr" {
-			ecrToken, err := commons.GetEcrAuthToken(providerParams)
+			ecrToken, err := getEcrToken(providerParams)
 			if err != nil {
 				return errors.Wrap(err, "failed to get ECR auth token")
 			}
 			registryUser = "AWS"
 			registryPass = ecrToken
+		} else if registryType == "acr" {
+			acrService := strings.Split(registryUrl, "/")[0]
+			acrToken, err := getAcrToken(providerParams, acrService)
+			if err != nil {
+				return errors.Wrap(err, "failed to get ACR auth token")
+			}
+			registryUser = "00000000-0000-0000-0000-000000000000"
+			registryPass = acrToken
 		} else {
 			registryUser = keosRegistry["User"]
 			registryPass = keosRegistry["Pass"]
