@@ -42,6 +42,9 @@ main() {
   # install kind
   install_kind
 
+  # DO NOT MERGE: always test 1.24.0 to ensure no runc 1.1.6 update
+  (cd ./../../k8s.io/kubernetes && git fetch && git checkout v1.24.0)
+
   # build kubernetes / e2e test
   "${REPO_ROOT}/hack/ci/e2e-k8s.sh"
 }
