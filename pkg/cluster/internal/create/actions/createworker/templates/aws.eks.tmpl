@@ -71,16 +71,16 @@ spec:
     {{- range .Descriptor.Networks.Subnets }}
       - id: {{ .SubnetId }}
       {{- if ne .AvailabilityZone "" }}
-        availabilityZone:  {{ .AvailabilityZone }} 
+        availabilityZone:  {{ .AvailabilityZone }}
       {{- end }}
       {{- if ne .CidrBlock "" }}
-        cidrBlock:  {{ .CidrBlock }} 
+        cidrBlock:  {{ .CidrBlock }}
       {{- end }}
       {{- if ne .RouteTableId "" }}
-        routeTableId:  {{ .RouteTableId }} 
+        routeTableId:  {{ .RouteTableId }}
       {{- end }}
       {{- if ne .NatGatewayId "" }}
-        natGatewayId:  {{ .NatGatewayId }} 
+        natGatewayId:  {{ .NatGatewayId }}
       {{- end }}
       {{- if checkReference .IsPublic }}
         isPublic: {{ .IsPublic }}
@@ -130,7 +130,7 @@ spec:
     matchLabels:
   template:
     metadata:
-      labels: 
+      labels:
         keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
     spec:
       clusterName: "{{ $.Descriptor.ClusterID }}"
@@ -171,6 +171,9 @@ spec:
         type: {{ $node.RootVolume.Type }}
         {{- end }}
         encrypted: {{ $node.RootVolume.Encrypted }}
+        {{- if $node.RootVolume.EncryptionKey }}
+        encryptionKey: {{ $node.RootVolume.EncryptionKey }}
+        {{- end }}
       {{- if $node.ExtraVolumes }}
       nonRootVolumes:
         {{- range $index, $vol := $node.ExtraVolumes }}
@@ -178,6 +181,9 @@ spec:
           size: {{ $vol.Size }}
           type: {{ $vol.Type }}
           encrypted: {{ $vol.Encrypted }}
+          {{- if $vol.EncryptionKey }}
+          encryptionKey: {{ $vol.EncryptionKey }}
+          {{- end }}
         {{- end }}
       {{- end }}
 ---
