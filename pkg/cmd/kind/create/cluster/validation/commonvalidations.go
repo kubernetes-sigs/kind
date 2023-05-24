@@ -115,11 +115,14 @@ func validateRegistryCredentials(descriptor commons.DescriptorFile, secrets comm
 func quantityValidations(workerNodes commons.WorkerNodes) error {
 	for _, wn := range workerNodes {
 		// Cluster Autoscaler doesn't scale a managed node group lower than minSize or higher than maxSize.
-		if wn.NodeGroupMaxSize < wn.Quantity {
+		if wn.NodeGroupMaxSize < wn.Quantity && wn.NodeGroupMaxSize != 0 {
 			return errors.New("max_size in WorkerNodes " + wn.Name + ", must be equal or greater than quantity")
 		}
 		if wn.Quantity < wn.NodeGroupMinSize {
 			return errors.New("quantity in WorkerNodes " + wn.Name + ", must be equal or greater than min_size")
+		}
+		if wn.NodeGroupMinSize < 0 {
+			return errors.New("min_size in WorkerNodes " + wn.Name + ", must be equal or greater than 0")
 		}
 		if wn.ZoneDistribution == "balanced" || wn.ZoneDistribution == "" {
 			if wn.AZ != "" {
