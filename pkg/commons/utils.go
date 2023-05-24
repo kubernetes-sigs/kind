@@ -417,3 +417,12 @@ func GetEcrAuthToken(p ProviderParams) (string, error) {
 	parts := strings.SplitN(string(data), ":", 2)
 	return parts[1], nil
 }
+
+func SliceContains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+	return false
+}

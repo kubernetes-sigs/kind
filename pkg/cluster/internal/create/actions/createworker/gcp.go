@@ -148,7 +148,7 @@ volumeBindingMode: WaitForFirstConsumer`
 	return nil
 }
 
-func (b *GCPBuilder) getAzs() ([]string, error) {
+func (b *GCPBuilder) getAzs(networks commons.Networks) ([]string, error) {
 	if len(b.dataCreds) == 0 {
 		return nil, errors.New("Insufficient credentials.")
 	}

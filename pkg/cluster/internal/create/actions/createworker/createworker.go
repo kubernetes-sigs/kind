@@ -176,7 +176,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		DockerRegistries: dockerRegistries,
 	}
 
-	azs, err := infra.getAzs()
+	azs, err := infra.getAzs(descriptorFile.Networks)
 	if err != nil {
 		return errors.Wrap(err, "failed to get AZs")
 	}

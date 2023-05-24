@@ -28,8 +28,8 @@ spec:
   {{- if ne .Descriptor.Networks.VPCID "" }}
   network:
     name: {{ .Descriptor.Networks.VPCID }}
+    autoCreateSubnetworks: true
     {{- if ne .Descriptor.Networks.Subnets nil }}
-    autoCreateSubnetworks: false
     subnets:
     {{- with (index .Descriptor.Networks.Subnets 0) }}
     - name: {{ .SubnetId }}

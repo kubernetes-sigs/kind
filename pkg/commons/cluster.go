@@ -60,8 +60,6 @@ type DescriptorFile struct {
 	ExternalDomain string `yaml:"external_domain" validate:"omitempty,hostname"`
 
 	Keos struct {
-		// PR fixing exclude_if behaviour https://github.com/go-playground/validator/pull/939
-		Domain  string `yaml:"domain" validate:"omitempty,hostname"`
 		Flavour string `yaml:"flavour"`
 		Version string `yaml:"version"`
 	} `yaml:"keos"`
