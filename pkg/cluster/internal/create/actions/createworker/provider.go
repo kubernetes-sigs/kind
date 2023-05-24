@@ -18,6 +18,7 @@ package createworker
 
 import (
 	"bytes"
+	"embed"
 	"encoding/base64"
 	"reflect"
 	"strings"
@@ -28,6 +29,9 @@ import (
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
 )
+
+//go:embed templates/*
+var ctel embed.FS
 
 const (
 	CAPICoreProvider         = "cluster-api:v1.4.1"
@@ -110,7 +114,7 @@ func installCalico(n nodes.Node, k string, descriptorFile commons.DescriptorFile
 	calicoTemplate := "/kind/calico-helm-values.yaml"
 
 	// Generate the calico helm values
-	calicoHelmValues, err := getCalicoManifest(descriptorFile)
+	calicoHelmValues, err := getManifest("calico-helm-values.tmpl", descriptorFile)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate calico helm values")
 	}
@@ -320,6 +324,20 @@ func GetClusterManifest(flavor string, params commons.TemplateParams, azs []stri
 	}
 
 	err = t.ExecuteTemplate(&tpl, flavor, params)
+	if err != nil {
+		return "", err
+	}
+	return tpl.String(), nil
+}
+
+func getManifest(name string, params interface{}) (string, error) {
+	var tpl bytes.Buffer
+	t, err := template.New("").ParseFS(ctel, "templates/"+name)
+	if err != nil {
+		return "", err
+	}
+
+	err = t.ExecuteTemplate(&tpl, name, params)
 	if err != nil {
 		return "", err
 	}
