@@ -63,6 +63,9 @@ func NewAction(vaultPassword string, descriptorPath string, moveManagement bool,
 // Execute runs the action
 func (a *action) Execute(ctx *actions.ActionContext) error {
 
+	var command string
+	var err error
+
 	// Get the target node
 	node, err := ctx.GetNode()
 	if err != nil {
@@ -97,7 +100,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	defer ctx.Status.End(false)
 
 	if provider.capxVersion != provider.capxImageVersion {
-		var command string
 		var registryUrl string
 		var registryType string
 		var registryUser string
@@ -112,12 +114,20 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 
 		if registryType == "ecr" {
-			ecrToken, err := commons.GetEcrAuthToken(providerParams)
+			ecrToken, err := getEcrToken(providerParams)
 			if err != nil {
 				return errors.Wrap(err, "failed to get ECR auth token")
 			}
 			registryUser = "AWS"
 			registryPass = ecrToken
+		} else if registryType == "acr" {
+			acrService := strings.Split(registryUrl, "/")[0]
+			acrToken, err := getAcrToken(providerParams, acrService)
+			if err != nil {
+				return errors.Wrap(err, "failed to get ACR auth token")
+			}
+			registryUser = "00000000-0000-0000-0000-000000000000"
+			registryPass = acrToken
 		} else {
 			registryUser = keosRegistry["User"]
 			registryPass = keosRegistry["Pass"]
@@ -307,11 +317,13 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Preparing nodes in workload cluster 📦")
 		defer ctx.Status.End(false)
 
-		// Wait for the worker cluster creation
-		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "15m", "--all", "md")
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
-			return errors.Wrap(err, "failed to create the worker Cluster")
+		if provider.capxProvider != "azure" || !descriptorFile.ControlPlane.Managed {
+			// Wait for the worker cluster creation
+			raw = bytes.Buffer{}
+			cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "15m", "--all", "md")
+			if err := cmd.SetStdout(&raw).Run(); err != nil {
+				return errors.Wrap(err, "failed to create the worker Cluster")
+			}
 		}
 
 		if !descriptorFile.ControlPlane.Managed {
@@ -322,6 +334,15 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				return errors.Wrap(err, "failed to create the worker Cluster")
 			}
 		}
+
+		if provider.capxProvider == "azure" && descriptorFile.ControlPlane.Managed && descriptorFile.ControlPlane.Azure.IdentityID != "" {
+			// Update AKS cluster with the user kubelet identity until the provider supports it
+			err := assignUserIdentity(descriptorFile.ControlPlane.Azure.IdentityID, descriptorFile.ClusterID, descriptorFile.Region, credentialsMap)
+			if err != nil {
+				return errors.Wrap(err, "failed to assign user identity to the workload Cluster")
+			}
+		}
+
 		ctx.Status.End(true) // End Preparing nodes in workload cluster
 
 		ctx.Status.Start("Enabling workload cluster's self-healing 🏥")
@@ -376,7 +397,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.End(true) // End Installing CAPx in workload cluster
 
 		// Use Calico as network policy engine in managed systems
-		if descriptorFile.ControlPlane.Managed {
+		if provider.capxProvider != "azure" && descriptorFile.ControlPlane.Managed {
 			ctx.Status.Start("Installing Network Policy Engine in workload cluster 🚧")
 			defer ctx.Status.End(false)
 
@@ -426,7 +447,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 		ctx.Status.End(true) // End Installing Network Policy Engine in workload cluster
 
-		if descriptorFile.DeployAutoscaler {
+		if descriptorFile.DeployAutoscaler && !(descriptorFile.InfraProvider == "azure" && descriptorFile.ControlPlane.Managed) {
 			ctx.Status.Start("Adding Cluster-Autoescaler 🗚")
 			defer ctx.Status.End(false)
 

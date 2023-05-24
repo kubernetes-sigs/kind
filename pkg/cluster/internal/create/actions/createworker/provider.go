@@ -22,7 +22,6 @@ import (
 	"encoding/base64"
 	"reflect"
 	"strings"
-
 	"text/template"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
@@ -79,6 +78,10 @@ func getBuilder(builderType string) PBuilder {
 
 	if builderType == "gcp" {
 		return newGCPBuilder()
+	}
+
+	if builderType == "azure" {
+		return newAzureBuilder()
 	}
 	return nil
 }
@@ -164,6 +167,23 @@ func (p *Provider) installCAPXWorker(node nodes.Node, kubeconfigPath string, all
 	var command string
 	var err error
 
+	if p.capxProvider == "azure" {
+		// Create capx namespace
+		command = "kubectl --kubeconfig " + kubeconfigPath + " create namespace " + p.capxName + "-system"
+		err = commons.ExecuteCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to create CAPx namespace")
+		}
+
+		// Create capx secret
+		secret := strings.Split(p.capxEnvVars[0], "AZURE_CLIENT_SECRET=")[1]
+		command = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system create secret generic cluster-identity-secret --from-literal=clientSecret='" + string(secret) + "'"
+		err = commons.ExecuteCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to create CAPx secret")
+		}
+	}
+
 	// Install CAPX in worker cluster
 	command = "clusterctl --kubeconfig " + kubeconfigPath + " init --wait-providers" +
 		" --core " + CAPICoreProvider +
@@ -196,6 +216,23 @@ func (p *Provider) installCAPXWorker(node nodes.Node, kubeconfigPath string, all
 func (p *Provider) installCAPXLocal(node nodes.Node) error {
 	var command string
 	var err error
+
+	if p.capxProvider == "azure" {
+		// Create capx namespace
+		command = "kubectl create namespace " + p.capxName + "-system"
+		err = commons.ExecuteCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to create CAPx namespace")
+		}
+
+		// Create capx secret
+		secret := strings.Split(p.capxEnvVars[0], "AZURE_CLIENT_SECRET=")[1]
+		command = "kubectl -n " + p.capxName + "-system create secret generic cluster-identity-secret --from-literal=clientSecret='" + string(secret) + "'"
+		err = commons.ExecuteCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to create CAPx secret")
+		}
+	}
 
 	command = "clusterctl init --wait-providers" +
 		" --core " + CAPICoreProvider +
@@ -311,6 +348,9 @@ func GetClusterManifest(flavor string, params commons.TemplateParams, azs []stri
 		},
 		"isNotEmpty": func(v interface{}) bool {
 			return !reflect.ValueOf(v).IsZero()
+		},
+		"inc": func(i int) int {
+			return i + 1
 		},
 		"base64": func(s string) string {
 			return base64.StdEncoding.EncodeToString([]byte(s))

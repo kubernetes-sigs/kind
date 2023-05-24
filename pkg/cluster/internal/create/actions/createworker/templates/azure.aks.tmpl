@@ -1,0 +1,113 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: "{{ .Descriptor.ClusterID }}"
+  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+spec:
+  clusterNetwork:
+    services:
+      cidrBlocks: [\"192.168.0.0/16\"]
+  controlPlaneRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureManagedControlPlane
+    name: "{{ .Descriptor.ClusterID }}"
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureManagedCluster
+    name: "{{ .Descriptor.ClusterID }}"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedCluster
+metadata:
+  name: "{{ .Descriptor.ClusterID }}"
+  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedControlPlane
+metadata:
+  name: "{{ .Descriptor.ClusterID }}"
+  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+spec:
+  identityRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureClusterIdentity
+    name: "{{ .Descriptor.ClusterID }}-identity"
+  location: "{{ .Descriptor.Region }}"
+  sku:
+    tier: "{{ .Descriptor.ControlPlane.Azure.Tier }}"
+  resourceGroupName: "{{ .Descriptor.ClusterID }}"
+  nodeResourceGroupName: "{{ .Descriptor.ClusterID }}-nodes"
+  networkPolicy: calico
+  sshPublicKey: \"\"
+  subscriptionID: "{{ .Credentials.SubscriptionID }}"
+  version: "{{ .Descriptor.K8SVersion }}"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterIdentity
+metadata:
+  labels:
+    clusterctl.cluster.x-k8s.io/move-hierarchy: \"true\"
+  name: "{{ .Descriptor.ClusterID }}-identity"
+  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+spec:
+  allowedNamespaces: {}
+  clientID: "{{ .Credentials.ClientID }}"
+  clientSecret:
+    name: "cluster-identity-secret"
+    namespace: "capz-system"
+  tenantID: "{{ .Credentials.TenantID }}"
+  type: ServicePrincipal
+{{- range $node := .Descriptor.WorkerNodes }}
+{{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachinePool
+metadata:
+  name: "{{ $node.Name }}-mp-{{ $index }}"
+  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
+spec:
+  clusterName: "{{ $.Descriptor.ClusterID }}"
+  replicas: {{ $n.QA }}
+  template:
+    metadata:
+      labels:
+        keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
+    spec:
+      bootstrap:
+        dataSecretName: \"\"
+      clusterName: "{{ $.Descriptor.ClusterID }}"
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureManagedMachinePool
+        name: "{{ $node.Name }}-mp-{{ $index }}"
+      version: "{{ $.Descriptor.K8SVersion }}"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  name: "{{ $node.Name }}-mp-{{ $index }}"
+  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
+spec:
+  mode: System
+  name: "{{ $node.Name }}mp{{ $index }}"
+  sku: "{{ $node.Size }}"
+  osDiskSizeGB: {{- if $node.RootVolume.Size }} {{ $node.RootVolume.Size }} {{ else }} 30 {{ end }}
+  {{- if $node.RootVolume.Type }}
+  osDiskType: {{ $node.RootVolume.Type }}
+  {{- end }}
+  availabilityZones:
+    - \"{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ inc $index }} {{- end }}\"
+  {{- if gt $node.NodeGroupMaxSize 0 }}
+  scaling:
+    minSize: {{ $n.MinSize }}
+    maxSize: {{ $n.MaxSize }}
+  {{- end }}
+  {{- if gt (len $node.Labels) 0 }}
+  nodeLabels:
+    {{- range $key, $value := $node.Labels }}
+    {{ $key }}: \"{{ $value }}\"
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}

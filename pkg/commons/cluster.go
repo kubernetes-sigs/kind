@@ -77,6 +77,7 @@ type DescriptorFile struct {
 			Encrypted bool   `yaml:"encrypted" validate:"boolean"`
 		} `yaml:"root_volume"`
 		AWS          AWSCP         `yaml:"aws"`
+		Azure        AzureCP       `yaml:"azure"`
 		ExtraVolumes []ExtraVolume `yaml:"extra_volumes"`
 	} `yaml:"control_plane"`
 
@@ -113,6 +114,11 @@ type AWSCP struct {
 		ControllerManager bool `yaml:"controller_manager" validate:"boolean"`
 		Scheduler         bool `yaml:"scheduler" validate:"boolean"`
 	} `yaml:"logging"`
+}
+
+type AzureCP struct {
+	IdentityID string `yaml:"identity_id"`
+	Tier       string `yaml:"tier" validate:"oneof='Free' 'Paid'"`
 }
 
 type WorkerNodes []struct {
@@ -153,8 +159,9 @@ type ExtraVolume struct {
 }
 
 type Credentials struct {
-	AWS              AWSCredentials              `yaml:"aws" validate:"excluded_with=GCP"`
-	GCP              GCPCredentials              `yaml:"gcp" validate:"excluded_with=AWS"`
+	AWS              AWSCredentials              `yaml:"aws" validate:"excluded_with=AZURE GCP"`
+	AZURE            AzureCredentials            `yaml:"azure" validate:"excluded_with=AWS GCP"`
+	GCP              GCPCredentials              `yaml:"gcp" validate:"excluded_with=AWS AZURE"`
 	GithubToken      string                      `yaml:"github_token"`
 	DockerRegistries []DockerRegistryCredentials `yaml:"docker_registries"`
 }
@@ -164,6 +171,13 @@ type AWSCredentials struct {
 	SecretKey string `yaml:"secret_key"`
 	Region    string `yaml:"region"`
 	AccountID string `yaml:"account_id"`
+}
+
+type AzureCredentials struct {
+	SubscriptionID string `yaml:"subscription_id"`
+	TenantID       string `yaml:"tenant_id"`
+	ClientID       string `yaml:"client_id"`
+	ClientSecret   string `yaml:"client_secret"`
 }
 
 type GCPCredentials struct {
@@ -197,6 +211,11 @@ type AWS struct {
 	Credentials AWSCredentials `yaml:"credentials"`
 }
 
+type AZURE struct {
+	Credentials   AzureCredentials `yaml:"credentials"`
+	ResourceGroup string           `yaml:"resource_group"`
+}
+
 type GCP struct {
 	Credentials GCPCredentials `yaml:"credentials"`
 }
@@ -207,6 +226,7 @@ type SecretsFile struct {
 
 type Secrets struct {
 	AWS              AWS                         `yaml:"aws"`
+	AZURE            AZURE                       `yaml:"azure"`
 	GCP              GCP                         `yaml:"gcp"`
 	GithubToken      string                      `yaml:"github_token"`
 	ExternalRegistry DockerRegistryCredentials   `yaml:"external_registry"`
@@ -223,6 +243,9 @@ type ProviderParams struct {
 // Init sets default values for the DescriptorFile
 func (d DescriptorFile) Init() DescriptorFile {
 	d.ControlPlane.HighlyAvailable = true
+
+	// AKS
+	d.ControlPlane.Azure.Tier = "Paid"
 
 	// Autoscaler
 	d.DeployAutoscaler = true

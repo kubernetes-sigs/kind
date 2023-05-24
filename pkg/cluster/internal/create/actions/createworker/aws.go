@@ -18,10 +18,15 @@ package createworker
 
 import (
 	"bytes"
+	"context"
+	"encoding/base64"
 	b64 "encoding/base64"
 	"os"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -157,4 +162,31 @@ func (b *AWSBuilder) getAzs() ([]string, error) {
 		azs[i] = *az.ZoneName
 	}
 	return azs, nil
+}
+
+func getEcrToken(p commons.ProviderParams) (string, error) {
+	customProvider := credentials.NewStaticCredentialsProvider(
+		p.Credentials["AccessKey"], p.Credentials["SecretKey"], "",
+	)
+	cfg, err := config.LoadDefaultConfig(
+		context.TODO(),
+		config.WithCredentialsProvider(customProvider),
+		config.WithRegion(p.Region),
+	)
+	if err != nil {
+		return "", err
+	}
+
+	svc := ecr.NewFromConfig(cfg)
+	token, err := svc.GetAuthorizationToken(context.TODO(), &ecr.GetAuthorizationTokenInput{})
+	if err != nil {
+		return "", err
+	}
+	authData := token.AuthorizationData[0].AuthorizationToken
+	data, err := base64.StdEncoding.DecodeString(*authData)
+	if err != nil {
+		return "", err
+	}
+	parts := strings.SplitN(string(data), ":", 2)
+	return parts[1], nil
 }

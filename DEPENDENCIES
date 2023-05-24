@@ -8,6 +8,7 @@ core:
     calicoctl: v3.25.1
     tigera-operator: v1.25.9
   cluster-autoscaler: 9.28.0
+  pause: v3.9
 aws:
   clusterawsadm: v2.0.2
   cluster-api-aws: v2.0.2
@@ -17,6 +18,9 @@ aws:
     coredns: v1.9.3-eksbuild.3
     kube-proxy: v1.25.9-eksbuild.1
     vpc-cni: v1.12.6-eksbuild.1
+azure:
+  cluster-api-azure: v1.9.2
+  cluster-api-azure-templates: v1.9.2
 gcp:
   cluster-api-gcp: v1.3.0
   cluster-api-gcp-templates: v1.3.0
@@ -26,4 +30,3 @@ gcp:
   csi-resizer: v1.7.0
   csi-attacher: v4.2.0
   csi-provisioner: v3.4.1
-  pause: v3.9
