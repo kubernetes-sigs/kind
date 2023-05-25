@@ -228,6 +228,27 @@ mount_kubelet_cgroup_root() {
   fi
 }
 
+# helper for cgroups v1, to eliminate the misc cgroup
+# see: https://github.com/kubernetes-sigs/kind/issues/3223
+# basically: this cgroup is not very useful for us, and until recently wasn't
+# supported by runc on cgroups v1 anyhow.
+# on cgroupsv2 we can leave it, but on v1 the mismatch in support from container
+# nesting causes problems
+remove_misc_controller() {
+  local misc_controller='/sys/fs/cgroup/misc'
+  if [[ ! -d $misc_controller ]]; then
+    return 0
+  fi
+  log_info "removing misc controller"
+  umount $misc_controller || log_warn "failed umount $misc_controller"
+  rmdir $misc_controller || log_warn "failed rmdir $misc_controller"
+  # systemd will discover misc controller is available here and re-mount it
+  # we will pretend it isn't available with a bind mount
+  # this mount will be removed by undo-mount-hacks.service
+  grep -v 'misc' /proc/cgroups >/kind/fake-cgroups
+  mount --bind /kind/fake-cgroups /proc/cgroups
+}
+
 fix_cgroup() {
   if [[ -f "/sys/fs/cgroup/cgroup.controllers" ]]; then
     log_info 'detected cgroup v2'
@@ -253,15 +274,17 @@ fix_cgroup() {
   # current process. this tells us what cgroup-path the container is in.
   local current_cgroup
   current_cgroup=$(grep -E '^[^:]*:([^:]*,)?cpu(,[^,:]*)?:.*' /proc/self/cgroup | cut -d: -f3)
-  local cgroup_subsystems
-  cgroup_subsystems=$(findmnt -lun -o source,target -t cgroup | grep -F "${current_cgroup}" | awk '{print $2}')
   if [ "$current_cgroup" = "/" ]; then
     log_info 'detected cgroupns'
+    # we don't need or want the misc controller, see comments on this function
+    remove_misc_controller
     # kubelet will try to manage cgroups / pods that are not owned by it when
     # "nesting" clusters, unless we instruct it to use a different cgroup root.
     # We do this, and when doing so we must fixup this alternative root
     # currently this is hardcoded to be /kubelet
     # under systemd cgroup driver, kubelet appends .slice
+    local cgroup_subsystems
+    cgroup_subsystems=$(findmnt -lun -o source,target -t cgroup | grep -F "${current_cgroup}" | awk '{print $2}')
     mount --make-rprivate /sys/fs/cgroup
     mount_kubelet_cgroup_root "${cgroup_subsystems}"
     return
@@ -305,6 +328,8 @@ fix_cgroup() {
       rmdir "$mnt" || log_warn "failed to rmdir $mnt"
     done
   fi
+  # always remove misc on v1, see comments on this function
+  remove_misc_controller
 
   # For each cgroup subsystem, Docker does a bind mount from the current
   # cgroup to the root of the cgroup subsystem. For instance:
@@ -345,6 +370,7 @@ fix_cgroup() {
   # currently this is hardcoded to be /kubelet
   # under systemd cgroup driver, kubelet appends .slice
   mount --make-rprivate /sys/fs/cgroup
+  cgroup_subsystems=$(findmnt -lun -o source,target -t cgroup | grep -F "${current_cgroup}" | awk '{print $2}')
   mount_kubelet_cgroup_root "${cgroup_subsystems}"
 }
 
