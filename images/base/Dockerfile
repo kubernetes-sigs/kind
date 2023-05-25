@@ -26,8 +26,10 @@ FROM $BASE_IMAGE as base
 # copy in static files
 # all scripts are 0755 (rwx r-x r-x)
 COPY --chmod=0755 files/usr/local/bin/* /usr/local/bin/
+COPY --chmod=0755 files/kind/bin/* /kind/bin/
 
 # all non-scripts are 0644 (rw- r-- r--)
+COPY --chmod=0644 files/kind/* /kind/
 COPY --chmod=0644 files/LICENSES/* /LICENSES/*
 COPY --chmod=0644 files/etc/* /etc/
 COPY --chmod=0644 files/etc/containerd/* /etc/containerd/
@@ -83,9 +85,10 @@ RUN echo "Installing Packages ..." \
     && echo "ReadKMsg=no" >> /etc/systemd/journald.conf \
     && ln -s "$(which systemd)" /sbin/init
 
-RUN echo "Enabling kubelet and containerd services ... " \
+RUN echo "Enabling services ... " \
     && systemctl enable kubelet.service \
-    && systemctl enable containerd.service
+    && systemctl enable containerd.service \
+    && systemctl enable undo-mount-hacks.service
 
 RUN echo "Ensuring /etc/kubernetes/manifests" \
     && mkdir -p /etc/kubernetes/manifests
@@ -195,7 +198,7 @@ COPY --from=build-containerd /containerd/bin/containerd /usr/local/bin/
 COPY --from=build-containerd /containerd/bin/ctr /usr/local/bin/
 COPY --from=build-containerd /containerd/bin/containerd-shim-runc-v2 /usr/local/bin/
 RUN ctr oci spec \
-        | jq '.hooks.createContainer[.hooks.createContainer| length] |= . + {"path": "/usr/local/bin/mount-product-files"}' \
+        | jq '.hooks.createContainer[.hooks.createContainer| length] |= . + {"path": "/kind/bin/mount-product-files.sh"}' \
         | jq 'del(.process.rlimits)' \
         > /etc/containerd/cri-base.json \
     && containerd --version
