@@ -28,7 +28,7 @@ spec:
   {{- if ne .Descriptor.Networks.VPCID "" }}
   network:
     name: {{ .Descriptor.Networks.VPCID }}
-    autoCreateSubnetworks: true
+    autoCreateSubnetworks: false
     {{- if ne .Descriptor.Networks.Subnets nil }}
     subnets:
     {{- with (index .Descriptor.Networks.Subnets 0) }}
