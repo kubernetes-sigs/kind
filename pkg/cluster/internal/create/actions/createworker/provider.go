@@ -42,6 +42,9 @@ const (
 const machineHealthCheckWorkerNodePath = "/kind/manifests/machinehealthcheckworkernode.yaml"
 const machineHealthCheckControlPlaneNodePath = "/kind/manifests/machinehealthcheckcontrolplane.yaml"
 
+//go:embed files/calico-metrics.yaml
+var calicoMetrics string
+
 type PBuilder interface {
 	setCapx(managed bool)
 	setCapxEnvVars(p commons.ProviderParams)
@@ -116,22 +119,6 @@ func installCalico(n nodes.Node, k string, descriptorFile commons.DescriptorFile
 	var cmd exec.Cmd
 	var err error
 
-	var felixMetrics = `
-apiVersion: v1
-kind: Service
-metadata:
-  name: calico-node-metrics
-  namespace: calico-system
-  labels:
-    k8s-app: calico-node
-spec:
-  selector:
-    k8s-app: calico-node
-  ports:
-    - name: metrics-port
-      port: 9191
-      targetPort: 9191`
-
 	calicoTemplate := "/kind/calico-helm-values.yaml"
 
 	// Generate the calico helm values
@@ -177,10 +164,10 @@ spec:
 		return errors.Wrap(err, "failed to apply calico-system egress NetworkPolicy")
 	}
 
-	// Create calico-node metrics service
+	// Create calico metrics services
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
-	if err = cmd.SetStdin(strings.NewReader(felixMetrics)).Run(); err != nil {
-		return errors.Wrap(err, "failed to create calico-node metrics service")
+	if err = cmd.SetStdin(strings.NewReader(calicoMetrics)).Run(); err != nil {
+		return errors.Wrap(err, "failed to create calico metrics services")
 	}
 
 	return nil
