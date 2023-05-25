@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/exec"
 )
 
 //go:embed templates/*
@@ -112,7 +113,24 @@ func (i *Infra) getAzs() ([]string, error) {
 
 func installCalico(n nodes.Node, k string, descriptorFile commons.DescriptorFile, allowCommonEgressNetPolPath string) error {
 	var c string
+	var cmd exec.Cmd
 	var err error
+
+	var felixMetrics = `
+apiVersion: v1
+kind: Service
+metadata:
+  name: calico-node-metrics
+  namespace: calico-system
+  labels:
+    k8s-app: calico-node
+spec:
+  selector:
+    k8s-app: calico-node
+  ports:
+    - name: metrics-port
+      port: 9191
+      targetPort: 9191`
 
 	calicoTemplate := "/kind/calico-helm-values.yaml"
 
@@ -157,6 +175,12 @@ func installCalico(n nodes.Node, k string, descriptorFile commons.DescriptorFile
 	err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to apply calico-system egress NetworkPolicy")
+	}
+
+	// Create calico-node metrics service
+	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
+	if err = cmd.SetStdin(strings.NewReader(felixMetrics)).Run(); err != nil {
+		return errors.Wrap(err, "failed to create calico-node metrics service")
 	}
 
 	return nil
