@@ -33,6 +33,10 @@ type KEOSDescriptor struct {
 		Enabled bool `yaml:"enabled"`
 		EKS     bool `yaml:"eks"`
 	} `yaml:"aws,omitempty"`
+	Azure struct {
+		Enabled bool `yaml:"enabled"`
+		AKS     bool `yaml:"aks"`
+	} `yaml:"azure,omitempty"`
 	GCP struct {
 		Enabled bool `yaml:"enabled"`
 		GKE     bool `yaml:"gke"`
@@ -79,6 +83,12 @@ func createKEOSDescriptor(descriptorFile commons.DescriptorFile, storageClass st
 	if descriptorFile.InfraProvider == "aws" {
 		keosDescriptor.AWS.Enabled = true
 		keosDescriptor.AWS.EKS = descriptorFile.ControlPlane.Managed
+	}
+
+	// Azure
+	if descriptorFile.InfraProvider == "azure" {
+		keosDescriptor.Azure.Enabled = true
+		keosDescriptor.Azure.AKS = descriptorFile.ControlPlane.Managed
 	}
 
 	// GCP

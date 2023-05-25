@@ -18,18 +18,12 @@ package commons
 
 import (
 	"bytes"
-	"context"
-	"encoding/base64"
-	"log"
 	"unicode"
 
 	"os"
 	"reflect"
 	"strings"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/fatih/structs"
 	"github.com/oleiade/reflections"
 	"gopkg.in/yaml.v3"
@@ -197,8 +191,10 @@ func EnsureSecretsFile(descriptorFile DescriptorFile, vaultPassword string) erro
 		if len(credentials) > 0 {
 			creds := convertStringMapToInterfaceMap(credentials)
 			creds = convertMapKeysToSnakeCase(creds)
-			secretMap[descriptorFile.InfraProvider] = map[string]interface{}{
-				"credentials": creds,
+			if descriptorFile.InfraProvider == "azure" {
+				secretMap[descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds, "resource_group": descriptorFile.ClusterID}
+			} else {
+				secretMap[descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds}
 			}
 		}
 
@@ -240,7 +236,11 @@ func EnsureSecretsFile(descriptorFile DescriptorFile, vaultPassword string) erro
 		edited = true
 		creds := convertStringMapToInterfaceMap(credentials)
 		creds = convertMapKeysToSnakeCase(creds)
-		secretMap["secrets"][descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds}
+		if descriptorFile.InfraProvider == "azure" {
+			secretMap["secrets"][descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds, "resource_group": descriptorFile.ClusterID}
+		} else {
+			secretMap["secrets"][descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds}
+		}
 	}
 
 	if secretMap["secrets"]["external_registry"] == nil && len(externalRegistry) > 0 {
@@ -389,33 +389,6 @@ func convertMapKeysToSnakeCase(m map[string]interface{}) map[string]interface{} 
 		newMap[newKey] = v
 	}
 	return newMap
-}
-
-func GetEcrAuthToken(p ProviderParams) (string, error) {
-	customProvider := credentials.NewStaticCredentialsProvider(
-		p.Credentials["AccessKey"], p.Credentials["SecretKey"], "",
-	)
-	cfg, err := config.LoadDefaultConfig(
-		context.TODO(),
-		config.WithCredentialsProvider(customProvider),
-		config.WithRegion(p.Region),
-	)
-	if err != nil {
-		panic("unable to load SDK config, " + err.Error())
-	}
-
-	svc := ecr.NewFromConfig(cfg)
-	token, err := svc.GetAuthorizationToken(context.TODO(), &ecr.GetAuthorizationTokenInput{})
-	if err != nil {
-		log.Fatal(err)
-	}
-	authData := token.AuthorizationData[0].AuthorizationToken
-	data, err := base64.StdEncoding.DecodeString(*authData)
-	if err != nil {
-		log.Fatal(err)
-	}
-	parts := strings.SplitN(string(data), ":", 2)
-	return parts[1], nil
 }
 
 func SliceContains(s []string, str string) bool {

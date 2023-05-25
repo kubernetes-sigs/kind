@@ -18,11 +18,11 @@ package createworker
 
 import (
 	"bytes"
+	"embed"
 	"encoding/base64"
 	"fmt"
 	"reflect"
 	"strings"
-
 	"text/template"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
@@ -30,15 +30,13 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
+//go:embed templates/*
+var ctel embed.FS
+
 const (
 	CAPICoreProvider         = "cluster-api:v1.4.1"
 	CAPIBootstrapProvider    = "kubeadm:v1.4.1"
 	CAPIControlPlaneProvider = "kubeadm:v1.4.1"
-
-	CalicoName      = "calico"
-	CalicoNamespace = "calico-system"
-	CalicoHelmChart = "/stratio/helm/tigera-operator"
-	CalicoTemplate  = "/kind/calico-helm-values.yaml"
 )
 
 const machineHealthCheckWorkerNodePath = "/kind/manifests/machinehealthcheckworkernode.yaml"
@@ -82,6 +80,10 @@ func getBuilder(builderType string) PBuilder {
 	if builderType == "gcp" {
 		return newGCPBuilder()
 	}
+
+	if builderType == "azure" {
+		return newAzureBuilder()
+	}
 	return nil
 }
 
@@ -110,33 +112,53 @@ func (i *Infra) getAzs(networks commons.Networks) ([]string, error) {
 	return azs, nil
 }
 
-func installCalico(n nodes.Node, k string, descriptorFile commons.DescriptorFile) error {
+func installCalico(n nodes.Node, k string, descriptorFile commons.DescriptorFile, allowCommonEgressNetPolPath string) error {
 	var c string
 	var err error
 
+	calicoTemplate := "/kind/calico-helm-values.yaml"
+
 	// Generate the calico helm values
-	calicoHelmValues, err := getCalicoManifest(descriptorFile)
+	calicoHelmValues, err := getManifest("calico-helm-values.tmpl", descriptorFile)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate calico helm values")
 	}
 
-	c = "kubectl --kubeconfig " + k + " create namespace " + CalicoNamespace
-	err = commons.ExecuteCommand(n, c)
-	if err != nil {
-		return errors.Wrap(err, "failed to create Calico namespace")
-	}
-
-	c = "echo '" + calicoHelmValues + "' > " + CalicoTemplate
+	c = "echo '" + calicoHelmValues + "' > " + calicoTemplate
 	err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to create Calico Helm chart values file")
 	}
 
-	c = "helm install --kubeconfig " + k + " " + CalicoName + " " + CalicoHelmChart +
-		" --namespace " + CalicoNamespace + " --values " + CalicoTemplate
+	c = "helm install calico /stratio/helm/tigera-operator" +
+		" --kubeconfig " + k +
+		" --namespace tigera-operator" +
+		" --create-namespace" +
+		" --values " + calicoTemplate
 	err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy Calico Helm Chart")
+	}
+
+	// Allow egress in tigera-operator namespace
+	c = "kubectl --kubeconfig " + kubeconfigPath + " -n tigera-operator apply -f " + allowCommonEgressNetPolPath
+	err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to apply tigera-operator egress NetworkPolicy")
+	}
+
+	// Wait for calico-system namespace to be created
+	c = "timeout 30s bash -c 'until kubectl --kubeconfig " + kubeconfigPath + " get ns calico-system; do sleep 2s ; done'"
+	err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to wait for calico-system namespace")
+	}
+
+	// Allow egress in calico-system namespace
+	c = "kubectl --kubeconfig " + kubeconfigPath + " -n calico-system apply -f " + allowCommonEgressNetPolPath
+	err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to apply calico-system egress NetworkPolicy")
 	}
 
 	return nil
@@ -146,6 +168,23 @@ func installCalico(n nodes.Node, k string, descriptorFile commons.DescriptorFile
 func (p *Provider) installCAPXWorker(node nodes.Node, kubeconfigPath string, allowAllEgressNetPolPath string) error {
 	var command string
 	var err error
+
+	if p.capxProvider == "azure" {
+		// Create capx namespace
+		command = "kubectl --kubeconfig " + kubeconfigPath + " create namespace " + p.capxName + "-system"
+		err = commons.ExecuteCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to create CAPx namespace")
+		}
+
+		// Create capx secret
+		secret := strings.Split(p.capxEnvVars[0], "AZURE_CLIENT_SECRET=")[1]
+		command = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system create secret generic cluster-identity-secret --from-literal=clientSecret='" + string(secret) + "'"
+		err = commons.ExecuteCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to create CAPx secret")
+		}
+	}
 
 	// Install CAPX in worker cluster
 	command = "clusterctl --kubeconfig " + kubeconfigPath + " init --wait-providers" +
@@ -179,6 +218,23 @@ func (p *Provider) installCAPXWorker(node nodes.Node, kubeconfigPath string, all
 func (p *Provider) installCAPXLocal(node nodes.Node) error {
 	var command string
 	var err error
+
+	if p.capxProvider == "azure" {
+		// Create capx namespace
+		command = "kubectl create namespace " + p.capxName + "-system"
+		err = commons.ExecuteCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to create CAPx namespace")
+		}
+
+		// Create capx secret
+		secret := strings.Split(p.capxEnvVars[0], "AZURE_CLIENT_SECRET=")[1]
+		command = "kubectl -n " + p.capxName + "-system create secret generic cluster-identity-secret --from-literal=clientSecret='" + string(secret) + "'"
+		err = commons.ExecuteCommand(node, command)
+		if err != nil {
+			return errors.Wrap(err, "failed to create CAPx secret")
+		}
+	}
 
 	command = "clusterctl init --wait-providers" +
 		" --core " + CAPICoreProvider +
@@ -295,6 +351,9 @@ func GetClusterManifest(flavor string, params commons.TemplateParams, azs []stri
 		"isNotEmpty": func(v interface{}) bool {
 			return !reflect.ValueOf(v).IsZero()
 		},
+		"inc": func(i int) int {
+			return i + 1
+		},
 		"base64": func(s string) string {
 			return base64.StdEncoding.EncodeToString([]byte(s))
 		},
@@ -307,6 +366,20 @@ func GetClusterManifest(flavor string, params commons.TemplateParams, azs []stri
 	}
 
 	err = t.ExecuteTemplate(&tpl, flavor, params)
+	if err != nil {
+		return "", err
+	}
+	return tpl.String(), nil
+}
+
+func getManifest(name string, params interface{}) (string, error) {
+	var tpl bytes.Buffer
+	t, err := template.New("").ParseFS(ctel, "templates/"+name)
+	if err != nil {
+		return "", err
+	}
+
+	err = t.ExecuteTemplate(&tpl, name, params)
 	if err != nil {
 		return "", err
 	}
