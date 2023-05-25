@@ -49,13 +49,9 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		},
 	}
 
-	const (
-		nameFlag = "name"
-	)
-
 	cmd.Flags().StringVarP(
 		&flags.Name,
-		nameFlag,
+		"name",
 		"n",
 		cluster.DefaultName,
 		"the cluster name",
@@ -67,7 +63,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		"sets kubeconfig path instead of $KUBECONFIG or $HOME/.kube/config",
 	)
 
-	cobra.CheckErr(cmd.RegisterFlagCompletionFunc(nameFlag, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	cobra.CheckErr(cmd.RegisterFlagCompletionFunc("name", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		clusters, err := cluster.NewProvider(
 			cluster.ProviderWithLogger(logger),
 			runtime.GetDefault(logger),
