@@ -99,7 +99,7 @@ func createKEOSDescriptor(descriptorFile commons.DescriptorFile, storageClass st
 
 	// Keos
 	keosDescriptor.Keos.ClusterID = descriptorFile.ClusterID
-        keosDescriptor.Keos.Domain = "cluster.local"
+	keosDescriptor.Keos.Domain = "cluster.local"
 	if descriptorFile.ExternalDomain != "" {
 		keosDescriptor.Keos.ExternalDomain = descriptorFile.ExternalDomain
 	}
