@@ -86,7 +86,7 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	return nil
 }
 
-func (b *AzureBuilder) getAzs() ([]string, error) {
+func (b *AzureBuilder) getAzs(networks commons.Networks) ([]string, error) {
 	return []string{"1", "2", "3"}, nil
 }
 

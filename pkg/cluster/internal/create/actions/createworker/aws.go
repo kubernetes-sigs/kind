@@ -30,6 +30,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"golang.org/x/exp/slices"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -150,7 +151,7 @@ func (b *AWSBuilder) getAzs(networks commons.Networks) ([]string, error) {
 	if networks.Subnets != nil {
 		privateAZs := []string{}
 		for _, subnet := range networks.Subnets {
-			privateSubnetID, _ := isPrivateSubnet(svc, &subnet.SubnetId)
+			privateSubnetID, _ := filterPrivateSubnet(svc, &subnet.SubnetId)
 			if len(privateSubnetID) > 0 {
 				sid := &ec2.DescribeSubnetsInput{
 					SubnetIds: []*string{&subnet.SubnetId},
@@ -160,24 +161,17 @@ func (b *AWSBuilder) getAzs(networks commons.Networks) ([]string, error) {
 					return nil, err
 				}
 				for _, describeSubnet := range ds.Subnets {
-					if !commons.SliceContains(privateAZs, *describeSubnet.AvailabilityZone) {
+					if !slices.Contains(privateAZs, *describeSubnet.AvailabilityZone) {
 						privateAZs = append(privateAZs, *describeSubnet.AvailabilityZone)
 					}
 				}
 			}
 		}
-		if len(privateAZs) < 3 {
-			return nil, errors.New("Insufficient Availability Zones in this region. Please add at least 3 private subnets in different Availability Zones")
-		} else {
-			return privateAZs, nil
-		}
+		return privateAZs, nil
 	} else {
 		result, err := svc.DescribeAvailabilityZones(&ec2.DescribeAvailabilityZonesInput{})
 		if err != nil {
 			return nil, err
-		}
-		if len(result.AvailabilityZones) < 3 {
-			return nil, errors.New("Insufficient Availability Zones in this region. Must have at least 3")
 		}
 		azs := make([]string, 3)
 		for i, az := range result.AvailabilityZones {
@@ -190,7 +184,7 @@ func (b *AWSBuilder) getAzs(networks commons.Networks) ([]string, error) {
 	}
 }
 
-func isPrivateSubnet(svc *ec2.EC2, subnetID *string) (string, error) {
+func filterPrivateSubnet(svc *ec2.EC2, subnetID *string) (string, error) {
 	keyname := "association.subnet-id"
 	filters := make([]*ec2.Filter, 0)
 	filter := ec2.Filter{
@@ -205,9 +199,7 @@ func isPrivateSubnet(svc *ec2.EC2, subnetID *string) (string, error) {
 
 	var isPublic bool
 	for _, associatedRouteTable := range drto.RouteTables {
-		//		fmt.Println(*subnetID)
 		for i := range associatedRouteTable.Routes {
-			// fmt.Println(*associatedRouteTable.Routes[i].GatewayId)
 			if strings.Contains(*associatedRouteTable.Routes[i].GatewayId, "igw") {
 				isPublic = true
 			}

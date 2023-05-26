@@ -369,6 +369,7 @@ func GetClusterManifest(flavor string, params commons.TemplateParams, azs []stri
 	if err != nil {
 		return "", err
 	}
+
 	return tpl.String(), nil
 }
 
