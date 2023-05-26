@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"embed"
 	"encoding/base64"
-	"fmt"
 	"reflect"
 	"strings"
 	"text/template"
@@ -108,7 +107,6 @@ func (i *Infra) getAzs(networks commons.Networks) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(azs)
 	return azs, nil
 }
 
