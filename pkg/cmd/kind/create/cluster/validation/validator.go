@@ -78,15 +78,15 @@ func getValidator(provider string, managed bool) (Validator, error) {
 		if managed {
 			return newEKSValidator(), nil
 		}
-		return nil, errors.New("WIP in not manage AWS")
+		return nil, errors.New("WIP in not managed AWS")
 	case "azure":
 		if managed {
 			return newAKSValidator(), nil
 		}
-		return nil, errors.New("WIP in not manage Azure")
+		return nil, errors.New("WIP in not managed Azure")
 	case "gcp":
 		if managed {
-			return nil, errors.New("WIP in manage GCP")
+			return nil, errors.New("WIP in managed GCP")
 		}
 		return NewGCPValidator(), nil
 	default:

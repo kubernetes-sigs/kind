@@ -158,8 +158,10 @@ func eksAZValidation(descriptorFile commons.DescriptorFile, secretsFile commons.
 			return errors.New("Insufficient Availability Zones in region " + descriptorFile.Region + ". Please add at least 3 private subnets in different Availability Zones")
 		}
 		for _, node := range descriptorFile.WorkerNodes {
-			if !slices.Contains(privateAZs, node.AZ) {
-				return errors.New("Worker node " + node.Name + " whose AZ is defined in " + node.AZ + " must match with the AZs associated to the defined subnets in descriptor")
+			if node.ZoneDistribution == "unbalanced" && node.AZ != "" {
+				if !slices.Contains(privateAZs, node.AZ) {
+					return errors.New("Worker node " + node.Name + " whose AZ is defined in " + node.AZ + " must match with the AZs associated to the defined subnets in descriptor")
+				}
 			}
 		}
 	} else {
@@ -178,8 +180,10 @@ func eksAZValidation(descriptorFile commons.DescriptorFile, secretsFile commons.
 			azs[i] = *az.ZoneName
 		}
 		for _, node := range descriptorFile.WorkerNodes {
-			if !slices.Contains(azs, node.AZ) {
-				return errors.New("Worker node " + node.Name + " whose AZ is defined in " + node.AZ + " must match with the first three AZs in region " + descriptorFile.Region)
+			if node.ZoneDistribution == "unbalanced" && node.AZ != "" {
+				if !slices.Contains(azs, node.AZ) {
+					return errors.New("Worker node " + node.Name + " whose AZ is defined in " + node.AZ + " must match with the first three AZs in region " + descriptorFile.Region)
+				}
 			}
 		}
 	}
