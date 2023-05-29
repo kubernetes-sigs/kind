@@ -34,8 +34,9 @@ type KEOSDescriptor struct {
 		EKS     bool `yaml:"eks"`
 	} `yaml:"aws,omitempty"`
 	Azure struct {
-		Enabled bool `yaml:"enabled"`
-		AKS     bool `yaml:"aks"`
+		Enabled       bool   `yaml:"enabled"`
+		AKS           bool   `yaml:"aks"`
+		ResourceGroup string `yaml:"resource_group"`
 	} `yaml:"azure,omitempty"`
 	GCP struct {
 		Enabled bool `yaml:"enabled"`
@@ -89,6 +90,7 @@ func createKEOSDescriptor(descriptorFile commons.DescriptorFile, storageClass st
 	if descriptorFile.InfraProvider == "azure" {
 		keosDescriptor.Azure.Enabled = true
 		keosDescriptor.Azure.AKS = descriptorFile.ControlPlane.Managed
+		keosDescriptor.Azure.ResourceGroup = descriptorFile.ClusterID
 	}
 
 	// GCP
