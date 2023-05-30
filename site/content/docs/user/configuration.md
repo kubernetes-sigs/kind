@@ -285,6 +285,20 @@ nodes:
 
 **Note**: Kubernetes versions are expressed as x.y.z, where x is the major version, y is the minor version, and z is the patch version, following [Semantic Versioning](https://semver.org/) terminology. For more information, see [Kubernetes Release Versioning.](https://github.com/kubernetes/sig-release/blob/master/release-engineering/versioning.md#kubernetes-release-versioning)
 
+### GPU Support
+
+Kind nodes can utilize GPUs by setting the following:
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  gpus: all
+{{< /codeFromInline >}}
+
+As a pre-requisite you need to have installed the
+[NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).
+
 ### Extra Mounts
 
 Extra mounts can be used to pass through storage on the host to a kind node
