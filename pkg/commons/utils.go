@@ -191,11 +191,7 @@ func EnsureSecretsFile(descriptorFile DescriptorFile, vaultPassword string) erro
 		if len(credentials) > 0 {
 			creds := convertStringMapToInterfaceMap(credentials)
 			creds = convertMapKeysToSnakeCase(creds)
-			if descriptorFile.InfraProvider == "azure" {
-				secretMap[descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds, "resource_group": descriptorFile.ClusterID}
-			} else {
-				secretMap[descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds}
-			}
+			secretMap[descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds}
 		}
 
 		if len(externalRegistry) > 0 {
@@ -236,11 +232,7 @@ func EnsureSecretsFile(descriptorFile DescriptorFile, vaultPassword string) erro
 		edited = true
 		creds := convertStringMapToInterfaceMap(credentials)
 		creds = convertMapKeysToSnakeCase(creds)
-		if descriptorFile.InfraProvider == "azure" {
-			secretMap["secrets"][descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds, "resource_group": descriptorFile.ClusterID}
-		} else {
-			secretMap["secrets"][descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds}
-		}
+		secretMap["secrets"][descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds}
 	}
 
 	if secretMap["secrets"]["external_registry"] == nil && len(externalRegistry) > 0 {
