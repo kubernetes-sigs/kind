@@ -18,10 +18,12 @@ package createworker
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -30,7 +32,11 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/exec"
 )
+
+//go:embed files/azure-storage-classes.yaml
+var azureStorageClasses string
 
 type AzureBuilder struct {
 	capxProvider     string
@@ -84,6 +90,7 @@ func (b *AzureBuilder) getProvider() Provider {
 
 func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	var c string
+	var cmd exec.Cmd
 	var err error
 
 	c = "helm install azuredisk-csi-driver /stratio/helm/azuredisk-csi-driver" +
@@ -91,6 +98,11 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy Azure Disk CSI driver Helm Chart")
+	}
+
+	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
+	if err = cmd.SetStdin(strings.NewReader(azureStorageClasses)).Run(); err != nil {
+		return errors.Wrap(err, "failed to create Azure Storage Classes")
 	}
 
 	return nil
