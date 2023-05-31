@@ -120,7 +120,7 @@ type Node struct {
 
 	// GPUs allows to access GPU devices from the kind node. Setting this to
 	// "all" will pass all the available GPUs to the kind node.
-	Gpus string `yaml:"gpus,omitempty" json:"gpus,omitempty"`
+	GPUs string `yaml:"gpus,omitempty" json:"gpus,omitempty"`
 
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// merge patches. The `kind` field must match the target object, and

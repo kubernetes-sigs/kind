@@ -255,8 +255,8 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		args = append(args, "-e", "KUBECONFIG=/etc/kubernetes/admin.conf")
 	}
 
-	if len(node.Gpus) > 0 {
-		args = append(args, fmt.Sprintf("--gpus=%v", node.Gpus))
+	if len(node.GPUs) > 0 {
+		args = append(args, fmt.Sprintf("--gpus=%v", node.GPUs))
 	}
 
 	// finally, specify the image to run

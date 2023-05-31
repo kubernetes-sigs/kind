@@ -100,7 +100,7 @@ type Node struct {
 
 	// GPUs allows to access GPU devices from the kind node. Setting this to
 	// "all" will pass all the available GPUs to the kind node.
-	Gpus string
+	GPUs string
 
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// strategic merge patches to `kustomize build` internally
