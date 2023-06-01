@@ -195,8 +195,6 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 }
 
 // alreadyExists returns an error if the cluster name already exists
-// or if we had an error checking
-// Also add the facililty to delete current cluster container if it exists with flag --force
 func alreadyExists(p providers.Provider, name string, forceDelete bool) error {
 	n, err := p.ListNodes(name)
 	if err != nil {
