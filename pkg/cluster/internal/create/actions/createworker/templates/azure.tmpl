@@ -114,8 +114,8 @@ spec:
         {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
         - device: /dev/disk/azure/scsi1/lun{{ $index }}
           extraOpts:
-            - -E
-            - lazy_itable_init=1,lazy_journal_init=1
+            - \"-E\"
+            - \"lazy_itable_init=1,lazy_journal_init=1\"
           filesystem: ext4
           label: {{ $vol.Label }}
         {{- end }}
@@ -165,7 +165,7 @@ spec:
       {{- if .Descriptor.ControlPlane.ExtraVolumes }}
       dataDisks:
         {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
-         - nameSuffix: {{ $vol.DeviceName }}
+         - nameSuffix: {{ $vol.Name }}
            {{- if $vol.Type }}
            managedDisk:
              storageAccountType: {{ $vol.Type }}
@@ -236,7 +236,7 @@ spec:
       {{- if $node.ExtraVolumes }}
       dataDisks:
         {{- range $index, $vol := $node.ExtraVolumes }}
-         - nameSuffix: {{ $vol.DeviceName }}
+         - nameSuffix: {{ $vol.Name }}
            {{- if $vol.Type }}
            managedDisk:
             storageAccountType: {{ $vol.Type }}
