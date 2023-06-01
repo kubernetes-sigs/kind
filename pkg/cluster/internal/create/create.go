@@ -59,6 +59,8 @@ type ClusterOptions struct {
 	DescriptorPath string
 	MoveManagement bool
 	AvoidCreation  bool
+	// Force local container delete before creating the cluster if it already exists
+	ForceDelete bool
 	// NodeImage overrides the nodes' images in Config if non-zero
 	NodeImage      string
 	Retain         bool
@@ -85,7 +87,13 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 
 	// Check if the cluster name already exists
 	if err := alreadyExists(p, opts.Config.Name); err != nil {
-		return err
+		if opts.ForceDelete {
+			// Delete current cluster container
+			_ = delete.Cluster(nil, p, opts.Config.Name, "")
+		} else {
+			return errors.Errorf("A cluster with the name %q already exists \n"+
+				"Please use a different cluster name or delete the current container with --delete-previous flag", opts.Config.Name)
+		}
 	}
 
 	// warn if cluster name might typically be too long

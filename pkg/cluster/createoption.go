@@ -94,6 +94,14 @@ func CreateWithAvoidCreation(avoidCreation bool) CreateOption {
 	})
 }
 
+// CreateWithWaitForceDelete removes local cluster container
+func CreateWithForceDelete(forceDelete bool) CreateOption {
+	return createOptionAdapter(func(o *internalcreate.ClusterOptions) error {
+		o.ForceDelete = forceDelete
+		return nil
+	})
+}
+
 // CreateWithWaitForReady configures a maximum wait time for the control plane
 // node(s) to be ready. By default no waiting is performed
 func CreateWithWaitForReady(waitTime time.Duration) CreateOption {
