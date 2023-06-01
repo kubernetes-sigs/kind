@@ -133,10 +133,9 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		false,
 		"by setting this flag the worker cluster won't be created",
 	)
-	// Shortcut "-f" for "--force
 	cmd.Flags().BoolVar(
 		&flags.ForceDelete,
-		"force",
+		"delete-previous",
 		false,
 		"by setting this flag the local cluster will be deleted",
 	)
