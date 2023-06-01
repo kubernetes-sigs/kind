@@ -103,8 +103,7 @@ func (n *Node) Validate() error {
 
 	// validate node role should be one of the expected values
 	switch n.Role {
-	case ControlPlaneRole,
-		WorkerRole:
+	case ControlPlaneRole, WorkerRole:
 	default:
 		errs = append(errs, errors.Errorf("%q is not a valid node role", n.Role))
 	}
@@ -112,6 +111,10 @@ func (n *Node) Validate() error {
 	// image should be defined
 	if n.Image == "" {
 		errs = append(errs, errors.New("image is a required field"))
+	}
+
+	if err := validateGPUs(n.GPUs); err != nil {
+		errs = append(errs, errors.Wrapf(err, "invalid gpus"))
 	}
 
 	// validate extra port forwards
@@ -188,6 +191,13 @@ func validatePortMappings(portMappings []PortMapping) error {
 
 		// add the entry to bindMap
 		bindMap[portProtocol].Insert(addrString)
+	}
+	return nil
+}
+
+func validateGPUs(gpus string) error {
+	if len(gpus) > 0 && gpus != "all" {
+		return errors.Errorf("invalid gpus string: '%v'. Only 'all' is a valid value", gpus)
 	}
 	return nil
 }
