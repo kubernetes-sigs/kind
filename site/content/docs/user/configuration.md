@@ -287,7 +287,7 @@ nodes:
 
 ### GPU Support
 
-Kind nodes can utilize GPUs by setting the following:
+Kind nodes can utilize GPU devices from host by setting the following:
 {{< codeFromInline lang="yaml" >}}
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
