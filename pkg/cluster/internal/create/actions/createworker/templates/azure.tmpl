@@ -1,0 +1,338 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: "{{ .Descriptor.ClusterID }}"
+  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks: [\"192.168.0.0/16\"]
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: KubeadmControlPlane
+    name: "{{ .Descriptor.ClusterID }}-control-plane"
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureCluster
+    name: "{{ .Descriptor.ClusterID }}"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureCluster
+metadata:
+  name: "{{ .Descriptor.ClusterID }}"
+  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+spec:
+  identityRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: AzureClusterIdentity
+    name: "{{ .Descriptor.ClusterID }}-identity"
+  location: "{{ .Descriptor.Region }}"
+  networkSpec:
+    subnets:
+    - name: control-plane-subnet
+      role: control-plane
+    - name: node-subnet
+      role: node
+    vnet:
+      name: "{{ .Descriptor.ClusterID }}-vnet"
+  resourceGroup: "{{ .Descriptor.ClusterID }}"
+  subscriptionID: "{{ .Credentials.SubscriptionID }}"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureClusterIdentity
+metadata:
+  labels:
+    clusterctl.cluster.x-k8s.io/move-hierarchy: \"true\"
+  name: "{{ .Descriptor.ClusterID }}-identity"
+  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+spec:
+  allowedNamespaces: {}
+  clientID: "{{ .Credentials.ClientID }}"
+  clientSecret:
+    name: "cluster-identity-secret"
+    namespace: "capz-system"
+  tenantID: "{{ .Credentials.TenantID }}"
+  type: ServicePrincipal
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlane
+metadata:
+  name: "{{ .Descriptor.ClusterID }}-control-plane"
+  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+spec:
+  kubeadmConfigSpec:
+    clusterConfiguration:
+      apiServer:
+        extraArgs:
+          cloud-provider: external
+        timeoutForControlPlane: 20m
+      controllerManager:
+        extraArgs:
+          allocate-node-cidrs: \"false\"
+          cloud-provider: external
+          cluster-name: "{{ .Descriptor.ClusterID }}"
+      etcd:
+        local:
+          dataDir: /var/lib/etcddisk/etcd
+          extraArgs:
+            quota-backend-bytes: \"8589934592\"
+    files:
+      {{- if .DockerRegistries }}
+      - content: |
+          version = 2
+          imports = [\"/etc/containerd/conf.d/*.toml\"]
+          [plugins]
+            [plugins.\"io.containerd.grpc.v1.cri\"]
+              sandbox_image = \"k8s.gcr.io/pause:3.6\"
+            [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc]
+              runtime_type = \"io.containerd.runc.v2\"
+            [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc.options]
+              SystemdCgroup = true
+            [plugins.\"io.containerd.grpc.v1.cri\".registry]
+              [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors]
+                [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]
+                  endpoint = [\"https://registry-1.docker.io\"]
+              {{- range $reg := .DockerRegistries }}
+              {{- $url := hostname $reg.url }}
+              [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ $url }}\".auth]
+                password = \"{{ $reg.pass }}\"
+                username = \"{{ $reg.user }}\"
+              {{- end }}
+        path: /etc/containerd/config.toml
+      {{- end }}
+      - contentFrom:
+          secret:
+            key: control-plane-azure.json
+            name: "{{ .Descriptor.ClusterID }}-control-plane-azure-json"
+        owner: root:root
+        path: /etc/kubernetes/azure.json
+        permissions: \"0644\"
+    {{- if .Descriptor.ControlPlane.ExtraVolumes }}
+    diskSetup:
+      filesystems:
+        {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+        - device: /dev/disk/azure/scsi1/lun{{ $index }}
+          extraOpts:
+            - \"-E\"
+            - \"lazy_itable_init=1,lazy_journal_init=1\"
+          filesystem: ext4
+          label: {{ $vol.Label }}
+        {{- end }}
+      partitions:
+        {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+        - device: /dev/disk/azure/scsi1/lun{{ $index }}
+          layout: true
+          overwrite: false
+          tableType: gpt
+        {{- end }}
+    mounts:
+      {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+      - - LABEL={{ $vol.Label }}
+        - {{ $vol.MountPath }}
+      {{- end }}
+    {{- end }}
+    initConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          azure-container-registry-config: /etc/kubernetes/azure.json
+          cloud-provider: external
+        name: {{`'{{ ds.meta_data[\"local_hostname\"] }}'`}}
+    joinConfiguration:
+      nodeRegistration:
+        kubeletExtraArgs:
+          azure-container-registry-config: /etc/kubernetes/azure.json
+          cloud-provider: external
+        name: {{`'{{ ds.meta_data[\"local_hostname\"] }}'`}}
+    postKubeadmCommands: []
+    preKubeadmCommands: []
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: AzureMachineTemplate
+      name: {{ .Descriptor.ClusterID }}-control-plane
+  replicas: {{- if .Descriptor.ControlPlane.HighlyAvailable }} 3 {{- else }} 1 {{- end }}
+  version: "{{ .Descriptor.K8SVersion }}"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: "{{ .Descriptor.ClusterID }}-control-plane"
+  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+spec:
+  template:
+    spec:
+      {{- if .Descriptor.ControlPlane.ExtraVolumes }}
+      dataDisks:
+        {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+         - nameSuffix: {{ $vol.Name }}
+           {{- if $vol.Type }}
+           managedDisk:
+             storageAccountType: {{ $vol.Type }}
+           {{- end }}
+           diskSizeGB: {{ $vol.Size }}
+           lun: {{ $index }}
+        {{- end }}
+      {{- end }}
+      {{- if .Descriptor.ControlPlane.Azure.IdentityID }}
+      identity: UserAssigned
+      userAssignedIdentities:
+        - providerID: {{ .Descriptor.ControlPlane.Azure.IdentityID }}
+      {{- end }}
+      osDisk:
+        {{- if .Descriptor.ControlPlane.RootVolume.Size }}
+        diskSizeGB: {{ .Descriptor.ControlPlane.RootVolume.Size }}
+        {{- end }}
+        {{- if .Descriptor.ControlPlane.RootVolume.Type }}
+        managedDisk:
+          storageAccountType: {{ .Descriptor.ControlPlane.RootVolume.Type }}
+        {{- end }}
+        osType: Linux
+      vmSize: "{{ .Descriptor.ControlPlane.Size }}"
+{{- range $node := .Descriptor.WorkerNodes }}
+{{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+{{- if gt $node.NodeGroupMaxSize 0 }}
+  annotations:
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: '{{ $n.MaxSize }}'
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: '{{ $n.MinSize }}'
+{{- end }}
+  name: "{{ $node.Name }}-md-{{ $index }}"
+  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
+spec:
+  clusterName: "{{ $.Descriptor.ClusterID }}"
+  replicas: {{ $n.QA }}
+  selector:
+    matchLabels:
+  template:
+    metadata:
+      labels:
+        keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
+    spec:
+      clusterName: "{{ $.Descriptor.ClusterID }}"
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+          name: "{{ $node.Name }}-md-{{ $index }}"
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureMachineTemplate
+        name: "{{ $node.Name }}-md-{{ $index }}"
+      failureDomain: \"{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ inc $index }} {{- end }}\"
+      version: "{{ $.Descriptor.K8SVersion }}"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureMachineTemplate
+metadata:
+  name: "{{ $node.Name }}-md-{{ $index }}"
+  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
+spec:
+  template:
+    spec:
+      {{- if $node.ExtraVolumes }}
+      dataDisks:
+        {{- range $index, $vol := $node.ExtraVolumes }}
+         - nameSuffix: {{ $vol.Name }}
+           {{- if $vol.Type }}
+           managedDisk:
+            storageAccountType: {{ $vol.Type }}
+           {{- end }}
+           diskSizeGB: {{ $vol.Size }}
+           lun: {{ $index }}
+        {{- end }}
+      {{- end }}
+      {{- if $.Descriptor.ControlPlane.Azure.IdentityID }}
+      identity: UserAssigned
+      userAssignedIdentities:
+        - providerID: {{ $.Descriptor.ControlPlane.Azure.IdentityID }}
+      {{- end }}
+      osDisk:
+        {{- if $node.RootVolume.Size }}
+        diskSizeGB: {{ $node.RootVolume.Size }}
+        {{- end }}
+        {{- if $node.RootVolume.Type }}
+        managedDisk:
+          storageAccountType: {{ $node.RootVolume.Type }}
+        {{- end }}
+        osType: Linux
+      {{- if $node.Spot }}
+      spotVMOptions: {}
+      {{- end }}
+      vmSize: "{{ $node.Size }}"
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: "{{ $node.Name }}-md-{{ $index }}"
+  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
+spec:
+  template:
+    spec:
+      files:
+        {{- if $.DockerRegistries }}
+        - content: |
+            version = 2
+            imports = [\"/etc/containerd/conf.d/*.toml\"]
+            [plugins]
+              [plugins.\"io.containerd.grpc.v1.cri\"]
+                sandbox_image = \"k8s.gcr.io/pause:3.6\"
+              [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc]
+                runtime_type = \"io.containerd.runc.v2\"
+              [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc.options]
+                SystemdCgroup = true
+              [plugins.\"io.containerd.grpc.v1.cri\".registry]
+                [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors]
+                  [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]
+                    endpoint = [\"https://registry-1.docker.io\"]
+                {{- range $reg := $.DockerRegistries }}
+                {{- $url := hostname $reg.url }}
+                [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ $url }}\".auth]
+                  password = \"{{ $reg.pass }}\"
+                  username = \"{{ $reg.user }}\"
+                {{- end }}
+          path: /etc/containerd/config.toml
+        {{- end }}
+        - contentFrom:
+            secret:
+              key: worker-node-azure.json
+              name: "{{ $node.Name }}-md-{{ $index }}-azure-json"
+          owner: root:root
+          path: /etc/kubernetes/azure.json
+          permissions: \"0644\"
+      {{- if $node.ExtraVolumes }}
+      diskSetup:
+        filesystems:
+          {{- range $index, $vol := $node.ExtraVolumes }}
+          - device: /dev/disk/azure/scsi1/lun{{ $index }}
+            filesystem: ext4
+            label: {{ $vol.Label }}
+          {{- end }}
+        partitions:
+          {{- range $index, $vol := $node.ExtraVolumes }}
+          - device: /dev/disk/azure/scsi1/lun{{ $index }}
+            layout: true
+            overwrite: false
+            tableType: gpt
+          {{- end }}
+      mounts:
+        {{- range $index, $vol := $node.ExtraVolumes }}
+        - - LABEL={{ $vol.Label }}
+          - {{ $vol.MountPath }}
+        {{- end }}
+      {{- end }}
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            azure-container-registry-config: /etc/kubernetes/azure.json
+            cloud-provider: external
+            {{- if $node.Labels }}
+            node-labels: \"{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}\"
+            {{- end }}
+          name: {{`'{{ ds.meta_data[\"local_hostname\"] }}'`}}
+      preKubeadmCommands: []
+{{- end }}
+{{- end }}
