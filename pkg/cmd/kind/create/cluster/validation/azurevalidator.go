@@ -13,36 +13,38 @@ import (
 	"sigs.k8s.io/kind/pkg/commons"
 )
 
-var aksInstance *AKSValidator
+var azureInstance *AzureValidator
 
-type AKSValidator struct {
+type AzureValidator struct {
 	commonValidator
+	managed bool
 }
 
-func newAKSValidator() *AKSValidator {
-	if aksInstance == nil {
-		aksInstance = new(AKSValidator)
+func newAzureValidator(managed bool) *AzureValidator {
+	if azureInstance == nil {
+		azureInstance = new(AzureValidator)
 	}
-	return aksInstance
+	azureInstance.managed = managed
+	return azureInstance
 }
 
-func (v *AKSValidator) DescriptorFile(descriptorFile commons.DescriptorFile) {
+func (v *AzureValidator) DescriptorFile(descriptorFile commons.DescriptorFile) {
 	v.descriptor = descriptorFile
 }
 
-func (v *AKSValidator) SecretsFile(secrets commons.SecretsFile) {
+func (v *AzureValidator) SecretsFile(secrets commons.SecretsFile) {
 	v.secrets = secrets
 }
 
-func (v *AKSValidator) Validate(fileType string) error {
+func (v *AzureValidator) Validate(fileType string) error {
 	switch fileType {
 	case "descriptor":
-		err := descriptorAksValidations((*v).descriptor, (*v).secrets)
+		err := descriptorAzureValidations((*v).descriptor, (*v).secrets, (*v).managed)
 		if err != nil {
 			return err
 		}
 	case "secrets":
-		err := secretsAksValidations((*v).secrets)
+		err := secretsAzureValidations((*v).secrets)
 		if err != nil {
 			return err
 		}
@@ -52,7 +54,7 @@ func (v *AKSValidator) Validate(fileType string) error {
 	return nil
 }
 
-func (v *AKSValidator) CommonsValidations() error {
+func (v *AzureValidator) CommonsValidations() error {
 	err := commonsValidations((*v).descriptor, (*v).secrets)
 	if err != nil {
 		return err
@@ -60,23 +62,25 @@ func (v *AKSValidator) CommonsValidations() error {
 	return nil
 }
 
-func descriptorAksValidations(descriptorFile commons.DescriptorFile, secretsFile commons.SecretsFile) error {
+func descriptorAzureValidations(descriptorFile commons.DescriptorFile, secretsFile commons.SecretsFile, managed bool) error {
 	err := commonsDescriptorValidation(descriptorFile)
 	if err != nil {
 		return err
 	}
-	err = aksVersionValidation(descriptorFile, secretsFile)
-	if err != nil {
-		return err
-	}
-	err = aksNodesValidation(descriptorFile.WorkerNodes)
-	if err != nil {
-		return err
+	if managed {
+		err = aksVersionValidation(descriptorFile, secretsFile)
+		if err != nil {
+			return err
+		}
+		err = aksNodesValidation(descriptorFile.WorkerNodes)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func secretsAksValidations(secretsFile commons.SecretsFile) error {
+func secretsAzureValidations(secretsFile commons.SecretsFile) error {
 	err := commonsSecretsValidations(secretsFile)
 	if err != nil {
 		return err
