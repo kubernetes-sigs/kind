@@ -45,6 +45,7 @@ type KEOSDescriptor struct {
 	Keos struct {
 		Calico struct {
 			Ipip                 bool   `yaml:"ipip,omitempty"`
+			VXLan                bool   `yaml:"vxlan,omitempty"`
 			Pool                 string `yaml:"pool,omitempty"`
 			DeployTigeraOperator bool   `yaml:"deploy_tigera_operator"`
 		} `yaml:"calico"`
@@ -109,7 +110,11 @@ func createKEOSDescriptor(descriptorFile commons.DescriptorFile, storageClass st
 
 	// Keos - Calico
 	if !descriptorFile.ControlPlane.Managed {
-		keosDescriptor.Keos.Calico.Ipip = true
+		if descriptorFile.InfraProvider == "azure" {
+			keosDescriptor.Keos.Calico.VXLan = true
+		} else {
+			keosDescriptor.Keos.Calico.Ipip = true
+		}
 		keosDescriptor.Keos.Calico.Pool = "192.168.0.0/16"
 	}
 	keosDescriptor.Keos.Calico.DeployTigeraOperator = false
