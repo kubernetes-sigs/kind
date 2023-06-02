@@ -18,10 +18,12 @@ package createworker
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -29,7 +31,12 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v3"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
+	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/exec"
 )
+
+//go:embed files/azure-storage-classes.yaml
+var azureStorageClasses string
 
 type AzureBuilder struct {
 	capxProvider     string
@@ -52,12 +59,11 @@ func (b *AzureBuilder) setCapx(managed bool) {
 	b.capxImageVersion = "v1.9.2"
 	b.capxName = "capz"
 	b.stClassName = "default"
+	b.csiNamespace = "kube-system"
 	if managed {
 		b.capxTemplate = "azure.aks.tmpl"
-		b.csiNamespace = ""
 	} else {
 		b.capxTemplate = "azure.tmpl"
-		b.csiNamespace = ""
 	}
 }
 
@@ -85,11 +91,43 @@ func (b *AzureBuilder) getProvider() Provider {
 }
 
 func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
+	var c string
+	var cmd exec.Cmd
+	var err error
+
+	c = "helm install azuredisk-csi-driver /stratio/helm/azuredisk-csi-driver" +
+		" --kubeconfig " + k
+	err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to deploy Azure Disk CSI driver Helm Chart")
+	}
+
+	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
+	if err = cmd.SetStdin(strings.NewReader(azureStorageClasses)).Run(); err != nil {
+		return errors.Wrap(err, "failed to create Azure Storage Classes")
+	}
+
 	return nil
 }
 
 func (b *AzureBuilder) getAzs() ([]string, error) {
 	return []string{"1", "2", "3"}, nil
+}
+
+func installCloudProvider(n nodes.Node, k string, clusterName string) error {
+	var c string
+	var err error
+
+	c = "helm install cloud-provider-azure /stratio/helm/cloud-provider-azure" +
+		" --kubeconfig " + k +
+		" --set infra.clusterName=" + clusterName +
+		" --set 'cloudControllerManager.clusterCIDR=192.168.0.0/16'"
+	err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to deploy cloud-provider-azure Helm Chart")
+	}
+
+	return nil
 }
 
 func assignUserIdentity(i string, c string, r string, s map[string]string) error {
