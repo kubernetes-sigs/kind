@@ -21,7 +21,7 @@ installation:
     {{- if not $.ControlPlane.Managed }}
     ipPools:
       - blockSize: 25
-        cidr: 192.168.0.0/16
+        cidr: {{ $.ClusterNetwork.Pods.CidrBlock }}
         encapsulation: IPIP
     {{- end }}
   cni:

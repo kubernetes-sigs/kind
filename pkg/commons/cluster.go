@@ -38,6 +38,11 @@ type K8sObject struct {
 // DescriptorFile represents the YAML structure in the spec field of the descriptor file
 type DescriptorFile struct {
 	ClusterID        string `yaml:"cluster_id" validate:"required,min=3,max=100"`
+	ClusterNetwork   struct {
+		Pods struct {
+			CidrBlock string `yaml:"cidr_block" validate:"omitempty,cidrv4"`
+		}
+	}`yaml:"cluster_network"`
 	DeployAutoscaler bool   `yaml:"deploy_autoscaler" validate:"boolean"`
 
 	Bastion Bastion `yaml:"bastion"`
@@ -60,7 +65,6 @@ type DescriptorFile struct {
 	ExternalDomain string `yaml:"external_domain" validate:"omitempty,hostname"`
 
 	Keos struct {
-		// PR fixing exclude_if behaviour https://github.com/go-playground/validator/pull/939
 		Flavour string `yaml:"flavour"`
 		Version string `yaml:"version"`
 	} `yaml:"keos"`
@@ -248,6 +252,10 @@ func (d DescriptorFile) Init() DescriptorFile {
 
 	// Autoscaler
 	d.DeployAutoscaler = true
+
+	// Cluster network
+
+	d.ClusterNetwork.Pods.CidrBlock = "192.168.0.0/16"
 
 	// EKS
 	d.ControlPlane.AWS.AssociateOIDCProvider = true
