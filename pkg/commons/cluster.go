@@ -154,6 +154,7 @@ type Bastion struct {
 }
 
 type ExtraVolume struct {
+	Name       string `yaml:"name"`
 	DeviceName string `yaml:"device_name"`
 	Size       int    `yaml:"size" validate:"numeric"`
 	Type       string `yaml:"type"`
