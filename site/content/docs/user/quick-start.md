@@ -58,7 +58,7 @@ into your `$PATH` at your preferred binary installation directory.
 On Linux:
 
 {{< codeFromInline lang="bash" >}}
-# For AMD64 / x86_64
+# For x86_64
 [ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/{{< stableVersion >}}/kind-linux-amd64
 # For ARM64
 [ $(uname -m) = aarch64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/{{< stableVersion >}}/kind-linux-arm64
