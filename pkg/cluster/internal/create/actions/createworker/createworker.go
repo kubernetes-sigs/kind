@@ -331,8 +331,14 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			}
 		}
 
-		if !descriptorFile.ControlPlane.Managed {
-			// Wait for the control plane creation
+		if !descriptorFile.ControlPlane.Managed && descriptorFile.ControlPlane.HighlyAvailable {
+			// Wait for all control planes creation
+			raw = bytes.Buffer{}
+			cmd = node.Command("sh", "-c", "kubectl -n "+capiClustersNamespace+" wait --for=condition=ControlPlaneReady --timeout 10m cluster "+descriptorFile.ClusterID)
+			if err := cmd.SetStdout(&raw).Run(); err != nil {
+				return errors.Wrap(err, "failed to create the worker Cluster")
+			}
+			// Wait for all control planes to be ready
 			raw = bytes.Buffer{}
 			cmd = node.Command("sh", "-c", "kubectl -n "+capiClustersNamespace+" wait --for=jsonpath=\"{.status.unavailableReplicas}\"=0 --timeout 10m --all kubeadmcontrolplanes")
 			if err := cmd.SetStdout(&raw).Run(); err != nil {
