@@ -52,6 +52,11 @@ To complete layer2 configuration, we need to provide MetalLB a range of IP addre
 docker network inspect -f '{{.IPAM.Config}}' kind
 {{< /codeFromInline >}}
 
+If you are using podman 4.0 or higher in rootful mode with the netavark network backend, use the following command instead:
+{{< codeFromInline lang="bash" >}}
+podman network inspect -f '{{range .Subnets}}{{if eq (len .Subnet.IP) 4}}{{.Subnet}}{{end}}{{end}}' kind
+{{< /codeFromInline >}}
+
 The output will contain a cidr such as 172.19.0.0/16.  We want our loadbalancer IP range to come from this subclass.  We can configure MetalLB, for instance, to use 172.19.255.200 to 172.19.255.250 by creating the IPAddressPool and the related L2Advertisement.
 
 ```yaml
