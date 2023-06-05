@@ -62,4 +62,4 @@ COPY haproxy.cfg /usr/local/etc/haproxy/haproxy.cfg
 
 # below roughly matches the standard haproxy image
 STOPSIGNAL SIGUSR1
-ENTRYPOINT ["haproxy", "-sf", "7", "-W", "-db", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
+ENTRYPOINT ["haproxy", "-W", "-db", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
