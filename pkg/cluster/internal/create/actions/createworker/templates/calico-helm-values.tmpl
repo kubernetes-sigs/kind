@@ -23,7 +23,7 @@ installation:
     mtu: 1350
     {{- end }}
     ipPools:
-      - cidr: 192.168.0.0/16
+      - cidr: {{ $.ClusterNetwork.Pods.CidrBlock }}
         encapsulation: {{- if eq $.InfraProvider "azure" }} VXLAN {{- else }} IPIP {{- end }}
   {{- end }}
   cni:
@@ -37,7 +37,7 @@ installation:
     type: Calico
   {{- end }}
   enabled: true
-  kubernetesProvider: "{{- if and ($.ControlPlane.Managed) (eq $.InfraProvider "aws") }} EKS {{- end }}"
+  kubernetesProvider: "{{- if and ($.ControlPlane.Managed) (eq $.InfraProvider "aws") -}} EKS {{- end }}"
   nodeMetricsPort: 9191
   registry: docker.io
   typhaMetricsPort: 9093
