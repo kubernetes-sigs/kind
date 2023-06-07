@@ -150,6 +150,7 @@ type Bastion struct {
 }
 
 type ExtraVolume struct {
+	Name       string `yaml:"name"`
 	DeviceName string `yaml:"device_name"`
 	Size       int    `yaml:"size" validate:"numeric"`
 	Type       string `yaml:"type"`
@@ -196,7 +197,7 @@ type DockerRegistryCredentials struct {
 
 type DockerRegistry struct {
 	AuthRequired bool   `yaml:"auth_required" validate:"boolean"`
-	Type         string `yaml:"type"`
+	Type         string `yaml:"type" validate:"required,oneof='acr' 'ecr' 'generic'"`
 	URL          string `yaml:"url" validate:"required"`
 	KeosRegistry bool   `yaml:"keos_registry" validate:"omitempty,boolean"`
 }
