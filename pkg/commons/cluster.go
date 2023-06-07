@@ -38,11 +38,6 @@ type K8sObject struct {
 // DescriptorFile represents the YAML structure in the spec field of the descriptor file
 type DescriptorFile struct {
 	ClusterID        string `yaml:"cluster_id" validate:"required,min=3,max=100"`
-	ClusterNetwork   struct {
-		Pods struct {
-			CidrBlock string `yaml:"cidr_block" validate:"omitempty,cidrv4"`
-		}
-	}`yaml:"cluster_network"`
 	DeployAutoscaler bool   `yaml:"deploy_autoscaler" validate:"boolean"`
 
 	Bastion Bastion `yaml:"bastion"`
@@ -253,10 +248,6 @@ func (d DescriptorFile) Init() DescriptorFile {
 
 	// Autoscaler
 	d.DeployAutoscaler = true
-
-	// Cluster network
-
-	d.ClusterNetwork.Pods.CidrBlock = "192.168.0.0/16"
 
 	// EKS
 	d.ControlPlane.AWS.AssociateOIDCProvider = true

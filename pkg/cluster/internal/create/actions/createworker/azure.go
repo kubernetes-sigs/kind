@@ -115,11 +115,18 @@ func (b *AzureBuilder) getAzs() ([]string, error) {
 func installCloudProvider(n nodes.Node, descriptorFile commons.DescriptorFile, k string, clusterName string) error {
 	var c string
 	var err error
+	var podsCidrBlock string
+
+	if descriptorFile.Networks.PodsCidrBlock != "" {
+		podsCidrBlock = descriptorFile.Networks.PodsCidrBlock
+	} else {
+		podsCidrBlock = "192.168.0.0/16"
+	}
 
 	c = "helm install cloud-provider-azure /stratio/helm/cloud-provider-azure" +
 		" --kubeconfig " + k +
 		" --set infra.clusterName=" + clusterName +
-		" --set 'cloudControllerManager.clusterCIDR=" + descriptorFile.ClusterNetwork.Pods.CidrBlock + "'"
+		" --set 'cloudControllerManager.clusterCIDR=" + podsCidrBlock + "'"
 	err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy cloud-provider-azure Helm Chart")
