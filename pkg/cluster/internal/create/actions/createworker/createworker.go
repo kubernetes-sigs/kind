@@ -322,6 +322,20 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Preparing nodes in workload cluster 📦")
 		defer ctx.Status.End(false)
 
+		// If provider.capxProvider is aws reload capa-controller-manager
+		if provider.capxProvider == "aws" {
+			ctx.Status.Start("Reloading capa-controller-manager 🔄")
+			defer ctx.Status.End(false)
+
+			raw = bytes.Buffer{}
+			cmd = node.Command("kubectl", "-n", "capa-system", "rollout", "restart", "deployment", "capa-controller-manager")
+			if err := cmd.SetStdout(&raw).Run(); err != nil {
+				return errors.Wrap(err, "failed to reload capa-controller-manager")
+			}
+
+			ctx.Status.End(true) // End Reloading capa-controller-manager
+		}
+
 		if provider.capxProvider != "azure" || !descriptorFile.ControlPlane.Managed {
 			// Wait for the worker cluster creation
 			raw = bytes.Buffer{}
