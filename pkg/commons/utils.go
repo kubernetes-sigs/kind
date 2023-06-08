@@ -84,9 +84,6 @@ func GetSecrets(descriptorFile DescriptorFile, vaultPassword string) (map[string
 		if reflect.DeepEqual(dc, reflect.Zero(reflect.TypeOf(dc)).Interface()) {
 			return c, r, "", dr, errors.New("No " + infraProvider + " credentials found in secrets file and descriptor file")
 		}
-		if descriptorFile.Credentials.GithubToken == "" {
-			return c, r, "", dr, errors.New("No GithubToken credentials found in secrets file and descriptor file")
-		}
 		for _, reg := range descriptorFile.DockerRegistries {
 			for _, regCreds := range descriptorFile.Credentials.DockerRegistries {
 				if reg.URL == regCreds.URL {
@@ -138,11 +135,7 @@ func GetSecrets(descriptorFile DescriptorFile, vaultPassword string) (map[string
 			m := structs.Map(f)
 			resultCreds = convertToMapStringString(m["Credentials"].(map[string]interface{}))
 		}
-		if secretFile.Secrets.GithubToken == "" {
-			if descriptorFile.Credentials.GithubToken == "" {
-				return c, r, "", dr, errors.New("No Github Token found in secrets file and descriptor file")
-			}
-
+		if secretFile.Secrets.GithubToken == "" && descriptorFile.Credentials.GithubToken != "" {
 			resultGHT = descriptorFile.Credentials.GithubToken
 		} else {
 			resultGHT = secretFile.Secrets.GithubToken
