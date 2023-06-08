@@ -214,6 +214,7 @@ metadata:
 spec:
   template:
     spec:
+      additionalNetworkTags: ["{{ $node.Name }}-md-{{ $index }}"]
       instanceType: "{{ $node.Size }}"
       image: "{{ $node.NodeImage }}"
       {{- if $node.RootVolume.Size }}
