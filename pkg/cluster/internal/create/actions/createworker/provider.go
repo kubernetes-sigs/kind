@@ -44,7 +44,7 @@ const machineHealthCheckControlPlaneNodePath = "/kind/manifests/machinehealthche
 type PBuilder interface {
 	setCapx(managed bool)
 	setCapxEnvVars(p commons.ProviderParams)
-	installCSI(n nodes.Node, k string) error
+	installCSI(n nodes.Node, k string, storageClasses []commons.StorageClass) error
 	getProvider() Provider
 	getAzs() ([]string, error)
 }
@@ -98,8 +98,8 @@ func (i *Infra) buildProvider(p commons.ProviderParams) Provider {
 	return i.builder.getProvider()
 }
 
-func (i *Infra) installCSI(n nodes.Node, k string) error {
-	return i.builder.installCSI(n, k)
+func (i *Infra) installCSI(n nodes.Node, k string, storageClasses []commons.StorageClass) error {
+	return i.builder.installCSI(n, k, storageClasses)
 }
 
 func (i *Infra) getAzs() ([]string, error) {

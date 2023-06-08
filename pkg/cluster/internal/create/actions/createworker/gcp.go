@@ -101,22 +101,45 @@ func (b *GCPBuilder) getProvider() Provider {
 	}
 }
 
-func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
+func (b *GCPBuilder) installCSI(n nodes.Node, k string, storageClasses []commons.StorageClass) error {
 	var c string
 	var cmd exec.Cmd
 	var err error
-	var storageClass = `
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  annotations:
-    storageclass.kubernetes.io/is-default-class: 'true'
-  name: ` + b.stClassName + `
-provisioner: pd.csi.storage.gke.io
-parameters:
-  type: pd-standard
-volumeBindingMode: WaitForFirstConsumer`
+	var scs []string
+	// 	var storageClass = `
+	// apiVersion: storage.k8s.io/v1
+	// kind: StorageClass
+	// metadata:
+	//   annotations:
+	//     storageclass.kubernetes.io/is-default-class: 'true'
+	//   name: ` + b.stClassName + `
+	// provisioner: pd.csi.storage.gke.io
+	// parameters:
+	//   type: pd-standard
+	// volumeBindingMode: WaitForFirstConsumer`
 
+	if len(storageClasses) > 0 {
+		for _, storageClass := range storageClasses {
+			sc, err := getStorageClass(storageClass)
+			if err != nil {
+				return err
+			}
+			scs = append(scs, sc)
+		}
+	} else {
+		storageClass := commons.StorageClass{
+			Name:        b.stClassName,
+			Provisioner: "pd.csi.storage.gke.io",
+			Parameters: map[string]string{
+				"type": "pd-standard",
+			},
+		}
+		sc, err := getStorageClass(storageClass)
+		if err != nil {
+			return err
+		}
+		scs = append(scs, sc)
+	}
 	// Get workload k8s version
 	raw := bytes.Buffer{}
 	errRaw := bytes.Buffer{}
@@ -154,10 +177,12 @@ volumeBindingMode: WaitForFirstConsumer`
 		return errors.Wrap(err, "failed to deploy CSI driver")
 	}
 
-	// Create StorageClass
-	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
-	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
-		return errors.Wrap(err, "failed to create StorageClass")
+	for _, sc := range scs {
+		// Create StorageClass
+		cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
+		if err = cmd.SetStdin(strings.NewReader(sc)).Run(); err != nil {
+			return errors.Wrap(err, "failed to create StorageClass")
+		}
 	}
 
 	return nil
@@ -198,4 +223,45 @@ func (b *GCPBuilder) getAzs() ([]string, error) {
 
 	return nil, errors.New("Error in project id")
 
+}
+
+func setStorageClassParameters(storageClass string, params map[string]string) (string, error) {
+
+	paramIndex := strings.Index(storageClass, "parameters:")
+	if paramIndex == -1 {
+		return storageClass, nil
+	}
+
+	var lines []string
+	for key, value := range params {
+		line := "  " + key + ": " + value
+		lines = append(lines, line)
+	}
+
+	linesToInsert := strings.Join(lines, "\n")
+	newStorageClass := storageClass[:paramIndex+len("parameters:")] + "\n" + linesToInsert + "\n" + storageClass[paramIndex+len("parameters:")+len(lines)-1:]
+
+	return newStorageClass, nil
+}
+
+func getStorageClass(sc commons.StorageClass) (string, error) {
+	//provisioner: pd.csi.storage.gke.io
+	//  type: pd-standard
+
+	storageClassTemplate := `
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  annotations:
+    storageclass.kubernetes.io/is-default-class: 'true'
+  name: ` + sc.Name + `
+provisioner: ` + sc.Provisioner + `
+parameters:
+volumeBindingMode: WaitForFirstConsumer`
+
+	storageClass, err := setStorageClassParameters(storageClassTemplate, sc.Parameters)
+	if err != nil {
+		return "", err
+	}
+	return storageClass, nil
 }

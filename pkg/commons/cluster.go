@@ -42,6 +42,8 @@ type DescriptorFile struct {
 
 	Bastion Bastion `yaml:"bastion"`
 
+	StorageClasses []StorageClass `yaml:"storage_classes" validate:"dive"`
+
 	Credentials Credentials `yaml:"credentials" validate:"dive"`
 
 	InfraProvider string `yaml:"infra_provider" validate:"required,oneof='aws' 'gcp' 'azure'"`
@@ -238,6 +240,12 @@ type ProviderParams struct {
 	Managed     bool
 	Credentials map[string]string
 	GithubToken string
+}
+
+type StorageClass struct {
+	Name        string            `yaml:"name"`
+	Provisioner string            `yaml:"provisioner"`
+	Parameters  map[string]string `yaml:"parameters"`
 }
 
 // Init sets default values for the DescriptorFile

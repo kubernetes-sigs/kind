@@ -312,7 +312,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.Start("Installing StorageClass in workload cluster 💾")
 			defer ctx.Status.End(false)
 
-			err = infra.installCSI(node, kubeconfigPath)
+			err = infra.installCSI(node, kubeconfigPath, descriptorFile.StorageClasses)
 			if err != nil {
 				return errors.Wrap(err, "failed to install StorageClass in workload cluster")
 			}

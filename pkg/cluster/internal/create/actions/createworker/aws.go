@@ -90,7 +90,7 @@ func (b *AWSBuilder) getProvider() Provider {
 	}
 }
 
-func (b *AWSBuilder) installCSI(n nodes.Node, k string) error {
+func (b *AWSBuilder) installCSI(n nodes.Node, k string, storageClasses []commons.StorageClass) error {
 	return nil
 }
 

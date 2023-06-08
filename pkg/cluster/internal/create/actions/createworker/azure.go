@@ -88,7 +88,7 @@ func (b *AzureBuilder) getProvider() Provider {
 	}
 }
 
-func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
+func (b *AzureBuilder) installCSI(n nodes.Node, k string, storageClasses []commons.StorageClass) error {
 	var c string
 	var cmd exec.Cmd
 	var err error
@@ -106,6 +106,10 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	}
 
 	return nil
+}
+
+func (b *AzureBuilder) setStorageClassParameters(storageClass string, params map[string]string) (string, error) {
+	return "", nil
 }
 
 func (b *AzureBuilder) getAzs() ([]string, error) {
