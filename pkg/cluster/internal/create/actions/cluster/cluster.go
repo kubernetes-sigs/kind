@@ -308,6 +308,7 @@ func GetClusterManifest(flavor string, params TemplateParams, azs []string) (str
 			element += element
 			return element == len
 		},
+		"sub": func(a, b int) int { return a - b },
 	}
 
 	var tpl bytes.Buffer
