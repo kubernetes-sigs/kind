@@ -1,5 +1,4 @@
 # build and test outputs
-/bin/
 /_output/
 /_artifacts/
 
@@ -21,7 +20,10 @@
 *.sublime-workspace
 *~
 
+/bin/.gimme
+/bin/cloud-provisioner*
 deploy-recorder.lst
 /hack/go
 /hack/pkg
 /hack/*.tar.gz
+deploy-recorder.lst
