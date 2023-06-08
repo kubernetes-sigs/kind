@@ -7,7 +7,7 @@ metadata:
 spec:
   clusterNetwork:
     pods:
-      cidrBlocks: ["192.168.0.0/16"]
+      cidrBlocks: [\"192.168.0.0/16\"]
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta2
     kind: AWSManagedControlPlane
@@ -51,48 +51,16 @@ spec:
     authenticator: {{ .Descriptor.ControlPlane.AWS.Logging.Authenticator }}
     controllerManager: {{ .Descriptor.ControlPlane.AWS.Logging.ControllerManager }}
     scheduler: {{ .Descriptor.ControlPlane.AWS.Logging.Scheduler }}
+{{- if ne .Descriptor.Networks.VPCID "" }}
   network:
     vpc:
-      availabilityZoneSelection: {{- if ne .Descriptor.Networks.AvailabilityZoneSelection "" }} {{ .Descriptor.Networks.AvailabilityZoneSelection }} {{ else }} Ordered {{ end }}
-      availabilityZoneUsageLimit: {{- if ne .Descriptor.Networks.AvailabilityZoneUsageLimit 0 }} {{ .Descriptor.Networks.AvailabilityZoneUsageLimit }} {{ else }} 3 {{ end }}
-  {{- if ne .Descriptor.Networks.VPCCidrBlock "" }}
-      cidrBlock: {{ .Descriptor.Networks.VPCCidrBlock }}
-  {{- end }}
-  {{- if isNotEmpty .Descriptor.Networks.Tags }}
-      tags:
-    {{- range $key,$value := .Descriptor.Networks.Tags }}
-      - $key: $value
-    {{- end}}
-  {{- end }}
-{{- if ne .Descriptor.Networks.VPCID "" }}
       id: {{ .Descriptor.Networks.VPCID }}
-    {{- if ne .Descriptor.Networks.Subnets nil }}
+  {{- if gt .Descriptor.Networks.Subnets 0 }}
     subnets:
     {{- range .Descriptor.Networks.Subnets }}
       - id: {{ .SubnetId }}
-      {{- if ne .AvailabilityZone "" }}
-        availabilityZone:  {{ .AvailabilityZone }} 
-      {{- end }}
-      {{- if ne .CidrBlock "" }}
-        cidrBlock:  {{ .CidrBlock }} 
-      {{- end }}
-      {{- if ne .RouteTableId "" }}
-        routeTableId:  {{ .RouteTableId }} 
-      {{- end }}
-      {{- if ne .NatGatewayId "" }}
-        natGatewayId:  {{ .NatGatewayId }} 
-      {{- end }}
-      {{- if checkReference .IsPublic }}
-        isPublic: {{ .IsPublic }}
-      {{- end }}
-      {{- if isNotEmpty .Tags }}
-        tags:
-      {{- range $key,$value := .Tags }}
-        - $key: $value
-      {{- end }}
-      {{- end }}
     {{- end }}
-    {{- end }}
+  {{- end }}
 {{- end }}
   region: "{{ .Descriptor.Region }}"
 {{- if ne .Descriptor.Networks.PodsCidrBlock "" }}
@@ -130,7 +98,7 @@ spec:
     matchLabels:
   template:
     metadata:
-      labels: 
+      labels:
         keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
     spec:
       clusterName: "{{ $.Descriptor.ClusterID }}"

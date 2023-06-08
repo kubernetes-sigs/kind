@@ -7,7 +7,7 @@ metadata:
 spec:
   clusterNetwork:
     pods:
-      cidrBlocks: ["192.168.0.0/16"]
+      cidrBlocks: [\"192.168.0.0/16\"]
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: GCPCluster
@@ -28,15 +28,12 @@ spec:
   {{- if ne .Descriptor.Networks.VPCID "" }}
   network:
     name: {{ .Descriptor.Networks.VPCID }}
-    {{- if ne .Descriptor.Networks.Subnets nil }}
+    {{- if gt .Descriptor.Networks.Subnets 0 }}
     autoCreateSubnetworks: false
     subnets:
     {{- with (index .Descriptor.Networks.Subnets 0) }}
     - name: {{ .SubnetId }}
       region: "{{ $.Descriptor.Region }}"
-      {{- if ne .CidrBlock "" }}
-      cidrBlock: {{ .CidrBlock }}
-      {{- end }}
     {{- end }}
   {{- end }}
   {{- else }}

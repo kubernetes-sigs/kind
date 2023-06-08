@@ -49,7 +49,13 @@ type DescriptorFile struct {
 	K8SVersion string `yaml:"k8s_version" validate:"required,startswith=v,min=7,max=8"`
 	Region     string `yaml:"region" validate:"required"`
 
-	Networks Networks `yaml:"networks" validate:"omitempty,dive"`
+	Networks struct {
+		VPCID         string `yaml:"vpc_id"`
+		PodsCidrBlock string `yaml:"pods_cidr" validate:"omitempty,cidrv4"`
+		Subnets       []struct {
+			SubnetID string `yaml:"subnet_id"`
+		} `yaml:"subnets" validate:"dive"`
+	} `yaml:"networks" validate:"omitempty,dive"`
 
 	Dns struct {
 		ManageZone bool `yaml:"manage_zone" validate:"boolean"`
@@ -82,27 +88,6 @@ type DescriptorFile struct {
 	} `yaml:"control_plane"`
 
 	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
-}
-
-type Networks struct {
-	VPCID                      string            `yaml:"vpc_id"`
-	VPCCidrBlock               string            `yaml:"vpc_cidr" validate:"omitempty,cidrv4"`
-	PodsCidrBlock              string            `yaml:"pods_cidr" validate:"omitempty,cidrv4"`
-	Tags                       map[string]string `yaml:"tags,omitempty"`
-	AvailabilityZoneUsageLimit int               `yaml:"az_usage_limit" validate:"numeric"`
-	AvailabilityZoneSelection  string            `yaml:"az_selection" validate:"oneof='Ordered' 'Random' '' "`
-
-	Subnets []Subnets `yaml:"subnets"`
-}
-
-type Subnets struct {
-	SubnetId         string            `yaml:"subnet_id"`
-	AvailabilityZone string            `yaml:"az,omitempty"`
-	IsPublic         *bool             `yaml:"is_public,omitempty"`
-	RouteTableId     string            `yaml:"route_table_id,omitempty"`
-	NatGatewayId     string            `yaml:"nat_id,omitempty"`
-	Tags             map[string]string `yaml:"tags,omitempty"`
-	CidrBlock        string            `yaml:"cidr,omitempty"`
 }
 
 type AWSCP struct {

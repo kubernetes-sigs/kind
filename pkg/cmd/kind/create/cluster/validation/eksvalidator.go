@@ -81,13 +81,6 @@ func secretsEksValidations(secretsFile commons.SecretsFile) error {
 }
 
 func validateVPCCidr(descriptorFile commons.DescriptorFile) error {
-	if descriptorFile.Networks.VPCCidrBlock != "" {
-		_, ipv4Net, _ := net.ParseCIDR(descriptorFile.Networks.VPCCidrBlock)
-		cidrSize := cidr.AddressCount(ipv4Net)
-		if cidrSize > cidrSizeMax || cidrSize < cidrSizeMin {
-			return errors.New("Invalid parameter VPCCidrBlock, CIDR block sizes must be between a /16 netmask and /28 netmask")
-		}
-	}
 	if descriptorFile.Networks.PodsCidrBlock != "" {
 		_, validRange1, _ := net.ParseCIDR("100.64.0.0/10")
 		_, validRange2, _ := net.ParseCIDR("198.19.0.0/16")
