@@ -60,7 +60,6 @@ type DescriptorFile struct {
 	ExternalDomain string `yaml:"external_domain" validate:"omitempty,hostname"`
 
 	Keos struct {
-		// PR fixing exclude_if behaviour https://github.com/go-playground/validator/pull/939
 		Flavour string `yaml:"flavour"`
 		Version string `yaml:"version"`
 	} `yaml:"keos"`
@@ -91,8 +90,8 @@ type Networks struct {
 	Tags                       map[string]string `yaml:"tags,omitempty"`
 	AvailabilityZoneUsageLimit int               `yaml:"az_usage_limit" validate:"numeric"`
 	AvailabilityZoneSelection  string            `yaml:"az_selection" validate:"oneof='Ordered' 'Random' '' "`
-
-	Subnets []Subnets `yaml:"subnets"`
+	PodsSubnets []Subnets `yaml:"pods_subnets"`
+	Subnets     []Subnets `yaml:"subnets"`
 }
 
 type Subnets struct {
@@ -150,6 +149,7 @@ type Bastion struct {
 }
 
 type ExtraVolume struct {
+	Name       string `yaml:"name"`
 	DeviceName string `yaml:"device_name"`
 	Size       int    `yaml:"size" validate:"numeric"`
 	Type       string `yaml:"type"`
@@ -196,7 +196,7 @@ type DockerRegistryCredentials struct {
 
 type DockerRegistry struct {
 	AuthRequired bool   `yaml:"auth_required" validate:"boolean"`
-	Type         string `yaml:"type"`
+	Type         string `yaml:"type" validate:"required,oneof='acr' 'ecr' 'generic'"`
 	URL          string `yaml:"url" validate:"required"`
 	KeosRegistry bool   `yaml:"keos_registry" validate:"omitempty,boolean"`
 }
@@ -212,8 +212,7 @@ type AWS struct {
 }
 
 type AZURE struct {
-	Credentials   AzureCredentials `yaml:"credentials"`
-	ResourceGroup string           `yaml:"resource_group"`
+	Credentials AzureCredentials `yaml:"credentials"`
 }
 
 type GCP struct {
