@@ -323,9 +323,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		defer ctx.Status.End(false)
 
 		// If provider.capxProvider is aws reload capa-controller-manager
-		if provider.capxProvider == "aws" {
-			ctx.Status.Start("Reloading capa-controller-manager 🔄")
-			defer ctx.Status.End(false)
+		if provider.capxProvider == "aws" && descriptorFile.ControlPlane.Managed {
 
 			raw = bytes.Buffer{}
 			cmd = node.Command("kubectl", "-n", "capa-system", "rollout", "restart", "deployment", "capa-controller-manager")
