@@ -33,9 +33,9 @@ import (
 var ctel embed.FS
 
 const (
-	CAPICoreProvider         = "cluster-api:v1.4.1"
-	CAPIBootstrapProvider    = "kubeadm:v1.4.1"
-	CAPIControlPlaneProvider = "kubeadm:v1.4.1"
+	CAPICoreProvider         = "cluster-api:v1.4.3"
+	CAPIBootstrapProvider    = "kubeadm:v1.4.3"
+	CAPIControlPlaneProvider = "kubeadm:v1.4.3"
 )
 
 const machineHealthCheckWorkerNodePath = "/kind/manifests/machinehealthcheckworkernode.yaml"

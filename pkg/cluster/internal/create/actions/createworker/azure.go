@@ -70,8 +70,10 @@ func (b *AzureBuilder) setCapx(managed bool) {
 func (b *AzureBuilder) setCapxEnvVars(p commons.ProviderParams) {
 	b.capxEnvVars = []string{
 		"AZURE_CLIENT_SECRET=" + p.Credentials["ClientSecret"],
-		"GITHUB_TOKEN=" + p.GithubToken,
 		"EXP_MACHINE_POOL=true",
+	}
+	if p.GithubToken != "" {
+		b.capxEnvVars = append(b.capxEnvVars, "GITHUB_TOKEN="+p.GithubToken)
 	}
 }
 
