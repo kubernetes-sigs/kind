@@ -486,28 +486,24 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Creating cloud-provisioner Objects backup 🗄️")
 		defer ctx.Status.End(false)
 
-		// Create Backup directory
 		raw := bytes.Buffer{}
 		cmd := node.Command("sh", "-c", "mkdir -p "+cloudProviderBackupPath)
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
 			return errors.Wrap(err, "failed to create cloud-provisioner backup directory")
 		}
 
-		// Set permissions to 0600
 		raw = bytes.Buffer{}
 		cmd = node.Command("sh", "-c", "chmod -R 0755 "+cloudProviderBackupPath)
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
 			return errors.Wrap(err, "failed to set permissions to cloud-provisioner backup directory")
 		}
 
-		// Backup cloud-provisioner Objects
 		raw = bytes.Buffer{}
 		cmd = node.Command("sh", "-c", "clusterctl move -n "+capiClustersNamespace+" --to-directory "+cloudProviderBackupPath)
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
 			return errors.Wrap(err, "failed to backup cloud-provisioner Objects")
 		}
 
-		// Now copy to local host with docker cp command all the PathsToBackupLocally to localBackupPath
 		for _, path := range PathsToBackupLocally {
 			raw = bytes.Buffer{}
 			cmd = exec.CommandContext(context.Background(), "sh", "-c", "docker cp "+node.String()+":"+path+" "+localBackupPath)
