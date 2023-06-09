@@ -19,6 +19,7 @@ package createworker
 
 import (
 	"bytes"
+	"context"
 	_ "embed"
 	"os"
 	"strings"
@@ -26,6 +27,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/exec"
 )
 
 type action struct {
@@ -300,7 +302,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				ctx.Status.Start("Installing cloud-provider in workload cluster ☁️")
 				defer ctx.Status.End(false)
 
-				err = installCloudProvider(node, *descriptorFile, kubeconfigPath, descriptorFile.ClusterID)
+				err = installCloudProvider(node, kubeconfigPath, descriptorFile.ClusterID)
 				if err != nil {
 					return errors.Wrap(err, "failed to install external cloud-provider in workload cluster")
 				}
@@ -479,6 +481,42 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 			ctx.Status.End(true)
 		}
+
+		// Create cloud-provisioner Objects backup
+		ctx.Status.Start("Creating cloud-provisioner Objects backup 🗄️")
+		defer ctx.Status.End(false)
+
+		// Create Backup directory
+		raw := bytes.Buffer{}
+		cmd := node.Command("sh", "-c", "mkdir -p "+cloudProviderBackupPath)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to create cloud-provisioner backup directory")
+		}
+
+		// Set permissions to 0600
+		raw = bytes.Buffer{}
+		cmd = node.Command("sh", "-c", "chmod -R 0755 "+cloudProviderBackupPath)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to set permissions to cloud-provisioner backup directory")
+		}
+
+		// Backup cloud-provisioner Objects
+		raw = bytes.Buffer{}
+		cmd = node.Command("sh", "-c", "clusterctl move -n "+capiClustersNamespace+" --to-directory "+cloudProviderBackupPath)
+		if err := cmd.SetStdout(&raw).Run(); err != nil {
+			return errors.Wrap(err, "failed to backup cloud-provisioner Objects")
+		}
+
+		// Now copy to local host with docker cp command all the PathsToBackupLocally to localBackupPath
+		for _, path := range PathsToBackupLocally {
+			raw = bytes.Buffer{}
+			cmd = exec.CommandContext(context.Background(), "sh", "-c", "docker cp "+node.String()+":"+path+" "+localBackupPath)
+			if err := cmd.SetStdout(&raw).Run(); err != nil {
+				return errors.Wrap(err, "failed to copy "+path+" to local host")
+			}
+		}
+
+		ctx.Status.End(true)
 
 		if !a.moveManagement {
 			ctx.Status.Start("Moving the management role 🗝️")
