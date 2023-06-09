@@ -51,6 +51,7 @@ type flagpole struct {
 	DescriptorPath string
 	MoveManagement bool
 	AvoidCreation  bool
+	ForceDelete    bool
 }
 
 const clusterDefaultPath = "./cluster.yaml"
@@ -132,6 +133,12 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		false,
 		"by setting this flag the worker cluster won't be created",
 	)
+	cmd.Flags().BoolVar(
+		&flags.ForceDelete,
+		"delete-previous",
+		false,
+		"by setting this flag the local cluster will be deleted",
+	)
 
 	return cmd
 }
@@ -197,6 +204,7 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		cluster.CreateWithRetain(flags.Retain),
 		cluster.CreateWithMove(flags.MoveManagement),
 		cluster.CreateWithAvoidCreation(flags.AvoidCreation),
+		cluster.CreateWithForceDelete(flags.ForceDelete),
 		cluster.CreateWithWaitForReady(flags.Wait),
 		cluster.CreateWithKubeconfigPath(flags.Kubeconfig),
 		cluster.CreateWithDisplayUsage(true),

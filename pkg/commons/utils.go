@@ -84,9 +84,6 @@ func GetSecrets(descriptorFile DescriptorFile, vaultPassword string) (map[string
 		if reflect.DeepEqual(dc, reflect.Zero(reflect.TypeOf(dc)).Interface()) {
 			return c, r, "", dr, errors.New("No " + infraProvider + " credentials found in secrets file and descriptor file")
 		}
-		if descriptorFile.Credentials.GithubToken == "" {
-			return c, r, "", dr, errors.New("No GithubToken credentials found in secrets file and descriptor file")
-		}
 		for _, reg := range descriptorFile.DockerRegistries {
 			for _, regCreds := range descriptorFile.Credentials.DockerRegistries {
 				if reg.URL == regCreds.URL {
@@ -138,11 +135,7 @@ func GetSecrets(descriptorFile DescriptorFile, vaultPassword string) (map[string
 			m := structs.Map(f)
 			resultCreds = convertToMapStringString(m["Credentials"].(map[string]interface{}))
 		}
-		if secretFile.Secrets.GithubToken == "" {
-			if descriptorFile.Credentials.GithubToken == "" {
-				return c, r, "", dr, errors.New("No Github Token found in secrets file and descriptor file")
-			}
-
+		if secretFile.Secrets.GithubToken == "" && descriptorFile.Credentials.GithubToken != "" {
 			resultGHT = descriptorFile.Credentials.GithubToken
 		} else {
 			resultGHT = secretFile.Secrets.GithubToken
@@ -191,11 +184,7 @@ func EnsureSecretsFile(descriptorFile DescriptorFile, vaultPassword string) erro
 		if len(credentials) > 0 {
 			creds := convertStringMapToInterfaceMap(credentials)
 			creds = convertMapKeysToSnakeCase(creds)
-			if descriptorFile.InfraProvider == "azure" {
-				secretMap[descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds, "resource_group": descriptorFile.ClusterID}
-			} else {
-				secretMap[descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds}
-			}
+			secretMap[descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds}
 		}
 
 		if len(externalRegistry) > 0 {
@@ -236,11 +225,7 @@ func EnsureSecretsFile(descriptorFile DescriptorFile, vaultPassword string) erro
 		edited = true
 		creds := convertStringMapToInterfaceMap(credentials)
 		creds = convertMapKeysToSnakeCase(creds)
-		if descriptorFile.InfraProvider == "azure" {
-			secretMap["secrets"][descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds, "resource_group": descriptorFile.ClusterID}
-		} else {
-			secretMap["secrets"][descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds}
-		}
+		secretMap["secrets"][descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds}
 	}
 
 	if secretMap["secrets"]["external_registry"] == nil && len(externalRegistry) > 0 {
