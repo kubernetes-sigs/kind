@@ -302,7 +302,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				ctx.Status.Start("Installing cloud-provider in workload cluster ☁️")
 				defer ctx.Status.End(false)
 
-				err = installCloudProvider(node, kubeconfigPath, descriptorFile.ClusterID)
+				err = installCloudProvider(node, *descriptorFile, kubeconfigPath, descriptorFile.ClusterID)
 				if err != nil {
 					return errors.Wrap(err, "failed to install external cloud-provider in workload cluster")
 				}
