@@ -109,5 +109,13 @@ spec:
     {{ $key }}: \"{{ $value }}\"
     {{- end }}
   {{- end }}
+  {{- if gt (len $node.Taints) 0 }}
+  taints:
+    {{- range $i, $taint := $node.Taints }}
+    - {{$taint.Key}}
+      {{$taint.Value}}
+      {{$taint.Effect}}
+    {{- end }}
+  {{- end }}
 {{- end }}
 {{- end }}
