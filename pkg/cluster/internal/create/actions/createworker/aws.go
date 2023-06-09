@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	b64 "encoding/base64"
 	"os"
 	"strings"
 
@@ -72,9 +71,11 @@ func (b *AWSBuilder) setCapxEnvVars(p commons.ProviderParams) {
 		"AWS_REGION=" + p.Region,
 		"AWS_ACCESS_KEY_ID=" + p.Credentials["AccessKey"],
 		"AWS_SECRET_ACCESS_KEY=" + p.Credentials["SecretKey"],
-		"AWS_B64ENCODED_CREDENTIALS=" + b64.StdEncoding.EncodeToString([]byte(awsCredentials)),
-		"GITHUB_TOKEN=" + p.GithubToken,
+		"AWS_B64ENCODED_CREDENTIALS=" + base64.StdEncoding.EncodeToString([]byte(awsCredentials)),
 		"CAPA_EKS_IAM=true",
+	}
+	if p.GithubToken != "" {
+		b.capxEnvVars = append(b.capxEnvVars, "GITHUB_TOKEN="+p.GithubToken)
 	}
 }
 
