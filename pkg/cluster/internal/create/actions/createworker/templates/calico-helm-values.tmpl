@@ -23,7 +23,7 @@ installation:
     mtu: 1350
     {{- end }}
     ipPools:
-      - cidr: 192.168.0.0/16
+      - cidr: {{- if $.Networks.PodsCidrBlock }} {{ $.Networks.PodsCidrBlock }} {{- else }} 192.168.0.0/16 {{- end }}
         encapsulation: {{- if eq $.InfraProvider "azure" }} VXLAN {{- else }} IPIP {{- end }}
   {{- end }}
   cni:
