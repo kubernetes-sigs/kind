@@ -49,6 +49,13 @@ var allowCAPAEgressIMDSGNetPol string
 const kubeconfigPath = "/kind/worker-cluster.kubeconfig"
 const workKubeconfigPath = ".kube/config"
 const CAPILocalRepository = "/root/.cluster-api/local-repository"
+const cloudProviderBackupPath = "/kind/backup/objects"
+const localBackupPath = "backup"
+
+var PathsToBackupLocally = []string{
+	cloudProviderBackupPath,
+	"/kind/manifests",
+}
 
 // NewAction returns a new action for installing default CAPI
 func NewAction(vaultPassword string, descriptorPath string, moveManagement bool, avoidCreation bool) actions.Action {
