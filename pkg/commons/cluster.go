@@ -14,22 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package commons
 
 import (
-	"bytes"
-	"embed"
+	"errors"
+	"fmt"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
-	"text/template"
 
 	"github.com/go-playground/validator/v10"
+	vault "github.com/sosedoff/ansible-vault-go"
 	"gopkg.in/yaml.v3"
 )
-
-//go:embed templates/*
-var ctel embed.FS
 
 type K8sObject struct {
 	APIVersion string         `yaml:"apiVersion" validate:"required"`
@@ -44,14 +42,14 @@ type DescriptorFile struct {
 
 	Bastion Bastion `yaml:"bastion"`
 
-	Credentials Credentials `yaml:"credentials"`
+	Credentials Credentials `yaml:"credentials" validate:"dive"`
 
 	InfraProvider string `yaml:"infra_provider" validate:"required,oneof='aws' 'gcp' 'azure'"`
 
 	K8SVersion string `yaml:"k8s_version" validate:"required,startswith=v,min=7,max=8"`
 	Region     string `yaml:"region" validate:"required"`
 
-	Networks Networks `yaml:"networks"`
+	Networks Networks `yaml:"networks" validate:"omitempty,dive"`
 
 	Dns struct {
 		ManageZone bool `yaml:"manage_zone" validate:"boolean"`
@@ -63,7 +61,6 @@ type DescriptorFile struct {
 
 	Keos struct {
 		// PR fixing exclude_if behaviour https://github.com/go-playground/validator/pull/939
-		Domain  string `yaml:"domain" validate:"omitempty,hostname"`
 		Flavour string `yaml:"flavour"`
 		Version string `yaml:"version"`
 	} `yaml:"keos"`
@@ -79,7 +76,8 @@ type DescriptorFile struct {
 			Type      string `yaml:"type"`
 			Encrypted bool   `yaml:"encrypted" validate:"boolean"`
 		} `yaml:"root_volume"`
-		AWS          AWS           `yaml:"aws"`
+		AWS          AWSCP         `yaml:"aws"`
+		Azure        AzureCP       `yaml:"azure"`
 		ExtraVolumes []ExtraVolume `yaml:"extra_volumes"`
 	} `yaml:"control_plane"`
 
@@ -88,7 +86,8 @@ type DescriptorFile struct {
 
 type Networks struct {
 	VPCID                      string            `yaml:"vpc_id"`
-	CidrBlock                  string            `yaml:"cidr,omitempty"`
+	VPCCidrBlock               string            `yaml:"vpc_cidr" validate:"omitempty,cidrv4"`
+	PodsCidrBlock              string            `yaml:"pods_cidr" validate:"omitempty,cidrv4"`
 	Tags                       map[string]string `yaml:"tags,omitempty"`
 	AvailabilityZoneUsageLimit int               `yaml:"az_usage_limit" validate:"numeric"`
 	AvailabilityZoneSelection  string            `yaml:"az_selection" validate:"oneof='Ordered' 'Random' '' "`
@@ -106,7 +105,7 @@ type Subnets struct {
 	CidrBlock        string            `yaml:"cidr,omitempty"`
 }
 
-type AWS struct {
+type AWSCP struct {
 	AssociateOIDCProvider bool `yaml:"associate_oidc_provider" validate:"boolean"`
 	Logging               struct {
 		ApiServer         bool `yaml:"api_server" validate:"boolean"`
@@ -115,6 +114,11 @@ type AWS struct {
 		ControllerManager bool `yaml:"controller_manager" validate:"boolean"`
 		Scheduler         bool `yaml:"scheduler" validate:"boolean"`
 	} `yaml:"logging"`
+}
+
+type AzureCP struct {
+	IdentityID string `yaml:"identity_id"`
+	Tier       string `yaml:"tier" validate:"oneof='Free' 'Paid'"`
 }
 
 type WorkerNodes []struct {
@@ -128,8 +132,8 @@ type WorkerNodes []struct {
 	Spot             bool              `yaml:"spot" validate:"omitempty,boolean"`
 	Labels           map[string]string `yaml:"labels"`
 	Taints           []Taint           `yaml:"taints" validate:"omitempty,dive"`
-	NodeGroupMaxSize int               `yaml:"max_size" validate:"omitempty,numeric,required_with=NodeGroupMinSize,gtefield=Quantity,gt=0"`
-	NodeGroupMinSize int               `yaml:"min_size" validate:"omitempty,numeric,required_with=NodeGroupMaxSize,ltefield=Quantity,gt=0"`
+	NodeGroupMaxSize int               `yaml:"max_size" validate:"required_with=NodeGroupMinSize,numeric,omitempty"`
+	NodeGroupMinSize int               `yaml:"min_size" validate:"required_with=NodeGroupMaxSize,numeric,omitempty"`
 	RootVolume       struct {
 		Size      int    `yaml:"size" validate:"numeric"`
 		Type      string `yaml:"type"`
@@ -146,14 +150,8 @@ type Bastion struct {
 	SSHKey            string   `yaml:"ssh_key"`
 }
 
-type Node struct {
-	AZ      string
-	QA      int
-	MaxSize int
-	MinSize int
-}
-
 type ExtraVolume struct {
+	Name       string `yaml:"name"`
 	DeviceName string `yaml:"device_name"`
 	Size       int    `yaml:"size" validate:"numeric"`
 	Type       string `yaml:"type"`
@@ -163,8 +161,9 @@ type ExtraVolume struct {
 }
 
 type Credentials struct {
-	AWS              AWSCredentials              `yaml:"aws"`
-	GCP              GCPCredentials              `yaml:"gcp"`
+	AWS              AWSCredentials              `yaml:"aws" validate:"excluded_with=AZURE GCP"`
+	AZURE            AzureCredentials            `yaml:"azure" validate:"excluded_with=AWS GCP"`
+	GCP              GCPCredentials              `yaml:"gcp" validate:"excluded_with=AWS AZURE"`
 	GithubToken      string                      `yaml:"github_token"`
 	DockerRegistries []DockerRegistryCredentials `yaml:"docker_registries"`
 }
@@ -173,7 +172,14 @@ type AWSCredentials struct {
 	AccessKey string `yaml:"access_key"`
 	SecretKey string `yaml:"secret_key"`
 	Region    string `yaml:"region"`
-	Account   string `yaml:"account"`
+	AccountID string `yaml:"account_id"`
+}
+
+type AzureCredentials struct {
+	SubscriptionID string `yaml:"subscription_id"`
+	TenantID       string `yaml:"tenant_id"`
+	ClientID       string `yaml:"client_id"`
+	ClientSecret   string `yaml:"client_secret"`
 }
 
 type GCPCredentials struct {
@@ -192,9 +198,9 @@ type DockerRegistryCredentials struct {
 
 type DockerRegistry struct {
 	AuthRequired bool   `yaml:"auth_required" validate:"boolean"`
-	Type         string `yaml:"type"`
+	Type         string `yaml:"type" validate:"required,oneof='acr' 'ecr' 'generic'"`
 	URL          string `yaml:"url" validate:"required"`
-	KeosRegistry bool   `yaml:"keos_registry" validate:"boolean"`
+	KeosRegistry bool   `yaml:"keos_registry" validate:"omitempty,boolean"`
 }
 
 type TemplateParams struct {
@@ -209,9 +215,44 @@ type Taint struct {
 	Effect string `yaml:"effect" validate:"required,oneof='NoSchedule' 'NoExecute' 'PreferNoSchedule'"`
 }
 
+type AWS struct {
+	Credentials AWSCredentials `yaml:"credentials"`
+}
+
+type AZURE struct {
+	Credentials AzureCredentials `yaml:"credentials"`
+}
+
+type GCP struct {
+	Credentials GCPCredentials `yaml:"credentials"`
+}
+
+type SecretsFile struct {
+	Secrets Secrets `yaml:"secrets"`
+}
+
+type Secrets struct {
+	AWS              AWS                         `yaml:"aws"`
+	AZURE            AZURE                       `yaml:"azure"`
+	GCP              GCP                         `yaml:"gcp"`
+	GithubToken      string                      `yaml:"github_token"`
+	ExternalRegistry DockerRegistryCredentials   `yaml:"external_registry"`
+	DockerRegistries []DockerRegistryCredentials `yaml:"docker_registries"`
+}
+
+type ProviderParams struct {
+	Region      string
+	Managed     bool
+	Credentials map[string]string
+	GithubToken string
+}
+
 // Init sets default values for the DescriptorFile
 func (d DescriptorFile) Init() DescriptorFile {
 	d.ControlPlane.HighlyAvailable = true
+
+	// AKS
+	d.ControlPlane.Azure.Tier = "Paid"
 
 	// Autoscaler
 	d.DeployAutoscaler = true
@@ -232,7 +273,10 @@ func (d DescriptorFile) Init() DescriptorFile {
 
 // Read descriptor file
 func GetClusterDescriptor(descriptorPath string) (*DescriptorFile, error) {
-
+	_, err := os.Stat(descriptorPath)
+	if err != nil {
+		return nil, errors.New("No exists any cluster descriptor as " + descriptorPath)
+	}
 	var k8sStruct K8sObject
 
 	descriptorRAW, err := os.ReadFile(descriptorPath)
@@ -246,76 +290,162 @@ func GetClusterDescriptor(descriptorPath string) (*DescriptorFile, error) {
 		return nil, err
 	}
 	descriptorFile := k8sStruct.Spec
-
 	validate := validator.New()
-	err = validate.Struct(k8sStruct)
+
+	validate.RegisterCustomTypeFunc(CustomTypeAWSCredsFunc, AWSCredentials{})
+	validate.RegisterCustomTypeFunc(CustomTypeGCPCredsFunc, GCPCredentials{})
+	validate.RegisterValidation("gte_param_if_exists", gteParamIfExists)
+	validate.RegisterValidation("lte_param_if_exists", lteParamIfExists)
+	validate.RegisterValidation("required_if_for_bool", requiredIfForBool)
+	err = validate.Struct(descriptorFile)
 	if err != nil {
 		return nil, err
 	}
-
 	return &descriptorFile, nil
 }
 
-func resto(n int, i int, azs int) int {
-	var r int
-	r = (n % azs) / (i + 1)
-	if r > 1 {
-		r = 1
+func DecryptFile(filePath string, vaultPassword string) (string, error) {
+	data, err := vault.DecryptFile(filePath, vaultPassword)
+
+	if err != nil {
+		return "", err
 	}
-	return r
+	return data, nil
 }
 
-func GetClusterManifest(flavor string, params TemplateParams, azs []string) (string, error) {
-	funcMap := template.FuncMap{
-		"loop": func(az string, zd string, qa int, maxsize int, minsize int) <-chan Node {
-			ch := make(chan Node)
-			go func() {
-				var q int
-				var mx int
-				var mn int
-				if az != "" {
-					ch <- Node{AZ: az, QA: qa, MaxSize: maxsize, MinSize: minsize}
-				} else {
-					for i, a := range azs {
-						if zd == "unbalanced" {
-							q = qa/len(azs) + resto(qa, i, len(azs))
-							mx = maxsize/len(azs) + resto(maxsize, i, len(azs))
-							mn = minsize/len(azs) + resto(minsize, i, len(azs))
-							ch <- Node{AZ: a, QA: q, MaxSize: mx, MinSize: mn}
-						} else {
-							ch <- Node{AZ: a, QA: qa / len(azs), MaxSize: maxsize / len(azs), MinSize: minsize / len(azs)}
-						}
-					}
-				}
-				close(ch)
-			}()
-			return ch
-		},
-		"hostname": func(s string) string {
-			return strings.Split(s, "/")[0]
-		},
-		"checkReference": func(v interface{}) bool {
-			defer func() { recover() }()
-			return v != nil && !reflect.ValueOf(v).IsNil() && v != "nil" && v != "<nil>"
-		},
-		"isNotEmpty": func(v interface{}) bool {
-			return !reflect.ValueOf(v).IsZero()
-		},
-		"lastElement": func(element int, len int) bool {
-			return element < len
-		},
-		"sub": func(a, b int) int { return a - b },
+func GetSecretsFile(secretsPath string, vaultPassword string) (*SecretsFile, error) {
+	secretRaw, err := DecryptFile(secretsPath, vaultPassword)
+	var secretFile SecretsFile
+	if err != nil {
+		err := errors.New("the vaultPassword is incorrect")
+		return nil, err
 	}
 
-	var tpl bytes.Buffer
-	t, err := template.New("").Funcs(funcMap).ParseFS(ctel, "templates/"+flavor)
+	err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
 	if err != nil {
-		return "", err
+		return nil, err
+	}
+	return &secretFile, nil
+}
+
+func IfExistsStructField(fl validator.FieldLevel) bool {
+	structValue := reflect.ValueOf(fl.Parent().Interface())
+
+	excludeFieldName := fl.Param()
+
+	// Get the value of the exclude field
+	excludeField := structValue.FieldByName(excludeFieldName)
+
+	// Exclude field is set to false or invalid, so don't exclude this field
+	return reflect.DeepEqual(excludeField, reflect.Zero(reflect.TypeOf(excludeField)).Interface())
+}
+
+func CustomTypeAWSCredsFunc(field reflect.Value) interface{} {
+	if value, ok := field.Interface().(AWSCredentials); ok {
+		return value.AccessKey
+	}
+	return nil
+}
+
+func CustomTypeGCPCredsFunc(field reflect.Value) interface{} {
+	if value, ok := field.Interface().(GCPCredentials); ok {
+		return value.ClientEmail
+	}
+	return nil
+}
+
+func gteParamIfExists(fl validator.FieldLevel) bool {
+	field := fl.Field()
+	fieldCompared := fl.Param()
+
+	//omitEmpty
+	if field.Kind() == reflect.Int && field.Int() == 0 {
+		return true
 	}
 
-	err = t.ExecuteTemplate(&tpl, flavor, params)
-	if err != nil {
-		return "", err
+	var paramFieldValue reflect.Value
+
+	if fl.Parent().Kind() == reflect.Ptr {
+		paramFieldValue = fl.Parent().Elem().FieldByName(fieldCompared)
+	} else {
+		paramFieldValue = fl.Parent().FieldByName(fieldCompared)
 	}
-	return tpl.String(), nil
+
+	if paramFieldValue.Kind() != reflect.Int {
+		return false
+	}
+	//QUe no rompa cuando quantity no se indica, se romperá en otra validación
+	if paramFieldValue.Int() == 0 {
+		return true
+	}
+
+	if paramFieldValue.Int() > 0 {
+		return field.Int() >= paramFieldValue.Int()
+	}
+	return false
+}
+
+func lteParamIfExists(fl validator.FieldLevel) bool {
+	field := fl.Field()
+	fieldCompared := fl.Param()
+
+	//omitEmpty
+	if field.Kind() == reflect.Int && field.Int() == 0 {
+		return true
+	}
+
+	var paramFieldValue reflect.Value
+
+	if fl.Parent().Kind() == reflect.Ptr {
+		paramFieldValue = fl.Parent().Elem().FieldByName(fieldCompared)
+	} else {
+		paramFieldValue = fl.Parent().FieldByName(fieldCompared)
+	}
+
+	if paramFieldValue.Kind() != reflect.Int {
+		return false
+	}
+
+	if paramFieldValue.Int() == 0 {
+		return true
+	}
+
+	if paramFieldValue.Int() > 0 {
+		return field.Int() <= paramFieldValue.Int()
+	}
+
+	return false
+}
+
+func requiredIfForBool(fl validator.FieldLevel) bool {
+	params := strings.Split(fl.Param(), " ")
+	if len(params) != 2 {
+		panic(fmt.Sprintf("Bad param number for required_if %s", fl.FieldName()))
+	}
+
+	if !requireCheckFieldValue(fl, params[0], params[1], false) {
+		return true
+	}
+	field := fl.Field()
+	fl.Parent()
+	return field.IsValid() && field.Interface() != reflect.Zero(field.Type()).Interface()
+}
+
+func requireCheckFieldValue(fl validator.FieldLevel, param string, value string, defaultNotFoundValue bool) bool {
+	field, kind, _, found := fl.GetStructFieldOKAdvanced2(fl.Parent(), param)
+	if !found {
+		return defaultNotFoundValue
+	}
+
+	if kind == reflect.Bool {
+		val, err := strconv.ParseBool(value)
+		if err != nil {
+			return false
+		}
+
+		return field.Bool() == val
+	}
+
+	return false
+
 }

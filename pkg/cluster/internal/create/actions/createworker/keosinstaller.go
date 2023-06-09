@@ -20,7 +20,7 @@ import (
 	"os"
 
 	"gopkg.in/yaml.v3"
-	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
+	"sigs.k8s.io/kind/pkg/commons"
 )
 
 type KEOSDescriptor struct {
@@ -33,6 +33,11 @@ type KEOSDescriptor struct {
 		Enabled bool `yaml:"enabled"`
 		EKS     bool `yaml:"eks"`
 	} `yaml:"aws,omitempty"`
+	Azure struct {
+		Enabled       bool   `yaml:"enabled"`
+		AKS           bool   `yaml:"aks"`
+		ResourceGroup string `yaml:"resource_group"`
+	} `yaml:"azure,omitempty"`
 	GCP struct {
 		Enabled bool `yaml:"enabled"`
 		GKE     bool `yaml:"gke"`
@@ -40,6 +45,7 @@ type KEOSDescriptor struct {
 	Keos struct {
 		Calico struct {
 			Ipip                 bool   `yaml:"ipip,omitempty"`
+			VXLan                bool   `yaml:"vxlan,omitempty"`
 			Pool                 string `yaml:"pool,omitempty"`
 			DeployTigeraOperator bool   `yaml:"deploy_tigera_operator"`
 		} `yaml:"calico"`
@@ -61,7 +67,7 @@ type KEOSDescriptor struct {
 	} `yaml:"keos"`
 }
 
-func createKEOSDescriptor(descriptorFile cluster.DescriptorFile, storageClass string) error {
+func createKEOSDescriptor(descriptorFile commons.DescriptorFile, storageClass string) error {
 
 	var keosDescriptor KEOSDescriptor
 	var err error
@@ -81,6 +87,13 @@ func createKEOSDescriptor(descriptorFile cluster.DescriptorFile, storageClass st
 		keosDescriptor.AWS.EKS = descriptorFile.ControlPlane.Managed
 	}
 
+	// Azure
+	if descriptorFile.InfraProvider == "azure" {
+		keosDescriptor.Azure.Enabled = true
+		keosDescriptor.Azure.AKS = descriptorFile.ControlPlane.Managed
+		keosDescriptor.Azure.ResourceGroup = descriptorFile.ClusterID
+	}
+
 	// GCP
 	if descriptorFile.InfraProvider == "gcp" {
 		keosDescriptor.GCP.Enabled = true
@@ -89,11 +102,7 @@ func createKEOSDescriptor(descriptorFile cluster.DescriptorFile, storageClass st
 
 	// Keos
 	keosDescriptor.Keos.ClusterID = descriptorFile.ClusterID
-        if descriptorFile.InfraProvider == "aws" {
-                keosDescriptor.Keos.Domain = "cluster.local"
-        } else if descriptorFile.Keos.Domain != "" {
-                keosDescriptor.Keos.Domain = descriptorFile.Keos.Domain
-        }
+	keosDescriptor.Keos.Domain = "cluster.local"
 	if descriptorFile.ExternalDomain != "" {
 		keosDescriptor.Keos.ExternalDomain = descriptorFile.ExternalDomain
 	}
@@ -101,7 +110,11 @@ func createKEOSDescriptor(descriptorFile cluster.DescriptorFile, storageClass st
 
 	// Keos - Calico
 	if !descriptorFile.ControlPlane.Managed {
-		keosDescriptor.Keos.Calico.Ipip = true
+		if descriptorFile.InfraProvider == "azure" {
+			keosDescriptor.Keos.Calico.VXLan = true
+		} else {
+			keosDescriptor.Keos.Calico.Ipip = true
+		}
 		keosDescriptor.Keos.Calico.Pool = "192.168.0.0/16"
 	}
 	keosDescriptor.Keos.Calico.DeployTigeraOperator = false

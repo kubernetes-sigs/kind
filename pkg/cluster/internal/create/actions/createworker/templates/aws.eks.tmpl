@@ -31,10 +31,17 @@ metadata:
   namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec:
   addons:
-    - name: "aws-ebs-csi-driver"
-      version: "v1.17.0-eksbuild.1"
     - name: "vpc-cni"
       version: "v1.12.6-eksbuild.1"
+      conflictResolution: "overwrite"
+    - name: "aws-ebs-csi-driver"
+      version: "v1.17.0-eksbuild.1"
+      conflictResolution: "overwrite"
+    - name: "coredns"
+      version: "v1.9.3-eksbuild.3"
+      conflictResolution: "overwrite"
+    - name: "kube-proxy"
+      version: "v1.24.10-eksbuild.2"
       conflictResolution: "overwrite"
   associateOIDCProvider: {{ .Descriptor.ControlPlane.AWS.AssociateOIDCProvider }}
   eksClusterName: "{{ .Descriptor.ClusterID }}"
@@ -48,8 +55,8 @@ spec:
     vpc:
       availabilityZoneSelection: {{- if ne .Descriptor.Networks.AvailabilityZoneSelection "" }} {{ .Descriptor.Networks.AvailabilityZoneSelection }} {{ else }} Ordered {{ end }}
       availabilityZoneUsageLimit: {{- if ne .Descriptor.Networks.AvailabilityZoneUsageLimit 0 }} {{ .Descriptor.Networks.AvailabilityZoneUsageLimit }} {{ else }} 3 {{ end }}
-  {{- if ne .Descriptor.Networks.CidrBlock "" }}
-      cidrBlock: {{ .Descriptor.Networks.CidrBlock }}
+  {{- if ne .Descriptor.Networks.VPCCidrBlock "" }}
+      cidrBlock: {{ .Descriptor.Networks.VPCCidrBlock }}
   {{- end }}
   {{- if isNotEmpty .Descriptor.Networks.Tags }}
       tags:
@@ -88,19 +95,28 @@ spec:
     {{- end }}
 {{- end }}
   region: "{{ .Descriptor.Region }}"
+{{- if ne .Descriptor.Networks.PodsCidrBlock "" }}
+  secondaryCidrBlock: {{ .Descriptor.Networks.PodsCidrBlock }}
+{{- end }}
   sshKeyName: \"{{ .Descriptor.Bastion.SSHKey }}\"
   version: "{{ .Descriptor.K8SVersion }}"
   vpcCni:
     env:
       - name: ANNOTATE_POD_IP
         value: \"true\"
+    {{- if ne .Descriptor.Networks.PodsCidrBlock "" }}
+      - name: AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG
+        value: \"true\"
+      - name: ENI_CONFIG_LABEL_DEF
+        value: \"topology.kubernetes.io/zone\"
+    {{- end }}
 {{- range $node := .Descriptor.WorkerNodes }}
 {{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
-{{- if and (gt $node.NodeGroupMaxSize 0) (gt $node.NodeGroupMinSize 0) }}
+{{- if gt $node.NodeGroupMaxSize 0 }}
   annotations:
     cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: '{{ $n.MaxSize }}'
     cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: '{{ $n.MinSize }}'
@@ -173,6 +189,22 @@ metadata:
 spec:
   template:
     spec:
+      {{- if gt (len $.DockerRegistries) 0 }}
+      files:
+        {{- range $reg := $.DockerRegistries }}
+        {{- $url := hostname $reg.url }}
+        - content: |
+            server = \"https://{{ $url }}\"
+            [host.\"https://{{ $url }}\"]
+              capabilities = [\"pull\", \"resolve\"]
+              [host.\"https://{{ $url }}\".header]
+                {{- $auth := base64 (print $reg.user ":" $reg.pass) }}
+                authorization = \"Basic {{ $auth }}\"
+          path: /etc/containerd/certs.d/{{ $url }}/hosts.toml
+        {{- end }}
+      postBootstrapCommands:
+        - systemctl restart containerd
+      {{- end }}
       {{- if $node.ExtraVolumes }}
       diskSetup:
         filesystems:

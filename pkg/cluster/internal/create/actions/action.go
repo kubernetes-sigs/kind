@@ -20,6 +20,7 @@ import (
 	"sync"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/cli"
 	"sigs.k8s.io/kind/pkg/log"
@@ -87,4 +88,17 @@ func (ac *ActionContext) Nodes() ([]nodes.Node, error) {
 	}
 	ac.cache.setNodes(n)
 	return n, nil
+}
+
+func (ac *ActionContext) GetNode() (nodes.Node, error) {
+	allNodes, err := ac.Nodes()
+	if err != nil {
+		return nil, err
+	}
+
+	controlPlanes, err := nodeutils.ControlPlaneNodes(allNodes)
+	if err != nil {
+		return nil, err
+	}
+	return controlPlanes[0], nil
 }

@@ -18,14 +18,19 @@ package createworker
 
 import (
 	"bytes"
-	b64 "encoding/base64"
+	"context"
+	"encoding/base64"
 	"os"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
@@ -59,15 +64,17 @@ func (b *AWSBuilder) setCapx(managed bool) {
 	}
 }
 
-func (b *AWSBuilder) setCapxEnvVars(p ProviderParams) {
-	awsCredentials := "[default]\naws_access_key_id = " + p.credentials["AccessKey"] + "\naws_secret_access_key = " + p.credentials["SecretKey"] + "\nregion = " + p.region + "\n"
+func (b *AWSBuilder) setCapxEnvVars(p commons.ProviderParams) {
+	awsCredentials := "[default]\naws_access_key_id = " + p.Credentials["AccessKey"] + "\naws_secret_access_key = " + p.Credentials["SecretKey"] + "\nregion = " + p.Region + "\n"
 	b.capxEnvVars = []string{
-		"AWS_REGION=" + p.region,
-		"AWS_ACCESS_KEY_ID=" + p.credentials["AccessKey"],
-		"AWS_SECRET_ACCESS_KEY=" + p.credentials["SecretKey"],
-		"AWS_B64ENCODED_CREDENTIALS=" + b64.StdEncoding.EncodeToString([]byte(awsCredentials)),
-		"GITHUB_TOKEN=" + p.githubToken,
+		"AWS_REGION=" + p.Region,
+		"AWS_ACCESS_KEY_ID=" + p.Credentials["AccessKey"],
+		"AWS_SECRET_ACCESS_KEY=" + p.Credentials["SecretKey"],
+		"AWS_B64ENCODED_CREDENTIALS=" + base64.StdEncoding.EncodeToString([]byte(awsCredentials)),
 		"CAPA_EKS_IAM=true",
+	}
+	if p.GithubToken != "" {
+		b.capxEnvVars = append(b.capxEnvVars, "GITHUB_TOKEN="+p.GithubToken)
 	}
 }
 
@@ -156,4 +163,31 @@ func (b *AWSBuilder) getAzs() ([]string, error) {
 		azs[i] = *az.ZoneName
 	}
 	return azs, nil
+}
+
+func getEcrToken(p commons.ProviderParams) (string, error) {
+	customProvider := credentials.NewStaticCredentialsProvider(
+		p.Credentials["AccessKey"], p.Credentials["SecretKey"], "",
+	)
+	cfg, err := config.LoadDefaultConfig(
+		context.TODO(),
+		config.WithCredentialsProvider(customProvider),
+		config.WithRegion(p.Region),
+	)
+	if err != nil {
+		return "", err
+	}
+
+	svc := ecr.NewFromConfig(cfg)
+	token, err := svc.GetAuthorizationToken(context.TODO(), &ecr.GetAuthorizationTokenInput{})
+	if err != nil {
+		return "", err
+	}
+	authData := token.AuthorizationData[0].AuthorizationToken
+	data, err := base64.StdEncoding.DecodeString(*authData)
+	if err != nil {
+		return "", err
+	}
+	parts := strings.SplitN(string(data), ":", 2)
+	return parts[1], nil
 }

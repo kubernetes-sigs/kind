@@ -17,25 +17,27 @@ certs:
 imagePullSecrets: {}
 installation:
   calicoNetwork:
-    bgp: "{{- if $.ControlPlane.Managed -}} Disabled {{- else -}} Enabled {{- end }}"
-    {{- if not $.ControlPlane.Managed }}
-    ipPools:
-      - blockSize: 25
-        cidr: 192.168.0.0/16
-        encapsulation: IPIP
+    bgp: {{- if or ($.ControlPlane.Managed) (eq $.InfraProvider "azure") }} Disabled {{- else }} Enabled {{- end }}
+  {{- if not $.ControlPlane.Managed }}
+    {{- if eq $.InfraProvider "azure" }}
+    mtu: 1350
     {{- end }}
+    ipPools:
+      - cidr: 192.168.0.0/16
+        encapsulation: {{- if eq $.InfraProvider "azure" }} VXLAN {{- else }} IPIP {{- end }}
+  {{- end }}
   cni:
-    {{- if eq $.InfraProvider "aws" }}
+  {{- if and ($.ControlPlane.Managed) (eq $.InfraProvider "aws") }}
     ipam:
       type: AmazonVPC
     type: AmazonVPC
-    {{- else }}
-    ipam: 
+  {{- else }}
+    ipam:
       type: Calico
     type: Calico
-    {{- end }}
+  {{- end }}
   enabled: true
-  kubernetesProvider: "{{- if eq $.InfraProvider "aws" -}} EKS {{- end }}"
+  kubernetesProvider: {{- if and ($.ControlPlane.Managed) (eq $.InfraProvider "aws") }} EKS {{- else }} "" {{- end }}
   nodeMetricsPort: 9191
   registry: docker.io
   typhaMetricsPort: 9093
@@ -52,7 +54,7 @@ resources: {}
 tigeraOperator:
   image: tigera/operator
   registry: quay.io
-  version: v1.25.9
+  version: v1.29.3
 # Tolerations for the tigera/operator pod.
 tolerations:
   - effect: NoExecute

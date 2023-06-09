@@ -14,30 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package createworker
+package commons
 
 import (
 	"bytes"
-	"context"
-	"encoding/base64"
-	"log"
 	"unicode"
 
-	"io/ioutil"
 	"os"
 	"reflect"
 	"strings"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/fatih/structs"
 	"github.com/oleiade/reflections"
 	"gopkg.in/yaml.v3"
-	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
-	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/cluster"
+
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 
@@ -46,18 +37,6 @@ import (
 
 const secretName = "secrets.yml"
 const secretPath = "./" + secretName
-
-func encryptFile(filePath string, vaultPassword string) error {
-	data, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		return err
-	}
-	err = vault.EncryptFile(filePath, string(data), vaultPassword)
-	if err != nil {
-		return err
-	}
-	return nil
-}
 
 func decryptFile(filePath string, vaultPassword string) (string, error) {
 	data, err := vault.DecryptFile(filePath, vaultPassword)
@@ -85,7 +64,7 @@ func convertStringMapToInterfaceMap(inputMap map[string]string) map[string]inter
 	return outputMap
 }
 
-func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (map[string]string, map[string]string, string, []map[string]interface{}, error) {
+func GetSecrets(descriptorFile DescriptorFile, vaultPassword string) (map[string]string, map[string]string, string, []map[string]interface{}, error) {
 
 	var c = map[string]string{}
 	var r = map[string]string{}
@@ -105,9 +84,6 @@ func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (ma
 		if reflect.DeepEqual(dc, reflect.Zero(reflect.TypeOf(dc)).Interface()) {
 			return c, r, "", dr, errors.New("No " + infraProvider + " credentials found in secrets file and descriptor file")
 		}
-		if descriptorFile.Credentials.GithubToken == "" {
-			return c, r, "", dr, errors.New("No GithubToken credentials found in secrets file and descriptor file")
-		}
 		for _, reg := range descriptorFile.DockerRegistries {
 			for _, regCreds := range descriptorFile.Credentials.DockerRegistries {
 				if reg.URL == regCreds.URL {
@@ -126,6 +102,7 @@ func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (ma
 		resultGHT = descriptorFile.Credentials.GithubToken
 
 	} else {
+
 		var secretFile SecretsFile
 		secretRaw, err := decryptFile("./secrets.yml", vaultPassword)
 		if err != nil {
@@ -158,18 +135,14 @@ func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (ma
 			m := structs.Map(f)
 			resultCreds = convertToMapStringString(m["Credentials"].(map[string]interface{}))
 		}
-		if secretFile.Secrets.GithubToken == "" {
-			if descriptorFile.Credentials.GithubToken == "" {
-				return c, r, "", dr, errors.New("No Github Token found in secrets file and descriptor file")
-			}
-
+		if secretFile.Secrets.GithubToken == "" && descriptorFile.Credentials.GithubToken != "" {
 			resultGHT = descriptorFile.Credentials.GithubToken
 		} else {
 			resultGHT = secretFile.Secrets.GithubToken
 		}
-		if secretFile.Secrets.ExternalRegistry == (cluster.DockerRegistryCredentials{}) {
+		if secretFile.Secrets.ExternalRegistry == (DockerRegistryCredentials{}) {
 			if len(descriptorFile.Credentials.DockerRegistries) > 0 &&
-				descriptorFile.Credentials.DockerRegistries[0] != (cluster.DockerRegistryCredentials{}) {
+				descriptorFile.Credentials.DockerRegistries[0] != (DockerRegistryCredentials{}) {
 				resultRegMap := structs.Map(descriptorFile.Credentials.DockerRegistries)
 				resultExternalReg = convertToMapStringString(resultRegMap)
 			}
@@ -195,9 +168,9 @@ func getSecrets(descriptorFile cluster.DescriptorFile, vaultPassword string) (ma
 	return resultCreds, resultExternalReg, resultGHT, resultDockerRegistries, nil
 }
 
-func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword string) error {
+func EnsureSecretsFile(descriptorFile DescriptorFile, vaultPassword string) error {
 	edited := false
-	credentials, externalRegistry, github_token, dockerRegistries, err := getSecrets(descriptorFile, vaultPassword)
+	credentials, externalRegistry, github_token, dockerRegistries, err := GetSecrets(descriptorFile, vaultPassword)
 	if err != nil {
 		return err
 	}
@@ -211,9 +184,7 @@ func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword stri
 		if len(credentials) > 0 {
 			creds := convertStringMapToInterfaceMap(credentials)
 			creds = convertMapKeysToSnakeCase(creds)
-			secretMap[descriptorFile.InfraProvider] = map[string]interface{}{
-				"credentials": creds,
-			}
+			secretMap[descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds}
 		}
 
 		if len(externalRegistry) > 0 {
@@ -254,8 +225,7 @@ func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword stri
 		edited = true
 		creds := convertStringMapToInterfaceMap(credentials)
 		creds = convertMapKeysToSnakeCase(creds)
-		secretMap["secrets"][descriptorFile.InfraProvider] = map[string]interface{}{
-			"credentials": creds}
+		secretMap["secrets"][descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds}
 	}
 
 	if secretMap["secrets"]["external_registry"] == nil && len(externalRegistry) > 0 {
@@ -285,39 +255,7 @@ func ensureSecretsFile(descriptorFile cluster.DescriptorFile, vaultPassword stri
 	return nil
 }
 
-func convertMapToStruct(m map[string]interface{}, s interface{}) error {
-	stValue := reflect.ValueOf(s).Elem()
-	sType := stValue.Type()
-	for i := 0; i < sType.NumField(); i++ {
-		field := sType.Field(i)
-		if value, ok := m[field.Name]; ok {
-			stValue.Field(i).Set(reflect.ValueOf(value))
-		}
-	}
-	return nil
-}
-
-func getMap(s interface{}) (map[string]string, error) {
-	var resultMap map[string]string
-	resultBytes, err := yaml.Marshal(s)
-	if err != nil {
-		return nil, err
-	}
-	yaml.Unmarshal(resultBytes, &resultMap)
-	return resultMap, nil
-
-}
-
-func cleanStruct(m map[string]string) map[string]string {
-	for k, v := range m {
-		if v == "" {
-			delete(m, k)
-		}
-	}
-	return m
-}
-
-func rewriteDescriptorFile(descriptorPath string) error {
+func RewriteDescriptorFile(descriptorPath string) error {
 
 	descriptorRAW, err := os.ReadFile(descriptorPath)
 
@@ -331,11 +269,13 @@ func rewriteDescriptorFile(descriptorPath string) error {
 		return err
 	}
 
-	yamlNodes := removeNodesUnderKey(data.Content, "spec", "credentials")
+	yamlNodes := removeKey(data.Content, "credentials")
 
 	b, err := yaml.Marshal(yamlNodes[0])
-
-	err = ioutil.WriteFile(descriptorPath, b, 0644)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(descriptorPath, []byte(b), 0644)
 	if err != nil {
 		return err
 	}
@@ -344,7 +284,7 @@ func rewriteDescriptorFile(descriptorPath string) error {
 
 }
 
-func integrateClusterAutoscaler(node nodes.Node, kubeconfigPath string, clusterID string, provider string) exec.Cmd {
+func IntegrateClusterAutoscaler(node nodes.Node, kubeconfigPath string, clusterID string, provider string) exec.Cmd {
 	cmd := node.Command("helm", "install", "cluster-autoscaler", "/stratio/helm/cluster-autoscaler",
 		"--kubeconfig", kubeconfigPath,
 		"--namespace", "kube-system",
@@ -356,21 +296,6 @@ func integrateClusterAutoscaler(node nodes.Node, kubeconfigPath string, clusterI
 	return cmd
 }
 
-func getDecryptedSecret(vaultPassword string) (SecretsFile, error) {
-	secretRaw, err := decryptFile("./secrets.yml", vaultPassword)
-	secretFile := new(SecretsFile)
-	if err != nil {
-		err := errors.New("The vaultPassword is incorrect")
-		return *secretFile, err
-	} else {
-		err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
-		if err != nil {
-			return *secretFile, err
-		}
-		return *secretFile, nil
-	}
-}
-
 func encryptSecret(secretMap map[string]map[string]interface{}, vaultPassword string) error {
 
 	var b bytes.Buffer
@@ -378,7 +303,7 @@ func encryptSecret(secretMap map[string]map[string]interface{}, vaultPassword st
 	yamlEncoder.SetIndent(2)
 	yamlEncoder.Encode(&secretMap)
 
-	err := vault.EncryptFile(secretPath, string(b.Bytes()), vaultPassword)
+	err := vault.EncryptFile(secretPath, b.String(), vaultPassword)
 	if err != nil {
 		return err
 	}
@@ -393,7 +318,7 @@ func removeKey(nodes []*yaml.Node, key string) []*yaml.Node {
 			j := 0
 			for j < len(node.Content)/2 {
 				if node.Content[j*2].Value == key {
-					if i == 0 {
+					if i == 5 {
 						// This is a root key, so remove it and its value.
 						node.Content = append(node.Content[:j*2], node.Content[j*2+2:]...)
 						continue
@@ -414,21 +339,7 @@ func removeKey(nodes []*yaml.Node, key string) []*yaml.Node {
 	return newNodes
 }
 
-// getNode returns the first control plane
-func getNode(ctx *actions.ActionContext) (nodes.Node, error) {
-	allNodes, err := ctx.Nodes()
-	if err != nil {
-		return nil, err
-	}
-
-	controlPlanes, err := nodeutils.ControlPlaneNodes(allNodes)
-	if err != nil {
-		return nil, err
-	}
-	return controlPlanes[0], nil
-}
-
-func executeCommand(node nodes.Node, command string, envVars ...[]string) error {
+func ExecuteCommand(node nodes.Node, command string, envVars ...[]string) error {
 	raw := bytes.Buffer{}
 	cmd := node.Command("sh", "-c", command)
 	if len(envVars) > 0 {
@@ -463,63 +374,4 @@ func convertMapKeysToSnakeCase(m map[string]interface{}) map[string]interface{} 
 		newMap[newKey] = v
 	}
 	return newMap
-}
-
-func getEcrAuthToken(p ProviderParams) (string, error) {
-	customProvider := credentials.NewStaticCredentialsProvider(
-		p.credentials["AccessKey"], p.credentials["SecretKey"], "",
-	)
-	cfg, err := config.LoadDefaultConfig(
-		context.TODO(),
-		config.WithCredentialsProvider(customProvider),
-		config.WithRegion(p.region),
-	)
-	if err != nil {
-		panic("unable to load SDK config, " + err.Error())
-	}
-
-	svc := ecr.NewFromConfig(cfg)
-	token, err := svc.GetAuthorizationToken(context.TODO(), &ecr.GetAuthorizationTokenInput{})
-	if err != nil {
-		log.Fatal(err)
-	}
-	authData := token.AuthorizationData[0].AuthorizationToken
-	data, err := base64.StdEncoding.DecodeString(*authData)
-	if err != nil {
-		log.Fatal(err)
-	}
-	parts := strings.SplitN(string(data), ":", 2)
-	return parts[1], nil
-}
-
-func removeNodesUnderKey(nodes []*yaml.Node, parentKey string, childKey string) []*yaml.Node {
-	for i, node := range nodes {
-		if node.Kind == yaml.MappingNode {
-			for j := 0; j < len(node.Content); j += 2 {
-				keyNode := node.Content[j]
-				valueNode := node.Content[j+1]
-				if keyNode.Value == parentKey {
-					// Se encontró el nodo padre.
-					if valueNode.Kind == yaml.MappingNode {
-						// Eliminar todos los nodos que coincidan con la key debajo del nodo padre.
-						for k := 0; k < len(valueNode.Content); k += 2 {
-							childKeyNode := valueNode.Content[k]
-							if childKeyNode.Value == childKey {
-								valueNode.Content = append(valueNode.Content[:k], valueNode.Content[k+2:]...)
-								k -= 2 // Se elimina un par clave-valor, por lo que debemos retroceder el índice.
-							}
-						}
-					}
-					break // Ya no es necesario continuar buscando.
-				} else {
-					removeNodesUnderKey([]*yaml.Node{valueNode}, parentKey, childKey) // Buscar recursivamente en los nodos hijos.
-				}
-			}
-			nodes[i].Content = removeNodesUnderKey(node.Content, parentKey, childKey)
-		} else if node.Kind == yaml.SequenceNode {
-			// Buscar recursivamente en los elementos de la secuencia.
-			nodes[i].Content = removeNodesUnderKey(node.Content, parentKey, childKey)
-		}
-	}
-	return nodes
 }
