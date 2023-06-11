@@ -24,6 +24,8 @@ import (
 
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/internal/sets"
+
+	cdi "github.com/container-orchestrated-devices/container-device-interface/pkg/parser"
 )
 
 // similar to valid docker container names, but since we will prefix
@@ -114,6 +116,10 @@ func (n *Node) Validate() error {
 		errs = append(errs, errors.New("image is a required field"))
 	}
 
+	if err := validateDevices(n.Devices); err != nil {
+		errs = append(errs, errors.Wrapf(err, "invalid devices"))
+	}
+
 	// validate extra port forwards
 	for _, mapping := range n.ExtraPortMappings {
 		if err := validatePort(mapping.HostPort); err != nil {
@@ -188,6 +194,21 @@ func validatePortMappings(portMappings []PortMapping) error {
 
 		// add the entry to bindMap
 		bindMap[portProtocol].Insert(addrString)
+	}
+	return nil
+}
+
+func validateDevices(devices []string) error {
+	for _, device := range devices {
+		device := strings.TrimSpace(device)
+		// validate device string is not empty
+		if len(device) == 0 {
+			return errors.Errorf("invalid device string: '%v'. Empty Strings not allowed", device)
+		} else if !cdi.IsQualifiedName(device) {
+			// Validte format of device string - must match: vendor.com/class=name
+			// See: https://github.com/container-orchestrated-devices/container-device-interface/blob/main/SPEC.md#kind
+			return errors.Errorf("invalid CDI device string: '%v'. Must be in format 'vendor.com/class=name'", device)
+		}
 	}
 	return nil
 }

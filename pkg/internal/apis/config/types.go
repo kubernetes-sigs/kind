@@ -98,6 +98,10 @@ type Node struct {
 	// binded to a host Port
 	ExtraPortMappings []PortMapping
 
+	// Devices allows access to GPUs through CDI using the --devices flag added in Docker v25.
+	// https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#container-device-interface-cdi-support
+	Devices []string
+
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// strategic merge patches to `kustomize build` internally
 	// https://github.com/kubernetes/community/blob/a9cf5c8f3380bb52ebe57b1e2dbdec136d8dd484/contributors/devel/sig-api-machinery/strategic-merge-patch.md
