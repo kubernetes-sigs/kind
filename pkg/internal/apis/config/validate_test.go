@@ -18,8 +18,9 @@ package config
 
 import (
 	"fmt"
-	"sigs.k8s.io/kind/pkg/internal/assert"
 	"testing"
+
+	"sigs.k8s.io/kind/pkg/internal/assert"
 
 	"sigs.k8s.io/kind/pkg/errors"
 )
@@ -251,7 +252,7 @@ func TestClusterValidate(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc //capture loop variable
+		tc := tc // capture loop variable
 		t.Run(tc.Name, func(t *testing.T) {
 			t.Parallel()
 			err := tc.Cluster.Validate()
@@ -344,6 +345,15 @@ func TestNodeValidate(t *testing.T) {
 			ExpectErrors: 1,
 		},
 		{
+			TestName: "Invalid Devices",
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg.Devices = []string{"TestDevice", "    "}
+				return cfg
+			}(),
+			ExpectErrors: 1,
+		},
+		{
 			TestName: "Invalid HostPort",
 			Node: func() Node {
 				cfg := newDefaultedNode(ControlPlaneRole)
@@ -360,7 +370,7 @@ func TestNodeValidate(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc //capture loop variable
+		tc := tc // capture loop variable
 		t.Run(tc.TestName, func(t *testing.T) {
 			t.Parallel()
 			err := tc.Node.Validate()
@@ -414,7 +424,7 @@ func TestPortValidate(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc //capture loop variable
+		tc := tc // capture loop variable
 		t.Run(tc.TestName, func(t *testing.T) {
 			t.Parallel()
 			err := validatePort(tc.Port)
@@ -537,7 +547,7 @@ func TestValidatePortMappings(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc //capture loop variable
+		tc := tc // capture loop variable
 		t.Run(tc.testName, func(t *testing.T) {
 			t.Parallel()
 

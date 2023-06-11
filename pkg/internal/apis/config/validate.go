@@ -103,8 +103,7 @@ func (n *Node) Validate() error {
 
 	// validate node role should be one of the expected values
 	switch n.Role {
-	case ControlPlaneRole,
-		WorkerRole:
+	case ControlPlaneRole, WorkerRole:
 	default:
 		errs = append(errs, errors.Errorf("%q is not a valid node role", n.Role))
 	}
@@ -112,6 +111,10 @@ func (n *Node) Validate() error {
 	// image should be defined
 	if n.Image == "" {
 		errs = append(errs, errors.New("image is a required field"))
+	}
+
+	if err := validateDevices(n.Devices); err != nil {
+		errs = append(errs, errors.Wrapf(err, "invalid devices"))
 	}
 
 	// validate extra port forwards
@@ -189,6 +192,16 @@ func validatePortMappings(portMappings []PortMapping) error {
 		// add the entry to bindMap
 		bindMap[portProtocol].Insert(addrString)
 	}
+	return nil
+}
+
+func validateDevices(devices []string) error {
+	for _, device := range devices {
+		if len(strings.TrimSpace(device)) == 0 {
+			return errors.Errorf("invalid device string: '%v'. Empty Strings not allowed", device)
+		}
+	}
+	// TODO: Validate shape of device identifer?
 	return nil
 }
 

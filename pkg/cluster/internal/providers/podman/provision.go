@@ -212,6 +212,10 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		args...,
 	)
 
+	if len(node.Devices) > 0 {
+		args = append(args, "--device", fmt.Sprintf("nvidia.com/gpu=%v", node.Devices))
+	}
+
 	// convert mounts and port mappings to container run args
 	args = append(args, generateMountBindings(node.ExtraMounts...)...)
 	mappingArgs, err := generatePortMappings(clusterIPFamily, node.ExtraPortMappings...)
@@ -302,7 +306,6 @@ type podmanNetworks []struct {
 func getSubnets(networkName string) ([]string, error) {
 	cmd := exec.Command("podman", "network", "inspect", networkName)
 	out, err := exec.Output(cmd)
-
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get subnets")
 	}

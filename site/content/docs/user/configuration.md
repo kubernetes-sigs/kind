@@ -8,7 +8,7 @@ menu:
 toc: true
 description: |-
   This guide covers how to configure KIND cluster creation.
-  
+
   We know this is currently a bit lacking and will expand it over time - PRs welcome!
 ---
 ## Getting Started
@@ -281,9 +281,46 @@ nodes:
   image: kindest/node:v1.16.4@sha256:b91a2c2317a000f3a783489dfb755064177dbc3a0b2f4147d50f04825d016f55
 {{< /codeFromInline >}}
 
-[Reference](https://kind.sigs.k8s.io/docs/user/quick-start/#creating-a-cluster) 
+[Reference](https://kind.sigs.k8s.io/docs/user/quick-start/#creating-a-cluster)
 
 **Note**: Kubernetes versions are expressed as x.y.z, where x is the major version, y is the minor version, and z is the patch version, following [Semantic Versioning](https://semver.org/) terminology. For more information, see [Kubernetes Release Versioning.](https://github.com/kubernetes/sig-release/blob/master/release-engineering/versioning.md#kubernetes-release-versioning)
+
+### GPU Support
+
+As a pre-requisite you need to have installed the
+[NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) installed on the host.
+
+Docker v25 or later.
+
+See notes on CDI Container Support [here.](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#container-device-interface-cdi-support)
+
+GPU devices can be mapped to Kind node copntainers with the devices API:
+
+All GPUs mapped to a single control-plane:
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  devices:
+  - "nvidia.com/gpu=all"
+{{< /codeFromInline >}}
+
+Specific GPUs mapped to specific worker nodes:
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+- role: worker
+  devices:
+  - "nvidia.com/gpu=0"
+- role: worker
+  devices:
+  - "nvidia.com/gpu=1"
+{{< /codeFromInline >}}
 
 ### Extra Mounts
 
@@ -300,10 +337,10 @@ For more information see the [Docker file sharing guide.](https://docs.docker.co
 
 ### Extra Port Mappings
 
-Extra port mappings can be used to port forward to the kind nodes. This is a 
-cross-platform option to get traffic into your kind cluster. 
+Extra port mappings can be used to port forward to the kind nodes. This is a
+cross-platform option to get traffic into your kind cluster.
 
-If you are running Docker without the Docker Desktop Application on Linux, you can simply send traffic to the node IPs from the host without extra port mappings. 
+If you are running Docker without the Docker Desktop Application on Linux, you can simply send traffic to the node IPs from the host without extra port mappings.
 With the installation of the Docker Desktop Application, whether it is on macOs, Windows or Linux, you'll want to use these.
 
 You may also want to see the [Ingress Guide].
@@ -401,11 +438,11 @@ nodes:
 
 ### Kubeadm Config Patches
 
-KIND uses [`kubeadm`](/docs/design/principles/#leverage-existing-tooling) 
+KIND uses [`kubeadm`](/docs/design/principles/#leverage-existing-tooling)
 to configure cluster nodes.
 
 Formally  KIND runs `kubeadm init` on the first control-plane node, we can customize the flags by using the kubeadm
-[InitConfiguration](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init/#config-file) 
+[InitConfiguration](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init/#config-file)
 ([spec](https://godoc.org/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3#InitConfiguration))
 
 {{< codeFromInline lang="yaml" >}}
@@ -436,9 +473,9 @@ nodes:
           enable-admission-plugins: NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook
 {{< /codeFromInline >}}
 
-On every additional node configured in the KIND cluster, 
+On every additional node configured in the KIND cluster,
 worker or control-plane (in HA mode),
-KIND runs `kubeadm join` which can be configured using the 
+KIND runs `kubeadm join` which can be configured using the
 [JoinConfiguration](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-join/#config-file)
 ([spec](https://godoc.org/k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm/v1beta3#JoinConfiguration))
 

@@ -82,6 +82,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 
 	// plan normal nodes
 	for i, node := range cfg.Nodes {
+		fmt.Print(node.Devices)
 		node := node.DeepCopy() // copy so we can modify
 		name := names[i]
 
@@ -112,6 +113,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 				if err != nil {
 					return err
 				}
+				fmt.Printf("CP Node Args: %v\n", args)
 				return createContainerWithWaitUntilSystemdReachesMultiUserSystem(name, args)
 			})
 		case config.WorkerRole:
@@ -254,6 +256,14 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 	case config.ControlPlaneRole:
 		args = append(args, "-e", "KUBECONFIG=/etc/kubernetes/admin.conf")
 	}
+
+	fmt.Print(node.Devices)
+	if len(node.Devices) > 0 {
+		fmt.Printf("Adding devices arg: %v\n", fmt.Sprintf("--devices=%v", node.Devices))
+		args = append(args, fmt.Sprintf("--devices=%v", node.Devices))
+	}
+
+	fmt.Printf("ARGs: %v\n", args)
 
 	// finally, specify the image to run
 	return append(args, node.Image), nil
@@ -407,6 +417,7 @@ func createContainer(name string, args []string) error {
 }
 
 func createContainerWithWaitUntilSystemdReachesMultiUserSystem(name string, args []string) error {
+	fmt.Printf("Executing command: docker run --name %s %s\n\n", name, args)
 	if err := exec.Command("docker", append([]string{"run", "--name", name}, args...)...).Run(); err != nil {
 		return err
 	}
