@@ -492,6 +492,12 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Creating cloud-provisioner Objects backup 🗄️")
 		defer ctx.Status.End(false)
 
+		if _, err := os.Stat(localBackupPath); os.IsNotExist(err) {
+			if err := os.MkdirAll(localBackupPath, 0755); err != nil {
+				return errors.Wrap(err, "failed to create local backup directory")
+			}
+		}
+
 		raw := bytes.Buffer{}
 		cmd := node.Command("sh", "-c", "mkdir -p "+cloudProviderBackupPath)
 		if err := cmd.SetStdout(&raw).Run(); err != nil {
