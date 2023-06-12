@@ -93,6 +93,11 @@ spec:
       {{- end }}
     {{- end }}
     {{- end }}
+    {{- if ne .Descriptor.Networks.PodsSubnets nil }}
+    {{- range .Descriptor.Networks.PodsSubnets }}
+      - id: {{ .SubnetId }}
+    {{- end }}
+    {{- end }}
 {{- end }}
   region: "{{ .Descriptor.Region }}"
 {{- if ne .Descriptor.Networks.PodsCidrBlock "" }}
