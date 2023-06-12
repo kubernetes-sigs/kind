@@ -23,12 +23,15 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v3"
+	"golang.org/x/exp/slices"
+	"gopkg.in/yaml.v2"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -92,6 +95,7 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string, storageClasses []commo
 	var c string
 	var cmd exec.Cmd
 	var err error
+	var scNames []string
 
 	c = "helm install azuredisk-csi-driver /stratio/helm/azuredisk-csi-driver" +
 		" --kubeconfig " + k
@@ -103,6 +107,39 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string, storageClasses []commo
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
 	if err = cmd.SetStdin(strings.NewReader(azureStorageClasses)).Run(); err != nil {
 		return errors.Wrap(err, "failed to create Azure Storage Classes")
+	}
+
+	azScs := strings.Split(azureStorageClasses, "---")
+	for _, azsc := range azScs {
+		var resource commons.Resource
+		err = yaml.Unmarshal([]byte(azsc), &resource)
+		if err != nil {
+			return errors.Wrap(err, "failed to unmarshal AzureStoreClass")
+		}
+		if !reflect.DeepEqual(resource, reflect.Zero(reflect.TypeOf(resource)).Interface()) {
+			if name, ok := resource.Metadata["name"].(string); ok {
+				scNames = append(scNames, name)
+			}
+		}
+
+	}
+
+	if len(storageClasses) > 0 {
+
+		for _, storageClass := range storageClasses {
+
+			if slices.Contains[string](scNames, storageClass.Name) {
+				sc, err := b.getStorageClass(storageClass)
+				if err != nil {
+					return err
+				}
+				cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
+				if err = cmd.SetStdin(strings.NewReader(sc)).Run(); err != nil {
+					return errors.Wrap(err, "failed to create StorageClass")
+				}
+			}
+		}
+
 	}
 
 	return nil
@@ -203,4 +240,34 @@ func getAcrToken(p commons.ProviderParams, acrService string) (string, error) {
 	var response map[string]interface{}
 	json.NewDecoder(jsonResponse.Body).Decode(&response)
 	return response["refresh_token"].(string), nil
+}
+
+func (b *AzureBuilder) getStorageClass(sc commons.StorageClass) (string, error) {
+	storageClassTemplate := `
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ` + sc.Name + `
+provisioner: ` + sc.Provisioner + `
+parameters:
+volumeBindingMode: WaitForFirstConsumer`
+
+	if sc.Default {
+		params := map[string]string{
+			"  annotations": "",
+			"    storageclass.kubernetes.io/is-default-class": "'true'",
+		}
+		err := errors.New("")
+		storageClassTemplate, err = setStorageClassParameters(storageClassTemplate, params, "metadata:")
+		if err != nil {
+			return "", err
+		}
+	}
+
+	storageClass, err := setStorageClassParameters(storageClassTemplate, sc.Parameters, "parameters:")
+	if err != nil {
+		return "", err
+	}
+	return storageClass, nil
+
 }

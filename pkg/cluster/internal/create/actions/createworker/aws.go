@@ -190,3 +190,7 @@ func getEcrToken(p commons.ProviderParams) (string, error) {
 	parts := strings.SplitN(string(data), ":", 2)
 	return parts[1], nil
 }
+
+func (b *AWSBuilder) getStorageClass(sc commons.StorageClass) (string, error) {
+	return "", nil
+}

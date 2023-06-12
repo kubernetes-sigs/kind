@@ -29,6 +29,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type Resource struct {
+	ApiVersion string                 `yaml:"apiVersion"`
+	Kind       string                 `yaml:"kind"`
+	Metadata   map[string]interface{} `yaml:"metadata"`
+	Spec       map[string]interface{} `yaml:"spec"`
+}
+
 type K8sObject struct {
 	APIVersion string         `yaml:"apiVersion" validate:"required"`
 	Kind       string         `yaml:"kind" validate:"required"`
@@ -244,6 +251,7 @@ type ProviderParams struct {
 
 type StorageClass struct {
 	Name        string            `yaml:"name"`
+	Default     bool              `yaml:"default"`
 	Provisioner string            `yaml:"provisioner"`
 	Parameters  map[string]string `yaml:"parameters"`
 }

@@ -106,21 +106,10 @@ func (b *GCPBuilder) installCSI(n nodes.Node, k string, storageClasses []commons
 	var cmd exec.Cmd
 	var err error
 	var scs []string
-	// 	var storageClass = `
-	// apiVersion: storage.k8s.io/v1
-	// kind: StorageClass
-	// metadata:
-	//   annotations:
-	//     storageclass.kubernetes.io/is-default-class: 'true'
-	//   name: ` + b.stClassName + `
-	// provisioner: pd.csi.storage.gke.io
-	// parameters:
-	//   type: pd-standard
-	// volumeBindingMode: WaitForFirstConsumer`
 
 	if len(storageClasses) > 0 {
 		for _, storageClass := range storageClasses {
-			sc, err := getStorageClass(storageClass)
+			sc, err := b.getStorageClass(storageClass)
 			if err != nil {
 				return err
 			}
@@ -134,7 +123,7 @@ func (b *GCPBuilder) installCSI(n nodes.Node, k string, storageClasses []commons
 				"type": "pd-standard",
 			},
 		}
-		sc, err := getStorageClass(storageClass)
+		sc, err := b.getStorageClass(storageClass)
 		if err != nil {
 			return err
 		}
@@ -225,28 +214,7 @@ func (b *GCPBuilder) getAzs() ([]string, error) {
 
 }
 
-func setStorageClassParameters(storageClass string, params map[string]string) (string, error) {
-
-	paramIndex := strings.Index(storageClass, "parameters:")
-	if paramIndex == -1 {
-		return storageClass, nil
-	}
-
-	var lines []string
-	for key, value := range params {
-		line := "  " + key + ": " + value
-		lines = append(lines, line)
-	}
-
-	linesToInsert := strings.Join(lines, "\n")
-	newStorageClass := storageClass[:paramIndex+len("parameters:")] + "\n" + linesToInsert + "\n" + storageClass[paramIndex+len("parameters:")+len(lines)-1:]
-
-	return newStorageClass, nil
-}
-
-func getStorageClass(sc commons.StorageClass) (string, error) {
-	//provisioner: pd.csi.storage.gke.io
-	//  type: pd-standard
+func (b *GCPBuilder) getStorageClass(sc commons.StorageClass) (string, error) {
 
 	storageClassTemplate := `
 apiVersion: storage.k8s.io/v1
@@ -259,7 +227,19 @@ provisioner: ` + sc.Provisioner + `
 parameters:
 volumeBindingMode: WaitForFirstConsumer`
 
-	storageClass, err := setStorageClassParameters(storageClassTemplate, sc.Parameters)
+	if sc.Default {
+		params := map[string]string{
+			"  annotations": "",
+			"    storageclass.kubernetes.io/is-default-class": "'true'",
+		}
+		err := errors.New("")
+		storageClassTemplate, err = setStorageClassParameters(storageClassTemplate, params, "metadata:")
+		if err != nil {
+			return "", err
+		}
+	}
+
+	storageClass, err := setStorageClassParameters(storageClassTemplate, sc.Parameters, "parameters:")
 	if err != nil {
 		return "", err
 	}

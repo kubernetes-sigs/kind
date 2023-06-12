@@ -47,6 +47,7 @@ type PBuilder interface {
 	installCSI(n nodes.Node, k string, storageClasses []commons.StorageClass) error
 	getProvider() Provider
 	getAzs() ([]string, error)
+	getStorageClass(sc commons.StorageClass) (string, error)
 }
 
 type Provider struct {
@@ -382,4 +383,23 @@ func getManifest(name string, params interface{}) (string, error) {
 		return "", err
 	}
 	return tpl.String(), nil
+}
+
+func setStorageClassParameters(storageClass string, params map[string]string, lineToStart string) (string, error) {
+
+	paramIndex := strings.Index(storageClass, lineToStart)
+	if paramIndex == -1 {
+		return storageClass, nil
+	}
+
+	var lines []string
+	for key, value := range params {
+		line := "  " + key + ": " + value
+		lines = append(lines, line)
+	}
+
+	linesToInsert := strings.Join(lines, "\n")
+	newStorageClass := storageClass[:paramIndex+len(lineToStart)] + "\n" + linesToInsert + "\n" + storageClass[paramIndex+len(lineToStart)+len(lines)-1:]
+
+	return newStorageClass, nil
 }
