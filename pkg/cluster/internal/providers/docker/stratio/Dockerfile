@@ -6,7 +6,7 @@ ENV CLUSTERCTL_DISABLE_VERSIONCHECK=true
 
 # Tools versions
 ENV CLUSTERCTL=v1.4.3
-ENV CLUSTERAWSADM=v2.0.2
+ENV CLUSTERAWSADM=v2.1.4
 ENV HELM_VERSION=v3.11.3
 
 # Helm charts
@@ -17,7 +17,7 @@ ENV TIGERA_OPERATOR=v3.25.1
 
 # Cluster-api artifacts
 ENV CAPI_REPO=/root/.cluster-api/local-repository
-ENV CAPA=v2.0.2
+ENV CAPA=v2.1.4
 
 # Download clusterctl (61.5M)
 RUN curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/${CLUSTERCTL}/clusterctl-linux-amd64 -o /usr/local/bin/clusterctl \
