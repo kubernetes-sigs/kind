@@ -293,7 +293,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				ctx.Status.Start("Installing cloud-provider in workload cluster ☁️")
 				defer ctx.Status.End(false)
 
-				err = installCloudProvider(node, kubeconfigPath, descriptorFile.ClusterID)
+				err = installCloudProvider(node, *descriptorFile, kubeconfigPath, descriptorFile.ClusterID)
 				if err != nil {
 					return errors.Wrap(err, "failed to install external cloud-provider in workload cluster")
 				}
@@ -321,6 +321,14 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 		ctx.Status.Start("Preparing nodes in workload cluster 📦")
 		defer ctx.Status.End(false)
+
+		if provider.capxProvider == "aws" && descriptorFile.ControlPlane.Managed {
+			raw = bytes.Buffer{}
+			cmd = node.Command("kubectl", "-n", "capa-system", "rollout", "restart", "deployment", "capa-controller-manager")
+			if err := cmd.SetStdout(&raw).Run(); err != nil {
+				return errors.Wrap(err, "failed to reload capa-controller-manager")
+			}
+		}
 
 		if provider.capxProvider != "azure" || !descriptorFile.ControlPlane.Managed {
 			// Wait for the worker cluster creation
