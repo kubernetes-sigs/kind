@@ -19,6 +19,11 @@ ENV TIGERA_OPERATOR_CHART=v3.25.1
 ENV CAPI_REPO=/root/.cluster-api/local-repository
 ENV CAPA=v2.0.2
 
+# Install vim
+RUN apt-get update && apt-get install -y \
+  vim \
+  && rm -rf /var/lib/apt/lists/*
+
 # Add aliases
 RUN echo 'alias k="kubectl"' >> ~/.bash_aliases \
     && echo 'alias capi-logs="kubectl -n capi-system logs -f deploy/capi-controller-manager"' >> ~/.bash_aliases \
