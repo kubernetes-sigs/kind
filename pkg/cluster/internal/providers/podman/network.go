@@ -19,6 +19,7 @@ package podman
 import (
 	"crypto/sha1"
 	"encoding/binary"
+	"encoding/json"
 	"net"
 	"regexp"
 	"strings"
@@ -46,6 +47,13 @@ func ensureNetwork(name string) error {
 	// network already exists
 	if checkIfNetworkExists(name) {
 		return nil
+	}
+
+	// in case kind is running in linux and IPv6 is disabled in linux kernel, then create the podman network without Ipv6
+	// This is required here because i came across that even though ipv6 is disabled in kernel, podman doesn't stop you from creating a network with Ipv6 enabled,
+	// which later will result in crashing when it'll try to create the cluster.
+	if isIPv6DisabledInLinuxKernel() {
+		return createNetwork(name, "")
 	}
 
 	// generate unique subnet per network based on the name
@@ -112,6 +120,35 @@ func isIPv6DisabledError(err error) bool {
 	rerr := exec.RunErrorForError(err)
 	return rerr != nil &&
 		strings.Contains(string(rerr.Output), "is ipv6 enabled in the kernel")
+}
+
+func isIPv6DisabledInLinuxKernel() bool {
+
+	// First check that we're running in Linux os
+
+	output, err := exec.Output(exec.Command("podman", "info", "-f", "json"))
+	if err != nil {
+		return false
+	}
+	var result bool
+	result = false
+	var podmanInfo map[string]json.RawMessage
+	var podmanVersion map[string]string
+	json.Unmarshal(output, &podmanInfo)
+	json.Unmarshal(podmanInfo["version"], &podmanVersion)
+	// In case of linux, check if the ipv6 module is enabled in kernel
+	if podmanVersion["Os"] == "linux" {
+		// https://www.golinuxcloud.com/linux-check-ipv6-enabled/
+		// one of 6 methods to check if ipv6 enabled in kernel, all are equivalent, but chose the following one  because it will work on all linux distribution, as the "cat" command utility is available on all linux distributions.
+		decision, error := exec.Output(exec.Command("cat", "/sys/module/ipv6/parameters/disable"))
+		// if the value is 0, then ipv6 module is enabled in linux kernel, otherwise, if it's 1 , it's disabled in kernel.
+		if error == nil {
+			if strings.Trim(string(decision), "\n") == "1" {
+				result = true
+			}
+		}
+	}
+	return result
 }
 
 func isPoolOverlapError(err error) bool {
