@@ -55,15 +55,15 @@ RUN mkdir -p /stratio/helm \
   && for i in $(seq 1 3); do timeout 5 helm pull cluster-autoscaler --version ${CLUSTER_AUTOSCALER_CHART} --repo https://kubernetes.github.io/autoscaler --untar --untardir /stratio/helm && break; done \
   && for i in $(seq 1 3); do timeout 5 helm pull tigera-operator --version ${TIGERA_OPERATOR_CHART} --repo https://docs.projectcalico.org/charts --untar --untardir /stratio/helm && break; done
 
-# Prepare cluster-api offline repository & download cluster-api artifacts
+# Prepare cluster-api offline repository
 RUN mkdir -p ${CAPI_REPO}/infrastructure-aws/${CAPA} ${CAPI_REPO}/infrastructure-gcp/${CAPG} ${CAPI_REPO}/infrastructure-azure/${CAPZ} \
   && echo "providers:" > /root/.cluster-api/clusterctl.yaml \
   && echo "  - name: aws\n    url: ${CAPI_REPO}/infrastructure-aws/${CAPA}/infrastructure-components.yaml\n    type: InfrastructureProvider" >> /root/.cluster-api/clusterctl.yaml \
   && echo "  - name: gcp\n    url: ${CAPI_REPO}/infrastructure-gcp/${CAPG}/infrastructure-components.yaml\n    type: InfrastructureProvider" >> /root/.cluster-api/clusterctl.yaml \
-  && echo "  - name: azure\n    url: ${CAPI_REPO}/infrastructure-azure/${CAPZ}/infrastructure-components.yaml\n    type: InfrastructureProvider" >> /root/.cluster-api/clusterctl.yaml \
-  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/download/${CAPA}/metadata.yaml -o ${CAPI_REPO}/infrastructure-aws/${CAPA}/metadata.yaml \
-  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/download/${CAPA}/infrastructure-components.yaml -o ${CAPI_REPO}/infrastructure-aws/${CAPA}/infrastructure-components.yaml \
-  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-gcp/releases/download/${CAPG}/metadata.yaml -o ${CAPI_REPO}/infrastructure-gcp/${CAPG}/metadata.yaml \
-  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-gcp/releases/download/${CAPG}/infrastructure-components.yaml -o ${CAPI_REPO}/infrastructure-gcp/${CAPG}/infrastructure-components.yaml \
-  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/${CAPZ}/metadata.yaml -o ${CAPI_REPO}/infrastructure-azure/${CAPZ}/metadata.yaml \
-  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/${CAPZ}/infrastructure-components.yaml -o ${CAPI_REPO}/infrastructure-azure/${CAPZ}/infrastructure-components.yaml
+  && echo "  - name: azure\n    url: ${CAPI_REPO}/infrastructure-azure/${CAPZ}/infrastructure-components.yaml\n    type: InfrastructureProvider" >> /root/.cluster-api/clusterctl.yaml
+
+# Download cluster-api artifacts
+RUN for i in metadata.yaml infrastructure-components.yaml; do \
+      curl -L https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/download/${CAPA}/${i} -o ${CAPI_REPO}/infrastructure-aws/${CAPA}/${i} \
+      && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-gcp/releases/download/${CAPG}/${i} -o ${CAPI_REPO}/infrastructure-gcp/${CAPG}/${i} \
+      && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/${CAPZ}/${i} -o ${CAPI_REPO}/infrastructure-azure/${CAPZ}/${i}; done
