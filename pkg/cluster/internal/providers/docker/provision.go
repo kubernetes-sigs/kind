@@ -257,13 +257,12 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		args = append(args, "-e", "KUBECONFIG=/etc/kubernetes/admin.conf")
 	}
 
-	fmt.Print(node.Devices)
+	// Append GPUs and other CDI device args
 	if len(node.Devices) > 0 {
-		fmt.Printf("Adding devices arg: %v\n", fmt.Sprintf("--devices=%v", node.Devices))
-		args = append(args, fmt.Sprintf("--devices=%v", node.Devices))
+		for _, device := range node.Devices {
+			args = append(args, "--device", strings.TrimSpace(device))
+		}
 	}
-
-	fmt.Printf("ARGs: %v\n", args)
 
 	// finally, specify the image to run
 	return append(args, node.Image), nil

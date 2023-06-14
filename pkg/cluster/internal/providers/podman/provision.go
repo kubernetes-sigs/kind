@@ -212,8 +212,11 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		args...,
 	)
 
+	// Append GPUs and other CDI device args
 	if len(node.Devices) > 0 {
-		args = append(args, "--device", fmt.Sprintf("nvidia.com/gpu=%v", node.Devices))
+		for _, device := range node.Devices {
+			args = append(args, "--device", strings.TrimSpace(device))
+		}
 	}
 
 	// convert mounts and port mappings to container run args
