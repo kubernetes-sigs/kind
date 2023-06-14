@@ -11,7 +11,7 @@ core:
   pause: v3.9
 aws:
   clusterawsadm: v2.1.4
-  cluster-api-aws: v2.1.4
+  cluster-api-aws: v2.1.4-0.4.0
   cluster-api-aws-templates: v2.1.4
   eks-addons:
     aws-ebs-csi-driver: v1.17.0-eksbuild.1
