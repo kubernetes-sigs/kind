@@ -46,7 +46,7 @@ type PBuilder interface {
 	setCapxEnvVars(p commons.ProviderParams)
 	installCSI(n nodes.Node, k string) error
 	getProvider() Provider
-	getAzs() ([]string, error)
+	getAzs(networks commons.Networks) ([]string, error)
 }
 
 type Provider struct {
@@ -102,8 +102,8 @@ func (i *Infra) installCSI(n nodes.Node, k string) error {
 	return i.builder.installCSI(n, k)
 }
 
-func (i *Infra) getAzs() ([]string, error) {
-	azs, err := i.builder.getAzs()
+func (i *Infra) getAzs(networks commons.Networks) ([]string, error) {
+	azs, err := i.builder.getAzs(networks)
 	if err != nil {
 		return nil, err
 	}
@@ -367,6 +367,7 @@ func GetClusterManifest(flavor string, params commons.TemplateParams, azs []stri
 	if err != nil {
 		return "", err
 	}
+
 	return tpl.String(), nil
 }
 
