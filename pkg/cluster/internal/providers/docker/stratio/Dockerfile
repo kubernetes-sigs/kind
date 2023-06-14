@@ -19,8 +19,13 @@ ENV TIGERA_OPERATOR_CHART=v3.25.1
 ENV CAPI_REPO=/root/.cluster-api/local-repository
 ENV CAPA=v2.0.2
 
-# Add alias for kubectl
-RUN echo 'alias k="kubectl"' >> ~/.bashrc
+# Add aliases
+RUN echo 'alias k="kubectl"' >> ~/.bash_aliases \
+    && echo 'alias capi-logs="kubectl -n capi-system logs -f deploy/capi-controller-manager"' >> ~/.bash_aliases \
+    && echo 'alias capa-logs="kubectl -n capa-system logs -f deploy/capa-controller-manager"' >> ~/.bash_aliases \
+    && echo 'alias capg-logs="kubectl -n capg-system logs -f deploy/capg-controller-manager"' >> ~/.bash_aliases \
+    && echo 'alias capz-logs="kubectl -n capz-system logs -f deploy/capz-controller-manager"' >> ~/.bash_aliases \
+    && echo 'alias kw="kubectl --kubeconfig /kind/worker-cluster.kubeconfig"' >> ~/.bash_aliases
 
 # Download clusterctl
 RUN curl -L https://github.com/kubernetes-sigs/cluster-api/releases/download/${CLUSTERCTL}/clusterctl-linux-amd64 -o /usr/local/bin/clusterctl \
