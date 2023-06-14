@@ -57,27 +57,14 @@ RUN mkdir -p /stratio/helm \
 
 # Prepare cluster-api offline repository & download cluster-api artifacts
 RUN mkdir -p ${CAPI_REPO}/infrastructure-aws/${CAPA} ${CAPI_REPO}/infrastructure-gcp/${CAPG} ${CAPI_REPO}/infrastructure-azure/${CAPZ} \
-  && echo "\
-providers:\n\
-  - name: "aws"\n\
-    url: ${CAPI_REPO}/infrastructure-aws/${CAPA}/infrastructure-components.yaml\n\
-    type: "InfrastructureProvider"\n\
-  - name: "gcp"\n\
-    url: ${CAPI_REPO}/infrastructure-gcp/${CAPG}/infrastructure-components.yaml\n\
-    type: "InfrastructureProvider"\n\
-  - name: "azure"\n\
-    url: ${CAPI_REPO}/infrastructure-azure/${CAPZ}/infrastructure-components.yaml\n\
-    type: "InfrastructureProvider"\n\
+  && echo "providers:\n\
+  - name: "aws"\n    url: ${CAPI_REPO}/infrastructure-aws/${CAPA}/infrastructure-components.yaml\n    type: "InfrastructureProvider"\n\
+  - name: "gcp"\n    url: ${CAPI_REPO}/infrastructure-gcp/${CAPG}/infrastructure-components.yaml\n    type: "InfrastructureProvider"\n\
+  - name: "azure"\n    url: ${CAPI_REPO}/infrastructure-azure/${CAPZ}/infrastructure-components.yaml\n    type: "InfrastructureProvider"\n\
 " > /root/.cluster-api/clusterctl.yaml \
-  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/download/${CAPA}/metadata.yaml \
-    -o ${CAPI_REPO}/infrastructure-aws/${CAPA}/metadata.yaml \
-  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/download/${CAPA}/infrastructure-components.yaml \
-    -o ${CAPI_REPO}/infrastructure-aws/${CAPA}/infrastructure-components.yaml \
-  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-gcp/releases/download/${CAPG}/metadata.yaml \
-    -o ${CAPI_REPO}/infrastructure-gcp/${CAPG}/metadata.yaml \
-  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-gcp/releases/download/${CAPG}/infrastructure-components.yaml \
-    -o ${CAPI_REPO}/infrastructure-gcp/${CAPG}/infrastructure-components.yaml \
-  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/${CAPZ}/metadata.yaml \
-    -o ${CAPI_REPO}/infrastructure-azure/${CAPZ}/metadata.yaml \
-  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/${CAPZ}/infrastructure-components.yaml \
-    -o ${CAPI_REPO}/infrastructure-azure/${CAPZ}/infrastructure-components.yaml
+  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/download/${CAPA}/metadata.yaml -o ${CAPI_REPO}/infrastructure-aws/${CAPA}/metadata.yaml \
+  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/download/${CAPA}/infrastructure-components.yaml -o ${CAPI_REPO}/infrastructure-aws/${CAPA}/infrastructure-components.yaml \
+  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-gcp/releases/download/${CAPG}/metadata.yaml -o ${CAPI_REPO}/infrastructure-gcp/${CAPG}/metadata.yaml \
+  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-gcp/releases/download/${CAPG}/infrastructure-components.yaml -o ${CAPI_REPO}/infrastructure-gcp/${CAPG}/infrastructure-components.yaml \
+  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/${CAPZ}/metadata.yaml -o ${CAPI_REPO}/infrastructure-azure/${CAPZ}/metadata.yaml \
+  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/${CAPZ}/infrastructure-components.yaml -o ${CAPI_REPO}/infrastructure-azure/${CAPZ}/infrastructure-components.yaml
