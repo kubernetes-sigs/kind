@@ -60,7 +60,6 @@ type DescriptorFile struct {
 	ExternalDomain string `yaml:"external_domain" validate:"omitempty,hostname"`
 
 	Keos struct {
-		// PR fixing exclude_if behaviour https://github.com/go-playground/validator/pull/939
 		Flavour string `yaml:"flavour"`
 		Version string `yaml:"version"`
 	} `yaml:"keos"`
@@ -91,8 +90,8 @@ type Networks struct {
 	Tags                       map[string]string `yaml:"tags,omitempty"`
 	AvailabilityZoneUsageLimit int               `yaml:"az_usage_limit" validate:"numeric"`
 	AvailabilityZoneSelection  string            `yaml:"az_selection" validate:"oneof='Ordered' 'Random' '' "`
-
-	Subnets []Subnets `yaml:"subnets"`
+	PodsSubnets []Subnets `yaml:"pods_subnets"`
+	Subnets     []Subnets `yaml:"subnets"`
 }
 
 type Subnets struct {

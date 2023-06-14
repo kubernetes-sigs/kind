@@ -7,7 +7,7 @@ metadata:
 spec:
   clusterNetwork:
     pods:
-      cidrBlocks: [\"192.168.0.0/16\"]
+      cidrBlocks: [\"{{- if .Descriptor.Networks.PodsCidrBlock -}} {{ .Descriptor.Networks.PodsCidrBlock }} {{- else -}} 192.168.0.0/16 {{- end }}\"]
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: KubeadmControlPlane
