@@ -18,6 +18,8 @@ ENV TIGERA_OPERATOR_CHART=v3.25.1
 # Cluster-api artifacts
 ENV CAPI_REPO=/root/.cluster-api/local-repository
 ENV CAPA=v2.0.2
+ENV CAPG=v1.3.0
+ENV CAPZ=v1.9.2
 
 # Install vim
 RUN apt-get update && apt-get install -y \
@@ -54,14 +56,28 @@ RUN mkdir -p /stratio/helm \
   && for i in $(seq 1 3); do timeout 5 helm pull tigera-operator --version ${TIGERA_OPERATOR_CHART} --repo https://docs.projectcalico.org/charts --untar --untardir /stratio/helm && break; done
 
 # Prepare cluster-api offline repository & download cluster-api artifacts
-RUN mkdir -p ${CAPI_REPO}/infrastructure-aws/${CAPA} \
+RUN mkdir -p ${CAPI_REPO}/infrastructure-aws/${CAPA} ${CAPI_REPO}/infrastructure-gcp/${CAPG} ${CAPI_REPO}/infrastructure-azure/${CAPZ} \
   && echo "\
 providers:\n\
   - name: "aws"\n\
     url: ${CAPI_REPO}/infrastructure-aws/${CAPA}/infrastructure-components.yaml\n\
     type: "InfrastructureProvider"\n\
+  - name: "gcp"\n\
+    url: ${CAPI_REPO}/infrastructure-gcp/${CAPG}/infrastructure-components.yaml\n\
+    type: "InfrastructureProvider"\n\
+  - name: "azure"\n\
+    url: ${CAPI_REPO}/infrastructure-azure/${CAPZ}/infrastructure-components.yaml\n\
+    type: "InfrastructureProvider"\n\
 " > /root/.cluster-api/clusterctl.yaml \
   && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/download/${CAPA}/metadata.yaml \
     -o ${CAPI_REPO}/infrastructure-aws/${CAPA}/metadata.yaml \
   && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/download/${CAPA}/infrastructure-components.yaml \
-    -o ${CAPI_REPO}/infrastructure-aws/${CAPA}/infrastructure-components.yaml
+    -o ${CAPI_REPO}/infrastructure-aws/${CAPA}/infrastructure-components.yaml \
+  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-gcp/releases/download/${CAPG}/metadata.yaml \
+    -o ${CAPI_REPO}/infrastructure-gcp/${CAPG}/metadata.yaml \
+  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-gcp/releases/download/${CAPG}/infrastructure-components.yaml \
+    -o ${CAPI_REPO}/infrastructure-gcp/${CAPG}/infrastructure-components.yaml \
+  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/${CAPZ}/metadata.yaml \
+    -o ${CAPI_REPO}/infrastructure-azure/${CAPZ}/metadata.yaml \
+  && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/${CAPZ}/infrastructure-components.yaml \
+    -o ${CAPI_REPO}/infrastructure-azure/${CAPZ}/infrastructure-components.yaml
