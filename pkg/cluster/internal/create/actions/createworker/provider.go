@@ -398,8 +398,8 @@ func setStorageClassParameters(storageClass string, params map[string]string, li
 		lines = append(lines, line)
 	}
 
-	linesToInsert := strings.Join(lines, "\n")
-	newStorageClass := storageClass[:paramIndex+len(lineToStart)] + "\n" + linesToInsert + "\n" + storageClass[paramIndex+len(lineToStart)+len(lines)-1:]
+	linesToInsert := "\n" + strings.Join(lines, "\n") + "\n"
+	newStorageClass := storageClass[:paramIndex+len(lineToStart)] + linesToInsert + storageClass[paramIndex+len(lineToStart):]
 
 	return newStorageClass, nil
 }

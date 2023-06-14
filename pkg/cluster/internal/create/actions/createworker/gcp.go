@@ -220,8 +220,6 @@ func (b *GCPBuilder) getStorageClass(sc commons.StorageClass) (string, error) {
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  annotations:
-    storageclass.kubernetes.io/is-default-class: 'true'
   name: ` + sc.Name + `
 provisioner: ` + sc.Provisioner + `
 parameters:
@@ -229,8 +227,8 @@ volumeBindingMode: WaitForFirstConsumer`
 
 	if sc.Default {
 		params := map[string]string{
-			"  annotations": "",
-			"    storageclass.kubernetes.io/is-default-class": "'true'",
+			"annotations": "",
+			"  storageclass.kubernetes.io/is-default-class": "'true'",
 		}
 		err := errors.New("")
 		storageClassTemplate, err = setStorageClassParameters(storageClassTemplate, params, "metadata:")
