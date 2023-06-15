@@ -326,20 +326,19 @@ func removeKey(nodes []*yaml.Node, key string) []*yaml.Node {
 	return newNodes
 }
 
-func ExecuteCommand(node nodes.Node, command string, envVars ...[]string) (string, error) {
-	out := bytes.Buffer{}
-	outErr := bytes.Buffer{}
-	cmd := node.Command("sh", "-c", command)
+func ExecuteCommand(n nodes.Node, command string, envVars ...[]string) (string, error) {
+	raw := bytes.Buffer{}
+	cmd := n.Command("sh", "-c", command)
 	if len(envVars) > 0 {
 		cmd.SetEnv(envVars[0]...)
 	}
-	if err := cmd.SetStdout(&out).SetStderr(&outErr).Run(); err != nil {
+	if err := cmd.SetStdout(&raw).SetStderr(&raw).Run(); err != nil {
 		return "", err
 	}
-	if outErr.String() != "" {
-		return "", errors.New(outErr.String())
+	if strings.Contains(raw.String(), "Error:") {
+		return "", errors.New(raw.String())
 	}
-	return out.String(), nil
+	return raw.String(), nil
 }
 
 func snakeCase(s string) string {

@@ -227,7 +227,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	defer ctx.Status.End(true) // End Generating secrets file
 
 	// Create namespace for CAPI clusters (it must exists)
-	c = "kubectl create ns" + capiClustersNamespace
+	c = "kubectl create ns " + capiClustersNamespace
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to create cluster's Namespace")
@@ -275,7 +275,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		// Get the workload cluster kubeconfig
 		c = "clusterctl -n " + capiClustersNamespace + " get kubeconfig " + descriptorFile.ClusterID + " | tee " + kubeconfigPath
 		kubeconfig, err := commons.ExecuteCommand(n, c)
-		if err != nil {
+		if err != nil || kubeconfig == "" {
 			return errors.Wrap(err, "failed to get workload cluster kubeconfig")
 		}
 
