@@ -255,7 +255,7 @@ func enableSelfHealing(n nodes.Node, descriptorFile commons.DescriptorFile, name
 		machineRole := "-control-plane-node"
 		generateMHCManifest(n, descriptorFile.ClusterID, namespace, machineHealthCheckControlPlaneNodePath, machineRole)
 
-		c = "kubectl -n" + namespace + "apply -f" + machineHealthCheckControlPlaneNodePath
+		c = "kubectl -n " + namespace + " apply -f " + machineHealthCheckControlPlaneNodePath
 		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
@@ -265,7 +265,7 @@ func enableSelfHealing(n nodes.Node, descriptorFile commons.DescriptorFile, name
 	machineRole := "-worker-node"
 	generateMHCManifest(n, descriptorFile.ClusterID, namespace, machineHealthCheckWorkerNodePath, machineRole)
 
-	c = "kubectl -n " + namespace + "apply -f" + machineHealthCheckWorkerNodePath
+	c = "kubectl -n " + namespace + " apply -f " + machineHealthCheckWorkerNodePath
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
