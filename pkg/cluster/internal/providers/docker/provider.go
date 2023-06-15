@@ -166,6 +166,21 @@ func (p *provider) GetAPIServerEndpoint(cluster string) (string, error) {
 		return "", errors.Wrap(err, "failed to get api server endpoint")
 	}
 
+	{
+		cmd := exec.Command(
+			"docker", "inspect",
+			"--format", `{{ .HostConfig.NetworkMode }}`,
+			n.String(),
+		)
+		lines, err := exec.OutputLines(cmd)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to get api server port")
+		}
+		if len(lines) == 1 && lines[0] == "host" {
+			return "127.0.0.1:6443", nil
+		}
+	}
+
 	// if the 'desktop.docker.io/ports/<PORT>/tcp' label is present,
 	// defer to its value for the api server endpoint
 	//

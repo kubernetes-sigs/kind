@@ -108,6 +108,10 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 						ContainerPort: common.APIServerInternalPort,
 					},
 				)
+
+				if networkName == "host" {
+					genericArgs = append(genericArgs, "--add-host", fmt.Sprintf("%s:127.0.0.1", name))
+				}
 				args, err := runArgsForNode(node, cfg.Networking.IPFamily, name, genericArgs)
 				if err != nil {
 					return err
