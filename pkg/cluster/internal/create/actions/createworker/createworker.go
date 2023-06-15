@@ -478,9 +478,16 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.Start("Adding Cluster-Autoescaler 🗚")
 			defer ctx.Status.End(false)
 
-			raw := bytes.Buffer{}
-			cmd := commons.IntegrateClusterAutoscaler(n, kubeconfigPath, descriptorFile.ClusterID, "clusterapi")
-			if err := cmd.SetStdout(&raw).Run(); err != nil {
+			c = "helm install cluster-autoscaler /stratio/helm/cluster-autoscaler" +
+				" --kubeconfig " + kubeconfigPath +
+				" --namespace kube-system" +
+				" --set autoDiscovery.clusterName=" + descriptorFile.ClusterID +
+				" --set autoDiscovery.labels[0].namespace=cluster-" + descriptorFile.ClusterID +
+				" --set cloudProvider=clusterapi" +
+				" --set clusterAPIMode=incluster-incluster"
+
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
 				return errors.Wrap(err, "failed to install chart cluster-autoscaler")
 			}
 
@@ -497,16 +504,10 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			}
 		}
 
-		c = "mkdir -p " + cloudProviderBackupPath
+		c = "mkdir -p " + cloudProviderBackupPath + " && chmod -R 0755 " + cloudProviderBackupPath
 		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to create cloud-provisioner backup directory")
-		}
-
-		c = "chmod -R 0755 " + cloudProviderBackupPath
-		_, err = commons.ExecuteCommand(n, c)
-		if err != nil {
-			return errors.Wrap(err, "failed to set permissions to cloud-provisioner backup directory")
 		}
 
 		c = "clusterctl move -n " + capiClustersNamespace + " --to-directory " + cloudProviderBackupPath
