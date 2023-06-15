@@ -14,7 +14,7 @@ spec:
   selector:
     k8s-app: calico-node
   ports:
-    - name: metrics-port
+    - name: metrics
       port: 9191
       targetPort: 9191
 ---
@@ -33,6 +33,6 @@ spec:
   selector:
     k8s-app: calico-typha
   ports:
-    - name: metrics-port
+    - name: metrics
       port: 9093
       targetPort: 9093
