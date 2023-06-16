@@ -25,9 +25,9 @@ azure:
 gcp:
   cluster-api-gcp: v1.3.0
   cluster-api-gcp-templates: v1.3.0
-  gcp-compute-persistent-disk-csi-driver: v1.9.2
-  csi-node-driver-registrar: v2.6.3
-  csi-snapshotter: v6.2.1
+  gcp-compute-persistent-disk-csi-driver: v1.10.1
+  csi-node-driver-registrar: v2.7.0
+  csi-snapshotter: v6.1.0
   csi-resizer: v1.7.0
   csi-attacher: v4.2.0
-  csi-provisioner: v3.4.1
+  csi-provisioner: v3.4.0
