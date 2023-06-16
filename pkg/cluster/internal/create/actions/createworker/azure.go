@@ -35,7 +35,7 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
-//go:embed files/azure-storage-classes.yaml
+//go:embed files/azure/azure-storage-classes.yaml
 var azureStorageClasses string
 
 type AzureBuilder struct {

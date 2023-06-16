@@ -47,6 +47,7 @@ type PBuilder interface {
 	installCSI(n nodes.Node, k string) error
 	getProvider() Provider
 	getAzs(networks commons.Networks) ([]string, error)
+	internalNginx(networks commons.Networks) (bool, error)
 }
 
 type Provider struct {
@@ -76,13 +77,13 @@ func getBuilder(builderType string) PBuilder {
 		return newAWSBuilder()
 	}
 
-	if builderType == "gcp" {
-		return newGCPBuilder()
-	}
+	//	if builderType == "gcp" {
+	//		return newGCPBuilder()
+	//	}
 
-	if builderType == "azure" {
-		return newAzureBuilder()
-	}
+	//	if builderType == "azure" {
+	//		return newAzureBuilder()
+	//	}
 	return nil
 }
 
@@ -100,6 +101,14 @@ func (i *Infra) buildProvider(p commons.ProviderParams) Provider {
 
 func (i *Infra) installCSI(n nodes.Node, k string) error {
 	return i.builder.installCSI(n, k)
+}
+
+func (i *Infra) internalNginx(networks commons.Networks) (bool, error) {
+	requiredIntenalNginx, err := i.builder.internalNginx(networks)
+	if err != nil {
+		return false, err
+	}
+	return requiredIntenalNginx, nil
 }
 
 func (i *Infra) getAzs(networks commons.Networks) ([]string, error) {

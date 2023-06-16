@@ -37,15 +37,15 @@ type action struct {
 	avoidCreation  bool
 }
 
-//go:embed files/allow-all-egress_netpol.yaml
+//go:embed files/all/allow-all-egress_netpol.yaml
 var allowCommonEgressNetPol string
 
 // In common with keos installer
 //
-//go:embed files/deny-all-egress-imds_gnetpol.yaml
+//go:embed files/aws/deny-all-egress-imds_gnetpol.yaml
 var denyallEgressIMDSGNetPol string
 
-//go:embed files/allow-capa-egress-imds_gnetpol.yaml
+//go:embed files/aws/allow-capa-egress-imds_gnetpol.yaml
 var allowCAPAEgressIMDSGNetPol string
 
 const kubeconfigPath = "/kind/worker-cluster.kubeconfig"
@@ -558,6 +558,11 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 	ctx.Status.End(true) // End Generating KEOS descriptor
+
+	err = override_vars(*descriptorFile, ctx, infra)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
