@@ -10,9 +10,9 @@ core:
   cluster-autoscaler: 9.28.0
   pause: v3.9
 aws:
-  clusterawsadm: v2.0.2
-  cluster-api-aws: v2.0.2
-  cluster-api-aws-templates: v2.0.2
+  clusterawsadm: v2.1.4
+  cluster-api-aws: v2.1.4-0.4.0
+  cluster-api-aws-templates: v2.1.4
   eks-addons:
     aws-ebs-csi-driver: v1.17.0-eksbuild.1
     coredns: v1.9.3-eksbuild.3
@@ -23,11 +23,11 @@ azure:
   cluster-api-azure: v1.9.2
   cluster-api-azure-templates: v1.9.2
 gcp:
-  cluster-api-gcp: v1.3.0
-  cluster-api-gcp-templates: v1.3.0
-  gcp-compute-persistent-disk-csi-driver: v1.9.2
-  csi-node-driver-registrar: v2.6.3
-  csi-snapshotter: v6.2.1
+  cluster-api-gcp: v1.3.1
+  cluster-api-gcp-templates: v1.3.1
+  gcp-compute-persistent-disk-csi-driver: v1.10.1
+  csi-node-driver-registrar: v2.7.0
+  csi-snapshotter: v6.1.0
   csi-resizer: v1.7.0
   csi-attacher: v4.2.0
-  csi-provisioner: v3.4.1
+  csi-provisioner: v3.4.0
