@@ -231,9 +231,12 @@ spec:
           - {{ $vol.MountPath }}
         {{- end }}
       {{- end }}
-      {{- if $node.Labels }}
       kubeletExtraArgs:
+        {{- if gt (len $node.Labels) 0 }}
         node-labels: \"{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}\"
-      {{- end }}
+        {{- end }}
+        {{- if gt (len $node.Taints) 0 }}
+        register-with-taints: \"{{ range $i, $taint := $node.Taints }}{{$taint}}{{- if ne $i (sub (len $node.Taints) 1) }},{{- end }}{{ end }}\"
+        {{- end }}
 {{- end }}
 {{- end }}

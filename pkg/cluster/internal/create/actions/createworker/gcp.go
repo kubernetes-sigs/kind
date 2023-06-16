@@ -22,7 +22,6 @@ import (
 	b64 "encoding/base64"
 	"encoding/json"
 	"net/url"
-	"strconv"
 	"strings"
 
 	"google.golang.org/api/compute/v1"
@@ -32,6 +31,9 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 )
+
+//go:embed files/gcp-compute-persistent-disk-csi-driver.yaml
+var csiManifest string
 
 type GCPBuilder struct {
 	capxProvider     string
@@ -52,8 +54,8 @@ func newGCPBuilder() *GCPBuilder {
 
 func (b *GCPBuilder) setCapx(managed bool) {
 	b.capxProvider = "gcp"
-	b.capxVersion = "v1.3.0"
-	b.capxImageVersion = "v1.3.0"
+	b.capxVersion = "v1.3.1"
+	b.capxImageVersion = "v1.3.1"
 	b.capxName = "capg"
 	b.stClassName = "csi-gcp-pd"
 	if managed {
@@ -117,21 +119,6 @@ provisioner: pd.csi.storage.gke.io
 parameters:
   type: pd-standard
 volumeBindingMode: WaitForFirstConsumer`
-
-	// Get workload k8s version
-	c = "kubectl version --short=true --client=false | grep Server | cut -d ':' -f 2"
-	output, err := commons.ExecuteCommand(n, c)
-	if err != nil || output == "" {
-		return errors.Wrap(err, "failed to get workload cluster kubeconfig")
-	}
-	res := strings.TrimSpace(strings.ReplaceAll(output, "v", ""))
-	version, _ := strconv.ParseFloat(res[0:4], 64)
-
-	// Generate CSI manifest
-	csiManifest, err := getManifest("gcp-compute-persistent-disk-csi-driver.tmpl", version)
-	if err != nil {
-		return errors.Wrap(err, "failed to generate CSI manifest")
-	}
 
 	// Create CSI namespace
 	c = "kubectl --kubeconfig " + k + " create namespace " + b.csiNamespace

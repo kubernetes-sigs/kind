@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/exec"
 )
 
 //go:embed templates/*
@@ -40,6 +41,9 @@ const (
 
 const machineHealthCheckWorkerNodePath = "/kind/manifests/machinehealthcheckworkernode.yaml"
 const machineHealthCheckControlPlaneNodePath = "/kind/manifests/machinehealthcheckcontrolplane.yaml"
+
+//go:embed files/calico-metrics.yaml
+var calicoMetrics string
 
 type PBuilder interface {
 	setCapx(managed bool)
@@ -112,6 +116,7 @@ func (i *Infra) getAzs(networks commons.Networks) ([]string, error) {
 
 func installCalico(n nodes.Node, k string, descriptorFile commons.DescriptorFile, allowCommonEgressNetPolPath string) error {
 	var c string
+	var cmd exec.Cmd
 	var err error
 
 	calicoTemplate := "/kind/calico-helm-values.yaml"
@@ -157,6 +162,12 @@ func installCalico(n nodes.Node, k string, descriptorFile commons.DescriptorFile
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to apply calico-system egress NetworkPolicy")
+	}
+
+	// Create calico metrics services
+	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
+	if err = cmd.SetStdin(strings.NewReader(calicoMetrics)).Run(); err != nil {
+		return errors.Wrap(err, "failed to create calico metrics services")
 	}
 
 	return nil
@@ -356,6 +367,18 @@ func GetClusterManifest(flavor string, params commons.TemplateParams, azs []stri
 		},
 		"base64": func(s string) string {
 			return base64.StdEncoding.EncodeToString([]byte(s))
+		},
+		"sub": func(a, b int) int { return a - b },
+		"getTaintKey": func(taint string) string {
+			keyvalue := strings.Split(taint, ":")[0]
+			return strings.Split(keyvalue, "=")[0]
+		},
+		"getTaintValue": func(taint string) string {
+			keyvalue := strings.Split(taint, ":")[0]
+			return strings.Split(keyvalue, "=")[1]
+		},
+		"getTaintEffect": func(taint string) string {
+			return strings.Split(taint, ":")[1]
 		},
 	}
 

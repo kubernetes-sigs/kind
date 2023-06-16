@@ -171,8 +171,9 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 
 		// Add imagePullSecrets to infrastructure-components.yaml
-		c = "sed -i '/securityContext:/i\\      imagePullSecrets:\\n      - name: regcred' " + infraComponents
+		c = "sed -i '/containers:/i\\      imagePullSecrets:\\n      - name: regcred' " + infraComponents
 		_, err = commons.ExecuteCommand(n, c)
+
 		if err != nil {
 			return errors.Wrap(err, "failed to add imagePullSecrets to infrastructure-components.yaml")
 		}
