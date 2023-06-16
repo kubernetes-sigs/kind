@@ -29,6 +29,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"golang.org/x/exp/slices"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -132,7 +133,7 @@ spec:
 	return nil
 }
 
-func (b *AWSBuilder) getAzs() ([]string, error) {
+func (b *AWSBuilder) getAzs(networks commons.Networks) ([]string, error) {
 	if len(b.capxEnvVars) == 0 {
 		return nil, errors.New("Insufficient credentials.")
 	}
@@ -148,21 +149,70 @@ func (b *AWSBuilder) getAzs() ([]string, error) {
 		return nil, err
 	}
 	svc := ec2.New(sess)
-	result, err := svc.DescribeAvailabilityZones(&ec2.DescribeAvailabilityZonesInput{})
-	if err != nil {
-		return nil, err
-	}
-	if len(result.AvailabilityZones) < 3 {
-		return nil, errors.New("Insufficient Availability Zones in this region. Must have at least 3")
-	}
-	azs := make([]string, 3)
-	for i, az := range result.AvailabilityZones {
-		if i == 3 {
-			break
+	if networks.Subnets != nil {
+		privateAZs := []string{}
+		for _, subnet := range networks.Subnets {
+			privateSubnetID, _ := filterPrivateSubnet(svc, &subnet.SubnetId)
+			if len(privateSubnetID) > 0 {
+				sid := &ec2.DescribeSubnetsInput{
+					SubnetIds: []*string{&subnet.SubnetId},
+				}
+				ds, err := svc.DescribeSubnets(sid)
+				if err != nil {
+					return nil, err
+				}
+				for _, describeSubnet := range ds.Subnets {
+					if !slices.Contains(privateAZs, *describeSubnet.AvailabilityZone) {
+						privateAZs = append(privateAZs, *describeSubnet.AvailabilityZone)
+					}
+				}
+			}
 		}
-		azs[i] = *az.ZoneName
+		return privateAZs, nil
+	} else {
+		result, err := svc.DescribeAvailabilityZones(&ec2.DescribeAvailabilityZonesInput{})
+		if err != nil {
+			return nil, err
+		}
+		azs := make([]string, 3)
+		for i, az := range result.AvailabilityZones {
+			if i == 3 {
+				break
+			}
+			azs[i] = *az.ZoneName
+		}
+		return azs, nil
 	}
-	return azs, nil
+}
+
+func filterPrivateSubnet(svc *ec2.EC2, subnetID *string) (string, error) {
+	keyname := "association.subnet-id"
+	filters := make([]*ec2.Filter, 0)
+	filter := ec2.Filter{
+		Name: &keyname, Values: []*string{subnetID}}
+	filters = append(filters, &filter)
+
+	drti := &ec2.DescribeRouteTablesInput{Filters: filters}
+	drto, err := svc.DescribeRouteTables(drti)
+	if err != nil {
+		return "", err
+	}
+
+	var isPublic bool
+	for _, associatedRouteTable := range drto.RouteTables {
+		for i := range associatedRouteTable.Routes {
+			if *associatedRouteTable.Routes[i].DestinationCidrBlock == "0.0.0.0/0" &&
+				associatedRouteTable.Routes[i].GatewayId != nil &&
+				strings.Contains(*associatedRouteTable.Routes[i].GatewayId, "igw") {
+				isPublic = true
+			}
+		}
+	}
+	if !isPublic {
+		return *subnetID, nil
+	} else {
+		return "", nil
+	}
 }
 
 func getEcrToken(p commons.ProviderParams) (string, error) {
