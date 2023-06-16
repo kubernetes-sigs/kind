@@ -10,9 +10,9 @@ core:
   cluster-autoscaler: 9.28.0
   pause: v3.9
 aws:
-  clusterawsadm: v2.0.2
-  cluster-api-aws: v2.0.2
-  cluster-api-aws-templates: v2.0.2
+  clusterawsadm: v2.1.4
+  cluster-api-aws: v2.1.4-0.4.0
+  cluster-api-aws-templates: v2.1.4
   eks-addons:
     aws-ebs-csi-driver: v1.17.0-eksbuild.1
     coredns: v1.9.3-eksbuild.3
