@@ -3,6 +3,8 @@ package validation
 import (
 	"errors"
 	"reflect"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/oleiade/reflections"
@@ -29,7 +31,10 @@ func commonsDescriptorValidation(descriptor commons.DescriptorFile) error {
 	if err != nil {
 		return err
 	}
-
+	err = validateTaintsFormat(descriptor.WorkerNodes)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -162,6 +167,19 @@ func validateUniqueRegistry(dockerRegistries []commons.DockerRegistry) error {
 			}
 		}
 	}
+	return nil
+}
+
+func validateTaintsFormat(wns commons.WorkerNodes) error {
+	regex := regexp.MustCompile(`^(\w+|.*)=(\w+|.*):(NoSchedule|PreferNoSchedule|NoExecute)$`)
+	for _, wn := range wns {
+		for i, taint := range wn.Taints {
+			if !regex.MatchString(taint) {
+				return errors.New("Incorrect taint format in taint[" + strconv.Itoa(i) + "] of wn: " + wn.Name + "")
+			}
+		}
+	}
+
 	return nil
 }
 

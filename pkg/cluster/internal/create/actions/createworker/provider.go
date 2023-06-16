@@ -355,6 +355,18 @@ func GetClusterManifest(flavor string, params commons.TemplateParams, azs []stri
 		"base64": func(s string) string {
 			return base64.StdEncoding.EncodeToString([]byte(s))
 		},
+		"sub": func(a, b int) int { return a - b },
+		"getTaintKey": func(taint string) string {
+			keyvalue := strings.Split(taint, ":")[0]
+			return strings.Split(keyvalue, "=")[0]
+		},
+		"getTaintValue": func(taint string) string {
+			keyvalue := strings.Split(taint, ":")[0]
+			return strings.Split(keyvalue, "=")[1]
+		},
+		"getTaintEffect": func(taint string) string {
+			return strings.Split(taint, ":")[1]
+		},
 	}
 
 	var tpl bytes.Buffer
