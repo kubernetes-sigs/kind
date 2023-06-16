@@ -332,6 +332,9 @@ spec:
             {{- if $node.Labels }}
             node-labels: \"{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}\"
             {{- end }}
+            {{- if gt (len $node.Taints) 0 }}
+            register-with-taints: \"{{ range $i, $taint := $node.Taints }}{{$taint.Key}}={{$taint.Value}}:{{$taint.Effect}}{{- if ne $i (sub (len $node.Taints) 1) }},{{- end }}{{ end }}\"
+            {{- end }}
           name: {{`'{{ ds.meta_data[\"local_hostname\"] }}'`}}
       preKubeadmCommands: []
 {{- end }}
