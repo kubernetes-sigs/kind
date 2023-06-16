@@ -216,3 +216,8 @@ kubectl --kubeconfig local_kubeconfig -n cluster-eks-cl01 delete cluster eks-cl0
 | iam:ListRoleTags | not authorized to perform: iam:ListRoleTags on resource: role eks-iam-for-sa-external-dns-role-eks-cl01 | ListRoleTags | arn:aws:iam::268367799918:role/* | keos |
 | route53:ListHostedZones | not authorized to perform: route53:ListHostedZones | ListHostedZones | * | keos |
 | iam:PutRolePolicy | not authorized to perform: iam:PutRolePolicy on resource: role eks-iam-for-sa-external-dns-role-eks-cl01 | PutRolePolicy | arn:aws:iam::268367799918:role/* | keos |
+
+**cluster-api-provider-aws v2.1.4-0.4.0**
+| Permission | Needed for | Description | Resource | Application |
+| --- | --- | --- | --- | --- |
+| ec2:DescribeInstanceTypes | not authorized to perform: ec2:DescribeInstanceTypes | DescribeInstanceTypes | * | cluster-api-provider-aws |
