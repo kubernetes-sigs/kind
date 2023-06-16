@@ -247,8 +247,11 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.Start("[CAPA] Ensuring IAM security 👮")
 			defer ctx.Status.End(false)
 
-			createCloudFormationStack(n, provider.capxEnvVars)
-			ctx.Status.End(true) // End Ensuring CAPx requirements
+			err = createCloudFormationStack(n, provider.capxEnvVars)
+			if err != nil {
+				return errors.Wrap(err, "failed to create the IAM security")
+			}
+			ctx.Status.End(true)
 		}
 
 		ctx.Status.Start("Creating the workload cluster 💥")
