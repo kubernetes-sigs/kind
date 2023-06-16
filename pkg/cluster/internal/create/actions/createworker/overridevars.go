@@ -36,6 +36,20 @@ var internalIngressFiles embed.FS
 
 func override_vars(descriptorFile commons.DescriptorFile, ctx *actions.ActionContext, infra *Infra) error {
 
+	overrideVarsDir := "override_vars"
+	originalFilePath := filepath.Join(overrideVarsDir, "ingress-nginx.yaml")
+	timestamp := time.Now().Format("20060102150405")
+	newFilePath := filepath.Dir(originalFilePath) + "." + timestamp
+
+	// Make a backup of existing override_vars
+	_, err := os.Stat(originalFilePath)
+	if err == nil {
+		err := os.Rename(filepath.Dir(originalFilePath), newFilePath)
+		if err != nil {
+			return errors.Wrap(err, "error renaming original override_vars directory")
+		}
+	}
+
 	requiredInternalNginx, err := infra.internalNginx(descriptorFile.Networks)
 	if err != nil {
 		return err
@@ -45,19 +59,6 @@ func override_vars(descriptorFile commons.DescriptorFile, ctx *actions.ActionCon
 		ctx.Status.Start("Generating override_vars structure ⚒️")
 		defer ctx.Status.End(false)
 
-		overrideVarsDir := "override_vars"
-		originalFilePath := filepath.Join(overrideVarsDir, "ingress-nginx.yaml")
-		timestamp := time.Now().Format("20060102150405")
-		newFilePath := filepath.Dir(originalFilePath) + "." + timestamp
-
-		// Make a backup of existing override_vars
-		_, err := os.Stat(originalFilePath)
-		if err == nil {
-			err := os.Rename(filepath.Dir(originalFilePath), newFilePath)
-			if err != nil {
-				return errors.Wrap(err, "error renaming original override_vars directory")
-			}
-		}
 		err = os.MkdirAll(filepath.Dir(originalFilePath), os.ModePerm)
 		if err != nil {
 			return errors.Wrap(err, "error creating override_vars directory")

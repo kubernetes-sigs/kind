@@ -201,3 +201,7 @@ func (b *GCPBuilder) getAzs(networks commons.Networks) ([]string, error) {
 	return nil, errors.New("Error in project id")
 
 }
+
+func (b *GCPBuilder) internalNginx(networks commons.Networks) (bool, error) {
+	return false, nil
+}

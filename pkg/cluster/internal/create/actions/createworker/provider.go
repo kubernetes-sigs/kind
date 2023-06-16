@@ -77,9 +77,9 @@ func getBuilder(builderType string) PBuilder {
 		return newAWSBuilder()
 	}
 
-	//	if builderType == "gcp" {
-	//		return newGCPBuilder()
-	//	}
+	if builderType == "gcp" {
+		return newGCPBuilder()
+	}
 
 	//	if builderType == "azure" {
 	//		return newAzureBuilder()
