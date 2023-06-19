@@ -112,9 +112,9 @@ spec:
   {{- if gt (len $node.Taints) 0 }}
   taints:
     {{- range $i, $taint := $node.Taints }}
-    - {{ getTaintKey $taint }}
-      {{ getTaintValue $taint }}
-      {{ getTaintEffect $taint }}
+    - key: \"{{ getTaintKey $taint }}\"
+      value: \"{{ getTaintValue $taint }}\"
+      effect: \"{{ getTaintEffect $taint }}\"
     {{- end }}
   {{- end }}
 {{- end }}
