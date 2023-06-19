@@ -98,7 +98,7 @@ spec:
   {{- end }}
   availabilityZones:
     - \"{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ inc $index }} {{- end }}\"
-  scaleSetPriority: {{- if and ($node.Spot) (gt $indexPool 0) -}} Spot {{- else -}} Regular {{- end }}
+  scaleSetPriority: {{- if and ($node.Spot) (gt $indexPool 0) }} Spot {{- else }} Regular {{- end }}
   {{- if gt $node.NodeGroupMaxSize 0 }}
   scaling:
     minSize: {{ $n.MinSize }}
