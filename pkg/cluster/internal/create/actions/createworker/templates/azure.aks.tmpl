@@ -58,7 +58,7 @@ spec:
     namespace: "capz-system"
   tenantID: "{{ .Credentials.TenantID }}"
   type: ServicePrincipal
-{{- range $node := .Descriptor.WorkerNodes }}
+{{- range $indexPool, $node := .Descriptor.WorkerNodes }}
 {{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -89,7 +89,7 @@ metadata:
   name: "{{ $node.Name }}-mp-{{ $index }}"
   namespace: "cluster-{{ $.Descriptor.ClusterID }}"
 spec:
-  mode: System
+  mode: {{- if lt $indexPool 1 }} System {{- else }} User {{- end }}
   name: "{{ $node.Name }}mp{{ $index }}"
   sku: "{{ $node.Size }}"
   osDiskSizeGB: {{- if $node.RootVolume.Size }} {{ $node.RootVolume.Size }} {{ else }} 30 {{ end }}
