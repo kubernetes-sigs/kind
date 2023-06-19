@@ -49,16 +49,7 @@ type DescriptorFile struct {
 	K8SVersion string `yaml:"k8s_version" validate:"required,startswith=v,min=7,max=8"`
 	Region     string `yaml:"region" validate:"required"`
 
-	Networks struct {
-		VPCID         string `yaml:"vpc_id"`
-		PodsCidrBlock string `yaml:"pods_cidr" validate:"omitempty,cidrv4"`
-		PodsSubnets   []struct {
-			SubnetID string `yaml:"subnet_id"`
-		} `yaml:"pods_subnets"`
-		Subnets []struct {
-			SubnetID string `yaml:"subnet_id"`
-		} `yaml:"subnets"`
-	} `yaml:"networks" validate:"omitempty,dive"`
+	Networks Networks `yaml:"networks" validate:"omitempty,dive"`
 
 	Dns struct {
 		ManageZone bool `yaml:"manage_zone" validate:"boolean"`
@@ -90,6 +81,17 @@ type DescriptorFile struct {
 	} `yaml:"control_plane"`
 
 	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
+}
+
+type Networks struct {
+	VPCID         string    `yaml:"vpc_id"`
+	PodsCidrBlock string    `yaml:"pods_cidr" validate:"omitempty,cidrv4"`
+	PodsSubnets   []Subnets `yaml:"pods_subnets"`
+	Subnets       []Subnets `yaml:"subnets"`
+}
+
+type Subnets struct {
+	SubnetId string `yaml:"subnet_id"`
 }
 
 type AWSCP struct {
