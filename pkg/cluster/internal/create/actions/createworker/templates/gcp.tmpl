@@ -7,7 +7,7 @@ metadata:
 spec:
   clusterNetwork:
     pods:
-      cidrBlocks: [\"192.168.0.0/16\"]
+      cidrBlocks: [\"{{- if .Descriptor.Networks.PodsCidrBlock -}} {{ .Descriptor.Networks.PodsCidrBlock }} {{- else -}} 192.168.0.0/16 {{- end }}\"]
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: GCPCluster
@@ -211,6 +211,7 @@ metadata:
 spec:
   template:
     spec:
+      additionalNetworkTags: ["{{ $node.Name }}-md-{{ $index }}"]
       instanceType: "{{ $node.Size }}"
       image: "{{ $node.NodeImage }}"
       {{- if $node.RootVolume.Size }}
@@ -296,8 +297,11 @@ spec:
           name: {{`'{{ ds.meta_data.local_hostname.split(\".\")[0] }}'`}}
           kubeletExtraArgs:
             cloud-provider: gce
-            {{- if $node.Labels }}
+            {{- if gt (len $node.Labels) 0 }}
             node-labels: \"{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}\"
+            {{- end }}
+            {{- if gt (len $node.Taints) 0 }}
+            register-with-taints: \"{{ range $i, $taint := $node.Taints }}{{$taint}}{{- if ne $i (sub (len $node.Taints) 1) }},{{- end }}{{ end }}\"
             {{- end }}
 {{- end }}
 {{- end }}

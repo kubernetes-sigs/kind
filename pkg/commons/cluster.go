@@ -52,9 +52,12 @@ type DescriptorFile struct {
 	Networks struct {
 		VPCID         string `yaml:"vpc_id"`
 		PodsCidrBlock string `yaml:"pods_cidr" validate:"omitempty,cidrv4"`
-		Subnets       []struct {
+		PodsSubnets   []struct {
 			SubnetID string `yaml:"subnet_id"`
-		} `yaml:"subnets" validate:"dive"`
+		} `yaml:"pods_subnets"`
+		Subnets []struct {
+			SubnetID string `yaml:"subnet_id"`
+		} `yaml:"subnets"`
 	} `yaml:"networks" validate:"omitempty,dive"`
 
 	Dns struct {
@@ -66,7 +69,6 @@ type DescriptorFile struct {
 	ExternalDomain string `yaml:"external_domain" validate:"omitempty,hostname"`
 
 	Keos struct {
-		// PR fixing exclude_if behaviour https://github.com/go-playground/validator/pull/939
 		Flavour string `yaml:"flavour"`
 		Version string `yaml:"version"`
 	} `yaml:"keos"`
@@ -116,6 +118,7 @@ type WorkerNodes []struct {
 	SSHKey           string            `yaml:"ssh_key"`
 	Spot             bool              `yaml:"spot" validate:"omitempty,boolean"`
 	Labels           map[string]string `yaml:"labels"`
+	Taints           []string          `yaml:"taints" validate:"omitempty,dive"`
 	NodeGroupMaxSize int               `yaml:"max_size" validate:"required_with=NodeGroupMinSize,numeric,omitempty"`
 	NodeGroupMinSize int               `yaml:"min_size" validate:"required_with=NodeGroupMaxSize,numeric,omitempty"`
 	RootVolume       struct {
@@ -275,6 +278,7 @@ func GetClusterDescriptor(descriptorPath string) (*DescriptorFile, error) {
 	validate.RegisterValidation("gte_param_if_exists", gteParamIfExists)
 	validate.RegisterValidation("lte_param_if_exists", lteParamIfExists)
 	validate.RegisterValidation("required_if_for_bool", requiredIfForBool)
+
 	err = validate.Struct(descriptorFile)
 	if err != nil {
 		return nil, err

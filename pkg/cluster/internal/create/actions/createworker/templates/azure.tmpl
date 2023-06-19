@@ -7,7 +7,7 @@ metadata:
 spec:
   clusterNetwork:
     pods:
-      cidrBlocks: [\"192.168.0.0/16\"]
+      cidrBlocks: [\"{{- if .Descriptor.Networks.PodsCidrBlock -}} {{ .Descriptor.Networks.PodsCidrBlock }} {{- else -}} 192.168.0.0/16 {{- end }}\"]
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: KubeadmControlPlane
@@ -331,6 +331,9 @@ spec:
             cloud-provider: external
             {{- if $node.Labels }}
             node-labels: \"{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}\"
+            {{- end }}
+            {{- if gt (len $node.Taints) 0 }}
+            register-with-taints: \"{{ range $i, $taint := $node.Taints }}{{$taint.Key}}={{$taint.Value}}:{{$taint.Effect}}{{- if ne $i (sub (len $node.Taints) 1) }},{{- end }}{{ end }}\"
             {{- end }}
           name: {{`'{{ ds.meta_data[\"local_hostname\"] }}'`}}
       preKubeadmCommands: []
