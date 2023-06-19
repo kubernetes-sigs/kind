@@ -106,8 +106,8 @@ func (b *GCPBuilder) getProvider() Provider {
 
 func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
 	var c string
-	var cmd exec.Cmd
 	var err error
+	var cmd exec.Cmd
 	var storageClass = `
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -122,7 +122,7 @@ volumeBindingMode: WaitForFirstConsumer`
 
 	// Create CSI namespace
 	c = "kubectl --kubeconfig " + k + " create namespace " + b.csiNamespace
-	err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to create CSI namespace")
 	}
@@ -130,7 +130,7 @@ volumeBindingMode: WaitForFirstConsumer`
 	// Create CSI secret in CSI namespace
 	secret, _ := b64.StdEncoding.DecodeString(strings.Split(b.capxEnvVars[0], "GCP_B64ENCODED_CREDENTIALS=")[1])
 	c = "kubectl --kubeconfig " + k + " -n " + b.csiNamespace + " create secret generic cloud-sa --from-literal=cloud-sa.json='" + string(secret) + "'"
-	err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to create CSI secret in CSI namespace")
 	}
@@ -184,5 +184,4 @@ func (b *GCPBuilder) getAzs(networks commons.Networks) ([]string, error) {
 	}
 
 	return nil, errors.New("Error in project id")
-
 }
