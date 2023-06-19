@@ -55,12 +55,12 @@ spec:
   network:
     vpc:
       id: {{ .Descriptor.Networks.VPCID }}
-  {{- if gt .Descriptor.Networks.Subnets 0 }}
+  {{- if gt (len .Descriptor.Networks.Subnets) 0 }}
     subnets:
     {{- range .Descriptor.Networks.Subnets }}
       - id: {{ .SubnetId }}
     {{- end }}
-    {{- if gt .Descriptor.Networks.PodsSubnets 0 }}
+    {{- if gt (len .Descriptor.Networks.PodsSubnets) 0 }}
       {{- range .Descriptor.Networks.PodsSubnets }}
       - id: {{ .SubnetId }}
       {{- end }}
