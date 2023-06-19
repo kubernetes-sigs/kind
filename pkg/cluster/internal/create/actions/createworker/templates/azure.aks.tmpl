@@ -109,7 +109,7 @@ spec:
     {{ $key }}: \"{{ $value }}\"
     {{- end }}
   {{- end }}
-  {{- if gt (len $node.Taints) 0 }}
+  {{- if and (gt (len $node.Taints) 0) (gt $indexPool 0) }}
   taints:
     {{- range $i, $taint := $node.Taints }}
     - key: \"{{ getTaintKey $taint }}\"
