@@ -60,7 +60,7 @@ spec:
     {{- range .Descriptor.Networks.Subnets }}
       - id: {{ .SubnetId }}
     {{- end }}
-    {{- if ne .Descriptor.Networks.PodsSubnets nil }}
+    {{- if gt .Descriptor.Networks.PodsSubnets 0 }}
       {{- range .Descriptor.Networks.PodsSubnets }}
       - id: {{ .SubnetId }}
       {{- end }}
