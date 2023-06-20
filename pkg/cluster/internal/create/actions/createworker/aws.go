@@ -273,6 +273,11 @@ func getEcrToken(p commons.ProviderParams) (string, error) {
 func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error {
 	var cmd exec.Cmd
 
+	cmd = n.Command("kubectl", "--kubeconfig", k, "delete", "storageclass", defaultAWSSc)
+	if err := cmd.Run(); err != nil {
+		return errors.Wrap(err, "failed to delete default StorageClass")
+	}
+
 	params := b.getParameters(sc)
 	storageClass, err := insertParameters(storageClassAWSTemplate, params)
 	if err != nil {
@@ -280,7 +285,7 @@ func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string, sc commons.St
 	}
 
 	command := "sed -i 's/fsType/csi.storage.k8s.io\\/fstype/' " + storageClass
-	err = commons.ExecuteCommand(n, command)
+	_, err = commons.ExecuteCommand(n, command)
 	if err != nil {
 		return errors.Wrap(err, "failed to add csi.storage.k8s.io/fstype param to storageclass")
 	}

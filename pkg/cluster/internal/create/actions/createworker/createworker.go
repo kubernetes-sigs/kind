@@ -335,7 +335,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			// }
 		}
 
-		err = infra.configureStorageClass(node, kubeconfigPath, descriptorFile.StorageClass)
+		err = infra.configureStorageClass(n, kubeconfigPath, descriptorFile.StorageClass)
 		if err != nil {
 			return errors.Wrap(err, "failed to configuring StorageClass in workload cluster")
 		}
