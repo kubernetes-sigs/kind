@@ -111,10 +111,12 @@ spec:
   {{- end }}
   {{- if gt (len $node.Taints) 0 }}
   taints:
-    {{- range $i, $taint := $node.Taints }}
-    - key: \"{{ getTaintKey $taint }}\"
-      value: \"{{ getTaintValue $taint }}\"
-      effect: \"{{ getTaintEffect $taint }}\"
+    {{- range $i, $nodeTaint := $node.Taints }}
+    {{- $taint := split $nodeTaint "=" }}
+    - key: \"{{ index $taint 0 }}\"
+      {{- $taintParams := split (index $taint 1) ":" }}
+      value: \"{{ index $taintParams 0 }}\"
+      effect: \"{{ index $taintParams 1 }}\"
     {{- end }}
   {{- end }}
 {{- end }}
