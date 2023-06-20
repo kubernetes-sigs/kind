@@ -174,10 +174,10 @@ spec:
            lun: {{ $index }}
         {{- end }}
       {{- end }}
-      {{- if .Descriptor.ControlPlane.Azure.IdentityID }}
+      {{- if .Descriptor.Security.NodesIdentity }}
       identity: UserAssigned
       userAssignedIdentities:
-        - providerID: {{ .Descriptor.ControlPlane.Azure.IdentityID }}
+        - providerID: {{ .Descriptor.Security.NodesIdentity }}
       {{- end }}
       osDisk:
         {{- if .Descriptor.ControlPlane.RootVolume.Size }}
@@ -245,10 +245,10 @@ spec:
            lun: {{ $index }}
         {{- end }}
       {{- end }}
-      {{- if $.Descriptor.ControlPlane.Azure.IdentityID }}
+      {{- if $.Descriptor.Security.NodesIdentity }}
       identity: UserAssigned
       userAssignedIdentities:
-        - providerID: {{ $.Descriptor.ControlPlane.Azure.IdentityID }}
+        - providerID: {{ $.Descriptor.Security.NodesIdentity }}
       {{- end }}
       osDisk:
         {{- if $node.RootVolume.Size }}
