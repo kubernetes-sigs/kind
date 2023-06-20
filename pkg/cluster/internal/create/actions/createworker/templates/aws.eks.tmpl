@@ -30,6 +30,12 @@ metadata:
   name: "{{ .Descriptor.ClusterID }}-control-plane"
   namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec:
+  additionalTags:
+    {{- range .Descriptor.ControlPlane.Tags }}
+      {{- range $key,$value := . }}
+      {{ $key }}: {{ $value }}
+      {{- end }}
+    {{- end }}
   addons:
     - name: "vpc-cni"
       version: "v1.12.6-eksbuild.1"
@@ -162,7 +168,7 @@ spec:
       {{- if $node.Spot }}
       spotMarketOptions:
         maxPrice: \"\"
-      {{- end }}
+      {{- end }}     
       {{- if ne $node.NodeImage "" }}
       ami:
         id: {{ $node.NodeImage }}

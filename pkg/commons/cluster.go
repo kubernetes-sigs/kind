@@ -75,9 +75,10 @@ type DescriptorFile struct {
 			Type      string `yaml:"type"`
 			Encrypted bool   `yaml:"encrypted" validate:"boolean"`
 		} `yaml:"root_volume"`
-		AWS          AWSCP         `yaml:"aws"`
-		Azure        AzureCP       `yaml:"azure"`
-		ExtraVolumes []ExtraVolume `yaml:"extra_volumes"`
+		Tags         []map[string]string `yaml:"tags" validate:"omitempty,dive"`
+		AWS          AWSCP               `yaml:"aws"`
+		Azure        AzureCP             `yaml:"azure"`
+		ExtraVolumes []ExtraVolume       `yaml:"extra_volumes"`
 	} `yaml:"control_plane"`
 
 	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
@@ -90,8 +91,8 @@ type Networks struct {
 	Tags                       map[string]string `yaml:"tags,omitempty"`
 	AvailabilityZoneUsageLimit int               `yaml:"az_usage_limit" validate:"numeric"`
 	AvailabilityZoneSelection  string            `yaml:"az_selection" validate:"oneof='Ordered' 'Random' '' "`
-	PodsSubnets []Subnets `yaml:"pods_subnets"`
-	Subnets     []Subnets `yaml:"subnets"`
+	PodsSubnets                []Subnets         `yaml:"pods_subnets"`
+	Subnets                    []Subnets         `yaml:"subnets"`
 }
 
 type Subnets struct {
