@@ -49,7 +49,7 @@ type DescriptorFile struct {
 
 	Bastion Bastion `yaml:"bastion"`
 
-	StorageClasses []StorageClass `yaml:"storage_classes" validate:"dive"`
+	StorageClass StorageClass `yaml:"storage_class" validate:"dive"`
 
 	Credentials Credentials `yaml:"credentials" validate:"dive"`
 
@@ -250,10 +250,38 @@ type ProviderParams struct {
 }
 
 type StorageClass struct {
-	Name        string            `yaml:"name"`
-	Default     bool              `yaml:"default"`
-	Provisioner string            `yaml:"provisioner"`
-	Parameters  map[string]string `yaml:"parameters"`
+	EncryptionKmsKey string       `yaml:"encryptionKmsKey,omitempty"  validate:"omitempty"`
+	Class            string       `yaml:"class,omitempty"  validate:"omitempty,oneof='standard' 'premium'"`
+	Parameters       SCParameters `yaml:"parameters,omitempty" validate:"omitempty,dive"`
+}
+
+type SCParameters struct {
+	Type string `yaml:"type,omitempty" validate:"omitempty"` //Todas //comprobar type por provider //AWS- oneof='io1' 'gp2' 'sc1' 'st2'" //GCP - pd-standard o pd-ssd
+
+	ProvisionedIopsOnCreate string `yaml:"provisioned_iops_on_create,omitempty"  validate:"omitempty"`                 //GCP - solo PD-extrme //comprobacionde int
+	ReplicationType         string `yaml:"replication_type,omitempty" validate:"omitempty,oneof='none' 'regional-pd'"` //GCP
+	DiskEncryptionKmsKey    string `yaml:"disk_encryption_kms_key,omitempty"  validate:"omitempty"`                    //GCP
+	Labels                  string `yaml:"labels,omitempty"  validate:"omitempty"`                                     // Validar el formato: key1=value1,key2=value2
+
+	IopsPerGB                  string `yaml:"iopsPerGB,omitempty" validate:"omitempty"`                  //AWS //convertir en string //comprobacion de int
+	FsType                     string `yaml:"fstype,omitempty"  validate:"omitempty"`                    //Todas
+	KmsKeyId                   string `yaml:"kmsKeyId,omitempty"  validate:"omitempty"`                  //AWS
+	AllowAutoIOPSPerGBIncrease string `yaml:"allowAutoIOPSPerGBIncrease,omitempty" validate:"omitempty"` //AWS
+	Iops                       string `yaml:"iops,omitempty" validate:"omitempty"`                       //AWS
+	Throughput                 int    `yaml:"throughput,omitempty" validate:"omitempty"`                 //AWS
+	Encrypted                  *bool  `yaml:"encrypted,omitempty" validate:"omitempty"`                  //AWS
+	BlockExpress               *bool  `yaml:"blockExpress,omitempty" validate:"omitempty"`               //AWS
+	BlockSize                  string `yaml:"blockSize,omitempty" validate:"omitempty"`                  //AWS
+
+	Provisioner         string   `yaml:"provisioner,omitempty" validate:"omitempty"`
+	SkuName             string   `yaml:"skuName,omitempty" validate:"omitempty"`
+	Kind                string   `yaml:"kind,omitempty" validate:"omitempty"`
+	CachingMode         string   `yaml:"cachingMode,omitempty" validate:"omitempty"`
+	DiskEncryptionType  string   `yaml:"diskEncryptionType,omitempty" validate:"omitempty"`
+	DiskEncryptionSetID string   `yaml:"diskEncryptionSetID,omitempty" validate:"omitempty"`
+	ResourceGroup       string   `yaml:"resourceGroup,omitempty" validate:"omitempty"`
+	Tags                string   `yaml:"tags,omitempty"  validate:"omitempty"`
+	MountOptions        []string `yaml:"mountOptions,omitempty" validate:"omitempty"`
 }
 
 // Init sets default values for the DescriptorFile

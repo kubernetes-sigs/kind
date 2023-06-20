@@ -38,6 +38,31 @@ import (
 //go:embed files/azure-storage-classes.yaml
 var azureStorageClasses string
 
+var storageClassAZTemplate = StorageClassDef{
+	APIVersion: "storage.k8s.io/v1",
+	Kind:       "StorageClass",
+	Metadata: struct {
+		Annotations map[string]string `yaml:"annotations,omitempty"`
+		Name        string            `yaml:"name"`
+	}{
+		Annotations: map[string]string{
+			"storageclass.kubernetes.io/is-default-class": "true",
+		},
+		Name: "keos",
+	},
+	Provisioner:       "disk.csi.azure.com",
+	Parameters:        make(map[string]interface{}),
+	VolumeBindingMode: "WaitForFirstConsumer",
+}
+
+var standardAZParameters = commons.SCParameters{
+	SkuName: "StandardSSD_LRS",
+}
+
+var premiumAZParameters = commons.SCParameters{
+	SkuName: "Premium_LRS",
+}
+
 type AzureBuilder struct {
 	capxProvider     string
 	capxVersion      string
@@ -88,11 +113,9 @@ func (b *AzureBuilder) getProvider() Provider {
 	}
 }
 
-func (b *AzureBuilder) installCSI(n nodes.Node, k string, storageClasses []commons.StorageClass) error {
+func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	var c string
-	var cmd exec.Cmd
 	var err error
-	// var scNames []string
 
 	c = "helm install azuredisk-csi-driver /stratio/helm/azuredisk-csi-driver" +
 		" --kubeconfig " + k
@@ -100,44 +123,6 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string, storageClasses []commo
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy Azure Disk CSI driver Helm Chart")
 	}
-
-	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
-	if err = cmd.SetStdin(strings.NewReader(azureStorageClasses)).Run(); err != nil {
-		return errors.Wrap(err, "failed to create Azure Storage Classes")
-	}
-
-	// azScs := strings.Split(azureStorageClasses, "---")
-	// for _, azsc := range azScs {
-	// 	var resource commons.Resource
-	// 	err = yaml.Unmarshal([]byte(azsc), &resource)
-	// 	if err != nil {
-	// 		return errors.Wrap(err, "failed to unmarshal AzureStoreClass")
-	// 	}
-	// 	if !reflect.DeepEqual(resource, reflect.Zero(reflect.TypeOf(resource)).Interface()) {
-	// 		if name, ok := resource.Metadata["name"].(string); ok {
-	// 			scNames = append(scNames, name)
-	// 		}
-	// 	}
-
-	// }
-
-	// if len(storageClasses) > 0 {
-
-	// 	for _, storageClass := range storageClasses {
-
-	// 		if slices.Contains(scNames, storageClass.Name) {
-	// 			sc, err := b.getStorageClass(storageClass)
-	// 			if err != nil {
-	// 				return err
-	// 			}
-	// 			cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
-	// 			if err = cmd.SetStdin(strings.NewReader(sc)).Run(); err != nil {
-	// 				return errors.Wrap(err, "failed to create StorageClass")
-	// 			}
-	// 		}
-	// 	}
-
-	// }
 
 	return nil
 }
@@ -239,32 +224,41 @@ func getAcrToken(p commons.ProviderParams, acrService string) (string, error) {
 	return response["refresh_token"].(string), nil
 }
 
-func (b *AzureBuilder) getStorageClass(sc commons.StorageClass) (string, error) {
-	storageClassTemplate := `
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: ` + sc.Name + `
-provisioner: ` + sc.Provisioner + `
-parameters:
-volumeBindingMode: WaitForFirstConsumer`
+func (b *AzureBuilder) configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error {
+	var cmd exec.Cmd
 
-	if sc.Default {
-		params := map[string]string{
-			"  annotations": "",
-			"    storageclass.kubernetes.io/is-default-class": "'true'",
-		}
-		err := errors.New("")
-		storageClassTemplate, err = setStorageClassParameters(storageClassTemplate, params, "metadata:")
-		if err != nil {
-			return "", err
-		}
+	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
+	if err := cmd.SetStdin(strings.NewReader(azureStorageClasses)).Run(); err != nil {
+		return errors.Wrap(err, "failed to create Azure Storage Classes")
+	}
+	if sc.Parameters.Provisioner != "" {
+
 	}
 
-	storageClass, err := setStorageClassParameters(storageClassTemplate, sc.Parameters, "parameters:")
+	params := b.getParameters(sc)
+	storageClass, err := insertParameters(storageClassAZTemplate, params)
 	if err != nil {
-		return "", err
+		return err
 	}
-	return storageClass, nil
 
+	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
+	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
+		return errors.Wrap(err, "failed to create StorageClass")
+	}
+	return nil
+
+}
+
+func (b *AzureBuilder) getParameters(sc commons.StorageClass) commons.SCParameters {
+	if sc.EncryptionKmsKey != "" {
+		sc.Parameters.DiskEncryptionSetID = sc.EncryptionKmsKey
+	}
+	switch class := sc.Class; class {
+	case "standard":
+		return mergeSCParameters(sc.Parameters, standardAZParameters)
+	case "premium":
+		return mergeSCParameters(sc.Parameters, premiumAZParameters)
+	default:
+		return standardAZParameters
+	}
 }

@@ -20,10 +20,12 @@ import (
 	"bytes"
 	"embed"
 	"encoding/base64"
+	"fmt"
 	"reflect"
 	"strings"
 	"text/template"
 
+	"gopkg.in/yaml.v2"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -44,10 +46,11 @@ const machineHealthCheckControlPlaneNodePath = "/kind/manifests/machinehealthche
 type PBuilder interface {
 	setCapx(managed bool)
 	setCapxEnvVars(p commons.ProviderParams)
-	installCSI(n nodes.Node, k string, storageClasses []commons.StorageClass) error
+	installCSI(n nodes.Node, k string) error
 	getProvider() Provider
 	getAzs() ([]string, error)
-	getStorageClass(sc commons.StorageClass) (string, error)
+	configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error
+	getParameters(sc commons.StorageClass) commons.SCParameters
 }
 
 type Provider struct {
@@ -70,6 +73,18 @@ type Node struct {
 
 type Infra struct {
 	builder PBuilder
+}
+
+type StorageClassDef struct {
+	APIVersion string `yaml:"apiVersion"`
+	Kind       string `yaml:"kind"`
+	Metadata   struct {
+		Annotations map[string]string `yaml:"annotations,omitempty"`
+		Name        string            `yaml:"name"`
+	} `yaml:"metadata"`
+	Provisioner       string                 `yaml:"provisioner"`
+	Parameters        map[string]interface{} `yaml:"parameters"`
+	VolumeBindingMode string                 `yaml:"volumeBindingMode"`
 }
 
 func getBuilder(builderType string) PBuilder {
@@ -99,8 +114,12 @@ func (i *Infra) buildProvider(p commons.ProviderParams) Provider {
 	return i.builder.getProvider()
 }
 
-func (i *Infra) installCSI(n nodes.Node, k string, storageClasses []commons.StorageClass) error {
-	return i.builder.installCSI(n, k, storageClasses)
+func (i *Infra) installCSI(n nodes.Node, k string) error {
+	return i.builder.installCSI(n, k)
+}
+
+func (i *Infra) configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error {
+	return i.builder.configureStorageClass(n, k, sc)
 }
 
 func (i *Infra) getAzs() ([]string, error) {
@@ -402,4 +421,60 @@ func setStorageClassParameters(storageClass string, params map[string]string, li
 	newStorageClass := storageClass[:paramIndex+len(lineToStart)] + linesToInsert + storageClass[paramIndex+len(lineToStart):]
 
 	return newStorageClass, nil
+}
+
+func mergeSCParameters(params1, params2 commons.SCParameters) commons.SCParameters {
+	destValue := reflect.ValueOf(&params1).Elem()
+	srcValue := reflect.ValueOf(&params2).Elem()
+
+	for i := 0; i < srcValue.NumField(); i++ {
+		srcField := srcValue.Field(i)
+		destField := destValue.Field(i)
+
+		if srcField.IsValid() && destField.IsValid() && destField.CanSet() {
+			destFieldValue := destField.Interface()
+
+			if reflect.DeepEqual(destFieldValue, reflect.Zero(destField.Type()).Interface()) {
+				destField.Set(srcField)
+			}
+		}
+	}
+	fmt.Println("params: " + fmt.Sprintln(params1))
+
+	return params1
+}
+
+func insertParameters(storageClass StorageClassDef, params commons.SCParameters) (string, error) {
+	paramsYAML, err := structToYAML(params)
+	if err != nil {
+		return "", err
+	}
+	// fmt.Println("paramsYAML before: " + paramsYAML)
+	// paramsYAML = strings.ReplaceAll(paramsYAML, "_", "-")
+	// fmt.Println("paramsYAML after: " + paramsYAML)
+
+	newMap := map[string]interface{}{}
+	err = yaml.Unmarshal([]byte(paramsYAML), &newMap)
+	if err != nil {
+		return "", err
+	}
+	for key, value := range newMap {
+		newKey := strings.ReplaceAll(key, "_", "-")
+		storageClass.Parameters[newKey] = value
+	}
+
+	resultYAML, err := yaml.Marshal(storageClass)
+	if err != nil {
+		return "", err
+	}
+
+	return string(resultYAML), nil
+}
+
+func structToYAML(data interface{}) (string, error) {
+	yamlBytes, err := yaml.Marshal(data)
+	if err != nil {
+		return "", err
+	}
+	return string(yamlBytes), nil
 }

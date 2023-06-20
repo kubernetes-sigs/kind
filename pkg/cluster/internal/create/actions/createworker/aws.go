@@ -33,7 +33,35 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/exec"
 )
+
+var defaultAWSSc = "gp2"
+
+var storageClassAWSTemplate = StorageClassDef{
+	APIVersion: "storage.k8s.io/v1",
+	Kind:       "StorageClass",
+	Metadata: struct {
+		Annotations map[string]string `yaml:"annotations,omitempty"`
+		Name        string            `yaml:"name"`
+	}{
+		Annotations: map[string]string{
+			"storageclass.kubernetes.io/is-default-class": "true",
+		},
+		Name: "keos",
+	},
+	Provisioner:       "ebs.csi.aws.com",
+	Parameters:        make(map[string]interface{}),
+	VolumeBindingMode: "WaitForFirstConsumer",
+}
+
+var standardAWSParameters = commons.SCParameters{
+	Type: "gp2",
+}
+
+var premiumAWSParameters = commons.SCParameters{
+	Type: "gp3",
+}
 
 type AWSBuilder struct {
 	capxProvider     string
@@ -90,7 +118,7 @@ func (b *AWSBuilder) getProvider() Provider {
 	}
 }
 
-func (b *AWSBuilder) installCSI(n nodes.Node, k string, storageClasses []commons.StorageClass) error {
+func (b *AWSBuilder) installCSI(n nodes.Node, k string) error {
 	return nil
 }
 
@@ -191,6 +219,41 @@ func getEcrToken(p commons.ProviderParams) (string, error) {
 	return parts[1], nil
 }
 
-func (b *AWSBuilder) getStorageClass(sc commons.StorageClass) (string, error) {
-	return "", nil
+func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error {
+	var cmd exec.Cmd
+
+	params := b.getParameters(sc)
+	storageClass, err := insertParameters(storageClassAWSTemplate, params)
+	if err != nil {
+		return err
+	}
+
+	command := "sed -i 's/fsType/csi.storage.k8s.io\\/fstype/' " + storageClass
+	err = commons.ExecuteCommand(n, command)
+	if err != nil {
+		return errors.Wrap(err, "failed to add csi.storage.k8s.io/fstype param to storageclass")
+	}
+
+	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
+	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
+		return errors.Wrap(err, "failed to create StorageClass")
+	}
+	return nil
+
+}
+
+func (b *AWSBuilder) getParameters(sc commons.StorageClass) commons.SCParameters {
+	if sc.EncryptionKmsKey != "" {
+		encrypted := true
+		sc.Parameters.Encrypted = &encrypted
+		sc.Parameters.KmsKeyId = sc.EncryptionKmsKey
+	}
+	switch class := sc.Class; class {
+	case "standard":
+		return mergeSCParameters(sc.Parameters, standardAWSParameters)
+	case "premium":
+		return mergeSCParameters(sc.Parameters, premiumAWSParameters)
+	default:
+		return standardAWSParameters
+	}
 }
