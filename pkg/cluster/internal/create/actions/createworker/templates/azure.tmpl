@@ -175,14 +175,8 @@ spec:
         {{- end }}
       {{- end }}
       {{- if ne .Descriptor.ControlPlane.NodeImage "" }}
-      {{- $nodeImage := split .Descriptor.ControlPlane.NodeImage "/" }}
       image:
-        computeGallery:
-          resourceGroup: {{ index $nodeImage 4 }}
-          subscriptionID: {{ index $nodeImage 2 }}
-          name: {{ index $nodeImage 10 }}
-          gallery: {{ index $nodeImage 8 }}
-          version: {{ index $nodeImage 12 }}
+        id: {{ .Descriptor.ControlPlane.NodeImage }}
       {{- end }}
       {{- if .Descriptor.Security.NodesIdentity }}
       identity: UserAssigned
@@ -256,14 +250,8 @@ spec:
         {{- end }}
       {{- end }}
       {{- if ne $node.NodeImage "" }}
-      {{- $nodeImage := split $node.NodeImage "/" }}
       image:
-        computeGallery:
-          resourceGroup: {{ index $nodeImage 4 }}
-          subscriptionID: {{ index $nodeImage 2 }}
-          name: {{ index $nodeImage 10 }}
-          gallery: {{ index $nodeImage 8 }}
-          version: {{ index $nodeImage 12 }}
+        id: {{ $node.NodeImage }}
       {{- end }}
       {{- if $.Descriptor.Security.NodesIdentity }}
       identity: UserAssigned
