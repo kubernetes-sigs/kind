@@ -31,7 +31,7 @@ metadata:
   namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec:
   additionalTags:
-    "keos.stratio.com/owner": \"{{ .Descriptor.ClusterID }}\"
+      "keos.stratio.com/owner": \"{{ .Descriptor.ClusterID }}\"
     {{- range .Descriptor.ControlPlane.Tags }}
       {{- range $key,$value := . }}
       {{ $key }}: {{ $value }}
