@@ -17,10 +17,8 @@ limitations under the License.
 package createworker
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
-	b64 "encoding/base64"
 	"os"
 	"strings"
 
@@ -30,6 +28,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"golang.org/x/exp/slices"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -80,8 +79,8 @@ func newAWSBuilder() *AWSBuilder {
 
 func (b *AWSBuilder) setCapx(managed bool) {
 	b.capxProvider = "aws"
-	b.capxVersion = "v2.0.2"
-	b.capxImageVersion = "2.0.2-0.1.0"
+	b.capxVersion = "v2.1.4"
+	b.capxImageVersion = "2.1.4-0.4.0"
 	b.capxName = "capa"
 	b.stClassName = "gp2"
 	if managed {
@@ -99,9 +98,11 @@ func (b *AWSBuilder) setCapxEnvVars(p commons.ProviderParams) {
 		"AWS_REGION=" + p.Region,
 		"AWS_ACCESS_KEY_ID=" + p.Credentials["AccessKey"],
 		"AWS_SECRET_ACCESS_KEY=" + p.Credentials["SecretKey"],
-		"AWS_B64ENCODED_CREDENTIALS=" + b64.StdEncoding.EncodeToString([]byte(awsCredentials)),
-		"GITHUB_TOKEN=" + p.GithubToken,
+		"AWS_B64ENCODED_CREDENTIALS=" + base64.StdEncoding.EncodeToString([]byte(awsCredentials)),
 		"CAPA_EKS_IAM=true",
+	}
+	if p.GithubToken != "" {
+		b.capxEnvVars = append(b.capxEnvVars, "GITHUB_TOKEN="+p.GithubToken)
 	}
 }
 
@@ -122,13 +123,16 @@ func (b *AWSBuilder) installCSI(n nodes.Node, k string) error {
 	return nil
 }
 
-func createCloudFormationStack(node nodes.Node, envVars []string) error {
+func createCloudFormationStack(n nodes.Node, envVars []string) error {
+	var c string
+	var err error
+
 	eksConfigData := `
 apiVersion: bootstrap.aws.infrastructure.cluster.x-k8s.io/v1beta1
 kind: AWSIAMConfiguration
 spec:
   bootstrapUser:
-    enable: true
+    enable: false
   eks:
     enable: true
     iamRoleCreation: false
@@ -141,25 +145,23 @@ spec:
     - arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy`
 
 	// Create the eks.config file in the container
-	var raw bytes.Buffer
 	eksConfigPath := "/kind/eks.config"
-	cmd := node.Command("sh", "-c", "echo \""+eksConfigData+"\" > "+eksConfigPath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
+	c = "echo \"" + eksConfigData + "\" > " + eksConfigPath
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
 		return errors.Wrap(err, "failed to create eks.config")
 	}
 
-	// Run clusterawsadm with the eks.config file previously created
-	// (this will create or update the CloudFormation stack in AWS)
-	raw = bytes.Buffer{}
-	cmd = node.Command("sh", "-c", "clusterawsadm bootstrap iam create-cloudformation-stack --config "+eksConfigPath)
-	cmd.SetEnv(envVars...)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
+	// Run clusterawsadm with the eks.config file previously created (this will create or update the CloudFormation stack in AWS)
+	c = "clusterawsadm bootstrap iam create-cloudformation-stack --config " + eksConfigPath
+	_, err = commons.ExecuteCommand(n, c, envVars)
+	if err != nil {
 		return errors.Wrap(err, "failed to run clusterawsadm")
 	}
 	return nil
 }
 
-func (b *AWSBuilder) getAzs() ([]string, error) {
+func (b *AWSBuilder) getAzs(networks commons.Networks) ([]string, error) {
 	if len(b.capxEnvVars) == 0 {
 		return nil, errors.New("Insufficient credentials.")
 	}
@@ -175,21 +177,70 @@ func (b *AWSBuilder) getAzs() ([]string, error) {
 		return nil, err
 	}
 	svc := ec2.New(sess)
-	result, err := svc.DescribeAvailabilityZones(&ec2.DescribeAvailabilityZonesInput{})
-	if err != nil {
-		return nil, err
-	}
-	if len(result.AvailabilityZones) < 3 {
-		return nil, errors.New("Insufficient Availability Zones in this region. Must have at least 3")
-	}
-	azs := make([]string, 3)
-	for i, az := range result.AvailabilityZones {
-		if i == 3 {
-			break
+	if networks.Subnets != nil {
+		privateAZs := []string{}
+		for _, subnet := range networks.Subnets {
+			privateSubnetID, _ := filterPrivateSubnet(svc, &subnet.SubnetId)
+			if len(privateSubnetID) > 0 {
+				sid := &ec2.DescribeSubnetsInput{
+					SubnetIds: []*string{&subnet.SubnetId},
+				}
+				ds, err := svc.DescribeSubnets(sid)
+				if err != nil {
+					return nil, err
+				}
+				for _, describeSubnet := range ds.Subnets {
+					if !slices.Contains(privateAZs, *describeSubnet.AvailabilityZone) {
+						privateAZs = append(privateAZs, *describeSubnet.AvailabilityZone)
+					}
+				}
+			}
 		}
-		azs[i] = *az.ZoneName
+		return privateAZs, nil
+	} else {
+		result, err := svc.DescribeAvailabilityZones(&ec2.DescribeAvailabilityZonesInput{})
+		if err != nil {
+			return nil, err
+		}
+		azs := make([]string, 3)
+		for i, az := range result.AvailabilityZones {
+			if i == 3 {
+				break
+			}
+			azs[i] = *az.ZoneName
+		}
+		return azs, nil
 	}
-	return azs, nil
+}
+
+func filterPrivateSubnet(svc *ec2.EC2, subnetID *string) (string, error) {
+	keyname := "association.subnet-id"
+	filters := make([]*ec2.Filter, 0)
+	filter := ec2.Filter{
+		Name: &keyname, Values: []*string{subnetID}}
+	filters = append(filters, &filter)
+
+	drti := &ec2.DescribeRouteTablesInput{Filters: filters}
+	drto, err := svc.DescribeRouteTables(drti)
+	if err != nil {
+		return "", err
+	}
+
+	var isPublic bool
+	for _, associatedRouteTable := range drto.RouteTables {
+		for i := range associatedRouteTable.Routes {
+			if *associatedRouteTable.Routes[i].DestinationCidrBlock == "0.0.0.0/0" &&
+				associatedRouteTable.Routes[i].GatewayId != nil &&
+				strings.Contains(*associatedRouteTable.Routes[i].GatewayId, "igw") {
+				isPublic = true
+			}
+		}
+	}
+	if !isPublic {
+		return *subnetID, nil
+	} else {
+		return "", nil
+	}
 }
 
 func getEcrToken(p commons.ProviderParams) (string, error) {

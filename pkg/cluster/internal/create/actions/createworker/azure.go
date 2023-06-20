@@ -95,8 +95,10 @@ func (b *AzureBuilder) setCapx(managed bool) {
 func (b *AzureBuilder) setCapxEnvVars(p commons.ProviderParams) {
 	b.capxEnvVars = []string{
 		"AZURE_CLIENT_SECRET=" + p.Credentials["ClientSecret"],
-		"GITHUB_TOKEN=" + p.GithubToken,
 		"EXP_MACHINE_POOL=true",
+	}
+	if p.GithubToken != "" {
+		b.capxEnvVars = append(b.capxEnvVars, "GITHUB_TOKEN="+p.GithubToken)
 	}
 }
 
@@ -117,9 +119,8 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	var c string
 	var err error
 
-	c = "helm install azuredisk-csi-driver /stratio/helm/azuredisk-csi-driver" +
-		" --kubeconfig " + k
-	err = commons.ExecuteCommand(n, c)
+	c = "helm install azuredisk-csi-driver /stratio/helm/azuredisk-csi-driver --kubeconfig " + k
+	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy Azure Disk CSI driver Helm Chart")
 	}
@@ -131,19 +132,26 @@ func (b *AzureBuilder) setStorageClassParameters(storageClass string, params map
 	return "", nil
 }
 
-func (b *AzureBuilder) getAzs() ([]string, error) {
+func (b *AzureBuilder) getAzs(networks commons.Networks) ([]string, error) {
 	return []string{"1", "2", "3"}, nil
 }
 
-func installCloudProvider(n nodes.Node, k string, clusterName string) error {
+func installCloudProvider(n nodes.Node, descriptorFile commons.DescriptorFile, k string, clusterName string) error {
 	var c string
 	var err error
+	var podsCidrBlock string
+
+	if descriptorFile.Networks.PodsCidrBlock != "" {
+		podsCidrBlock = descriptorFile.Networks.PodsCidrBlock
+	} else {
+		podsCidrBlock = "192.168.0.0/16"
+	}
 
 	c = "helm install cloud-provider-azure /stratio/helm/cloud-provider-azure" +
 		" --kubeconfig " + k +
 		" --set infra.clusterName=" + clusterName +
-		" --set 'cloudControllerManager.clusterCIDR=192.168.0.0/16'"
-	err = commons.ExecuteCommand(n, c)
+		" --set 'cloudControllerManager.clusterCIDR=" + podsCidrBlock + "'"
+	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy cloud-provider-azure Helm Chart")
 	}

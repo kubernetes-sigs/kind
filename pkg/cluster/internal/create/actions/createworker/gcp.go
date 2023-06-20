@@ -17,14 +17,12 @@ limitations under the License.
 package createworker
 
 import (
-	"bytes"
 	"context"
 	_ "embed"
 	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"strconv"
 	"strings"
 
 	"google.golang.org/api/compute/v1"
@@ -34,6 +32,9 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 )
+
+//go:embed files/gcp-compute-persistent-disk-csi-driver.yaml
+var csiManifest string
 
 type GCPBuilder struct {
 	capxProvider     string
@@ -81,8 +82,8 @@ var premiumGCPParameters = commons.SCParameters{
 
 func (b *GCPBuilder) setCapx(managed bool) {
 	b.capxProvider = "gcp"
-	b.capxVersion = "v1.3.0"
-	b.capxImageVersion = "v1.3.0"
+	b.capxVersion = "v1.3.1"
+	b.capxImageVersion = "v1.3.1"
 	b.capxName = "capg"
 	b.stClassName = "csi-gcp-pd"
 	if managed {
@@ -112,7 +113,9 @@ func (b *GCPBuilder) setCapxEnvVars(p commons.ProviderParams) {
 	jsonData, _ := json.Marshal(data)
 	b.capxEnvVars = []string{
 		"GCP_B64ENCODED_CREDENTIALS=" + b64.StdEncoding.EncodeToString([]byte(jsonData)),
-		"GITHUB_TOKEN=" + p.GithubToken,
+	}
+	if p.GithubToken != "" {
+		b.capxEnvVars = append(b.capxEnvVars, "GITHUB_TOKEN="+p.GithubToken)
 	}
 }
 
@@ -131,28 +134,12 @@ func (b *GCPBuilder) getProvider() Provider {
 
 func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
 	var c string
-	var cmd exec.Cmd
 	var err error
-
-	// Get workload k8s version
-	raw := bytes.Buffer{}
-	errRaw := bytes.Buffer{}
-	cmd = n.Command("sh", "-c", "kubectl version --short=true --client=false | grep Server | cut -d ':' -f 2")
-	if err := cmd.SetStdout(&raw).SetStderr(&errRaw).Run(); err != nil || strings.Contains(errRaw.String(), "Error:") || raw.String() == "" {
-		return errors.Wrap(err, "failed to get workload cluster kubeconfig")
-	}
-	res := strings.TrimSpace(strings.ReplaceAll(raw.String(), "v", ""))
-	version, _ := strconv.ParseFloat(res[0:4], 64)
-
-	// Generate CSI manifest
-	csiManifest, err := getManifest("gcp-compute-persistent-disk-csi-driver.tmpl", version)
-	if err != nil {
-		return errors.Wrap(err, "failed to generate CSI manifest")
-	}
+	var cmd exec.Cmd
 
 	// Create CSI namespace
 	c = "kubectl --kubeconfig " + k + " create namespace " + b.csiNamespace
-	err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to create CSI namespace")
 	}
@@ -160,7 +147,7 @@ func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
 	// Create CSI secret in CSI namespace
 	secret, _ := b64.StdEncoding.DecodeString(strings.Split(b.capxEnvVars[0], "GCP_B64ENCODED_CREDENTIALS=")[1])
 	c = "kubectl --kubeconfig " + k + " -n " + b.csiNamespace + " create secret generic cloud-sa --from-literal=cloud-sa.json='" + string(secret) + "'"
-	err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to create CSI secret in CSI namespace")
 	}
@@ -180,7 +167,7 @@ func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
 	return nil
 }
 
-func (b *GCPBuilder) getAzs() ([]string, error) {
+func (b *GCPBuilder) getAzs(networks commons.Networks) ([]string, error) {
 	if len(b.dataCreds) == 0 {
 		return nil, errors.New("Insufficient credentials.")
 	}
@@ -214,7 +201,6 @@ func (b *GCPBuilder) getAzs() ([]string, error) {
 	}
 
 	return nil, errors.New("Error in project id")
-
 }
 
 func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error {

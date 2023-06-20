@@ -30,7 +30,6 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
-	"sigs.k8s.io/kind/pkg/exec"
 
 	vault "github.com/sosedoff/ansible-vault-go"
 )
@@ -84,9 +83,6 @@ func GetSecrets(descriptorFile DescriptorFile, vaultPassword string) (map[string
 		if reflect.DeepEqual(dc, reflect.Zero(reflect.TypeOf(dc)).Interface()) {
 			return c, r, "", dr, errors.New("No " + infraProvider + " credentials found in secrets file and descriptor file")
 		}
-		if descriptorFile.Credentials.GithubToken == "" {
-			return c, r, "", dr, errors.New("No GithubToken credentials found in secrets file and descriptor file")
-		}
 		for _, reg := range descriptorFile.DockerRegistries {
 			for _, regCreds := range descriptorFile.Credentials.DockerRegistries {
 				if reg.URL == regCreds.URL {
@@ -138,11 +134,7 @@ func GetSecrets(descriptorFile DescriptorFile, vaultPassword string) (map[string
 			m := structs.Map(f)
 			resultCreds = convertToMapStringString(m["Credentials"].(map[string]interface{}))
 		}
-		if secretFile.Secrets.GithubToken == "" {
-			if descriptorFile.Credentials.GithubToken == "" {
-				return c, r, "", dr, errors.New("No Github Token found in secrets file and descriptor file")
-			}
-
+		if secretFile.Secrets.GithubToken == "" && descriptorFile.Credentials.GithubToken != "" {
 			resultGHT = descriptorFile.Credentials.GithubToken
 		} else {
 			resultGHT = secretFile.Secrets.GithubToken
@@ -291,18 +283,6 @@ func RewriteDescriptorFile(descriptorPath string) error {
 
 }
 
-func IntegrateClusterAutoscaler(node nodes.Node, kubeconfigPath string, clusterID string, provider string) exec.Cmd {
-	cmd := node.Command("helm", "install", "cluster-autoscaler", "/stratio/helm/cluster-autoscaler",
-		"--kubeconfig", kubeconfigPath,
-		"--namespace", "kube-system",
-		"--set", "autoDiscovery.clusterName="+clusterID,
-		"--set", "autoDiscovery.labels[0].namespace=cluster-"+clusterID,
-		"--set", "cloudProvider="+provider,
-		"--set", "clusterAPIMode=incluster-incluster")
-
-	return cmd
-}
-
 func encryptSecret(secretMap map[string]map[string]interface{}, vaultPassword string) error {
 
 	var b bytes.Buffer
@@ -346,16 +326,19 @@ func removeKey(nodes []*yaml.Node, key string) []*yaml.Node {
 	return newNodes
 }
 
-func ExecuteCommand(node nodes.Node, command string, envVars ...[]string) error {
+func ExecuteCommand(n nodes.Node, command string, envVars ...[]string) (string, error) {
 	raw := bytes.Buffer{}
-	cmd := node.Command("sh", "-c", command)
+	cmd := n.Command("sh", "-c", command)
 	if len(envVars) > 0 {
 		cmd.SetEnv(envVars[0]...)
 	}
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
-		return err
+	if err := cmd.SetStdout(&raw).SetStderr(&raw).Run(); err != nil {
+		return "", err
 	}
-	return nil
+	if strings.Contains(raw.String(), "Error:") {
+		return "", errors.New(raw.String())
+	}
+	return raw.String(), nil
 }
 
 func snakeCase(s string) string {

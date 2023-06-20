@@ -9,120 +9,6 @@ kind: ServiceAccount
 metadata:
   name: csi-gce-pd-node-sa
   namespace: gce-pd-csi-driver
-{{- if lt . 1.25 }}
----
-apiVersion: policy/v1beta1
-kind: PodSecurityPolicy
-metadata:
-  name: csi-gce-pd-controller-psp
-spec:
-  fsGroup:
-    rule: RunAsAny
-  hostNetwork: true
-  runAsUser:
-    rule: RunAsAny
-  seLinux:
-    rule: RunAsAny
-  supplementalGroups:
-    rule: RunAsAny
-  volumes:
-  - emptyDir
-  - secret
----
-apiVersion: policy/v1beta1
-kind: PodSecurityPolicy
-metadata:
-  name: csi-gce-pd-node-psp
-spec:
-  allowedHostPaths:
-  - pathPrefix: /var/lib/kubelet/plugins_registry/
-  - pathPrefix: /var/lib/kubelet
-  - pathPrefix: /var/lib/kubelet/plugins/pd.csi.storage.gke.io/
-  - pathPrefix: /dev
-  - pathPrefix: /etc/udev
-  - pathPrefix: /lib/udev
-  - pathPrefix: /run/udev
-  - pathPrefix: /sys
-  fsGroup:
-    rule: RunAsAny
-  hostNetwork: true
-  privileged: true
-  runAsUser:
-    rule: RunAsAny
-  seLinux:
-    rule: RunAsAny
-  supplementalGroups:
-    rule: RunAsAny
-  volumes:
-  - '*'
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: csi-gce-pd-controller-deploy
-rules:
-- apiGroups:
-  - policy
-  resourceNames:
-  - csi-gce-pd-controller-psp
-  resources:
-  - podsecuritypolicies
-  verbs:
-  - use
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: csi-gce-pd-controller-deploy
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: csi-gce-pd-controller-deploy
-subjects:
-- kind: ServiceAccount
-  name: csi-gce-pd-controller-sa
-  namespace: gce-pd-csi-driver
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: csi-gce-pd-node-deploy
-rules:
-- apiGroups:
-  - policy
-  resourceNames:
-  - csi-gce-pd-node-psp
-  resources:
-  - podsecuritypolicies
-  verbs:
-  - use
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: csi-gce-pd-controller
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: csi-gce-pd-node-deploy
-subjects:
-- kind: ServiceAccount
-  name: csi-gce-pd-controller-sa
-  namespace: gce-pd-csi-driver
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: csi-gce-pd-node
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: csi-gce-pd-node-deploy
-subjects:
-- kind: ServiceAccount
-  name: csi-gce-pd-node-sa
-  namespace: gce-pd-csi-driver
-{{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -191,6 +77,34 @@ rules:
   - volumeattachments/status
   verbs:
   - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: csi-gce-pd-controller-deploy
+rules:
+- apiGroups:
+  - policy
+  resourceNames:
+  - csi-gce-pd-controller-psp
+  resources:
+  - podsecuritypolicies
+  verbs:
+  - use
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: csi-gce-pd-node-deploy
+rules:
+- apiGroups:
+  - policy
+  resourceNames:
+  - csi-gce-pd-node-psp
+  resources:
+  - podsecuritypolicies
+  verbs:
+  - use
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -384,11 +298,37 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
+  name: csi-gce-pd-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: csi-gce-pd-node-deploy
+subjects:
+- kind: ServiceAccount
+  name: csi-gce-pd-controller-sa
+  namespace: gce-pd-csi-driver
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
   name: csi-gce-pd-controller-attacher-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: csi-gce-pd-attacher-role
+subjects:
+- kind: ServiceAccount
+  name: csi-gce-pd-controller-sa
+  namespace: gce-pd-csi-driver
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: csi-gce-pd-controller-deploy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: csi-gce-pd-controller-deploy
 subjects:
 - kind: ServiceAccount
   name: csi-gce-pd-controller-sa
@@ -418,6 +358,19 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: csi-gce-pd-controller-sa
+  namespace: gce-pd-csi-driver
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: csi-gce-pd-node
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: csi-gce-pd-node-deploy
+subjects:
+- kind: ServiceAccount
+  name: csi-gce-pd-node-sa
   namespace: gce-pd-csi-driver
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -483,7 +436,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: registry.k8s.io/sig-storage/csi-provisioner:v3.4.1
+        image: registry.k8s.io/sig-storage/csi-provisioner:v3.4.0
         livenessProbe:
           failureThreshold: 1
           httpGet:
@@ -507,6 +460,8 @@ spec:
         - --leader-election
         - --leader-election-namespace=$(PDCSI_NAMESPACE)
         - --timeout=250s
+        - --max-grpc-log-length=10000
+        - --default-fstype=ext4
         env:
         - name: PDCSI_NAMESPACE
           valueFrom:
@@ -570,7 +525,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: registry.k8s.io/sig-storage/csi-snapshotter:v6.2.1
+        image: registry.k8s.io/sig-storage/csi-snapshotter:v6.1.0
         name: csi-snapshotter
         volumeMounts:
         - mountPath: /csi
@@ -581,7 +536,7 @@ spec:
         env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /etc/cloud-sa/cloud-sa.json
-        image: registry.k8s.io/cloud-provider-gcp/gcp-compute-persistent-disk-csi-driver:v1.9.2
+        image: registry.k8s.io/cloud-provider-gcp/gcp-compute-persistent-disk-csi-driver:v1.10.1
         name: gce-pd-driver
         volumeMounts:
         - mountPath: /csi
@@ -625,7 +580,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
-        image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.6.3
+        image: registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.7.0
         name: csi-driver-registrar
         volumeMounts:
         - mountPath: /csi
@@ -636,7 +591,7 @@ spec:
         - --v=5
         - --endpoint=unix:/csi/csi.sock
         - --run-controller-service=false
-        image: registry.k8s.io/cloud-provider-gcp/gcp-compute-persistent-disk-csi-driver:v1.9.2
+        image: registry.k8s.io/cloud-provider-gcp/gcp-compute-persistent-disk-csi-driver:v1.10.1
         name: gce-pd-driver
         securityContext:
           privileged: true

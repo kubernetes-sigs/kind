@@ -115,7 +115,11 @@ func createKEOSDescriptor(descriptorFile commons.DescriptorFile, storageClass st
 		} else {
 			keosDescriptor.Keos.Calico.Ipip = true
 		}
-		keosDescriptor.Keos.Calico.Pool = "192.168.0.0/16"
+		if descriptorFile.Networks.PodsCidrBlock != "" {
+			keosDescriptor.Keos.Calico.Pool = descriptorFile.Networks.PodsCidrBlock
+		} else {
+			keosDescriptor.Keos.Calico.Pool = "192.168.0.0/16"
+		}
 	}
 	keosDescriptor.Keos.Calico.DeployTigeraOperator = false
 

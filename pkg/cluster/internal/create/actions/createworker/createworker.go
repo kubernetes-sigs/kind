@@ -19,6 +19,7 @@ package createworker
 
 import (
 	"bytes"
+	"context"
 	_ "embed"
 	"os"
 	"strings"
@@ -26,6 +27,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/exec"
 )
 
 type action struct {
@@ -33,6 +35,19 @@ type action struct {
 	descriptorPath string
 	moveManagement bool
 	avoidCreation  bool
+}
+
+const (
+	kubeconfigPath          = "/kind/worker-cluster.kubeconfig"
+	workKubeconfigPath      = ".kube/config"
+	CAPILocalRepository     = "/root/.cluster-api/local-repository"
+	cloudProviderBackupPath = "/kind/backup/objects"
+	localBackupPath         = "backup"
+)
+
+var PathsToBackupLocally = []string{
+	cloudProviderBackupPath,
+	"/kind/manifests",
 }
 
 //go:embed files/allow-all-egress_netpol.yaml
@@ -46,10 +61,6 @@ var denyallEgressIMDSGNetPol string
 //go:embed files/allow-capa-egress-imds_gnetpol.yaml
 var allowCAPAEgressIMDSGNetPol string
 
-const kubeconfigPath = "/kind/worker-cluster.kubeconfig"
-const workKubeconfigPath = ".kube/config"
-const CAPILocalRepository = "/root/.cluster-api/local-repository"
-
 // NewAction returns a new action for installing default CAPI
 func NewAction(vaultPassword string, descriptorPath string, moveManagement bool, avoidCreation bool) actions.Action {
 	return &action{
@@ -62,12 +73,11 @@ func NewAction(vaultPassword string, descriptorPath string, moveManagement bool,
 
 // Execute runs the action
 func (a *action) Execute(ctx *actions.ActionContext) error {
-
-	var command string
+	var c string
 	var err error
 
 	// Get the target node
-	node, err := ctx.GetNode()
+	n, err := ctx.GetNode()
 	if err != nil {
 		return err
 	}
@@ -136,39 +146,40 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		// Change image in infrastructure-components.yaml
 		infraComponents := CAPILocalRepository + "/infrastructure-" + provider.capxProvider + "/" + provider.capxVersion + "/infrastructure-components.yaml"
 		infraImage := registryUrl + "/stratio/cluster-api-provider-" + provider.capxProvider + ":" + provider.capxImageVersion
-		command = "sed -i 's%image:.*%image: " + infraImage + "%' " + infraComponents
-		err = commons.ExecuteCommand(node, command)
+		c = "sed -i 's%image:.*%image: " + infraImage + "%' " + infraComponents
+		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to change image in infrastructure-components.yaml")
 		}
 
 		// Create provider-system namespace
-		command = "kubectl create namespace " + provider.capxName + "-system"
-		err = commons.ExecuteCommand(node, command)
+		c = "kubectl create namespace " + provider.capxName + "-system"
+		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to create "+provider.capxName+"-system namespace")
 		}
 
 		// Create docker-registry secret
-		command = "kubectl create secret docker-registry regcred" +
+		c = "kubectl create secret docker-registry regcred" +
 			" --docker-server=" + registryUrl +
 			" --docker-username=" + registryUser +
 			" --docker-password=" + registryPass +
 			" --namespace=" + provider.capxName + "-system"
-		err = commons.ExecuteCommand(node, command)
+		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to create docker-registry secret")
 		}
 
 		// Add imagePullSecrets to infrastructure-components.yaml
-		command = "sed -i '/securityContext:/i\\      imagePullSecrets:\\n      - name: regcred' " + infraComponents
-		err = commons.ExecuteCommand(node, command)
+		c = "sed -i '/containers:/i\\      imagePullSecrets:\\n      - name: regcred' " + infraComponents
+		_, err = commons.ExecuteCommand(n, c)
+
 		if err != nil {
 			return errors.Wrap(err, "failed to add imagePullSecrets to infrastructure-components.yaml")
 		}
 	}
 
-	err = provider.installCAPXLocal(node)
+	err = provider.installCAPXLocal(n)
 	if err != nil {
 		return err
 	}
@@ -186,7 +197,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		DockerRegistries: dockerRegistries,
 	}
 
-	azs, err := infra.getAzs()
+	azs, err := infra.getAzs(descriptorFile.Networks)
 	if err != nil {
 		return errors.Wrap(err, "failed to get AZs")
 	}
@@ -199,9 +210,9 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	// Create the cluster manifests file in the container
 	descriptorPath := "/kind/manifests/cluster_" + descriptorFile.ClusterID + ".yaml"
-	raw := bytes.Buffer{}
-	cmd := node.Command("sh", "-c", "echo \""+descriptorData+"\" > "+descriptorPath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
+	c = "echo \"" + descriptorData + "\" > " + descriptorPath
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
 		return errors.Wrap(err, "failed to write the cluster manifests")
 	}
 
@@ -217,44 +228,46 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	defer ctx.Status.End(true) // End Generating secrets file
 
 	// Create namespace for CAPI clusters (it must exists)
-	raw = bytes.Buffer{}
-	cmd = node.Command("kubectl", "create", "ns", capiClustersNamespace)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
+	c = "kubectl create ns " + capiClustersNamespace
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
 		return errors.Wrap(err, "failed to create cluster's Namespace")
 	}
 
 	// Create the allow-all-egress network policy file in the container
 	allowCommonEgressNetPolPath := "/kind/allow-all-egress_netpol.yaml"
-	raw = bytes.Buffer{}
-	cmd = node.Command("sh", "-c", "echo \""+allowCommonEgressNetPol+"\" > "+allowCommonEgressNetPolPath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
+	c = "echo \"" + allowCommonEgressNetPol + "\" > " + allowCommonEgressNetPolPath
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
 		return errors.Wrap(err, "failed to write the allow-all-egress network policy")
 	}
 
 	if !a.avoidCreation {
-
-		if descriptorFile.InfraProvider == "aws" {
+		if descriptorFile.InfraProvider == "aws" && descriptorFile.Security.AWS.CreateIAM {
 			ctx.Status.Start("[CAPA] Ensuring IAM security 👮")
 			defer ctx.Status.End(false)
 
-			createCloudFormationStack(node, provider.capxEnvVars)
-			ctx.Status.End(true) // End Ensuring CAPx requirements
+			err = createCloudFormationStack(n, provider.capxEnvVars)
+			if err != nil {
+				return errors.Wrap(err, "failed to create the IAM security")
+			}
+			ctx.Status.End(true)
 		}
 
 		ctx.Status.Start("Creating the workload cluster 💥")
 		defer ctx.Status.End(false)
 
 		// Apply cluster manifests
-		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "create", "-n", capiClustersNamespace, "-f", descriptorPath)
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
+		c = "kubectl apply -n " + capiClustersNamespace + " -f " + descriptorPath
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
 			return errors.Wrap(err, "failed to apply manifests")
 		}
 
 		// Wait for the control plane initialization
-		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ControlPlaneInitialized", "--timeout", "25m", "cluster", descriptorFile.ClusterID)
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
+		c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=ControlPlaneInitialized --timeout=25m cluster " + descriptorFile.ClusterID
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
 			return errors.Wrap(err, "failed to create the worker Cluster")
 		}
 
@@ -264,12 +277,11 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		defer ctx.Status.End(false)
 
 		// Get the workload cluster kubeconfig
-		raw = bytes.Buffer{}
-		cmd = node.Command("sh", "-c", "clusterctl -n "+capiClustersNamespace+" get kubeconfig "+descriptorFile.ClusterID+" | tee "+kubeconfigPath)
-		if err := cmd.SetStdout(&raw).SetStderr(&raw).Run(); err != nil || strings.Contains(raw.String(), "Error:") || raw.String() == "" {
+		c = "clusterctl -n " + capiClustersNamespace + " get kubeconfig " + descriptorFile.ClusterID + " | tee " + kubeconfigPath
+		kubeconfig, err := commons.ExecuteCommand(n, c)
+		if err != nil || kubeconfig == "" {
 			return errors.Wrap(err, "failed to get workload cluster kubeconfig")
 		}
-		kubeconfig := raw.String()
 
 		workKubeconfigBasePath := strings.Split(workKubeconfigPath, "/")[0]
 		_, err = os.Stat(workKubeconfigBasePath)
@@ -293,7 +305,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				ctx.Status.Start("Installing cloud-provider in workload cluster ☁️")
 				defer ctx.Status.End(false)
 
-				err = installCloudProvider(node, kubeconfigPath, descriptorFile.ClusterID)
+				err = installCloudProvider(n, *descriptorFile, kubeconfigPath, descriptorFile.ClusterID)
 				if err != nil {
 					return errors.Wrap(err, "failed to install external cloud-provider in workload cluster")
 				}
@@ -303,7 +315,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.Start("Installing Calico in workload cluster 🔌")
 			defer ctx.Status.End(false)
 
-			err = installCalico(node, kubeconfigPath, *descriptorFile, allowCommonEgressNetPolPath)
+			err = installCalico(n, kubeconfigPath, *descriptorFile, allowCommonEgressNetPolPath)
 			if err != nil {
 				return errors.Wrap(err, "failed to install Calico in workload cluster")
 			}
@@ -312,7 +324,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.Start("Installing StorageClass in workload cluster 💾")
 			defer ctx.Status.End(false)
 
-			err = infra.installCSI(node, kubeconfigPath)
+			err = infra.installCSI(n, kubeconfigPath)
 			if err != nil {
 				return errors.Wrap(err, "failed to install CSI in workload cluster")
 			}
@@ -332,27 +344,41 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Preparing nodes in workload cluster 📦")
 		defer ctx.Status.End(false)
 
+		if provider.capxProvider == "aws" && descriptorFile.ControlPlane.Managed {
+			c = "kubectl -n capa-system rollout restart deployment capa-controller-manager"
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
+				return errors.Wrap(err, "failed to reload capa-controller-manager")
+			}
+		}
+
 		if provider.capxProvider != "azure" || !descriptorFile.ControlPlane.Managed {
 			// Wait for the worker cluster creation
-			raw = bytes.Buffer{}
-			cmd = node.Command("kubectl", "-n", capiClustersNamespace, "wait", "--for=condition=ready", "--timeout", "15m", "--all", "md")
-			if err := cmd.SetStdout(&raw).Run(); err != nil {
+			c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=ready --timeout=15m --all md"
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
 				return errors.Wrap(err, "failed to create the worker Cluster")
 			}
 		}
 
-		if !descriptorFile.ControlPlane.Managed {
-			// Wait for the control plane creation
-			raw = bytes.Buffer{}
-			cmd = node.Command("sh", "-c", "kubectl -n "+capiClustersNamespace+" wait --for=jsonpath=\"{.status.unavailableReplicas}\"=0 --timeout 10m --all kubeadmcontrolplanes")
-			if err := cmd.SetStdout(&raw).Run(); err != nil {
+		if !descriptorFile.ControlPlane.Managed && descriptorFile.ControlPlane.HighlyAvailable {
+			// Wait for all control planes creation
+			c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=ControlPlaneReady --timeout 10m cluster " + descriptorFile.ClusterID
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
+				return errors.Wrap(err, "failed to create the worker Cluster")
+			}
+			// Wait for all control planes to be ready
+			c = "kubectl -n " + capiClustersNamespace + " wait --for=jsonpath=\"{.status.unavailableReplicas}\"=0 --timeout 10m --all kubeadmcontrolplanes"
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
 				return errors.Wrap(err, "failed to create the worker Cluster")
 			}
 		}
 
-		if provider.capxProvider == "azure" && descriptorFile.ControlPlane.Managed && descriptorFile.ControlPlane.Azure.IdentityID != "" {
+		if provider.capxProvider == "azure" && descriptorFile.ControlPlane.Managed && descriptorFile.Security.NodesIdentity != "" {
 			// Update AKS cluster with the user kubelet identity until the provider supports it
-			err := assignUserIdentity(descriptorFile.ControlPlane.Azure.IdentityID, descriptorFile.ClusterID, descriptorFile.Region, credentialsMap)
+			err := assignUserIdentity(descriptorFile.Security.NodesIdentity, descriptorFile.ClusterID, descriptorFile.Region, credentialsMap)
 			if err != nil {
 				return errors.Wrap(err, "failed to assign user identity to the workload Cluster")
 			}
@@ -363,7 +389,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Enabling workload cluster's self-healing 🏥")
 		defer ctx.Status.End(false)
 
-		err = enableSelfHealing(node, *descriptorFile, capiClustersNamespace)
+		err = enableSelfHealing(n, *descriptorFile, capiClustersNamespace)
 		if err != nil {
 			return errors.Wrap(err, "failed to enable workload cluster's self-healing")
 		}
@@ -373,39 +399,39 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Installing CAPx in workload cluster 🎖️")
 		defer ctx.Status.End(false)
 
-		err = provider.installCAPXWorker(node, kubeconfigPath, allowCommonEgressNetPolPath)
+		err = provider.installCAPXWorker(n, kubeconfigPath, allowCommonEgressNetPolPath)
 		if err != nil {
 			return err
 		}
 
 		// Scale CAPI to 2 replicas
-		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capi-system", "scale", "--replicas", "2", "deploy", "capi-controller-manager")
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
+		c = "kubectl --kubeconfig " + kubeconfigPath + " -n capi-system scale --replicas 2 deploy capi-controller-manager"
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
 			return errors.Wrap(err, "failed to scale the CAPI Deployment")
 		}
 
 		// Allow egress in CAPI's Namespaces
-		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capi-system", "apply", "-f", allowCommonEgressNetPolPath)
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
+		c = "kubectl --kubeconfig " + kubeconfigPath + " -n capi-system apply -f " + allowCommonEgressNetPolPath
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
 			return errors.Wrap(err, "failed to apply CAPI's egress NetworkPolicy")
 		}
-		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capi-kubeadm-bootstrap-system", "apply", "-f", allowCommonEgressNetPolPath)
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
+		c = "kubectl --kubeconfig " + kubeconfigPath + " -n capi-kubeadm-bootstrap-system apply -f " + allowCommonEgressNetPolPath
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
 			return errors.Wrap(err, "failed to apply CAPI's egress NetworkPolicy")
 		}
-		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "capi-kubeadm-control-plane-system", "apply", "-f", allowCommonEgressNetPolPath)
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
+		c = "kubectl --kubeconfig " + kubeconfigPath + " -n capi-kubeadm-control-plane-system apply -f " + allowCommonEgressNetPolPath
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
 			return errors.Wrap(err, "failed to apply CAPI's egress NetworkPolicy")
 		}
 
 		// Allow egress in cert-manager Namespace
-		raw = bytes.Buffer{}
-		cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "cert-manager", "apply", "-f", allowCommonEgressNetPolPath)
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
+		c = "kubectl --kubeconfig " + kubeconfigPath + " -n cert-manager apply -f " + allowCommonEgressNetPolPath
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
 			return errors.Wrap(err, "failed to apply cert-manager's NetworkPolicy")
 		}
 
@@ -416,7 +442,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.Start("Installing Network Policy Engine in workload cluster 🚧")
 			defer ctx.Status.End(false)
 
-			err = installCalico(node, kubeconfigPath, *descriptorFile, allowCommonEgressNetPolPath)
+			err = installCalico(n, kubeconfigPath, *descriptorFile, allowCommonEgressNetPolPath)
 			if err != nil {
 				return errors.Wrap(err, "failed to install Network Policy Engine in workload cluster")
 			}
@@ -427,34 +453,34 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				allowCAPAEgressIMDSGNetPolPath := "/kind/allow-capa-egress-imds_gnetpol.yaml"
 
 				// Allow egress in kube-system Namespace
-				raw = bytes.Buffer{}
-				cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "-n", "kube-system", "apply", "-f", allowCommonEgressNetPolPath)
-				if err := cmd.SetStdout(&raw).Run(); err != nil {
+				c = "kubectl --kubeconfig " + kubeconfigPath + " -n kube-system apply -f " + allowCommonEgressNetPolPath
+				_, err = commons.ExecuteCommand(n, c)
+				if err != nil {
 					return errors.Wrap(err, "failed to apply kube-system egress NetworkPolicy")
 				}
 
-				raw = bytes.Buffer{}
-				cmd = node.Command("sh", "-c", "echo \""+denyallEgressIMDSGNetPol+"\" > "+denyallEgressIMDSGNetPolPath)
-				if err := cmd.SetStdout(&raw).Run(); err != nil {
+				c = "echo \"" + denyallEgressIMDSGNetPol + "\" > " + denyallEgressIMDSGNetPolPath
+				_, err = commons.ExecuteCommand(n, c)
+				if err != nil {
 					return errors.Wrap(err, "failed to write the deny-all-traffic-to-aws-imds global network policy")
 				}
-				raw = bytes.Buffer{}
-				cmd = node.Command("sh", "-c", "echo \""+allowCAPAEgressIMDSGNetPol+"\" > "+allowCAPAEgressIMDSGNetPolPath)
-				if err := cmd.SetStdout(&raw).Run(); err != nil {
+				c = "echo \"" + allowCAPAEgressIMDSGNetPol + "\" > " + allowCAPAEgressIMDSGNetPolPath
+				_, err = commons.ExecuteCommand(n, c)
+				if err != nil {
 					return errors.Wrap(err, "failed to write the allow-traffic-to-aws-imds-capa global network policy")
 				}
 
 				// Deny CAPA egress to AWS IMDS
-				raw = bytes.Buffer{}
-				cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "apply", "-f", denyallEgressIMDSGNetPolPath)
-				if err := cmd.SetStdout(&raw).Run(); err != nil {
+				c = "kubectl --kubeconfig " + kubeconfigPath + " apply -f " + denyallEgressIMDSGNetPolPath
+				_, err = commons.ExecuteCommand(n, c)
+				if err != nil {
 					return errors.Wrap(err, "failed to apply deny IMDS traffic GlobalNetworkPolicy")
 				}
 
 				// Allow CAPA egress to AWS IMDS
-				raw = bytes.Buffer{}
-				cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "apply", "-f", allowCAPAEgressIMDSGNetPolPath)
-				if err := cmd.SetStdout(&raw).Run(); err != nil {
+				c = "kubectl --kubeconfig " + kubeconfigPath + " apply -f " + allowCAPAEgressIMDSGNetPolPath
+				_, err = commons.ExecuteCommand(n, c)
+				if err != nil {
 					return errors.Wrap(err, "failed to apply allow CAPA as egress GlobalNetworkPolicy")
 				}
 			}
@@ -466,31 +492,69 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.Start("Adding Cluster-Autoescaler 🗚")
 			defer ctx.Status.End(false)
 
-			raw = bytes.Buffer{}
-			cmd = commons.IntegrateClusterAutoscaler(node, kubeconfigPath, descriptorFile.ClusterID, "clusterapi")
-			if err := cmd.SetStdout(&raw).Run(); err != nil {
+			c = "helm install cluster-autoscaler /stratio/helm/cluster-autoscaler" +
+				" --kubeconfig " + kubeconfigPath +
+				" --namespace kube-system" +
+				" --set autoDiscovery.clusterName=" + descriptorFile.ClusterID +
+				" --set autoDiscovery.labels[0].namespace=cluster-" + descriptorFile.ClusterID +
+				" --set cloudProvider=clusterapi" +
+				" --set clusterAPIMode=incluster-incluster"
+
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
 				return errors.Wrap(err, "failed to install chart cluster-autoscaler")
 			}
 
 			ctx.Status.End(true)
 		}
 
+		// Create cloud-provisioner Objects backup
+		ctx.Status.Start("Creating cloud-provisioner Objects backup 🗄️")
+		defer ctx.Status.End(false)
+
+		if _, err := os.Stat(localBackupPath); os.IsNotExist(err) {
+			if err := os.MkdirAll(localBackupPath, 0755); err != nil {
+				return errors.Wrap(err, "failed to create local backup directory")
+			}
+		}
+
+		c = "mkdir -p " + cloudProviderBackupPath + " && chmod -R 0755 " + cloudProviderBackupPath
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
+			return errors.Wrap(err, "failed to create cloud-provisioner backup directory")
+		}
+
+		c = "clusterctl move -n " + capiClustersNamespace + " --to-directory " + cloudProviderBackupPath
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
+			return errors.Wrap(err, "failed to backup cloud-provisioner Objects")
+		}
+
+		for _, path := range PathsToBackupLocally {
+			raw := bytes.Buffer{}
+			cmd := exec.CommandContext(context.Background(), "sh", "-c", "docker cp "+n.String()+":"+path+" "+localBackupPath)
+			if err := cmd.SetStdout(&raw).Run(); err != nil {
+				return errors.Wrap(err, "failed to copy "+path+" to local host")
+			}
+		}
+
+		ctx.Status.End(true)
+
 		if !a.moveManagement {
 			ctx.Status.Start("Moving the management role 🗝️")
 			defer ctx.Status.End(false)
 
 			// Create namespace for CAPI clusters (it must exists) in worker cluster
-			raw = bytes.Buffer{}
-			cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "create", "ns", capiClustersNamespace)
-			if err := cmd.SetStdout(&raw).Run(); err != nil {
+			c = "kubectl --kubeconfig " + kubeconfigPath + " create ns " + capiClustersNamespace
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
 				return errors.Wrap(err, "failed to create manifests Namespace")
 			}
 
 			// Pivot management role to worker cluster
-			raw = bytes.Buffer{}
-			cmd = node.Command("sh", "-c", "clusterctl move -n "+capiClustersNamespace+" --to-kubeconfig "+kubeconfigPath)
-
-			if err := cmd.SetStdout(&raw).Run(); err != nil {
+			c = "clusterctl move -n " + capiClustersNamespace + " --to-kubeconfig " + kubeconfigPath
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
 				return errors.Wrap(err, "failed to pivot management role to worker cluster")
 			}
 
