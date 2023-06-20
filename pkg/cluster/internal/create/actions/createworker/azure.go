@@ -92,12 +92,11 @@ func (b *AzureBuilder) getProvider() Provider {
 
 func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	var c string
-	var cmd exec.Cmd
 	var err error
+	var cmd exec.Cmd
 
-	c = "helm install azuredisk-csi-driver /stratio/helm/azuredisk-csi-driver" +
-		" --kubeconfig " + k
-	err = commons.ExecuteCommand(n, c)
+	c = "helm install azuredisk-csi-driver /stratio/helm/azuredisk-csi-driver --kubeconfig " + k
+	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy Azure Disk CSI driver Helm Chart")
 	}
@@ -129,7 +128,7 @@ func installCloudProvider(n nodes.Node, descriptorFile commons.DescriptorFile, k
 		" --kubeconfig " + k +
 		" --set infra.clusterName=" + clusterName +
 		" --set 'cloudControllerManager.clusterCIDR=" + podsCidrBlock + "'"
-	err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy cloud-provider-azure Helm Chart")
 	}
