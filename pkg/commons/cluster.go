@@ -59,6 +59,13 @@ type DescriptorFile struct {
 
 	ExternalDomain string `yaml:"external_domain" validate:"omitempty,hostname"`
 
+	Security struct {
+		NodesIdentity string `yaml:"nodes_identity"`
+		AWS           struct {
+			CreateIAM bool `yaml:"create_iam" validate:"boolean"`
+		} `yaml:"aws" validate:"dive"`
+	} `yaml:"security" validate:"dive"`
+
 	Keos struct {
 		Flavour string `yaml:"flavour"`
 		Version string `yaml:"version"`
@@ -106,8 +113,7 @@ type AWSCP struct {
 }
 
 type AzureCP struct {
-	IdentityID string `yaml:"identity_id"`
-	Tier       string `yaml:"tier" validate:"oneof='Free' 'Paid'"`
+	Tier string `yaml:"tier" validate:"oneof='Free' 'Paid'"`
 }
 
 type WorkerNodes []struct {
@@ -241,6 +247,7 @@ func (d DescriptorFile) Init() DescriptorFile {
 	d.DeployAutoscaler = true
 
 	// EKS
+	d.Security.AWS.CreateIAM = true
 	d.ControlPlane.AWS.AssociateOIDCProvider = true
 	d.ControlPlane.AWS.Logging.ApiServer = false
 	d.ControlPlane.AWS.Logging.Audit = false
