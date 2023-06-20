@@ -184,10 +184,10 @@ spec:
           gallery: {{ index $nodeImage 8 }}
           version: {{ index $nodeImage 12 }}
       {{- end }}
-      {{- if .Descriptor.ControlPlane.Azure.IdentityID }}
+      {{- if .Descriptor.Security.NodesIdentity }}
       identity: UserAssigned
       userAssignedIdentities:
-        - providerID: {{ .Descriptor.ControlPlane.Azure.IdentityID }}
+        - providerID: {{ .Descriptor.Security.NodesIdentity }}
       {{- end }}
       osDisk:
         {{- if .Descriptor.ControlPlane.RootVolume.Size }}
@@ -265,10 +265,10 @@ spec:
           gallery: {{ index $nodeImage 8 }}
           version: {{ index $nodeImage 12 }}
       {{- end }}
-      {{- if $.Descriptor.ControlPlane.Azure.IdentityID }}
+      {{- if $.Descriptor.Security.NodesIdentity }}
       identity: UserAssigned
       userAssignedIdentities:
-        - providerID: {{ $.Descriptor.ControlPlane.Azure.IdentityID }}
+        - providerID: {{ $.Descriptor.Security.NodesIdentity }}
       {{- end }}
       osDisk:
         {{- if $node.RootVolume.Size }}
