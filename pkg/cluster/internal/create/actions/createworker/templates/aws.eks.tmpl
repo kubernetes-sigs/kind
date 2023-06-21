@@ -30,6 +30,13 @@ metadata:
   name: "{{ .Descriptor.ClusterID }}-control-plane"
   namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec:
+  additionalTags:
+      "keos.stratio.com/owner": \"{{ .Descriptor.ClusterID }}\"
+    {{- range .Descriptor.ControlPlane.Tags }}
+      {{- range $key,$value := . }}
+      {{ $key }}: {{ $value }}
+      {{- end }}
+    {{- end }}
   addons:
     - name: "vpc-cni"
       version: "v1.13.0-eksbuild.1"
@@ -199,6 +206,7 @@ spec:
           - {{ $vol.MountPath }}
         {{- end }}
       {{- end }}
+      {{- if or (gt (len $node.Labels) 0) (gt (len $node.Taints) 0) }}
       kubeletExtraArgs:
         {{- if gt (len $node.Labels) 0 }}
         node-labels: \"{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}\"
@@ -206,5 +214,6 @@ spec:
         {{- if gt (len $node.Taints) 0 }}
         register-with-taints: \"{{ range $i, $taint := $node.Taints }}{{$taint}}{{- if ne $i (sub (len $node.Taints) 1) }},{{- end }}{{ end }}\"
         {{- end }}
+      {{- end }}
 {{- end }}
 {{- end }}
