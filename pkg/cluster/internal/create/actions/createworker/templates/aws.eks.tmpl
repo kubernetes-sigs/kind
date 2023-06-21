@@ -32,10 +32,10 @@ metadata:
 spec:
   addons:
     - name: "vpc-cni"
-      version: "v1.12.6-eksbuild.1"
+      version: "v1.13.0-eksbuild.1"
       conflictResolution: "overwrite"
     - name: "aws-ebs-csi-driver"
-      version: "v1.17.0-eksbuild.1"
+      version: "v1.19.0-eksbuild.2"
       conflictResolution: "overwrite"
     - name: "coredns"
       version: "v1.9.3-eksbuild.3"
@@ -71,16 +71,16 @@ spec:
     {{- range .Descriptor.Networks.Subnets }}
       - id: {{ .SubnetId }}
       {{- if ne .AvailabilityZone "" }}
-        availabilityZone:  {{ .AvailabilityZone }} 
+        availabilityZone:  {{ .AvailabilityZone }}
       {{- end }}
       {{- if ne .CidrBlock "" }}
-        cidrBlock:  {{ .CidrBlock }} 
+        cidrBlock:  {{ .CidrBlock }}
       {{- end }}
       {{- if ne .RouteTableId "" }}
-        routeTableId:  {{ .RouteTableId }} 
+        routeTableId:  {{ .RouteTableId }}
       {{- end }}
       {{- if ne .NatGatewayId "" }}
-        natGatewayId:  {{ .NatGatewayId }} 
+        natGatewayId:  {{ .NatGatewayId }}
       {{- end }}
       {{- if checkReference .IsPublic }}
         isPublic: {{ .IsPublic }}
@@ -135,7 +135,7 @@ spec:
     matchLabels:
   template:
     metadata:
-      labels: 
+      labels:
         keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
     spec:
       clusterName: "{{ $.Descriptor.ClusterID }}"
