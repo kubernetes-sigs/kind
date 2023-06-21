@@ -28,15 +28,12 @@ spec:
   {{- if ne .Descriptor.Networks.VPCID "" }}
   network:
     name: {{ .Descriptor.Networks.VPCID }}
-    {{- if ne .Descriptor.Networks.Subnets nil }}
+    {{- if gt (len .Descriptor.Networks.Subnets) 0 }}
     autoCreateSubnetworks: false
     subnets:
     {{- with (index .Descriptor.Networks.Subnets 0) }}
     - name: {{ .SubnetId }}
       region: "{{ $.Descriptor.Region }}"
-      {{- if ne .CidrBlock "" }}
-      cidrBlock: {{ .CidrBlock }}
-      {{- end }}
     {{- end }}
   {{- end }}
   {{- else }}
