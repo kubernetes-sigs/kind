@@ -30,6 +30,13 @@ metadata:
   name: "{{ .Descriptor.ClusterID }}-control-plane"
   namespace: "cluster-{{ .Descriptor.ClusterID }}"
 spec:
+  additionalTags:
+      "keos.stratio.com/owner": \"{{ .Descriptor.ClusterID }}\"
+    {{- range .Descriptor.ControlPlane.Tags }}
+      {{- range $key,$value := . }}
+      {{ $key }}: {{ $value }}
+      {{- end }}
+    {{- end }}
   addons:
     - name: "vpc-cni"
       version: "v1.13.0-eksbuild.1"
