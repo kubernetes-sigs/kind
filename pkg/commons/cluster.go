@@ -82,9 +82,10 @@ type DescriptorFile struct {
 			Type      string `yaml:"type"`
 			Encrypted bool   `yaml:"encrypted" validate:"boolean"`
 		} `yaml:"root_volume"`
-		AWS          AWSCP         `yaml:"aws"`
-		Azure        AzureCP       `yaml:"azure"`
-		ExtraVolumes []ExtraVolume `yaml:"extra_volumes"`
+		Tags         []map[string]string `yaml:"tags"`
+		AWS          AWSCP               `yaml:"aws"`
+		Azure        AzureCP             `yaml:"azure"`
+		ExtraVolumes []ExtraVolume       `yaml:"extra_volumes"`
 	} `yaml:"control_plane"`
 
 	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
