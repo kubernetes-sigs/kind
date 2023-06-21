@@ -174,6 +174,10 @@ spec:
            lun: {{ $index }}
         {{- end }}
       {{- end }}
+      {{- if ne .Descriptor.ControlPlane.NodeImage "" }}
+      image:
+        id: {{ .Descriptor.ControlPlane.NodeImage }}
+      {{- end }}
       {{- if .Descriptor.Security.NodesIdentity }}
       identity: UserAssigned
       userAssignedIdentities:
@@ -244,6 +248,10 @@ spec:
            diskSizeGB: {{ $vol.Size }}
            lun: {{ $index }}
         {{- end }}
+      {{- end }}
+      {{- if ne $node.NodeImage "" }}
+      image:
+        id: {{ $node.NodeImage }}
       {{- end }}
       {{- if $.Descriptor.Security.NodesIdentity }}
       identity: UserAssigned
