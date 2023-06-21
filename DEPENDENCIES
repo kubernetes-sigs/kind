@@ -21,8 +21,8 @@ aws:
     vpc-cni: v1.12.6-eksbuild.1
 azure:
   azuredisk-csi-driver: v1.27.1
-  cluster-api-azure: v1.9.2
-  cluster-api-azure-templates: v1.9.2
+  cluster-api-azure: v1.9.3
+  cluster-api-azure-templates: v1.9.3
 gcp:
   cluster-api-gcp: v1.3.1
   cluster-api-gcp-templates: v1.3.1
