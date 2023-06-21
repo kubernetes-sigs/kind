@@ -241,12 +241,14 @@ type Secrets struct {
 }
 
 type StorageClass struct {
-	EFS struct {
-		Name        string `yaml:"name" validate:"required_with=ID"`
-		ID          string `yaml:"id" validate:"required_with=Name"`
-		Permissions string `yaml:"permissions,omitempty"`
-	} `yaml:"efs"`
+	EFS           EFS    `yaml:"efs"`
 	EncryptionKey string `yaml:"encryption_key,omitempty"`
+}
+
+type EFS struct {
+	Name        string `yaml:"name" validate:"required_with=ID"`
+	ID          string `yaml:"id" validate:"required_with=Name"`
+	Permissions string `yaml:"permissions,omitempty"`
 }
 
 type ProviderParams struct {

@@ -138,6 +138,7 @@ func createKEOSDescriptor(descriptorFile commons.DescriptorFile, storageClass st
 	keosDescriptor.Keos.Calico.DeployTigeraOperator = false
 
 	// Keos - Storage
+	keosDescriptor.Keos.Storage.DefaultStorageClass = storageClass
 	if descriptorFile.StorageClass.EFS.Name != "" {
 		keosDescriptor.Keos.Storage.Providers = []string{"csi-aws"}
 
@@ -159,7 +160,6 @@ func createKEOSDescriptor(descriptorFile commons.DescriptorFile, storageClass st
 			keosDescriptor.Keos.Storage.Config.CSIAWS.KMSKeyID = descriptorFile.StorageClass.EncryptionKey
 		}
 	} else {
-		keosDescriptor.Keos.Storage.DefaultStorageClass = storageClass
 		keosDescriptor.Keos.Storage.Providers = []string{"custom"}
 	}
 
