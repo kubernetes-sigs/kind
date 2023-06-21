@@ -169,7 +169,7 @@ spec:
       {{- if $node.Spot }}
       spotMarketOptions:
         maxPrice: \"\"
-      {{- end }}     
+      {{- end }}
       {{- if ne $node.NodeImage "" }}
       ami:
         id: {{ $node.NodeImage }}
