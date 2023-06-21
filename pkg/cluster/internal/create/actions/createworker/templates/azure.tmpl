@@ -174,6 +174,10 @@ spec:
            lun: {{ $index }}
         {{- end }}
       {{- end }}
+      {{- if ne .Descriptor.ControlPlane.NodeImage "" }}
+      image:
+        id: {{ .Descriptor.ControlPlane.NodeImage }}
+      {{- end }}
       {{- if .Descriptor.Security.NodesIdentity }}
       identity: UserAssigned
       userAssignedIdentities:
@@ -244,6 +248,10 @@ spec:
            diskSizeGB: {{ $vol.Size }}
            lun: {{ $index }}
         {{- end }}
+      {{- end }}
+      {{- if ne $node.NodeImage "" }}
+      image:
+        id: {{ $node.NodeImage }}
       {{- end }}
       {{- if $.Descriptor.Security.NodesIdentity }}
       identity: UserAssigned
@@ -329,11 +337,11 @@ spec:
           kubeletExtraArgs:
             azure-container-registry-config: /etc/kubernetes/azure.json
             cloud-provider: external
-            {{- if $node.Labels }}
+            {{- if gt (len $node.Labels) 0 }}
             node-labels: \"{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}\"
             {{- end }}
             {{- if gt (len $node.Taints) 0 }}
-            register-with-taints: \"{{ range $i, $taint := $node.Taints }}{{$taint.Key}}={{$taint.Value}}:{{$taint.Effect}}{{- if ne $i (sub (len $node.Taints) 1) }},{{- end }}{{ end }}\"
+            register-with-taints: \"{{ range $i, $taint := $node.Taints }}{{$taint}}{{- if ne $i (sub (len $node.Taints) 1) }},{{- end }}{{ end }}\"
             {{- end }}
           name: {{`'{{ ds.meta_data[\"local_hostname\"] }}'`}}
       preKubeadmCommands: []
