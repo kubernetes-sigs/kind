@@ -82,7 +82,7 @@ func (b *AWSBuilder) setCapx(managed bool) {
 	b.capxVersion = "v2.1.4"
 	b.capxImageVersion = "2.1.4-0.4.0"
 	b.capxName = "capa"
-	b.stClassName = "gp2"
+	b.stClassName = "keos"
 	if managed {
 		b.capxTemplate = "aws.eks.tmpl"
 		b.csiNamespace = ""
@@ -279,16 +279,13 @@ func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string, sc commons.St
 	}
 
 	params := b.getParameters(sc)
+
 	storageClass, err := insertParameters(storageClassAWSTemplate, params)
 	if err != nil {
 		return err
 	}
 
-	command := "sed -i 's/fsType/csi.storage.k8s.io\\/fstype/' " + storageClass
-	_, err = commons.ExecuteCommand(n, command)
-	if err != nil {
-		return errors.Wrap(err, "failed to add csi.storage.k8s.io/fstype param to storageclass")
-	}
+	storageClass = strings.ReplaceAll(storageClass, "fsType", "csi.storage.k8s.io/fstype")
 
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
 	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
@@ -300,8 +297,7 @@ func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string, sc commons.St
 
 func (b *AWSBuilder) getParameters(sc commons.StorageClass) commons.SCParameters {
 	if sc.EncryptionKmsKey != "" {
-		encrypted := true
-		sc.Parameters.Encrypted = &encrypted
+		sc.Parameters.Encrypted = "true"
 		sc.Parameters.KmsKeyId = sc.EncryptionKmsKey
 	}
 	switch class := sc.Class; class {

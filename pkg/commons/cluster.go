@@ -275,8 +275,8 @@ type SCParameters struct {
 	AllowAutoIOPSPerGBIncrease string `yaml:"allowAutoIOPSPerGBIncrease,omitempty" validate:"omitempty"` //AWS
 	Iops                       string `yaml:"iops,omitempty" validate:"omitempty"`                       //AWS
 	Throughput                 int    `yaml:"throughput,omitempty" validate:"omitempty"`                 //AWS
-	Encrypted                  *bool  `yaml:"encrypted,omitempty" validate:"omitempty"`                  //AWS
-	BlockExpress               *bool  `yaml:"blockExpress,omitempty" validate:"omitempty"`               //AWS
+	Encrypted                  string `yaml:"encrypted,omitempty" validate:"omitempty"`                  //AWS //bool validation
+	BlockExpress               string `yaml:"blockExpress,omitempty" validate:"omitempty"`               //AWS //bool validation
 	BlockSize                  string `yaml:"blockSize,omitempty" validate:"omitempty"`                  //AWS
 
 	Provisioner         string   `yaml:"provisioner,omitempty" validate:"omitempty"`

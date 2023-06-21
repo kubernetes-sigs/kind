@@ -22,6 +22,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -475,24 +476,35 @@ func insertParameters(storageClass StorageClassDef, params commons.SCParameters)
 	if err != nil {
 		return "", err
 	}
-	// fmt.Println("paramsYAML before: " + paramsYAML)
-	// paramsYAML = strings.ReplaceAll(paramsYAML, "_", "-")
-	// fmt.Println("paramsYAML after: " + paramsYAML)
 
 	newMap := map[string]interface{}{}
 	err = yaml.Unmarshal([]byte(paramsYAML), &newMap)
 	if err != nil {
 		return "", err
 	}
+
 	for key, value := range newMap {
 		newKey := strings.ReplaceAll(key, "_", "-")
 		storageClass.Parameters[newKey] = value
+	}
+
+	if storageClass.Provisioner == "ebs.csi.aws.com" {
+		if labels, ok := storageClass.Parameters["labels"].(string); ok && labels != "" {
+			delete(storageClass.Parameters, "labels")
+			for i, label := range strings.Split(labels, ",") {
+				key_prefix := "tagSpecification_"
+				key := key_prefix + strconv.Itoa(i)
+				storageClass.Parameters[key] = label
+			}
+		}
 	}
 
 	resultYAML, err := yaml.Marshal(storageClass)
 	if err != nil {
 		return "", err
 	}
+
+	fmt.Println("sc after: " + string(resultYAML))
 
 	return string(resultYAML), nil
 }

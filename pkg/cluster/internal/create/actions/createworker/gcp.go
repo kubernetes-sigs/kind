@@ -85,7 +85,7 @@ func (b *GCPBuilder) setCapx(managed bool) {
 	b.capxVersion = "v1.3.1"
 	b.capxImageVersion = "v1.3.1"
 	b.capxName = "capg"
-	b.stClassName = "csi-gcp-pd"
+	b.stClassName = "keos"
 	if managed {
 		b.capxTemplate = "gcp.gke.tmpl"
 		b.csiNamespace = ""
