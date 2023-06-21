@@ -91,24 +91,14 @@ type DescriptorFile struct {
 }
 
 type Networks struct {
-	VPCID                      string            `yaml:"vpc_id"`
-	VPCCidrBlock               string            `yaml:"vpc_cidr" validate:"omitempty,cidrv4"`
-	PodsCidrBlock              string            `yaml:"pods_cidr" validate:"omitempty,cidrv4"`
-	Tags                       map[string]string `yaml:"tags,omitempty"`
-	AvailabilityZoneUsageLimit int               `yaml:"az_usage_limit" validate:"numeric"`
-	AvailabilityZoneSelection  string            `yaml:"az_selection" validate:"oneof='Ordered' 'Random' '' "`
-	PodsSubnets                []Subnets         `yaml:"pods_subnets"`
-	Subnets                    []Subnets         `yaml:"subnets"`
+	VPCID         string    `yaml:"vpc_id"`
+	PodsCidrBlock string    `yaml:"pods_cidr" validate:"omitempty,cidrv4"`
+	PodsSubnets   []Subnets `yaml:"pods_subnets"`
+	Subnets       []Subnets `yaml:"subnets"`
 }
 
 type Subnets struct {
-	SubnetId         string            `yaml:"subnet_id"`
-	AvailabilityZone string            `yaml:"az,omitempty"`
-	IsPublic         *bool             `yaml:"is_public,omitempty"`
-	RouteTableId     string            `yaml:"route_table_id,omitempty"`
-	NatGatewayId     string            `yaml:"nat_id,omitempty"`
-	Tags             map[string]string `yaml:"tags,omitempty"`
-	CidrBlock        string            `yaml:"cidr,omitempty"`
+	SubnetId string `yaml:"subnet_id"`
 }
 
 type AWSCP struct {
