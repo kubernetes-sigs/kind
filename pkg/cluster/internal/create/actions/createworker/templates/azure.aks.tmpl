@@ -89,7 +89,7 @@ metadata:
   name: "{{ $node.Name }}-mp-{{ $index }}"
   namespace: "cluster-{{ $.Descriptor.ClusterID }}"
 spec:
-  mode: System
+  mode: {{- if or (gt (len $node.Taints) 0) ($node.Spot) }} User {{- else }} System {{- end }}
   name: "{{ $node.Name }}mp{{ $index }}"
   sku: "{{ $node.Size }}"
   osDiskSizeGB: {{- if $node.RootVolume.Size }} {{ $node.RootVolume.Size }} {{ else }} 30 {{ end }}
@@ -98,6 +98,7 @@ spec:
   {{- end }}
   availabilityZones:
     - \"{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ inc $index }} {{- end }}\"
+  scaleSetPriority: {{- if $node.Spot }} Spot {{- else }} Regular {{- end }}
   {{- if gt $node.NodeGroupMaxSize 0 }}
   scaling:
     minSize: {{ $n.MinSize }}
@@ -111,10 +112,12 @@ spec:
   {{- end }}
   {{- if gt (len $node.Taints) 0 }}
   taints:
-    {{- range $i, $taint := $node.Taints }}
-    - {{ getTaintKey $taint }}
-      {{ getTaintValue $taint }}
-      {{ getTaintEffect $taint }}
+    {{- range $i, $nodeTaint := $node.Taints }}
+    {{- $taint := split $nodeTaint "=" }}
+    - key: \"{{ index $taint 0 }}\"
+      {{- $taintParams := split (index $taint 1) ":" }}
+      value: \"{{ index $taintParams 0 }}\"
+      effect: \"{{ index $taintParams 1 }}\"
     {{- end }}
   {{- end }}
 {{- end }}

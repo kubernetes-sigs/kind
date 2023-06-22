@@ -17,7 +17,6 @@ limitations under the License.
 package createworker
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"os"
@@ -52,8 +51,8 @@ func newAWSBuilder() *AWSBuilder {
 
 func (b *AWSBuilder) setCapx(managed bool) {
 	b.capxProvider = "aws"
-	b.capxVersion = "v2.0.2"
-	b.capxImageVersion = "2.0.2-0.1.0"
+	b.capxVersion = "v2.1.4"
+	b.capxImageVersion = "2.1.4-0.4.0"
 	b.capxName = "capa"
 	b.stClassName = "gp2"
 	if managed {
@@ -96,13 +95,16 @@ func (b *AWSBuilder) installCSI(n nodes.Node, k string) error {
 	return nil
 }
 
-func createCloudFormationStack(node nodes.Node, envVars []string) error {
+func createCloudFormationStack(n nodes.Node, envVars []string) error {
+	var c string
+	var err error
+
 	eksConfigData := `
 apiVersion: bootstrap.aws.infrastructure.cluster.x-k8s.io/v1beta1
 kind: AWSIAMConfiguration
 spec:
   bootstrapUser:
-    enable: true
+    enable: false
   eks:
     enable: true
     iamRoleCreation: false
@@ -115,19 +117,17 @@ spec:
     - arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy`
 
 	// Create the eks.config file in the container
-	var raw bytes.Buffer
 	eksConfigPath := "/kind/eks.config"
-	cmd := node.Command("sh", "-c", "echo \""+eksConfigData+"\" > "+eksConfigPath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
+	c = "echo \"" + eksConfigData + "\" > " + eksConfigPath
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
 		return errors.Wrap(err, "failed to create eks.config")
 	}
 
-	// Run clusterawsadm with the eks.config file previously created
-	// (this will create or update the CloudFormation stack in AWS)
-	raw = bytes.Buffer{}
-	cmd = node.Command("sh", "-c", "clusterawsadm bootstrap iam create-cloudformation-stack --config "+eksConfigPath)
-	cmd.SetEnv(envVars...)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
+	// Run clusterawsadm with the eks.config file previously created (this will create or update the CloudFormation stack in AWS)
+	c = "clusterawsadm bootstrap iam create-cloudformation-stack --config " + eksConfigPath
+	_, err = commons.ExecuteCommand(n, c, envVars)
+	if err != nil {
 		return errors.Wrap(err, "failed to run clusterawsadm")
 	}
 	return nil

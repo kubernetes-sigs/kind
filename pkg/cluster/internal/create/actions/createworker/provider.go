@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/exec"
 )
 
 //go:embed templates/*
@@ -40,6 +41,9 @@ const (
 
 const machineHealthCheckWorkerNodePath = "/kind/manifests/machinehealthcheckworkernode.yaml"
 const machineHealthCheckControlPlaneNodePath = "/kind/manifests/machinehealthcheckcontrolplane.yaml"
+
+//go:embed files/calico-metrics.yaml
+var calicoMetrics string
 
 type PBuilder interface {
 	setCapx(managed bool)
@@ -121,6 +125,7 @@ func (i *Infra) getAzs(networks commons.Networks) ([]string, error) {
 
 func installCalico(n nodes.Node, k string, descriptorFile commons.DescriptorFile, allowCommonEgressNetPolPath string) error {
 	var c string
+	var cmd exec.Cmd
 	var err error
 
 	calicoTemplate := "/kind/calico-helm-values.yaml"
@@ -132,7 +137,7 @@ func installCalico(n nodes.Node, k string, descriptorFile commons.DescriptorFile
 	}
 
 	c = "echo '" + calicoHelmValues + "' > " + calicoTemplate
-	err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to create Calico Helm chart values file")
 	}
@@ -142,78 +147,84 @@ func installCalico(n nodes.Node, k string, descriptorFile commons.DescriptorFile
 		" --namespace tigera-operator" +
 		" --create-namespace" +
 		" --values " + calicoTemplate
-	err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy Calico Helm Chart")
 	}
 
 	// Allow egress in tigera-operator namespace
 	c = "kubectl --kubeconfig " + kubeconfigPath + " -n tigera-operator apply -f " + allowCommonEgressNetPolPath
-	err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to apply tigera-operator egress NetworkPolicy")
 	}
 
 	// Wait for calico-system namespace to be created
 	c = "timeout 30s bash -c 'until kubectl --kubeconfig " + kubeconfigPath + " get ns calico-system; do sleep 2s ; done'"
-	err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to wait for calico-system namespace")
 	}
 
 	// Allow egress in calico-system namespace
 	c = "kubectl --kubeconfig " + kubeconfigPath + " -n calico-system apply -f " + allowCommonEgressNetPolPath
-	err = commons.ExecuteCommand(n, c)
+	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to apply calico-system egress NetworkPolicy")
+	}
+
+	// Create calico metrics services
+	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
+	if err = cmd.SetStdin(strings.NewReader(calicoMetrics)).Run(); err != nil {
+		return errors.Wrap(err, "failed to create calico metrics services")
 	}
 
 	return nil
 }
 
 // installCAPXWorker installs CAPX in the worker cluster
-func (p *Provider) installCAPXWorker(node nodes.Node, kubeconfigPath string, allowAllEgressNetPolPath string) error {
-	var command string
+func (p *Provider) installCAPXWorker(n nodes.Node, kubeconfigPath string, allowAllEgressNetPolPath string) error {
+	var c string
 	var err error
 
 	if p.capxProvider == "azure" {
 		// Create capx namespace
-		command = "kubectl --kubeconfig " + kubeconfigPath + " create namespace " + p.capxName + "-system"
-		err = commons.ExecuteCommand(node, command)
+		c = "kubectl --kubeconfig " + kubeconfigPath + " create namespace " + p.capxName + "-system"
+		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to create CAPx namespace")
 		}
 
 		// Create capx secret
 		secret := strings.Split(p.capxEnvVars[0], "AZURE_CLIENT_SECRET=")[1]
-		command = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system create secret generic cluster-identity-secret --from-literal=clientSecret='" + string(secret) + "'"
-		err = commons.ExecuteCommand(node, command)
+		c = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system create secret generic cluster-identity-secret --from-literal=clientSecret='" + string(secret) + "'"
+		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to create CAPx secret")
 		}
 	}
 
 	// Install CAPX in worker cluster
-	command = "clusterctl --kubeconfig " + kubeconfigPath + " init --wait-providers" +
+	c = "clusterctl --kubeconfig " + kubeconfigPath + " init --wait-providers" +
 		" --core " + CAPICoreProvider +
 		" --bootstrap " + CAPIBootstrapProvider +
 		" --control-plane " + CAPIControlPlaneProvider +
 		" --infrastructure " + p.capxProvider + ":" + p.capxVersion
-	err = commons.ExecuteCommand(node, command, p.capxEnvVars)
+	_, err = commons.ExecuteCommand(n, c, p.capxEnvVars)
 	if err != nil {
 		return errors.Wrap(err, "failed to install CAPX in workload cluster")
 	}
 
 	// Scale CAPX to 2 replicas
-	command = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system scale --replicas 2 deploy " + p.capxName + "-controller-manager"
-	err = commons.ExecuteCommand(node, command)
+	c = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system scale --replicas 2 deploy " + p.capxName + "-controller-manager"
+	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to scale CAPX in workload cluster")
 	}
 
 	// Allow egress in CAPX's Namespace
-	command = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system apply -f " + allowAllEgressNetPolPath
-	err = commons.ExecuteCommand(node, command)
+	c = "kubectl --kubeconfig " + kubeconfigPath + " -n " + p.capxName + "-system apply -f " + allowAllEgressNetPolPath
+	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to apply CAPX's NetworkPolicy in workload cluster")
 	}
@@ -222,34 +233,33 @@ func (p *Provider) installCAPXWorker(node nodes.Node, kubeconfigPath string, all
 }
 
 // installCAPXLocal installs CAPX in the local cluster
-func (p *Provider) installCAPXLocal(node nodes.Node) error {
-	var command string
+func (p *Provider) installCAPXLocal(n nodes.Node) error {
+	var c string
 	var err error
 
 	if p.capxProvider == "azure" {
 		// Create capx namespace
-		command = "kubectl create namespace " + p.capxName + "-system"
-		err = commons.ExecuteCommand(node, command)
+		c = "kubectl create namespace " + p.capxName + "-system"
+		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to create CAPx namespace")
 		}
 
 		// Create capx secret
 		secret := strings.Split(p.capxEnvVars[0], "AZURE_CLIENT_SECRET=")[1]
-		command = "kubectl -n " + p.capxName + "-system create secret generic cluster-identity-secret --from-literal=clientSecret='" + string(secret) + "'"
-		err = commons.ExecuteCommand(node, command)
+		c = "kubectl -n " + p.capxName + "-system create secret generic cluster-identity-secret --from-literal=clientSecret='" + string(secret) + "'"
+		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to create CAPx secret")
 		}
 	}
 
-	command = "clusterctl init --wait-providers" +
+	c = "clusterctl init --wait-providers" +
 		" --core " + CAPICoreProvider +
 		" --bootstrap " + CAPIBootstrapProvider +
 		" --control-plane " + CAPIControlPlaneProvider +
-
 		" --infrastructure " + p.capxProvider + ":" + p.capxVersion
-	err = commons.ExecuteCommand(node, command, p.capxEnvVars)
+	_, err = commons.ExecuteCommand(n, c, p.capxEnvVars)
 	if err != nil {
 		return errors.Wrap(err, "failed to install CAPX in local cluster")
 	}
@@ -257,34 +267,36 @@ func (p *Provider) installCAPXLocal(node nodes.Node) error {
 	return nil
 }
 
-func enableSelfHealing(node nodes.Node, descriptorFile commons.DescriptorFile, namespace string) error {
+func enableSelfHealing(n nodes.Node, descriptorFile commons.DescriptorFile, namespace string) error {
+	var c string
+	var err error
 
 	if !descriptorFile.ControlPlane.Managed {
-
 		machineRole := "-control-plane-node"
-		generateMHCManifest(node, descriptorFile.ClusterID, namespace, machineHealthCheckControlPlaneNodePath, machineRole)
+		generateMHCManifest(n, descriptorFile.ClusterID, namespace, machineHealthCheckControlPlaneNodePath, machineRole)
 
-		raw := bytes.Buffer{}
-		cmd := node.Command("kubectl", "-n", namespace, "apply", "-f", machineHealthCheckControlPlaneNodePath)
-		if err := cmd.SetStdout(&raw).Run(); err != nil {
+		c = "kubectl -n " + namespace + " apply -f " + machineHealthCheckControlPlaneNodePath
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
 			return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
 		}
 	}
 
 	machineRole := "-worker-node"
-	generateMHCManifest(node, descriptorFile.ClusterID, namespace, machineHealthCheckWorkerNodePath, machineRole)
+	generateMHCManifest(n, descriptorFile.ClusterID, namespace, machineHealthCheckWorkerNodePath, machineRole)
 
-	raw := bytes.Buffer{}
-	cmd := node.Command("kubectl", "-n", namespace, "apply", "-f", machineHealthCheckWorkerNodePath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
+	c = "kubectl -n " + namespace + " apply -f " + machineHealthCheckWorkerNodePath
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
 		return errors.Wrap(err, "failed to apply the MachineHealthCheck manifest")
 	}
 
 	return nil
 }
 
-func generateMHCManifest(node nodes.Node, clusterID string, namespace string, manifestPath string, machineRole string) error {
-
+func generateMHCManifest(n nodes.Node, clusterID string, namespace string, manifestPath string, machineRole string) error {
+	var c string
+	var err error
 	var machineHealthCheck = `
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineHealthCheck
@@ -305,11 +317,12 @@ spec:
       status: 'False'
       timeout: 60s`
 
-	raw := bytes.Buffer{}
-	cmd := node.Command("sh", "-c", "echo \""+machineHealthCheck+"\" > "+manifestPath)
-	if err := cmd.SetStdout(&raw).Run(); err != nil {
+	c = "echo \"" + machineHealthCheck + "\" > " + manifestPath
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
 		return errors.Wrap(err, "failed to write the MachineHealthCheck manifest")
 	}
+
 	return nil
 }
 
@@ -364,18 +377,8 @@ func GetClusterManifest(flavor string, params commons.TemplateParams, azs []stri
 		"base64": func(s string) string {
 			return base64.StdEncoding.EncodeToString([]byte(s))
 		},
-		"sub": func(a, b int) int { return a - b },
-		"getTaintKey": func(taint string) string {
-			keyvalue := strings.Split(taint, ":")[0]
-			return strings.Split(keyvalue, "=")[0]
-		},
-		"getTaintValue": func(taint string) string {
-			keyvalue := strings.Split(taint, ":")[0]
-			return strings.Split(keyvalue, "=")[1]
-		},
-		"getTaintEffect": func(taint string) string {
-			return strings.Split(taint, ":")[1]
-		},
+		"sub":   func(a, b int) int { return a - b },
+		"split": strings.Split,
 	}
 
 	var tpl bytes.Buffer
