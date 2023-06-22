@@ -149,8 +149,8 @@ Refer [Using Ingress](#using-ingress) for a basic example usage.
 
 ## Using Ingress
 
-The following example creates simple http-echo services
-and an Ingress object to route to these services.
+The following example creates a simple agnhost service
+and an Ingress object to route to that service.
 
 ```yaml
 {{% readFile "static/examples/ingress/usage.yaml" %}}
@@ -165,8 +165,6 @@ kubectl apply -f {{< absURL "examples/ingress/usage.yaml" >}}
 Now verify that the ingress works
 
 {{< codeFromInline lang="bash" >}}
-# should output "foo-app"
-curl localhost/foo/hostname
-# should output "bar-app"
-curl localhost/bar/hostname
+# should output "agnhost"
+curl http://localhost/hostname
 {{< /codeFromInline >}}
