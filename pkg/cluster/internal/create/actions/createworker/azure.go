@@ -267,6 +267,6 @@ func (b *AzureBuilder) getParameters(sc commons.StorageClass) commons.SCParamete
 	case "premium":
 		return mergeSCParameters(sc.Parameters, premiumAZParameters)
 	default:
-		return standardAZParameters
+		return premiumGCPParameters
 	}
 }

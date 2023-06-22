@@ -237,6 +237,6 @@ func (b *GCPBuilder) getParameters(sc commons.StorageClass) commons.SCParameters
 	case "premium":
 		return mergeSCParameters(sc.Parameters, premiumGCPParameters)
 	default:
-		return standardGCPParameters
+		return premiumGCPParameters
 	}
 }

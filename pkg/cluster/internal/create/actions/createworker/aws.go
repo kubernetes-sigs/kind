@@ -55,7 +55,7 @@ var storageClassAWSTemplate = StorageClassDef{
 }
 
 var standardAWSParameters = commons.SCParameters{
-	Type: "gp2",
+	Type: "st1",
 }
 
 var premiumAWSParameters = commons.SCParameters{
@@ -306,6 +306,6 @@ func (b *AWSBuilder) getParameters(sc commons.StorageClass) commons.SCParameters
 	case "premium":
 		return mergeSCParameters(sc.Parameters, premiumAWSParameters)
 	default:
-		return standardAWSParameters
+		return premiumAWSParameters
 	}
 }
