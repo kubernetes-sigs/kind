@@ -78,9 +78,10 @@ type DescriptorFile struct {
 		HighlyAvailable bool   `yaml:"highly_available" validate:"boolean"`
 		Size            string `yaml:"size" validate:"required_if=Managed false"`
 		RootVolume      struct {
-			Size      int    `yaml:"size" validate:"numeric"`
-			Type      string `yaml:"type"`
-			Encrypted bool   `yaml:"encrypted" validate:"boolean"`
+			Size          int    `yaml:"size" validate:"numeric"`
+			Type          string `yaml:"type"`
+			Encrypted     bool   `yaml:"encrypted" validate:"boolean"`
+			EncryptionKey string `yaml:"encryption_key"`
 		} `yaml:"root_volume"`
 		Tags         []map[string]string `yaml:"tags"`
 		AWS          AWSCP               `yaml:"aws"`
@@ -132,9 +133,10 @@ type WorkerNodes []struct {
 	NodeGroupMaxSize int               `yaml:"max_size" validate:"required_with=NodeGroupMinSize,numeric,omitempty"`
 	NodeGroupMinSize int               `yaml:"min_size" validate:"required_with=NodeGroupMaxSize,numeric,omitempty"`
 	RootVolume       struct {
-		Size      int    `yaml:"size" validate:"numeric"`
-		Type      string `yaml:"type"`
-		Encrypted bool   `yaml:"encrypted" validate:"boolean"`
+		Size          int    `yaml:"size" validate:"numeric"`
+		Type          string `yaml:"type"`
+		Encrypted     bool   `yaml:"encrypted" validate:"boolean"`
+		EncryptionKey string `yaml:"encryption_key"`
 	} `yaml:"root_volume"`
 	ExtraVolumes []ExtraVolume `yaml:"extra_volumes"`
 }
@@ -148,13 +150,14 @@ type Bastion struct {
 }
 
 type ExtraVolume struct {
-	Name       string `yaml:"name"`
-	DeviceName string `yaml:"device_name"`
-	Size       int    `yaml:"size" validate:"numeric"`
-	Type       string `yaml:"type"`
-	Label      string `yaml:"label"`
-	Encrypted  bool   `yaml:"encrypted" validate:"boolean"`
-	MountPath  string `yaml:"mount_path" validate:"omitempty,required_with=Name"`
+	Name          string `yaml:"name"`
+	DeviceName    string `yaml:"device_name"`
+	Size          int    `yaml:"size" validate:"numeric"`
+	Type          string `yaml:"type"`
+	Label         string `yaml:"label"`
+	Encrypted     bool   `yaml:"encrypted" validate:"boolean"`
+	EncryptionKey string `yaml:"encryption_key"`
+	MountPath     string `yaml:"mount_path" validate:"omitempty,required_with=Name"`
 }
 
 type Credentials struct {

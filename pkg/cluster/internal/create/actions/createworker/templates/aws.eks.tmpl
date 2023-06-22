@@ -151,6 +151,9 @@ spec:
         type: {{ $node.RootVolume.Type }}
         {{- end }}
         encrypted: {{ $node.RootVolume.Encrypted }}
+        {{- if $node.RootVolume.EncryptionKey }}
+        encryptionKey: {{ $node.RootVolume.EncryptionKey }}
+        {{- end }}
       {{- if $node.ExtraVolumes }}
       nonRootVolumes:
         {{- range $index, $vol := $node.ExtraVolumes }}
@@ -158,6 +161,9 @@ spec:
           size: {{ $vol.Size }}
           type: {{ $vol.Type }}
           encrypted: {{ $vol.Encrypted }}
+          {{- if $vol.EncryptionKey }}
+          encryptionKey: {{ $vol.EncryptionKey }}
+          {{- end }}
         {{- end }}
       {{- end }}
 ---
