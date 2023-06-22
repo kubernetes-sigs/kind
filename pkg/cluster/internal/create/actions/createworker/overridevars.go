@@ -19,6 +19,7 @@ package createworker
 import (
 	"embed"
 	_ "embed"
+
 	"io/ioutil"
 	"os"
 
@@ -34,7 +35,7 @@ import (
 //go:embed files/*/internal-ingress-nginx.yaml
 var internalIngressFiles embed.FS
 
-func override_vars(descriptorFile commons.DescriptorFile, ctx *actions.ActionContext, infra *Infra) error {
+func override_vars(descriptorFile commons.DescriptorFile, credentialsMap map[string]string, ctx *actions.ActionContext, infra *Infra) error {
 
 	overrideVarsDir := "override_vars"
 	originalFilePath := filepath.Join(overrideVarsDir, "ingress-nginx.yaml")
@@ -50,10 +51,11 @@ func override_vars(descriptorFile commons.DescriptorFile, ctx *actions.ActionCon
 		}
 	}
 
-	requiredInternalNginx, err := infra.internalNginx(descriptorFile.Networks)
+	requiredInternalNginx, err := infra.internalNginx(descriptorFile.Networks, credentialsMap, descriptorFile.ClusterID)
 	if err != nil {
 		return err
 	}
+
 	if requiredInternalNginx {
 
 		ctx.Status.Start("Generating override_vars structure ⚒️")

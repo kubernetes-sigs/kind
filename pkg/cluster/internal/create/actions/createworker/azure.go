@@ -23,12 +23,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v3"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -208,4 +210,50 @@ func getAcrToken(p commons.ProviderParams, acrService string) (string, error) {
 	var response map[string]interface{}
 	json.NewDecoder(jsonResponse.Body).Decode(&response)
 	return response["refresh_token"].(string), nil
+}
+
+func (b *AzureBuilder) internalNginx(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (bool, error) {
+
+	os.Setenv("AZURE_CLIENT_ID", credentialsMap["ClientID"])
+	os.Setenv("AZURE_SECRET_ID", credentialsMap["ClientSecret"])
+	os.Setenv("AZURE_TENANT_ID", credentialsMap["TenantID"])
+
+	creds, err := azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		return false, err
+	}
+	ctx := context.Background()
+
+	networkClientFactory, err := armnetwork.NewClientFactory(credentialsMap["SubscriptionID"], creds, nil)
+	if err != nil {
+		return false, err
+	}
+
+	subnetsClient := networkClientFactory.NewSubnetsClient()
+
+	if networks.Subnets != nil {
+		resourceGroup := ClusterID
+		for _, subnet := range networks.Subnets {
+			publicSubnetID, _ := AzureFilterPublicSubnet(ctx, subnetsClient, resourceGroup, networks.VPCID, subnet.SubnetId)
+			if len(publicSubnetID) > 0 {
+				return false, nil
+			}
+		}
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func AzureFilterPublicSubnet(ctx context.Context, subnetsClient *armnetwork.SubnetsClient, resourceGroup string, VPCID string, subnetID string) (string, error) {
+	subnet, err := subnetsClient.Get(ctx, resourceGroup, VPCID, subnetID, nil)
+	if err != nil {
+		return "", err
+	}
+
+	if subnet.Properties.NatGateway != nil && strings.Contains(*subnet.Properties.NatGateway.ID, "natGateways") {
+		return "", nil
+	} else {
+		return subnetID, nil
+	}
 }

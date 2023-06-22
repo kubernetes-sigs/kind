@@ -185,7 +185,7 @@ func (b *AWSBuilder) getAzs(networks commons.Networks) ([]string, error) {
 	}
 }
 
-func (b *AWSBuilder) internalNginx(networks commons.Networks) (bool, error) {
+func (b *AWSBuilder) internalNginx(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (bool, error) {
 	if len(b.capxEnvVars) == 0 {
 		return false, errors.New("Insufficient credentials.")
 	}

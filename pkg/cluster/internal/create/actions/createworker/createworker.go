@@ -40,6 +40,9 @@ type action struct {
 //go:embed files/all/allow-all-egress_netpol.yaml
 var allowCommonEgressNetPol string
 
+//go:embed files/gcp/rbac-loadbalancing.yaml
+var rbacInternalLoadBalancing string
+
 // In common with keos installer
 //
 //go:embed files/aws/deny-all-egress-imds_gnetpol.yaml
@@ -488,6 +491,36 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.End(true)
 		}
 
+		ctx.Status.Start("Creating Kubernetes RBAC internal loadbalancing 🔐")
+		defer ctx.Status.End(false)
+
+		if provider.capxProvider == "gcp" {
+			requiredInternalNginx, err := infra.internalNginx(descriptorFile.Networks, credentialsMap, descriptorFile.ClusterID)
+			if err != nil {
+				return err
+			}
+
+			if requiredInternalNginx {
+				rbacInternalLoadBalancingPath := "/kind/internalloadbalancing_rbac.yaml"
+
+				// Deploy Kubernetes RBAC internal loadbalancing
+
+				raw = bytes.Buffer{}
+				cmd = node.Command("sh", "-c", "echo \""+rbacInternalLoadBalancing+"\" > "+rbacInternalLoadBalancingPath)
+				if err := cmd.SetStdout(&raw).Run(); err != nil {
+					return errors.Wrap(err, "failed to write the kubernetes RBAC internal loadbalancing")
+				}
+
+				raw = bytes.Buffer{}
+				cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "apply", "-f", rbacInternalLoadBalancingPath)
+				if err := cmd.SetStdout(&raw).Run(); err != nil {
+					return errors.Wrap(err, "failed to the kubernetes RBAC internal loadbalancing")
+				}
+			}
+
+			ctx.Status.End(true)
+		}
+
 		// Create cloud-provisioner Objects backup
 		ctx.Status.Start("Creating cloud-provisioner Objects backup 🗄️")
 		defer ctx.Status.End(false)
@@ -559,7 +592,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 	ctx.Status.End(true) // End Generating KEOS descriptor
 
-	err = override_vars(*descriptorFile, ctx, infra)
+	err = override_vars(*descriptorFile, credentialsMap, ctx, infra)
 	if err != nil {
 		return err
 	}
