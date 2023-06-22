@@ -334,11 +334,11 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.End(true) // End Installing StorageClass in workload cluster
 		}
 
-		// XXX Ref kubernetes/kubernetes#86793 - starting from v1.18, gcp cloud-controller-manager requires RBAC to patch,update service/status. (in-tree)
-		ctx.Status.Start("Creating Kubernetes RBAC for internal loadbalancing 🔐")
-		defer ctx.Status.End(false)
-
 		if provider.capxProvider == "gcp" {
+			// XXX Ref kubernetes/kubernetes#86793 - starting from v1.18, gcp cloud-controller-manager requires RBAC to patch,update service/status. (in-tree)
+			ctx.Status.Start("Creating Kubernetes RBAC for internal loadbalancing 🔐")
+			defer ctx.Status.End(false)
+
 			requiredInternalNginx, err := infra.internalNginx(descriptorFile.Networks, credentialsMap, descriptorFile.ClusterID)
 			if err != nil {
 				return err
