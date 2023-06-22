@@ -50,7 +50,7 @@ var PathsToBackupLocally = []string{
 	"/kind/manifests",
 }
 
-//go:embed files/allow-all-egress_netpol.yaml
+//go:embed files/all/allow-all-egress_netpol.yaml
 var allowCommonEgressNetPol string
 
 //go:embed files/gcp/rbac-loadbalancing.yaml
@@ -334,6 +334,36 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.End(true) // End Installing StorageClass in workload cluster
 		}
 
+		// XXX Ref kubernetes/kubernetes#86793 - starting from v1.18, gcp cloud-controller-manager requires RBAC to patch,update service/status. (in-tree)
+		ctx.Status.Start("Creating Kubernetes RBAC for internal loadbalancing 🔐")
+		defer ctx.Status.End(false)
+
+		if provider.capxProvider == "gcp" {
+			requiredInternalNginx, err := infra.internalNginx(descriptorFile.Networks, credentialsMap, descriptorFile.ClusterID)
+			if err != nil {
+				return err
+			}
+
+			if requiredInternalNginx {
+				rbacInternalLoadBalancingPath := "/kind/internalloadbalancing_rbac.yaml"
+
+				// Deploy Kubernetes RBAC internal loadbalancing
+				c = "echo \"" + rbacInternalLoadBalancing + "\" > " + rbacInternalLoadBalancingPath
+				_, err = commons.ExecuteCommand(n, c)
+				if err != nil {
+					return errors.Wrap(err, "failed to write the kubernetes RBAC internal loadbalancing")
+				}
+
+				c = "kubectl --kubeconfig " + kubeconfigPath + " apply -f " + rbacInternalLoadBalancingPath
+				_, err = commons.ExecuteCommand(n, c)
+				if err != nil {
+					return errors.Wrap(err, "failed to the kubernetes RBAC internal loadbalancing")
+				}
+			}
+
+			ctx.Status.End(true)
+		}
+
 		ctx.Status.Start("Preparing nodes in workload cluster 📦")
 		defer ctx.Status.End(false)
 
@@ -496,36 +526,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			_, err = commons.ExecuteCommand(n, c)
 			if err != nil {
 				return errors.Wrap(err, "failed to install chart cluster-autoscaler")
-			}
-
-			ctx.Status.End(true)
-		}
-
-		ctx.Status.Start("Creating Kubernetes RBAC internal loadbalancing 🔐")
-		defer ctx.Status.End(false)
-
-		if provider.capxProvider == "gcp" {
-			requiredInternalNginx, err := infra.internalNginx(descriptorFile.Networks, credentialsMap, descriptorFile.ClusterID)
-			if err != nil {
-				return err
-			}
-
-			if requiredInternalNginx {
-				rbacInternalLoadBalancingPath := "/kind/internalloadbalancing_rbac.yaml"
-
-				// Deploy Kubernetes RBAC internal loadbalancing
-
-				raw = bytes.Buffer{}
-				cmd = node.Command("sh", "-c", "echo \""+rbacInternalLoadBalancing+"\" > "+rbacInternalLoadBalancingPath)
-				if err := cmd.SetStdout(&raw).Run(); err != nil {
-					return errors.Wrap(err, "failed to write the kubernetes RBAC internal loadbalancing")
-				}
-
-				raw = bytes.Buffer{}
-				cmd = node.Command("kubectl", "--kubeconfig", kubeconfigPath, "apply", "-f", rbacInternalLoadBalancingPath)
-				if err := cmd.SetStdout(&raw).Run(); err != nil {
-					return errors.Wrap(err, "failed to the kubernetes RBAC internal loadbalancing")
-				}
 			}
 
 			ctx.Status.End(true)
