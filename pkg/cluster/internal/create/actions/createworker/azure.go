@@ -138,9 +138,7 @@ func installCloudProvider(n nodes.Node, descriptorFile commons.DescriptorFile, k
 	return nil
 }
 
-func assignUserIdentity(d commons.DescriptorFile, s map[string]string) error {
-	var cluster string
-
+func assignUserIdentity(i string, c string, r string, s map[string]string) error {
 	creds, err := azidentity.NewClientSecretCredential(s["TenantID"], s["ClientID"], s["ClientSecret"], nil)
 	if err != nil {
 		return err
@@ -153,26 +151,20 @@ func assignUserIdentity(d commons.DescriptorFile, s map[string]string) error {
 	}
 	managedClustersClient := containerserviceClientFactory.NewManagedClustersClient()
 
-	if d.ControlPlane.Azure.ResourceGroup != "" {
-		cluster = d.ControlPlane.Azure.ResourceGroup
-	} else {
-		cluster = d.ClusterID
-	}
-
 	pollerResp, err := managedClustersClient.BeginCreateOrUpdate(
-		ctx, cluster, cluster,
+		ctx, c, c,
 		armcontainerservice.ManagedCluster{
-			Location: to.Ptr(d.Region),
+			Location: to.Ptr(r),
 			Identity: &armcontainerservice.ManagedClusterIdentity{
 				Type: to.Ptr(armcontainerservice.ResourceIdentityTypeUserAssigned),
 				UserAssignedIdentities: map[string]*armcontainerservice.ManagedServiceIdentityUserAssignedIdentitiesValue{
-					d.Security.NodesIdentity: {},
+					i: {},
 				},
 			},
 			Properties: &armcontainerservice.ManagedClusterProperties{
 				IdentityProfile: map[string]*armcontainerservice.UserAssignedIdentity{
 					"kubeletidentity": {
-						ResourceID: to.Ptr(d.Security.NodesIdentity),
+						ResourceID: to.Ptr(i),
 					},
 				},
 			},

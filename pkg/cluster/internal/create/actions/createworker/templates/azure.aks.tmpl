@@ -36,8 +36,8 @@ spec:
   location: "{{ .Descriptor.Region }}"
   sku:
     tier: "{{ .Descriptor.ControlPlane.Azure.Tier }}"
-  resourceGroupName: {{ if ne .Descriptor.ControlPlane.Azure.ResourceGroup "" }}{{ .Descriptor.ControlPlane.Azure.ResourceGroup }}{{ else }}{{ .Descriptor.ClusterID }}{{- end }}
-  nodeResourceGroupName: {{ if ne .Descriptor.ControlPlane.Azure.ResourceGroup "" }}{{ .Descriptor.ControlPlane.Azure.ResourceGroup }}{{ else }}{{ .Descriptor.ClusterID }}{{- end }}-nodes
+  resourceGroupName: {{ .Descriptor.ClusterID }}
+  nodeResourceGroupName: {{ .Descriptor.ClusterID }}-nodes
   networkPolicy: calico
   sshPublicKey: \"\"
   subscriptionID: "{{ .Credentials.SubscriptionID }}"

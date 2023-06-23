@@ -46,7 +46,7 @@ spec:
     - name: node-subnet
       role: node
   {{- end }}
-  resourceGroup: {{ if ne .Descriptor.ControlPlane.Azure.ResourceGroup "" }}{{ .Descriptor.ControlPlane.Azure.ResourceGroup }}{{ else }}{{ .Descriptor.ClusterID }}{{- end }}
+  resourceGroup: {{ .Descriptor.ClusterID }}
   subscriptionID: {{ .Credentials.SubscriptionID }}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
