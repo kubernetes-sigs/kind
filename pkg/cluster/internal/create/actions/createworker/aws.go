@@ -19,7 +19,6 @@ package createworker
 import (
 	"context"
 	"encoding/base64"
-	"fmt"
 	"os"
 	"strings"
 
@@ -359,7 +358,6 @@ func (b *AWSBuilder) getParameters(sc commons.StorageClass) commons.SCParameters
 		sc.Parameters.Encrypted = "true"
 		sc.Parameters.KmsKeyId = sc.EncryptionKey
 	}
-	fmt.Println("paramsss: " + fmt.Sprint(sc.Parameters))
 	switch class := sc.Class; class {
 	case "standard":
 		return mergeSCParameters(sc.Parameters, standardAWSParameters)

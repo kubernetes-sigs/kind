@@ -21,7 +21,6 @@ import (
 	_ "embed"
 	b64 "encoding/base64"
 	"encoding/json"
-	"fmt"
 	"net/url"
 	"strings"
 
@@ -205,7 +204,6 @@ func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string, sc commons.St
 	if err != nil {
 		return err
 	}
-	fmt.Println("storageClass: " + storageClass)
 
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
 	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {

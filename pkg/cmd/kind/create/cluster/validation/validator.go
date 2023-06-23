@@ -106,7 +106,7 @@ func verifyFields(descriptor commons.DescriptorFile) error {
 		}
 	case "aws":
 		supportedFields = []string{"type", "iopsPerGB", "fstype", "allowAutoIOPSPerGBIncrease", "iops", "throughput", "blockExpress", "blockSize", "labels"}
-		err := verifyAdditionalFields(params, []string{"Type", "IopsPerGB", "FsType", "AllowAutoIOPSPerGBIncrease", "Iops", "Throughput", "BlockExpress", "BlockSize"})
+		err := verifyAdditionalFields(params, []string{"Type", "IopsPerGB", "FsType", "AllowAutoIOPSPerGBIncrease", "Iops", "Throughput", "BlockExpress", "BlockSize", "Labels"})
 		if err != nil {
 			return errors.New(err.Error() + "Supported fields for " + descriptor.InfraProvider + ": " + strings.Join(supportedFields, ", "))
 		}

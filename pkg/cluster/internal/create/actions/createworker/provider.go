@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"embed"
 	"encoding/base64"
-	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -465,7 +464,6 @@ func mergeSCParameters(params1, params2 commons.SCParameters) commons.SCParamete
 			}
 		}
 	}
-	fmt.Println("params: " + fmt.Sprintln(params1))
 
 	return params1
 }
@@ -502,8 +500,6 @@ func insertParameters(storageClass StorageClassDef, params commons.SCParameters)
 	if err != nil {
 		return "", err
 	}
-
-	fmt.Println("sc after: " + string(resultYAML))
 
 	return string(resultYAML), nil
 }
