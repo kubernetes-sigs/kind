@@ -269,15 +269,15 @@ type SCParameters struct {
 	DiskEncryptionKmsKey    string `yaml:"disk_encryption_kms_key,omitempty"  validate:"omitempty"`                    //GCP
 	Labels                  string `yaml:"labels,omitempty"  validate:"omitempty"`                                     // Validar el formato: key1=value1,key2=value2
 
-	IopsPerGB                  string `yaml:"iopsPerGB,omitempty" validate:"omitempty"`                  //AWS //convertir en string //comprobacion de int
-	FsType                     string `yaml:"fstype,omitempty"  validate:"omitempty"`                    //Todas
-	KmsKeyId                   string `yaml:"kmsKeyId,omitempty"  validate:"omitempty"`                  //AWS
-	AllowAutoIOPSPerGBIncrease string `yaml:"allowAutoIOPSPerGBIncrease,omitempty" validate:"omitempty"` //AWS
-	Iops                       string `yaml:"iops,omitempty" validate:"omitempty"`                       //AWS
-	Throughput                 int    `yaml:"throughput,omitempty" validate:"omitempty"`                 //AWS
-	Encrypted                  string `yaml:"encrypted,omitempty" validate:"omitempty"`                  //AWS //bool validation
-	BlockExpress               string `yaml:"blockExpress,omitempty" validate:"omitempty"`               //AWS //bool validation
-	BlockSize                  string `yaml:"blockSize,omitempty" validate:"omitempty"`                  //AWS
+	IopsPerGB                  string `yaml:"iopsPerGB,omitempty" validate:"omitempty"`                                 //AWS //convertir en string //comprobacion de int
+	FsType                     string `yaml:"fstype,omitempty"  validate:"omitempty,oneof='xfs' 'ext2' 'ext3' 'ext4' "` //Todas
+	KmsKeyId                   string `yaml:"kmsKeyId,omitempty"  validate:"omitempty"`                                 //AWS
+	AllowAutoIOPSPerGBIncrease string `yaml:"allowAutoIOPSPerGBIncrease,omitempty" validate:"omitempty"`                //AWS
+	Iops                       string `yaml:"iops,omitempty" validate:"omitempty"`                                      //AWS
+	Throughput                 int    `yaml:"throughput,omitempty" validate:"omitempty"`                                //AWS
+	Encrypted                  string `yaml:"encrypted,omitempty" validate:"omitempty"`                                 //AWS //bool validation
+	BlockExpress               string `yaml:"blockExpress,omitempty" validate:"omitempty"`                              //AWS //bool validation
+	BlockSize                  string `yaml:"blockSize,omitempty" validate:"omitempty"`                                 //AWS
 
 	Provisioner         string   `yaml:"provisioner,omitempty" validate:"omitempty"`
 	SkuName             string   `yaml:"skuName,omitempty" validate:"omitempty"`

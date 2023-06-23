@@ -11,6 +11,6 @@ spec:
       - 169.254.169.254/32
     protocol: TCP
   order: 0
-  namespaceSelector: cluster.x-k8s.io/provider == 'infrastructure-aws'
+  namespaceSelector: cluster.x-k8s.io/provider == 'infrastructure-aws' || kubernetes.io/metadata.name in { 'kube-system' }
   types:
   - Egress
