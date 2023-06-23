@@ -119,7 +119,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		"descriptor",
 		"d",
 		"",
-		"allows you to indicate the name of the descriptor located in this directory. By default it is cluster.yaml",
+		"allows you to indicate the name of the descriptor located in current or other directory. Default: cluster.yaml",
 	)
 	cmd.Flags().BoolVar(
 		&flags.MoveManagement,
@@ -137,7 +137,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		&flags.ForceDelete,
 		"delete-previous",
 		false,
-		"by setting this flag the local cluster will be deleted",
+		"by setting this flag the local cluster container will be deleted",
 	)
 
 	return cmd
