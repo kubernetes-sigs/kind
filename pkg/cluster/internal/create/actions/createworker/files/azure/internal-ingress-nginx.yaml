@@ -1,0 +1,5 @@
+---
+ingress_external_lb: false
+ingress_internal_lb: true
+ingress_internal_lb_annotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"

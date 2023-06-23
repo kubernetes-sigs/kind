@@ -51,6 +51,7 @@ type PBuilder interface {
 	installCSI(n nodes.Node, k string) error
 	getProvider() Provider
 	getAzs(networks commons.Networks) ([]string, error)
+	internalNginx(networks commons.Networks, credentialsMap map[string]string, clusterID string) (bool, error)
 }
 
 type Provider struct {
@@ -104,6 +105,14 @@ func (i *Infra) buildProvider(p commons.ProviderParams) Provider {
 
 func (i *Infra) installCSI(n nodes.Node, k string) error {
 	return i.builder.installCSI(n, k)
+}
+
+func (i *Infra) internalNginx(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (bool, error) {
+	requiredIntenalNginx, err := i.builder.internalNginx(networks, credentialsMap, ClusterID)
+	if err != nil {
+		return false, err
+	}
+	return requiredIntenalNginx, nil
 }
 
 func (i *Infra) getAzs(networks commons.Networks) ([]string, error) {
