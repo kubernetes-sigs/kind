@@ -56,6 +56,7 @@ type PBuilder interface {
 	configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error
 	getParameters(sc commons.StorageClass) commons.SCParameters
 	getAzs(networks commons.Networks) ([]string, error)
+	internalNginx(networks commons.Networks, credentialsMap map[string]string, clusterID string) (bool, error)
 }
 
 type Provider struct {
@@ -125,6 +126,14 @@ func (i *Infra) installCSI(n nodes.Node, k string) error {
 
 func (i *Infra) configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error {
 	return i.builder.configureStorageClass(n, k, sc)
+}
+
+func (i *Infra) internalNginx(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (bool, error) {
+	requiredIntenalNginx, err := i.builder.internalNginx(networks, credentialsMap, ClusterID)
+	if err != nil {
+		return false, err
+	}
+	return requiredIntenalNginx, nil
 }
 
 func (i *Infra) getAzs(networks commons.Networks) ([]string, error) {

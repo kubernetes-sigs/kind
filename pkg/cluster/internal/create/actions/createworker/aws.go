@@ -214,6 +214,34 @@ func (b *AWSBuilder) getAzs(networks commons.Networks) ([]string, error) {
 	}
 }
 
+func (b *AWSBuilder) internalNginx(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (bool, error) {
+	if len(b.capxEnvVars) == 0 {
+		return false, errors.New("Insufficient credentials.")
+	}
+	for _, cred := range b.capxEnvVars {
+		c := strings.Split(cred, "=")
+		envVar := c[0]
+		envValue := c[1]
+		os.Setenv(envVar, envValue)
+	}
+
+	sess, err := session.NewSession(&aws.Config{})
+	if err != nil {
+		return false, err
+	}
+	svc := ec2.New(sess)
+	if networks.Subnets != nil {
+		for _, subnet := range networks.Subnets {
+			publicSubnetID, _ := filterPublicSubnet(svc, &subnet.SubnetId)
+			if len(publicSubnetID) > 0 {
+				return false, nil
+			}
+		}
+		return true, nil
+	}
+	return false, nil
+}
+
 func filterPrivateSubnet(svc *ec2.EC2, subnetID *string) (string, error) {
 	keyname := "association.subnet-id"
 	filters := make([]*ec2.Filter, 0)
@@ -238,6 +266,36 @@ func filterPrivateSubnet(svc *ec2.EC2, subnetID *string) (string, error) {
 		}
 	}
 	if !isPublic {
+		return *subnetID, nil
+	} else {
+		return "", nil
+	}
+}
+
+func filterPublicSubnet(svc *ec2.EC2, subnetID *string) (string, error) {
+	keyname := "association.subnet-id"
+	filters := make([]*ec2.Filter, 0)
+	filter := ec2.Filter{
+		Name: &keyname, Values: []*string{subnetID}}
+	filters = append(filters, &filter)
+
+	drti := &ec2.DescribeRouteTablesInput{Filters: filters}
+	drto, err := svc.DescribeRouteTables(drti)
+	if err != nil {
+		return "", err
+	}
+
+	var isPublic bool
+	for _, associatedRouteTable := range drto.RouteTables {
+		for i := range associatedRouteTable.Routes {
+			if *associatedRouteTable.Routes[i].DestinationCidrBlock == "0.0.0.0/0" &&
+				associatedRouteTable.Routes[i].GatewayId != nil &&
+				strings.Contains(*associatedRouteTable.Routes[i].GatewayId, "igw") {
+				isPublic = true
+			}
+		}
+	}
+	if isPublic {
 		return *subnetID, nil
 	} else {
 		return "", nil

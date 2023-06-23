@@ -226,5 +226,47 @@ func (b *GCPBuilder) getParameters(sc commons.StorageClass) commons.SCParameters
 		return mergeSCParameters(sc.Parameters, premiumGCPParameters)
 	default:
 		return mergeSCParameters(sc.Parameters, premiumAZParameters)
+
+	}
+}
+
+func (b *GCPBuilder) internalNginx(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (bool, error) {
+	if len(b.dataCreds) == 0 {
+		return false, errors.New("Insufficient credentials.")
+	}
+
+	ctx := context.Background()
+	jsonDataCreds, _ := json.Marshal(b.dataCreds)
+	creds := option.WithCredentialsJSON(jsonDataCreds)
+	computeService, err := compute.NewService(ctx, creds)
+	if err != nil {
+		return false, err
+	}
+
+	project := b.dataCreds["project_id"].(string)
+	region := b.region
+
+	if networks.Subnets != nil {
+		for _, subnet := range networks.Subnets {
+			publicSubnetID, _ := GCPFilterPublicSubnet(computeService, project, region, subnet.SubnetId)
+			if len(publicSubnetID) > 0 {
+				return false, nil
+			}
+		}
+		return true, nil
+	}
+	return false, nil
+}
+
+func GCPFilterPublicSubnet(computeService *compute.Service, projectID string, region string, subnetID string) (string, error) {
+	subnet, err := computeService.Subnetworks.Get(projectID, region, subnetID).Do()
+	if err != nil {
+		return "", err
+	}
+
+	if subnet.PrivateIpGoogleAccess {
+		return "", nil
+	} else {
+		return subnetID, nil
 	}
 }
