@@ -2,8 +2,10 @@ package validation
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/apparentlymart/go-cidr/cidr"
@@ -32,6 +34,8 @@ func newEKSValidator() *EKSValidator {
 	return eksInstance
 }
 
+var provisionersTypesAWS = []string{"io1", "io2", "gp2", "gp3", "sc1", "st1", "standard", "sbp1", "sbg1"}
+
 func (v *EKSValidator) DescriptorFile(descriptorFile commons.DescriptorFile) {
 	v.descriptor = descriptorFile
 }
@@ -43,7 +47,7 @@ func (v *EKSValidator) SecretsFile(secrets commons.SecretsFile) {
 func (v *EKSValidator) Validate(fileType string) error {
 	switch fileType {
 	case "descriptor":
-		err := descriptorEksValidations((*v).descriptor, (*v).secrets)
+		err := v.descriptorEksValidations((*v).descriptor, (*v).secrets)
 		if err != nil {
 			return err
 		}
@@ -66,7 +70,7 @@ func (v *EKSValidator) CommonsValidations() error {
 	return nil
 }
 
-func descriptorEksValidations(descriptorFile commons.DescriptorFile, secretsFile commons.SecretsFile) error {
+func (v *EKSValidator) descriptorEksValidations(descriptorFile commons.DescriptorFile, secretsFile commons.SecretsFile) error {
 	err := commonsDescriptorValidation(descriptorFile)
 	if err != nil {
 		return err
@@ -76,6 +80,10 @@ func descriptorEksValidations(descriptorFile commons.DescriptorFile, secretsFile
 		return err
 	}
 	err = eksAZValidation(descriptorFile, secretsFile)
+	if err != nil {
+		return err
+	}
+	err = v.storageClassValidation(descriptorFile)
 	if err != nil {
 		return err
 	}
@@ -219,4 +227,64 @@ func filterPrivateSubnet(svc *ec2.EC2, subnetID *string) (string, error) {
 	} else {
 		return "", nil
 	}
+}
+
+func (v *EKSValidator) storageClassValidation(descriptorFile commons.DescriptorFile) error {
+	err := v.storageClassKeyFormatValidation(descriptorFile.StorageClass.EncryptionKmsKey)
+	if err != nil {
+		return errors.New("Error in StorageClass: " + err.Error())
+	}
+	err = v.storageClassParametersValidation(descriptorFile)
+	if err != nil {
+		return errors.New("Error in StorageClass: " + err.Error())
+	}
+
+	return nil
+}
+
+func (v *EKSValidator) storageClassKeyFormatValidation(key string) error {
+	regex := regexp.MustCompile(`^arn:aws:kms:[a-zA-Z0-9-]+:\d{12}:key/[a-zA-Z0-9-_]+$`)
+	if !regex.MatchString(key) {
+		return errors.New("Incorrect key for encryption format. It must have the complete arn format")
+	}
+	return nil
+}
+
+func (v *EKSValidator) storageClassParametersValidation(descriptorFile commons.DescriptorFile) error {
+	sc := descriptorFile.StorageClass
+	typesSupportedForIOPS := []string{"io1", "io2", "gp3"}
+	fstypes := []string{"xfs", "ext3", "ext4", "ext2"}
+	err := verifyFields(descriptorFile)
+	if err != nil {
+		return err
+	}
+	if sc.Parameters.Type != "" && !slices.Contains(provisionersTypesAWS, sc.Parameters.Type) {
+		return errors.New("Unsupported type: " + sc.Parameters.Type)
+	}
+	if sc.Parameters.IopsPerGB != "" && !slices.Contains(typesSupportedForIOPS, sc.Parameters.Type) {
+		return errors.New("I/O operations per second per GiB only can be specified for IO1, IO2, and GP3 volume types.")
+	}
+	if sc.Parameters.Iops != "" && !slices.Contains(typesSupportedForIOPS, sc.Parameters.Type) {
+		return errors.New("I/O operations per second per GiB only can be specified for IO1, IO2, and GP3 volume types.")
+	}
+	if sc.Parameters.FsType != "" && !slices.Contains(fstypes, sc.Parameters.FsType) {
+		return errors.New("Unsupported fsType: " + sc.Parameters.Type + ". Supported types: " + fmt.Sprint(fstypes))
+	}
+	if sc.Parameters.KmsKeyId != "" {
+		err := v.storageClassKeyFormatValidation(sc.Parameters.KmsKeyId)
+		if err != nil {
+			return err
+		}
+	}
+	if sc.Parameters.Labels != "" {
+		labels := strings.Split(sc.Parameters.Labels, ",")
+		regex := regexp.MustCompile(`^(\w+|.*)=(\w+|.*)$`)
+		for _, label := range labels {
+			if !regex.MatchString(label) {
+				return errors.New("Incorrect labels format. Labels must have the format 'key1=value1,key2=value2'")
+			}
+		}
+	}
+
+	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -19,6 +20,8 @@ type AzureValidator struct {
 	commonValidator
 	managed bool
 }
+
+var provisionersTypesAzure = []string{"Standard_LRS", "Premium_LRS", "StandardSSD_LRS", "UltraSSD_LRS", "Premium_ZRS", "StandardSSD_ZRS", "PremiumV2_LRS"}
 
 func newAzureValidator(managed bool) *AzureValidator {
 	if azureInstance == nil {
@@ -39,7 +42,7 @@ func (v *AzureValidator) SecretsFile(secrets commons.SecretsFile) {
 func (v *AzureValidator) Validate(fileType string) error {
 	switch fileType {
 	case "descriptor":
-		err := descriptorAzureValidations((*v).descriptor, (*v).secrets, (*v).managed)
+		err := v.descriptorAzureValidations((*v).descriptor, (*v).secrets, (*v).managed)
 		if err != nil {
 			return err
 		}
@@ -62,7 +65,7 @@ func (v *AzureValidator) CommonsValidations() error {
 	return nil
 }
 
-func descriptorAzureValidations(descriptorFile commons.DescriptorFile, secretsFile commons.SecretsFile, managed bool) error {
+func (v *AzureValidator) descriptorAzureValidations(descriptorFile commons.DescriptorFile, secretsFile commons.SecretsFile, managed bool) error {
 	err := commonsDescriptorValidation(descriptorFile)
 	if err != nil {
 		return err
@@ -76,6 +79,10 @@ func descriptorAzureValidations(descriptorFile commons.DescriptorFile, secretsFi
 		if err != nil {
 			return err
 		}
+	}
+	err = v.storageClassValidation(descriptorFile)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -132,5 +139,59 @@ func aksNodesValidation(workerNodes commons.WorkerNodes) error {
 			return errors.New("node name must be 9 characters or less & contain only lowercase alphanumeric characters")
 		}
 	}
+	return nil
+}
+
+func (v *AzureValidator) storageClassValidation(descriptorFile commons.DescriptorFile) error {
+	err := v.storageClassKeyFormatValidation(descriptorFile)
+	if err != nil {
+		return errors.New("Error in StorageClass: " + err.Error())
+	}
+	err = v.storageClassParametersValidation(descriptorFile)
+	if err != nil {
+		return errors.New("Error in StorageClass: " + err.Error())
+	}
+
+	return nil
+}
+
+func (v *AzureValidator) storageClassKeyFormatValidation(descriptorFile commons.DescriptorFile) error {
+	key := descriptorFile.StorageClass.EncryptionKmsKey
+	regex := regexp.MustCompile(`^/subscriptions/[a-fA-F0-9-]+/resourceGroups/[\w.-]+/providers/Microsoft\.Compute/diskEncryptionSets/[\w.-]+$`)
+	if !regex.MatchString(key) {
+		return errors.New("Incorrect encryptionKmsKey format. It must have the format /subscriptions/[SUBSCRIPTION_ID]/resourceGroups/[RESOURCE_GROUP]/providers/Microsoft.ManagedIdentity/diskEncryptionSets/[DISK_ENCRYPION_SETS_NAME]")
+	}
+	return nil
+}
+
+func (v *AzureValidator) storageClassParametersValidation(descriptorFile commons.DescriptorFile) error {
+	sc := descriptorFile.StorageClass
+	err := verifyFields(descriptorFile)
+	fstypes := []string{"xfs", "ext3", "ext4", "ext2", "btrfs"}
+	if err != nil {
+		return err
+	}
+	if sc.Parameters.SkuName != "" && !slices.Contains(provisionersTypesAzure, sc.Parameters.SkuName) {
+		return errors.New("Unsupported skuname: " + sc.Parameters.SkuName)
+	}
+
+	if sc.Parameters.FsType != "" && !slices.Contains(fstypes, sc.Parameters.FsType) {
+		return errors.New("Unsupported fsType: " + sc.Parameters.FsType + ". Supported types: " + fmt.Sprint(strings.Join(fstypes, ", ")))
+	}
+	if sc.Parameters.CachingMode != "" && sc.Parameters.SkuName == "PremiumV2_LRS" && sc.Parameters.CachingMode != "none" {
+		return errors.New("With skuName: PremiumV2_LRS, CachingMode only can be none")
+
+	}
+
+	if sc.Parameters.Tags != "" {
+		tags := strings.Split(sc.Parameters.Tags, ",")
+		regex := regexp.MustCompile(`^(\w+|.*)=(\w+|.*)$`)
+		for _, tag := range tags {
+			if !regex.MatchString(tag) {
+				return errors.New("Incorrect labels format. Labels must have the format 'key1=value1,key2=value2'")
+			}
+		}
+	}
+
 	return nil
 }

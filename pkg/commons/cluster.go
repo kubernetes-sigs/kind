@@ -269,25 +269,30 @@ type SCParameters struct {
 	DiskEncryptionKmsKey    string `yaml:"disk_encryption_kms_key,omitempty"  validate:"omitempty"`                    //GCP
 	Labels                  string `yaml:"labels,omitempty"  validate:"omitempty"`                                     // Validar el formato: key1=value1,key2=value2
 
-	IopsPerGB                  string `yaml:"iopsPerGB,omitempty" validate:"omitempty"`                                 //AWS //convertir en string //comprobacion de int
-	FsType                     string `yaml:"fstype,omitempty"  validate:"omitempty,oneof='xfs' 'ext2' 'ext3' 'ext4' "` //Todas
-	KmsKeyId                   string `yaml:"kmsKeyId,omitempty"  validate:"omitempty"`                                 //AWS
-	AllowAutoIOPSPerGBIncrease string `yaml:"allowAutoIOPSPerGBIncrease,omitempty" validate:"omitempty"`                //AWS
-	Iops                       string `yaml:"iops,omitempty" validate:"omitempty"`                                      //AWS
-	Throughput                 int    `yaml:"throughput,omitempty" validate:"omitempty"`                                //AWS
-	Encrypted                  string `yaml:"encrypted,omitempty" validate:"omitempty"`                                 //AWS //bool validation
-	BlockExpress               string `yaml:"blockExpress,omitempty" validate:"omitempty"`                              //AWS //bool validation
-	BlockSize                  string `yaml:"blockSize,omitempty" validate:"omitempty"`                                 //AWS
+	IopsPerGB                  string `yaml:"iopsPerGB,omitempty" validate:"omitempty,excluded_with=Iops"`                    //AWS //convertir en string //comprobacion de int
+	FsType                     string `yaml:"fstype,omitempty"  validate:"omitempty"`                                         //Todas
+	KmsKeyId                   string `yaml:"kmsKeyId,omitempty"  validate:"omitempty"`                                       //AWS
+	AllowAutoIOPSPerGBIncrease string `yaml:"allowAutoIOPSPerGBIncrease,omitempty" validate:"omitempty,oneof='true' 'false'"` //AWS
+	Iops                       string `yaml:"iops,omitempty" validate:"omitempty,excluded_with=IopsPerGB"`                    //AWS
+	Throughput                 int    `yaml:"throughput,omitempty" validate:"omitempty,gt=0"`                                 //AWS
+	Encrypted                  string `yaml:"encrypted,omitempty" validate:"omitempty,oneof='true' 'false'"`                  //AWS //bool validation
+	BlockExpress               string `yaml:"blockExpress,omitempty" validate:"omitempty,oneof='true' 'false'"`               //AWS //bool validation
+	BlockSize                  string `yaml:"blockSize,omitempty" validate:"omitempty"`                                       //AWS
 
-	Provisioner         string   `yaml:"provisioner,omitempty" validate:"omitempty"`
-	SkuName             string   `yaml:"skuName,omitempty" validate:"omitempty"`
-	Kind                string   `yaml:"kind,omitempty" validate:"omitempty"`
-	CachingMode         string   `yaml:"cachingMode,omitempty" validate:"omitempty"`
-	DiskEncryptionType  string   `yaml:"diskEncryptionType,omitempty" validate:"omitempty"`
-	DiskEncryptionSetID string   `yaml:"diskEncryptionSetID,omitempty" validate:"omitempty"`
-	ResourceGroup       string   `yaml:"resourceGroup,omitempty" validate:"omitempty"`
-	Tags                string   `yaml:"tags,omitempty"  validate:"omitempty"`
-	MountOptions        []string `yaml:"mountOptions,omitempty" validate:"omitempty"`
+	Provisioner           string `yaml:"provisioner,omitempty" validate:"omitempty,oneof='disk.csi.azure.com' 'file.csi.azure.com"`
+	SkuName               string `yaml:"skuName,omitempty" validate:"omitempty"`
+	Kind                  string `yaml:"kind,omitempty" validate:"omitempty,oneof='managed'"`
+	CachingMode           string `yaml:"cachingMode,omitempty" validate:"omitempty,oneof='None' 'ReadOnly'"`
+	DiskEncryptionType    string `yaml:"diskEncryptionType,omitempty" validate:"omitempty,oneof='EncryptionAtRestWithCustomerKey' 'EncryptionAtRestWithPlatformAndCustomerKeys'"`
+	DiskEncryptionSetID   string `yaml:"diskEncryptionSetID,omitempty" validate:"omitempty"`
+	ResourceGroup         string `yaml:"resourceGroup,omitempty" validate:"omitempty"`
+	Tags                  string `yaml:"tags,omitempty"  validate:"omitempty"`
+	NetworkAccessPolicy   string `yaml:"networkAccessPolicy,omitempty"  validate:"omitempty,oneof='AllowAll' 'DenyAll' 'AllowPrivate'"`
+	PublicNetworkAccess   string `yaml:"publicNetworkAccess,omitempty" validate:"omitempty,oneof='Enabled' 'Disabled'"`
+	DiskAccessID          string `yaml:"diskAccessID,omitempty" validate:"omitempty"`
+	EnableBursting        string `yaml:"enableBursting,omitempty" validate:"omitempty,oneof='true' 'false'"`
+	EnablePerformancePlus string `yaml:"enablePerformancePlus,omitempty" validate:"omitempty,oneof='true' 'false'"`
+	SubscriptionID        string `yaml:"subscriptionID,omitempty" validate:"omitempty"`
 }
 
 // Init sets default values for the DescriptorFile
@@ -403,7 +408,6 @@ func gteParamIfExists(fl validator.FieldLevel) bool {
 	field := fl.Field()
 	fieldCompared := fl.Param()
 
-	//omitEmpty
 	if field.Kind() == reflect.Int && field.Int() == 0 {
 		return true
 	}
@@ -419,7 +423,6 @@ func gteParamIfExists(fl validator.FieldLevel) bool {
 	if paramFieldValue.Kind() != reflect.Int {
 		return false
 	}
-	//QUe no rompa cuando quantity no se indica, se romperá en otra validación
 	if paramFieldValue.Int() == 0 {
 		return true
 	}
