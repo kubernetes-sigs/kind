@@ -29,15 +29,25 @@ spec:
     name: "{{ .Descriptor.ClusterID }}-identity"
   location: "{{ .Descriptor.Region }}"
   networkSpec:
+    vnet:
+      name: {{ if ne .Descriptor.Networks.VPCID "" }}{{ .Descriptor.Networks.VPCID }}{{ else }}{{ .Descriptor.ClusterID }}-vnet{{- end }}
+      {{- if ne .Descriptor.Networks.ResourceGroup "" }}
+      resourceGroup: {{ .Descriptor.Networks.ResourceGroup }}
+      {{- end }}
     subnets:
+  {{- if gt (len .Descriptor.Networks.Subnets) 0 }}
+    {{- range .Descriptor.Networks.Subnets }}
+    - name: {{ .SubnetId }}
+      role: {{ .Role }}
+    {{- end }}
+  {{- else }}
     - name: control-plane-subnet
       role: control-plane
     - name: node-subnet
       role: node
-    vnet:
-      name: "{{ .Descriptor.ClusterID }}-vnet"
-  resourceGroup: "{{ .Descriptor.ClusterID }}"
-  subscriptionID: "{{ .Credentials.SubscriptionID }}"
+  {{- end }}
+  resourceGroup: {{ .Descriptor.ClusterID }}
+  subscriptionID: {{ .Credentials.SubscriptionID }}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureClusterIdentity
@@ -174,6 +184,10 @@ spec:
            lun: {{ $index }}
         {{- end }}
       {{- end }}
+      {{- if ne .Descriptor.ControlPlane.NodeImage "" }}
+      image:
+        id: {{ .Descriptor.ControlPlane.NodeImage }}
+      {{- end }}
       {{- if .Descriptor.Security.NodesIdentity }}
       identity: UserAssigned
       userAssignedIdentities:
@@ -244,6 +258,10 @@ spec:
            diskSizeGB: {{ $vol.Size }}
            lun: {{ $index }}
         {{- end }}
+      {{- end }}
+      {{- if ne $node.NodeImage "" }}
+      image:
+        id: {{ $node.NodeImage }}
       {{- end }}
       {{- if $.Descriptor.Security.NodesIdentity }}
       identity: UserAssigned
@@ -329,11 +347,11 @@ spec:
           kubeletExtraArgs:
             azure-container-registry-config: /etc/kubernetes/azure.json
             cloud-provider: external
-            {{- if $node.Labels }}
+            {{- if gt (len $node.Labels) 0 }}
             node-labels: \"{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}\"
             {{- end }}
             {{- if gt (len $node.Taints) 0 }}
-            register-with-taints: \"{{ range $i, $taint := $node.Taints }}{{$taint.Key}}={{$taint.Value}}:{{$taint.Effect}}{{- if ne $i (sub (len $node.Taints) 1) }},{{- end }}{{ end }}\"
+            register-with-taints: \"{{ range $i, $taint := $node.Taints }}{{$taint}}{{- if ne $i (sub (len $node.Taints) 1) }},{{- end }}{{ end }}\"
             {{- end }}
           name: {{`'{{ ds.meta_data[\"local_hostname\"] }}'`}}
       preKubeadmCommands: []

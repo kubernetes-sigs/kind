@@ -18,6 +18,8 @@ package createworker
 
 import (
 	"os"
+	"path/filepath"
+	"time"
 
 	"gopkg.in/yaml.v3"
 	"sigs.k8s.io/kind/pkg/commons"
@@ -61,10 +63,22 @@ type KEOSDescriptor struct {
 		Flavour         string `yaml:"flavour"`
 		K8sInstallation bool   `yaml:"k8s_installation"`
 		Storage         struct {
-			DefaultStorageClass string   `yaml:"default_storage_class"`
+			DefaultStorageClass string   `yaml:"default_storage_class,omitempty"`
 			Providers           []string `yaml:"providers"`
+			Config              struct {
+				CSIAWS struct {
+					EFS      []EFSConfig `yaml:"efs"`
+					KMSKeyID string      `yaml:"kms_key_id,omitempty"`
+				} `yaml:"csi-aws"`
+			} `yaml:"config,omitempty"`
 		} `yaml:"storage"`
-	} `yaml:"keos"`
+	}
+}
+
+type EFSConfig struct {
+	ID          string `yaml:"id"`
+	Name        string `yaml:"name"`
+	Permissions string `yaml:"permissions"`
 }
 
 func createKEOSDescriptor(descriptorFile commons.DescriptorFile, storageClass string) error {
@@ -125,7 +139,29 @@ func createKEOSDescriptor(descriptorFile commons.DescriptorFile, storageClass st
 
 	// Keos - Storage
 	keosDescriptor.Keos.Storage.DefaultStorageClass = storageClass
-	keosDescriptor.Keos.Storage.Providers = []string{"custom"}
+	if descriptorFile.StorageClass.EFS.Name != "" {
+		keosDescriptor.Keos.Storage.Providers = []string{"csi-aws"}
+
+		name := descriptorFile.StorageClass.EFS.Name
+		id := descriptorFile.StorageClass.EFS.ID
+		permissions := descriptorFile.StorageClass.EFS.Permissions
+
+		if permissions == "" {
+			permissions = "700"
+		}
+		keosDescriptor.Keos.Storage.Config.CSIAWS.EFS = []EFSConfig{
+			{
+				Name:        name,
+				ID:          id,
+				Permissions: permissions,
+			},
+		}
+		if descriptorFile.StorageClass.EncryptionKey != "" {
+			keosDescriptor.Keos.Storage.Config.CSIAWS.KMSKeyID = descriptorFile.StorageClass.EncryptionKey
+		}
+	} else {
+		keosDescriptor.Keos.Storage.Providers = []string{"custom"}
+	}
 
 	// Keos - External dns
 	if !descriptorFile.Dns.ManageZone {
@@ -135,6 +171,20 @@ func createKEOSDescriptor(descriptorFile commons.DescriptorFile, storageClass st
 	keosYAMLData, err := yaml.Marshal(keosDescriptor)
 	if err != nil {
 		return err
+	}
+
+	// Rotate keos.yaml
+	keosFilename := "keos.yaml"
+
+	if _, err := os.Stat(keosFilename); err == nil {
+		timestamp := time.Now().Format("2006-01-02@15:04:05")
+		backupKeosFilename := keosFilename + "." + timestamp + "~"
+		originalKeosFilePath := filepath.Join(".", keosFilename)
+		backupKeosFilePath := filepath.Join(".", backupKeosFilename)
+
+		if err := os.Rename(originalKeosFilePath, backupKeosFilePath); err != nil {
+			return err
+		}
 	}
 
 	// Write file to disk

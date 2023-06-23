@@ -87,37 +87,34 @@ type DescriptorFile struct {
 		HighlyAvailable bool   `yaml:"highly_available" validate:"boolean"`
 		Size            string `yaml:"size" validate:"required_if=Managed false"`
 		RootVolume      struct {
-			Size      int    `yaml:"size" validate:"numeric"`
-			Type      string `yaml:"type"`
-			Encrypted bool   `yaml:"encrypted" validate:"boolean"`
+			Size          int    `yaml:"size" validate:"numeric"`
+			Type          string `yaml:"type"`
+			Encrypted     bool   `yaml:"encrypted" validate:"boolean"`
+			EncryptionKey string `yaml:"encryption_key"`
 		} `yaml:"root_volume"`
-		AWS          AWSCP         `yaml:"aws"`
-		Azure        AzureCP       `yaml:"azure"`
-		ExtraVolumes []ExtraVolume `yaml:"extra_volumes"`
+		Tags         []map[string]string `yaml:"tags"`
+		AWS          AWSCP               `yaml:"aws"`
+		Azure        AzureCP             `yaml:"azure"`
+		ExtraVolumes []ExtraVolume       `yaml:"extra_volumes"`
 	} `yaml:"control_plane"`
 
-	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
+	StorageClass StorageClass `yaml:storageclass`
+	WorkerNodes  WorkerNodes  `yaml:"worker_nodes" validate:"required,dive"`
 }
 
 type Networks struct {
-	VPCID                      string            `yaml:"vpc_id"`
-	VPCCidrBlock               string            `yaml:"vpc_cidr" validate:"omitempty,cidrv4"`
-	PodsCidrBlock              string            `yaml:"pods_cidr" validate:"omitempty,cidrv4"`
-	Tags                       map[string]string `yaml:"tags,omitempty"`
-	AvailabilityZoneUsageLimit int               `yaml:"az_usage_limit" validate:"numeric"`
-	AvailabilityZoneSelection  string            `yaml:"az_selection" validate:"oneof='Ordered' 'Random' '' "`
-	PodsSubnets                []Subnets         `yaml:"pods_subnets"`
-	Subnets                    []Subnets         `yaml:"subnets"`
+	VPCID         string    `yaml:"vpc_id"`
+	VPCCidrBlock  string    `yaml:"vpc_cidr" validate:"omitempty,cidrv4"`
+	PodsCidrBlock string    `yaml:"pods_cidr" validate:"omitempty,cidrv4"`
+	PodsSubnets   []Subnets `yaml:"pods_subnets"`
+	Subnets       []Subnets `yaml:"subnets"`
+	ResourceGroup string    `yaml:"resource_group"`
 }
 
 type Subnets struct {
-	SubnetId         string            `yaml:"subnet_id"`
-	AvailabilityZone string            `yaml:"az,omitempty"`
-	IsPublic         *bool             `yaml:"is_public,omitempty"`
-	RouteTableId     string            `yaml:"route_table_id,omitempty"`
-	NatGatewayId     string            `yaml:"nat_id,omitempty"`
-	Tags             map[string]string `yaml:"tags,omitempty"`
-	CidrBlock        string            `yaml:"cidr,omitempty"`
+	SubnetId  string `yaml:"subnet_id"`
+	CidrBlock string `yaml:"cidr" validate:"omitempty,cidrv4"`
+	Role      string `yaml:"role" validate:"oneof='control-plane' 'node'"`
 }
 
 type AWSCP struct {
@@ -149,9 +146,10 @@ type WorkerNodes []struct {
 	NodeGroupMaxSize int               `yaml:"max_size" validate:"required_with=NodeGroupMinSize,numeric,omitempty"`
 	NodeGroupMinSize int               `yaml:"min_size" validate:"required_with=NodeGroupMaxSize,numeric,omitempty"`
 	RootVolume       struct {
-		Size      int    `yaml:"size" validate:"numeric"`
-		Type      string `yaml:"type"`
-		Encrypted bool   `yaml:"encrypted" validate:"boolean"`
+		Size          int    `yaml:"size" validate:"numeric"`
+		Type          string `yaml:"type"`
+		Encrypted     bool   `yaml:"encrypted" validate:"boolean"`
+		EncryptionKey string `yaml:"encryption_key"`
 	} `yaml:"root_volume"`
 	ExtraVolumes []ExtraVolume `yaml:"extra_volumes"`
 }
@@ -165,13 +163,14 @@ type Bastion struct {
 }
 
 type ExtraVolume struct {
-	Name       string `yaml:"name"`
-	DeviceName string `yaml:"device_name"`
-	Size       int    `yaml:"size" validate:"numeric"`
-	Type       string `yaml:"type"`
-	Label      string `yaml:"label"`
-	Encrypted  bool   `yaml:"encrypted" validate:"boolean"`
-	MountPath  string `yaml:"mount_path" validate:"omitempty,required_with=Name"`
+	Name          string `yaml:"name"`
+	DeviceName    string `yaml:"device_name"`
+	Size          int    `yaml:"size" validate:"numeric"`
+	Type          string `yaml:"type"`
+	Label         string `yaml:"label"`
+	Encrypted     bool   `yaml:"encrypted" validate:"boolean"`
+	EncryptionKey string `yaml:"encryption_key"`
+	MountPath     string `yaml:"mount_path" validate:"omitempty,required_with=Name"`
 }
 
 type Credentials struct {
@@ -246,6 +245,17 @@ type Secrets struct {
 	GithubToken      string                      `yaml:"github_token"`
 	ExternalRegistry DockerRegistryCredentials   `yaml:"external_registry"`
 	DockerRegistries []DockerRegistryCredentials `yaml:"docker_registries"`
+}
+
+type StorageClass struct {
+	EFS           EFS    `yaml:"efs"`
+	EncryptionKey string `yaml:"encryption_key,omitempty"`
+}
+
+type EFS struct {
+	Name        string `yaml:"name" validate:"required_with=ID"`
+	ID          string `yaml:"id" validate:"required_with=Name"`
+	Permissions string `yaml:"permissions,omitempty"`
 }
 
 type ProviderParams struct {

@@ -15,14 +15,14 @@ aws:
   cluster-api-aws: v2.1.4-0.4.0
   cluster-api-aws-templates: v2.1.4
   eks-addons:
-    aws-ebs-csi-driver: v1.17.0-eksbuild.1
+    aws-ebs-csi-driver: v1.19.0-eksbuild.2
     coredns: v1.9.3-eksbuild.3
-    kube-proxy: v1.25.9-eksbuild.1
-    vpc-cni: v1.12.6-eksbuild.1
+    kube-proxy: v1.24.10-eksbuild.2
+    vpc-cni: v1.12.6-eksbuild.2
 azure:
   azuredisk-csi-driver: v1.27.1
-  cluster-api-azure: v1.9.2
-  cluster-api-azure-templates: v1.9.2
+  cluster-api-azure: v1.9.3
+  cluster-api-azure-templates: v1.9.3
 gcp:
   cluster-api-gcp: v1.3.1
   cluster-api-gcp-templates: v1.3.1

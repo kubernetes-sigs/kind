@@ -80,8 +80,8 @@ func newAzureBuilder() *AzureBuilder {
 
 func (b *AzureBuilder) setCapx(managed bool) {
 	b.capxProvider = "azure"
-	b.capxVersion = "v1.9.2"
-	b.capxImageVersion = "v1.9.2"
+	b.capxVersion = "v1.9.3"
+	b.capxImageVersion = "v1.9.3"
 	b.capxName = "capz"
 	b.stClassName = "keos"
 	b.csiNamespace = "kube-system"
@@ -119,7 +119,9 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	var c string
 	var err error
 
-	c = "helm install azuredisk-csi-driver /stratio/helm/azuredisk-csi-driver --kubeconfig " + k
+	c = "helm install azuredisk-csi-driver /stratio/helm/azuredisk-csi-driver " +
+		" --kubeconfig " + k +
+		" --namespace " + b.csiNamespace
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy Azure Disk CSI driver Helm Chart")
