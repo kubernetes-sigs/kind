@@ -156,10 +156,10 @@ func (v *AzureValidator) storageClassValidation(descriptorFile commons.Descripto
 }
 
 func (v *AzureValidator) storageClassKeyFormatValidation(descriptorFile commons.DescriptorFile) error {
-	key := descriptorFile.StorageClass.EncryptionKmsKey
+	key := descriptorFile.StorageClass.EncryptionKey
 	regex := regexp.MustCompile(`^/subscriptions/[a-fA-F0-9-]+/resourceGroups/[\w.-]+/providers/Microsoft\.Compute/diskEncryptionSets/[\w.-]+$`)
 	if !regex.MatchString(key) {
-		return errors.New("Incorrect encryptionKmsKey format. It must have the format /subscriptions/[SUBSCRIPTION_ID]/resourceGroups/[RESOURCE_GROUP]/providers/Microsoft.ManagedIdentity/diskEncryptionSets/[DISK_ENCRYPION_SETS_NAME]")
+		return errors.New("Incorrect encryptionKey format. It must have the format /subscriptions/[SUBSCRIPTION_ID]/resourceGroups/[RESOURCE_GROUP]/providers/Microsoft.ManagedIdentity/diskEncryptionSets/[DISK_ENCRYPION_SETS_NAME]")
 	}
 	return nil
 }

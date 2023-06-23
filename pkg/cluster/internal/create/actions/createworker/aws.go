@@ -297,9 +297,9 @@ func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string, sc commons.St
 }
 
 func (b *AWSBuilder) getParameters(sc commons.StorageClass) commons.SCParameters {
-	if sc.EncryptionKmsKey != "" {
+	if sc.EncryptionKey != "" {
 		sc.Parameters.Encrypted = "true"
-		sc.Parameters.KmsKeyId = sc.EncryptionKmsKey
+		sc.Parameters.KmsKeyId = sc.EncryptionKey
 	}
 	fmt.Println("paramsss: " + fmt.Sprint(sc.Parameters))
 	switch class := sc.Class; class {

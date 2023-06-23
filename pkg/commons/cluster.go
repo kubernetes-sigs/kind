@@ -98,8 +98,7 @@ type DescriptorFile struct {
 		ExtraVolumes []ExtraVolume       `yaml:"extra_volumes"`
 	} `yaml:"control_plane"`
 
-	StorageClass StorageClass `yaml:storageclass`
-	WorkerNodes  WorkerNodes  `yaml:"worker_nodes" validate:"required,dive"`
+	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
 }
 
 type Networks struct {
@@ -247,11 +246,6 @@ type Secrets struct {
 	DockerRegistries []DockerRegistryCredentials `yaml:"docker_registries"`
 }
 
-type StorageClass struct {
-	EFS           EFS    `yaml:"efs"`
-	EncryptionKey string `yaml:"encryption_key,omitempty"`
-}
-
 type EFS struct {
 	Name        string `yaml:"name" validate:"required_with=ID"`
 	ID          string `yaml:"id" validate:"required_with=Name"`
@@ -266,9 +260,10 @@ type ProviderParams struct {
 }
 
 type StorageClass struct {
-	EncryptionKmsKey string       `yaml:"encryptionKmsKey,omitempty"  validate:"omitempty"`
-	Class            string       `yaml:"class,omitempty"  validate:"omitempty,oneof='standard' 'premium'"`
-	Parameters       SCParameters `yaml:"parameters,omitempty" validate:"omitempty,dive"`
+	EFS           EFS          `yaml:"efs"`
+	EncryptionKey string       `yaml:"encryptionKey,omitempty"  validate:"omitempty"`
+	Class         string       `yaml:"class,omitempty"  validate:"omitempty,oneof='standard' 'premium'"`
+	Parameters    SCParameters `yaml:"parameters,omitempty" validate:"omitempty,dive"`
 }
 
 type SCParameters struct {

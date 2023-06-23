@@ -228,8 +228,8 @@ func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string, sc commons.St
 }
 
 func (b *GCPBuilder) getParameters(sc commons.StorageClass) commons.SCParameters {
-	if sc.EncryptionKmsKey != "" {
-		sc.Parameters.DiskEncryptionKmsKey = sc.EncryptionKmsKey
+	if sc.EncryptionKey != "" {
+		sc.Parameters.DiskEncryptionKmsKey = sc.EncryptionKey
 	}
 	switch class := sc.Class; class {
 	case "standard":

@@ -260,8 +260,8 @@ func (b *AzureBuilder) configureStorageClass(n nodes.Node, k string, sc commons.
 }
 
 func (b *AzureBuilder) getParameters(sc commons.StorageClass) commons.SCParameters {
-	if sc.EncryptionKmsKey != "" {
-		sc.Parameters.DiskEncryptionSetID = sc.EncryptionKmsKey
+	if sc.EncryptionKey != "" {
+		sc.Parameters.DiskEncryptionSetID = sc.EncryptionKey
 	}
 	switch class := sc.Class; class {
 	case "standard":

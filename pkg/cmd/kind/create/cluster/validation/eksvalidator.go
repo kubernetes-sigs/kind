@@ -223,7 +223,7 @@ func filterPrivateSubnet(svc *ec2.EC2, subnetID *string) (string, error) {
 }
 
 func (v *EKSValidator) storageClassValidation(descriptorFile commons.DescriptorFile) error {
-	err := v.storageClassKeyFormatValidation(descriptorFile.StorageClass.EncryptionKmsKey)
+	err := v.storageClassKeyFormatValidation(descriptorFile.StorageClass.EncryptionKey)
 	if err != nil {
 		return errors.New("Error in StorageClass: " + err.Error())
 	}

@@ -95,10 +95,10 @@ func (v *GCPValidator) storageClassValidation(descriptorFile commons.DescriptorF
 }
 
 func (v *GCPValidator) storageClassKeyFormatValidation(descriptorFile commons.DescriptorFile) error {
-	key := descriptorFile.StorageClass.EncryptionKmsKey
+	key := descriptorFile.StorageClass.EncryptionKey
 	regex := regexp.MustCompile(`^projects/[a-zA-Z0-9-]+/locations/[a-zA-Z0-9-]+/keyRings/[a-zA-Z0-9-]+/cryptoKeys/[a-zA-Z0-9-]+$`)
 	if !regex.MatchString(key) {
-		return errors.New("Incorrect encryptionKmsKey format. It must have the format projects/[PROJECT_ID]/locations/[REGION]/keyRings/[RING_NAME]/cryptoKeys/[KEY_NAME]")
+		return errors.New("Incorrect encryptionKey format. It must have the format projects/[PROJECT_ID]/locations/[REGION]/keyRings/[RING_NAME]/cryptoKeys/[KEY_NAME]")
 	}
 	return nil
 }
