@@ -17,5 +17,5 @@ hose {
         doDeploy(conf: config)
     }
     BUILDTOOL_MEMORY_REQUEST = "512Mi"
-    BUILDTOOL_MEMORY_LIMIT = "2048Mi"
+    BUILDTOOL_MEMORY_LIMIT = "4096Mi"
 }
