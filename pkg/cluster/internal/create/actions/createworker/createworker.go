@@ -331,11 +331,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			if err != nil {
 				return errors.Wrap(err, "failed to install CSI in workload cluster")
 			}
-
-			// err = infra.configureStorageClass(node, kubeconfigPath, descriptorFile.StorageClass)
-			// if err != nil {
-			// 	return errors.Wrap(err, "failed to configuring StorageClass in workload cluster")
-			// }
 		}
 
 		err = infra.configureStorageClass(n, kubeconfigPath, descriptorFile.StorageClass)
