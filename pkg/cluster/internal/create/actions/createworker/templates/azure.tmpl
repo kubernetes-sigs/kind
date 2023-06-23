@@ -29,15 +29,25 @@ spec:
     name: "{{ .Descriptor.ClusterID }}-identity"
   location: "{{ .Descriptor.Region }}"
   networkSpec:
+    vnet:
+      name: {{ if ne .Descriptor.Networks.VPCID "" }}{{ .Descriptor.Networks.VPCID }}{{ else }}{{ .Descriptor.ClusterID }}-vnet{{- end }}
+      {{- if ne .Descriptor.Networks.ResourceGroup "" }}
+      resourceGroup: {{ .Descriptor.Networks.ResourceGroup }}
+      {{- end }}
     subnets:
+  {{- if gt (len .Descriptor.Networks.Subnets) 0 }}
+    {{- range .Descriptor.Networks.Subnets }}
+    - name: {{ .SubnetId }}
+      role: {{ .Role }}
+    {{- end }}
+  {{- else }}
     - name: control-plane-subnet
       role: control-plane
     - name: node-subnet
       role: node
-    vnet:
-      name: "{{ .Descriptor.ClusterID }}-vnet"
-  resourceGroup: "{{ .Descriptor.ClusterID }}"
-  subscriptionID: "{{ .Credentials.SubscriptionID }}"
+  {{- end }}
+  resourceGroup: {{ .Descriptor.ClusterID }}
+  subscriptionID: {{ .Credentials.SubscriptionID }}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureClusterIdentity

@@ -90,18 +90,22 @@ type DescriptorFile struct {
 	} `yaml:"control_plane"`
 
 	StorageClass StorageClass `yaml:storageclass`
-	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
+	WorkerNodes  WorkerNodes  `yaml:"worker_nodes" validate:"required,dive"`
 }
 
 type Networks struct {
 	VPCID         string    `yaml:"vpc_id"`
+	VPCCidrBlock  string    `yaml:"vpc_cidr" validate:"omitempty,cidrv4"`
 	PodsCidrBlock string    `yaml:"pods_cidr" validate:"omitempty,cidrv4"`
 	PodsSubnets   []Subnets `yaml:"pods_subnets"`
 	Subnets       []Subnets `yaml:"subnets"`
+	ResourceGroup string    `yaml:"resource_group"`
 }
 
 type Subnets struct {
-	SubnetId string `yaml:"subnet_id"`
+	SubnetId  string `yaml:"subnet_id"`
+	CidrBlock string `yaml:"cidr" validate:"omitempty,cidrv4"`
+	Role      string `yaml:"role" validate:"oneof='control-plane' 'node'"`
 }
 
 type AWSCP struct {
