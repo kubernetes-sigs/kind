@@ -137,7 +137,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		&flags.ForceDelete,
 		"delete-previous",
 		false,
-		"by setting this flag the local cluster will be deleted",
+		"by setting this flag the local cluster container will be deleted",
 	)
 
 	return cmd
