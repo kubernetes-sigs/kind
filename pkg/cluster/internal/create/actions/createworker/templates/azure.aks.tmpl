@@ -42,6 +42,21 @@ spec:
   sshPublicKey: \"\"
   subscriptionID: "{{ .Credentials.SubscriptionID }}"
   version: "{{ .Descriptor.K8SVersion }}"
+{{- if and (ne .Descriptor.Networks.VPCID "") (ne .Descriptor.Networks.VPCCidrBlock "" ) }}
+  virtualNetwork:
+    name: {{ .Descriptor.Networks.VPCID }}
+    cidrBlock: {{ .Descriptor.Networks.VPCCidrBlock }}
+    {{- if ne .Descriptor.Networks.ResourceGroup "" }}
+    resourceGroup: {{ .Descriptor.Networks.ResourceGroup }}
+    {{- end }}
+  {{- if gt (len .Descriptor.Networks.Subnets) 0 }}
+    subnet:
+    {{- with (index .Descriptor.Networks.Subnets 0) }}
+      name: {{ .SubnetId }}
+      cidrBlock: {{ .CidrBlock }}
+    {{- end }}
+  {{- end }}
+{{- end }}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureClusterIdentity
