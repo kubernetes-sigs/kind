@@ -119,7 +119,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		"descriptor",
 		"d",
 		"",
-		"allows you to indicate the name of the descriptor located in current or other directory. By default it is cluster.yaml",
+		"allows you to indicate the name of the descriptor located in current or other directory. Default: cluster.yaml",
 	)
 	cmd.Flags().BoolVar(
 		&flags.MoveManagement,
