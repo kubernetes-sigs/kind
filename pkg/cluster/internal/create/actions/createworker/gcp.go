@@ -52,12 +52,39 @@ func newGCPBuilder() *GCPBuilder {
 	return &GCPBuilder{}
 }
 
+var defaultGCPSc = "csi-gcp-pd"
+
+var storageClassGCPTemplate = StorageClassDef{
+	APIVersion: "storage.k8s.io/v1",
+	Kind:       "StorageClass",
+	Metadata: struct {
+		Annotations map[string]string `yaml:"annotations,omitempty"`
+		Name        string            `yaml:"name"`
+	}{
+		Annotations: map[string]string{
+			"storageclass.kubernetes.io/is-default-class": "true",
+		},
+		Name: "keos",
+	},
+	Provisioner:       "pd.csi.storage.gke.io",
+	Parameters:        make(map[string]interface{}),
+	VolumeBindingMode: "WaitForFirstConsumer",
+}
+
+var standardGCPParameters = commons.SCParameters{
+	Type: "pd-standard",
+}
+
+var premiumGCPParameters = commons.SCParameters{
+	Type: "pd-ssd",
+}
+
 func (b *GCPBuilder) setCapx(managed bool) {
 	b.capxProvider = "gcp"
 	b.capxVersion = "v1.3.1"
 	b.capxImageVersion = "v1.3.1"
 	b.capxName = "capg"
-	b.stClassName = "csi-gcp-pd"
+	b.stClassName = "keos"
 	if managed {
 		b.capxTemplate = "gcp.gke.tmpl"
 		b.csiNamespace = ""
@@ -108,17 +135,6 @@ func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
 	var c string
 	var err error
 	var cmd exec.Cmd
-	var storageClass = `
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  annotations:
-    storageclass.kubernetes.io/is-default-class: 'true'
-  name: ` + b.stClassName + `
-provisioner: pd.csi.storage.gke.io
-parameters:
-  type: pd-standard
-volumeBindingMode: WaitForFirstConsumer`
 
 	// Create CSI namespace
 	c = "kubectl --kubeconfig " + k + " create namespace " + b.csiNamespace
@@ -139,12 +155,6 @@ volumeBindingMode: WaitForFirstConsumer`
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
 	if err = cmd.SetStdin(strings.NewReader(csiManifest)).Run(); err != nil {
 		return errors.Wrap(err, "failed to deploy CSI driver")
-	}
-
-	// Create StorageClass
-	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
-	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
-		return errors.Wrap(err, "failed to create StorageClass")
 	}
 
 	return nil
@@ -184,6 +194,38 @@ func (b *GCPBuilder) getAzs(networks commons.Networks) ([]string, error) {
 	}
 
 	return nil, errors.New("Error in project id")
+}
+
+func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error {
+	var cmd exec.Cmd
+
+	params := b.getParameters(sc)
+	storageClass, err := insertParameters(storageClassGCPTemplate, params)
+	if err != nil {
+		return err
+	}
+
+	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
+	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
+		return errors.Wrap(err, "failed to create StorageClass")
+	}
+	return nil
+
+}
+
+func (b *GCPBuilder) getParameters(sc commons.StorageClass) commons.SCParameters {
+	if sc.EncryptionKey != "" {
+		sc.Parameters.DiskEncryptionKmsKey = sc.EncryptionKey
+	}
+	switch class := sc.Class; class {
+	case "standard":
+		return mergeSCParameters(sc.Parameters, standardGCPParameters)
+	case "premium":
+		return mergeSCParameters(sc.Parameters, premiumGCPParameters)
+	default:
+		return mergeSCParameters(sc.Parameters, premiumAZParameters)
+
+	}
 }
 
 func (b *GCPBuilder) internalNginx(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (bool, error) {

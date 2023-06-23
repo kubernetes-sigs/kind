@@ -324,15 +324,25 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			}
 			ctx.Status.End(true) // End Installing Calico in workload cluster
 
-			ctx.Status.Start("Installing StorageClass in workload cluster 💾")
+			ctx.Status.Start("Installing CSI in workload cluster 💾")
 			defer ctx.Status.End(false)
 
 			err = infra.installCSI(n, kubeconfigPath)
 			if err != nil {
-				return errors.Wrap(err, "failed to install StorageClass in workload cluster")
+				return errors.Wrap(err, "failed to install CSI in workload cluster")
 			}
-			ctx.Status.End(true) // End Installing StorageClass in workload cluster
+
+			ctx.Status.End(true)
 		}
+
+		ctx.Status.Start("Installing StorageClass in workload cluster 💾")
+		defer ctx.Status.End(false)
+
+		err = infra.configureStorageClass(n, kubeconfigPath, descriptorFile.StorageClass)
+		if err != nil {
+			return errors.Wrap(err, "failed to configuring StorageClass in workload cluster")
+		}
+		ctx.Status.End(true) // End Installing StorageClass in workload cluster
 
 		if provider.capxProvider == "gcp" {
 			// XXX Ref kubernetes/kubernetes#86793 Starting from v1.18, gcp cloud-controller-manager requires RBAC to patch,update service/status (in-tree)

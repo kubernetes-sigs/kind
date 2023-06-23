@@ -32,7 +32,35 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/exec"
 )
+
+var defaultAWSSc = "gp2"
+
+var storageClassAWSTemplate = StorageClassDef{
+	APIVersion: "storage.k8s.io/v1",
+	Kind:       "StorageClass",
+	Metadata: struct {
+		Annotations map[string]string `yaml:"annotations,omitempty"`
+		Name        string            `yaml:"name"`
+	}{
+		Annotations: map[string]string{
+			"storageclass.kubernetes.io/is-default-class": "true",
+		},
+		Name: "keos",
+	},
+	Provisioner:       "ebs.csi.aws.com",
+	Parameters:        make(map[string]interface{}),
+	VolumeBindingMode: "WaitForFirstConsumer",
+}
+
+var standardAWSParameters = commons.SCParameters{
+	Type: "st1",
+}
+
+var premiumAWSParameters = commons.SCParameters{
+	Type: "gp3",
+}
 
 type AWSBuilder struct {
 	capxProvider     string
@@ -54,7 +82,7 @@ func (b *AWSBuilder) setCapx(managed bool) {
 	b.capxVersion = "v2.1.4"
 	b.capxImageVersion = "2.1.4-0.4.0"
 	b.capxName = "capa"
-	b.stClassName = "gp2"
+	b.stClassName = "keos"
 	if managed {
 		b.capxTemplate = "aws.eks.tmpl"
 		b.csiNamespace = ""
@@ -298,4 +326,44 @@ func getEcrToken(p commons.ProviderParams) (string, error) {
 	}
 	parts := strings.SplitN(string(data), ":", 2)
 	return parts[1], nil
+}
+
+func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error {
+	var cmd exec.Cmd
+
+	cmd = n.Command("kubectl", "--kubeconfig", k, "delete", "storageclass", defaultAWSSc)
+	if err := cmd.Run(); err != nil {
+		return errors.Wrap(err, "failed to delete default StorageClass")
+	}
+
+	params := b.getParameters(sc)
+
+	storageClass, err := insertParameters(storageClassAWSTemplate, params)
+	if err != nil {
+		return err
+	}
+
+	storageClass = strings.ReplaceAll(storageClass, "fsType", "csi.storage.k8s.io/fstype")
+
+	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
+	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
+		return errors.Wrap(err, "failed to create StorageClass")
+	}
+	return nil
+
+}
+
+func (b *AWSBuilder) getParameters(sc commons.StorageClass) commons.SCParameters {
+	if sc.EncryptionKey != "" {
+		sc.Parameters.Encrypted = "true"
+		sc.Parameters.KmsKeyId = sc.EncryptionKey
+	}
+	switch class := sc.Class; class {
+	case "standard":
+		return mergeSCParameters(sc.Parameters, standardAWSParameters)
+	case "premium":
+		return mergeSCParameters(sc.Parameters, premiumAWSParameters)
+	default:
+		return mergeSCParameters(sc.Parameters, premiumAWSParameters)
+	}
 }

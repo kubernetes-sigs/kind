@@ -29,6 +29,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type Resource struct {
+	ApiVersion string                 `yaml:"apiVersion"`
+	Kind       string                 `yaml:"kind"`
+	Metadata   map[string]interface{} `yaml:"metadata"`
+	Spec       map[string]interface{} `yaml:"spec"`
+}
+
 type K8sObject struct {
 	APIVersion string         `yaml:"apiVersion" validate:"required"`
 	Kind       string         `yaml:"kind" validate:"required"`
@@ -41,6 +48,8 @@ type DescriptorFile struct {
 	DeployAutoscaler bool   `yaml:"deploy_autoscaler" validate:"boolean"`
 
 	Bastion Bastion `yaml:"bastion"`
+
+	StorageClass StorageClass `yaml:"storage_class" validate:"dive"`
 
 	Credentials Credentials `yaml:"credentials" validate:"dive"`
 
@@ -89,8 +98,7 @@ type DescriptorFile struct {
 		ExtraVolumes []ExtraVolume       `yaml:"extra_volumes"`
 	} `yaml:"control_plane"`
 
-	StorageClass StorageClass `yaml:storageclass`
-	WorkerNodes  WorkerNodes  `yaml:"worker_nodes" validate:"required,dive"`
+	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
 }
 
 type Networks struct {
@@ -238,11 +246,6 @@ type Secrets struct {
 	DockerRegistries []DockerRegistryCredentials `yaml:"docker_registries"`
 }
 
-type StorageClass struct {
-	EFS           EFS    `yaml:"efs"`
-	EncryptionKey string `yaml:"encryption_key,omitempty"`
-}
-
 type EFS struct {
 	Name        string `yaml:"name" validate:"required_with=ID"`
 	ID          string `yaml:"id" validate:"required_with=Name"`
@@ -254,6 +257,47 @@ type ProviderParams struct {
 	Managed     bool
 	Credentials map[string]string
 	GithubToken string
+}
+
+type StorageClass struct {
+	EFS           EFS          `yaml:"efs"`
+	EncryptionKey string       `yaml:"encryptionKey,omitempty"  validate:"omitempty"`
+	Class         string       `yaml:"class,omitempty"  validate:"omitempty,oneof='standard' 'premium'"`
+	Parameters    SCParameters `yaml:"parameters,omitempty" validate:"omitempty,dive"`
+}
+
+type SCParameters struct {
+	Type string `yaml:"type,omitempty" validate:"omitempty"`
+
+	ProvisionedIopsOnCreate string `yaml:"provisioned_iops_on_create,omitempty"  validate:"omitempty"`
+	ReplicationType         string `yaml:"replication_type,omitempty" validate:"omitempty,oneof='none' 'regional-pd'"`
+	DiskEncryptionKmsKey    string `yaml:"disk_encryption_kms_key,omitempty"  validate:"omitempty"`
+	Labels                  string `yaml:"labels,omitempty"  validate:"omitempty"`
+
+	IopsPerGB                  string `yaml:"iopsPerGB,omitempty" validate:"omitempty,excluded_with=Iops"`
+	FsType                     string `yaml:"fstype,omitempty"  validate:"omitempty"`
+	KmsKeyId                   string `yaml:"kmsKeyId,omitempty"  validate:"omitempty"`
+	AllowAutoIOPSPerGBIncrease string `yaml:"allowAutoIOPSPerGBIncrease,omitempty" validate:"omitempty,oneof='true' 'false'"`
+	Iops                       string `yaml:"iops,omitempty" validate:"omitempty,excluded_with=IopsPerGB"`
+	Throughput                 int    `yaml:"throughput,omitempty" validate:"omitempty,gt=0"`
+	Encrypted                  string `yaml:"encrypted,omitempty" validate:"omitempty,oneof='true' 'false'"`
+	BlockExpress               string `yaml:"blockExpress,omitempty" validate:"omitempty,oneof='true' 'false'"`
+	BlockSize                  string `yaml:"blockSize,omitempty" validate:"omitempty"`
+
+	Provisioner           string `yaml:"provisioner,omitempty" validate:"omitempty,oneof='disk.csi.azure.com' 'file.csi.azure.com"`
+	SkuName               string `yaml:"skuName,omitempty" validate:"omitempty"`
+	Kind                  string `yaml:"kind,omitempty" validate:"omitempty,oneof='managed'"`
+	CachingMode           string `yaml:"cachingMode,omitempty" validate:"omitempty,oneof='None' 'ReadOnly'"`
+	DiskEncryptionType    string `yaml:"diskEncryptionType,omitempty" validate:"omitempty,oneof='EncryptionAtRestWithCustomerKey' 'EncryptionAtRestWithPlatformAndCustomerKeys'"`
+	DiskEncryptionSetID   string `yaml:"diskEncryptionSetID,omitempty" validate:"omitempty"`
+	ResourceGroup         string `yaml:"resourceGroup,omitempty" validate:"omitempty"`
+	Tags                  string `yaml:"tags,omitempty"  validate:"omitempty"`
+	NetworkAccessPolicy   string `yaml:"networkAccessPolicy,omitempty"  validate:"omitempty,oneof='AllowAll' 'DenyAll' 'AllowPrivate'"`
+	PublicNetworkAccess   string `yaml:"publicNetworkAccess,omitempty" validate:"omitempty,oneof='Enabled' 'Disabled'"`
+	DiskAccessID          string `yaml:"diskAccessID,omitempty" validate:"omitempty"`
+	EnableBursting        string `yaml:"enableBursting,omitempty" validate:"omitempty,oneof='true' 'false'"`
+	EnablePerformancePlus string `yaml:"enablePerformancePlus,omitempty" validate:"omitempty,oneof='true' 'false'"`
+	SubscriptionID        string `yaml:"subscriptionID,omitempty" validate:"omitempty"`
 }
 
 // Init sets default values for the DescriptorFile
@@ -369,7 +413,6 @@ func gteParamIfExists(fl validator.FieldLevel) bool {
 	field := fl.Field()
 	fieldCompared := fl.Param()
 
-	//omitEmpty
 	if field.Kind() == reflect.Int && field.Int() == 0 {
 		return true
 	}
@@ -385,7 +428,6 @@ func gteParamIfExists(fl validator.FieldLevel) bool {
 	if paramFieldValue.Kind() != reflect.Int {
 		return false
 	}
-	//QUe no rompa cuando quantity no se indica, se romperá en otra validación
 	if paramFieldValue.Int() == 0 {
 		return true
 	}
