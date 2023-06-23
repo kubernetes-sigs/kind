@@ -335,7 +335,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 
 		if provider.capxProvider == "gcp" {
-			// XXX Ref kubernetes/kubernetes#86793 - starting from v1.18, gcp cloud-controller-manager requires RBAC to patch,update service/status. (in-tree)
+			// XXX Ref kubernetes/kubernetes#86793 Starting from v1.18, gcp cloud-controller-manager requires RBAC to patch,update service/status (in-tree)
 			ctx.Status.Start("Creating Kubernetes RBAC for internal loadbalancing 🔐")
 			defer ctx.Status.End(false)
 
