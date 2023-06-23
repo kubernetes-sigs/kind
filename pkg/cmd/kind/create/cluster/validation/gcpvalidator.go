@@ -82,11 +82,14 @@ func secretsGcpValidations(secretsFile commons.SecretsFile) error {
 }
 
 func (v *GCPValidator) storageClassValidation(descriptorFile commons.DescriptorFile) error {
-	err := v.storageClassKeyFormatValidation(descriptorFile)
-	if err != nil {
-		return errors.New("Error in StorageClass: " + err.Error())
+	if descriptorFile.StorageClass.EncryptionKey != "" {
+		err := v.storageClassKeyFormatValidation(descriptorFile.StorageClass.EncryptionKey)
+		if err != nil {
+			return errors.New("Error in StorageClass: " + err.Error())
+		}
 	}
-	err = v.storageClassParametersValidation(descriptorFile)
+
+	err := v.storageClassParametersValidation(descriptorFile)
 	if err != nil {
 		return errors.New("Error in StorageClass: " + err.Error())
 	}
@@ -94,8 +97,7 @@ func (v *GCPValidator) storageClassValidation(descriptorFile commons.DescriptorF
 	return nil
 }
 
-func (v *GCPValidator) storageClassKeyFormatValidation(descriptorFile commons.DescriptorFile) error {
-	key := descriptorFile.StorageClass.EncryptionKey
+func (v *GCPValidator) storageClassKeyFormatValidation(key string) error {
 	regex := regexp.MustCompile(`^projects/[a-zA-Z0-9-]+/locations/[a-zA-Z0-9-]+/keyRings/[a-zA-Z0-9-]+/cryptoKeys/[a-zA-Z0-9-]+$`)
 	if !regex.MatchString(key) {
 		return errors.New("Incorrect encryptionKey format. It must have the format projects/[PROJECT_ID]/locations/[REGION]/keyRings/[RING_NAME]/cryptoKeys/[KEY_NAME]")
@@ -129,6 +131,13 @@ func (v *GCPValidator) storageClassParametersValidation(descriptorFile commons.D
 		_, err = strconv.Atoi(sc.Parameters.ProvisionedIopsOnCreate)
 		if err != nil {
 			return errors.New("Parameter provisioned_iops_on_create must be an integer")
+		}
+	}
+
+	if descriptorFile.StorageClass.Parameters.DiskEncryptionKmsKey != "" {
+		err := v.storageClassKeyFormatValidation(descriptorFile.StorageClass.Parameters.DiskEncryptionKmsKey)
+		if err != nil {
+			return errors.New("Error in StorageClass: " + err.Error())
 		}
 	}
 

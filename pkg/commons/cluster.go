@@ -267,22 +267,22 @@ type StorageClass struct {
 }
 
 type SCParameters struct {
-	Type string `yaml:"type,omitempty" validate:"omitempty"` //Todas //comprobar type por provider //AWS- oneof='io1' 'gp2' 'sc1' 'st2'" //GCP - pd-standard o pd-ssd
+	Type string `yaml:"type,omitempty" validate:"omitempty"`
 
-	ProvisionedIopsOnCreate string `yaml:"provisioned_iops_on_create,omitempty"  validate:"omitempty"`                 //GCP - solo PD-extrme //comprobacionde int
-	ReplicationType         string `yaml:"replication_type,omitempty" validate:"omitempty,oneof='none' 'regional-pd'"` //GCP
-	DiskEncryptionKmsKey    string `yaml:"disk_encryption_kms_key,omitempty"  validate:"omitempty"`                    //GCP
-	Labels                  string `yaml:"labels,omitempty"  validate:"omitempty"`                                     // Validar el formato: key1=value1,key2=value2
+	ProvisionedIopsOnCreate string `yaml:"provisioned_iops_on_create,omitempty"  validate:"omitempty"`
+	ReplicationType         string `yaml:"replication_type,omitempty" validate:"omitempty,oneof='none' 'regional-pd'"`
+	DiskEncryptionKmsKey    string `yaml:"disk_encryption_kms_key,omitempty"  validate:"omitempty"`
+	Labels                  string `yaml:"labels,omitempty"  validate:"omitempty"`
 
-	IopsPerGB                  string `yaml:"iopsPerGB,omitempty" validate:"omitempty,excluded_with=Iops"`                    //AWS //convertir en string //comprobacion de int
-	FsType                     string `yaml:"fstype,omitempty"  validate:"omitempty"`                                         //Todas
-	KmsKeyId                   string `yaml:"kmsKeyId,omitempty"  validate:"omitempty"`                                       //AWS
-	AllowAutoIOPSPerGBIncrease string `yaml:"allowAutoIOPSPerGBIncrease,omitempty" validate:"omitempty,oneof='true' 'false'"` //AWS
-	Iops                       string `yaml:"iops,omitempty" validate:"omitempty,excluded_with=IopsPerGB"`                    //AWS
-	Throughput                 int    `yaml:"throughput,omitempty" validate:"omitempty,gt=0"`                                 //AWS
-	Encrypted                  string `yaml:"encrypted,omitempty" validate:"omitempty,oneof='true' 'false'"`                  //AWS //bool validation
-	BlockExpress               string `yaml:"blockExpress,omitempty" validate:"omitempty,oneof='true' 'false'"`               //AWS //bool validation
-	BlockSize                  string `yaml:"blockSize,omitempty" validate:"omitempty"`                                       //AWS
+	IopsPerGB                  string `yaml:"iopsPerGB,omitempty" validate:"omitempty,excluded_with=Iops"`
+	FsType                     string `yaml:"fstype,omitempty"  validate:"omitempty"`
+	KmsKeyId                   string `yaml:"kmsKeyId,omitempty"  validate:"omitempty"`
+	AllowAutoIOPSPerGBIncrease string `yaml:"allowAutoIOPSPerGBIncrease,omitempty" validate:"omitempty,oneof='true' 'false'"`
+	Iops                       string `yaml:"iops,omitempty" validate:"omitempty,excluded_with=IopsPerGB"`
+	Throughput                 int    `yaml:"throughput,omitempty" validate:"omitempty,gt=0"`
+	Encrypted                  string `yaml:"encrypted,omitempty" validate:"omitempty,oneof='true' 'false'"`
+	BlockExpress               string `yaml:"blockExpress,omitempty" validate:"omitempty,oneof='true' 'false'"`
+	BlockSize                  string `yaml:"blockSize,omitempty" validate:"omitempty"`
 
 	Provisioner           string `yaml:"provisioner,omitempty" validate:"omitempty,oneof='disk.csi.azure.com' 'file.csi.azure.com"`
 	SkuName               string `yaml:"skuName,omitempty" validate:"omitempty"`

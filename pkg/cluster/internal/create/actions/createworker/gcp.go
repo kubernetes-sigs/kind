@@ -158,12 +158,6 @@ func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
 		return errors.Wrap(err, "failed to deploy CSI driver")
 	}
 
-	// // Create StorageClass
-	// cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
-	// if err = cmd.SetStdin(strings.NewReader(sc)).Run(); err != nil {
-	// 	return errors.Wrap(err, "failed to create StorageClass")
-	// }
-
 	return nil
 }
 
@@ -205,12 +199,6 @@ func (b *GCPBuilder) getAzs(networks commons.Networks) ([]string, error) {
 
 func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error {
 	var cmd exec.Cmd
-
-	// raw := bytes.Buffer{}
-	// cmd = n.Command("kubectl", "--kubeconfig", k, "delete", "storageclass", defaultGCPSc)
-	// if err := cmd.SetStdout(&raw).Run(); err != nil {
-	// 	return errors.Wrap(err, "failed to delete default StorageClass")
-	// }
 
 	params := b.getParameters(sc)
 	storageClass, err := insertParameters(storageClassGCPTemplate, params)

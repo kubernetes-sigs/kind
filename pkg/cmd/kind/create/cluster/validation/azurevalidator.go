@@ -143,11 +143,13 @@ func aksNodesValidation(workerNodes commons.WorkerNodes) error {
 }
 
 func (v *AzureValidator) storageClassValidation(descriptorFile commons.DescriptorFile) error {
-	err := v.storageClassKeyFormatValidation(descriptorFile)
-	if err != nil {
-		return errors.New("Error in StorageClass: " + err.Error())
+	if descriptorFile.StorageClass.EncryptionKey != "" {
+		err := v.storageClassKeyFormatValidation(descriptorFile.StorageClass.EncryptionKey)
+		if err != nil {
+			return errors.New("Error in StorageClass: " + err.Error())
+		}
 	}
-	err = v.storageClassParametersValidation(descriptorFile)
+	err := v.storageClassParametersValidation(descriptorFile)
 	if err != nil {
 		return errors.New("Error in StorageClass: " + err.Error())
 	}
@@ -155,8 +157,7 @@ func (v *AzureValidator) storageClassValidation(descriptorFile commons.Descripto
 	return nil
 }
 
-func (v *AzureValidator) storageClassKeyFormatValidation(descriptorFile commons.DescriptorFile) error {
-	key := descriptorFile.StorageClass.EncryptionKey
+func (v *AzureValidator) storageClassKeyFormatValidation(key string) error {
 	regex := regexp.MustCompile(`^/subscriptions/[a-fA-F0-9-]+/resourceGroups/[\w.-]+/providers/Microsoft\.Compute/diskEncryptionSets/[\w.-]+$`)
 	if !regex.MatchString(key) {
 		return errors.New("Incorrect encryptionKey format. It must have the format /subscriptions/[SUBSCRIPTION_ID]/resourceGroups/[RESOURCE_GROUP]/providers/Microsoft.ManagedIdentity/diskEncryptionSets/[DISK_ENCRYPION_SETS_NAME]")
@@ -174,13 +175,17 @@ func (v *AzureValidator) storageClassParametersValidation(descriptorFile commons
 	if sc.Parameters.SkuName != "" && !slices.Contains(provisionersTypesAzure, sc.Parameters.SkuName) {
 		return errors.New("Unsupported skuname: " + sc.Parameters.SkuName)
 	}
-
 	if sc.Parameters.FsType != "" && !slices.Contains(fstypes, sc.Parameters.FsType) {
 		return errors.New("Unsupported fsType: " + sc.Parameters.FsType + ". Supported types: " + fmt.Sprint(strings.Join(fstypes, ", ")))
 	}
 	if sc.Parameters.CachingMode != "" && sc.Parameters.SkuName == "PremiumV2_LRS" && sc.Parameters.CachingMode != "none" {
 		return errors.New("With skuName: PremiumV2_LRS, CachingMode only can be none")
-
+	}
+	if sc.Parameters.DiskEncryptionSetID != "" {
+		err := v.storageClassKeyFormatValidation(descriptorFile.StorageClass.Parameters.DiskEncryptionKmsKey)
+		if err != nil {
+			return err
+		}
 	}
 
 	if sc.Parameters.Tags != "" {
