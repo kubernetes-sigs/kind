@@ -214,7 +214,7 @@ func getAcrToken(p commons.ProviderParams, acrService string) (string, error) {
 }
 
 func (b *AzureBuilder) internalNginx(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (bool, error) {
-
+	var resourceGroup string
 	os.Setenv("AZURE_CLIENT_ID", credentialsMap["ClientID"])
 	os.Setenv("AZURE_SECRET_ID", credentialsMap["ClientSecret"])
 	os.Setenv("AZURE_TENANT_ID", credentialsMap["TenantID"])
@@ -233,7 +233,11 @@ func (b *AzureBuilder) internalNginx(networks commons.Networks, credentialsMap m
 	subnetsClient := networkClientFactory.NewSubnetsClient()
 
 	if networks.Subnets != nil {
-		resourceGroup := ClusterID
+		if networks.ResourceGroup != "" {
+			resourceGroup = networks.ResourceGroup
+		} else {
+			resourceGroup = ClusterID
+		}
 		for _, subnet := range networks.Subnets {
 			publicSubnetID, _ := AzureFilterPublicSubnet(ctx, subnetsClient, resourceGroup, networks.VPCID, subnet.SubnetId)
 			if len(publicSubnetID) > 0 {
