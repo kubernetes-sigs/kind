@@ -324,14 +324,19 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			}
 			ctx.Status.End(true) // End Installing Calico in workload cluster
 
-			ctx.Status.Start("Installing StorageClass in workload cluster 💾")
+			ctx.Status.Start("Installing CSI in workload cluster 💾")
 			defer ctx.Status.End(false)
 
 			err = infra.installCSI(n, kubeconfigPath)
 			if err != nil {
 				return errors.Wrap(err, "failed to install CSI in workload cluster")
 			}
+
+			ctx.Status.End(true)
 		}
+
+		ctx.Status.Start("Installing StorageClass in workload cluster 💾")
+		defer ctx.Status.End(false)
 
 		err = infra.configureStorageClass(n, kubeconfigPath, descriptorFile.StorageClass)
 		if err != nil {
