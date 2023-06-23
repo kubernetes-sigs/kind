@@ -31,7 +31,9 @@ spec:
   networkSpec:
     vnet:
       name: {{ if ne .Descriptor.Networks.VPCID "" }}{{ .Descriptor.Networks.VPCID }}{{ else }}{{ .Descriptor.ClusterID }}-vnet{{- end }}
-      resourceGroup: {{ if ne .Descriptor.Networks.ResourceGroup "" }}{{ .Descriptor.Networks.ResourceGroup }}{{ else }}{{ .Descriptor.ClusterID }}{{- end }}
+      {{- if ne .Descriptor.Networks.ResourceGroup "" }}
+      resourceGroup: {{ .Descriptor.Networks.ResourceGroup }}
+      {{- end }}
     subnets:
   {{- if gt (len .Descriptor.Networks.Subnets) 0 }}
     {{- range .Descriptor.Networks.Subnets }}
@@ -44,7 +46,7 @@ spec:
     - name: node-subnet
       role: node
   {{- end }}
-  resourceGroup: {{ .Descriptor.ClusterID }}
+  resourceGroup: {{ if ne .Descriptor.ControlPlane.Azure.ResourceGroup "" }}{{ .Descriptor.ControlPlane.Azure.ResourceGroup }}{{ else }}{{ .Descriptor.ClusterID }}{{- end }}
   subscriptionID: {{ .Credentials.SubscriptionID }}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1

@@ -120,7 +120,8 @@ type AWSCP struct {
 }
 
 type AzureCP struct {
-	Tier string `yaml:"tier" validate:"oneof='Free' 'Paid'"`
+	ResourceGroup string `yaml:"resource_group"`
+	Tier          string `yaml:"tier" validate:"oneof='Free' 'Paid'"`
 }
 
 type WorkerNodes []struct {

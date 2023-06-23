@@ -368,7 +368,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 		if provider.capxProvider == "azure" && descriptorFile.ControlPlane.Managed && descriptorFile.Security.NodesIdentity != "" {
 			// Update AKS cluster with the user kubelet identity until the provider supports it
-			err := assignUserIdentity(descriptorFile.Security.NodesIdentity, descriptorFile.ClusterID, descriptorFile.Region, credentialsMap)
+			err := assignUserIdentity(*descriptorFile, credentialsMap)
 			if err != nil {
 				return errors.Wrap(err, "failed to assign user identity to the workload Cluster")
 			}
