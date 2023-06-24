@@ -10,7 +10,7 @@
               {
                 "containerPort": 8000,
                 "hostPort": 80,
-                "name": "proxy",
+                "name": "proxy-tcp",
                 "protocol": "TCP"
               },
               {
