@@ -274,6 +274,7 @@ func RewriteDescriptorFile(descriptorPath string) error {
 	if err != nil {
 		return err
 	}
+
 	err = os.WriteFile(descriptorPath, []byte(b), 0644)
 	if err != nil {
 		return err
@@ -300,18 +301,12 @@ func encryptSecret(secretMap map[string]map[string]interface{}, vaultPassword st
 
 func removeKey(nodes []*yaml.Node, key string) []*yaml.Node {
 	newNodes := []*yaml.Node{}
-	for i, node := range nodes {
+	for _, node := range nodes {
 		if node.Kind == yaml.MappingNode {
 			j := 0
 			for j < len(node.Content)/2 {
 				if node.Content[j*2].Value == key {
-					if i == 5 {
-						// This is a root key, so remove it and its value.
-						node.Content = append(node.Content[:j*2], node.Content[j*2+2:]...)
-						continue
-					}
-					// This is not a root key, so keep it.
-					j += 2
+					node.Content = append(node.Content[:j*2], node.Content[j*2+2:]...)
 					continue
 				}
 				j++
