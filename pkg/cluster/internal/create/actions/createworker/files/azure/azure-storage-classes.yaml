@@ -58,7 +58,7 @@ volumeBindingMode: Immediate
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  annorations:
+  annotations:
     storageclass.kubernetes.io/is-default-class: "true"
   name: default
 provisioner: disk.csi.azure.com
