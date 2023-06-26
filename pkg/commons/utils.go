@@ -318,7 +318,6 @@ func removeKey(nodes []*yaml.Node, key string) []*yaml.Node {
 		}
 		newNodes = append(newNodes, node)
 	}
-
 	return newNodes
 }
 
