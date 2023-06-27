@@ -48,7 +48,7 @@ var storageClassAZTemplate = StorageClassDef{
 		Name        string            `yaml:"name"`
 	}{
 		Annotations: map[string]string{
-			"storageclass.kubernetes.io/is-default-class": "true",
+			defaultScAnnotation: "true",
 		},
 		Name: "keos",
 	},
@@ -120,6 +120,7 @@ func (b *AzureBuilder) getProvider() Provider {
 func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	var c string
 	var err error
+	var cmd exec.Cmd
 
 	c = "helm install azuredisk-csi-driver /stratio/helm/azuredisk-csi-driver " +
 		" --kubeconfig " + k +
@@ -127,6 +128,11 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy Azure Disk CSI driver Helm Chart")
+	}
+
+	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
+	if err := cmd.SetStdin(strings.NewReader(azureStorageClasses)).Run(); err != nil {
+		return errors.Wrap(err, "failed to create Azure Storage Classes")
 	}
 
 	return nil
@@ -239,12 +245,9 @@ func getAcrToken(p commons.ProviderParams, acrService string) (string, error) {
 func (b *AzureBuilder) configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error {
 	var cmd exec.Cmd
 
-	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
+	cmd = n.Command("kubectl", "--kubeconfig", k, "annotate", "sc", "default", defaultScAnnotation+"-")
 	if err := cmd.SetStdin(strings.NewReader(azureStorageClasses)).Run(); err != nil {
-		return errors.Wrap(err, "failed to create Azure Storage Classes")
-	}
-	if sc.Parameters.Provisioner != "" {
-
+		return errors.Wrap(err, "failed to unannotate default Azure Storage Classes")
 	}
 
 	params := b.getParameters(sc)

@@ -43,6 +43,7 @@ const (
 
 const machineHealthCheckWorkerNodePath = "/kind/manifests/machinehealthcheckworkernode.yaml"
 const machineHealthCheckControlPlaneNodePath = "/kind/manifests/machinehealthcheckcontrolplane.yaml"
+const defaultScAnnotation = "storageclass.kubernetes.io/is-default-class"
 
 //go:embed files/calico-metrics.yaml
 var calicoMetrics string
