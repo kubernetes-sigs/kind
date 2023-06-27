@@ -257,14 +257,16 @@ func filterPrivateSubnet(svc *ec2.EC2, subnetID *string) (string, error) {
 	var isPublic bool
 	for _, associatedRouteTable := range drto.RouteTables {
 		for i := range associatedRouteTable.Routes {
-			if associatedRouteTable.Routes[i].DestinationCidrBlock != nil &&
-				associatedRouteTable.Routes[i].GatewayId != nil &&
-				*associatedRouteTable.Routes[i].DestinationCidrBlock == "0.0.0.0/0" &&
-				strings.Contains(*associatedRouteTable.Routes[i].GatewayId, "igw") {
-				isPublic = true
+			route := associatedRouteTable.Routes[i]
+
+			if route.DestinationCidrBlock != nil && route.GatewayId != nil {
+				if *route.DestinationCidrBlock == "0.0.0.0/0" && strings.Contains(*route.GatewayId, "igw") {
+					isPublic = true
+				}
 			}
 		}
 	}
+
 	if !isPublic {
 		return *subnetID, nil
 	} else {
@@ -288,14 +290,16 @@ func filterPublicSubnet(svc *ec2.EC2, subnetID *string) (string, error) {
 	var isPublic bool
 	for _, associatedRouteTable := range drto.RouteTables {
 		for i := range associatedRouteTable.Routes {
-			if associatedRouteTable.Routes[i].DestinationCidrBlock != nil &&
-				associatedRouteTable.Routes[i].GatewayId != nil &&
-				*associatedRouteTable.Routes[i].DestinationCidrBlock == "0.0.0.0/0" &&
-				strings.Contains(*associatedRouteTable.Routes[i].GatewayId, "igw") {
-				isPublic = true
+			route := associatedRouteTable.Routes[i]
+
+			if route.DestinationCidrBlock != nil && route.GatewayId != nil {
+				if *route.DestinationCidrBlock == "0.0.0.0/0" && strings.Contains(*route.GatewayId, "igw") {
+					isPublic = true
+				}
 			}
 		}
 	}
+
 	if isPublic {
 		return *subnetID, nil
 	} else {
