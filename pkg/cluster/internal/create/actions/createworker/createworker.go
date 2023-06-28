@@ -605,7 +605,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 	ctx.Status.End(true) // End Generating KEOS descriptor
 
-	err = override_vars(*descriptorFile, credentialsMap, ctx, infra)
+	err = override_vars(*descriptorFile, credentialsMap, ctx, infra, provider)
 	if err != nil {
 		return err
 	}
