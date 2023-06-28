@@ -37,7 +37,7 @@ var internalIngressFiles embed.FS
 
 func override_vars(descriptorFile commons.DescriptorFile, credentialsMap map[string]string, ctx *actions.ActionContext, infra *Infra, provider Provider) error {
 
-	override_vars, err := infra.getOverrideVars(descriptorFile, credentialsMap) //OverrideVars: {"overrideFileName1": {"overrideVariable1": "overrideValue1", ...}}
+	override_vars, err := infra.getOverrideVars(descriptorFile, credentialsMap)
 	if err != nil {
 		return err
 	}
