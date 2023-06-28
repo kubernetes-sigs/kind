@@ -217,7 +217,6 @@ func filterPrivateSubnet(svc *ec2.EC2, subnetID *string) (string, error) {
 			}
 		}
 	}
-
 	if !isPublic {
 		return *subnetID, nil
 	} else {
