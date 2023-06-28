@@ -11,9 +11,11 @@
     <tr>
       <th>
         <a href="/{{ $virtualPath }}">{{ $virtualPath }}</a>
-        <button onclick='copyText("code-{{ $virtualPath }}-hidden-copy-text");' title="Copy to clipboard">
+        <button onclick='copyText("code-{{ $virtualPath }}-hidden-copy-text", "button-{{ $virtualPath }}");' title="Copy to clipboard">
           <img src="{{ "copycode.svg" | relURL }}" alt="Copy">
+          <img src="{{ "tick.svg" | relURL }}" alt="Tick" class="hidden-tick" id="button-{{ $virtualPath }}-tick">
         </button>
+        <span class="copy-success" id="button-{{ $virtualPath }}-success"></span>
       </th>
     </tr>
   </thead>
@@ -24,3 +26,18 @@
   </tbody>
   <textarea class="hidden-copy-text" id="code-{{ $virtualPath }}-hidden-copy-text">{{ ($file | readFile) }}</textarea>
 </table>
+
+<script>
+  function copyText(elementId, successElementId) {
+    const textarea = document.getElementById(elementId);
+    textarea.select();
+    document.execCommand("copy");
+  
+    // Add visual confirmation
+    const tickElement = document.getElementById(`${successElementId}-tick`);
+    tickElement.classList.remove("hidden-tick");
+    setTimeout(() => {
+      tickElement.classList.add("hidden-tick");
+    }, 2000);
+  }
+  </script>

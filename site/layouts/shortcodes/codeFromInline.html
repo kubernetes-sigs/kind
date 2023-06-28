@@ -6,8 +6,8 @@
   <thead>
   <tr>
     <th>
-      <button onclick='copyText("inline-code-{{ $hash }}-hidden-copy-text");' title="Copy to clipboard">
-        <img src="{{ "copycode.svg" | relURL }}" alt="Copy">
+      <button id="copy-button-inline-code-{{ $hash }}" onclick='copyText("inline-code-{{ $hash }}-hidden-copy-text");' title="Copy to clipboard">
+        &#128203; <!-- Initial copy button icon -->
       </button>
     </th>
   </tr>
@@ -19,3 +19,18 @@
   </tbody>
   <textarea class="hidden-copy-text" id="inline-code-{{ $hash }}-hidden-copy-text">{{ $code }}</textarea>
 </table>
+
+<script>
+  function copyText(elementId) {
+    const textarea = document.getElementById(elementId);
+    textarea.select();
+    document.execCommand("copy");
+  
+    // Add visual confirmation
+    const button = document.getElementById(`copy-button-${elementId}`);
+    button.innerHTML = "&#10004; Copied";
+    setTimeout(() => {
+      button.innerHTML = "&#128203;"; // Reset the button text after a delay
+    }, 2000);
+  }
+  </script>
