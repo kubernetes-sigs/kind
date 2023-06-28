@@ -53,8 +53,10 @@ func (c *Cluster) Validate() error {
 	}
 
 	// podSubnet should be a valid CIDR
-	if err := validateSubnets(c.Networking.PodSubnet, c.Networking.IPFamily); err != nil {
-		errs = append(errs, errors.Errorf("invalid pod subnet %v", err))
+	if !c.Networking.DisableDefaultCNI {
+		if err := validateSubnets(c.Networking.PodSubnet, c.Networking.IPFamily); err != nil {
+			errs = append(errs, errors.Errorf("invalid pod subnet %v", err))
+		}
 	}
 
 	// serviceSubnet should be a valid CIDR

@@ -47,8 +47,8 @@ func SetDefaultsCluster(obj *Cluster) {
 			obj.Networking.APIServerAddress = "::1"
 		}
 	}
-	// default the pod CIDR
-	if obj.Networking.PodSubnet == "" {
+	// default the pod CIDR if not disabling default CNI
+	if obj.Networking.PodSubnet == "" && !obj.Networking.DisableDefaultCNI {
 		obj.Networking.PodSubnet = "10.244.0.0/16"
 		if obj.Networking.IPFamily == IPv6Family {
 			// node-mask cidr default is /64 so we need a larger subnet, we use /56 following best practices
