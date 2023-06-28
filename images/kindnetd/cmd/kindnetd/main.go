@@ -123,6 +123,17 @@ func main() {
 		mtu:  mtu,
 	}
 
+	// set up noMasqueradeCIDRs to skip NAT for kind clusters
+	var noMasqueradeIPv4Subnets, noMasqueradeIPv6Subnets []string = []string{}, []string{}
+	{
+		noMasqueradeSubnetEnv := os.Getenv("NO_MASQUERADE_SUBNET")
+		if noMasqueradeSubnetEnv != "" {
+			noMasqueradeSubnetEnv = strings.TrimSpace(noMasqueradeSubnetEnv)
+			noMasqueradeSubnets := strings.Split(noMasqueradeSubnetEnv, ",")
+			noMasqueradeIPv4Subnets, noMasqueradeIPv6Subnets = splitCIDRs(noMasqueradeSubnets)
+		}
+	}
+
 	// enforce ip masquerade rules
 	podSubnetEnv := os.Getenv("POD_SUBNET")
 	if podSubnetEnv == "" {
@@ -147,8 +158,9 @@ func main() {
 
 	// create an ipMasqAgent for IPv4
 	if len(clusterIPv4Subnets) > 0 {
-		klog.Infof("noMask IPv4 subnets: %v", clusterIPv4Subnets)
-		masqAgentIPv4, err := NewIPMasqAgent(false, clusterIPv4Subnets)
+		noMasqueradeIPv4Subnets = append(noMasqueradeIPv4Subnets, clusterIPv4Subnets...)
+		klog.Infof("noMask IPv4 subnets: %v", noMasqueradeIPv4Subnets)
+		masqAgentIPv4, err := NewIPMasqAgent(false, noMasqueradeIPv4Subnets)
 		if err != nil {
 			panic(err.Error())
 		}
@@ -161,8 +173,9 @@ func main() {
 
 	// create an ipMasqAgent for IPv6
 	if len(clusterIPv6Subnets) > 0 {
-		klog.Infof("noMask IPv6 subnets: %v", clusterIPv6Subnets)
-		masqAgentIPv6, err := NewIPMasqAgent(true, clusterIPv6Subnets)
+		noMasqueradeIPv6Subnets = append(noMasqueradeIPv6Subnets, clusterIPv6Subnets...)
+		klog.Infof("noMask IPv6 subnets: %v", noMasqueradeIPv6Subnets)
+		masqAgentIPv6, err := NewIPMasqAgent(true, noMasqueradeIPv6Subnets)
 		if err != nil {
 			panic(err.Error())
 		}
