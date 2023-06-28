@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/apparentlymart/go-cidr/cidr"
@@ -206,11 +207,13 @@ func filterPrivateSubnet(svc *ec2.EC2, subnetID *string) (string, error) {
 
 	var isPublic bool
 	for _, associatedRouteTable := range drto.RouteTables {
-
 		for i := range associatedRouteTable.Routes {
-			if *associatedRouteTable.Routes[i].DestinationCidrBlock == "0.0.0.0/0" &&
-				associatedRouteTable.Routes[i].GatewayId != nil &&
-				strings.Contains(*associatedRouteTable.Routes[i].GatewayId, "igw") {
+			route := associatedRouteTable.Routes[i]
+
+			if route.DestinationCidrBlock != nil &&
+				route.GatewayId != nil &&
+				*route.DestinationCidrBlock == "0.0.0.0/0" &&
+				strings.Contains(*route.GatewayId, "igw") {
 				isPublic = true
 			}
 		}
@@ -256,11 +259,27 @@ func (v *EKSValidator) storageClassParametersValidation(descriptorFile commons.D
 	if sc.Parameters.Type != "" && !slices.Contains(provisionersTypesAWS, sc.Parameters.Type) {
 		return errors.New("Unsupported type: " + sc.Parameters.Type)
 	}
-	if sc.Parameters.IopsPerGB != "" && !slices.Contains(typesSupportedForIOPS, sc.Parameters.Type) {
+	if sc.Parameters.IopsPerGB != "" && sc.Parameters.Type != "" && !slices.Contains(typesSupportedForIOPS, sc.Parameters.Type) {
 		return errors.New("I/O operations per second per GiB only can be specified for IO1, IO2, and GP3 volume types.")
 	}
-	if sc.Parameters.Iops != "" && !slices.Contains(typesSupportedForIOPS, sc.Parameters.Type) {
+	if sc.Parameters.Iops != "" && sc.Parameters.Type != "" && !slices.Contains(typesSupportedForIOPS, sc.Parameters.Type) {
 		return errors.New("I/O operations per second per GiB only can be specified for IO1, IO2, and GP3 volume types.")
+	}
+	if sc.Parameters.Iops != "" {
+		iops, err := strconv.Atoi(sc.Parameters.Iops)
+		if err != nil {
+			return errors.New("Invalid Iops parameter. It must be a number in string format")
+		}
+		if (sc.Class != "premium" && sc.Parameters.Type == "") || sc.Parameters.Type == "gp3" {
+			if iops < 3000 || iops > 16000 {
+				return errors.New("Invalid Iops parameter. It must be greater than 3000 and lower than 16000 for gp3 type")
+			}
+		} else {
+			if iops < 16000 || iops > 64000 {
+				return errors.New("Invalid Iops parameter. It must be greater than 16000 and lower than 64000 for io1 and io2 types")
+			}
+		}
+
 	}
 	if sc.Parameters.FsType != "" && !slices.Contains(fstypes, sc.Parameters.FsType) {
 		return errors.New("Unsupported fsType: " + sc.Parameters.Type + ". Supported types: " + fmt.Sprint(fstypes))
