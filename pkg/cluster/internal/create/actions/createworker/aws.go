@@ -60,6 +60,7 @@ var standardAWSParameters = commons.SCParameters{
 
 var premiumAWSParameters = commons.SCParameters{
 	Type: "io2",
+	Iops: "64000",
 }
 
 type AWSBuilder struct {
