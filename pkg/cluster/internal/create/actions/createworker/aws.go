@@ -394,7 +394,7 @@ func (b *AWSBuilder) getOverrideVars(descriptor commons.DescriptorFile, credenti
 
 func (b *AWSBuilder) getPvcSizeOverrideVars(sc commons.StorageClass) (string, []byte, error) {
 	if sc.Class == "premium" || sc.Parameters.Type == "io2" || sc.Parameters.Type == "io1" {
-		return "storage_class.yaml", []byte("storage_class_pvc_size: 4XGi"), nil
+		return "storage_class.yaml", []byte("storage_class_pvc_size: 4Gi"), nil
 	}
 	return "", []byte(""), nil
 }
