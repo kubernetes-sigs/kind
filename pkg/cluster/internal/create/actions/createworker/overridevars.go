@@ -41,12 +41,12 @@ func override_vars(descriptorFile commons.DescriptorFile, credentialsMap map[str
 	if err != nil {
 		return err
 	}
+	overrideVarsDir := "override_vars"
 
 	if len(override_vars) > 0 {
-		ctx.Status.Start("Generating override_vars structure ⚒️")
+		ctx.Status.Start("Rotating and generating override_vars structure ⚒️")
 		defer ctx.Status.End(false)
 		for filename, overrideValue := range override_vars {
-			overrideVarsDir := "override_vars"
 			originalFilePath := filepath.Join(overrideVarsDir, filename)
 			err := createBackupOverrideVars(originalFilePath)
 			if err != nil {
@@ -64,17 +64,34 @@ func override_vars(descriptorFile commons.DescriptorFile, credentialsMap map[str
 			}
 
 		}
-		ctx.Status.End(true) // End Generating override_vars structure
 
+		ctx.Status.End(true) // End Generating and rotating override_vars structure
+
+	} else {
+
+		err := rotateBackupOverrideVars(overrideVarsDir, ctx)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func internalNginxOverrideVars() error {
-	err := createBackupOverrideVars("ingress-nginx.yaml")
-	if err != nil {
-		return err
+func rotateBackupOverrideVars(originalDirPath string, ctx *actions.ActionContext) error {
+	timestamp := time.Now().Format("20060102150405")
+	newDirName := originalDirPath + "." + timestamp
+
+	_, err := os.Stat(originalDirPath)
+	if err == nil {
+		ctx.Status.Start("Rotating override_vars structure ⚒️")
+
+		err := os.Rename(originalDirPath, newDirName)
+		if err != nil {
+			return errors.Wrap(err, "error renaming original override_vars directory")
+		}
+		ctx.Status.End(true) // End Rotating override_vars structure
+
 	}
 	return nil
 }
