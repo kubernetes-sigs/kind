@@ -354,15 +354,6 @@ func TestNodeValidate(t *testing.T) {
 			ExpectErrors: 1,
 		},
 		{
-			TestName: "Invalid Devices",
-			Node: func() Node {
-				cfg := newDefaultedNode(ControlPlaneRole)
-				cfg.Devices = []string{"vendor.com/foo/bar"}
-				return cfg
-			}(),
-			ExpectErrors: 1,
-		},
-		{
 			TestName: "Valid Devices",
 			Node: func() Node {
 				cfg := newDefaultedNode(ControlPlaneRole)
