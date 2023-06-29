@@ -35,10 +35,68 @@ import (
 //go:embed files/*/internal-ingress-nginx.yaml
 var internalIngressFiles embed.FS
 
-func override_vars(descriptorFile commons.DescriptorFile, credentialsMap map[string]string, ctx *actions.ActionContext, infra *Infra) error {
+func override_vars(descriptorFile commons.DescriptorFile, credentialsMap map[string]string, ctx *actions.ActionContext, infra *Infra, provider Provider) error {
 
+	override_vars, err := infra.getOverrideVars(descriptorFile, credentialsMap)
+	if err != nil {
+		return err
+	}
 	overrideVarsDir := "override_vars"
-	originalFilePath := filepath.Join(overrideVarsDir, "ingress-nginx.yaml")
+
+	if len(override_vars) > 0 {
+		ctx.Status.Start("Rotating and generating override_vars structure ⚒️")
+		defer ctx.Status.End(false)
+		for filename, overrideValue := range override_vars {
+			originalFilePath := filepath.Join(overrideVarsDir, filename)
+			err := createBackupOverrideVars(originalFilePath)
+			if err != nil {
+				return err
+			}
+
+			err = os.MkdirAll(filepath.Dir(originalFilePath), os.ModePerm)
+			if err != nil {
+				return errors.Wrap(err, "error creating override_vars directory")
+			}
+
+			err = ioutil.WriteFile(originalFilePath, overrideValue, os.ModePerm)
+			if err != nil {
+				return errors.Wrap(err, "error writing corresponding '"+originalFilePath+"'")
+			}
+
+		}
+
+		ctx.Status.End(true) // End Generating and rotating override_vars structure
+
+	} else {
+
+		err := rotateBackupOverrideVars(overrideVarsDir, ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func rotateBackupOverrideVars(originalDirPath string, ctx *actions.ActionContext) error {
+	timestamp := time.Now().Format("20060102150405")
+	newDirName := originalDirPath + "." + timestamp
+
+	_, err := os.Stat(originalDirPath)
+	if err == nil {
+		ctx.Status.Start("Rotating override_vars structure ⚒️")
+
+		err := os.Rename(originalDirPath, newDirName)
+		if err != nil {
+			return errors.Wrap(err, "error renaming original override_vars directory")
+		}
+		ctx.Status.End(true) // End Rotating override_vars structure
+
+	}
+	return nil
+}
+
+func createBackupOverrideVars(originalFilePath string) error {
 	timestamp := time.Now().Format("20060102150405")
 	newFilePath := filepath.Dir(originalFilePath) + "." + timestamp
 
@@ -50,41 +108,12 @@ func override_vars(descriptorFile commons.DescriptorFile, credentialsMap map[str
 			return errors.Wrap(err, "error renaming original override_vars directory")
 		}
 	}
-
-	requiredInternalNginx, err := infra.internalNginx(descriptorFile.Networks, credentialsMap, descriptorFile.ClusterID)
-	if err != nil {
-		return err
-	}
-
-	if requiredInternalNginx {
-
-		ctx.Status.Start("Generating override_vars structure ⚒️")
-		defer ctx.Status.End(false)
-
-		err = os.MkdirAll(filepath.Dir(originalFilePath), os.ModePerm)
-		if err != nil {
-			return errors.Wrap(err, "error creating override_vars directory")
-		}
-
-		// Create ingress-nginx.yaml in override_vars folder if required
-		internalIngressFilePath := "files/" + descriptorFile.InfraProvider + "/internal-ingress-nginx.yaml"
-		internalIngressFile, err := internalIngressFiles.Open(internalIngressFilePath)
-		if err != nil {
-			return errors.Wrap(err, "error opening the internal ingress nginx file")
-		}
-		defer internalIngressFile.Close()
-
-		internalIngressContent, err := ioutil.ReadAll(internalIngressFile)
-		if err != nil {
-			return errors.Wrap(err, "error reading the internal ingress nginx file")
-		}
-		err = ioutil.WriteFile(originalFilePath, []byte(internalIngressContent), os.ModePerm)
-		if err != nil {
-			return errors.Wrap(err, "error writing corresponding 'override_vars/ingress-nginx.yaml'")
-		}
-
-		ctx.Status.End(true) // End Generating override_vars structure
-	}
-
 	return nil
+}
+
+func addOverrideVar(path string, value []byte, ov map[string][]byte) map[string][]byte {
+	if path != "" && string(value) != "" {
+		ov[path] = value
+	}
+	return ov
 }
