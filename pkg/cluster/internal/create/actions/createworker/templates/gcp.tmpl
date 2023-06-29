@@ -51,7 +51,7 @@ spec:
   machineTemplate:
     metadata:
       labels:
-        keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-control-plane-node"
+        keos.stratio.com/machine-role: "{{ .Descriptor.ClusterID }}-control-plane-node"
     infrastructureRef:
       kind: GCPMachineTemplate
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1

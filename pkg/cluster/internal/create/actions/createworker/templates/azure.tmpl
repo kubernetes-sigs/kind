@@ -157,6 +157,9 @@ spec:
     postKubeadmCommands: []
     preKubeadmCommands: []
   machineTemplate:
+    metadata:
+      labels:
+        keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-control-plane-node"
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: AzureMachineTemplate
