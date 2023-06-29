@@ -12,7 +12,7 @@
       <th>
         <a href="/{{ $virtualPath }}">{{ $virtualPath }}</a>
         <button onclick='copyText("code-{{ $virtualPath }}-hidden-copy-text", "button-{{ $virtualPath }}");' title="Copy to clipboard">
-          <img src="site/static/copycode.svg" alt="Copy">
+          &#128203; <!-- Initial copy button icon -->
         </button>
         
         <span class="copy-success" id="button-{{ $virtualPath }}-success"></span>
