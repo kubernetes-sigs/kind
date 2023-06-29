@@ -1,11 +1,11 @@
 {{ $file := .Get "file" }}
 {{ $lang := "" }}
 {{ $suffix := findRE "(\\.[^.]+)$" $file 1 }}
-{{ with  $suffix }}
-{{ $lang = (index . 0 | strings.TrimPrefix ".") }}
+{{ with $suffix }}
+  {{ $lang = (index . 0 | strings.TrimPrefix ".") }}
 {{ end }}
 {{ with .Get "lang" }}{{ $lang = . }}{{ end }}
-{{ $virtualPath :=  strings.TrimPrefix `static/` $file }}
+{{ $virtualPath := strings.TrimPrefix "static/" $file }}
 <table class="includecode" id="code-{{ $virtualPath }}">
   <thead>
     <tr>
@@ -21,10 +21,10 @@
   </thead>
   <tbody>
     <tr>
-      <td>{{- highlight (trim ($file | readFile) "\n") $lang "" | -}}</td>
+      <td>{{- highlight (trim ($file | readFile) "\n") $lang "" -}}</td>
     </tr>
   </tbody>
-  <textarea class="hidden-copy-text" id="code-{{ $virtualPath }}-hidden-copy-text">{{ ($file | readFile) }}</textarea>
+  <textarea class="hidden-copy-text" id="code-{{ $virtualPath }}-hidden-copy-text">{{ $file | readFile }}</textarea>
 </table>
 
 <script>
@@ -40,4 +40,4 @@
       tickElement.classList.add("hidden-tick");
     }, 2000);
   }
-  </script>
+</script>

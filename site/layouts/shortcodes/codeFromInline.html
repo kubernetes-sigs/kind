@@ -1,4 +1,4 @@
-{{ $code := trim .Inner  "\n"  }}
+{{ $code := trim .Inner "\n" }}
 {{ $lang := "" }}
 {{ with .Get "lang" }}{{ $lang = . }}{{ end }}
 {{ $hash := md5 $code }}
@@ -6,7 +6,7 @@
   <thead>
   <tr>
     <th>
-      <button id="copy-button-inline-code-{{ $hash }}" onclick='copyText("inline-code-{{ $hash }}-hidden-copy-text");' title="Copy to clipboard">
+      <button id="copy-button-inline-code-{{ $hash }}" onclick='copyText("inline-code-{{ $hash }}-hidden-copy-text", "copy-button-inline-code-{{ $hash }}");' title="Copy to clipboard">
         &#128203; <!-- Initial copy button icon -->
       </button>
     </th>
@@ -21,16 +21,16 @@
 </table>
 
 <script>
-  function copyText(elementId) {
+  function copyText(elementId, buttonId) {
     const textarea = document.getElementById(elementId);
     textarea.select();
     document.execCommand("copy");
   
     // Add visual confirmation
-    const button = document.getElementById(`copy-button-${elementId}`);
+    const button = document.getElementById(buttonId);
     button.innerHTML = "&#10004; Copied";
     setTimeout(() => {
       button.innerHTML = "&#128203;"; // Reset the button text after a delay
     }, 2000);
   }
-  </script>
+</script>
