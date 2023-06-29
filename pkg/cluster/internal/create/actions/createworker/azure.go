@@ -21,6 +21,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -326,4 +327,37 @@ func AzureFilterPublicSubnet(ctx context.Context, subnetsClient *armnetwork.Subn
 	} else {
 		return subnetID, nil
 	}
+}
+
+func (b *AzureBuilder) getOverrideVars(descriptor commons.DescriptorFile, credentialsMap map[string]string) (map[string][]byte, error) {
+	overrideVars := map[string][]byte{}
+	InternalNginxOVPath, InternalNginxOVValue, err := b.getInternalNginxOverrideVars(descriptor.Networks, credentialsMap, descriptor.ClusterID)
+	if err != nil {
+		return nil, err
+	}
+	overrideVars = addOverrideVar(InternalNginxOVPath, InternalNginxOVValue, overrideVars)
+	return overrideVars, nil
+}
+
+func (b *AzureBuilder) getInternalNginxOverrideVars(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (string, []byte, error) {
+	requiredInternalNginx, err := b.internalNginx(networks, credentialsMap, ClusterID)
+	if err != nil {
+		return "", nil, err
+	}
+
+	if requiredInternalNginx {
+		internalIngressFilePath := "files/" + b.capxProvider + "/internal-ingress-nginx.yaml"
+		internalIngressFile, err := internalIngressFiles.Open(internalIngressFilePath)
+		if err != nil {
+			return "", nil, errors.Wrap(err, "error opening the internal ingress nginx file")
+		}
+		defer internalIngressFile.Close()
+
+		internalIngressContent, err := ioutil.ReadAll(internalIngressFile)
+		if err != nil {
+			return "", nil, errors.Wrap(err, "error reading the internal ingress nginx file")
+		}
+		return "ingress-nginx.yaml", internalIngressContent, nil
+	}
+	return "", []byte(""), nil
 }

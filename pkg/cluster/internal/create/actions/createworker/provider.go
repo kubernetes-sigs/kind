@@ -57,6 +57,7 @@ type PBuilder interface {
 	getParameters(sc commons.StorageClass) commons.SCParameters
 	getAzs(networks commons.Networks) ([]string, error)
 	internalNginx(networks commons.Networks, credentialsMap map[string]string, clusterID string) (bool, error)
+	getOverrideVars(descriptor commons.DescriptorFile, credentialsMap map[string]string) (map[string][]byte, error)
 }
 
 type Provider struct {
@@ -134,6 +135,14 @@ func (i *Infra) internalNginx(networks commons.Networks, credentialsMap map[stri
 		return false, err
 	}
 	return requiredIntenalNginx, nil
+}
+
+func (i *Infra) getOverrideVars(descriptor commons.DescriptorFile, credentialsMap map[string]string) (map[string][]byte, error) {
+	overrideVars, err := i.builder.getOverrideVars(descriptor, credentialsMap)
+	if err != nil {
+		return nil, err
+	}
+	return overrideVars, nil
 }
 
 func (i *Infra) getAzs(networks commons.Networks) ([]string, error) {
