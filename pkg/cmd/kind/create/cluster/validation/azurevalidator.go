@@ -84,6 +84,20 @@ func (v *AzureValidator) descriptorAzureValidations(descriptorFile commons.Descr
 	if err != nil {
 		return err
 	}
+
+	if !descriptorFile.ControlPlane.Managed {
+		err = v.extraVolumesValidation(descriptorFile.ControlPlane.ExtraVolumes, "controlplane")
+		if err != nil {
+			return err
+		}
+		for _, wn := range descriptorFile.WorkerNodes {
+			err = v.extraVolumesValidation(wn.ExtraVolumes, "workernodes "+wn.Name)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -193,10 +207,26 @@ func (v *AzureValidator) storageClassParametersValidation(descriptorFile commons
 		regex := regexp.MustCompile(`^(\w+|.*)=(\w+|.*)$`)
 		for _, tag := range tags {
 			if !regex.MatchString(tag) {
-				return errors.New("Incorrect labels format. Labels must have the format 'key1=value1,key2=value2'")
+				return errors.New("Incorrect labels format. Labels must have the format 'key1=value1,key2=value2'.")
 			}
 		}
 	}
 
+	return nil
+}
+
+func (v *AzureValidator) extraVolumesValidation(extraVolumes []commons.ExtraVolume, nodeRole string) error {
+	for i, ev := range extraVolumes {
+		if ev.Name == "" {
+			return errors.New("All  extravolumes must have their own name in " + nodeRole + ".")
+		}
+		name1 := ev.Name
+		for _, ev2 := range extraVolumes[i+1:] {
+			if name1 == ev2.Name {
+				return errors.New("There can be no more than 1 extravolume with the same name in " + nodeRole + ".")
+			}
+		}
+
+	}
 	return nil
 }
