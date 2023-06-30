@@ -49,7 +49,7 @@ type DescriptorFile struct {
 
 	Bastion Bastion `yaml:"bastion"`
 
-	StorageClass StorageClass `yaml:"storage_class" validate:"dive"`
+	StorageClass StorageClass `yaml:"storageclass" validate:"dive"`
 
 	Credentials Credentials `yaml:"credentials" validate:"dive"`
 
