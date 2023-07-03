@@ -67,9 +67,10 @@ var storageClassGCPTemplate = StorageClassDef{
 		},
 		Name: "keos",
 	},
-	Provisioner:       "pd.csi.storage.gke.io",
-	Parameters:        make(map[string]interface{}),
-	VolumeBindingMode: "WaitForFirstConsumer",
+	AllowVolumeExpansion: true,
+	Provisioner:          "pd.csi.storage.gke.io",
+	Parameters:           make(map[string]interface{}),
+	VolumeBindingMode:    "WaitForFirstConsumer",
 }
 
 var standardGCPParameters = commons.SCParameters{
