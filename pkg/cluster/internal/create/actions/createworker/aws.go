@@ -50,9 +50,10 @@ var storageClassAWSTemplate = StorageClassDef{
 		},
 		Name: "keos",
 	},
-	Provisioner:       "ebs.csi.aws.com",
-	Parameters:        make(map[string]interface{}),
-	VolumeBindingMode: "WaitForFirstConsumer",
+	AllowVolumeExpansion: true,
+	Provisioner:          "ebs.csi.aws.com",
+	Parameters:           make(map[string]interface{}),
+	VolumeBindingMode:    "WaitForFirstConsumer",
 }
 
 var standardAWSParameters = commons.SCParameters{

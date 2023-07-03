@@ -89,9 +89,10 @@ type StorageClassDef struct {
 		Annotations map[string]string `yaml:"annotations,omitempty"`
 		Name        string            `yaml:"name"`
 	} `yaml:"metadata"`
-	Provisioner       string                 `yaml:"provisioner"`
-	Parameters        map[string]interface{} `yaml:"parameters"`
-	VolumeBindingMode string                 `yaml:"volumeBindingMode"`
+	AllowVolumeExpansion bool                   `yaml:"allowVolumeExpansion"`
+	Provisioner          string                 `yaml:"provisioner"`
+	Parameters           map[string]interface{} `yaml:"parameters"`
+	VolumeBindingMode    string                 `yaml:"volumeBindingMode"`
 }
 
 func getBuilder(builderType string) PBuilder {

@@ -53,9 +53,10 @@ var storageClassAZTemplate = StorageClassDef{
 		},
 		Name: "keos",
 	},
-	Provisioner:       "disk.csi.azure.com",
-	Parameters:        make(map[string]interface{}),
-	VolumeBindingMode: "WaitForFirstConsumer",
+	AllowVolumeExpansion: true,
+	Provisioner:          "disk.csi.azure.com",
+	Parameters:           make(map[string]interface{}),
+	VolumeBindingMode:    "WaitForFirstConsumer",
 }
 
 var standardAZParameters = commons.SCParameters{
