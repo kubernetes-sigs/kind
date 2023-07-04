@@ -3,6 +3,7 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: azurefile
+allowVolumeExpansion: true
 provisioner: file.csi.azure.com
 mountOptions:
   - mfsymlinks
@@ -17,6 +18,7 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: azurefile-csi
+allowVolumeExpansion: true
 provisioner: file.csi.azure.com
 mountOptions:
   - mfsymlinks
@@ -31,6 +33,7 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: azurefile-csi-premium
+allowVolumeExpansion: true
 provisioner: file.csi.azure.com
 mountOptions:
   - mfsymlinks
@@ -45,6 +48,7 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: azurefile-premium
+allowVolumeExpansion: true
 provisioner: file.csi.azure.com
 mountOptions:
   - mfsymlinks
@@ -61,6 +65,7 @@ metadata:
   annotations:
     storageclass.kubernetes.io/is-default-class: "true"
   name: default
+allowVolumeExpansion: true
 provisioner: disk.csi.azure.com
 parameters:
   skuname: StandardSSD_LRS
@@ -71,6 +76,7 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: managed
+allowVolumeExpansion: true
 provisioner: disk.csi.azure.com
 parameters:
   cachingmode: ReadOnly
@@ -83,6 +89,7 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: managed-csi
+allowVolumeExpansion: true
 provisioner: disk.csi.azure.com
 parameters:
   skuname: StandardSSD_LRS
@@ -93,6 +100,7 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: managed-csi-premium
+allowVolumeExpansion: true
 provisioner: disk.csi.azure.com
 parameters:
   skuname: Premium_LRS
@@ -103,6 +111,7 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: managed-premium
+allowVolumeExpansion: true
 provisioner: disk.csi.azure.com
 parameters:
   cachingmode: ReadOnly
