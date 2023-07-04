@@ -35,7 +35,7 @@ import (
 )
 
 // planCreation creates a slice of funcs that will create the containers
-func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs []func() error, err error) {
+func planCreation(cfg *config.Cluster, networkName string, noEnvPass bool) (createContainerFuncs []func() error, err error) {
 	// these apply to all container creation
 	nodeNamer := common.MakeNodeNamer(cfg.Name)
 	names := make([]string, len(cfg.Nodes))
@@ -47,7 +47,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 	if haveLoadbalancer {
 		names = append(names, nodeNamer(constants.ExternalLoadBalancerNodeRoleValue))
 	}
-	genericArgs, err := commonArgs(cfg, networkName, names)
+	genericArgs, err := commonArgs(cfg, networkName, names, noEnvPass)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 }
 
 // commonArgs computes static arguments that apply to all containers
-func commonArgs(cfg *config.Cluster, networkName string, nodeNames []string) ([]string, error) {
+func commonArgs(cfg *config.Cluster, networkName string, nodeNames []string, noEnvPass bool) ([]string, error) {
 	// standard arguments all nodes containers need, computed once
 	args := []string{
 		"--detach",           // run the container detached
@@ -158,6 +158,16 @@ func commonArgs(cfg *config.Cluster, networkName string, nodeNames []string) ([]
 	// https://github.com/kubernetes-sigs/kind/issues/1416#issuecomment-606514724
 	if mountDevMapper() {
 		args = append(args, "--volume", "/dev/mapper:/dev/mapper")
+	}
+
+	if !noEnvPass {
+		proxyEnv, err := getProxyEnv(cfg, networkName, nodeNames)
+		if err != nil {
+			return nil, errors.Wrap(err, "proxy setup error")
+		}
+		for key, val := range proxyEnv {
+			args = append(args, "-e", fmt.Sprintf("%s=%s", key, val))
+		}
 	}
 
 	// rootless: use fuse-overlayfs by default
