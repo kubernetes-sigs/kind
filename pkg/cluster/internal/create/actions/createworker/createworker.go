@@ -387,8 +387,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 
 		if provider.capxProvider != "azure" || !keosCluster.Spec.ControlPlane.Managed {
-			// Wait for the worker cluster creation
-			c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=ready --timeout=15m --all md"
+			// Wait for all the machine deployments to be ready
+			c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=Ready --timeout=15m --all md"
 			_, err = commons.ExecuteCommand(n, c)
 			if err != nil {
 				return errors.Wrap(err, "failed to create the worker Cluster")
@@ -396,13 +396,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 
 		if !keosCluster.Spec.ControlPlane.Managed && keosCluster.Spec.ControlPlane.HighlyAvailable {
-			// Wait for all control planes creation
-			c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=ControlPlaneReady --timeout 10m cluster " + keosCluster.Metadata.Name
-			if err != nil {
-				return errors.Wrap(err, "failed to create the worker Cluster")
-			}
 			// Wait for all control planes to be ready
-			c = "kubectl -n " + capiClustersNamespace + " wait --for=jsonpath=\"{.status.unavailableReplicas}\"=0 --timeout 10m --all kubeadmcontrolplanes"
+			c = "kubectl -n " + capiClustersNamespace + " wait --for=jsonpath=\"{.status.readyReplicas}\"=3 --timeout 10m kubeadmcontrolplanes " + keosCluster.Metadata.Name + "-control-plane"
 			_, err = commons.ExecuteCommand(n, c)
 			if err != nil {
 				return errors.Wrap(err, "failed to create the worker Cluster")
@@ -544,12 +539,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		// Create cloud-provisioner Objects backup
 		ctx.Status.Start("Creating cloud-provisioner Objects backup 🗄️")
 		defer ctx.Status.End(false)
-
-		c = "kubectl wait --for=condition=Ready -n " + capiClustersNamespace + " cluster " + keosCluster.Metadata.Name + " --timeout 15m"
-		_, err = commons.ExecuteCommand(n, c)
-		if err != nil {
-			return errors.Wrap(err, "timeout to cluster condition ready")
-		}
 
 		if _, err := os.Stat(localBackupPath); os.IsNotExist(err) {
 			if err := os.MkdirAll(localBackupPath, 0755); err != nil {
