@@ -2,38 +2,38 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  name: "{{ .Descriptor.ClusterID }}"
-  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+  name: "{{ .KeosCluster.Metadata.Name }}"
+  namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
 spec:
   clusterNetwork:
     pods:
-      cidrBlocks: [\"{{- if .Descriptor.Networks.PodsCidrBlock -}} {{ .Descriptor.Networks.PodsCidrBlock }} {{- else -}} 192.168.0.0/16 {{- end }}\"]
+      cidrBlocks: [\"{{- if .KeosCluster.Spec.Networks.PodsCidrBlock -}} {{ .KeosCluster.Spec.Networks.PodsCidrBlock }} {{- else -}} 192.168.0.0/16 {{- end }}\"]
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: GCPCluster
-    name: "{{ .Descriptor.ClusterID }}"
+    name: "{{ .KeosCluster.Metadata.Name }}"
   controlPlaneRef:
     kind: KubeadmControlPlane
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
-    name: "{{ .Descriptor.ClusterID }}-control-plane"
+    name: "{{ .KeosCluster.Metadata.Name }}-control-plane"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: GCPCluster
 metadata:
-  name: "{{ .Descriptor.ClusterID }}"
-  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+  name: "{{ .KeosCluster.Metadata.Name }}"
+  namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
 spec:
   project: {{ .Credentials.ProjectID }}
-  region: "{{ .Descriptor.Region }}"
-  {{- if ne .Descriptor.Networks.VPCID "" }}
+  region: "{{ .KeosCluster.Spec.Region }}"
+  {{- if ne .KeosCluster.Spec.Networks.VPCID "" }}
   network:
-    name: {{ .Descriptor.Networks.VPCID }}
-    {{- if gt (len .Descriptor.Networks.Subnets) 0 }}
+    name: {{ .KeosCluster.Spec.Networks.VPCID }}
+    {{- if gt (len .KeosCluster.Spec.Networks.Subnets) 0 }}
     autoCreateSubnetworks: false
     subnets:
-    {{- with (index .Descriptor.Networks.Subnets 0) }}
+    {{- with (index .KeosCluster.Spec.Networks.Subnets 0) }}
     - name: {{ .SubnetId }}
-      region: "{{ $.Descriptor.Region }}"
+      region: "{{ $.KeosCluster.Spec.Region }}"
     {{- end }}
   {{- end }}
   {{- else }}
@@ -44,18 +44,18 @@ spec:
 kind: KubeadmControlPlane
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 metadata:
-  name: "{{ .Descriptor.ClusterID }}-control-plane"
-  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+  name: "{{ .KeosCluster.Metadata.Name }}-control-plane"
+  namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
 spec:
-  replicas: {{- if .Descriptor.ControlPlane.HighlyAvailable }} 3 {{- else }} 1 {{- end }}
+  replicas: {{- if .KeosCluster.Spec.ControlPlane.HighlyAvailable }} 3 {{- else }} 1 {{- end }}
   machineTemplate:
     metadata:
       labels:
-        keos.stratio.com/machine-role: "{{ .Descriptor.ClusterID }}-control-plane-node"
+        keos.stratio.com/machine-role: "{{ .KeosCluster.Metadata.Name }}-control-plane-node"
     infrastructureRef:
       kind: GCPMachineTemplate
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
-      name: "{{ .Descriptor.ClusterID }}-control-plane"
+      name: "{{ .KeosCluster.Metadata.Name }}-control-plane"
   kubeadmConfigSpec:
     initConfiguration:
       nodeRegistration:
@@ -113,23 +113,23 @@ spec:
     postKubeadmCommands:
       - systemctl restart containerd
     {{- end }}
-    {{- if .Descriptor.ControlPlane.ExtraVolumes }}
+    {{- if .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
     diskSetup:
       filesystems:
-        {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+        {{- range $index, $vol := .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
         - device: /dev/disk/by-id/google-persistent-disk-{{ len (printf "a%*s" $index "") }}
           filesystem: ext4
           label: {{ $vol.Label }}
         {{- end }}
       partitions:
-        {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+        {{- range $index, $vol := .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
         - device: /dev/disk/by-id/google-persistent-disk-{{ len (printf "a%*s" $index "") }}
           layout: true
           overwrite: false
           tableType: gpt
         {{- end }}
     mounts:
-      {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+      {{- range $index, $vol := .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
       - - LABEL={{ $vol.Label }}
         - {{ $vol.MountPath }}
       {{- end }}
@@ -139,35 +139,35 @@ spec:
         name: {{`'{{ ds.meta_data.local_hostname.split(\".\")[0] }}'`}}
         kubeletExtraArgs:
           cloud-provider: gce
-  version: "{{ .Descriptor.K8SVersion }}"
+  version: "{{ .KeosCluster.Spec.K8SVersion }}"
 ---
 kind: GCPMachineTemplate
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 metadata:
-  name: "{{ .Descriptor.ClusterID }}-control-plane"
-  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+  name: "{{ .KeosCluster.Metadata.Name }}-control-plane"
+  namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
 spec:
   template:
     spec:
-      instanceType: "{{ .Descriptor.ControlPlane.Size }}"
-      image: "{{ .Descriptor.ControlPlane.NodeImage }}"
-      {{- if .Descriptor.ControlPlane.RootVolume.Size }}
-      rootDeviceSize: {{ .Descriptor.ControlPlane.RootVolume.Size }}
+      instanceType: "{{ .KeosCluster.Spec.ControlPlane.Size }}"
+      image: "{{ .KeosCluster.Spec.ControlPlane.NodeImage }}"
+      {{- if .KeosCluster.Spec.ControlPlane.RootVolume.Size }}
+      rootDeviceSize: {{ .KeosCluster.Spec.ControlPlane.RootVolume.Size }}
       {{- end }}
-      {{- if .Descriptor.ControlPlane.RootVolume.Type }}
-      rootDeviceType: {{ .Descriptor.ControlPlane.RootVolume.Type }}
+      {{- if .KeosCluster.Spec.ControlPlane.RootVolume.Type }}
+      rootDeviceType: {{ .KeosCluster.Spec.ControlPlane.RootVolume.Type }}
       {{- end }}
-      {{- if ne .Descriptor.Networks.Subnets nil }}
-      subnet: {{ with (index .Descriptor.Networks.Subnets 0) }}{{ .SubnetId }}{{ end }}
+      {{- if ne .KeosCluster.Spec.Networks.Subnets nil }}
+      subnet: {{ with (index .KeosCluster.Spec.Networks.Subnets 0) }}{{ .SubnetId }}{{ end }}
       {{- end }}
-      {{- if .Descriptor.ControlPlane.ExtraVolumes }}
+      {{- if .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
       additionalDisks:
-        {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+        {{- range $index, $vol := .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
         - deviceType: {{ $vol.Type }}
           size: {{ $vol.Size }}
         {{- end }}
       {{- end }}
-{{- range $node := .Descriptor.WorkerNodes }}
+{{- range $node := .KeosCluster.Spec.WorkerNodes }}
 {{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -179,19 +179,19 @@ metadata:
     cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: '{{ $n.MinSize }}'
 {{- end }}
   name: "{{ $node.Name }}-md-{{ $index }}"
-  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
+  namespace: "cluster-{{ $.KeosCluster.Metadata.Name }}"
 spec:
-  clusterName: "{{ $.Descriptor.ClusterID }}"
+  clusterName: "{{ $.KeosCluster.Metadata.Name }}"
   replicas: {{ $n.QA }}
   selector:
     matchLabels:
   template:
     metadata:
       labels:
-        keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
+        keos.stratio.com/machine-role: "{{ $.KeosCluster.Metadata.Name }}-worker-node"
     spec:
-      clusterName: "{{ $.Descriptor.ClusterID }}"
-      version: "{{ $.Descriptor.K8SVersion }}"
+      clusterName: "{{ $.KeosCluster.Metadata.Name }}"
+      version: "{{ $.KeosCluster.Spec.K8SVersion }}"
       failureDomain: "{{ $n.AZ }}"
       bootstrap:
         configRef:
@@ -207,7 +207,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: GCPMachineTemplate
 metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
-  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
+  namespace: "cluster-{{ $.KeosCluster.Metadata.Name }}"
 spec:
   template:
     spec:
@@ -220,8 +220,8 @@ spec:
       {{- if $node.RootVolume.Type }}
       rootDeviceType: {{ $node.RootVolume.Type }}
       {{- end }}
-      {{- if ne $.Descriptor.Networks.Subnets nil }}
-      subnet: {{ with (index $.Descriptor.Networks.Subnets 0) }}{{ .SubnetId }}{{ end }}
+      {{- if ne $.KeosCluster.Spec.Networks.Subnets nil }}
+      subnet: {{ with (index $.KeosCluster.Spec.Networks.Subnets 0) }}{{ .SubnetId }}{{ end }}
       {{- end }}
       {{- if $node.ExtraVolumes }}
       additionalDisks:
@@ -235,7 +235,7 @@ apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
 metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
-  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
+  namespace: "cluster-{{ $.KeosCluster.Metadata.Name }}"
 spec:
   template:
     spec:

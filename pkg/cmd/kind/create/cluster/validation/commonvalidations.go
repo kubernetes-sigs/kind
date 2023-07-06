@@ -11,39 +11,39 @@ import (
 	"sigs.k8s.io/kind/pkg/commons"
 )
 
-func commonsDescriptorValidation(descriptor commons.DescriptorFile) error {
+func commonsDescriptorValidation(spec commons.Spec) error {
 
 	var err error
 
-	err = quantityValidations(descriptor.WorkerNodes)
+	err = quantityValidations(spec.WorkerNodes)
 	if err != nil {
 		return err
 	}
-	err = singleKeosInstaller(descriptor)
+	err = singleKeosInstaller(spec)
 	if err != nil {
 		return err
 	}
-	err = validateUniqueCredentialsRegistry(descriptor.Credentials.DockerRegistries, "descriptor")
+	err = validateUniqueCredentialsRegistry(spec.Credentials.DockerRegistries, "descriptor")
 	if err != nil {
 		return err
 	}
-	err = validateUniqueRegistry(descriptor.DockerRegistries)
+	err = validateUniqueRegistry(spec.DockerRegistries)
 	if err != nil {
 		return err
 	}
-	err = validateTaintsFormat(descriptor.WorkerNodes)
+	err = validateTaintsFormat(spec.WorkerNodes)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func commonsValidations(descriptor commons.DescriptorFile, secrets commons.SecretsFile) error {
-	err := validateExistsCredentials(descriptor, secrets)
+func commonsValidations(spec commons.Spec, secrets commons.SecretsFile) error {
+	err := validateExistsCredentials(spec, secrets)
 	if err != nil {
 		return err
 	}
-	err = validateRegistryCredentials(descriptor, secrets)
+	err = validateRegistryCredentials(spec, secrets)
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func commonsSecretsValidations(secrets commons.SecretsFile) error {
 	return nil
 }
 
-func singleKeosInstaller(descriptor commons.DescriptorFile) error {
+func singleKeosInstaller(descriptor commons.Spec) error {
 	// Only one registry with keos_installer
 	count := 0
 	for _, dr := range descriptor.DockerRegistries {
@@ -73,12 +73,12 @@ func singleKeosInstaller(descriptor commons.DescriptorFile) error {
 	return nil
 }
 
-func validateExistsCredentials(descriptor commons.DescriptorFile, secrets commons.SecretsFile) error {
+func validateExistsCredentials(spec commons.Spec, secrets commons.SecretsFile) error {
 	// Credentials must exist in the secrets or descriptor
-	infraProvider := descriptor.InfraProvider
+	infraProvider := spec.InfraProvider
 	credentialsProvider, err := reflections.GetField(secrets.Secrets, strings.ToUpper(infraProvider))
 	if err != nil || reflect.DeepEqual(credentialsProvider, reflect.Zero(reflect.TypeOf(credentialsProvider)).Interface()) {
-		credentialsProvider, err = reflections.GetField(descriptor.Credentials, strings.ToUpper(infraProvider))
+		credentialsProvider, err = reflections.GetField(spec.Credentials, strings.ToUpper(infraProvider))
 		if err != nil || reflect.DeepEqual(credentialsProvider, reflect.Zero(reflect.TypeOf(credentialsProvider)).Interface()) {
 			return errors.New("There is not " + infraProvider + " credentials in descriptor or secrets file")
 		}
@@ -88,9 +88,9 @@ func validateExistsCredentials(descriptor commons.DescriptorFile, secrets common
 	return nil
 }
 
-func validateRegistryCredentials(descriptor commons.DescriptorFile, secrets commons.SecretsFile) error {
+func validateRegistryCredentials(spec commons.Spec, secrets commons.SecretsFile) error {
 	//If auth_required=true, the registry credentials must exist in secrets or descriptor.
-	for _, dockerRegistry := range descriptor.DockerRegistries {
+	for _, dockerRegistry := range spec.DockerRegistries {
 		if dockerRegistry.AuthRequired {
 
 			existCredentials := false
@@ -101,7 +101,7 @@ func validateRegistryCredentials(descriptor commons.DescriptorFile, secrets comm
 				}
 			}
 			if !existCredentials {
-				for _, dockerRegistryCredential := range descriptor.Credentials.DockerRegistries {
+				for _, dockerRegistryCredential := range spec.Credentials.DockerRegistries {
 					if dockerRegistryCredential.URL == dockerRegistry.URL {
 						existCredentials = true
 						break

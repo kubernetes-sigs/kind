@@ -2,8 +2,8 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  name: "{{ .Descriptor.ClusterID }}"
-  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+  name: "{{ .KeosCluster.Metadata.Name }}"
+  namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
 spec:
   clusterNetwork:
     pods:
@@ -11,28 +11,28 @@ spec:
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta2
     kind: AWSManagedControlPlane
-    name: "{{ .Descriptor.ClusterID }}-control-plane"
+    name: "{{ .KeosCluster.Metadata.Name }}-control-plane"
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
     kind: AWSManagedCluster
-    name: "{{ .Descriptor.ClusterID }}"
+    name: "{{ .KeosCluster.Metadata.Name }}"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSManagedCluster
 metadata:
-  name: "{{ .Descriptor.ClusterID }}"
-  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+  name: "{{ .KeosCluster.Metadata.Name }}"
+  namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
 spec: {}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: AWSManagedControlPlane
 metadata:
-  name: "{{ .Descriptor.ClusterID }}-control-plane"
-  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+  name: "{{ .KeosCluster.Metadata.Name }}-control-plane"
+  namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
 spec:
   additionalTags:
-      "keos.stratio.com/owner": \"{{ .Descriptor.ClusterID }}\"
-    {{- range .Descriptor.ControlPlane.Tags }}
+      "keos.stratio.com/owner": \"{{ .KeosCluster.Metadata.Name }}\"
+    {{- range .KeosCluster.Spec.ControlPlane.Tags }}
       {{- range $key,$value := . }}
       {{ $key }}: {{ $value }}
       {{- end }}
@@ -50,47 +50,47 @@ spec:
     - name: "kube-proxy"
       version: "v1.24.10-eksbuild.2"
       conflictResolution: "overwrite"
-  associateOIDCProvider: {{ .Descriptor.ControlPlane.AWS.AssociateOIDCProvider }}
-  eksClusterName: "{{ .Descriptor.ClusterID }}"
+  associateOIDCProvider: {{ .KeosCluster.Spec.ControlPlane.AWS.AssociateOIDCProvider }}
+  eksClusterName: "{{ .KeosCluster.Metadata.Name }}"
   logging:
-    apiServer: {{ .Descriptor.ControlPlane.AWS.Logging.ApiServer }}
-    audit: {{ .Descriptor.ControlPlane.AWS.Logging.Audit }}
-    authenticator: {{ .Descriptor.ControlPlane.AWS.Logging.Authenticator }}
-    controllerManager: {{ .Descriptor.ControlPlane.AWS.Logging.ControllerManager }}
-    scheduler: {{ .Descriptor.ControlPlane.AWS.Logging.Scheduler }}
-{{- if ne .Descriptor.Networks.VPCID "" }}
+    apiServer: {{ .KeosCluster.Spec.ControlPlane.AWS.Logging.ApiServer }}
+    audit: {{ .KeosCluster.Spec.ControlPlane.AWS.Logging.Audit }}
+    authenticator: {{ .KeosCluster.Spec.ControlPlane.AWS.Logging.Authenticator }}
+    controllerManager: {{ .KeosCluster.Spec.ControlPlane.AWS.Logging.ControllerManager }}
+    scheduler: {{ .KeosCluster.Spec.ControlPlane.AWS.Logging.Scheduler }}
+{{- if ne .KeosCluster.Spec.Networks.VPCID "" }}
   network:
     vpc:
-      id: {{ .Descriptor.Networks.VPCID }}
-  {{- if gt (len .Descriptor.Networks.Subnets) 0 }}
+      id: {{ .KeosCluster.Spec.Networks.VPCID }}
+  {{- if gt (len .KeosCluster.Spec.Networks.Subnets) 0 }}
     subnets:
-    {{- range .Descriptor.Networks.Subnets }}
+    {{- range .KeosCluster.Spec.Networks.Subnets }}
       - id: {{ .SubnetId }}
     {{- end }}
-    {{- if gt (len .Descriptor.Networks.PodsSubnets) 0 }}
-      {{- range .Descriptor.Networks.PodsSubnets }}
+    {{- if gt (len .KeosCluster.Spec.Networks.PodsSubnets) 0 }}
+      {{- range .KeosCluster.Spec.Networks.PodsSubnets }}
       - id: {{ .SubnetId }}
       {{- end }}
     {{- end }}
   {{- end }}
 {{- end }}
-  region: "{{ .Descriptor.Region }}"
-{{- if ne .Descriptor.Networks.PodsCidrBlock "" }}
-  secondaryCidrBlock: {{ .Descriptor.Networks.PodsCidrBlock }}
+  region: "{{ .KeosCluster.Spec.Region }}"
+{{- if ne .KeosCluster.Spec.Networks.PodsCidrBlock "" }}
+  secondaryCidrBlock: {{ .KeosCluster.Spec.Networks.PodsCidrBlock }}
 {{- end }}
-  sshKeyName: \"{{ .Descriptor.Bastion.SSHKey }}\"
-  version: "{{ .Descriptor.K8SVersion }}"
+  sshKeyName: \"{{ .KeosCluster.Spec.Bastion.SSHKey }}\"
+  version: "{{ .KeosCluster.Spec.K8SVersion }}"
   vpcCni:
     env:
       - name: ANNOTATE_POD_IP
         value: \"true\"
-    {{- if ne .Descriptor.Networks.PodsCidrBlock "" }}
+    {{- if ne .KeosCluster.Spec.Networks.PodsCidrBlock "" }}
       - name: AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG
         value: \"true\"
       - name: ENI_CONFIG_LABEL_DEF
         value: \"topology.kubernetes.io/zone\"
     {{- end }}
-{{- range $node := .Descriptor.WorkerNodes }}
+{{- range $node := .KeosCluster.Spec.WorkerNodes }}
 {{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -102,19 +102,19 @@ metadata:
     cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: '{{ $n.MinSize }}'
 {{- end }}
   name: "{{ $node.Name }}-md-{{ $index }}"
-  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
+  namespace: "cluster-{{ $.KeosCluster.Metadata.Name }}"
 spec:
-  clusterName: "{{ $.Descriptor.ClusterID }}"
+  clusterName: "{{ $.KeosCluster.Metadata.Name }}"
   replicas: {{ $n.QA }}
   selector:
     matchLabels:
   template:
     metadata:
       labels:
-        keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
+        keos.stratio.com/machine-role: "{{ $.KeosCluster.Metadata.Name }}-worker-node"
     spec:
-      clusterName: "{{ $.Descriptor.ClusterID }}"
-      version: "{{ $.Descriptor.K8SVersion }}"
+      clusterName: "{{ $.KeosCluster.Metadata.Name }}"
+      version: "{{ $.KeosCluster.Spec.K8SVersion }}"
       failureDomain: "{{ $n.AZ }}"
       bootstrap:
         configRef:
@@ -130,7 +130,7 @@ apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSMachineTemplate
 metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
-  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
+  namespace: "cluster-{{ $.KeosCluster.Metadata.Name }}"
 spec:
   template:
     spec:
@@ -171,7 +171,7 @@ apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: EKSConfigTemplate
 metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
-  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
+  namespace: "cluster-{{ $.KeosCluster.Metadata.Name }}"
 spec:
   template:
     spec:

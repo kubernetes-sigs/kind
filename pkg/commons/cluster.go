@@ -36,16 +36,23 @@ type Resource struct {
 	Spec       map[string]interface{} `yaml:"spec"`
 }
 
-type K8sObject struct {
-	APIVersion string         `yaml:"apiVersion" validate:"required"`
-	Kind       string         `yaml:"kind" validate:"required"`
-	Spec       DescriptorFile `yaml:"spec" validate:"required,dive"`
+type KeosCluster struct {
+	APIVersion string   `yaml:"apiVersion" validate:"required"`
+	Kind       string   `yaml:"kind" validate:"required"`
+	Metadata   Metadata `yaml:"metadata" validate:"required,dive"`
+	Spec       Spec     `yaml:"spec" validate:"required,dive"`
 }
 
-// DescriptorFile represents the YAML structure in the spec field of the descriptor file
-type DescriptorFile struct {
-	ClusterID        string `yaml:"cluster_id" validate:"required,min=3,max=100"`
-	DeployAutoscaler bool   `yaml:"deploy_autoscaler" validate:"boolean"`
+type Metadata struct {
+	Name        string            `json:"name,omitempty" validate:"required,min=3,max=100"`
+	Namespace   string            `json:"namespace,omitempty" `
+	Labels      map[string]string `json:"labels,omitempty"`
+	Annotations map[string]string `json:"annotations,omitempty"`
+}
+
+// Spec represents the YAML structure in the spec field of the descriptor file
+type Spec struct {
+	DeployAutoscaler bool `yaml:"deploy_autoscaler" validate:"boolean"`
 
 	Bastion Bastion `yaml:"bastion"`
 
@@ -216,7 +223,7 @@ type DockerRegistry struct {
 }
 
 type TemplateParams struct {
-	Descriptor       DescriptorFile
+	KeosCluster      KeosCluster
 	Credentials      map[string]string
 	DockerRegistries []map[string]interface{}
 }
@@ -300,50 +307,49 @@ type SCParameters struct {
 	SubscriptionID        string `yaml:"subscriptionID,omitempty" validate:"omitempty"`
 }
 
-// Init sets default values for the DescriptorFile
-func (d DescriptorFile) Init() DescriptorFile {
-	d.ControlPlane.HighlyAvailable = true
+// Init sets default values for the Spec
+func (s Spec) Init() Spec {
+	s.ControlPlane.HighlyAvailable = true
 
 	// AKS
-	d.ControlPlane.Azure.Tier = "Paid"
+	s.ControlPlane.Azure.Tier = "Paid"
 
 	// Autoscaler
-	d.DeployAutoscaler = true
+	s.DeployAutoscaler = true
 
 	// EKS
-	d.Security.AWS.CreateIAM = true
-	d.ControlPlane.AWS.AssociateOIDCProvider = true
-	d.ControlPlane.AWS.Logging.ApiServer = false
-	d.ControlPlane.AWS.Logging.Audit = false
-	d.ControlPlane.AWS.Logging.Authenticator = false
-	d.ControlPlane.AWS.Logging.ControllerManager = false
-	d.ControlPlane.AWS.Logging.Scheduler = false
+	s.Security.AWS.CreateIAM = true
+	s.ControlPlane.AWS.AssociateOIDCProvider = true
+	s.ControlPlane.AWS.Logging.ApiServer = false
+	s.ControlPlane.AWS.Logging.Audit = false
+	s.ControlPlane.AWS.Logging.Authenticator = false
+	s.ControlPlane.AWS.Logging.ControllerManager = false
+	s.ControlPlane.AWS.Logging.Scheduler = false
 
 	// Managed zones
-	d.Dns.ManageZone = true
+	s.Dns.ManageZone = true
 
-	return d
+	return s
 }
 
 // Read descriptor file
-func GetClusterDescriptor(descriptorPath string) (*DescriptorFile, error) {
+func GetClusterDescriptor(descriptorPath string) (*KeosCluster, error) {
 	_, err := os.Stat(descriptorPath)
 	if err != nil {
 		return nil, errors.New("No exists any cluster descriptor as " + descriptorPath)
 	}
-	var k8sStruct K8sObject
+	var keosCluster KeosCluster
 
 	descriptorRAW, err := os.ReadFile(descriptorPath)
 	if err != nil {
 		return nil, err
 	}
 
-	k8sStruct.Spec = new(DescriptorFile).Init()
-	err = yaml.Unmarshal(descriptorRAW, &k8sStruct)
+	keosCluster.Spec = new(Spec).Init()
+	err = yaml.Unmarshal(descriptorRAW, &keosCluster)
 	if err != nil {
 		return nil, err
 	}
-	descriptorFile := k8sStruct.Spec
 	validate := validator.New()
 
 	validate.RegisterCustomTypeFunc(CustomTypeAWSCredsFunc, AWSCredentials{})
@@ -352,11 +358,11 @@ func GetClusterDescriptor(descriptorPath string) (*DescriptorFile, error) {
 	validate.RegisterValidation("lte_param_if_exists", lteParamIfExists)
 	validate.RegisterValidation("required_if_for_bool", requiredIfForBool)
 
-	err = validate.Struct(descriptorFile)
+	err = validate.Struct(keosCluster)
 	if err != nil {
 		return nil, err
 	}
-	return &descriptorFile, nil
+	return &keosCluster, nil
 }
 
 func DecryptFile(filePath string, vaultPassword string) (string, error) {

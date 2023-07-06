@@ -2,8 +2,8 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  name: "{{ .Descriptor.ClusterID }}"
-  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+  name: "{{ .KeosCluster.Metadata.Name }}"
+  namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
 spec:
   clusterNetwork:
     services:
@@ -11,47 +11,47 @@ spec:
   controlPlaneRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureManagedControlPlane
-    name: "{{ .Descriptor.ClusterID }}"
+    name: "{{ .KeosCluster.Metadata.Name }}"
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureManagedCluster
-    name: "{{ .Descriptor.ClusterID }}"
+    name: "{{ .KeosCluster.Metadata.Name }}"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedCluster
 metadata:
-  name: "{{ .Descriptor.ClusterID }}"
-  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+  name: "{{ .KeosCluster.Metadata.Name }}"
+  namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedControlPlane
 metadata:
-  name: "{{ .Descriptor.ClusterID }}"
-  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+  name: "{{ .KeosCluster.Metadata.Name }}"
+  namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
 spec:
   identityRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureClusterIdentity
-    name: "{{ .Descriptor.ClusterID }}-identity"
-  location: "{{ .Descriptor.Region }}"
+    name: "{{ .KeosCluster.Metadata.Name }}-identity"
+  location: "{{ .KeosCluster.Spec.Region }}"
   sku:
-    tier: "{{ .Descriptor.ControlPlane.Azure.Tier }}"
-  resourceGroupName: {{ .Descriptor.ClusterID }}
-  nodeResourceGroupName: {{ .Descriptor.ClusterID }}-nodes
+    tier: "{{ .KeosCluster.Spec.ControlPlane.Azure.Tier }}"
+  resourceGroupName: {{ .KeosCluster.Metadata.Name }}
+  nodeResourceGroupName: {{ .KeosCluster.Metadata.Name }}-nodes
   networkPolicy: calico
   sshPublicKey: \"\"
   subscriptionID: "{{ .Credentials.SubscriptionID }}"
-  version: "{{ .Descriptor.K8SVersion }}"
-{{- if and (ne .Descriptor.Networks.VPCID "") (ne .Descriptor.Networks.VPCCidrBlock "" ) }}
+  version: "{{ .KeosCluster.Spec.K8SVersion }}"
+{{- if and (ne .KeosCluster.Spec.Networks.VPCID "") (ne .KeosCluster.Spec.Networks.VPCCidrBlock "" ) }}
   virtualNetwork:
-    name: {{ .Descriptor.Networks.VPCID }}
-    cidrBlock: {{ .Descriptor.Networks.VPCCidrBlock }}
-    {{- if ne .Descriptor.Networks.ResourceGroup "" }}
-    resourceGroup: {{ .Descriptor.Networks.ResourceGroup }}
+    name: {{ .KeosCluster.Spec.Networks.VPCID }}
+    cidrBlock: {{ .KeosCluster.Spec.Networks.VPCCidrBlock }}
+    {{- if ne .KeosCluster.Spec.Networks.ResourceGroup "" }}
+    resourceGroup: {{ .KeosCluster.Spec.Networks.ResourceGroup }}
     {{- end }}
-  {{- if gt (len .Descriptor.Networks.Subnets) 0 }}
+  {{- if gt (len .KeosCluster.Spec.Networks.Subnets) 0 }}
     subnet:
-    {{- with (index .Descriptor.Networks.Subnets 0) }}
+    {{- with (index .KeosCluster.Spec.Networks.Subnets 0) }}
       name: {{ .SubnetId }}
       cidrBlock: {{ .CidrBlock }}
     {{- end }}
@@ -63,8 +63,8 @@ kind: AzureClusterIdentity
 metadata:
   labels:
     clusterctl.cluster.x-k8s.io/move-hierarchy: \"true\"
-  name: "{{ .Descriptor.ClusterID }}-identity"
-  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+  name: "{{ .KeosCluster.Metadata.Name }}-identity"
+  namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
 spec:
   allowedNamespaces: {}
   clientID: "{{ .Credentials.ClientID }}"
@@ -73,36 +73,36 @@ spec:
     namespace: "capz-system"
   tenantID: "{{ .Credentials.TenantID }}"
   type: ServicePrincipal
-{{- range $node := .Descriptor.WorkerNodes }}
+{{- range $node := .KeosCluster.Spec.WorkerNodes }}
 {{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachinePool
 metadata:
   name: "{{ $node.Name }}-mp-{{ $index }}"
-  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
+  namespace: "cluster-{{ $.KeosCluster.Metadata.Name }}"
 spec:
-  clusterName: "{{ $.Descriptor.ClusterID }}"
+  clusterName: "{{ $.KeosCluster.Metadata.Name }}"
   replicas: {{ $n.QA }}
   template:
     metadata:
       labels:
-        keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
+        keos.stratio.com/machine-role: "{{ $.KeosCluster.Metadata.Name }}-worker-node"
     spec:
       bootstrap:
         dataSecretName: \"\"
-      clusterName: "{{ $.Descriptor.ClusterID }}"
+      clusterName: "{{ $.KeosCluster.Metadata.Name }}"
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
         kind: AzureManagedMachinePool
         name: "{{ $node.Name }}-mp-{{ $index }}"
-      version: "{{ $.Descriptor.K8SVersion }}"
+      version: "{{ $.KeosCluster.Spec.K8SVersion }}"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureManagedMachinePool
 metadata:
   name: "{{ $node.Name }}-mp-{{ $index }}"
-  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
+  namespace: "cluster-{{ $.KeosCluster.Metadata.Name }}"
 spec:
   mode: {{- if or (gt (len $node.Taints) 0) ($node.Spot) }} User {{- else }} System {{- end }}
   name: "{{ $node.Name }}mp{{ $index }}"

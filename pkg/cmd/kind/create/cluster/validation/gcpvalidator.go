@@ -27,8 +27,8 @@ func NewGCPValidator() *GCPValidator {
 	return gcpInstance
 }
 
-func (v *GCPValidator) DescriptorFile(descriptorFile commons.DescriptorFile) {
-	v.descriptor = descriptorFile
+func (v *GCPValidator) Spec(spec commons.Spec) {
+	v.descriptor = spec
 }
 
 func (v *GCPValidator) SecretsFile(secrets commons.SecretsFile) {
@@ -61,12 +61,12 @@ func (v *GCPValidator) CommonsValidations() error {
 	return nil
 }
 
-func (v *GCPValidator) descriptorGcpValidations(descriptorFile commons.DescriptorFile) error {
-	err := commonsDescriptorValidation(descriptorFile)
+func (v *GCPValidator) descriptorGcpValidations(spec commons.Spec) error {
+	err := commonsDescriptorValidation(spec)
 	if err != nil {
 		return err
 	}
-	err = v.storageClassValidation(descriptorFile)
+	err = v.storageClassValidation(spec)
 	if err != nil {
 		return err
 	}
@@ -81,15 +81,15 @@ func secretsGcpValidations(secretsFile commons.SecretsFile) error {
 	return nil
 }
 
-func (v *GCPValidator) storageClassValidation(descriptorFile commons.DescriptorFile) error {
-	if descriptorFile.StorageClass.EncryptionKey != "" {
-		err := v.storageClassKeyFormatValidation(descriptorFile.StorageClass.EncryptionKey)
+func (v *GCPValidator) storageClassValidation(spec commons.Spec) error {
+	if spec.StorageClass.EncryptionKey != "" {
+		err := v.storageClassKeyFormatValidation(spec.StorageClass.EncryptionKey)
 		if err != nil {
 			return errors.New("Error in StorageClass: " + err.Error())
 		}
 	}
 
-	err := v.storageClassParametersValidation(descriptorFile)
+	err := v.storageClassParametersValidation(spec)
 	if err != nil {
 		return errors.New("Error in StorageClass: " + err.Error())
 	}
@@ -105,11 +105,11 @@ func (v *GCPValidator) storageClassKeyFormatValidation(key string) error {
 	return nil
 }
 
-func (v *GCPValidator) storageClassParametersValidation(descriptorFile commons.DescriptorFile) error {
-	sc := descriptorFile.StorageClass
-	k8s_version := descriptorFile.K8SVersion
+func (v *GCPValidator) storageClassParametersValidation(spec commons.Spec) error {
+	sc := spec.StorageClass
+	k8s_version := spec.K8SVersion
 	minor, _ := strconv.Atoi(strings.Split(k8s_version, ".")[1])
-	err := verifyFields(descriptorFile)
+	err := verifyFields(spec)
 	if err != nil {
 		return err
 	}
@@ -134,8 +134,8 @@ func (v *GCPValidator) storageClassParametersValidation(descriptorFile commons.D
 		}
 	}
 
-	if descriptorFile.StorageClass.Parameters.DiskEncryptionKmsKey != "" {
-		err := v.storageClassKeyFormatValidation(descriptorFile.StorageClass.Parameters.DiskEncryptionKmsKey)
+	if spec.StorageClass.Parameters.DiskEncryptionKmsKey != "" {
+		err := v.storageClassKeyFormatValidation(spec.StorageClass.Parameters.DiskEncryptionKmsKey)
 		if err != nil {
 			return errors.New("Error in StorageClass: " + err.Error())
 		}

@@ -216,7 +216,7 @@ func (b *AWSBuilder) getAzs(networks commons.Networks) ([]string, error) {
 	}
 }
 
-func (b *AWSBuilder) internalNginx(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (bool, error) {
+func (b *AWSBuilder) internalNginx(networks commons.Networks, credentialsMap map[string]string, clusterName string) (bool, error) {
 	if len(b.capxEnvVars) == 0 {
 		return false, errors.New("Insufficient credentials.")
 	}
@@ -377,13 +377,13 @@ func (b *AWSBuilder) getParameters(sc commons.StorageClass) commons.SCParameters
 	}
 }
 
-func (b *AWSBuilder) getOverrideVars(descriptor commons.DescriptorFile, credentialsMap map[string]string) (map[string][]byte, error) {
+func (b *AWSBuilder) getOverrideVars(keosCluster commons.KeosCluster, credentialsMap map[string]string) (map[string][]byte, error) {
 	overrideVars := map[string][]byte{}
-	InternalNginxOVPath, InternalNginxOVValue, err := b.getInternalNginxOverrideVars(descriptor.Networks, credentialsMap, descriptor.ClusterID)
+	InternalNginxOVPath, InternalNginxOVValue, err := b.getInternalNginxOverrideVars(keosCluster.Spec.Networks, credentialsMap, keosCluster.Metadata.Name)
 	if err != nil {
 		return nil, err
 	}
-	pvcSizeOVPath, pvcSizeOVValue, err := b.getPvcSizeOverrideVars(descriptor.StorageClass)
+	pvcSizeOVPath, pvcSizeOVValue, err := b.getPvcSizeOverrideVars(keosCluster.Spec.StorageClass)
 	if err != nil {
 		return nil, err
 	}
@@ -400,8 +400,8 @@ func (b *AWSBuilder) getPvcSizeOverrideVars(sc commons.StorageClass) (string, []
 	return "", []byte(""), nil
 }
 
-func (b *AWSBuilder) getInternalNginxOverrideVars(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (string, []byte, error) {
-	requiredInternalNginx, err := b.internalNginx(networks, credentialsMap, ClusterID)
+func (b *AWSBuilder) getInternalNginxOverrideVars(networks commons.Networks, credentialsMap map[string]string, clusterName string) (string, []byte, error) {
+	requiredInternalNginx, err := b.internalNginx(networks, credentialsMap, clusterName)
 	if err != nil {
 		return "", nil, err
 	}

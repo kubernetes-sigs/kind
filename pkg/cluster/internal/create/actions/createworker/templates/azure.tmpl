@@ -2,41 +2,41 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  name: "{{ .Descriptor.ClusterID }}"
-  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+  name: "{{ .KeosCluster.Metadata.Name }}"
+  namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
 spec:
   clusterNetwork:
     pods:
-      cidrBlocks: [\"{{- if .Descriptor.Networks.PodsCidrBlock -}} {{ .Descriptor.Networks.PodsCidrBlock }} {{- else -}} 192.168.0.0/16 {{- end }}\"]
+      cidrBlocks: [\"{{- if .KeosCluster.Spec.Networks.PodsCidrBlock -}} {{ .KeosCluster.Spec.Networks.PodsCidrBlock }} {{- else -}} 192.168.0.0/16 {{- end }}\"]
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: KubeadmControlPlane
-    name: "{{ .Descriptor.ClusterID }}-control-plane"
+    name: "{{ .KeosCluster.Metadata.Name }}-control-plane"
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureCluster
-    name: "{{ .Descriptor.ClusterID }}"
+    name: "{{ .KeosCluster.Metadata.Name }}"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureCluster
 metadata:
-  name: "{{ .Descriptor.ClusterID }}"
-  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+  name: "{{ .KeosCluster.Metadata.Name }}"
+  namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
 spec:
   identityRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureClusterIdentity
-    name: "{{ .Descriptor.ClusterID }}-identity"
-  location: "{{ .Descriptor.Region }}"
+    name: "{{ .KeosCluster.Metadata.Name }}-identity"
+  location: "{{ .KeosCluster.Spec.Region }}"
   networkSpec:
     vnet:
-      name: {{ if ne .Descriptor.Networks.VPCID "" }}{{ .Descriptor.Networks.VPCID }}{{ else }}{{ .Descriptor.ClusterID }}-vnet{{- end }}
-      {{- if ne .Descriptor.Networks.ResourceGroup "" }}
-      resourceGroup: {{ .Descriptor.Networks.ResourceGroup }}
+      name: {{ if ne .KeosCluster.Spec.Networks.VPCID "" }}{{ .KeosCluster.Spec.Networks.VPCID }}{{ else }}{{ .KeosCluster.Metadata.Name }}-vnet{{- end }}
+      {{- if ne .KeosCluster.Spec.Networks.ResourceGroup "" }}
+      resourceGroup: {{ .KeosCluster.Spec.Networks.ResourceGroup }}
       {{- end }}
     subnets:
-  {{- if gt (len .Descriptor.Networks.Subnets) 0 }}
-    {{- range .Descriptor.Networks.Subnets }}
+  {{- if gt (len .KeosCluster.Spec.Networks.Subnets) 0 }}
+    {{- range .KeosCluster.Spec.Networks.Subnets }}
     - name: {{ .SubnetId }}
       role: {{ .Role }}
     {{- end }}
@@ -46,7 +46,7 @@ spec:
     - name: node-subnet
       role: node
   {{- end }}
-  resourceGroup: {{ .Descriptor.ClusterID }}
+  resourceGroup: {{ .KeosCluster.Metadata.Name }}
   subscriptionID: {{ .Credentials.SubscriptionID }}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
@@ -54,8 +54,8 @@ kind: AzureClusterIdentity
 metadata:
   labels:
     clusterctl.cluster.x-k8s.io/move-hierarchy: \"true\"
-  name: "{{ .Descriptor.ClusterID }}-identity"
-  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+  name: "{{ .KeosCluster.Metadata.Name }}-identity"
+  namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
 spec:
   allowedNamespaces: {}
   clientID: "{{ .Credentials.ClientID }}"
@@ -68,8 +68,8 @@ spec:
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: KubeadmControlPlane
 metadata:
-  name: "{{ .Descriptor.ClusterID }}-control-plane"
-  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+  name: "{{ .KeosCluster.Metadata.Name }}-control-plane"
+  namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
 spec:
   kubeadmConfigSpec:
     clusterConfiguration:
@@ -81,7 +81,7 @@ spec:
         extraArgs:
           allocate-node-cidrs: \"false\"
           cloud-provider: external
-          cluster-name: "{{ .Descriptor.ClusterID }}"
+          cluster-name: "{{ .KeosCluster.Metadata.Name }}"
       etcd:
         local:
           dataDir: /var/lib/etcddisk/etcd
@@ -114,14 +114,14 @@ spec:
       - contentFrom:
           secret:
             key: control-plane-azure.json
-            name: "{{ .Descriptor.ClusterID }}-control-plane-azure-json"
+            name: "{{ .KeosCluster.Metadata.Name }}-control-plane-azure-json"
         owner: root:root
         path: /etc/kubernetes/azure.json
         permissions: \"0644\"
-    {{- if .Descriptor.ControlPlane.ExtraVolumes }}
+    {{- if .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
     diskSetup:
       filesystems:
-        {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+        {{- range $index, $vol := .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
         - device: /dev/disk/azure/scsi1/lun{{ $index }}
           extraOpts:
             - \"-E\"
@@ -130,14 +130,14 @@ spec:
           label: {{ $vol.Label }}
         {{- end }}
       partitions:
-        {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+        {{- range $index, $vol := .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
         - device: /dev/disk/azure/scsi1/lun{{ $index }}
           layout: true
           overwrite: false
           tableType: gpt
         {{- end }}
     mounts:
-      {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+      {{- range $index, $vol := .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
       - - LABEL={{ $vol.Label }}
         - {{ $vol.MountPath }}
       {{- end }}
@@ -159,25 +159,25 @@ spec:
   machineTemplate:
     metadata:
       labels:
-        keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-control-plane-node"
+        keos.stratio.com/machine-role: "{{ $.KeosCluster.Metadata.Name }}-control-plane-node"
     infrastructureRef:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
       kind: AzureMachineTemplate
-      name: {{ .Descriptor.ClusterID }}-control-plane
-  replicas: {{- if .Descriptor.ControlPlane.HighlyAvailable }} 3 {{- else }} 1 {{- end }}
-  version: "{{ .Descriptor.K8SVersion }}"
+      name: {{ .KeosCluster.Metadata.Name }}-control-plane
+  replicas: {{- if .KeosCluster.Spec.ControlPlane.HighlyAvailable }} 3 {{- else }} 1 {{- end }}
+  version: "{{ .KeosCluster.Spec.K8SVersion }}"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
 metadata:
-  name: "{{ .Descriptor.ClusterID }}-control-plane"
-  namespace: "cluster-{{ .Descriptor.ClusterID }}"
+  name: "{{ .KeosCluster.Metadata.Name }}-control-plane"
+  namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
 spec:
   template:
     spec:
-      {{- if .Descriptor.ControlPlane.ExtraVolumes }}
+      {{- if .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
       dataDisks:
-        {{- range $index, $vol := .Descriptor.ControlPlane.ExtraVolumes }}
+        {{- range $index, $vol := .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
          - nameSuffix: {{ $vol.Name }}
            {{- if $vol.Type }}
            managedDisk:
@@ -187,26 +187,26 @@ spec:
            lun: {{ $index }}
         {{- end }}
       {{- end }}
-      {{- if ne .Descriptor.ControlPlane.NodeImage "" }}
+      {{- if ne .KeosCluster.Spec.ControlPlane.NodeImage "" }}
       image:
-        id: {{ .Descriptor.ControlPlane.NodeImage }}
+        id: {{ .KeosCluster.Spec.ControlPlane.NodeImage }}
       {{- end }}
-      {{- if .Descriptor.Security.NodesIdentity }}
+      {{- if .KeosCluster.Spec.Security.NodesIdentity }}
       identity: UserAssigned
       userAssignedIdentities:
-        - providerID: {{ .Descriptor.Security.NodesIdentity }}
+        - providerID: {{ .KeosCluster.Spec.Security.NodesIdentity }}
       {{- end }}
       osDisk:
-        {{- if .Descriptor.ControlPlane.RootVolume.Size }}
-        diskSizeGB: {{ .Descriptor.ControlPlane.RootVolume.Size }}
+        {{- if .KeosCluster.Spec.ControlPlane.RootVolume.Size }}
+        diskSizeGB: {{ .KeosCluster.Spec.ControlPlane.RootVolume.Size }}
         {{- end }}
-        {{- if .Descriptor.ControlPlane.RootVolume.Type }}
+        {{- if .KeosCluster.Spec.ControlPlane.RootVolume.Type }}
         managedDisk:
-          storageAccountType: {{ .Descriptor.ControlPlane.RootVolume.Type }}
+          storageAccountType: {{ .KeosCluster.Spec.ControlPlane.RootVolume.Type }}
         {{- end }}
         osType: Linux
-      vmSize: "{{ .Descriptor.ControlPlane.Size }}"
-{{- range $node := .Descriptor.WorkerNodes }}
+      vmSize: "{{ .KeosCluster.Spec.ControlPlane.Size }}"
+{{- range $node := .KeosCluster.Spec.WorkerNodes }}
 {{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -218,18 +218,18 @@ metadata:
     cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: '{{ $n.MinSize }}'
 {{- end }}
   name: "{{ $node.Name }}-md-{{ $index }}"
-  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
+  namespace: "cluster-{{ $.KeosCluster.Metadata.Name }}"
 spec:
-  clusterName: "{{ $.Descriptor.ClusterID }}"
+  clusterName: "{{ $.KeosCluster.Metadata.Name }}"
   replicas: {{ $n.QA }}
   selector:
     matchLabels:
   template:
     metadata:
       labels:
-        keos.stratio.com/machine-role: "{{ $.Descriptor.ClusterID }}-worker-node"
+        keos.stratio.com/machine-role: "{{ $.KeosCluster.Metadata.Name }}-worker-node"
     spec:
-      clusterName: "{{ $.Descriptor.ClusterID }}"
+      clusterName: "{{ $.KeosCluster.Metadata.Name }}"
       bootstrap:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -240,13 +240,13 @@ spec:
         kind: AzureMachineTemplate
         name: "{{ $node.Name }}-md-{{ $index }}"
       failureDomain: \"{{- if $node.AZ -}} {{ $n.AZ }} {{- else -}} {{ inc $index }} {{- end }}\"
-      version: "{{ $.Descriptor.K8SVersion }}"
+      version: "{{ $.KeosCluster.Spec.K8SVersion }}"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: AzureMachineTemplate
 metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
-  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
+  namespace: "cluster-{{ $.KeosCluster.Metadata.Name }}"
 spec:
   template:
     spec:
@@ -266,10 +266,10 @@ spec:
       image:
         id: {{ $node.NodeImage }}
       {{- end }}
-      {{- if $.Descriptor.Security.NodesIdentity }}
+      {{- if $.KeosCluster.Spec.Security.NodesIdentity }}
       identity: UserAssigned
       userAssignedIdentities:
-        - providerID: {{ $.Descriptor.Security.NodesIdentity }}
+        - providerID: {{ $.KeosCluster.Spec.Security.NodesIdentity }}
       {{- end }}
       osDisk:
         {{- if $node.RootVolume.Size }}
@@ -289,7 +289,7 @@ apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
 metadata:
   name: "{{ $node.Name }}-md-{{ $index }}"
-  namespace: "cluster-{{ $.Descriptor.ClusterID }}"
+  namespace: "cluster-{{ $.KeosCluster.Metadata.Name }}"
 spec:
   template:
     spec:

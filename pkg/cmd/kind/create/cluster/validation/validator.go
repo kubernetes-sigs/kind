@@ -11,33 +11,33 @@ import (
 )
 
 type Validator interface {
-	DescriptorFile(descriptorFile commons.DescriptorFile)
+	Spec(spec commons.Spec)
 	SecretsFile(secretFile commons.SecretsFile)
 	Validate(fileType string) error
 	CommonsValidations() error
 }
 
 type commonValidator struct {
-	descriptor commons.DescriptorFile
+	descriptor commons.Spec
 	secrets    commons.SecretsFile
 }
 
 var validator Validator
 
 func InitValidator(descriptorPath string) error {
-	descriptorFile, err := commons.GetClusterDescriptor(descriptorPath)
+	keosCluster, err := commons.GetClusterDescriptor(descriptorPath)
 	if err != nil {
 		return err
 	}
 
-	infraProvider := descriptorFile.InfraProvider
-	managed := descriptorFile.ControlPlane.Managed
+	infraProvider := keosCluster.Spec.InfraProvider
+	managed := keosCluster.Spec.ControlPlane.Managed
 	validator, err = getValidator(infraProvider, managed)
 	if err != nil {
 		return err
 	}
 
-	validator.DescriptorFile(*descriptorFile)
+	validator.Spec(keosCluster.Spec)
 	return nil
 }
 
@@ -94,7 +94,7 @@ func getValidator(provider string, managed bool) (Validator, error) {
 	}
 }
 
-func verifyFields(descriptor commons.DescriptorFile) error {
+func verifyFields(descriptor commons.Spec) error {
 	params := descriptor.StorageClass.Parameters
 	supportedFields := []string{}
 	switch descriptor.InfraProvider {

@@ -57,7 +57,7 @@ type PBuilder interface {
 	getParameters(sc commons.StorageClass) commons.SCParameters
 	getAzs(networks commons.Networks) ([]string, error)
 	internalNginx(networks commons.Networks, credentialsMap map[string]string, clusterID string) (bool, error)
-	getOverrideVars(descriptor commons.DescriptorFile, credentialsMap map[string]string) (map[string][]byte, error)
+	getOverrideVars(keosCluster commons.KeosCluster, credentialsMap map[string]string) (map[string][]byte, error)
 }
 
 type Provider struct {
@@ -138,8 +138,8 @@ func (i *Infra) internalNginx(networks commons.Networks, credentialsMap map[stri
 	return requiredIntenalNginx, nil
 }
 
-func (i *Infra) getOverrideVars(descriptor commons.DescriptorFile, credentialsMap map[string]string) (map[string][]byte, error) {
-	overrideVars, err := i.builder.getOverrideVars(descriptor, credentialsMap)
+func (i *Infra) getOverrideVars(keosCluster commons.KeosCluster, credentialsMap map[string]string) (map[string][]byte, error) {
+	overrideVars, err := i.builder.getOverrideVars(keosCluster, credentialsMap)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +154,7 @@ func (i *Infra) getAzs(networks commons.Networks) ([]string, error) {
 	return azs, nil
 }
 
-func installCalico(n nodes.Node, k string, descriptorFile commons.DescriptorFile, allowCommonEgressNetPolPath string) error {
+func installCalico(n nodes.Node, k string, keosCluster commons.KeosCluster, allowCommonEgressNetPolPath string) error {
 	var c string
 	var cmd exec.Cmd
 	var err error
@@ -162,7 +162,7 @@ func installCalico(n nodes.Node, k string, descriptorFile commons.DescriptorFile
 	calicoTemplate := "/kind/calico-helm-values.yaml"
 
 	// Generate the calico helm values
-	calicoHelmValues, err := getManifest("calico-helm-values.tmpl", descriptorFile)
+	calicoHelmValues, err := getManifest("calico-helm-values.tmpl", keosCluster.Spec)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate calico helm values")
 	}
@@ -298,13 +298,13 @@ func (p *Provider) installCAPXLocal(n nodes.Node) error {
 	return nil
 }
 
-func enableSelfHealing(n nodes.Node, descriptorFile commons.DescriptorFile, namespace string) error {
+func enableSelfHealing(n nodes.Node, keosCluster commons.KeosCluster, namespace string) error {
 	var c string
 	var err error
 
-	if !descriptorFile.ControlPlane.Managed {
+	if !keosCluster.Spec.ControlPlane.Managed {
 		machineRole := "-control-plane-node"
-		generateMHCManifest(n, descriptorFile.ClusterID, namespace, machineHealthCheckControlPlaneNodePath, machineRole)
+		generateMHCManifest(n, keosCluster.Metadata.Name, namespace, machineHealthCheckControlPlaneNodePath, machineRole)
 
 		c = "kubectl -n " + namespace + " apply -f " + machineHealthCheckControlPlaneNodePath
 		_, err = commons.ExecuteCommand(n, c)
@@ -314,7 +314,7 @@ func enableSelfHealing(n nodes.Node, descriptorFile commons.DescriptorFile, name
 	}
 
 	machineRole := "-worker-node"
-	generateMHCManifest(n, descriptorFile.ClusterID, namespace, machineHealthCheckWorkerNodePath, machineRole)
+	generateMHCManifest(n, keosCluster.Metadata.Name, namespace, machineHealthCheckWorkerNodePath, machineRole)
 
 	c = "kubectl -n " + namespace + " apply -f " + machineHealthCheckWorkerNodePath
 	_, err = commons.ExecuteCommand(n, c)

@@ -37,8 +37,8 @@ func newEKSValidator() *EKSValidator {
 
 var provisionersTypesAWS = []string{"io1", "io2", "gp2", "gp3", "sc1", "st1", "standard", "sbp1", "sbg1"}
 
-func (v *EKSValidator) DescriptorFile(descriptorFile commons.DescriptorFile) {
-	v.descriptor = descriptorFile
+func (v *EKSValidator) Spec(spec commons.Spec) {
+	v.descriptor = spec
 }
 
 func (v *EKSValidator) SecretsFile(secrets commons.SecretsFile) {
@@ -71,20 +71,20 @@ func (v *EKSValidator) CommonsValidations() error {
 	return nil
 }
 
-func (v *EKSValidator) descriptorEksValidations(descriptorFile commons.DescriptorFile, secretsFile commons.SecretsFile) error {
-	err := commonsDescriptorValidation(descriptorFile)
+func (v *EKSValidator) descriptorEksValidations(spec commons.Spec, secretsFile commons.SecretsFile) error {
+	err := commonsDescriptorValidation(spec)
 	if err != nil {
 		return err
 	}
-	err = validateVPCCidr(descriptorFile)
+	err = validateVPCCidr(spec)
 	if err != nil {
 		return err
 	}
-	err = eksAZValidation(descriptorFile, secretsFile)
+	err = eksAZValidation(spec, secretsFile)
 	if err != nil {
 		return err
 	}
-	err = v.storageClassValidation(descriptorFile)
+	err = v.storageClassValidation(spec)
 	if err != nil {
 		return err
 	}
@@ -99,12 +99,12 @@ func secretsEksValidations(secretsFile commons.SecretsFile) error {
 	return nil
 }
 
-func validateVPCCidr(descriptorFile commons.DescriptorFile) error {
-	if descriptorFile.Networks.PodsCidrBlock != "" {
+func validateVPCCidr(spec commons.Spec) error {
+	if spec.Networks.PodsCidrBlock != "" {
 		_, validRange1, _ := net.ParseCIDR("100.64.0.0/10")
 		_, validRange2, _ := net.ParseCIDR("198.19.0.0/16")
 
-		_, ipv4Net, _ := net.ParseCIDR(descriptorFile.Networks.PodsCidrBlock)
+		_, ipv4Net, _ := net.ParseCIDR(spec.Networks.PodsCidrBlock)
 
 		cidrSize := cidr.AddressCount(ipv4Net)
 		if cidrSize > cidrSizeMax || cidrSize < cidrSizeMin {
@@ -119,9 +119,9 @@ func validateVPCCidr(descriptorFile commons.DescriptorFile) error {
 	return nil
 }
 
-func eksAZValidation(descriptorFile commons.DescriptorFile, secretsFile commons.SecretsFile) error {
+func eksAZValidation(spec commons.Spec, secretsFile commons.SecretsFile) error {
 	awsCredentials := []string{
-		"AWS_REGION=" + descriptorFile.Region,
+		"AWS_REGION=" + spec.Region,
 		"AWS_ACCESS_KEY_ID=" + secretsFile.Secrets.AWS.Credentials.AccessKey,
 		"AWS_SECRET_ACCESS_KEY=" + secretsFile.Secrets.AWS.Credentials.SecretKey,
 	}
@@ -137,9 +137,9 @@ func eksAZValidation(descriptorFile commons.DescriptorFile, secretsFile commons.
 		return err
 	}
 	svc := ec2.New(sess)
-	if descriptorFile.Networks.Subnets != nil {
+	if spec.Networks.Subnets != nil {
 		privateAZs := []string{}
-		for _, subnet := range descriptorFile.Networks.Subnets {
+		for _, subnet := range spec.Networks.Subnets {
 			privateSubnetID, _ := filterPrivateSubnet(svc, &subnet.SubnetId)
 			if len(privateSubnetID) > 0 {
 				sid := &ec2.DescribeSubnetsInput{
@@ -157,9 +157,9 @@ func eksAZValidation(descriptorFile commons.DescriptorFile, secretsFile commons.
 			}
 		}
 		if len(privateAZs) < 3 {
-			return errors.New("Insufficient Availability Zones in region " + descriptorFile.Region + ". Please add at least 3 private subnets in different Availability Zones")
+			return errors.New("Insufficient Availability Zones in region " + spec.Region + ". Please add at least 3 private subnets in different Availability Zones")
 		}
-		for _, node := range descriptorFile.WorkerNodes {
+		for _, node := range spec.WorkerNodes {
 			if node.ZoneDistribution == "unbalanced" && node.AZ != "" {
 				if !slices.Contains(privateAZs, node.AZ) {
 					return errors.New("Worker node " + node.Name + " whose AZ is defined in " + node.AZ + " must match with the AZs associated to the defined subnets in descriptor")
@@ -172,7 +172,7 @@ func eksAZValidation(descriptorFile commons.DescriptorFile, secretsFile commons.
 			return err
 		}
 		if len(result.AvailabilityZones) < 3 {
-			return errors.New("Insufficient Availability Zones in region " + descriptorFile.Region + ". Must have at least 3")
+			return errors.New("Insufficient Availability Zones in region " + spec.Region + ". Must have at least 3")
 		}
 		azs := make([]string, 3)
 		for i, az := range result.AvailabilityZones {
@@ -181,10 +181,10 @@ func eksAZValidation(descriptorFile commons.DescriptorFile, secretsFile commons.
 			}
 			azs[i] = *az.ZoneName
 		}
-		for _, node := range descriptorFile.WorkerNodes {
+		for _, node := range spec.WorkerNodes {
 			if node.ZoneDistribution == "unbalanced" && node.AZ != "" {
 				if !slices.Contains(azs, node.AZ) {
-					return errors.New("Worker node " + node.Name + " whose AZ is defined in " + node.AZ + " must match with the first three AZs in region " + descriptorFile.Region)
+					return errors.New("Worker node " + node.Name + " whose AZ is defined in " + node.AZ + " must match with the first three AZs in region " + spec.Region)
 				}
 			}
 		}
@@ -225,14 +225,14 @@ func filterPrivateSubnet(svc *ec2.EC2, subnetID *string) (string, error) {
 	}
 }
 
-func (v *EKSValidator) storageClassValidation(descriptorFile commons.DescriptorFile) error {
-	if descriptorFile.StorageClass.EncryptionKey != "" {
-		err := v.storageClassKeyFormatValidation(descriptorFile.StorageClass.EncryptionKey)
+func (v *EKSValidator) storageClassValidation(spec commons.Spec) error {
+	if spec.StorageClass.EncryptionKey != "" {
+		err := v.storageClassKeyFormatValidation(spec.StorageClass.EncryptionKey)
 		if err != nil {
 			return errors.New("Error in StorageClass: " + err.Error())
 		}
 	}
-	err := v.storageClassParametersValidation(descriptorFile)
+	err := v.storageClassParametersValidation(spec)
 	if err != nil {
 		return errors.New("Error in StorageClass: " + err.Error())
 	}
@@ -248,11 +248,11 @@ func (v *EKSValidator) storageClassKeyFormatValidation(key string) error {
 	return nil
 }
 
-func (v *EKSValidator) storageClassParametersValidation(descriptorFile commons.DescriptorFile) error {
-	sc := descriptorFile.StorageClass
+func (v *EKSValidator) storageClassParametersValidation(spec commons.Spec) error {
+	sc := spec.StorageClass
 	typesSupportedForIOPS := []string{"io1", "io2", "gp3"}
 	fstypes := []string{"xfs", "ext3", "ext4", "ext2"}
-	err := verifyFields(descriptorFile)
+	err := verifyFields(spec)
 	if err != nil {
 		return err
 	}

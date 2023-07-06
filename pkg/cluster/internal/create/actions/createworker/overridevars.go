@@ -35,9 +35,9 @@ import (
 //go:embed files/*/internal-ingress-nginx.yaml
 var internalIngressFiles embed.FS
 
-func override_vars(descriptorFile commons.DescriptorFile, credentialsMap map[string]string, ctx *actions.ActionContext, infra *Infra, provider Provider) error {
+func override_vars(keosCluster commons.KeosCluster, credentialsMap map[string]string, ctx *actions.ActionContext, infra *Infra, provider Provider) error {
 
-	override_vars, err := infra.getOverrideVars(descriptorFile, credentialsMap)
+	override_vars, err := infra.getOverrideVars(keosCluster, credentialsMap)
 	if err != nil {
 		return err
 	}

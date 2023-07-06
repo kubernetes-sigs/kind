@@ -81,13 +81,13 @@ type EFSConfig struct {
 	Permissions string `yaml:"permissions"`
 }
 
-func createKEOSDescriptor(descriptorFile commons.DescriptorFile, storageClass string) error {
+func createKEOSDescriptor(keosCluster commons.KeosCluster, storageClass string) error {
 
 	var keosDescriptor KEOSDescriptor
 	var err error
 
 	// External registry
-	for _, registry := range descriptorFile.DockerRegistries {
+	for _, registry := range keosCluster.Spec.DockerRegistries {
 		if registry.KeosRegistry {
 			keosDescriptor.ExternalRegistry.URL = registry.URL
 			keosDescriptor.ExternalRegistry.AuthRequired = registry.AuthRequired
@@ -96,41 +96,41 @@ func createKEOSDescriptor(descriptorFile commons.DescriptorFile, storageClass st
 	}
 
 	// AWS
-	if descriptorFile.InfraProvider == "aws" {
+	if keosCluster.Spec.InfraProvider == "aws" {
 		keosDescriptor.AWS.Enabled = true
-		keosDescriptor.AWS.EKS = descriptorFile.ControlPlane.Managed
+		keosDescriptor.AWS.EKS = keosCluster.Spec.ControlPlane.Managed
 	}
 
 	// Azure
-	if descriptorFile.InfraProvider == "azure" {
+	if keosCluster.Spec.InfraProvider == "azure" {
 		keosDescriptor.Azure.Enabled = true
-		keosDescriptor.Azure.AKS = descriptorFile.ControlPlane.Managed
-		keosDescriptor.Azure.ResourceGroup = descriptorFile.ClusterID
+		keosDescriptor.Azure.AKS = keosCluster.Spec.ControlPlane.Managed
+		keosDescriptor.Azure.ResourceGroup = keosCluster.Metadata.Name
 	}
 
 	// GCP
-	if descriptorFile.InfraProvider == "gcp" {
+	if keosCluster.Spec.InfraProvider == "gcp" {
 		keosDescriptor.GCP.Enabled = true
-		keosDescriptor.GCP.GKE = descriptorFile.ControlPlane.Managed
+		keosDescriptor.GCP.GKE = keosCluster.Spec.ControlPlane.Managed
 	}
 
 	// Keos
-	keosDescriptor.Keos.ClusterID = descriptorFile.ClusterID
+	keosDescriptor.Keos.ClusterID = keosCluster.Metadata.Name
 	keosDescriptor.Keos.Domain = "cluster.local"
-	if descriptorFile.ExternalDomain != "" {
-		keosDescriptor.Keos.ExternalDomain = descriptorFile.ExternalDomain
+	if keosCluster.Spec.ExternalDomain != "" {
+		keosDescriptor.Keos.ExternalDomain = keosCluster.Spec.ExternalDomain
 	}
-	keosDescriptor.Keos.Flavour = descriptorFile.Keos.Flavour
+	keosDescriptor.Keos.Flavour = keosCluster.Spec.Keos.Flavour
 
 	// Keos - Calico
-	if !descriptorFile.ControlPlane.Managed {
-		if descriptorFile.InfraProvider == "azure" {
+	if !keosCluster.Spec.ControlPlane.Managed {
+		if keosCluster.Spec.InfraProvider == "azure" {
 			keosDescriptor.Keos.Calico.VXLan = true
 		} else {
 			keosDescriptor.Keos.Calico.Ipip = true
 		}
-		if descriptorFile.Networks.PodsCidrBlock != "" {
-			keosDescriptor.Keos.Calico.Pool = descriptorFile.Networks.PodsCidrBlock
+		if keosCluster.Spec.Networks.PodsCidrBlock != "" {
+			keosDescriptor.Keos.Calico.Pool = keosCluster.Spec.Networks.PodsCidrBlock
 		} else {
 			keosDescriptor.Keos.Calico.Pool = "192.168.0.0/16"
 		}
@@ -139,12 +139,12 @@ func createKEOSDescriptor(descriptorFile commons.DescriptorFile, storageClass st
 
 	// Keos - Storage
 	keosDescriptor.Keos.Storage.DefaultStorageClass = storageClass
-	if descriptorFile.StorageClass.EFS.Name != "" {
+	if keosCluster.Spec.StorageClass.EFS.Name != "" {
 		keosDescriptor.Keos.Storage.Providers = []string{"csi-aws"}
 
-		name := descriptorFile.StorageClass.EFS.Name
-		id := descriptorFile.StorageClass.EFS.ID
-		permissions := descriptorFile.StorageClass.EFS.Permissions
+		name := keosCluster.Spec.StorageClass.EFS.Name
+		id := keosCluster.Spec.StorageClass.EFS.ID
+		permissions := keosCluster.Spec.StorageClass.EFS.Permissions
 
 		if permissions == "" {
 			permissions = "700"
@@ -156,16 +156,16 @@ func createKEOSDescriptor(descriptorFile commons.DescriptorFile, storageClass st
 				Permissions: permissions,
 			},
 		}
-		if descriptorFile.StorageClass.EncryptionKey != "" {
-			keosDescriptor.Keos.Storage.Config.CSIAWS.KMSKeyID = descriptorFile.StorageClass.EncryptionKey
+		if keosCluster.Spec.StorageClass.EncryptionKey != "" {
+			keosDescriptor.Keos.Storage.Config.CSIAWS.KMSKeyID = keosCluster.Spec.StorageClass.EncryptionKey
 		}
 	} else {
 		keosDescriptor.Keos.Storage.Providers = []string{"custom"}
 	}
 
 	// Keos - External dns
-	if !descriptorFile.Dns.ManageZone {
-		keosDescriptor.Keos.Dns.ExternalDns.Enabled = &descriptorFile.Dns.ManageZone
+	if !keosCluster.Spec.Dns.ManageZone {
+		keosDescriptor.Keos.Dns.ExternalDns.Enabled = &keosCluster.Spec.Dns.ManageZone
 	}
 
 	keosYAMLData, err := yaml.Marshal(keosDescriptor)

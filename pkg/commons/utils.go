@@ -63,7 +63,7 @@ func convertStringMapToInterfaceMap(inputMap map[string]string) map[string]inter
 	return outputMap
 }
 
-func GetSecrets(descriptorFile DescriptorFile, vaultPassword string) (map[string]string, map[string]string, string, []map[string]interface{}, error) {
+func GetSecrets(spec Spec, vaultPassword string) (map[string]string, map[string]string, string, []map[string]interface{}, error) {
 
 	var c = map[string]string{}
 	var r = map[string]string{}
@@ -71,20 +71,20 @@ func GetSecrets(descriptorFile DescriptorFile, vaultPassword string) (map[string
 	var resultCreds = map[string]string{}
 	var resultExternalReg = map[string]string{}
 	var resultGHT string
-	var infraProvider = descriptorFile.InfraProvider
+	var infraProvider = spec.InfraProvider
 	var resultDockerRegistries = []map[string]interface{}{}
 
 	_, err := os.Stat("./secrets.yml")
 	if err != nil {
-		dc, err := reflections.GetField(descriptorFile.Credentials, strings.ToUpper(infraProvider))
+		dc, err := reflections.GetField(spec.Credentials, strings.ToUpper(infraProvider))
 		if err != nil {
 			return c, r, "", dr, err
 		}
 		if reflect.DeepEqual(dc, reflect.Zero(reflect.TypeOf(dc)).Interface()) {
 			return c, r, "", dr, errors.New("No " + infraProvider + " credentials found in secrets file and descriptor file")
 		}
-		for _, reg := range descriptorFile.DockerRegistries {
-			for _, regCreds := range descriptorFile.Credentials.DockerRegistries {
+		for _, reg := range spec.DockerRegistries {
+			for _, regCreds := range spec.Credentials.DockerRegistries {
 				if reg.URL == regCreds.URL {
 					dockerReg := structs.Map(regCreds)
 					resultDockerRegistries = append(resultDockerRegistries, convertMapKeysToSnakeCase(dockerReg))
@@ -98,7 +98,7 @@ func GetSecrets(descriptorFile DescriptorFile, vaultPassword string) (map[string
 		m := structs.Map(dc)
 		resultCreds = convertToMapStringString(m)
 		resultExternalReg = r
-		resultGHT = descriptorFile.Credentials.GithubToken
+		resultGHT = spec.Credentials.GithubToken
 
 	} else {
 
@@ -114,13 +114,13 @@ func GetSecrets(descriptorFile DescriptorFile, vaultPassword string) (map[string
 			return c, r, "", dr, err
 		}
 
-		f, err := reflections.GetField(secretFile.Secrets, strings.ToUpper(descriptorFile.InfraProvider))
+		f, err := reflections.GetField(secretFile.Secrets, strings.ToUpper(spec.InfraProvider))
 		if err != nil {
 			return c, r, "", dr, err
 		}
 
 		if reflect.DeepEqual(f, reflect.Zero(reflect.TypeOf(f)).Interface()) {
-			dc, err := reflections.GetField(descriptorFile.Credentials, strings.ToUpper(infraProvider))
+			dc, err := reflections.GetField(spec.Credentials, strings.ToUpper(infraProvider))
 			if err != nil {
 				return c, r, "", dr, err
 			}
@@ -134,15 +134,15 @@ func GetSecrets(descriptorFile DescriptorFile, vaultPassword string) (map[string
 			m := structs.Map(f)
 			resultCreds = convertToMapStringString(m["Credentials"].(map[string]interface{}))
 		}
-		if secretFile.Secrets.GithubToken == "" && descriptorFile.Credentials.GithubToken != "" {
-			resultGHT = descriptorFile.Credentials.GithubToken
+		if secretFile.Secrets.GithubToken == "" && spec.Credentials.GithubToken != "" {
+			resultGHT = spec.Credentials.GithubToken
 		} else {
 			resultGHT = secretFile.Secrets.GithubToken
 		}
 		if secretFile.Secrets.ExternalRegistry == (DockerRegistryCredentials{}) {
-			if len(descriptorFile.Credentials.DockerRegistries) > 0 &&
-				descriptorFile.Credentials.DockerRegistries[0] != (DockerRegistryCredentials{}) {
-				resultRegMap := structs.Map(descriptorFile.Credentials.DockerRegistries)
+			if len(spec.Credentials.DockerRegistries) > 0 &&
+				spec.Credentials.DockerRegistries[0] != (DockerRegistryCredentials{}) {
+				resultRegMap := structs.Map(spec.Credentials.DockerRegistries)
 				resultExternalReg = convertToMapStringString(resultRegMap)
 			}
 		} else {
@@ -151,8 +151,8 @@ func GetSecrets(descriptorFile DescriptorFile, vaultPassword string) (map[string
 		}
 
 		if len(secretFile.Secrets.DockerRegistries) == 0 {
-			if len(descriptorFile.DockerRegistries) > 0 {
-				for _, registry := range descriptorFile.DockerRegistries {
+			if len(spec.DockerRegistries) > 0 {
+				for _, registry := range spec.DockerRegistries {
 					dockerReg := structs.Map(registry)
 					resultDockerRegistries = append(resultDockerRegistries, convertMapKeysToSnakeCase(dockerReg))
 				}
@@ -167,9 +167,9 @@ func GetSecrets(descriptorFile DescriptorFile, vaultPassword string) (map[string
 	return resultCreds, resultExternalReg, resultGHT, resultDockerRegistries, nil
 }
 
-func EnsureSecretsFile(descriptorFile DescriptorFile, vaultPassword string) error {
+func EnsureSecretsFile(spec Spec, vaultPassword string) error {
 	edited := false
-	credentials, externalRegistry, github_token, dockerRegistries, err := GetSecrets(descriptorFile, vaultPassword)
+	credentials, externalRegistry, github_token, dockerRegistries, err := GetSecrets(spec, vaultPassword)
 	if err != nil {
 		return err
 	}
@@ -183,7 +183,7 @@ func EnsureSecretsFile(descriptorFile DescriptorFile, vaultPassword string) erro
 		if len(credentials) > 0 {
 			creds := convertStringMapToInterfaceMap(credentials)
 			creds = convertMapKeysToSnakeCase(creds)
-			secretMap[descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds}
+			secretMap[spec.InfraProvider] = map[string]interface{}{"credentials": creds}
 		}
 
 		if len(externalRegistry) > 0 {
@@ -220,11 +220,11 @@ func EnsureSecretsFile(descriptorFile DescriptorFile, vaultPassword string) erro
 		return err
 	}
 
-	if secretMap["secrets"][descriptorFile.InfraProvider] == nil && len(credentials) > 0 {
+	if secretMap["secrets"][spec.InfraProvider] == nil && len(credentials) > 0 {
 		edited = true
 		creds := convertStringMapToInterfaceMap(credentials)
 		creds = convertMapKeysToSnakeCase(creds)
-		secretMap["secrets"][descriptorFile.InfraProvider] = map[string]interface{}{"credentials": creds}
+		secretMap["secrets"][spec.InfraProvider] = map[string]interface{}{"credentials": creds}
 	}
 
 	if secretMap["secrets"]["external_registry"] == nil && len(externalRegistry) > 0 {
