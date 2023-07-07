@@ -90,6 +90,12 @@ spec:
       - name: ENI_CONFIG_LABEL_DEF
         value: \"topology.kubernetes.io/zone\"
     {{- end }}
+{{- if ne .KeosCluster.Spec.ControlPlane.AWS.EncryptionKey "" }}
+  encryptionConfig:
+    provider: \"{{ .KeosCluster.Spec.ControlPlane.AWS.EncryptionKey }}\"
+    resources:
+      - secrets
+{{- end }}
 {{- range $node := .KeosCluster.Spec.WorkerNodes }}
 {{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
 ---
