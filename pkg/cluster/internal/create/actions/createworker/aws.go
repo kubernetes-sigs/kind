@@ -36,8 +36,6 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
-var defaultAWSSc = "gp2"
-
 var storageClassAWSTemplate = StorageClassDef{
 	APIVersion: "storage.k8s.io/v1",
 	Kind:       "StorageClass",
@@ -85,13 +83,12 @@ func (b *AWSBuilder) setCapx(managed bool) {
 	b.capxVersion = "v2.1.4"
 	b.capxImageVersion = "2.1.4-0.4.0"
 	b.capxName = "capa"
+	b.csiNamespace = "kube-system"
 	b.stClassName = "keos"
 	if managed {
 		b.capxTemplate = "aws.eks.tmpl"
-		b.csiNamespace = ""
 	} else {
 		b.capxTemplate = "aws.tmpl"
-		b.csiNamespace = ""
 	}
 }
 
@@ -123,6 +120,17 @@ func (b *AWSBuilder) getProvider() Provider {
 }
 
 func (b *AWSBuilder) installCSI(n nodes.Node, k string) error {
+	var c string
+	var err error
+
+	c = "helm install aws-ebs-csi-driver /stratio/helm/aws-ebs-csi-driver" +
+		" --kubeconfig " + k +
+		" --namespace " + b.csiNamespace
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to deploy AWS EBS CSI driver Helm Chart")
+	}
+
 	return nil
 }
 
@@ -338,11 +346,22 @@ func getEcrToken(p commons.ProviderParams) (string, error) {
 }
 
 func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error {
+	var c string
+	var err error
 	var cmd exec.Cmd
 
-	cmd = n.Command("kubectl", "--kubeconfig", k, "delete", "storageclass", defaultAWSSc)
-	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "failed to delete default StorageClass")
+	// Remove annotation from default storage class
+	c = "kubectl --kubeconfig " + k + " get sc | grep '(default)' | awk '{print $1}'"
+	output, err := commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to get default storage class")
+	}
+	if strings.TrimSpace(output) != "" && strings.TrimSpace(output) != "No resources found" {
+		c = "kubectl --kubeconfig " + k + " annotate sc " + strings.TrimSpace(output) + " " + defaultScAnnotation + "-"
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
+			return errors.Wrap(err, "failed to remove annotation from default storage class")
+		}
 	}
 
 	params := b.getParameters(sc)
@@ -356,10 +375,9 @@ func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string, sc commons.St
 
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
 	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
-		return errors.Wrap(err, "failed to create StorageClass")
+		return errors.Wrap(err, "failed to create default storage class")
 	}
 	return nil
-
 }
 
 func (b *AWSBuilder) getParameters(sc commons.StorageClass) commons.SCParameters {

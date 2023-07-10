@@ -1,0 +1,327 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: "{{ .KeosCluster.Metadata.Name }}"
+  namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks: [\"192.168.0.0/16\"]
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: KubeadmControlPlane
+    name: "{{ .KeosCluster.Metadata.Name }}-control-plane"
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+    kind: AWSCluster
+    name: "{{ .KeosCluster.Metadata.Name }}"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSCluster
+metadata:
+  name: "{{ .KeosCluster.Metadata.Name }}"
+  namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
+spec:
+  additionalTags:
+    "keos.stratio.com/owner": \"{{ .KeosCluster.Metadata.Name }}\"
+  {{- range .KeosCluster.Spec.ControlPlane.Tags }}
+    {{- range $key, $value := . }}
+    {{ $key }}: \"{{ $value }}\"
+    {{- end }}
+  {{- end }}
+  region: "{{ .KeosCluster.Spec.Region }}"
+  network:
+    cni:
+      cniIngressRules:
+        - description: \"bgp (calico)\"
+          protocol: tcp
+          fromPort: 179
+          toPort: 179
+        - description: \"IP-in-IP (calico)\"
+          protocol: \"4\"
+          fromPort: -1
+          toPort: 65535
+        - description: \"typha (calico)\"
+          protocol: tcp
+          fromPort: 5473
+          toPort: 5473
+  {{- if ne .KeosCluster.Spec.Networks.VPCID "" }}
+    vpc:
+      id: {{ .KeosCluster.Spec.Networks.VPCID }}
+    {{- if ne .KeosCluster.Spec.Networks.Subnets nil }}
+    subnets:
+      {{- range .KeosCluster.Spec.Networks.Subnets }}
+      - id: {{ .SubnetId }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlane
+metadata:
+  name: "{{ .KeosCluster.Metadata.Name }}-control-plane"
+  namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
+spec:
+  replicas: {{- if .KeosCluster.Spec.ControlPlane.HighlyAvailable }} 3 {{- else }} 1 {{- end }}
+  machineTemplate:
+    infrastructureRef:
+      kind: AWSMachineTemplate
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      name: "{{ .KeosCluster.Metadata.Name }}-control-plane"
+  kubeadmConfigSpec:
+    initConfiguration:
+      nodeRegistration:
+        name: {{`'{{ ds.meta_data.local_hostname }}'`}}
+        kubeletExtraArgs:
+          cloud-provider: aws
+    clusterConfiguration:
+      apiServer:
+        extraArgs:
+          cloud-provider: aws
+      controllerManager:
+        extraArgs:
+          cloud-provider: aws
+    {{- if gt (len .DockerRegistries) 0 }}
+    files:
+      - content: |
+          version = 2
+          imports = [\"/etc/containerd/conf.d/*.toml\"]
+          [plugins]
+            [plugins.\"io.containerd.grpc.v1.cri\"]
+              sandbox_image = \"k8s.gcr.io/pause:3.9\"
+            [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc]
+              runtime_type = \"io.containerd.runc.v2\"
+              [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc.options]
+                SystemdCgroup = true
+            [plugins.\"io.containerd.grpc.v1.cri\".registry]
+              [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors]
+                [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]
+                  endpoint = [\"https://registry-1.docker.io\"]
+                {{- range $reg := .DockerRegistries }}
+                {{- $url := hostname $reg.url }}
+                [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"{{ $url }}\"]
+                  endpoint = [\"https://{{ $url }}\"]
+                {{- end }}
+            [plugins.\"io.containerd.grpc.v1.cri\".registry.configs]
+              {{- range $reg := .DockerRegistries }}
+              {{- $url := hostname $reg.url }}
+              [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ $url }}\".auth]
+                password = \"{{ $reg.pass }}\"
+                username = \"{{ $reg.user }}\"
+              {{- end }}
+        path: /etc/containerd/config.toml
+    postKubeadmCommands:
+      - systemctl restart containerd
+    {{- end }}
+    {{- if .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
+    diskSetup:
+      filesystems:
+        {{- range $index, $vol := .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
+        - device: /dev/nvme{{ len (printf "a%*s" $index "") }}n1
+          filesystem: xfs
+          label: {{ $vol.Label }}
+        {{- end }}
+      partitions:
+        {{- range $index, $vol := .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
+        - device: /dev/nvme{{ len (printf "a%*s" $index "") }}n1
+          layout: true
+          overwrite: false
+          tableType: gpt
+        {{- end }}
+    mounts:
+      {{- range $index, $vol := .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
+      - - /dev/nvme{{ len (printf "a%*s" $index "") }}n1
+        - {{ $vol.MountPath }}
+      {{- end }}
+    {{- end }}
+    joinConfiguration:
+      nodeRegistration:
+        name: {{`'{{ ds.meta_data.local_hostname }}'`}}
+        kubeletExtraArgs:
+          cloud-provider: aws
+  version: "{{ .KeosCluster.Spec.K8SVersion }}"
+---
+kind: AWSMachineTemplate
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+metadata:
+  name: "{{ .KeosCluster.Metadata.Name }}-control-plane"
+  namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
+spec:
+  template:
+    spec:
+      {{- if ne .KeosCluster.Spec.ControlPlane.NodeImage "" }}
+      ami:
+        id: {{ .KeosCluster.Spec.ControlPlane.NodeImage }}
+      {{- end }}
+      instanceType: "{{ .KeosCluster.Spec.ControlPlane.Size }}"
+      iamInstanceProfile: "control-plane.cluster-api-provider-aws.sigs.k8s.io"
+      {{- if .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
+      nonRootVolumes:
+        {{- range $index, $vol := .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
+        - deviceName: {{ $vol.DeviceName }}
+          size: {{ $vol.Size }}
+          type: {{ $vol.Type }}
+          encrypted: {{ $vol.Encrypted }}
+          {{- if $vol.EncryptionKey }}
+          encryptionKey: {{ $vol.EncryptionKey }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+      rootVolume:
+        size: {{- if .KeosCluster.Spec.ControlPlane.RootVolume.Size }} {{ .KeosCluster.Spec.ControlPlane.RootVolume.Size }} {{ else }} 30 {{ end }}
+        {{- if .KeosCluster.Spec.ControlPlane.RootVolume.Type }}
+        type: {{ .KeosCluster.Spec.ControlPlane.RootVolume.Type }}
+        {{- end }}
+        encrypted: {{ .KeosCluster.Spec.ControlPlane.RootVolume.Encrypted }}
+        {{- if .KeosCluster.Spec.ControlPlane.RootVolume.EncryptionKey }}
+        encryptionKey: {{ .KeosCluster.Spec.ControlPlane.RootVolume.EncryptionKey }}
+        {{- end }}
+      sshKeyName: \"{{ .KeosCluster.Spec.Bastion.SSHKey }}\"
+{{- range $node := .KeosCluster.Spec.WorkerNodes }}
+{{- range $index, $n := loop .AZ .ZoneDistribution .Quantity .NodeGroupMaxSize .NodeGroupMinSize }}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+{{- if gt $node.NodeGroupMaxSize 0 }}
+  annotations:
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: '{{ $n.MaxSize }}'
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: '{{ $n.MinSize }}'
+{{- end }}
+  name: "{{ $node.Name }}-md-{{ $index }}"
+  namespace: "cluster-{{ $.KeosCluster.Metadata.Name }}"
+spec:
+  clusterName: "{{ $.KeosCluster.Metadata.Name }}"
+  replicas: {{ $n.QA }}
+  selector:
+    matchLabels: null
+  template:
+    metadata:
+      labels:
+        keos.stratio.com/machine-role: "{{ $.KeosCluster.Metadata.Name }}-worker-node"
+    spec:
+      clusterName: "{{ $.KeosCluster.Metadata.Name }}"
+      bootstrap:
+        configRef:
+          name: "{{ $node.Name }}-md-{{ $index }}"
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+      infrastructureRef:
+        name: "{{ $node.Name }}-md-{{ $index }}"
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: AWSMachineTemplate
+      failureDomain: "{{ $n.AZ }}"
+      version: "{{ $.KeosCluster.Spec.K8SVersion }}"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSMachineTemplate
+metadata:
+  name: "{{ $node.Name }}-md-{{ $index }}"
+  namespace: "cluster-{{ $.KeosCluster.Metadata.Name }}"
+spec:
+  template:
+    spec:
+      {{- if ne $node.NodeImage "" }}
+      ami:
+        id: {{ $node.NodeImage }}
+      {{- end }}
+      iamInstanceProfile: "nodes.cluster-api-provider-aws.sigs.k8s.io"
+      instanceType: "{{ $node.Size }}"
+      {{- if $node.ExtraVolumes }}
+      nonRootVolumes:
+        {{- range $index, $vol := $node.ExtraVolumes }}
+        - deviceName: {{ $vol.DeviceName }}
+          size: {{ $vol.Size }}
+          type: {{ $vol.Type }}
+          encrypted: {{ $vol.Encrypted }}
+          {{- if $vol.EncryptionKey }}
+          encryptionKey: {{ $vol.EncryptionKey }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+      rootVolume:
+        size: {{- if $node.RootVolume.Size }} {{ $node.RootVolume.Size }} {{ else }} 30 {{ end }}
+        {{- if $node.RootVolume.Type }}
+        type: {{ $node.RootVolume.Type }}
+        {{- end }}
+        encrypted: {{ $node.RootVolume.Encrypted }}
+        {{- if $node.RootVolume.EncryptionKey }}
+        encryptionKey: {{ $node.RootVolume.EncryptionKey }}
+        {{- end }}
+      sshKeyName: \"{{ $node.SSHKey }}\"
+      {{- if $node.Spot }}
+      spotMarketOptions: {}
+      {{- end }}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: "{{ $node.Name }}-md-{{ $index }}"
+  namespace: "cluster-{{ $.KeosCluster.Metadata.Name }}"
+spec:
+  template:
+    spec:
+      {{- if gt (len $.DockerRegistries) 0 }}
+      files:
+        - content: |
+            version = 2
+            imports = [\"/etc/containerd/conf.d/*.toml\"]
+            [plugins]
+              [plugins.\"io.containerd.grpc.v1.cri\"]
+                sandbox_image = \"k8s.gcr.io/pause:3.9\"
+              [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc]
+                runtime_type = \"io.containerd.runc.v2\"
+                [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc.options]
+                  SystemdCgroup = true
+              [plugins.\"io.containerd.grpc.v1.cri\".registry]
+                [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors]
+                  [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]
+                    endpoint = [\"https://registry-1.docker.io\"]
+                  {{- range $reg := $.DockerRegistries }}
+                  {{- $url := hostname $reg.url }}
+                  [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"{{ $url }}\"]
+                    endpoint = [\"https://{{ $url }}\"]
+                  {{- end }}
+              [plugins.\"io.containerd.grpc.v1.cri\".registry.configs]
+                {{- range $reg := $.DockerRegistries }}
+                {{- $url := hostname $reg.url }}
+                [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"{{ $url }}\".auth]
+                  password = \"{{ $reg.pass }}\"
+                  username = \"{{ $reg.user }}\"
+                {{- end }}
+          path: /etc/containerd/config.toml
+      postKubeadmCommands:
+        - systemctl restart containerd
+      {{- end }}
+      {{- if $node.ExtraVolumes }}
+      diskSetup:
+        filesystems:
+          {{- range $index, $vol := $node.ExtraVolumes }}
+          - device: /dev/nvme{{ len (printf "a%*s" $index "") }}n1
+            filesystem: xfs
+            label: {{ $vol.Label }}
+          {{- end }}
+        partitions:
+          {{- range $index, $vol := $node.ExtraVolumes }}
+          - device: /dev/nvme{{ len (printf "a%*s" $index "") }}n1
+            layout: true
+            overwrite: false
+            tableType: gpt
+          {{- end }}
+      mounts:
+        {{- range $index, $vol := $node.ExtraVolumes }}
+        - - /dev/nvme{{ len (printf "a%*s" $index "") }}n1
+          - {{ $vol.MountPath }}
+        {{- end }}
+      {{- end }}
+      joinConfiguration:
+        nodeRegistration:
+          name: {{`'{{ ds.meta_data.local_hostname }}'`}}
+          kubeletExtraArgs:
+            cloud-provider: aws
+            {{- if $node.Labels }}
+            node-labels: \"{{ range $key, $value := $node.Labels }}{{ $key }}={{ $value }},{{- end }}\"
+            {{- end }}
+{{- end }}
+{{- end }}

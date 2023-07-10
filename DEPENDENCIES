@@ -14,11 +14,22 @@ aws:
   clusterawsadm: v2.1.4
   cluster-api-aws: v2.1.4-0.4.0
   cluster-api-aws-templates: v2.1.4
-  eks-addons:
-    aws-ebs-csi-driver: v1.19.0-eksbuild.2
-    coredns: v1.9.3-eksbuild.3
-    kube-proxy: v1.24.10-eksbuild.2
-    vpc-cni: v1.12.6-eksbuild.2
+  managed:
+    eks-addons:
+      aws-ebs-csi-driver: v1.19.0-eksbuild.2
+      coredns: v1.9.3-eksbuild.3
+      kube-proxy: v1.24.10-eksbuild.2
+      vpc-cni: v1.12.6-eksbuild.2
+  unmanaged:
+    aws-ebs-csi-driver-chart: v2.20.0
+    aws-ebs-csi-driver: v2.20.0
+    external-attacher: v4.3.0-eks-1-27-3
+    external-provisioner: v3.5.0-eks-1-27-3
+    external-resizer: v1.8.0-eks-1-27-3
+    csi-snapshotter: v6.2.1-eks-1-27-3
+    livenessprobe: v2.10.0-eks-1-27-3
+    node-driver-registrar: v2.8.0-eks-1-27-3
+    volume-modifier-for-k8s: v0.1.0
 azure:
   azuredisk-csi-driver: v1.27.1
   cluster-api-azure: v1.9.3

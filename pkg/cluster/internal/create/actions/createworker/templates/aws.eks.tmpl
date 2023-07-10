@@ -31,12 +31,12 @@ metadata:
   namespace: "cluster-{{ .KeosCluster.Metadata.Name }}"
 spec:
   additionalTags:
-      "keos.stratio.com/owner": \"{{ .KeosCluster.Metadata.Name }}\"
-    {{- range .KeosCluster.Spec.ControlPlane.Tags }}
-      {{- range $key,$value := . }}
-      {{ $key }}: {{ $value }}
-      {{- end }}
+    "keos.stratio.com/owner": \"{{ .KeosCluster.Metadata.Name }}\"
+  {{- range .KeosCluster.Spec.ControlPlane.Tags }}
+    {{- range $key, $value := . }}
+    {{ $key }}: \"{{ $value }}\"
     {{- end }}
+  {{- end }}
   addons:
     - name: "vpc-cni"
       version: "v1.12.6-eksbuild.2"
