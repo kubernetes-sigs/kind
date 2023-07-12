@@ -260,13 +260,6 @@ type EFS struct {
 	Permissions string `yaml:"permissions,omitempty"`
 }
 
-type ProviderParams struct {
-	Region      string
-	Managed     bool
-	Credentials map[string]string
-	GithubToken string
-}
-
 type StorageClass struct {
 	EFS           EFS          `yaml:"efs"`
 	EncryptionKey string       `yaml:"encryptionKey,omitempty"  validate:"omitempty"`
@@ -275,37 +268,42 @@ type StorageClass struct {
 }
 
 type SCParameters struct {
-	Type string `yaml:"type,omitempty" validate:"omitempty"`
+	// Common
+	Type   string `yaml:"type,omitempty" validate:"omitempty"`
+	FsType string `yaml:"fsType,omitempty"  validate:"omitempty"`
+	Labels string `yaml:"labels,omitempty"  validate:"omitempty"`
 
-	ProvisionedIopsOnCreate string `yaml:"provisioned_iops_on_create,omitempty"  validate:"omitempty"`
-	ReplicationType         string `yaml:"replication_type,omitempty" validate:"omitempty,oneof='none' 'regional-pd'"`
-	DiskEncryptionKmsKey    string `yaml:"disk_encryption_kms_key,omitempty"  validate:"omitempty"`
-	Labels                  string `yaml:"labels,omitempty"  validate:"omitempty"`
-
-	IopsPerGB                  string `yaml:"iopsPerGB,omitempty" validate:"omitempty,excluded_with=Iops"`
-	FsType                     string `yaml:"fsType,omitempty"  validate:"omitempty"`
-	KmsKeyId                   string `yaml:"kmsKeyId,omitempty"  validate:"omitempty"`
+	// AWS
 	AllowAutoIOPSPerGBIncrease string `yaml:"allowAutoIOPSPerGBIncrease,omitempty" validate:"omitempty,oneof='true' 'false'"`
-	Iops                       string `yaml:"iops,omitempty" validate:"omitempty,excluded_with=IopsPerGB"`
-	Throughput                 int    `yaml:"throughput,omitempty" validate:"omitempty,gt=0"`
-	Encrypted                  string `yaml:"encrypted,omitempty" validate:"omitempty,oneof='true' 'false'"`
 	BlockExpress               string `yaml:"blockExpress,omitempty" validate:"omitempty,oneof='true' 'false'"`
 	BlockSize                  string `yaml:"blockSize,omitempty" validate:"omitempty"`
+	Iops                       string `yaml:"iops,omitempty" validate:"omitempty,excluded_with=IopsPerGB"`
+	IopsPerGB                  string `yaml:"iopsPerGB,omitempty" validate:"omitempty,excluded_with=Iops"`
+	Encrypted                  string `yaml:"encrypted,omitempty" validate:"omitempty,oneof='true' 'false'"`
+	KmsKeyId                   string `yaml:"kmsKeyId,omitempty" validate:"omitempty"`
+	Throughput                 int    `yaml:"throughput,omitempty" validate:"omitempty,gt=0"`
 
-	Provisioner           string `yaml:"provisioner,omitempty" validate:"omitempty,oneof='disk.csi.azure.com' 'file.csi.azure.com"`
-	SkuName               string `yaml:"skuName,omitempty" validate:"omitempty"`
-	Kind                  string `yaml:"kind,omitempty" validate:"omitempty,oneof='managed'"`
+	// Azure
 	CachingMode           string `yaml:"cachingMode,omitempty" validate:"omitempty,oneof='None' 'ReadOnly'"`
-	DiskEncryptionType    string `yaml:"diskEncryptionType,omitempty" validate:"omitempty,oneof='EncryptionAtRestWithCustomerKey' 'EncryptionAtRestWithPlatformAndCustomerKeys'"`
-	DiskEncryptionSetID   string `yaml:"diskEncryptionSetID,omitempty" validate:"omitempty"`
-	ResourceGroup         string `yaml:"resourceGroup,omitempty" validate:"omitempty"`
-	Tags                  string `yaml:"tags,omitempty"  validate:"omitempty"`
-	NetworkAccessPolicy   string `yaml:"networkAccessPolicy,omitempty"  validate:"omitempty,oneof='AllowAll' 'DenyAll' 'AllowPrivate'"`
-	PublicNetworkAccess   string `yaml:"publicNetworkAccess,omitempty" validate:"omitempty,oneof='Enabled' 'Disabled'"`
 	DiskAccessID          string `yaml:"diskAccessID,omitempty" validate:"omitempty"`
+	DiskEncryptionSetID   string `yaml:"diskEncryptionSetID,omitempty" validate:"omitempty"`
+	DiskEncryptionType    string `yaml:"diskEncryptionType,omitempty" validate:"omitempty,oneof='EncryptionAtRestWithCustomerKey' 'EncryptionAtRestWithPlatformAndCustomerKeys'"`
 	EnableBursting        string `yaml:"enableBursting,omitempty" validate:"omitempty,oneof='true' 'false'"`
 	EnablePerformancePlus string `yaml:"enablePerformancePlus,omitempty" validate:"omitempty,oneof='true' 'false'"`
+	Kind                  string `yaml:"kind,omitempty" validate:"omitempty,oneof='managed'"`
+	NetworkAccessPolicy   string `yaml:"networkAccessPolicy,omitempty" validate:"omitempty,oneof='AllowAll' 'DenyAll' 'AllowPrivate'"`
+	Provisioner           string `yaml:"provisioner,omitempty" validate:"omitempty,oneof='disk.csi.azure.com' 'file.csi.azure.com"`
+	PublicNetworkAccess   string `yaml:"publicNetworkAccess,omitempty" validate:"omitempty,oneof='Enabled' 'Disabled'"`
+	ResourceGroup         string `yaml:"resourceGroup,omitempty" validate:"omitempty"`
+	SkuName               string `yaml:"skuName,omitempty" validate:"omitempty"`
 	SubscriptionID        string `yaml:"subscriptionID,omitempty" validate:"omitempty"`
+	Tags                  string `yaml:"tags,omitempty" validate:"omitempty"`
+
+	// GCP
+	DiskEncryptionKmsKey          string `yaml:"disk-encryption-kms-key,omitempty" validate:"omitempty"`
+	ProvisionedIopsOnCreate       string `yaml:"provisioned-iops-on-create,omitempty" validate:"omitempty"`
+	ProvisionedThroughputOnCreate string `yaml:"provisioned-throughput-on-create,omitempty" validate:"omitempty"`
+	ReplicationType               string `yaml:"replication-type,omitempty" validate:"omitempty,oneof='none' 'regional-pd'"`
 }
 
 // Init sets default values for the Spec

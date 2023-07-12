@@ -27,6 +27,7 @@ import (
 
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"
+	"gopkg.in/yaml.v3"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -40,10 +41,12 @@ type GCPBuilder struct {
 	capxProvider     string
 	capxVersion      string
 	capxImageVersion string
+	capxManaged      bool
 	capxName         string
 	capxTemplate     string
 	capxEnvVars      []string
-	stClassName      string
+	scParameters     commons.SCParameters
+	scProvisioner    string
 	csiNamespace     string
 	dataCreds        map[string]interface{}
 	region           string
@@ -53,50 +56,24 @@ func newGCPBuilder() *GCPBuilder {
 	return &GCPBuilder{}
 }
 
-var defaultGCPSc = "csi-gcp-pd"
-
-var storageClassGCPTemplate = StorageClassDef{
-	APIVersion: "storage.k8s.io/v1",
-	Kind:       "StorageClass",
-	Metadata: struct {
-		Annotations map[string]string `yaml:"annotations,omitempty"`
-		Name        string            `yaml:"name"`
-	}{
-		Annotations: map[string]string{
-			"storageclass.kubernetes.io/is-default-class": "true",
-		},
-		Name: "keos",
-	},
-	AllowVolumeExpansion: true,
-	Provisioner:          "pd.csi.storage.gke.io",
-	Parameters:           make(map[string]interface{}),
-	VolumeBindingMode:    "WaitForFirstConsumer",
-}
-
-var standardGCPParameters = commons.SCParameters{
-	Type: "pd-standard",
-}
-
-var premiumGCPParameters = commons.SCParameters{
-	Type: "pd-ssd",
-}
-
 func (b *GCPBuilder) setCapx(managed bool) {
 	b.capxProvider = "gcp"
 	b.capxVersion = "v1.3.1"
 	b.capxImageVersion = "v1.3.1"
 	b.capxName = "capg"
-	b.stClassName = "keos"
+
 	if managed {
+		b.capxManaged = true
 		b.capxTemplate = "gcp.gke.tmpl"
 		b.csiNamespace = ""
 	} else {
+		b.capxManaged = false
 		b.capxTemplate = "gcp.tmpl"
 		b.csiNamespace = "gce-pd-csi-driver"
 	}
 }
 
-func (b *GCPBuilder) setCapxEnvVars(p commons.ProviderParams) {
+func (b *GCPBuilder) setCapxEnvVars(p ProviderParams) {
 	data := map[string]interface{}{
 		"type":                        "service_account",
 		"project_id":                  p.Credentials["ProjectID"],
@@ -120,6 +97,26 @@ func (b *GCPBuilder) setCapxEnvVars(p commons.ProviderParams) {
 	}
 }
 
+func (b *GCPBuilder) setSC(p ProviderParams) {
+	if (p.StorageClass.Parameters != commons.SCParameters{}) {
+		b.scParameters = p.StorageClass.Parameters
+	}
+
+	b.scProvisioner = "pd.csi.storage.gke.io"
+
+	if b.scParameters.Type == "" {
+		if p.StorageClass.Class == "premium" {
+			b.scParameters.Type = "pd-ssd"
+		} else {
+			b.scParameters.Type = "pd-standard"
+		}
+	}
+
+	if p.StorageClass.EncryptionKey != "" {
+		b.scParameters.DiskEncryptionKmsKey = p.StorageClass.EncryptionKey
+	}
+}
+
 func (b *GCPBuilder) getProvider() Provider {
 	return Provider{
 		capxProvider:     b.capxProvider,
@@ -128,7 +125,8 @@ func (b *GCPBuilder) getProvider() Provider {
 		capxName:         b.capxName,
 		capxTemplate:     b.capxTemplate,
 		capxEnvVars:      b.capxEnvVars,
-		stClassName:      b.stClassName,
+		scParameters:     b.scParameters,
+		scProvisioner:    b.scProvisioner,
 		csiNamespace:     b.csiNamespace,
 	}
 }
@@ -198,36 +196,42 @@ func (b *GCPBuilder) getAzs(networks commons.Networks) ([]string, error) {
 	return nil, errors.New("Error in project id")
 }
 
-func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error {
+func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string) error {
+	var c string
+	var err error
 	var cmd exec.Cmd
 
-	params := b.getParameters(sc)
-	storageClass, err := insertParameters(storageClassGCPTemplate, params)
+	if b.capxManaged {
+		// Remove annotation from default storage class
+		c = "kubectl --kubeconfig " + k + " get sc | grep '(default)' | awk '{print $1}'"
+		output, err := commons.ExecuteCommand(n, c)
+		if err != nil {
+			return errors.Wrap(err, "failed to get default storage class")
+		}
+		if strings.TrimSpace(output) != "" && strings.TrimSpace(output) != "No resources found" {
+			c = "kubectl --kubeconfig " + k + " annotate sc " + strings.TrimSpace(output) + " " + defaultScAnnotation + "-"
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
+				return errors.Wrap(err, "failed to remove annotation from default storage class")
+			}
+		}
+	}
+
+	scTemplate.Parameters = b.scParameters
+	scTemplate.Provisioner = b.scProvisioner
+
+	scBytes, err := yaml.Marshal(scTemplate)
 	if err != nil {
 		return err
 	}
+	storageClass := strings.Replace(string(scBytes), "fsType", "csi.storage.k8s.io/fstype", -1)
 
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
 	if err = cmd.SetStdin(strings.NewReader(storageClass)).Run(); err != nil {
-		return errors.Wrap(err, "failed to create StorageClass")
+		return errors.Wrap(err, "failed to create default storage class")
 	}
+
 	return nil
-
-}
-
-func (b *GCPBuilder) getParameters(sc commons.StorageClass) commons.SCParameters {
-	if sc.EncryptionKey != "" {
-		sc.Parameters.DiskEncryptionKmsKey = sc.EncryptionKey
-	}
-	switch class := sc.Class; class {
-	case "standard":
-		return mergeSCParameters(sc.Parameters, standardGCPParameters)
-	case "premium":
-		return mergeSCParameters(sc.Parameters, premiumGCPParameters)
-	default:
-		return mergeSCParameters(sc.Parameters, standardGCPParameters)
-
-	}
 }
 
 func (b *GCPBuilder) internalNginx(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (bool, error) {

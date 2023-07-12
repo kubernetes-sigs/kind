@@ -18,13 +18,9 @@ package createworker
 
 import (
 	"embed"
-	_ "embed"
-
 	"io/ioutil"
 	"os"
-
 	"path/filepath"
-
 	"time"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"

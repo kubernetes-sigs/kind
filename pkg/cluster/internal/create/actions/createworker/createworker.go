@@ -99,11 +99,12 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
-	providerParams := commons.ProviderParams{
-		Region:      keosCluster.Spec.Region,
-		Managed:     keosCluster.Spec.ControlPlane.Managed,
-		Credentials: credentialsMap,
-		GithubToken: githubToken,
+	providerParams := ProviderParams{
+		Region:       keosCluster.Spec.Region,
+		Managed:      keosCluster.Spec.ControlPlane.Managed,
+		Credentials:  credentialsMap,
+		GithubToken:  githubToken,
+		StorageClass: keosCluster.Spec.StorageClass,
 	}
 
 	providerBuilder := getBuilder(keosCluster.Spec.InfraProvider)
@@ -336,15 +337,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.End(true)
 		}
 
-		ctx.Status.Start("Installing StorageClass in workload cluster 💾")
-		defer ctx.Status.End(false)
-
-		err = infra.configureStorageClass(n, kubeconfigPath, keosCluster.Spec.StorageClass)
-		if err != nil {
-			return errors.Wrap(err, "failed to configuring StorageClass in workload cluster")
-		}
-		ctx.Status.End(true) // End Installing StorageClass in workload cluster
-
 		if provider.capxProvider == "gcp" {
 			// XXX Ref kubernetes/kubernetes#86793 Starting from v1.18, gcp cloud-controller-manager requires RBAC to patch,update service/status (in-tree)
 			ctx.Status.Start("Creating Kubernetes RBAC for internal loadbalancing 🔐")
@@ -413,6 +405,15 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 
 		ctx.Status.End(true) // End Preparing nodes in workload cluster
+
+		ctx.Status.Start("Installing StorageClass in workload cluster 💾")
+		defer ctx.Status.End(false)
+
+		err = infra.configureStorageClass(n, kubeconfigPath)
+		if err != nil {
+			return errors.Wrap(err, "failed to configuring StorageClass in workload cluster")
+		}
+		ctx.Status.End(true) // End Installing StorageClass in workload cluster
 
 		ctx.Status.Start("Enabling workload cluster's self-healing 🏥")
 		defer ctx.Status.End(false)
@@ -512,9 +513,9 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 					return errors.Wrap(err, "failed to apply allow CAPA as egress GlobalNetworkPolicy")
 				}
 			}
-		}
 
-		ctx.Status.End(true) // End Installing Network Policy Engine in workload cluster
+			ctx.Status.End(true) // End Installing Network Policy Engine in workload cluster
+		}
 
 		if keosCluster.Spec.DeployAutoscaler && !(keosCluster.Spec.InfraProvider == "azure" && keosCluster.Spec.ControlPlane.Managed) {
 			ctx.Status.Start("Adding Cluster-Autoescaler 🗚")
@@ -594,16 +595,17 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Generating the KEOS descriptor 📝")
 	defer ctx.Status.End(false)
 
-	err = createKEOSDescriptor(*keosCluster, provider.stClassName)
+	err = createKEOSDescriptor(*keosCluster, scName)
 	if err != nil {
 		return err
 	}
-	ctx.Status.End(true) // End Generating KEOS descriptor
 
 	err = override_vars(*keosCluster, credentialsMap, ctx, infra, provider)
 	if err != nil {
 		return err
 	}
+
+	ctx.Status.End(true) // End Generating KEOS descriptor
 
 	return nil
 }

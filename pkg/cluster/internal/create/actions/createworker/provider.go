@@ -21,11 +21,9 @@ import (
 	"embed"
 	"encoding/base64"
 	"reflect"
-	"strconv"
 	"strings"
 	"text/template"
 
-	"gopkg.in/yaml.v2"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -39,6 +37,8 @@ const (
 	CAPICoreProvider         = "cluster-api:v1.4.3"
 	CAPIBootstrapProvider    = "kubeadm:v1.4.3"
 	CAPIControlPlaneProvider = "kubeadm:v1.4.3"
+
+	scName = "keos"
 )
 
 const machineHealthCheckWorkerNodePath = "/kind/manifests/machinehealthcheckworkernode.yaml"
@@ -50,11 +50,11 @@ var calicoMetrics string
 
 type PBuilder interface {
 	setCapx(managed bool)
-	setCapxEnvVars(p commons.ProviderParams)
+	setCapxEnvVars(p ProviderParams)
+	setSC(p ProviderParams)
 	installCSI(n nodes.Node, k string) error
 	getProvider() Provider
-	configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error
-	getParameters(sc commons.StorageClass) commons.SCParameters
+	configureStorageClass(n nodes.Node, k string) error
 	getAzs(networks commons.Networks) ([]string, error)
 	internalNginx(networks commons.Networks, credentialsMap map[string]string, clusterID string) (bool, error)
 	getOverrideVars(keosCluster commons.KeosCluster, credentialsMap map[string]string) (map[string][]byte, error)
@@ -64,10 +64,12 @@ type Provider struct {
 	capxProvider     string
 	capxVersion      string
 	capxImageVersion string
+	capxManaged      bool
 	capxName         string
 	capxTemplate     string
 	capxEnvVars      []string
-	stClassName      string
+	scParameters     commons.SCParameters
+	scProvisioner    string
 	csiNamespace     string
 }
 
@@ -82,17 +84,41 @@ type Infra struct {
 	builder PBuilder
 }
 
-type StorageClassDef struct {
+type ProviderParams struct {
+	Region       string
+	Managed      bool
+	Credentials  map[string]string
+	GithubToken  string
+	StorageClass commons.StorageClass
+}
+
+type DefaultStorageClass struct {
 	APIVersion string `yaml:"apiVersion"`
 	Kind       string `yaml:"kind"`
 	Metadata   struct {
 		Annotations map[string]string `yaml:"annotations,omitempty"`
 		Name        string            `yaml:"name"`
 	} `yaml:"metadata"`
-	AllowVolumeExpansion bool                   `yaml:"allowVolumeExpansion"`
-	Provisioner          string                 `yaml:"provisioner"`
-	Parameters           map[string]interface{} `yaml:"parameters"`
-	VolumeBindingMode    string                 `yaml:"volumeBindingMode"`
+	AllowVolumeExpansion bool                 `yaml:"allowVolumeExpansion"`
+	Provisioner          string               `yaml:"provisioner"`
+	Parameters           commons.SCParameters `yaml:"parameters"`
+	VolumeBindingMode    string               `yaml:"volumeBindingMode"`
+}
+
+var scTemplate = DefaultStorageClass{
+	APIVersion: "storage.k8s.io/v1",
+	Kind:       "StorageClass",
+	Metadata: struct {
+		Annotations map[string]string `yaml:"annotations,omitempty"`
+		Name        string            `yaml:"name"`
+	}{
+		Annotations: map[string]string{
+			defaultScAnnotation: "true",
+		},
+		Name: scName,
+	},
+	AllowVolumeExpansion: true,
+	VolumeBindingMode:    "WaitForFirstConsumer",
 }
 
 func getBuilder(builderType string) PBuilder {
@@ -116,9 +142,10 @@ func newInfra(b PBuilder) *Infra {
 	}
 }
 
-func (i *Infra) buildProvider(p commons.ProviderParams) Provider {
+func (i *Infra) buildProvider(p ProviderParams) Provider {
 	i.builder.setCapx(p.Managed)
 	i.builder.setCapxEnvVars(p)
+	i.builder.setSC(p)
 	return i.builder.getProvider()
 }
 
@@ -126,8 +153,8 @@ func (i *Infra) installCSI(n nodes.Node, k string) error {
 	return i.builder.installCSI(n, k)
 }
 
-func (i *Infra) configureStorageClass(n nodes.Node, k string, sc commons.StorageClass) error {
-	return i.builder.configureStorageClass(n, k, sc)
+func (i *Infra) configureStorageClass(n nodes.Node, k string) error {
+	return i.builder.configureStorageClass(n, k)
 }
 
 func (i *Infra) internalNginx(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (bool, error) {
@@ -438,87 +465,4 @@ func getManifest(name string, params interface{}) (string, error) {
 		return "", err
 	}
 	return tpl.String(), nil
-}
-
-func setStorageClassParameters(storageClass string, params map[string]string, lineToStart string) (string, error) {
-
-	paramIndex := strings.Index(storageClass, lineToStart)
-	if paramIndex == -1 {
-		return storageClass, nil
-	}
-
-	var lines []string
-	for key, value := range params {
-		line := "  " + key + ": " + value
-		lines = append(lines, line)
-	}
-
-	linesToInsert := "\n" + strings.Join(lines, "\n") + "\n"
-	newStorageClass := storageClass[:paramIndex+len(lineToStart)] + linesToInsert + storageClass[paramIndex+len(lineToStart):]
-
-	return newStorageClass, nil
-}
-
-func mergeSCParameters(params1, params2 commons.SCParameters) commons.SCParameters {
-	destValue := reflect.ValueOf(&params1).Elem()
-	srcValue := reflect.ValueOf(&params2).Elem()
-
-	for i := 0; i < srcValue.NumField(); i++ {
-		srcField := srcValue.Field(i)
-		destField := destValue.Field(i)
-
-		if srcField.IsValid() && destField.IsValid() && destField.CanSet() {
-			destFieldValue := destField.Interface()
-
-			if reflect.DeepEqual(destFieldValue, reflect.Zero(destField.Type()).Interface()) {
-				destField.Set(srcField)
-			}
-		}
-	}
-
-	return params1
-}
-
-func insertParameters(storageClass StorageClassDef, params commons.SCParameters) (string, error) {
-	paramsYAML, err := structToYAML(params)
-	if err != nil {
-		return "", err
-	}
-
-	newMap := map[string]interface{}{}
-	err = yaml.Unmarshal([]byte(paramsYAML), &newMap)
-	if err != nil {
-		return "", err
-	}
-
-	for key, value := range newMap {
-		newKey := strings.ReplaceAll(key, "_", "-")
-		storageClass.Parameters[newKey] = value
-	}
-
-	if storageClass.Provisioner == "ebs.csi.aws.com" {
-		if labels, ok := storageClass.Parameters["labels"].(string); ok && labels != "" {
-			delete(storageClass.Parameters, "labels")
-			for i, label := range strings.Split(labels, ",") {
-				key_prefix := "tagSpecification_"
-				key := key_prefix + strconv.Itoa(i)
-				storageClass.Parameters[key] = label
-			}
-		}
-	}
-
-	resultYAML, err := yaml.Marshal(storageClass)
-	if err != nil {
-		return "", err
-	}
-
-	return string(resultYAML), nil
-}
-
-func structToYAML(data interface{}) (string, error) {
-	yamlBytes, err := yaml.Marshal(data)
-	if err != nil {
-		return "", err
-	}
-	return string(yamlBytes), nil
 }
