@@ -527,7 +527,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				" --set autoDiscovery.clusterName=" + keosCluster.Metadata.Name +
 				" --set autoDiscovery.labels[0].namespace=cluster-" + keosCluster.Metadata.Name +
 				" --set cloudProvider=clusterapi" +
-				" --set clusterAPIMode=incluster-incluster"
+				" --set clusterAPIMode=incluster-incluster" +
+				" --set replicaCount=2"
 
 			_, err = commons.ExecuteCommand(n, c)
 			if err != nil {
