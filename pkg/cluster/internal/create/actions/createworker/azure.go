@@ -21,7 +21,6 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -41,6 +40,9 @@ import (
 
 //go:embed files/azure/azure-storage-classes.yaml
 var azureStorageClasses string
+
+//go:embed files/azure/internal-ingress-nginx.yaml
+var azureInternalIngress []byte
 
 type AzureBuilder struct {
 	capxProvider     string
@@ -355,18 +357,8 @@ func (b *AzureBuilder) getInternalNginxOverrideVars(networks commons.Networks, c
 	}
 
 	if requiredInternalNginx {
-		internalIngressFilePath := "files/" + b.capxProvider + "/internal-ingress-nginx.yaml"
-		internalIngressFile, err := internalIngressFiles.Open(internalIngressFilePath)
-		if err != nil {
-			return "", nil, errors.Wrap(err, "error opening the internal ingress nginx file")
-		}
-		defer internalIngressFile.Close()
-
-		internalIngressContent, err := ioutil.ReadAll(internalIngressFile)
-		if err != nil {
-			return "", nil, errors.Wrap(err, "error reading the internal ingress nginx file")
-		}
-		return "ingress-nginx.yaml", internalIngressContent, nil
+		return "ingress-nginx.yaml", azureInternalIngress, nil
 	}
+
 	return "", []byte(""), nil
 }

@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"strings"
 
-	"gopkg.in/yaml.v2"
 	"sigs.k8s.io/kind/pkg/commons"
 )
 
@@ -154,12 +153,4 @@ func contains(list []string, item string) bool {
 		}
 	}
 	return false
-}
-
-func structToYAML(data interface{}) (string, error) {
-	yamlBytes, err := yaml.Marshal(data)
-	if err != nil {
-		return "", err
-	}
-	return string(yamlBytes), nil
 }

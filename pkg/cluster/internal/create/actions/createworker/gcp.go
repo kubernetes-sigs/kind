@@ -21,7 +21,6 @@ import (
 	_ "embed"
 	b64 "encoding/base64"
 	"encoding/json"
-	"io/ioutil"
 	"net/url"
 	"strings"
 
@@ -34,8 +33,11 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
-//go:embed files/gcp-compute-persistent-disk-csi-driver.yaml
+//go:embed files/gcp/gcp-compute-persistent-disk-csi-driver.yaml
 var csiManifest string
+
+//go:embed files/gcp/internal-ingress-nginx.yaml
+var gcpInternalIngress []byte
 
 type GCPBuilder struct {
 	capxProvider     string
@@ -293,18 +295,8 @@ func (b *GCPBuilder) getInternalNginxOverrideVars(networks commons.Networks, cre
 	}
 
 	if requiredInternalNginx {
-		internalIngressFilePath := "files/" + b.capxProvider + "/internal-ingress-nginx.yaml"
-		internalIngressFile, err := internalIngressFiles.Open(internalIngressFilePath)
-		if err != nil {
-			return "", nil, errors.Wrap(err, "error opening the internal ingress nginx file")
-		}
-		defer internalIngressFile.Close()
-
-		internalIngressContent, err := ioutil.ReadAll(internalIngressFile)
-		if err != nil {
-			return "", nil, errors.Wrap(err, "error reading the internal ingress nginx file")
-		}
-		return "ingress-nginx.yaml", internalIngressContent, nil
+		return "ingress-nginx.yaml", gcpInternalIngress, nil
 	}
+
 	return "", []byte(""), nil
 }

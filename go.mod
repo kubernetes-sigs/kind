@@ -34,7 +34,6 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v3 v3.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2 v2.2.1
 	golang.org/x/exp v0.0.0-20230425010034-47ecfdc1ba53
-	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
@@ -74,4 +73,5 @@ require (
 	google.golang.org/genproto v0.0.0-20230306155012-7f2fa6fef1f4 // indirect
 	google.golang.org/grpc v1.53.0 // indirect
 	google.golang.org/protobuf v1.29.1 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

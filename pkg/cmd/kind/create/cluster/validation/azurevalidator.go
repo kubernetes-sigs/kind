@@ -174,7 +174,7 @@ func (v *AzureValidator) storageClassValidation(spec commons.Spec) error {
 func (v *AzureValidator) storageClassKeyFormatValidation(key string) error {
 	regex := regexp.MustCompile(`^/subscriptions/[a-fA-F0-9-]+/resourceGroups/[\w.-]+/providers/Microsoft\.Compute/diskEncryptionSets/[\w.-]+$`)
 	if !regex.MatchString(key) {
-		return errors.New("Incorrect encryptionKey format. It must have the format /subscriptions/[SUBSCRIPTION_ID]/resourceGroups/[RESOURCE_GROUP]/providers/Microsoft.ManagedIdentity/diskEncryptionSets/[DISK_ENCRYPION_SETS_NAME]")
+		return errors.New("incorrect encryptionKey format. It must have the format /subscriptions/[SUBSCRIPTION_ID]/resourceGroups/[RESOURCE_GROUP]/providers/Microsoft.ManagedIdentity/diskEncryptionSets/[DISK_ENCRYPION_SETS_NAME]")
 	}
 	return nil
 }
@@ -187,13 +187,13 @@ func (v *AzureValidator) storageClassParametersValidation(spec commons.Spec) err
 		return err
 	}
 	if sc.Parameters.SkuName != "" && !slices.Contains(provisionersTypesAzure, sc.Parameters.SkuName) {
-		return errors.New("Unsupported skuname: " + sc.Parameters.SkuName)
+		return errors.New("unsupported skuname: " + sc.Parameters.SkuName)
 	}
 	if sc.Parameters.FsType != "" && !slices.Contains(fstypes, sc.Parameters.FsType) {
-		return errors.New("Unsupported fsType: " + sc.Parameters.FsType + ". Supported types: " + fmt.Sprint(strings.Join(fstypes, ", ")))
+		return errors.New("unsupported fsType: " + sc.Parameters.FsType + ". Supported types: " + fmt.Sprint(strings.Join(fstypes, ", ")))
 	}
 	if sc.Parameters.CachingMode != "" && sc.Parameters.SkuName == "PremiumV2_LRS" && sc.Parameters.CachingMode != "none" {
-		return errors.New("With skuName: PremiumV2_LRS, CachingMode only can be none")
+		return errors.New("with skuName: PremiumV2_LRS, CachingMode only can be none")
 	}
 	if sc.Parameters.DiskEncryptionSetID != "" {
 		err := v.storageClassKeyFormatValidation(spec.StorageClass.Parameters.DiskEncryptionKmsKey)
@@ -207,7 +207,7 @@ func (v *AzureValidator) storageClassParametersValidation(spec commons.Spec) err
 		regex := regexp.MustCompile(`^(\w+|.*)=(\w+|.*)$`)
 		for _, tag := range tags {
 			if !regex.MatchString(tag) {
-				return errors.New("Incorrect labels format. Labels must have the format 'key1=value1,key2=value2'.")
+				return errors.New("incorrect labels format. Labels must have the format 'key1=value1,key2=value2'")
 			}
 		}
 	}
@@ -218,12 +218,12 @@ func (v *AzureValidator) storageClassParametersValidation(spec commons.Spec) err
 func (v *AzureValidator) extraVolumesValidation(extraVolumes []commons.ExtraVolume, nodeRole string) error {
 	for i, ev := range extraVolumes {
 		if ev.Name == "" {
-			return errors.New("All  extravolumes must have their own name in " + nodeRole + ".")
+			return errors.New("all  extravolumes must have their own name in " + nodeRole + ".")
 		}
 		name1 := ev.Name
 		for _, ev2 := range extraVolumes[i+1:] {
 			if name1 == ev2.Name {
-				return errors.New("There can be no more than 1 extravolume with the same name in " + nodeRole + ".")
+				return errors.New("there can be no more than 1 extravolume with the same name in " + nodeRole + ".")
 			}
 		}
 

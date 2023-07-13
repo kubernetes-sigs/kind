@@ -18,8 +18,8 @@ package createworker
 
 import (
 	"context"
+	_ "embed"
 	"encoding/base64"
-	"io/ioutil"
 	"os"
 	"regexp"
 	"strconv"
@@ -38,6 +38,9 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
 )
+
+//go:embed files/aws/internal-ingress-nginx.yaml
+var awsInternalIngress []byte
 
 type AWSBuilder struct {
 	capxProvider     string
@@ -425,18 +428,8 @@ func (b *AWSBuilder) getInternalNginxOverrideVars(networks commons.Networks, cre
 	}
 
 	if requiredInternalNginx {
-		internalIngressFilePath := "files/" + b.capxProvider + "/internal-ingress-nginx.yaml"
-		internalIngressFile, err := internalIngressFiles.Open(internalIngressFilePath)
-		if err != nil {
-			return "", nil, errors.Wrap(err, "error opening the internal ingress nginx file")
-		}
-		defer internalIngressFile.Close()
-
-		internalIngressContent, err := ioutil.ReadAll(internalIngressFile)
-		if err != nil {
-			return "", nil, errors.Wrap(err, "error reading the internal ingress nginx file")
-		}
-		return "ingress-nginx.yaml", internalIngressContent, nil
+		return "ingress-nginx.yaml", awsInternalIngress, nil
 	}
+
 	return "", []byte(""), nil
 }

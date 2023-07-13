@@ -63,7 +63,7 @@ func (v *AWSValidator) Validate(fileType string) error {
 			return err
 		}
 	default:
-		return errors.New("Incorrect filetype validation")
+		return errors.New("incorrect filetype validation")
 	}
 	return nil
 }
@@ -115,12 +115,12 @@ func validateVPCCidr(spec commons.Spec) error {
 
 		cidrSize := cidr.AddressCount(ipv4Net)
 		if cidrSize > cidrSizeMax || cidrSize < cidrSizeMin {
-			return errors.New("Invalid parameter PodsCidrBlock, CIDR block sizes must be between a /16 netmask and /28 netmask")
+			return errors.New("invalid parameter PodsCidrBlock, CIDR block sizes must be between a /16 netmask and /28 netmask")
 		}
 
 		start, end := cidr.AddressRange(ipv4Net)
 		if (!validRange1.Contains(start) || !validRange1.Contains(end)) && (!validRange2.Contains(start) || !validRange2.Contains(end)) {
-			return errors.New("Invalid parameter PodsCidrBlock, CIDR must be within the 100.64.0.0/10 or 198.19.0.0/16 range")
+			return errors.New("invalid parameter PodsCidrBlock, CIDR must be within the 100.64.0.0/10 or 198.19.0.0/16 range")
 		}
 	}
 	return nil
@@ -250,7 +250,7 @@ func (v *AWSValidator) storageClassValidation(spec commons.Spec) error {
 func (v *AWSValidator) storageClassKeyFormatValidation(key string) error {
 	regex := regexp.MustCompile(`^arn:aws:kms:[a-zA-Z0-9-]+:\d{12}:key/[a-zA-Z0-9-_]+$`)
 	if !regex.MatchString(key) {
-		return errors.New("Incorrect key for encryption format. It must have the complete arn format")
+		return errors.New("incorrect key for encryption format. It must have the complete arn format")
 	}
 	return nil
 }
@@ -264,32 +264,32 @@ func (v *AWSValidator) storageClassParametersValidation(spec commons.Spec) error
 		return err
 	}
 	if sc.Parameters.Type != "" && !slices.Contains(provisionersTypesAWS, sc.Parameters.Type) {
-		return errors.New("Unsupported type: " + sc.Parameters.Type)
+		return errors.New("unsupported type: " + sc.Parameters.Type)
 	}
 	if sc.Parameters.IopsPerGB != "" && sc.Parameters.Type != "" && !slices.Contains(typesSupportedForIOPS, sc.Parameters.Type) {
-		return errors.New("I/O operations per second per GiB only can be specified for IO1, IO2, and GP3 volume types.")
+		return errors.New("I/O operations per second per GiB only can be specified for IO1, IO2, and GP3 volume types")
 	}
 	if sc.Parameters.Iops != "" && sc.Parameters.Type != "" && !slices.Contains(typesSupportedForIOPS, sc.Parameters.Type) {
-		return errors.New("I/O operations per second per GiB only can be specified for IO1, IO2, and GP3 volume types.")
+		return errors.New("I/O operations per second per GiB only can be specified for IO1, IO2, and GP3 volume types")
 	}
 	if sc.Parameters.Iops != "" {
 		iops, err := strconv.Atoi(sc.Parameters.Iops)
 		if err != nil {
-			return errors.New("Invalid Iops parameter. It must be a number in string format")
+			return errors.New("invalid Iops parameter. It must be a number in string format")
 		}
 		if (sc.Class != "premium" && sc.Parameters.Type == "") || sc.Parameters.Type == "gp3" {
 			if iops < 3000 || iops > 16000 {
-				return errors.New("Invalid Iops parameter. It must be greater than 3000 and lower than 16000 for gp3 type")
+				return errors.New("invalid Iops parameter. It must be greater than 3000 and lower than 16000 for gp3 type")
 			}
 		} else {
 			if iops < 16000 || iops > 64000 {
-				return errors.New("Invalid Iops parameter. It must be greater than 16000 and lower than 64000 for io1 and io2 types")
+				return errors.New("invalid Iops parameter. It must be greater than 16000 and lower than 64000 for io1 and io2 types")
 			}
 		}
 
 	}
 	if sc.Parameters.FsType != "" && !slices.Contains(fstypes, sc.Parameters.FsType) {
-		return errors.New("Unsupported fsType: " + sc.Parameters.Type + ". Supported types: " + fmt.Sprint(fstypes))
+		return errors.New("unsupported fsType: " + sc.Parameters.Type + ". Supported types: " + fmt.Sprint(fstypes))
 	}
 	if sc.Parameters.KmsKeyId != "" {
 		err := v.storageClassKeyFormatValidation(sc.Parameters.KmsKeyId)
@@ -302,7 +302,7 @@ func (v *AWSValidator) storageClassParametersValidation(spec commons.Spec) error
 		regex := regexp.MustCompile(`^(\w+|.*)=(\w+|.*)$`)
 		for _, label := range labels {
 			if !regex.MatchString(label) {
-				return errors.New("Incorrect labels format. Labels must have the format 'key1=value1,key2=value2'")
+				return errors.New("incorrect labels format. Labels must have the format 'key1=value1,key2=value2'")
 			}
 		}
 	}

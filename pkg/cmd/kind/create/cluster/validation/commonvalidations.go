@@ -66,7 +66,7 @@ func singleKeosInstaller(descriptor commons.Spec) error {
 		if dr.KeosRegistry {
 			count++
 			if count > 1 {
-				return errors.New("There is more than 1 docker_registry defined as keos_registry")
+				return errors.New("there is more than 1 docker_registry defined as keos_registry")
 			}
 		}
 	}
@@ -181,9 +181,4 @@ func validateTaintsFormat(wns commons.WorkerNodes) error {
 	}
 
 	return nil
-}
-
-func validateWnAZWithSubnetsAZ() {
-	// az de subnets vs az workers
-	// Cuando se mergee VPC custom
 }

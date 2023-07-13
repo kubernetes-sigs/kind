@@ -2,7 +2,6 @@ package validation
 
 import (
 	"reflect"
-	"strconv"
 )
 
 func StructToMap(obj interface{}) map[string]interface{} {
@@ -23,9 +22,4 @@ func StructToMap(obj interface{}) map[string]interface{} {
 	}
 
 	return result
-}
-
-func isStringInt(s string) bool {
-	_, err := strconv.Atoi(s)
-	return err == nil
 }
