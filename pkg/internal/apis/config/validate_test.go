@@ -20,9 +20,8 @@ import (
 	"fmt"
 	"testing"
 
-	"sigs.k8s.io/kind/pkg/internal/assert"
-
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/internal/assert"
 )
 
 func TestClusterValidate(t *testing.T) {
@@ -349,6 +348,15 @@ func TestNodeValidate(t *testing.T) {
 			Node: func() Node {
 				cfg := newDefaultedNode(ControlPlaneRole)
 				cfg.Devices = []string{"    ", ""}
+				return cfg
+			}(),
+			ExpectErrors: 1,
+		},
+		{
+			TestName: "Invalid Device String",
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg.Devices = []string{"thisdeviceisnotvalid"}
 				return cfg
 			}(),
 			ExpectErrors: 1,

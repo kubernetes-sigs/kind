@@ -22,6 +22,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/container-orchestrated-devices/container-device-interface/pkg/parser"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/internal/sets"
 )
@@ -202,6 +203,12 @@ func validateDevices(devices []string) error {
 		// validate device string is not empty
 		if len(device) == 0 {
 			return errors.Errorf("invalid device string: '%v'. Empty Strings not allowed", device)
+		}
+
+		// validate device string is valid
+		_, _, _, err := parser.ParseQualifiedName(device)
+		if err != nil {
+			return errors.Errorf("invalid device string: '%v'. %v", device, err)
 		}
 	}
 	return nil
