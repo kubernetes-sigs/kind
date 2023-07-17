@@ -293,7 +293,7 @@ There are two ways to map GPUs in to a KinD cluster. The first is using the `dev
 
 As a pre-requisite you install the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) installed on the host.
 
-Using `devices` for GPU support requires Docker v25 or later. See notes on CDI Container Support [here.](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#container-device-interface-cdi-support)
+Using `devices` for GPU support requires Docker v25 or later. A [CDI specification](https://github.com/container-orchestrated-devices/container-device-interface) will need to be generated for your device. For Nvidia GPU devices see notes [here.](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#container-device-interface-cdi-support)
 
 GPU devices can be mapped to Kind node copntainers with the devices API:
 
@@ -329,7 +329,7 @@ GPUs can also be mapped using the `extraMounts` API. This method passes a list o
 
 Steps to enable this:
 
-1. Add nvidia as your default runtime in /etc/docker/daemon.json
+1. Add nvidia as your default runtime in `/etc/docker/daemon.json` If you have the [NVIDIA Container Toolkit installed](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) this can be done with: `sudo nvidia-ctk runtime configure --runtime=docker --set-as-default`
 1. Restart docker (as necessary)
 1. Set `accept-nvidia-visible-devices-as-volume-mounts = true` in `/etc/nvidia-container-runtime/config.toml`
 1. Add the `extraMounts` to any kind nodes you want to have access to all GPUs in the system:
