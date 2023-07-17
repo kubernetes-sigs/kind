@@ -259,7 +259,7 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 	if len(node.CDIDevices) > 0 {
 		// Check for docker > 25
 		ver := Version()
-		if strings.Split(ver, ".")[0] < "25" {
+		if ver != "dev" || strings.Split(ver, ".")[0] < "25" {
 			return nil, errors.Errorf("using devices api in kind requires Docker >= v25, but found %q", ver)
 		}
 
