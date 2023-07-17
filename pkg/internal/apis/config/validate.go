@@ -115,7 +115,7 @@ func (n *Node) Validate() error {
 		errs = append(errs, errors.New("image is a required field"))
 	}
 
-	if err := validateDevices(n.Devices); err != nil {
+	if err := validateDevices(n.CDIDevices); err != nil {
 		errs = append(errs, errors.Wrapf(err, "invalid devices"))
 	}
 
@@ -197,8 +197,8 @@ func validatePortMappings(portMappings []PortMapping) error {
 	return nil
 }
 
-func validateDevices(devices []string) error {
-	for _, device := range devices {
+func validateDevices(cdiDevices []string) error {
+	for _, device := range cdiDevices {
 		device := strings.TrimSpace(device)
 		// validate device string is not empty
 		if len(device) == 0 {

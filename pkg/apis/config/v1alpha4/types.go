@@ -120,7 +120,7 @@ type Node struct {
 
 	// Devices allows access to GPUs through CDI using the --devices flag added in Docker v25.
 	// https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#container-device-interface-cdi-support
-	Devices []string `yaml:"devices,omitempty" json:"devices,omitempty"`
+	CDIDevices []string `yaml:"devices,omitempty" json:"devices,omitempty"`
 
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// merge patches. The `kind` field must match the target object, and

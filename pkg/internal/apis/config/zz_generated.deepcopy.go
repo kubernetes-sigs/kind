@@ -140,8 +140,8 @@ func (in *Node) DeepCopyInto(out *Node) {
 		*out = make([]PortMapping, len(*in))
 		copy(*out, *in)
 	}
-	if in.Devices != nil {
-		in, out := &in.Devices, &out.Devices
+	if in.CDIDevices != nil {
+		in, out := &in.CDIDevices, &out.CDIDevices
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}

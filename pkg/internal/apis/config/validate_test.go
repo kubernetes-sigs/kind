@@ -347,7 +347,7 @@ func TestNodeValidate(t *testing.T) {
 			TestName: "Empty Devices",
 			Node: func() Node {
 				cfg := newDefaultedNode(ControlPlaneRole)
-				cfg.Devices = []string{"    ", ""}
+				cfg.CDIDevices = []string{"    ", ""}
 				return cfg
 			}(),
 			ExpectErrors: 1,
@@ -356,7 +356,7 @@ func TestNodeValidate(t *testing.T) {
 			TestName: "Invalid Device String",
 			Node: func() Node {
 				cfg := newDefaultedNode(ControlPlaneRole)
-				cfg.Devices = []string{"thisdeviceisnotvalid"}
+				cfg.CDIDevices = []string{"thisdeviceisnotvalid"}
 				return cfg
 			}(),
 			ExpectErrors: 1,
@@ -365,7 +365,7 @@ func TestNodeValidate(t *testing.T) {
 			TestName: "Valid Devices",
 			Node: func() Node {
 				cfg := newDefaultedNode(ControlPlaneRole)
-				cfg.Devices = []string{"vendor1.com/device=test", "nvidia.com/gpu=1", "nvidia.com/gpu=all", "vendor.com/foo=1", "foo.bar.baz/foo-bar123.B_az=all"}
+				cfg.CDIDevices = []string{"vendor1.com/device=test", "nvidia.com/gpu=1", "nvidia.com/gpu=all", "vendor.com/foo=1", "foo.bar.baz/foo-bar123.B_az=all"}
 				return cfg
 			}(),
 			ExpectErrors: 0,

@@ -256,7 +256,7 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 	}
 
 	// Append CDI device args (used for GPU support)
-	if len(node.Devices) > 0 {
+	if len(node.CDIDevices) > 0 {
 		// Check for docker > 25
 		ver := Version()
 		if strings.Split(ver, ".")[0] < "25" {
@@ -264,7 +264,7 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		}
 
 		// Append args for each device
-		for _, device := range node.Devices {
+		for _, device := range node.CDIDevices {
 			args = append(args, "--device", strings.TrimSpace(device))
 		}
 	}
