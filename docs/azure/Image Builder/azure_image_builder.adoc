@@ -1,0 +1,107 @@
+AZURE IMAGE BUILDER
+===================
+// Metadata:
+:description: Como crear imagenes propias para el Stratio cloud-provisioner en Azure.
+:keywords: azure, aks, image, builder, stratio, cloud-provisioner
+// Settings:
+// Deshabilitar el modo de compatibilidad
+:compat-mode!:
+// Deshabilitar la fecha de actualización
+:last-update-label!:
+// Habilitamos el uso de iconos
+:icons: font
+// Sobreescritura de la fuente de los iconos
+:icon-set: fa
+// Definimos el directorio de imagenes
+:imagesdir: ../images
+// // Refs:
+:url-project: https://asciidoctor.org
+:url-docs: {url-project}/docs
+:url-issues:  https://github.com/asciidoctor/asciidoctor
+:img-ci: https://github.com/asciidoctor/asciidoctor/workflows/CI/badge.svg
+:url-antora: https://docs.antora.org/antora/latest/asciidoc/asciidoc/
+// Tabla de contenidos
+:toc: left
+:toclevels: 6
+:toc-title: 🛠️ Azure Image Builder
+:source-highlighter: rouge
+:rouge-style: monokai
+
+== https://image-builder.sigs.k8s.io/capi/capi.html[Introducción]
+
+Image Builder se puede utilizar para crear imágenes destinadas a su uso con proveedores de CAPI de Kubernetes. Cada proveedor tiene su propio formato de imágenes con el que puede trabajar. Por ejemplo, las instancias de AWS utilizan AMI.
+
+== Prerequisitos
+=== Prerequisitos Globales
+Packer y Ansible se utilizan para construir estas imágenes. Esta herramienta se ha bifurcado y ampliado del proyecto Wardroom.
+
+Versión del empaquetador >= 1.6.0
+Complemento de Goss para la versión de Packer >= 1.2.0
+Versión de Ansible >= 2.10.0
+Si los archivos binarios necesarios no están presentes, se pueden instalar en images/capi/.bin con el comando make deps. Este directorio deberá agregarse a su $PATH.
+
+== https://image-builder.sigs.k8s.io/capi/capi.html#customization[Configuraciones de la imagen]
+
+=== https://github.com/kubernetes-sigs/image-builder/tree/1510769a271725cda3d46907182a2843ef5c1c8b/images/capi/packer/gce[Imágenes Disponibles]
+Para modificar la configuración de la imagen, puede editar el archivo images/capi/packer/config/ami-<OS>.json. Los parámetros de configuración se pueden encontrar en la documentación de Packer (Haz click en la sección de este documento a tal efecto).
+
+[TIP]
+====
+.Modificar las versiones de Kubernetes
+📂 https://github.com/kubernetes-sigs/image-builder/blob/3b70f45036617ba8752b0711ee6d212f9591a514/images/capi/packer/config/kubernetes.json[Version de  Kubernetes]::
+[%autowidth]
+|===
+| *kubernetes_deb_version* | 1.24.10-00 | Version de kubernetes para Debian
+| *kubernetes_rpm_version* | 1.24.10-0 | Versión de kubernetes para RPM
+| *kubernetes_semver* | 1.24.10 | Versión semántica de Kubernetes que se instalará en la imagen
+| *kubernetes_series* | 1.24 | Versión de la serie de Kubernetes que se instalará en la imagen
+|===
+
+📂 https://github.com/kubernetes-sigs/image-builder/blob/3b70f45036617ba8752b0711ee6d212f9591a514/images/capi/packer/ami/packer.json[Tipo de instancia]::
+[%autowidth]
+.Cambiar el tipo de instancia de la imagen
+Editar el archivo images/capi/packer/ami/packer.json y modificar el valor de la variable "builder_instance_type" por el tipo de instancia
+deseado.
+
+"builder_instance_type": "Standard_D2as_v4"
+====
+
+== Construcción de la imagen
+
+. Exportar los datos de la subscripción de Azure en la que vamos a trabajar
+[source,shell]
+export AZURE_SUBSCRIPTION_ID="<subscriptionID>"
+export AZURE_TENANT_ID="<tenantID>"
+export AZURE_LOCATION="<region>"
+
+. Exportar el resource group que se usará para almacenar las imágenes creadas
+[source,shell]
+export RESOURCE_GROUP_NAME="<resourceGroup>"
+
+. Exportar las credenciales de la cuenta de servicio creadas en el paso anterior
+[source,shell]
+export AZURE_CLIENT_ID="<clientID>"
+export AZURE_CLIENT_SECRET="<clientSecret>"
+
+. Clonar el repositorio de image-builder si no lo tienías previamente
+[source,shell]
+git clone https://github.com/kubernetes-sigs/image-builder.git
+cd image-builder/images/capi/
+
+. Instalar las dependencias necesarias para crear la imagen
+[source,shell]
+make deps-azure
+
+. Consultar las imágenes que podemos construir
+[source,shell]
+make help | grep build-azure-sig
+
+. Generar la imágen deseada
+[source,shell]
+make build-azure-sig-ubuntu-2204
+
+== Debug
+
+Podemos debugear el proceso de creación de la imagen con la variable de entorno PACKER_LOG
+[source,shell]
+export PACKER_LOG=1
