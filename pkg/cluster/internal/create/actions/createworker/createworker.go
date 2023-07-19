@@ -148,14 +148,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			registryPass = keosRegistry["Pass"]
 		}
 
-		// Change image in infrastructure-components.yaml
 		infraComponents := CAPILocalRepository + "/infrastructure-" + provider.capxProvider + "/" + provider.capxVersion + "/infrastructure-components.yaml"
-		infraImage := registryUrl + "/stratio/cluster-api-provider-" + provider.capxProvider + ":" + provider.capxImageVersion
-		c = "sed -i 's%image:.*%image: " + infraImage + "%' " + infraComponents
-		_, err = commons.ExecuteCommand(n, c)
-		if err != nil {
-			return errors.Wrap(err, "failed to change image in infrastructure-components.yaml")
-		}
 
 		// Create provider-system namespace
 		c = "kubectl create namespace " + provider.capxName + "-system"

@@ -61,8 +61,8 @@ func newAWSBuilder() *AWSBuilder {
 
 func (b *AWSBuilder) setCapx(managed bool) {
 	b.capxProvider = "aws"
-	b.capxVersion = "v2.1.4"
-	b.capxImageVersion = "2.1.4-0.4.0"
+	b.capxVersion = "v2.2.0"
+	b.capxImageVersion = "v2.2.0"
 	b.capxName = "capa"
 
 	b.csiNamespace = "kube-system"
