@@ -7,7 +7,7 @@
   <tr>
     <th>
       <button id="copy-button-inline-code-{{ $hash }}" onclick='copyText("inline-code-{{ $hash }}-hidden-copy-text", "copy-button-inline-code-{{ $hash }}");' title="Copy to clipboard">
-        &#128203; <!-- Initial copy button icon -->
+        <img src="{{ "copycode.svg" | relURL }}" alt="Copy">
       </button>
       
     </th>
@@ -31,7 +31,7 @@
     const button = document.getElementById(buttonId);
     button.innerHTML = "&#10003; Copied";
     setTimeout(() => {
-      button.innerHTML = "&#128203;"; // Reset the button text after a delay
+      button.innerHTML = '<img src="{{ "copycode.svg" | relURL }}" alt="Copy">'; // Reset the button text after a delay
     }, 2000);
   }
 </script>
