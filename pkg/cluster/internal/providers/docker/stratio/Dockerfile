@@ -19,7 +19,7 @@ ENV TIGERA_OPERATOR_CHART=v3.25.1
 # Cluster-api artifacts
 ENV CAPI_REPO=/root/.cluster-api/local-repository
 ENV CAPA=v2.2.0
-ENV CAPG=v1.3.1
+ENV CAPG=v1.4.0
 ENV CAPZ=v1.9.3
 
 # Install vim

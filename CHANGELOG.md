@@ -2,6 +2,7 @@
 
 ## 0.17.0-0.3.0 (Upcoming)
 
+* Bump cluster-api-provider-gcp to v1.4.0
 * Bump cluster-api-provider-aws to v2.2.0
 * Add clusterAPI capabilities for AWS VMs
 * Add EKS secrets encryption support
