@@ -68,7 +68,8 @@ type Spec struct {
 	Networks Networks `yaml:"networks" validate:"omitempty,dive"`
 
 	Dns struct {
-		ManageZone bool `yaml:"manage_zone" validate:"boolean"`
+		ManageZone bool     `yaml:"manage_zone" validate:"boolean"`
+		Forwarders []string `yaml:"forwarders" validate:"omitempty,dive,ip_addr"`
 	} `yaml:"dns"`
 
 	DockerRegistries []DockerRegistry `yaml:"docker_registries" validate:"dive"`

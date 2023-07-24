@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"embed"
 	"encoding/base64"
+	"path/filepath"
+
 	"reflect"
 	"strings"
 	"text/template"
@@ -30,7 +32,7 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
-//go:embed templates/*
+//go:embed templates/*/*
 var ctel embed.FS
 
 const (
@@ -45,7 +47,7 @@ const machineHealthCheckWorkerNodePath = "/kind/manifests/machinehealthcheckwork
 const machineHealthCheckControlPlaneNodePath = "/kind/manifests/machinehealthcheckcontrolplane.yaml"
 const defaultScAnnotation = "storageclass.kubernetes.io/is-default-class"
 
-//go:embed files/calico-metrics.yaml
+//go:embed files/common/calico-metrics.yaml
 var calicoMetrics string
 
 type PBuilder interface {
@@ -189,7 +191,7 @@ func installCalico(n nodes.Node, k string, keosCluster commons.KeosCluster, allo
 	calicoTemplate := "/kind/calico-helm-values.yaml"
 
 	// Generate the calico helm values
-	calicoHelmValues, err := getManifest("calico-helm-values.tmpl", keosCluster.Spec)
+	calicoHelmValues, err := getManifest("common", "calico-helm-values.tmpl", keosCluster.Spec)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate calico helm values")
 	}
@@ -235,6 +237,54 @@ func installCalico(n nodes.Node, k string, keosCluster commons.KeosCluster, allo
 	cmd = n.Command("kubectl", "--kubeconfig", k, "apply", "-f", "-")
 	if err = cmd.SetStdin(strings.NewReader(calicoMetrics)).Run(); err != nil {
 		return errors.Wrap(err, "failed to create calico metrics services")
+	}
+
+	return nil
+}
+
+func customCoreDNS(n nodes.Node, k string, keosCluster commons.KeosCluster) error {
+	var c string
+	var err error
+
+	coreDNSPatchFile := "coredns"
+	coreDNSTemplate := "/kind/coredns-configmap.yaml"
+	coreDNSSuffix := ""
+
+	if keosCluster.Spec.InfraProvider == "azure" && keosCluster.Spec.ControlPlane.Managed {
+		coreDNSPatchFile = "coredns-custom"
+		coreDNSSuffix = "-aks"
+	}
+
+	coreDNSConfigmap, err := getManifest(keosCluster.Spec.InfraProvider, "coredns_configmap"+coreDNSSuffix+".tmpl", keosCluster.Spec)
+	if err != nil {
+		return errors.Wrap(err, "failed to get CoreDNS file")
+	}
+
+	c = "echo '" + coreDNSConfigmap + "' > " + coreDNSTemplate
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to create CoreDNS configmap file")
+	}
+
+	// Patch configmap
+	c = "kubectl --kubeconfig " + kubeconfigPath + " -n kube-system patch cm " + coreDNSPatchFile + " --patch-file " + coreDNSTemplate
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to customize coreDNS patching ConfigMap")
+	}
+
+	// Rollout restart to catch the made changes
+	c = "kubectl --kubeconfig " + kubeconfigPath + " -n kube-system rollout restart deploy coredns"
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to redeploy coreDNS")
+	}
+
+	// Wait until CoreDNS completely rollout
+	c = "kubectl --kubeconfig " + kubeconfigPath + " -n kube-system rollout status deploy coredns --timeout=3m"
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to wait for the customatization of CoreDNS configmap")
 	}
 
 	return nil
@@ -438,9 +488,10 @@ func GetClusterManifest(flavor string, params commons.TemplateParams, azs []stri
 		"sub":   func(a, b int) int { return a - b },
 		"split": strings.Split,
 	}
+	templatePath := filepath.Join("templates", params.KeosCluster.Spec.InfraProvider, flavor)
 
 	var tpl bytes.Buffer
-	t, err := template.New("").Funcs(funcMap).ParseFS(ctel, "templates/"+flavor)
+	t, err := template.New("").Funcs(funcMap).ParseFS(ctel, templatePath)
 	if err != nil {
 		return "", err
 	}
@@ -453,9 +504,11 @@ func GetClusterManifest(flavor string, params commons.TemplateParams, azs []stri
 	return tpl.String(), nil
 }
 
-func getManifest(name string, params interface{}) (string, error) {
+func getManifest(parentPath string, name string, params interface{}) (string, error) {
+	templatePath := filepath.Join("templates", parentPath, name)
+
 	var tpl bytes.Buffer
-	t, err := template.New("").ParseFS(ctel, "templates/"+name)
+	t, err := template.New("").ParseFS(ctel, templatePath)
 	if err != nil {
 		return "", err
 	}

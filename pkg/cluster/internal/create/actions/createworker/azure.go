@@ -251,11 +251,12 @@ func (b *AzureBuilder) configureStorageClass(n nodes.Node, k string) error {
 
 	if b.capxManaged {
 		// Remove annotation from default storage class
-		c = "kubectl --kubeconfig " + k + " get sc | grep '(default)' | awk '{print $1}'"
+		c = "kubectl --kubeconfig " + k + ` get sc -o jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}'`
 		output, err := commons.ExecuteCommand(n, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to get default storage class")
 		}
+
 		if strings.TrimSpace(output) != "" && strings.TrimSpace(output) != "No resources found" {
 			c = "kubectl --kubeconfig " + k + " annotate sc " + strings.TrimSpace(output) + " " + defaultScAnnotation + "-"
 			_, err = commons.ExecuteCommand(n, c)

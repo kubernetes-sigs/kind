@@ -1,0 +1,28 @@
+data:
+  Corefile: |
+    .:53 {
+        errors
+        health {
+           lameduck 5s
+        }
+        ready
+        kubernetes cluster.local in-addr.arpa ip6.arpa {
+           pods insecure
+           fallthrough in-addr.arpa ip6.arpa
+           ttl 30
+        }
+        prometheus :9153
+        {{- if gt (len $.Dns.Forwarders) 0 }}
+        forward .{{ range $i, $server := .Dns.Forwarders }} {{ $server }}{{ end }} {
+          prefer_udp
+        }
+        {{- else }}
+        forward . /etc/resolv.conf {
+          max_concurrent 1000
+        }
+        {{- end }}
+        cache 30
+        loop
+        reload
+        loadbalance
+    }

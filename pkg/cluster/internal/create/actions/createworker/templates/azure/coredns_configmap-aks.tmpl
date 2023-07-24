@@ -1,0 +1,9 @@
+data:
+  custom.override: |
+    {{- if gt (len $.Dns.Forwarders) 0 }}
+    forward .{{ range $i, $server := .Dns.Forwarders }} {{ $server }}{{ end }}
+    {{- else }}
+    forward . /etc/resolv.conf {
+      max_concurrent 1000
+    }
+    {{- end }}
