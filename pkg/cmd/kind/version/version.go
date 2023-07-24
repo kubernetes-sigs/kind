@@ -50,7 +50,7 @@ func Version() string {
 // DisplayVersion is Version() display formatted, this is what the version
 // subcommand prints
 func DisplayVersion() string {
-	return "kind v" + Version() + " " + runtime.Version() + " " + runtime.GOOS + "/" + runtime.GOARCH
+	return "kind-gpu (@kiryuumaru's patched GPU edition) v" + Version() + " " + runtime.Version() + " " + runtime.GOOS + "/" + runtime.GOARCH
 }
 
 // versionCore is the core portion of the kind CLI version per Semantic Versioning 2.0.0

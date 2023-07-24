@@ -249,6 +249,10 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		return nil, err
 	}
 	args = append(args, mappingArgs...)
+	
+	if node.Gpus {
+		args = append(args, "--gpus=all")
+	}
 
 	switch node.Role {
 	case config.ControlPlaneRole:
