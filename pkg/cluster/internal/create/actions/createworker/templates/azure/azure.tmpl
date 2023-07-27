@@ -82,12 +82,33 @@ spec:
           allocate-node-cidrs: \"false\"
           cloud-provider: external
           cluster-name: "{{ .KeosCluster.Metadata.Name }}"
+          bind-address: 0.0.0.0
+      scheduler:
+        extraArgs:
+          bind-address: 0.0.0.0
       etcd:
         local:
           dataDir: /var/lib/etcddisk/etcd
           extraArgs:
             quota-backend-bytes: \"8589934592\"
+            listen-metrics-urls: http://0.0.0.0:2381
     files:
+      - content: |
+          #!/bin/bash
+          # CAPI does not expose an API to modify KubeProxyConfiguration
+          # this is a workaround to use a script with preKubeadmCommand to modify the kubeadm config files
+          # https://github.com/kubernetes-sigs/cluster-api/issues/4512
+          FILE=/run/kubeadm/kubeadm.yaml
+          if [ -f "\$FILE" ]; then
+          cat <<EOF>> "\$FILE"
+          ---
+          kind: KubeProxyConfiguration
+          apiVersion: kubeproxy.config.k8s.io/v1alpha1
+          metricsBindAddress: "0.0.0.0:10249"
+          EOF
+          fi
+        path: /usr/local/bin/set-kube-proxy-configuration.sh
+        permissions: \"0700\"
       {{- if .DockerRegistries }}
       - content: |
           version = 2
@@ -155,7 +176,8 @@ spec:
           cloud-provider: external
         name: {{`'{{ ds.meta_data[\"local_hostname\"] }}'`}}
     postKubeadmCommands: []
-    preKubeadmCommands: []
+    preKubeadmCommands:
+      - set-kube-proxy-configuration.sh
   machineTemplate:
     metadata:
       labels:

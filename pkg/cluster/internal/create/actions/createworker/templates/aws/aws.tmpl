@@ -46,6 +46,22 @@ spec:
           protocol: tcp
           fromPort: 5473
           toPort: 5473
+        - description: \"metrics scheduler (prometheus)\"
+          protocol: tcp
+          fromPort: 10259
+          toPort: 10259
+        - description: \"metrics kube-proxy (prometheus)\"
+          protocol: tcp
+          fromPort: 10249
+          toPort: 10249
+        - description: \"metrics etcd (prometheus)\"
+          protocol: tcp
+          fromPort: 2381
+          toPort: 2381
+        - description: \"metrics controller (prometheus)\"
+          protocol: tcp
+          fromPort: 10257
+          toPort: 10257
   {{- if ne .KeosCluster.Spec.Networks.VPCID "" }}
     vpc:
       id: {{ .KeosCluster.Spec.Networks.VPCID }}
@@ -81,9 +97,33 @@ spec:
           cloud-provider: aws
       controllerManager:
         extraArgs:
+          bind-address: 0.0.0.0
           cloud-provider: aws
-    {{- if gt (len .DockerRegistries) 0 }}
+      scheduler:
+        extraArgs:
+          bind-address: 0.0.0.0
+      etcd:
+        local:
+          extraArgs:
+            listen-metrics-urls: http://0.0.0.0:2381
     files:
+      - content: |
+          #!/bin/bash
+          # CAPI does not expose an API to modify KubeProxyConfiguration
+          # this is a workaround to use a script with preKubeadmCommand to modify the kubeadm config files
+          # https://github.com/kubernetes-sigs/cluster-api/issues/4512
+          FILE=/run/kubeadm/kubeadm.yaml
+          if [ -f "\$FILE" ]; then
+          cat <<EOF>> "\$FILE"
+          ---
+          kind: KubeProxyConfiguration
+          apiVersion: kubeproxy.config.k8s.io/v1alpha1
+          metricsBindAddress: "0.0.0.0:10249"
+          EOF
+          fi
+        path: /usr/local/bin/set-kube-proxy-configuration.sh
+        permissions: \"0700\"
+    {{- if gt (len .DockerRegistries) 0 }}
       - content: |
           version = 2
           imports = [\"/etc/containerd/conf.d/*.toml\"]
@@ -114,6 +154,8 @@ spec:
     postKubeadmCommands:
       - systemctl restart containerd
     {{- end }}
+    preKubeadmCommands:
+      - set-kube-proxy-configuration.sh
     {{- if .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
     diskSetup:
       filesystems:
