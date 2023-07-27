@@ -18,19 +18,23 @@ package commons
 
 import (
 	"bytes"
+	"context"
 	"unicode"
 
 	"os"
-	"reflect"
 	"strings"
 
-	"github.com/fatih/structs"
-	"github.com/oleiade/reflections"
+	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v3"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	vault "github.com/sosedoff/ansible-vault-go"
 )
 
@@ -47,14 +51,6 @@ func decryptFile(filePath string, vaultPassword string) (string, error) {
 	return data, nil
 }
 
-func convertToMapStringString(m map[string]interface{}) map[string]string {
-	var m2 = map[string]string{}
-	for k, v := range m {
-		m2[k] = v.(string)
-	}
-	return m2
-}
-
 func convertStringMapToInterfaceMap(inputMap map[string]string) map[string]interface{} {
 	outputMap := make(map[string]interface{})
 	for key, value := range inputMap {
@@ -63,116 +59,15 @@ func convertStringMapToInterfaceMap(inputMap map[string]string) map[string]inter
 	return outputMap
 }
 
-func GetSecrets(spec Spec, vaultPassword string) (map[string]string, map[string]string, string, []map[string]interface{}, error) {
+func EnsureSecretsFile(spec Spec, vaultPassword string, clusterCredentials ClusterCredentials) error {
+	var err error
 
-	var c = map[string]string{}
-	var r = map[string]string{}
-	var dr = []map[string]interface{}{}
-	var resultCreds = map[string]string{}
-	var resultExternalReg = map[string]string{}
-	var resultGHT string
-	var infraProvider = spec.InfraProvider
-	var resultDockerRegistries = []map[string]interface{}{}
-
-	_, err := os.Stat("./secrets.yml")
-	if err != nil {
-		dc, err := reflections.GetField(spec.Credentials, strings.ToUpper(infraProvider))
-		if err != nil {
-			return c, r, "", dr, err
-		}
-		if reflect.DeepEqual(dc, reflect.Zero(reflect.TypeOf(dc)).Interface()) {
-			return c, r, "", dr, errors.New("No " + infraProvider + " credentials found in secrets file and descriptor file")
-		}
-		for _, reg := range spec.DockerRegistries {
-			for _, regCreds := range spec.Credentials.DockerRegistries {
-				if reg.URL == regCreds.URL {
-					dockerReg := structs.Map(regCreds)
-					resultDockerRegistries = append(resultDockerRegistries, convertMapKeysToSnakeCase(dockerReg))
-					if reg.KeosRegistry {
-						r = map[string]string{"User": regCreds.User, "Pass": regCreds.Pass, "Url": regCreds.URL}
-					}
-				}
-			}
-		}
-
-		m := structs.Map(dc)
-		resultCreds = convertToMapStringString(m)
-		resultExternalReg = r
-		resultGHT = spec.Credentials.GithubToken
-
-	} else {
-
-		var secretFile SecretsFile
-		secretRaw, err := decryptFile("./secrets.yml", vaultPassword)
-		if err != nil {
-			return c, r, "", dr, errors.New("The Vault password is incorrect")
-		}
-
-		err = yaml.Unmarshal([]byte(secretRaw), &secretFile)
-
-		if err != nil {
-			return c, r, "", dr, err
-		}
-
-		f, err := reflections.GetField(secretFile.Secrets, strings.ToUpper(spec.InfraProvider))
-		if err != nil {
-			return c, r, "", dr, err
-		}
-
-		if reflect.DeepEqual(f, reflect.Zero(reflect.TypeOf(f)).Interface()) {
-			dc, err := reflections.GetField(spec.Credentials, strings.ToUpper(infraProvider))
-			if err != nil {
-				return c, r, "", dr, err
-			}
-			if reflect.DeepEqual(dc, reflect.Zero(reflect.TypeOf(dc)).Interface()) {
-				return c, r, "", dr, errors.New("No " + infraProvider + " credentials found in secrets file and descriptor file")
-			}
-			resultCredsMap := structs.Map(dc)
-			resultCreds = convertToMapStringString(resultCredsMap)
-
-		} else {
-			m := structs.Map(f)
-			resultCreds = convertToMapStringString(m["Credentials"].(map[string]interface{}))
-		}
-		if secretFile.Secrets.GithubToken == "" && spec.Credentials.GithubToken != "" {
-			resultGHT = spec.Credentials.GithubToken
-		} else {
-			resultGHT = secretFile.Secrets.GithubToken
-		}
-		if secretFile.Secrets.ExternalRegistry == (DockerRegistryCredentials{}) {
-			if len(spec.Credentials.DockerRegistries) > 0 &&
-				spec.Credentials.DockerRegistries[0] != (DockerRegistryCredentials{}) {
-				resultRegMap := structs.Map(spec.Credentials.DockerRegistries)
-				resultExternalReg = convertToMapStringString(resultRegMap)
-			}
-		} else {
-			resultRegMap := structs.Map(secretFile.Secrets.ExternalRegistry)
-			resultExternalReg = convertToMapStringString(resultRegMap)
-		}
-
-		if len(secretFile.Secrets.DockerRegistries) == 0 {
-			if len(spec.DockerRegistries) > 0 {
-				for _, registry := range spec.DockerRegistries {
-					dockerReg := structs.Map(registry)
-					resultDockerRegistries = append(resultDockerRegistries, convertMapKeysToSnakeCase(dockerReg))
-				}
-			}
-		} else {
-			for _, registry := range secretFile.Secrets.DockerRegistries {
-				dockerReg := structs.Map(registry)
-				resultDockerRegistries = append(resultDockerRegistries, convertMapKeysToSnakeCase(dockerReg))
-			}
-		}
-	}
-	return resultCreds, resultExternalReg, resultGHT, resultDockerRegistries, nil
-}
-
-func EnsureSecretsFile(spec Spec, vaultPassword string) error {
 	edited := false
-	credentials, externalRegistry, github_token, dockerRegistries, err := GetSecrets(spec, vaultPassword)
-	if err != nil {
-		return err
-	}
+
+	credentials := clusterCredentials.ProviderCredentials
+	externalRegistry := clusterCredentials.KeosRegistryCredentials
+	dockerRegistries := clusterCredentials.DockerRegistriesCredentials
+	github_token := clusterCredentials.GithubToken
 
 	_, err = os.Stat(secretPath)
 	if err != nil {
@@ -182,19 +77,19 @@ func EnsureSecretsFile(spec Spec, vaultPassword string) error {
 		}
 		if len(credentials) > 0 {
 			creds := convertStringMapToInterfaceMap(credentials)
-			creds = convertMapKeysToSnakeCase(creds)
+			creds = ConvertMapKeysToSnakeCase(creds)
 			secretMap[spec.InfraProvider] = map[string]interface{}{"credentials": creds}
 		}
 
 		if len(externalRegistry) > 0 {
 			externalReg := convertStringMapToInterfaceMap(externalRegistry)
-			externalReg = convertMapKeysToSnakeCase(externalReg)
+			externalReg = ConvertMapKeysToSnakeCase(externalReg)
 			secretMap["external_registry"] = externalReg
 		}
 
 		if len(dockerRegistries) > 0 {
 			for i, dockerReg := range dockerRegistries {
-				dockerRegistries[i] = convertMapKeysToSnakeCase(dockerReg)
+				dockerRegistries[i] = ConvertMapKeysToSnakeCase(dockerReg)
 			}
 			secretMap["docker_registries"] = dockerRegistries
 		}
@@ -223,14 +118,14 @@ func EnsureSecretsFile(spec Spec, vaultPassword string) error {
 	if secretMap["secrets"][spec.InfraProvider] == nil && len(credentials) > 0 {
 		edited = true
 		creds := convertStringMapToInterfaceMap(credentials)
-		creds = convertMapKeysToSnakeCase(creds)
+		creds = ConvertMapKeysToSnakeCase(creds)
 		secretMap["secrets"][spec.InfraProvider] = map[string]interface{}{"credentials": creds}
 	}
 
 	if secretMap["secrets"]["external_registry"] == nil && len(externalRegistry) > 0 {
 		edited = true
 		externalReg := convertStringMapToInterfaceMap(externalRegistry)
-		externalReg = convertMapKeysToSnakeCase(externalReg)
+		externalReg = ConvertMapKeysToSnakeCase(externalReg)
 		secretMap["secrets"]["external_registry"] = externalReg
 	}
 	if secretMap["secrets"]["github_token"] == nil && github_token != "" {
@@ -240,7 +135,7 @@ func EnsureSecretsFile(spec Spec, vaultPassword string) error {
 	if secretMap["secrets"]["docker_registries"] == nil && len(dockerRegistries) > 0 {
 		edited = true
 		for i, dockerReg := range dockerRegistries {
-			dockerRegistries[i] = convertMapKeysToSnakeCase(dockerReg)
+			dockerRegistries[i] = ConvertMapKeysToSnakeCase(dockerReg)
 		}
 		secretMap["secrets"]["docker_registries"] = dockerRegistries
 	}
@@ -351,8 +246,7 @@ func snakeCase(s string) string {
 	return string(result)
 }
 
-func convertMapKeysToSnakeCase(m map[string]interface{}) map[string]interface{} {
-
+func ConvertMapKeysToSnakeCase(m map[string]interface{}) map[string]interface{} {
 	newMap := make(map[string]interface{})
 	for k, v := range m {
 		newKey := snakeCase(k)
@@ -370,4 +264,90 @@ func Contains(s []string, str string) bool {
 	}
 
 	return false
+}
+
+func AWSGetConfig(secrets map[string]string, region string) (aws.Config, error) {
+	customProvider := credentials.NewStaticCredentialsProvider(
+		secrets["AccessKey"], secrets["SecretKey"], "",
+	)
+	cfg, err := config.LoadDefaultConfig(
+		context.TODO(),
+		config.WithCredentialsProvider(customProvider),
+		config.WithRegion(region),
+	)
+	if err != nil {
+		return aws.Config{}, err
+	}
+	return cfg, nil
+}
+
+func AWSIsPrivateSubnet(ctx context.Context, svc *ec2.Client, subnetID *string) (bool, error) {
+	keyname := "association.subnet-id"
+	drtInput := &ec2.DescribeRouteTablesInput{
+		Filters: []types.Filter{
+			{
+				Name:   &keyname,
+				Values: []string{*subnetID},
+			},
+		},
+	}
+	rt, err := svc.DescribeRouteTables(ctx, drtInput)
+	if err != nil {
+		return false, err
+	}
+
+	for _, associatedRouteTable := range rt.RouteTables {
+		for i := range associatedRouteTable.Routes {
+			route := associatedRouteTable.Routes[i]
+			// Check if route is public
+			if route.DestinationCidrBlock != nil &&
+				route.GatewayId != nil &&
+				*route.DestinationCidrBlock == "0.0.0.0/0" &&
+				strings.Contains(*route.GatewayId, "igw") {
+				return false, nil // Public subnet
+			}
+		}
+	}
+
+	return true, nil
+}
+
+func AWSGetPrivateAZs(ctx context.Context, svc *ec2.Client, subnets []Subnets) ([]string, error) {
+	var azs []string
+	for _, s := range subnets {
+		isPrivate, err := AWSIsPrivateSubnet(ctx, svc, &s.SubnetId)
+		if err != nil {
+			return nil, nil
+		}
+		if isPrivate {
+			sid := &ec2.DescribeSubnetsInput{
+				SubnetIds: []string{s.SubnetId},
+			}
+			ds, err := svc.DescribeSubnets(ctx, sid)
+			if err != nil {
+				return nil, nil
+			}
+			for _, describeSubnet := range ds.Subnets {
+				if !slices.Contains(azs, *describeSubnet.AvailabilityZone) {
+					azs = append(azs, *describeSubnet.AvailabilityZone)
+				}
+			}
+		}
+	}
+	return azs, nil
+}
+
+func AWSGetAZs(ctx context.Context, svc *ec2.Client) ([]string, error) {
+	var azs []string
+	result, err := svc.DescribeAvailabilityZones(ctx, &ec2.DescribeAvailabilityZonesInput{})
+	if err != nil {
+		return nil, err
+	}
+	for i, az := range result.AvailabilityZones {
+		if i == 3 {
+			break
+		}
+		azs = append(azs, *az.ZoneName)
+	}
+	return azs, nil
 }

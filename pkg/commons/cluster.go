@@ -39,8 +39,8 @@ type Resource struct {
 type KeosCluster struct {
 	APIVersion string   `yaml:"apiVersion" validate:"required"`
 	Kind       string   `yaml:"kind" validate:"required"`
-	Metadata   Metadata `yaml:"metadata" validate:"required,dive"`
-	Spec       Spec     `yaml:"spec" validate:"required,dive"`
+	Metadata   Metadata `yaml:"metadata" validate:"required"`
+	Spec       Spec     `yaml:"spec" validate:"required"`
 }
 
 type Metadata struct {
@@ -56,32 +56,32 @@ type Spec struct {
 
 	Bastion Bastion `yaml:"bastion"`
 
-	StorageClass StorageClass `yaml:"storageclass" validate:"dive"`
+	StorageClass StorageClass `yaml:"storageclass"`
 
-	Credentials Credentials `yaml:"credentials" validate:"dive"`
+	Credentials Credentials `yaml:"credentials"`
 
 	InfraProvider string `yaml:"infra_provider" validate:"required,oneof='aws' 'gcp' 'azure'"`
 
-	K8SVersion string `yaml:"k8s_version" validate:"required,startswith=v,min=7,max=8"`
+	K8SVersion string `yaml:"k8s_version" validate:"required"`
 	Region     string `yaml:"region" validate:"required"`
 
-	Networks Networks `yaml:"networks" validate:"omitempty,dive"`
+	Networks Networks `yaml:"networks"`
 
 	Dns struct {
 		ManageZone bool     `yaml:"manage_zone" validate:"boolean"`
 		Forwarders []string `yaml:"forwarders" validate:"omitempty,dive,ip_addr"`
 	} `yaml:"dns"`
 
-	DockerRegistries []DockerRegistry `yaml:"docker_registries" validate:"dive"`
+	DockerRegistries []DockerRegistry `yaml:"docker_registries" validate:"required,dive"`
 
-	ExternalDomain string `yaml:"external_domain" validate:"omitempty,hostname"`
+	ExternalDomain string `yaml:"external_domain" validate:"fqdn"`
 
 	Security struct {
 		NodesIdentity string `yaml:"nodes_identity"`
 		AWS           struct {
 			CreateIAM bool `yaml:"create_iam" validate:"boolean"`
-		} `yaml:"aws" validate:"dive"`
-	} `yaml:"security" validate:"dive"`
+		} `yaml:"aws"`
+	} `yaml:"security"`
 
 	Keos struct {
 		Flavour string `yaml:"flavour"`
@@ -89,21 +89,16 @@ type Spec struct {
 	} `yaml:"keos"`
 
 	ControlPlane struct {
-		Managed         bool   `yaml:"managed" validate:"boolean"`
-		Name            string `yaml:"name"`
-		NodeImage       string `yaml:"node_image" validate:"required_if=InfraProvider gcp"`
-		HighlyAvailable bool   `yaml:"highly_available" validate:"boolean"`
-		Size            string `yaml:"size" validate:"required_if=Managed false"`
-		RootVolume      struct {
-			Size          int    `yaml:"size" validate:"numeric"`
-			Type          string `yaml:"type"`
-			Encrypted     bool   `yaml:"encrypted" validate:"boolean"`
-			EncryptionKey string `yaml:"encryption_key"`
-		} `yaml:"root_volume"`
-		Tags         []map[string]string `yaml:"tags"`
-		AWS          AWSCP               `yaml:"aws"`
-		Azure        AzureCP             `yaml:"azure"`
-		ExtraVolumes []ExtraVolume       `yaml:"extra_volumes"`
+		Managed         bool                `yaml:"managed" validate:"boolean"`
+		Name            string              `yaml:"name"`
+		NodeImage       string              `yaml:"node_image"`
+		HighlyAvailable bool                `yaml:"highly_available" validate:"boolean"`
+		Size            string              `yaml:"size" validate:"required_if=Managed false"`
+		RootVolume      RootVolume          `yaml:"root_volume"`
+		Tags            []map[string]string `yaml:"tags"`
+		AWS             AWSCP               `yaml:"aws"`
+		Azure           AzureCP             `yaml:"azure"`
+		ExtraVolumes    []ExtraVolume       `yaml:"extra_volumes" validate:"dive"`
 	} `yaml:"control_plane"`
 
 	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
@@ -113,15 +108,15 @@ type Networks struct {
 	VPCID         string    `yaml:"vpc_id"`
 	VPCCidrBlock  string    `yaml:"vpc_cidr" validate:"omitempty,cidrv4"`
 	PodsCidrBlock string    `yaml:"pods_cidr" validate:"omitempty,cidrv4"`
-	PodsSubnets   []Subnets `yaml:"pods_subnets"`
-	Subnets       []Subnets `yaml:"subnets"`
+	PodsSubnets   []Subnets `yaml:"pods_subnets" validate:"dive"`
+	Subnets       []Subnets `yaml:"subnets" validate:"dive"`
 	ResourceGroup string    `yaml:"resource_group"`
 }
 
 type Subnets struct {
 	SubnetId  string `yaml:"subnet_id"`
 	CidrBlock string `yaml:"cidr" validate:"omitempty,cidrv4"`
-	Role      string `yaml:"role" validate:"oneof='control-plane' 'node'"`
+	Role      string `yaml:"role" validate:"omitempty,oneof='control-plane' 'node'"`
 }
 
 type AWSCP struct {
@@ -137,29 +132,24 @@ type AWSCP struct {
 }
 
 type AzureCP struct {
-	Tier string `yaml:"tier" validate:"oneof='Free' 'Paid'"`
+	Tier string `yaml:"tier" validate:"omitempty,oneof='Free' 'Paid'"`
 }
 
 type WorkerNodes []struct {
 	Name             string            `yaml:"name" validate:"required"`
-	NodeImage        string            `yaml:"node_image" validate:"required_if=InfraProvider gcp"`
+	NodeImage        string            `yaml:"node_image"`
 	Quantity         int               `yaml:"quantity" validate:"required,numeric,gt=0"`
 	Size             string            `yaml:"size" validate:"required"`
 	ZoneDistribution string            `yaml:"zone_distribution" validate:"omitempty,oneof='balanced' 'unbalanced'"`
-	AZ               string            `yaml:"az"`
+	AZ               string            `yaml:"az" validate:"required_if=ZoneDistribution unbalanced"`
 	SSHKey           string            `yaml:"ssh_key"`
-	Spot             bool              `yaml:"spot" validate:"omitempty,boolean"`
+	Spot             bool              `yaml:"spot" validate:"boolean"`
 	Labels           map[string]string `yaml:"labels"`
-	Taints           []string          `yaml:"taints" validate:"omitempty,dive"`
+	Taints           []string          `yaml:"taints"`
 	NodeGroupMaxSize int               `yaml:"max_size" validate:"required_with=NodeGroupMinSize,numeric,omitempty"`
 	NodeGroupMinSize int               `yaml:"min_size" validate:"required_with=NodeGroupMaxSize,numeric,omitempty"`
-	RootVolume       struct {
-		Size          int    `yaml:"size" validate:"numeric"`
-		Type          string `yaml:"type"`
-		Encrypted     bool   `yaml:"encrypted" validate:"boolean"`
-		EncryptionKey string `yaml:"encryption_key"`
-	} `yaml:"root_volume"`
-	ExtraVolumes []ExtraVolume `yaml:"extra_volumes"`
+	RootVolume       RootVolume        `yaml:"root_volume"`
+	ExtraVolumes     []ExtraVolume     `yaml:"extra_volumes" validate:"dive"`
 }
 
 // Bastion represents the bastion VM
@@ -170,15 +160,29 @@ type Bastion struct {
 	SSHKey            string   `yaml:"ssh_key"`
 }
 
+type RootVolume struct {
+	Size          int    `yaml:"size"`
+	Type          string `yaml:"type"`
+	Encrypted     bool   `yaml:"encrypted"`
+	EncryptionKey string `yaml:"encryption_key"`
+}
+
 type ExtraVolume struct {
 	Name          string `yaml:"name"`
 	DeviceName    string `yaml:"device_name"`
-	Size          int    `yaml:"size" validate:"numeric"`
+	Size          int    `yaml:"size" validate:"required,numeric"`
 	Type          string `yaml:"type"`
-	Label         string `yaml:"label"`
+	Label         string `yaml:"label" validate:"required"`
 	Encrypted     bool   `yaml:"encrypted" validate:"boolean"`
 	EncryptionKey string `yaml:"encryption_key"`
-	MountPath     string `yaml:"mount_path" validate:"omitempty,required_with=Name"`
+	MountPath     string `yaml:"mount_path" validate:"required"`
+}
+
+type ClusterCredentials struct {
+	ProviderCredentials         map[string]string
+	KeosRegistryCredentials     map[string]string
+	DockerRegistriesCredentials []map[string]interface{}
+	GithubToken                 string
 }
 
 type Credentials struct {
@@ -221,7 +225,7 @@ type DockerRegistry struct {
 	AuthRequired bool   `yaml:"auth_required" validate:"boolean"`
 	Type         string `yaml:"type" validate:"required,oneof='acr' 'ecr' 'generic'"`
 	URL          string `yaml:"url" validate:"required"`
-	KeosRegistry bool   `yaml:"keos_registry" validate:"omitempty,boolean"`
+	KeosRegistry bool   `yaml:"keos_registry" validate:"boolean"`
 }
 
 type TemplateParams struct {
@@ -263,31 +267,31 @@ type EFS struct {
 
 type StorageClass struct {
 	EFS           EFS          `yaml:"efs"`
-	EncryptionKey string       `yaml:"encryptionKey,omitempty"  validate:"omitempty"`
-	Class         string       `yaml:"class,omitempty"  validate:"omitempty,oneof='standard' 'premium'"`
-	Parameters    SCParameters `yaml:"parameters,omitempty" validate:"omitempty,dive"`
+	EncryptionKey string       `yaml:"encryptionKey,omitempty"`
+	Class         string       `yaml:"class,omitempty" validate:"omitempty,oneof='standard' 'premium'"`
+	Parameters    SCParameters `yaml:"parameters,omitempty"`
 }
 
 type SCParameters struct {
 	// Common
-	Type   string `yaml:"type,omitempty" validate:"omitempty"`
-	FsType string `yaml:"fsType,omitempty"  validate:"omitempty"`
-	Labels string `yaml:"labels,omitempty"  validate:"omitempty"`
+	Type   string `yaml:"type,omitempty"`
+	FsType string `yaml:"fsType,omitempty"`
+	Labels string `yaml:"labels,omitempty"`
 
 	// AWS
 	AllowAutoIOPSPerGBIncrease string `yaml:"allowAutoIOPSPerGBIncrease,omitempty" validate:"omitempty,oneof='true' 'false'"`
 	BlockExpress               string `yaml:"blockExpress,omitempty" validate:"omitempty,oneof='true' 'false'"`
-	BlockSize                  string `yaml:"blockSize,omitempty" validate:"omitempty"`
+	BlockSize                  string `yaml:"blockSize,omitempty"`
 	Iops                       string `yaml:"iops,omitempty" validate:"omitempty,excluded_with=IopsPerGB"`
 	IopsPerGB                  string `yaml:"iopsPerGB,omitempty" validate:"omitempty,excluded_with=Iops"`
 	Encrypted                  string `yaml:"encrypted,omitempty" validate:"omitempty,oneof='true' 'false'"`
-	KmsKeyId                   string `yaml:"kmsKeyId,omitempty" validate:"omitempty"`
+	KmsKeyId                   string `yaml:"kmsKeyId,omitempty"`
 	Throughput                 int    `yaml:"throughput,omitempty" validate:"omitempty,gt=0"`
 
 	// Azure
 	CachingMode           string `yaml:"cachingMode,omitempty" validate:"omitempty,oneof='None' 'ReadOnly'"`
-	DiskAccessID          string `yaml:"diskAccessID,omitempty" validate:"omitempty"`
-	DiskEncryptionSetID   string `yaml:"diskEncryptionSetID,omitempty" validate:"omitempty"`
+	DiskAccessID          string `yaml:"diskAccessID,omitempty"`
+	DiskEncryptionSetID   string `yaml:"diskEncryptionSetID,omitempty"`
 	DiskEncryptionType    string `yaml:"diskEncryptionType,omitempty" validate:"omitempty,oneof='EncryptionAtRestWithCustomerKey' 'EncryptionAtRestWithPlatformAndCustomerKeys'"`
 	EnableBursting        string `yaml:"enableBursting,omitempty" validate:"omitempty,oneof='true' 'false'"`
 	EnablePerformancePlus string `yaml:"enablePerformancePlus,omitempty" validate:"omitempty,oneof='true' 'false'"`
@@ -295,16 +299,16 @@ type SCParameters struct {
 	NetworkAccessPolicy   string `yaml:"networkAccessPolicy,omitempty" validate:"omitempty,oneof='AllowAll' 'DenyAll' 'AllowPrivate'"`
 	Provisioner           string `yaml:"provisioner,omitempty" validate:"omitempty,oneof='disk.csi.azure.com' 'file.csi.azure.com"`
 	PublicNetworkAccess   string `yaml:"publicNetworkAccess,omitempty" validate:"omitempty,oneof='Enabled' 'Disabled'"`
-	ResourceGroup         string `yaml:"resourceGroup,omitempty" validate:"omitempty"`
-	SkuName               string `yaml:"skuName,omitempty" validate:"omitempty"`
-	SubscriptionID        string `yaml:"subscriptionID,omitempty" validate:"omitempty"`
-	Tags                  string `yaml:"tags,omitempty" validate:"omitempty"`
+	ResourceGroup         string `yaml:"resourceGroup,omitempty"`
+	SkuName               string `yaml:"skuName,omitempty"`
+	SubscriptionID        string `yaml:"subscriptionID,omitempty"`
+	Tags                  string `yaml:"tags,omitempty"`
 
 	// GCP
-	DiskEncryptionKmsKey          string `yaml:"disk-encryption-kms-key,omitempty" validate:"omitempty"`
-	ProvisionedIopsOnCreate       string `yaml:"provisioned-iops-on-create,omitempty" validate:"omitempty"`
-	ProvisionedThroughputOnCreate string `yaml:"provisioned-throughput-on-create,omitempty" validate:"omitempty"`
-	ReplicationType               string `yaml:"replication-type,omitempty" validate:"omitempty,oneof='none' 'regional-pd'"`
+	DiskEncryptionKmsKey          string `yaml:"disk-encryption-kms-key,omitempty"`
+	ProvisionedIopsOnCreate       string `yaml:"provisioned-iops-on-create,omitempty"`
+	ProvisionedThroughputOnCreate string `yaml:"provisioned-throughput-on-create,omitempty"`
+	ReplicationType               string `yaml:"replication-type,omitempty"`
 }
 
 // Init sets default values for the Spec

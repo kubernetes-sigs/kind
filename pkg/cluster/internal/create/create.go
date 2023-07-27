@@ -25,6 +25,7 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/delete"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers"
+	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/apis/config/encoding"
@@ -53,12 +54,17 @@ const (
 
 // ClusterOptions holds cluster creation options
 type ClusterOptions struct {
-	Config         *config.Cluster
-	NameOverride   string // overrides config.Name
-	VaultPassword  string
-	DescriptorPath string
-	MoveManagement bool
-	AvoidCreation  bool
+	Config       *config.Cluster
+	NameOverride string // overrides config.Name
+
+	// Stratio
+	VaultPassword      string
+	DescriptorPath     string
+	MoveManagement     bool
+	AvoidCreation      bool
+	KeosCluster        commons.KeosCluster
+	ClusterCredentials commons.ClusterCredentials
+
 	// Force local container delete before creating the cluster if it already exists
 	ForceDelete bool
 	// NodeImage overrides the nodes' images in Config if non-zero
@@ -145,7 +151,7 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 
 		// add Stratio step
 		actionsToRun = append(actionsToRun,
-			createworker.NewAction(opts.VaultPassword, opts.DescriptorPath, opts.MoveManagement, opts.AvoidCreation), // create worker k8s cluster
+			createworker.NewAction(opts.VaultPassword, opts.DescriptorPath, opts.MoveManagement, opts.AvoidCreation, opts.KeosCluster, opts.ClusterCredentials), // create worker k8s cluster
 		)
 	}
 
