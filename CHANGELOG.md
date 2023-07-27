@@ -3,8 +3,9 @@
 ## 0.17.0-0.3.0 (Upcoming)
 
 * Customize coredns configuration
-* Bump cluster-api-provider-gcp to v1.4.0
 * Bump cluster-api-provider-aws to v2.2.0
+* Bump cluster-api-provider-azure to v1.10.0: Fix Azure VMs load balancer health check
+* Bump cluster-api-provider-gcp to v1.4.0: Fix GCP VMs load balancer health check
 * Add clusterAPI capabilities for AWS VMs
 * Add EKS secrets encryption support
 * Fix wait conditions for unmanaged clusters
