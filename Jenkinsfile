@@ -16,6 +16,6 @@ hose {
         doPackage(conf: config, parameters: "GOCACHE=/tmp")
         doDeploy(conf: config)
     }
-    BUILDTOOL_MEMORY_REQUEST = "512Mi"
-    BUILDTOOL_MEMORY_LIMIT = "3072Mi"
+    BUILDTOOL_MEMORY_REQUEST = "1024Mi"
+    BUILDTOOL_MEMORY_LIMIT = "4096Mi"
 }
