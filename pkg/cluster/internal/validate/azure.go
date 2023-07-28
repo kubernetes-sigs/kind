@@ -225,17 +225,10 @@ func validateAKSVersion(spec commons.Spec, creds *azidentity.ClientSecretCredent
 
 func validateAKSNodes(workerNodes commons.WorkerNodes) error {
 	var isLetter = regexp.MustCompile(`^[a-z0-9]+$`).MatchString
-	hasNodeSystem := false
 	for _, node := range workerNodes {
 		if !isLetter(node.Name) || len(node.Name) >= AKSMaxNodeNameLength {
 			return errors.New("AKS node names must be " + strconv.Itoa(AKSMaxNodeNameLength) + " characters or less & contain only lowercase alphanumeric characters")
 		}
-		if len(node.Taints) == 0 && !node.Spot {
-			hasNodeSystem = true
-		}
-	}
-	if !hasNodeSystem {
-		return errors.New("at least one worker node must be non-spot and without taints")
 	}
 	return nil
 }

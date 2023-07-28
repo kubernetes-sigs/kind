@@ -59,6 +59,9 @@ func validateWorkers(wn commons.WorkerNodes) error {
 	if err := validateWorkersTaints(wn); err != nil {
 		return err
 	}
+	if err := validateWorkersType(wn); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -122,6 +125,19 @@ func validateWorkersTaints(wns commons.WorkerNodes) error {
 				return errors.New("Incorrect taint format in taint[" + strconv.Itoa(i) + "] of wn: " + wn.Name + "")
 			}
 		}
+	}
+	return nil
+}
+
+func validateWorkersType(wns commons.WorkerNodes) error {
+	hasNodeSystem := false
+	for _, wn := range wns {
+		if len(wn.Taints) == 0 && !wn.Spot {
+			hasNodeSystem = true
+		}
+	}
+	if !hasNodeSystem {
+		return errors.New("at least one worker node must be non spot and without taints")
 	}
 	return nil
 }
