@@ -69,7 +69,7 @@ func validateAzure(spec commons.Spec, providerSecrets map[string]string) error {
 		}
 	}
 	if !reflect.ValueOf(spec.Networks).IsZero() {
-		if err = validateAzureNetwork(spec); err != nil {
+		if err = validateAzureNetwork(spec.Networks, spec.ControlPlane.Managed); err != nil {
 			return errors.Wrap(err, "invalid network")
 		}
 	}
@@ -173,25 +173,23 @@ func validateAzureStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) 
 	return nil
 }
 
-func validateAzureNetwork(spec commons.Spec) error {
-	if spec.Networks.VPCID == "" {
+func validateAzureNetwork(network commons.Networks, managed bool) error {
+	if network.VPCID == "" {
 		return errors.New("vpc_id is required")
 	}
-	if spec.Networks.VPCCidrBlock == "" {
+	if managed && network.VPCCidrBlock == "" {
 		return errors.New("vpc_cidr is required")
 	}
-	if len(spec.Networks.Subnets) > 0 {
-		for _, s := range spec.Networks.Subnets {
+	if len(network.Subnets) > 0 {
+		for _, s := range network.Subnets {
 			if s.SubnetId == "" {
 				return errors.New("subnet_id is required")
 			}
-			if s.CidrBlock == "" {
+			if managed && s.CidrBlock == "" {
 				return errors.New("cidr is required")
 			}
-			if !spec.ControlPlane.Managed {
-				if s.Role == "" {
-					return errors.New("role is required")
-				}
+			if !managed && s.Role == "" {
+				return errors.New("role is required")
 			}
 		}
 	}
