@@ -90,6 +90,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	providerParams := ProviderParams{
+		ClusterName:  a.keosCluster.Metadata.Name,
 		Region:       a.keosCluster.Spec.Region,
 		Managed:      a.keosCluster.Spec.ControlPlane.Managed,
 		Credentials:  a.clusterCredentials.ProviderCredentials,
@@ -188,12 +189,12 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		DockerRegistries: a.clusterCredentials.DockerRegistriesCredentials,
 	}
 
-	azs, err := infra.getAzs(a.keosCluster.Spec.Networks)
+	azs, err := infra.getAzs(providerParams, a.keosCluster.Spec.Networks)
 	if err != nil {
 		return errors.Wrap(err, "failed to get AZs")
 	}
-	// Generate the cluster manifest
 
+	// Generate the cluster manifest
 	descriptorData, err := GetClusterManifest(provider.capxTemplate, templateParams, azs)
 	if err != nil {
 		return errors.Wrap(err, "failed to generate cluster manifests")
@@ -328,7 +329,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.Start("Creating Kubernetes RBAC for internal loadbalancing 🔐")
 			defer ctx.Status.End(false)
 
-			requiredInternalNginx, err := infra.internalNginx(a.keosCluster.Spec.Networks, a.clusterCredentials.ProviderCredentials, a.keosCluster.Metadata.Name)
+			requiredInternalNginx, err := infra.internalNginx(providerParams, a.keosCluster.Spec.Networks)
 			if err != nil {
 				return err
 			}
@@ -384,7 +385,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 		if azureAKSEnabled && a.keosCluster.Spec.Security.NodesIdentity != "" {
 			// Update AKS cluster with the user kubelet identity until the provider supports it
-			err := assignUserIdentity(a.keosCluster.Spec.Security.NodesIdentity, a.keosCluster.Metadata.Name, a.keosCluster.Spec.Region, a.clusterCredentials.ProviderCredentials)
+			err := assignUserIdentity(providerParams, a.keosCluster.Spec.Security.NodesIdentity)
 			if err != nil {
 				return errors.Wrap(err, "failed to assign user identity to the workload Cluster")
 			}
@@ -608,7 +609,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
-	err = override_vars(a.keosCluster, a.clusterCredentials.ProviderCredentials, ctx, infra, provider)
+	err = override_vars(ctx, providerParams, a.keosCluster.Spec.Networks, infra)
 	if err != nil {
 		return err
 	}

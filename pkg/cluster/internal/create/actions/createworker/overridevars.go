@@ -26,9 +26,9 @@ import (
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
-func override_vars(keosCluster commons.KeosCluster, credentialsMap map[string]string, ctx *actions.ActionContext, infra *Infra, provider Provider) error {
+func override_vars(ctx *actions.ActionContext, p ProviderParams, networks commons.Networks, infra *Infra) error {
 
-	override_vars, err := infra.getOverrideVars(keosCluster, credentialsMap)
+	override_vars, err := infra.getOverrideVars(p, networks)
 	if err != nil {
 		return err
 	}

@@ -20,18 +20,12 @@ import (
 	"context"
 	_ "embed"
 	"encoding/base64"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v3"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/commons"
@@ -180,78 +174,46 @@ spec:
 	return nil
 }
 
-func (b *AWSBuilder) getAzs(networks commons.Networks) ([]string, error) {
-	if len(b.capxEnvVars) == 0 {
-		return nil, errors.New("Insufficient credentials.")
-	}
-	for _, cred := range b.capxEnvVars {
-		c := strings.Split(cred, "=")
-		envVar := c[0]
-		envValue := c[1]
-		os.Setenv(envVar, envValue)
-	}
+func (b *AWSBuilder) getAzs(p ProviderParams, networks commons.Networks) ([]string, error) {
+	var err error
+	var azs []string
+	var ctx = context.TODO()
 
-	sess, err := session.NewSession(&aws.Config{})
+	cfg, err := commons.AWSGetConfig(ctx, p.Credentials, p.Region)
 	if err != nil {
 		return nil, err
 	}
-	svc := ec2.New(sess)
-	if networks.Subnets != nil {
-		privateAZs := []string{}
-		for _, subnet := range networks.Subnets {
-			privateSubnetID, _ := filterPrivateSubnet(svc, &subnet.SubnetId)
-			if len(privateSubnetID) > 0 {
-				sid := &ec2.DescribeSubnetsInput{
-					SubnetIds: []*string{&subnet.SubnetId},
-				}
-				ds, err := svc.DescribeSubnets(sid)
-				if err != nil {
-					return nil, err
-				}
-				for _, describeSubnet := range ds.Subnets {
-					if !slices.Contains(privateAZs, *describeSubnet.AvailabilityZone) {
-						privateAZs = append(privateAZs, *describeSubnet.AvailabilityZone)
-					}
-				}
-			}
-		}
-		return privateAZs, nil
-	} else {
-		result, err := svc.DescribeAvailabilityZones(&ec2.DescribeAvailabilityZonesInput{})
+	svc := ec2.NewFromConfig(cfg)
+	if len(networks.Subnets) > 0 {
+		azs, err = commons.AWSGetPrivateAZs(ctx, svc, networks.Subnets)
 		if err != nil {
 			return nil, err
 		}
-		azs := make([]string, 3)
-		for i, az := range result.AvailabilityZones {
-			if i == 3 {
-				break
-			}
-			azs[i] = *az.ZoneName
+	} else {
+		azs, err = commons.AWSGetAZs(ctx, svc)
+		if err != nil {
+			return nil, err
 		}
-		return azs, nil
 	}
+	return azs, nil
 }
 
-func (b *AWSBuilder) internalNginx(networks commons.Networks, credentialsMap map[string]string, clusterName string) (bool, error) {
-	if len(b.capxEnvVars) == 0 {
-		return false, errors.New("Insufficient credentials.")
-	}
-	for _, cred := range b.capxEnvVars {
-		c := strings.Split(cred, "=")
-		envVar := c[0]
-		envValue := c[1]
-		os.Setenv(envVar, envValue)
-	}
+func (b *AWSBuilder) internalNginx(p ProviderParams, networks commons.Networks) (bool, error) {
+	var err error
+	var ctx = context.TODO()
 
-	sess, err := session.NewSession(&aws.Config{})
+	cfg, err := commons.AWSGetConfig(ctx, p.Credentials, p.Region)
 	if err != nil {
 		return false, err
 	}
-	svc := ec2.New(sess)
-	if networks.Subnets != nil {
-		for _, subnet := range networks.Subnets {
-			publicSubnetID, _ := filterPublicSubnet(svc, &subnet.SubnetId)
-			if len(publicSubnetID) > 0 {
+	svc := ec2.NewFromConfig(cfg)
+	if len(networks.Subnets) > 0 {
+		for _, s := range networks.Subnets {
+			isPrivate, err := commons.AWSIsPrivateSubnet(ctx, svc, &s.SubnetId)
+			if err != nil {
+				return false, err
+			}
+			if !isPrivate {
 				return false, nil
 			}
 		}
@@ -260,87 +222,16 @@ func (b *AWSBuilder) internalNginx(networks commons.Networks, credentialsMap map
 	return false, nil
 }
 
-func filterPrivateSubnet(svc *ec2.EC2, subnetID *string) (string, error) {
-	keyname := "association.subnet-id"
-	filters := make([]*ec2.Filter, 0)
-	filter := ec2.Filter{
-		Name: &keyname, Values: []*string{subnetID}}
-	filters = append(filters, &filter)
-
-	drti := &ec2.DescribeRouteTablesInput{Filters: filters}
-	drto, err := svc.DescribeRouteTables(drti)
-	if err != nil {
-		return "", err
-	}
-
-	var isPublic bool
-	for _, associatedRouteTable := range drto.RouteTables {
-		for i := range associatedRouteTable.Routes {
-			route := associatedRouteTable.Routes[i]
-
-			if route.DestinationCidrBlock != nil &&
-				route.GatewayId != nil &&
-				*route.DestinationCidrBlock == "0.0.0.0/0" &&
-				strings.Contains(*route.GatewayId, "igw") {
-				isPublic = true
-			}
-		}
-	}
-	if !isPublic {
-		return *subnetID, nil
-	} else {
-		return "", nil
-	}
-}
-
-func filterPublicSubnet(svc *ec2.EC2, subnetID *string) (string, error) {
-	keyname := "association.subnet-id"
-	filters := make([]*ec2.Filter, 0)
-	filter := ec2.Filter{
-		Name: &keyname, Values: []*string{subnetID}}
-	filters = append(filters, &filter)
-
-	drti := &ec2.DescribeRouteTablesInput{Filters: filters}
-	drto, err := svc.DescribeRouteTables(drti)
-	if err != nil {
-		return "", err
-	}
-
-	var isPublic bool
-	for _, associatedRouteTable := range drto.RouteTables {
-		for i := range associatedRouteTable.Routes {
-			route := associatedRouteTable.Routes[i]
-
-			if route.DestinationCidrBlock != nil &&
-				route.GatewayId != nil &&
-				*route.DestinationCidrBlock == "0.0.0.0/0" &&
-				strings.Contains(*route.GatewayId, "igw") {
-				isPublic = true
-			}
-		}
-	}
-	if isPublic {
-		return *subnetID, nil
-	} else {
-		return "", nil
-	}
-}
-
 func getEcrToken(p ProviderParams) (string, error) {
-	customProvider := credentials.NewStaticCredentialsProvider(
-		p.Credentials["AccessKey"], p.Credentials["SecretKey"], "",
-	)
-	cfg, err := config.LoadDefaultConfig(
-		context.TODO(),
-		config.WithCredentialsProvider(customProvider),
-		config.WithRegion(p.Region),
-	)
+	var err error
+	var ctx = context.TODO()
+
+	cfg, err := commons.AWSGetConfig(ctx, p.Credentials, p.Region)
 	if err != nil {
 		return "", err
 	}
-
 	svc := ecr.NewFromConfig(cfg)
-	token, err := svc.GetAuthorizationToken(context.TODO(), &ecr.GetAuthorizationTokenInput{})
+	token, err := svc.GetAuthorizationToken(ctx, &ecr.GetAuthorizationTokenInput{})
 	if err != nil {
 		return "", err
 	}
@@ -401,14 +292,17 @@ func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string) error {
 	return nil
 }
 
-func (b *AWSBuilder) getOverrideVars(keosCluster commons.KeosCluster, credentialsMap map[string]string) (map[string][]byte, error) {
-	overrideVars := map[string][]byte{}
-	InternalNginxOVPath, InternalNginxOVValue, err := b.getInternalNginxOverrideVars(keosCluster.Spec.Networks, credentialsMap, keosCluster.Metadata.Name)
+func (b *AWSBuilder) getOverrideVars(p ProviderParams, networks commons.Networks) (map[string][]byte, error) {
+	var overrideVars map[string][]byte
+
+	// Add override vars internal nginx
+	requiredInternalNginx, err := b.internalNginx(p, networks)
 	if err != nil {
 		return nil, err
 	}
-
-	overrideVars = addOverrideVar(InternalNginxOVPath, InternalNginxOVValue, overrideVars)
+	if requiredInternalNginx {
+		overrideVars = addOverrideVar("ingress-nginx.yaml", awsInternalIngress, overrideVars)
+	}
 
 	// Add override vars for storage class
 	if commons.Contains([]string{"io1", "io2"}, b.scParameters.Type) {
@@ -419,17 +313,4 @@ func (b *AWSBuilder) getOverrideVars(keosCluster commons.KeosCluster, credential
 	}
 
 	return overrideVars, nil
-}
-
-func (b *AWSBuilder) getInternalNginxOverrideVars(networks commons.Networks, credentialsMap map[string]string, clusterName string) (string, []byte, error) {
-	requiredInternalNginx, err := b.internalNginx(networks, credentialsMap, clusterName)
-	if err != nil {
-		return "", nil, err
-	}
-
-	if requiredInternalNginx {
-		return "ingress-nginx.yaml", awsInternalIngress, nil
-	}
-
-	return "", []byte(""), nil
 }

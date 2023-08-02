@@ -57,9 +57,9 @@ type PBuilder interface {
 	installCSI(n nodes.Node, k string) error
 	getProvider() Provider
 	configureStorageClass(n nodes.Node, k string) error
-	getAzs(networks commons.Networks) ([]string, error)
-	internalNginx(networks commons.Networks, credentialsMap map[string]string, clusterID string) (bool, error)
-	getOverrideVars(keosCluster commons.KeosCluster, credentialsMap map[string]string) (map[string][]byte, error)
+	getAzs(p ProviderParams, networks commons.Networks) ([]string, error)
+	internalNginx(p ProviderParams, networks commons.Networks) (bool, error)
+	getOverrideVars(p ProviderParams, networks commons.Networks) (map[string][]byte, error)
 }
 
 type Provider struct {
@@ -87,6 +87,7 @@ type Infra struct {
 }
 
 type ProviderParams struct {
+	ClusterName  string
 	Region       string
 	Managed      bool
 	Credentials  map[string]string
@@ -159,28 +160,16 @@ func (i *Infra) configureStorageClass(n nodes.Node, k string) error {
 	return i.builder.configureStorageClass(n, k)
 }
 
-func (i *Infra) internalNginx(networks commons.Networks, credentialsMap map[string]string, ClusterID string) (bool, error) {
-	requiredIntenalNginx, err := i.builder.internalNginx(networks, credentialsMap, ClusterID)
-	if err != nil {
-		return false, err
-	}
-	return requiredIntenalNginx, nil
+func (i *Infra) internalNginx(p ProviderParams, networks commons.Networks) (bool, error) {
+	return i.builder.internalNginx(p, networks)
 }
 
-func (i *Infra) getOverrideVars(keosCluster commons.KeosCluster, credentialsMap map[string]string) (map[string][]byte, error) {
-	overrideVars, err := i.builder.getOverrideVars(keosCluster, credentialsMap)
-	if err != nil {
-		return nil, err
-	}
-	return overrideVars, nil
+func (i *Infra) getOverrideVars(p ProviderParams, networks commons.Networks) (map[string][]byte, error) {
+	return i.builder.getOverrideVars(p, networks)
 }
 
-func (i *Infra) getAzs(networks commons.Networks) ([]string, error) {
-	azs, err := i.builder.getAzs(networks)
-	if err != nil {
-		return nil, err
-	}
-	return azs, nil
+func (i *Infra) getAzs(p ProviderParams, networks commons.Networks) ([]string, error) {
+	return i.builder.getAzs(p, networks)
 }
 
 func installCalico(n nodes.Node, k string, keosCluster commons.KeosCluster, allowCommonEgressNetPolPath string) error {

@@ -48,8 +48,9 @@ var AWSNodeImageFormat = "ami-[IMAGE_ID]"
 
 func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 	var err error
+	var ctx = context.TODO()
 
-	cfg, err := commons.AWSGetConfig(providerSecrets, spec.Region)
+	cfg, err := commons.AWSGetConfig(ctx, providerSecrets, spec.Region)
 	if err != nil {
 		return err
 	}
@@ -59,8 +60,9 @@ func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 			return errors.Wrap(err, "invalid storage class")
 		}
 	}
+
 	if !reflect.ValueOf(spec.Networks).IsZero() {
-		if err = validateAWSNetwork(spec, cfg); err != nil {
+		if err = validateAWSNetwork(ctx, cfg, spec); err != nil {
 			return errors.Wrap(err, "invalid network")
 		}
 	}
@@ -90,7 +92,7 @@ func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 	return nil
 }
 
-func validateAWSNetwork(spec commons.Spec, cfg aws.Config) error {
+func validateAWSNetwork(ctx context.Context, cfg aws.Config, spec commons.Spec) error {
 	var err error
 	if spec.Networks.VPCID == "" {
 		return errors.New("vpc_id is required")
@@ -106,7 +108,7 @@ func validateAWSNetwork(spec commons.Spec, cfg aws.Config) error {
 				return errors.New("subnet_id is required")
 			}
 		}
-		if err = validateAWSAZs(spec, cfg); err != nil {
+		if err = validateAWSAZs(ctx, cfg, spec); err != nil {
 			return err
 		}
 	}
@@ -230,12 +232,11 @@ func validateAWSVolumes(rootVol commons.RootVolume, extraVols []commons.ExtraVol
 	return nil
 }
 
-func validateAWSAZs(spec commons.Spec, cfg aws.Config) error {
+func validateAWSAZs(ctx context.Context, cfg aws.Config, spec commons.Spec) error {
 	var err error
 	var azs []string
 
 	svc := ec2.NewFromConfig(cfg)
-	ctx := context.TODO()
 	if len(spec.Networks.Subnets) > 0 {
 		azs, err = commons.AWSGetPrivateAZs(ctx, svc, spec.Networks.Subnets)
 		if err != nil {
