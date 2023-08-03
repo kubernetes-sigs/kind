@@ -39,6 +39,8 @@ azure:
     azure-cloud-node-manager: v1.24.18
     azuredisk-csi-driver-chart: v1.27.1
     azuredisk-csi-driver: v1.27.1
+    azurefile-csi-driver-chart: v1.27.1
+    azurefile-csi-driver: v1.27.1
     csi-provisioner: v3.3.0
     csi-attacher: v4.0.0
     csi-snapshotter: v5.0.1

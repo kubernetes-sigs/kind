@@ -130,13 +130,22 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	var c string
 	var err error
 
-	// Deploy CSI driver
+	// Deploy disk CSI driver
 	c = "helm install azuredisk-csi-driver /stratio/helm/azuredisk-csi-driver " +
 		" --kubeconfig " + k +
 		" --namespace " + b.csiNamespace
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy Azure Disk CSI driver Helm Chart")
+	}
+
+	// Deploy file CSI driver
+	c = "helm install azurefile-csi-driver /stratio/helm/azurefile-csi-driver " +
+		" --kubeconfig " + k +
+		" --namespace " + b.csiNamespace
+	_, err = commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to deploy Azure File CSI driver Helm Chart")
 	}
 
 	return nil
