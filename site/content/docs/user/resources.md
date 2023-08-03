@@ -38,6 +38,14 @@ https://projectcontour.io/kindly-running-contour/
 
 https://mjpitz.com/blog/2020/10/21/local-ingress-domains-kind/
 
+### Connect directly to Docker-for-Mac containers via IP address
+
+https://golangexample.com/connect-directly-to-docker-for-mac-containers-via-ip-address/
+
+### Developing for Kubernetes with KinD
+
+https://docs.gitlab.com/charts/development/kind/
+
 ## KubeCon Talks
 
 The authors have given the following talks relating to KIND:

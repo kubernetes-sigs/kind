@@ -57,26 +57,32 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(
-		&flags.BuildType, "type",
-		"docker", "build type, default is docker",
+		&flags.BuildType,
+		"type",
+		"docker",
+		"build type, default is docker",
 	)
 	cmd.Flags().StringVar(
-		&flags.Image, "image",
+		&flags.Image,
+		"image",
 		nodeimage.DefaultImage,
 		"name:tag of the resulting image to be built",
 	)
 	cmd.Flags().StringVar(
-		&flags.KubeRoot, "kube-root",
+		&flags.KubeRoot,
+		"kube-root",
 		"",
-		"path to the Kubernetes source directory (if empty, the path is autodetected)",
+		"DEPRECATED: please switch to just the argument. Path to the Kubernetes source directory (if empty, the path is autodetected)",
 	)
 	cmd.Flags().StringVar(
-		&flags.BaseImage, "base-image",
+		&flags.BaseImage,
+		"base-image",
 		nodeimage.DefaultBaseImage,
 		"name:tag of the base image to use for the build",
 	)
 	cmd.Flags().StringVar(
-		&flags.Arch, "arch",
+		&flags.Arch,
+		"arch",
 		"",
 		"architecture to build for, defaults to the host architecture",
 	)

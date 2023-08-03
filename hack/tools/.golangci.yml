@@ -5,23 +5,27 @@ linters:
   disable-all: true
   enable:
     # default golangci-lint lints
-    - deadcode
+    # NOTE: https://github.com/golangci/golangci-lint/issues/1841
     - errcheck
     - gosimple
     - govet
     - ineffassign
     - staticcheck
-    - structcheck
     - typecheck
     - unused
-    - varcheck
 
     # additional lints
     - gochecknoinits
     - gofmt
-    - golint
+    - revive # replaces golint for now
     - misspell
-    - scopelint
+    - exportloopref
     - unparam
 
 linters-settings:
+  staticcheck:
+    checks:
+    - all
+    # TODO: require go1.16 for kind and sort out migrating without breakage
+    # until then, we still use io/ioutil for now
+    - '-SA1019'

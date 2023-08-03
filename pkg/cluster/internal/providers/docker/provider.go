@@ -25,8 +25,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/util/sets"
-
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
@@ -38,6 +36,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/cli"
+	"sigs.k8s.io/kind/pkg/internal/sets"
 )
 
 // NewProvider returns a new provider based on executing `docker ...`
@@ -124,7 +123,7 @@ func (p *provider) ListNodes(cluster string) ([]nodes.Node, error) {
 	)
 	lines, err := exec.OutputLines(cmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to list clusters")
+		return nil, errors.Wrap(err, "failed to list nodes")
 	}
 	// convert names to node handles
 	ret := make([]nodes.Node, 0, len(lines))

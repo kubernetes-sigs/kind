@@ -17,13 +17,13 @@ limitations under the License.
 package main
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	stdnet "net"
 	"os"
 	"reflect"
 	"text/template"
-
-	"github.com/pkg/errors"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -62,8 +62,8 @@ func ComputeCNIConfigInputs(node corev1.Node) CNIConfigInputs {
 	}
 }
 
-//computeBridgeMTU finds the mtu for the eth0 interface
-//otherwise it defaults to ptp default behavior of being set by kernel
+// computeBridgeMTU finds the mtu for the eth0 interface
+// otherwise it defaults to ptp default behavior of being set by kernel
 func computeBridgeMTU() (int, error) {
 	interfaces, err := stdnet.Interfaces()
 	if err != nil {
@@ -165,7 +165,7 @@ func (c *CNIConfigWriter) Write(inputs CNIConfigInputs) error {
 func writeCNIConfig(w io.Writer, rawTemplate string, data CNIConfigInputs) error {
 	t, err := template.New("cni-json").Parse(rawTemplate)
 	if err != nil {
-		return errors.Wrap(err, "failed to parse cni template")
+		return fmt.Errorf("failed to parse cni template: %w", err)
 	}
 	return t.Execute(w, &data)
 }

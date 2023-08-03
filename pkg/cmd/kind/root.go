@@ -19,7 +19,6 @@ package kind
 
 import (
 	"io"
-	"io/ioutil"
 
 	"github.com/spf13/cobra"
 
@@ -69,7 +68,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		"verbosity",
 		"v",
 		0,
-		"info log verbosity",
+		"info log verbosity, higher value produces more output",
 	)
 	cmd.PersistentFlags().BoolVarP(
 		&flags.Quiet,
@@ -106,7 +105,7 @@ func runE(logger log.Logger, flags *flagpole, command *cobra.Command) error {
 	if flags.Quiet {
 		// NOTE: if we are coming from app.Run handling this flag is
 		// redundant, however it doesn't hurt, and this may be called directly.
-		maybeSetWriter(logger, ioutil.Discard)
+		maybeSetWriter(logger, io.Discard)
 	}
 	maybeSetVerbosity(logger, log.Level(flags.Verbosity))
 	// warn about deprecated flag if used

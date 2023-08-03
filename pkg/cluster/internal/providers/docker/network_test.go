@@ -154,9 +154,7 @@ func Test_sortNetworkInspectEntries(t *testing.T) {
 		tc := tc
 		t.Run(tc.Name, func(t *testing.T) {
 			toSort := make([]networkInspectEntry, len(tc.Networks))
-			for i := range tc.Networks {
-				toSort[i] = tc.Networks[i]
-			}
+			copy(toSort, tc.Networks)
 			sortNetworkInspectEntries(toSort)
 			assert.DeepEqual(t, tc.Sorted, toSort)
 		})

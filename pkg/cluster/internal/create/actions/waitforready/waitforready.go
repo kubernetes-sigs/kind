@@ -25,7 +25,9 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
+	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/internal/version"
 )
 
 // Action implements an action for waiting for the cluster to be ready
@@ -66,7 +68,23 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 
 	// Wait for the nodes to reach Ready status.
 	startTime := time.Now()
-	isReady := waitForReady(node, startTime.Add(a.waitTime))
+
+	// TODO: Remove the below handling once kubeadm 1.23 is no longer supported.
+	// https://github.com/kubernetes-sigs/kind/issues/1699
+	rawVersion, err := nodeutils.KubeVersion(node)
+	if err != nil {
+		return errors.Wrap(err, "failed to get Kubernetes version from node")
+	}
+	kubeVersion, err := version.ParseSemantic(rawVersion)
+	if err != nil {
+		return errors.Wrap(err, "could not parse Kubernetes version")
+	}
+	selectorLabel := "node-role.kubernetes.io/control-plane"
+	if kubeVersion.LessThan(version.MustParseSemantic("v1.24.0-alpha.1.591+a3d5e5598290df")) {
+		selectorLabel = "node-role.kubernetes.io/master"
+	}
+
+	isReady := waitForReady(node, startTime.Add(a.waitTime), selectorLabel)
 	if !isReady {
 		ctx.Status.End(false)
 		ctx.Logger.V(0).Info(" • WARNING: Timed out waiting for Ready ⚠️")
@@ -81,14 +99,14 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 
 // WaitForReady uses kubectl inside the "node" container to check if the
 // control plane nodes are "Ready".
-func waitForReady(node nodes.Node, until time.Time) bool {
+func waitForReady(node nodes.Node, until time.Time, selectorLabel string) bool {
 	return tryUntil(until, func() bool {
 		cmd := node.Command(
 			"kubectl",
 			"--kubeconfig=/etc/kubernetes/admin.conf",
 			"get",
 			"nodes",
-			"--selector=node-role.kubernetes.io/master",
+			"--selector="+selectorLabel,
 			// When the node reaches status ready, the status field will be set
 			// to true.
 			"-o=jsonpath='{.items..status.conditions[-1:].status}'",
@@ -113,7 +131,7 @@ func waitForReady(node nodes.Node, until time.Time) bool {
 	})
 }
 
-// helper that calls `try()`` in a loop until the deadline `until`
+// helper that calls `try()“ in a loop until the deadline `until`
 // has passed or `try()`returns true, returns whether try ever returned true
 func tryUntil(until time.Time, try func() bool) bool {
 	for until.After(time.Now()) {

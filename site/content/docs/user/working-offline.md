@@ -8,7 +8,7 @@ menu:
 description: |-
   This guide covers how to work with KIND in an offline / airgapped environment.
 
-  You you should first [install kind][installation documentation] before continuing.
+  You should first [install kind][installation documentation] before continuing.
 
   [installation documentation]: https://kind.sigs.k8s.io/docs/user/quick-start#installation
 ---

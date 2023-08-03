@@ -5,8 +5,11 @@
 <table class="includecode" id="inline-code-{{ $hash }}">
   <thead>
   <tr>
-    <th> <button
-        onclick='copyText("inline-code-{{ $hash }}-hidden-copy-text");'>COPY</button></th>
+    <th>
+      <button onclick='copyText("inline-code-{{ $hash }}-hidden-copy-text");' title="Copy to clipboard">
+        <img src="{{ "copycode.svg" | relURL }}" alt="Copy">
+      </button>
+    </th>
   </tr>
   </thead>
   <tbody>

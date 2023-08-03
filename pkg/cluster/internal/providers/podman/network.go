@@ -58,7 +58,8 @@ func ensureNetwork(name string) error {
 		return nil
 	}
 
-	if isUnknownIPv6FlagError(err) {
+	if isUnknownIPv6FlagError(err) ||
+		isIPv6DisabledError(err) {
 		return createNetwork(name, "")
 	}
 
@@ -107,11 +108,21 @@ func isUnknownIPv6FlagError(err error) bool {
 		strings.Contains(string(rerr.Output), "unknown flag: --ipv6")
 }
 
-func isPoolOverlapError(err error) bool {
+func isIPv6DisabledError(err error) bool {
 	rerr := exec.RunErrorForError(err)
 	return rerr != nil &&
-		(strings.Contains(string(rerr.Output), "is being used by a network interface") ||
-			strings.Contains(string(rerr.Output), "is already being used by a cni configuration"))
+		strings.Contains(string(rerr.Output), "is ipv6 enabled in the kernel")
+}
+
+func isPoolOverlapError(err error) bool {
+	rerr := exec.RunErrorForError(err)
+	if rerr == nil {
+		return false
+	}
+	output := string(rerr.Output)
+	return strings.Contains(output, "is already used on the host or by another config") ||
+		strings.Contains(output, "is being used by a network interface") ||
+		strings.Contains(output, "is already being used by a cni configuration")
 }
 
 // generateULASubnetFromName generate an IPv6 subnet based on the

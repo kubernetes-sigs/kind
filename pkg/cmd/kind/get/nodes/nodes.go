@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
+	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/log"
 
@@ -31,7 +32,8 @@ import (
 )
 
 type flagpole struct {
-	Name string
+	Name        string
+	AllClusters bool
 }
 
 // NewCommand returns a new cobra.Command for getting the list of nodes for a given cluster
@@ -47,11 +49,19 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 			return runE(logger, streams, flags)
 		},
 	}
-	cmd.Flags().StringVar(
+	cmd.Flags().StringVarP(
 		&flags.Name,
 		"name",
+		"n",
 		cluster.DefaultName,
 		"the cluster context name",
+	)
+	cmd.Flags().BoolVarP(
+		&flags.AllClusters,
+		"all-clusters",
+		"A",
+		false,
+		"If present, list all the available nodes across all cluster contexts. Current context is ignored even if specified with --name.",
 	)
 	return cmd
 }
@@ -62,15 +72,37 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		cluster.ProviderWithLogger(logger),
 		runtime.GetDefault(logger),
 	)
-	n, err := provider.ListNodes(flags.Name)
-	if err != nil {
-		return err
+
+	var nodes []nodes.Node
+	var err error
+	if flags.AllClusters {
+		clusters, err := provider.List()
+		if err != nil {
+			return err
+		}
+		for _, clusterName := range clusters {
+			clusterNodes, err := provider.ListNodes(clusterName)
+			if err != nil {
+				return err
+			}
+			nodes = append(nodes, clusterNodes...)
+		}
+		if len(nodes) == 0 {
+			logger.V(0).Infof("No kind nodes for any cluster.")
+			return nil
+		}
+	} else {
+		nodes, err = provider.ListNodes(flags.Name)
+		if err != nil {
+			return err
+		}
+		if len(nodes) == 0 {
+			logger.V(0).Infof("No kind nodes found for cluster %q.", flags.Name)
+			return nil
+		}
 	}
-	if len(n) == 0 {
-		logger.V(0).Infof("No kind nodes found for cluster %q.", flags.Name)
-		return nil
-	}
-	for _, node := range n {
+
+	for _, node := range nodes {
 		fmt.Fprintln(streams.Out, node.String())
 	}
 	return nil

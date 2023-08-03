@@ -15,6 +15,9 @@
 
 set -o errexit -o nounset -o pipefail
 
+REGISTRY="${REGISTRY:-kindest}"
+IMAGE_NAME="${IMAGE_NAME:-node}"
+
 # cd to the repo root
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." &> /dev/null && pwd -P)"
 cd "${REPO_ROOT}"
@@ -23,17 +26,10 @@ cd "${REPO_ROOT}"
 make build
 
 # path to kubernetes sources
-KUBEROOT="${KUBEROOT:-${GOPATH}/src/k8s.io/kubernetes}"
+KUBEROOT="${KUBEROOT:-"$(go env GOPATH)"/src/k8s.io/kubernetes}"
 
 # ensure we have qemu setup (de-duped logic with setting up buildx for multi-arch)
 "${REPO_ROOT}/hack/build/init-buildx.sh"
-
-# kubernetes build option(s)
-GOFLAGS="${GOFLAGS:-}"
-if [ -z "${GOFLAGS}" ]; then
-    # TODO: add dockerless when 1.19 or greater
-    GOFLAGS="-tags=providerless"
-fi
 
 # NOTE: adding platforms is costly in terms of build time
 # we will consider expanding this in the future, for now the aim is to prove
@@ -47,14 +43,29 @@ set -x
 # ensure clean build
 (cd "${KUBEROOT}" && make clean)
 # get kubernetes version
-version_line="$(cd "${KUBEROOT}"; ./hack/print-workspace-status.sh | grep 'gitVersion')"
-kube_version="${version_line#"gitVersion "}"
+version_line="$(cd "${KUBEROOT}"; ./hack/print-workspace-status.sh | grep 'STABLE_DOCKER_TAG')"
+kube_version="${version_line#"STABLE_DOCKER_TAG "}"
+
+# kubernetes build option(s)
+GOFLAGS="${GOFLAGS:-}"
+if [ -z "${GOFLAGS}" ]; then
+    # TODO: dockerless only applies to < 1.24, the version selection here is brittle
+    case "${kube_version}" in
+    v1.1[0-8].*)
+        GOFLAGS="-tags=providerless"
+        ;;
+    *)
+        GOFLAGS="-tags=providerless,dockerless"
+        ;;
+    esac
+fi
+export GOFLAGS
 
 # build for each arch
-IMAGE="kindest/node:${kube_version}"
+IMAGE="${REGISTRY}/${IMAGE_NAME}:${kube_version}"
 images=()
 for arch in "${__arches__[@]}"; do
-    image="kindest/node-${arch}:${kube_version}"
+    image="${REGISTRY}/${IMAGE_NAME}-${arch}:${kube_version}"
     "${REPO_ROOT}/bin/kind" build node-image --image="${image}" --arch="${arch}" "${KUBEROOT}"
     images+=("${image}")
 done

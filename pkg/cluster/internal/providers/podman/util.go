@@ -17,13 +17,14 @@ limitations under the License.
 package podman
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/util/version"
-
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
+
+	"sigs.k8s.io/kind/pkg/internal/version"
 )
 
 // IsAvailable checks if podman is available in the system
@@ -99,6 +100,10 @@ func getVolumes(label string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	if string(output) == "" {
+		// no volumes
+		return nil, nil
+	}
 	// Trim away the last `\n`.
 	trimmedOutput := strings.TrimSuffix(string(output), "\n")
 	// Get names of all volumes by splitting via `\n`.
@@ -118,16 +123,47 @@ func deleteVolumes(names []string) error {
 
 // mountDevMapper checks if the podman storage driver is Btrfs or ZFS
 func mountDevMapper() bool {
-	storage := ""
-	cmd := exec.Command("podman", "info", "-f",
-		`{{ index .Store.GraphStatus "Backing Filesystem"}}`)
-	lines, err := exec.OutputLines(cmd)
+	cmd := exec.Command("podman", "info", "--format", "json")
+	out, err := exec.Output(cmd)
 	if err != nil {
 		return false
 	}
 
-	if len(lines) > 0 {
-		storage = strings.ToLower(strings.TrimSpace(lines[0]))
+	var pInfo podmanStorageInfo
+	if err := json.Unmarshal(out, &pInfo); err != nil {
+		return false
 	}
-	return storage == "btrfs" || storage == "zfs"
+
+	// match docker logic pkg/cluster/internal/providers/docker/util.go
+	if pInfo.Store.GraphDriverName == "btrfs" ||
+		pInfo.Store.GraphDriverName == "zfs" ||
+		pInfo.Store.GraphDriverName == "devicemapper" ||
+		pInfo.Store.GraphStatus.BackingFilesystem == "btrfs" ||
+		pInfo.Store.GraphStatus.BackingFilesystem == "xfs" ||
+		pInfo.Store.GraphStatus.BackingFilesystem == "zfs" {
+		return true
+	}
+	return false
+}
+
+type podmanStorageInfo struct {
+	Store struct {
+		GraphDriverName string `json:"graphDriverName,omitempty"`
+		GraphStatus     struct {
+			BackingFilesystem string `json:"Backing Filesystem,omitempty"` // "v2"
+		} `json:"graphStatus"`
+	} `json:"store"`
+}
+
+// rootless: use fuse-overlayfs by default
+// https://github.com/kubernetes-sigs/kind/issues/2275
+func mountFuse() bool {
+	i, err := info(nil)
+	if err != nil {
+		return false
+	}
+	if i != nil && i.Rootless {
+		return true
+	}
+	return false
 }

@@ -19,7 +19,6 @@ package cluster
 
 import (
 	"io"
-	"io/ioutil"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -55,12 +54,43 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 			return runE(logger, streams, flags)
 		},
 	}
-	cmd.Flags().StringVar(&flags.Name, "name", "", "cluster name, overrides KIND_CLUSTER_NAME, config (default kind)")
-	cmd.Flags().StringVar(&flags.Config, "config", "", "path to a kind config file")
-	cmd.Flags().StringVar(&flags.ImageName, "image", "", "node docker image to use for booting the cluster")
-	cmd.Flags().BoolVar(&flags.Retain, "retain", false, "retain nodes for debugging when cluster creation fails")
-	cmd.Flags().DurationVar(&flags.Wait, "wait", time.Duration(0), "wait for control plane node to be ready (default 0s)")
-	cmd.Flags().StringVar(&flags.Kubeconfig, "kubeconfig", "", "sets kubeconfig path instead of $KUBECONFIG or $HOME/.kube/config")
+	cmd.Flags().StringVarP(
+		&flags.Name,
+		"name",
+		"n",
+		"",
+		"cluster name, overrides KIND_CLUSTER_NAME, config (default kind)",
+	)
+	cmd.Flags().StringVar(
+		&flags.Config,
+		"config",
+		"",
+		"path to a kind config file",
+	)
+	cmd.Flags().StringVar(
+		&flags.ImageName,
+		"image",
+		"",
+		"node docker image to use for booting the cluster",
+	)
+	cmd.Flags().BoolVar(
+		&flags.Retain,
+		"retain",
+		false,
+		"retain nodes for debugging when cluster creation fails",
+	)
+	cmd.Flags().DurationVar(
+		&flags.Wait,
+		"wait",
+		time.Duration(0),
+		"wait for control plane node to be ready (default 0s)",
+	)
+	cmd.Flags().StringVar(
+		&flags.Kubeconfig,
+		"kubeconfig",
+		"",
+		"sets kubeconfig path instead of $KUBECONFIG or $HOME/.kube/config",
+	)
 	return cmd
 }
 
@@ -101,7 +131,7 @@ func configOption(rawConfigFlag string, stdin io.Reader) (cluster.CreateOption, 
 		return cluster.CreateWithConfigFile(rawConfigFlag), nil
 	}
 	// otherwise read from stdin
-	raw, err := ioutil.ReadAll(stdin)
+	raw, err := io.ReadAll(stdin)
 	if err != nil {
 		return nil, errors.Wrap(err, "error reading config from stdin")
 	}

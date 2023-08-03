@@ -25,15 +25,14 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/apimachinery/pkg/util/version"
+	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/log"
 
 	"sigs.k8s.io/kind/pkg/build/nodeimage/internal/container/docker"
 	"sigs.k8s.io/kind/pkg/build/nodeimage/internal/kube"
-	"sigs.k8s.io/kind/pkg/errors"
-	"sigs.k8s.io/kind/pkg/exec"
-	"sigs.k8s.io/kind/pkg/fs"
-	"sigs.k8s.io/kind/pkg/log"
+	"sigs.k8s.io/kind/pkg/internal/sets"
+	"sigs.k8s.io/kind/pkg/internal/version"
 )
 
 // buildContext is used to build the kind node image, and contains
@@ -49,10 +48,10 @@ type buildContext struct {
 	builder kube.Builder
 }
 
-// Build builds the cluster node image, the sourcedir must be set on
+// Build builds the cluster node image, the source dir must be set on
 // the buildContext
 func (c *buildContext) Build() (err error) {
-	// ensure kubernetes build is up to date first
+	// ensure kubernetes build is up-to-date first
 	c.logger.V(0).Info("Starting to build Kubernetes")
 	bits, err := c.builder.Build()
 	if err != nil {
@@ -61,17 +60,17 @@ func (c *buildContext) Build() (err error) {
 	}
 	c.logger.V(0).Info("Finished building Kubernetes")
 
-	// then the perform the actual docker image build
+	// then perform the actual docker image build
 	c.logger.V(0).Info("Building node image ...")
 	return c.buildImage(bits)
 }
 
 func (c *buildContext) buildImage(bits kube.Bits) error {
 	// create build container
-	// NOTE: we are using docker run + docker commit so we can install
+	// NOTE: we are using docker run + docker commit, so we can install
 	// debian packages without permanently copying them into the image.
 	// if docker gets proper squash support, we can rm them instead
-	// This also allows the KubeBit implementations to perform programmatic
+	// This also allows the KubeBit implementations to programmatically
 	// install in the image
 	containerID, err := c.createBuildContainer()
 	cmder := docker.ContainerCmder(containerID)
@@ -87,15 +86,11 @@ func (c *buildContext) buildImage(bits kube.Bits) error {
 		return err
 	}
 
-	c.logger.V(0).Info("Building in " + containerID)
-
-	// helper we will use to run "build steps"
-	execInBuild := func(command string, args ...string) error {
-		return exec.InheritOutput(cmder.Command(command, args...)).Run()
-	}
+	c.logger.V(0).Info("Building in container: " + containerID)
 
 	// make artifacts directory
-	if err = execInBuild("mkdir", "/kind/"); err != nil {
+	// TODO: remove this after the next release, we pre-create this in the base image now
+	if err = cmder.Command("mkdir", "-p", "/kind/").Run(); err != nil {
 		c.logger.Errorf("Image build Failed! Failed to make directory %v", err)
 		return err
 	}
@@ -108,52 +103,49 @@ func (c *buildContext) buildImage(bits kube.Bits) error {
 		if err := exec.Command("docker", "cp", binary, containerID+":"+nodePath).Run(); err != nil {
 			return err
 		}
-		if err := execInBuild("chmod", "+x", nodePath); err != nil {
+		if err := cmder.Command("chmod", "+x", nodePath).Run(); err != nil {
 			return err
 		}
-		if err := execInBuild("chown", "root:root", nodePath); err != nil {
+		if err := cmder.Command("chown", "root:root", nodePath).Run(); err != nil {
 			return err
 		}
 	}
 
 	// write version
-	// TODO: support grabbing version from a binary instead
-	if err := createFile(cmder, "/kind/version", bits.Version()); err != nil {
-		return err
-	}
-
-	dir, err := fs.TempDir("", "kind-build")
+	// TODO: support grabbing version from a binary instead?
+	// This may or may not be a good idea ...
+	rawVersion := bits.Version()
+	parsedVersion, err := version.ParseSemantic(rawVersion)
 	if err != nil {
+		return errors.Wrap(err, "invalid Kubernetes version")
+	}
+	if err := createFile(cmder, "/kind/version", rawVersion); err != nil {
 		return err
 	}
-	defer func() {
-		_ = os.RemoveAll(dir)
-	}()
 
-	// pre-pull images that were not part of the build
-	if _, err = c.prePullImages(bits, dir, containerID); err != nil {
+	// pre-pull images that were not part of the build and write CNI / storage
+	// manifests
+	if _, err = c.prePullImagesAndWriteManifests(bits, parsedVersion, containerID); err != nil {
 		c.logger.Errorf("Image build Failed! Failed to pull Images: %v", err)
 		return err
 	}
 
 	// Save the image changes to a new image
-	cmd := exec.Command(
+	if err = exec.Command(
 		"docker", "commit",
 		// we need to put this back after changing it when running the image
 		"--change", `ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]`,
 		containerID, c.image,
-	)
-	exec.InheritOutput(cmd)
-	if err = cmd.Run(); err != nil {
+	).Run(); err != nil {
 		c.logger.Errorf("Image build Failed! Failed to save image: %v", err)
 		return err
 	}
 
-	c.logger.V(0).Info("Image build completed.")
+	c.logger.V(0).Infof("Image %q build completed.", c.image)
 	return nil
 }
 
-// returns a set of image tags that will be sideloaded
+// returns a set of image tags that will be side-loaded
 func (c *buildContext) getBuiltImages(bits kube.Bits) (sets.String, error) {
 	images := sets.NewString()
 	for _, path := range bits.ImagePaths() {
@@ -167,7 +159,7 @@ func (c *buildContext) getBuiltImages(bits kube.Bits) (sets.String, error) {
 }
 
 // must be run after kubernetes has been installed on the node
-func (c *buildContext) prePullImages(bits kube.Bits, dir, containerID string) ([]string, error) {
+func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVersion *version.Version, containerID string) ([]string, error) {
 	// first get the images we actually built
 	builtImages, err := c.getBuiltImages(bits)
 	if err != nil {
@@ -177,24 +169,6 @@ func (c *buildContext) prePullImages(bits kube.Bits, dir, containerID string) ([
 
 	// helpers to run things in the build container
 	cmder := docker.ContainerCmder(containerID)
-
-	// get the Kubernetes version we installed on the node
-	// we need this to ask kubeadm what images we need
-	rawVersion, err := exec.OutputLines(cmder.Command("cat", kubernetesVersionLocation))
-	if err != nil {
-		c.logger.Errorf("Image build Failed! Failed to get Kubernetes version: %v", err)
-		return nil, err
-	}
-	if len(rawVersion) != 1 {
-		c.logger.Errorf("Image build Failed! Failed to get Kubernetes version: %v", err)
-		return nil, errors.New("invalid kubernetes version file")
-	}
-
-	// parse version for comparison
-	ver, err := version.ParseSemantic(rawVersion[0])
-	if err != nil {
-		return nil, err
-	}
 
 	// For kubernetes v1.15+ (actually 1.16 alpha versions) we may need to
 	// drop the arch suffix from images to get the expected image
@@ -224,18 +198,18 @@ func (c *buildContext) prePullImages(bits kube.Bits, dir, containerID string) ([
 
 	// gets the list of images required by kubeadm
 	requiredImages, err := exec.OutputLines(cmder.Command(
-		"kubeadm", "config", "images", "list", "--kubernetes-version", rawVersion[0],
+		"kubeadm", "config", "images", "list", "--kubernetes-version", bits.Version(),
 	))
 	if err != nil {
 		return nil, err
 	}
 
 	// replace pause image with our own
-	config, err := exec.Output(cmder.Command("cat", "/etc/containerd/config.toml"))
+	containerdConfig, err := exec.Output(cmder.Command("cat", containerdConfigPath))
 	if err != nil {
 		return nil, err
 	}
-	pauseImage, err := findSandboxImage(string(config))
+	pauseImage, err := findSandboxImage(string(containerdConfig))
 	if err != nil {
 		return nil, err
 	}
@@ -248,6 +222,12 @@ func (c *buildContext) prePullImages(bits kube.Bits, dir, containerID string) ([
 	}
 	requiredImages = append(requiredImages[:n], pauseImage)
 
+	if parsedVersion.LessThan(version.MustParseSemantic("v1.24.0")) {
+		if err := configureContainerdSystemdCgroupFalse(cmder, string(containerdConfig)); err != nil {
+			return nil, err
+		}
+	}
+
 	// write the default CNI manifest
 	if err := createFile(cmder, defaultCNIManifestLocation, defaultCNIManifest); err != nil {
 		c.logger.Errorf("Image build Failed! Failed write default CNI Manifest: %v", err)
@@ -257,24 +237,12 @@ func (c *buildContext) prePullImages(bits kube.Bits, dir, containerID string) ([
 	requiredImages = append(requiredImages, defaultCNIImages...)
 
 	// write the default Storage manifest
-	// in < 1.14 we need to use beta labels
-	storageManifest := defaultStorageManifest
-	if ver.LessThan(version.MustParseSemantic("v1.14.0")) {
-		storageManifest = strings.ReplaceAll(storageManifest, "kubernetes.io/os", "beta.kubernetes.io/os")
-	}
-	if err := createFile(cmder, defaultStorageManifestLocation, storageManifest); err != nil {
+	if err := createFile(cmder, defaultStorageManifestLocation, defaultStorageManifest); err != nil {
 		c.logger.Errorf("Image build Failed! Failed write default Storage Manifest: %v", err)
 		return nil, err
 	}
 	// all builds should install the default storage driver images currently
 	requiredImages = append(requiredImages, defaultStorageImages...)
-
-	// Create "images" subdir.
-	imagesDir := path.Join(dir, "bits", "images")
-	if err := os.MkdirAll(imagesDir, 0777); err != nil {
-		c.logger.Errorf("Image build Failed! Failed create local images dir: %v", err)
-		return nil, errors.Wrap(err, "failed to make images dir")
-	}
 
 	// setup image importer
 	importer := newContainerdImporter(cmder)
@@ -295,17 +263,11 @@ func (c *buildContext) prePullImages(bits kube.Bits, dir, containerID string) ([
 		image := image // https://golang.org/doc/faq#closures_and_goroutines
 		fns = append(fns, func() error {
 			if !builtImages.Has(image) {
-				/*
-					TODO: show errors when we have real errors. See comments in
-					importer implementation
-					err := importer.Pull(image, dockerBuildOsAndArch(c.arch))
-					if err != nil {
-						c.logger.Warnf("Failed to pull %s with error: %v", image, err)
-						runE := exec.RunErrorForError(err)
-						c.logger.Warn(string(runE.Output))
-					}
-				*/
-				_ = importer.Pull(image, dockerBuildOsAndArch(c.arch))
+				if err = importer.Pull(image, dockerBuildOsAndArch(c.arch)); err != nil {
+					c.logger.Warnf("Failed to pull %s with error: %v", image, err)
+					runE := exec.RunErrorForError(err)
+					c.logger.Warn(string(runE.Output))
+				}
 			}
 			return nil
 		})
@@ -346,7 +308,7 @@ func (c *buildContext) prePullImages(bits kube.Bits, dir, containerID string) ([
 
 func (c *buildContext) createBuildContainer() (id string, err error) {
 	// attempt to explicitly pull the image if it doesn't exist locally
-	// we don't care if this errors, we'll still try to run which also pulls
+	// we don't care if this returns error, we'll still try to run which also pulls
 	_ = docker.Pull(c.logger, c.baseImage, dockerBuildOsAndArch(c.arch), 4)
 	// this should be good enough: a specific prefix, the current unix time,
 	// and a little random bits in case we have multiple builds simultaneously
@@ -356,10 +318,11 @@ func (c *buildContext) createBuildContainer() (id string, err error) {
 		c.baseImage,
 		[]string{
 			"-d", // make the client exit while the container continues to run
-			// the container should hang forever so we can exec in it
+			// the container should hang forever, so we can exec in it
 			"--entrypoint=sleep",
 			"--name=" + id,
 			"--platform=" + dockerBuildOsAndArch(c.arch),
+			"--security-opt", "seccomp=unconfined", // ignore seccomp
 		},
 		[]string{
 			"infinity", // sleep infinitely to keep the container around
@@ -369,8 +332,4 @@ func (c *buildContext) createBuildContainer() (id string, err error) {
 		return id, errors.Wrap(err, "failed to create build container")
 	}
 	return id, nil
-}
-
-func dockerBuildOsAndArch(arch string) string {
-	return "linux/" + arch
 }

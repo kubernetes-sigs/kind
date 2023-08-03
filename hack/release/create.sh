@@ -45,8 +45,8 @@ VERSION_FILE="./pkg/cmd/kind/version/version.go"
 
 # update core version in go code to $1 and pre-release version to $2
 set_version() {
-  ${SED} -i "s/VersionCore = .*/VersionCore = \"${1}\"/" "${VERSION_FILE}"
-  ${SED} -i "s/VersionPreRelease = .*/VersionPreRelease = \"${2}\"/" "${VERSION_FILE}"
+  ${SED} -i "s/versionCore = .*/versionCore = \"${1}\"/" "${VERSION_FILE}"
+  ${SED} -i "s/versionPreRelease = .*/versionPreRelease = \"${2}\"/" "${VERSION_FILE}"
   echo "Updated ${VERSION_FILE} for ${1}"
 }
 
@@ -73,6 +73,7 @@ make clean && ./hack/release/build/cross.sh
 # update to the second version
 set_version "${2}" "alpha"
 make_commit "v${2}-alpha"
+add_tag "v${2}-alpha"
 
 # print follow-up instructions
 echo ""
@@ -81,4 +82,5 @@ echo " - git push"
 echo " - File a PR with these pushed commits"
 echo " - Merge the PR"
 echo " - git push ${UPSTREAM} v${1}"
+echo " - git push ${UPSTREAM} v${2}-alpha"
 echo " - Create a GitHub release from the pushed tag v${1}"

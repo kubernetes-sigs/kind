@@ -17,12 +17,13 @@ description: |-
   [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
   [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new
   [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
-  [kubernetes slack]: http://slack.k8s.io/
+  [kubernetes slack]: https://slack.k8s.io/
 ---
 
 
 
 ## Contents
+* [Troubleshooting Kind](#troubleshooting-kind)
 * [Kubectl Version Skew](#kubectl-version-skew) (Kubernetes limits supported version skew)
 * [Older Docker Installations](#older-docker-installations) (untested, known to have bugs)
 * [Docker Installed With Snap](#docker-installed-with-snap) (snap filesystem restrictions problematic)
@@ -32,13 +33,21 @@ description: |-
 * [Pod Errors Due to "too many open files"](#pod-errors-due-to-too-many-open-files) (likely [inotify] limits which are not namespaced)
 * [Docker Permission Denied](#docker-permission-denied) (ensure you have permission to use docker)
 * [Windows Containers](#windows-containers) (unsupported / infeasible)
-* [Non-AMD64 Architectures](#non-amd64-architectures) (images not pre-built yet)
+* [Non-AMD64 Architectures](#nonamd64-architectures) (images not pre-built yet)
 * [Unable to Pull Images](#unable-to-pull-images) (various)
-* [Chrome OS](#chrome-os) (unsupported)
+* [Chrome OS](#chrome-os) (needs KubeletInUserNamespace)
 * [AppArmor](#apparmor) (may break things, consider disabling)
 * [IPv6 Port Forwarding](#ipv6-port-forwarding) (docker doesn't seem to implement this correctly)
-* [Fedora 32 Firewalld](#fedora32-firewalld) (nftables + docker broken, switch to iptables)
 * [Couldn't find an alternative telinit implementation to spawn](#docker-init-daemon-config)
+* [Fedora](#fedora) (various)
+* [Failed to get rootfs info](#failed-to-get-rootfs-info--stat-failed-on-dev)
+* [Failure to Create Cluster with Docker Desktop as Container Runtime](#failure-to-create-cluster-with-docker-desktop-as-container-runtime)
+* [Docker Desktop for macOS and Windows](#docker-desktop-for-macos-and-windows)
+
+## Troubleshooting Kind
+
+If the cluster fails to create, try again with the `--retain` option (preserving the failed container),
+then run `kind export logs` to export the logs from the container to a temporary directory on the host.
 
 ## Kubectl Version Skew
 
@@ -61,7 +70,7 @@ You can check your client and server versions by running:
 kubectl version
 {{< /codeFromInline >}}
 
-If there is a mismatch between the server and client versions, you should install a newer client version. 
+If there is a mismatch between the server and client versions, you should install a newer client version.
 
 If you are using Mac, you can install kubectl via homebrew by running:
 {{< codeFromInline lang="bash" >}}
@@ -76,6 +85,10 @@ brew link --overwrite kubernetes-cli
 [for-mac#3663]: https://github.com/docker/for-mac/issues/3663
 
 ## Older Docker Installations
+
+> **NOTE**: This only applies to kind version v0.15.0 and back: Kubernetes
+> before 1.15 will not be supported in KIND v0.16.0 and versions below 1.13
+> were no longer supported in kind v0.9.0.
 
 `kind` is known to have issues with Kubernetes 1.13 or lower when using Docker versions:
 
@@ -149,7 +162,7 @@ Open the **Preferences** menu.
 
 <img src="/docs/user/images/docker-pref-1.png"/>
 
-Go to the **Advanced** settings page, and change the settings there, see 
+Go to the **Advanced** settings page, and change the settings there, see
 [changing Docker's resource limits][Docker resource lims].
 
 <img width="400px" src="/docs/user/images/docker-pref-build.png" alt="Setting 8Gb of memory in Docker for Mac" />
@@ -157,7 +170,7 @@ Go to the **Advanced** settings page, and change the settings there, see
 <img width="400px" src="/docs/user/images/docker-pref-build-win.png" alt="Setting 8Gb of memory in Docker for Windows" />
 
 ## Failing to properly start cluster
-This issue is similar to a 
+This issue is similar to a
 [failure while building the node image](#failure-to-build-node-image).
 If the cluster creation process was successful but you are unable to see any
 Kubernetes resources running, for example:
@@ -182,7 +195,7 @@ Unable to connect to the server: EOF
 ```
 
 Then as in [kind#156][kind#156], you may solve this issue by claiming back some
-space on your machine by removing unused data or images left by the Docker 
+space on your machine by removing unused data or images left by the Docker
 engine by running:
 {{< codeFromInline lang="bash" >}}
 docker system prune
@@ -273,7 +286,7 @@ When using named KIND instances you may sometimes see your images failing to pul
 Failed to pull image "docker.io/my-custom-image:tag": rpc error: code = Unknown desc = failed to resolve image "docker.io/library/my-custom-image:tag": no available registry endpoint: pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed
 ```
 
-If this image has been loaded onto your kind cluster using the command `kind load docker-image my-custom-image` then you have likely not provided the name parameter. 
+If this image has been loaded onto your kind cluster using the command `kind load docker-image my-custom-image` then you have likely not provided the name parameter.
 
 Re-run the command this time adding the `--name my-cluster-name` param:
 
@@ -281,11 +294,22 @@ Re-run the command this time adding the `--name my-cluster-name` param:
 
 ## Chrome OS
 
-Kubernetes does not work in the Chrome OS Linux sandbox.
+To run Kubernetes inside Chrome OS the LXC container must allow nesting. In Crosh session (ctrl+alt+t):
 
-Please see the upstream issue https://bugs.chromium.org/p/chromium/issues/detail?id=878034
+```
+crosh> vmc launch termina
+(termina) chronos@localhost ~ $ lxc config set penguin security.nesting true
+(termina) chronos@localhost ~ $ lxc restart penguin
+```
 
-For previous discussion see: https://github.com/kubernetes-sigs/kind/issues/763
+Then KIND cluster must use KubeletInUserNamespace feature gate (available since Kubernetes 1.22):
+
+```
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+featureGates:
+  KubeletInUserNamespace: true
+```
 
 ## AppArmor
 
@@ -301,12 +325,44 @@ See Previous Discussion: [kind#1179]
 Docker assumes that all the IPv6 addresses should be reachable, hence doesn't implement
 port mapping using NAT [moby#17666].
 
-You will likely need to use Kubernetes services like NodePort or LoadBalancer to access 
+You will likely need to use Kubernetes services like NodePort or LoadBalancer to access
 your workloads inside the cluster via the nodes IPv6 addresses.
 
 See Previous Discussion: [kind#1326]
 
-## Fedora32 Firewalld
+## Failed to get rootfs info / "stat failed on /dev/..."
+
+On some systems, creating a cluster times out with these errors in kubelet.log (device varies):
+
+```
+stat failed on /dev/nvme0n1p3 with error: no such file or directory
+"Failed to start ContainerManager" err="failed to get rootfs info: failed to get device for dir \"/var/lib/kubelet\": could not find device with major: 0, minor: 40 in cached partitions map"
+```
+
+Kubernetes needs access to storage device nodes in order to do some stuff, e.g. tracking free disk space. Therefore, Kind needs to mount the necessary device nodes from the host into the control-plane container — however, it cannot always determine which device Kubernetes requires, since this varies with the host OS and filesystem. For example, the error above occurred with a BTRFS filesystem on Fedora Desktop 35.
+
+This can be worked around by including the necessary device as an extra mount in the cluster configuration file.
+
+```yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  extraMounts:
+    - hostPath: /dev/nvme0n1p3
+      containerPath: /dev/nvme0n1p3
+      propagation: HostToContainer
+```
+
+To identify the device that must be listed, two variations have been observed.
+* The device reported in the error message is a symlink (e.g. `/dev/mapper/luks-903aad3d-...`) — in this case, the config file should refer to the target of that symlink (e.g. `/dev/dm-0`).
+* The device reported in the error message is a regular block device (e.g. `/dev/nvme0n1p3`) — in this case, use the device reported.
+
+See Previous Discussion: [kind#2411]
+
+## Fedora
+
+### Firewalld
 
 On Fedora 32 [firewalld] moved to nftables backend by default.
 This seems to be incompatible with Docker, leading to KIND cluster nodes not
@@ -322,10 +378,35 @@ systemctl restart firewalld
 See [#1547 (comment)](https://github.com/kubernetes-sigs/kind/issues/1547#issuecomment-623756313)
 and [Docker and Fedora 32 article](https://fedoramagazine.org/docker-and-fedora-32/)
 
+### SELinux
+
+On Fedora 33 an update to the SELinux policy causes `kind create cluster` to fail with an error like
+
+```sh
+docker: Error response from daemon: open /dev/dma_heap: permission denied.
+```
+
+Although the policy has been fixed in Fedora 34, the fix has not been backported to Fedora 33 as of June 28, 2021. Putting SELinux in permissive mode (`setenforce 0`) is one known workaround. This disables SELinux until the next boot. For more details, see [kind#2296].
+
+## Failure to Create Cluster with Docker Desktop as Container Runtime
+
+Docker Desktop 4.3.0+ uses Cgroups v2 (see [release notes](https://docs.docker.com/release-notes/)) and can only work with Kubernetes versions >= 1.19 (see [failure to create cluster with Cgroups v2](https://kind.sigs.k8s.io/docs/user/known-issues/#failure-to-create-cluster-with-cgroups-v2)).
+
+There are a couple options for getting around this limitation with Docker
+Desktop. You may downgrade your Docker Desktop to version 4.2.0. This was the
+last release to default to cgroupv1.
+
+You may also be able to make a configuration change to your Docker Desktop
+settings. Starting with Docker Desktop 4.4.2 a deprecated option has been added
+to support those requiring cgroupv1. As noted in the [4.4.2 release
+notes](https://docs.docker.com/desktop/mac/release-notes/#docker-desktop-442),
+the setting `deprecatedCgroupv1` can be set to `true` in `settings.json`. After
+restarting the Docker Engine, the VM used by Docker Desktop will use cgroupv1.
+
 [issue tracker]: https://github.com/kubernetes-sigs/kind/issues
 [file an issue]: https://github.com/kubernetes-sigs/kind/issues/new
 [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
-[kubernetes slack]: http://slack.k8s.io/
+[kubernetes slack]: https://slack.k8s.io/
 [kind#136]: https://github.com/kubernetes-sigs/kind/issues/136
 [kind#136-docker]: https://github.com/kubernetes-sigs/kind/issues/136#issuecomment-457015838
 [kind#156]: https://github.com/kubernetes-sigs/kind/issues/156
@@ -335,6 +416,8 @@ and [Docker and Fedora 32 article](https://fedoramagazine.org/docker-and-fedora-
 [kind#270]: https://github.com/kubernetes-sigs/kind/issues/270
 [kind#1179]: https://github.com/kubernetes-sigs/kind/issues/1179
 [kind#1326]: https://github.com/kubernetes-sigs/kind/issues/1326
+[kind#2296]: https://github.com/kubernetes-sigs/kind/issues/2296
+[kind#2411]: https://github.com/kubernetes-sigs/kind/issues/2411
 [moby#9939]: https://github.com/moby/moby/issues/9939
 [moby#17666]: https://github.com/moby/moby/issues/17666
 [Docker resource lims]: https://docs.docker.com/docker-for-mac/#advanced
@@ -348,3 +431,7 @@ and [Docker and Fedora 32 article](https://fedoramagazine.org/docker-and-fedora-
 [AppArmor]: https://en.wikipedia.org/wiki/AppArmor
 [firewalld]: https://firewalld.org/
 [inotify]: https://en.wikipedia.org/wiki/Inotify
+
+## Docker Desktop for macOS and Windows
+
+Docker containers cannot be executed natively on macOS and Windows, therefore Docker Desktop runs them in a Linux VM. As a consequence, the container networks are not exposed to the host and you cannot reach the kind nodes via IP. You can work around this limitation by configuring [extra port mappings](https://kind.sigs.k8s.io/docs/user/configuration/#extra-port-mappings) though.

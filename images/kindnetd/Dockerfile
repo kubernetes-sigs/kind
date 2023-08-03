@@ -13,17 +13,27 @@
 # limitations under the License.
 
 # first stage build kindnetd binary
-# NOTE: tentatively follow upstream kubernetes go version based on k8s in go.mod
-FROM golang:1.15
+# NOTE: the actual go version will be overridden
+FROM --platform=$BUILDPLATFORM golang:latest
 WORKDIR /go/src
+COPY --chmod=0755 scripts/third_party/gimme/gimme /usr/local/bin/
 # make deps fetching cacheable
 COPY go.mod go.sum ./
-RUN go mod download
+# set by makefile to .go-version
+ARG GO_VERSION
+RUN eval "$(gimme "${GO_VERSION}")" \
+    && go mod download \
+    && GOBIN=/usr/local/bin go install github.com/google/go-licenses@latest
 # build
 COPY . .
-RUN CGO_ENABLED=0 go build -o ./kindnetd ./cmd/kindnetd
+ARG TARGETARCH
+RUN eval "$(gimme "${GO_VERSION}")" \
+    && CGO_ENABLED=0 GOARCH=$TARGETARCH go build -o ./kindnetd ./cmd/kindnetd \
+    && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES ./cmd/kindnetd
 
 # build real kindnetd image
-FROM k8s.gcr.io/build-image/debian-iptables:buster-v1.5.0
+FROM registry.k8s.io/build-image/distroless-iptables:v0.2.3
 COPY --from=0 --chown=root:root ./go/src/kindnetd /bin/kindnetd
+COPY --from=0 /_LICENSES/* /LICENSES/
+COPY --chmod=0644 files/LICENSES/* /LICENSES/*
 CMD ["/bin/kindnetd"]

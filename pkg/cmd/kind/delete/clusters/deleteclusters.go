@@ -33,7 +33,7 @@ type flagpole struct {
 	All        bool
 }
 
-// NewCommand returns a new cobra.Command for cluster creation
+// NewCommand returns a new cobra.Command for cluster deletion
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
@@ -50,8 +50,19 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 			return deleteClusters(logger, flags, args)
 		},
 	}
-	cmd.Flags().StringVar(&flags.Kubeconfig, "kubeconfig", "", "sets kubeconfig path instead of $KUBECONFIG or $HOME/.kube/config")
-	cmd.Flags().BoolVar(&flags.All, "all", false, "delete all clusters")
+	cmd.Flags().StringVar(
+		&flags.Kubeconfig,
+		"kubeconfig",
+		"",
+		"sets kubeconfig path instead of $KUBECONFIG or $HOME/.kube/config",
+	)
+	cmd.Flags().BoolVarP(
+		&flags.All,
+		"all",
+		"A",
+		false,
+		"delete all clusters",
+	)
 	return cmd
 }
 

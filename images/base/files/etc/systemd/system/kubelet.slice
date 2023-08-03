@@ -1,0 +1,7 @@
+[Unit]
+Description=slice used to run Kubernetes / Kubelet
+Before=slices.target
+
+[Slice]
+MemoryAccounting=true
+CPUAccounting=true

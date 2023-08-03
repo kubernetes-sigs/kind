@@ -12,7 +12,7 @@ kubeadmConfigPatches:
 # patch it further using a JSON 6902 patch
 kubeadmConfigPatchesJSON6902:
 - group: kubeadm.k8s.io
-  version: v1beta2
+  version: v1beta3
   kind: ClusterConfiguration
   patch: |
     - op: add

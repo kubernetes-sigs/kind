@@ -23,7 +23,7 @@ if [[ ! -f "/sys/fs/cgroup/cgroup.controllers" ]]; then
 fi
 
 # NOTE: we can't use `test -s` because cgroup.procs is not a regular file.
-if [[ -n "$(cat /sys/fs/cgroup/cgroup.procs)" ]]; then
+if grep -qv '^0$' /sys/fs/cgroup/cgroup.procs ; then
 	echo 'ERROR: this script needs /sys/fs/cgroup/cgroup.procs to be empty (for writing the top-level cgroup.subtree_control)' >&2
 	# So, this script needs to be called after launching systemd.
 	# This script cannot be called from /usr/local/bin/entrypoint.
@@ -44,3 +44,6 @@ ensure_subtree_control() {
 ensure_subtree_control /
 mkdir -p /sys/fs/cgroup/kubelet
 ensure_subtree_control /kubelet
+# again for kubelet.slice for systemd cgroup driver
+mkdir -p /sys/fs/cgroup/kubelet.slice
+ensure_subtree_control /kubelet.slice

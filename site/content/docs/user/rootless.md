@@ -1,5 +1,5 @@
 ---
-title: "Running kind with Rootless Docker"
+title: "Rootless"
 menu:
   main:
     parent: "user"
@@ -22,16 +22,26 @@ running `sudo update-grub`.
 Also, depending on the host configuration, the following steps might be needed:
 
 - Create `/etc/systemd/system/user@.service.d/delegate.conf` with the following content, and then run `sudo systemctl daemon-reload`:
-```ini
-[Service]
-Delegate=yes
-```
+
+  ```ini
+  [Service]
+  Delegate=yes
+  ```
+
+  (This is not enabled by default because ["the runtime impact of
+  [delegating the "cpu" controller] is still too
+  high"](https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/ZMKLS7SHMRJLJ57NZCYPBAQ3UOYULV65/).
+  Beware that changing this configuration may affect system
+  performance.)
 
 - Create `/etc/modules-load.d/iptables.conf` with the following content:
-```
-iptables_nat
-ip6tables_nat
-```
+
+  ```
+  ip6_tables
+  ip6table_nat
+  ip_tables
+  iptable_nat
+  ```
 
 ## Restrictions
 
@@ -39,7 +49,7 @@ The restrictions of Rootless Docker apply to kind clusters as well.
 
 e.g.
 - OverlayFS cannot be used unless the host is using kernel >= 5.11, or Ubuntu/Debian kernel
-- Cannot mount block storages
+- Cannot mount block storage
 - Cannot mount NFS
 
 ## Creating a kind cluster with Rootless Docker
@@ -50,9 +60,16 @@ $ export DOCKER_HOST=unix://${XDG_RUNTIME_DIR}/docker.sock
 $ kind create cluster
 ```
 
+## Creating a kind cluster with Rootless Podman
+
 To create a kind cluster with Rootless Podman, just run:
 ```console
 $ KIND_EXPERIMENTAL_PROVIDER=podman kind create cluster
+```
+
+On some distributions, you might need to use systemd-run to start kind into its own cgroup scope:
+```console
+$ systemd-run --scope --user kind create cluster
 ```
 
 ## Tips

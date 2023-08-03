@@ -9,8 +9,12 @@
 <table class="includecode" id="code-{{ $virtualPath }}">
   <thead>
     <tr>
-      <th><a href="/{{ $virtualPath }}">{{ $virtualPath }}</a> <button
-          onclick='copyText("code-{{ $virtualPath }}-hidden-copy-text");'>COPY</button></th>
+      <th>
+        <a href="/{{ $virtualPath }}">{{ $virtualPath }}</a>
+        <button onclick='copyText("code-{{ $virtualPath }}-hidden-copy-text");' title="Copy to clipboard">
+          <img src="{{ "copycode.svg" | relURL }}" alt="Copy">
+        </button>
+      </th>
     </tr>
   </thead>
   <tbody>

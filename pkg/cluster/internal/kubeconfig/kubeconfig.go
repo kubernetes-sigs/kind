@@ -63,7 +63,7 @@ func Get(p providers.Provider, name string, external bool) (string, error) {
 }
 
 // ContextForCluster returns the context name for a kind cluster based on
-// it's name. This key is used for all list entries of kind clusters
+// its name. This key is used for all list entries of kind clusters
 func ContextForCluster(kindClusterName string) string {
 	return kubeconfig.KINDClusterKey(kindClusterName)
 }
@@ -80,7 +80,8 @@ func get(p providers.Provider, name string, external bool) (*kubeconfig.Config, 
 		return nil, err
 	}
 	if len(nodes) < 1 {
-		return nil, errors.New("could not locate any control plane nodes")
+		return nil, errors.Errorf("could not locate any control plane nodes for cluster named '%s'. "+
+			"Use the --name option to select a different cluster", name)
 	}
 	node := nodes[0]
 

@@ -5,7 +5,7 @@
 kind is a tool for running local Kubernetes clusters using Docker container "nodes".
 kind was primarily designed for testing Kubernetes itself, but may be used for local development or CI.
 
-If you have [go] ([1.11+][go-supported]) and [docker] installed `GO111MODULE="on" go get sigs.k8s.io/kind@v0.11.0 && kind create cluster` is all you need!
+If you have [go] 1.16+ and [docker] or [podman] installed `go install sigs.k8s.io/kind@v0.20.0 && kind create cluster` is all you need!
 
 ![](site/static/images/kind-create-cluster.png)
 
@@ -23,12 +23,9 @@ kind bootstraps each "node" with [kubeadm][kubeadm]. For more details see [the d
 
 For a complete [install guide] see [the documentation here][install guide].
 
-You can install kind with `GO111MODULE="on" go get sigs.k8s.io/kind@v0.11.0`.
+You can install kind with `go install sigs.k8s.io/kind@v0.20.0`.
 
-**NOTE**: please use the latest go to do this, ideally go 1.13 or greater.
-
-**NOTE**: `go get` should not be run from a Go [modules] enabled project directory,
-as go get inside a modules enabled project updates dependencies / behaves differently. Try for example `cd $HOME` first.
+**NOTE**: please use the latest go to do this. KIND is developed with the latest stable go, see [`.go-version`](./.go-version) for the exact version we're using.
 
 This will put `kind` in `$(go env GOPATH)/bin`. If you encounter the error
 `kind: command not found` after installation then you may need to either add that directory to your `$PATH` as
@@ -45,9 +42,12 @@ into your `$PATH`:
 On Linux:
 
 ```console
-curl -Lo ./kind "https://kind.sigs.k8s.io/dl/v0.11.0/kind-$(uname)-amd64"
+# For AMD64 / x86_64
+[ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-$(uname)-amd64
+# For ARM64
+[ $(uname -m) = aarch64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-$(uname)-arm64
 chmod +x ./kind
-mv ./kind /some-dir-in-your-PATH/kind
+sudo mv ./kind /usr/local/bin/kind
 ```
 
 On macOS via Homebrew:
@@ -65,7 +65,10 @@ sudo port selfupdate && sudo port install kind
 On macOS via Bash:
 
 ```console
-curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.10.0/kind-darwin-amd64
+# For Intel Macs
+[ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-darwin-amd64
+# For M1 / ARM Macs
+[ $(uname -m) = arm64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-darwin-arm64
 chmod +x ./kind
 mv ./kind /some-dir-in-your-PATH/kind
 ```
@@ -73,7 +76,7 @@ mv ./kind /some-dir-in-your-PATH/kind
 On Windows:
 
 ```powershell
-curl.exe -Lo kind-windows-amd64.exe https://kind.sigs.k8s.io/dl/v0.11.0/kind-windows-amd64
+curl.exe -Lo kind-windows-amd64.exe https://kind.sigs.k8s.io/dl/v0.20.0/kind-windows-amd64
 Move-Item .\kind-windows-amd64.exe c:\some-dir-in-your-PATH\kind.exe
 
 # OR via Chocolatey (https://chocolatey.org/packages/kind)
@@ -114,7 +117,7 @@ The maintainers of this project are reachable via:
 - [filing an issue] against this repo
 - The Kubernetes [SIG-Testing Mailing List]
 
-Current maintainers are [@BenTheElder], [@munnerz], [@aojea], and [@amwat] - feel free to
+Current maintainers are [@aojea] and [@BenTheElder] - feel free to
 reach out if you have any questions!
 
 Pull Requests are very welcome!
@@ -141,6 +144,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [go]: https://golang.org/
 [go-supported]: https://golang.org/doc/devel/release.html#policy
 [docker]: https://www.docker.com/
+[podman]: https://podman.io/
 [community page]: https://kubernetes.io/community/
 [Kubernetes Code of Conduct]: code-of-conduct.md
 [Go Report Card Badge]: https://goreportcard.com/badge/sigs.k8s.io/kind
@@ -160,7 +164,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [filing an issue]: https://github.com/kubernetes-sigs/kind/issues/new
 [Kubernetes Slack]: http://slack.k8s.io/
 [#kind]: https://kubernetes.slack.com/messages/CEKK1KTN2/
-[1.0 roadmap]:  https://kind.sigs.k8s.io/docs/contributing/1.0-roadmap
+[1.0 roadmap]: https://kind.sigs.k8s.io/docs/contributing/1.0-roadmap
 [install docker]: https://docs.docker.com/install/
 [@BenTheElder]: https://github.com/BenTheElder
 [@munnerz]: https://github.com/munnerz
@@ -169,3 +173,4 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 [contributor guide]: https://kind.sigs.k8s.io/docs/contributing/getting-started
 [releases]: https://github.com/kubernetes-sigs/kind/releases
 [install guide]: https://kind.sigs.k8s.io/docs/user/quick-start/#installation
+[modules]: https://github.com/golang/go/wiki/Modules

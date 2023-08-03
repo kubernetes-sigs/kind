@@ -5,12 +5,17 @@ on:
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - 'site/**'
+
+permissions:
+  contents: read
 
 jobs:
   docker:
     name: Cgroup v2
     # nested virtualization is only available on macOS hosts
-    runs-on: macos-10.15
+    runs-on: macos-12
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -24,7 +29,7 @@ jobs:
       JOB_NAME: "cgroup2-${{ matrix.provider }}-${{ matrix.rootless }}"
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
 
       - name: Boot Fedora
         run: |
@@ -42,10 +47,6 @@ jobs:
       - name: Set up Rootless Docker
         if: ${{ matrix.provider == 'docker' && matrix.rootless == 'rootless' }}
         run: |
-          # Disable SELinux for Rootless Docker, until the following PRs gets merged into Docker CE:
-          # - https://github.com/moby/moby/pull/42199 ("dockerd-rootless.sh: avoid /run/xtables.lock EACCES on SELinux hosts")
-          # - https://github.com/moby/moby/pull/42334 ("rootless: disable overlay2 if running with SELinux")
-          "$HELPER" sudo setenforce 0
           # Disable the rootful daemon
           "$HELPER" sudo systemctl disable --now docker
           # Install the systemd unit
@@ -53,10 +54,12 @@ jobs:
           # Modify the client config to use the rootless daemon by default
           "$HELPER" docker context use rootless
 
-
       - name: Set up Rootless Podman
         if: ${{ matrix.provider == 'podman' && matrix.rootless == 'rootless' }}
         run: |
+          # Restart the user session to ensure the cgroup delegation
+          # ref: https://github.com/kubernetes-sigs/kind/pull/2754#issuecomment-1124027063
+          "$HELPER" sudo loginctl terminate-user vagrant || true
           # We have modprobe ip6_tables in Vagrantfile, but it seems we have to modprobe it once again
           "$HELPER" sudo modprobe ip6_tables
 
@@ -84,7 +87,7 @@ jobs:
 
       - name: Upload logs
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
         with:
           name: kind-logs-${{ env.JOB_NAME }}-${{ github.run_id }}
           path: /tmp/kind/logs

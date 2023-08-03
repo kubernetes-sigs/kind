@@ -25,9 +25,6 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/apimachinery/pkg/util/version"
-
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -39,6 +36,8 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/common"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/cli"
+	"sigs.k8s.io/kind/pkg/internal/sets"
+	"sigs.k8s.io/kind/pkg/internal/version"
 )
 
 // NewProvider returns a new provider based on executing `podman ...`
@@ -130,7 +129,7 @@ func (p *provider) ListNodes(cluster string) ([]nodes.Node, error) {
 	)
 	lines, err := exec.OutputLines(cmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to list clusters")
+		return nil, errors.Wrap(err, "failed to list nodes")
 	}
 	// convert names to node handles
 	ret := make([]nodes.Node, 0, len(lines))
@@ -165,6 +164,9 @@ func (p *provider) DeleteNodes(n []nodes.Node) error {
 			return err
 		}
 		nodeVolumes = append(nodeVolumes, volumes...)
+	}
+	if len(nodeVolumes) == 0 {
+		return nil
 	}
 	return deleteVolumes(nodeVolumes)
 }
@@ -372,8 +374,9 @@ func (p *provider) Info() (*providers.ProviderInfo, error) {
 // and lacks information about the availability of the cgroup controllers.
 type podmanInfo struct {
 	Host struct {
-		CgroupVersion string `json:"cgroupVersion,omitempty"` // "v2"
-		Security      struct {
+		CgroupVersion     string   `json:"cgroupVersion,omitempty"` // "v2"
+		CgroupControllers []string `json:"cgroupControllers,omitempty"`
+		Security          struct {
 			Rootless bool `json:"rootless,omitempty"`
 		} `json:"security"`
 	} `json:"host"`
@@ -393,23 +396,47 @@ func info(logger log.Logger) (*providers.ProviderInfo, error) {
 	if err := json.Unmarshal(out, &pInfo); err != nil {
 		return nil, err
 	}
-	info := &providers.ProviderInfo{
-		Rootless: pInfo.Host.Security.Rootless,
-		Cgroup2:  pInfo.Host.CgroupVersion == "v2",
-		// We assume all the cgroup controllers to be available.
-		//
-		// For rootless, this assumption is not always correct,
-		// so we print the warning below.
-		//
-		// TODO: We wiil be able to implement proper cgroup controller detection
-		// after the GA of Podman 3.2.x: https://github.com/containers/podman/pull/10387
-		SupportsMemoryLimit: true, // not guaranteed to be correct
-		SupportsPidsLimit:   true, // not guaranteed to be correct
-		SupportsCPUShares:   true, // not guaranteed to be correct
+	stringSliceContains := func(s []string, str string) bool {
+		for _, v := range s {
+			if v == str {
+				return true
+			}
+		}
+		return false
 	}
-	if info.Rootless {
-		logger.Warn("Cgroup controller detection is not implemented for Podman. " +
-			"If you see cgroup-related errors, you might need to set systemd property \"Delegate=yes\", see https://kind.sigs.k8s.io/docs/user/rootless/")
+
+	// Since Podman version before v4.0.0 does not gives controller info.
+	// We assume all the cgroup controllers to be available.
+	// For rootless, this assumption is not always correct,
+	// so we print the warning below.
+	cgroupSupportsMemoryLimit := true
+	cgroupSupportsPidsLimit := true
+	cgroupSupportsCPUShares := true
+
+	v, err := getPodmanVersion()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to check podman version")
+	}
+	// Info for controllers must be available after v4.0.0
+	// via https://github.com/containers/podman/pull/10387
+	if v.AtLeast(version.MustParseSemantic("4.0.0")) {
+		cgroupSupportsMemoryLimit = stringSliceContains(pInfo.Host.CgroupControllers, "memory")
+		cgroupSupportsPidsLimit = stringSliceContains(pInfo.Host.CgroupControllers, "pids")
+		cgroupSupportsCPUShares = stringSliceContains(pInfo.Host.CgroupControllers, "cpu")
+	}
+
+	info := &providers.ProviderInfo{
+		Rootless:            pInfo.Host.Security.Rootless,
+		Cgroup2:             pInfo.Host.CgroupVersion == "v2",
+		SupportsMemoryLimit: cgroupSupportsMemoryLimit,
+		SupportsPidsLimit:   cgroupSupportsPidsLimit,
+		SupportsCPUShares:   cgroupSupportsCPUShares,
+	}
+	if info.Rootless && !v.AtLeast(version.MustParseSemantic("4.0.0")) {
+		if logger != nil {
+			logger.Warn("Cgroup controller detection is not implemented for Podman. " +
+				"If you see cgroup-related errors, you might need to set systemd property \"Delegate=yes\", see https://kind.sigs.k8s.io/docs/user/rootless/")
+		}
 	}
 	return info, nil
 }

@@ -29,10 +29,10 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
-	"sigs.k8s.io/kind/pkg/cluster/internal/patch"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/common"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
+	"sigs.k8s.io/kind/pkg/internal/patch"
 )
 
 // Action implements action for creating the node config files
@@ -98,61 +98,16 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		}
 	}
 
-	// Populate the list of control-plane node labels and the list of worker node labels respectively.
-	// controlPlaneLabels is an array of maps (labels, read from config) associated with all the control-plane nodes.
-	// workerLabels is an array of maps (labels, read from config) associated with all the worker nodes.
-	controlPlaneLabels := []map[string]string{}
-	workerLabels := []map[string]string{}
-	for _, node := range ctx.Config.Nodes {
-		if node.Role == config.ControlPlaneRole {
-			controlPlaneLabels = append(controlPlaneLabels, node.Labels)
-		} else if node.Role == config.WorkerRole {
-			workerLabels = append(workerLabels, node.Labels)
-		} else {
-			continue
-		}
-	}
-
-	// hashMapLabelsToCommaSeparatedLabels converts labels in hashmap form to labels in a comma-separated string form like "key1=value1,key2=value2"
-	hashMapLabelsToCommaSeparatedLabels := func(labels map[string]string) string {
-		output := ""
-		for key, value := range labels {
-			output += fmt.Sprintf("%s=%s,", key, value)
-		}
-		return strings.TrimSuffix(output, ",") // remove the last character (comma) in the output string
-	}
-
-	// create the kubeadm join configuration for control plane nodes
-	controlPlanes, err := nodeutils.ControlPlaneNodes(allNodes)
+	// create the kubeadm join configuration for the kubernetes cluster nodes only
+	kubeNodes, err := nodeutils.InternalNodes(allNodes)
 	if err != nil {
 		return err
 	}
 
-	for i, node := range controlPlanes {
+	for _, node := range kubeNodes {
 		node := node             // capture loop variable
 		configData := configData // copy config data
-		if len(controlPlaneLabels[i]) > 0 {
-			configData.NodeLabels = hashMapLabelsToCommaSeparatedLabels(controlPlaneLabels[i]) // updating the config with the respective labels to be written over the current control-plane node in consideration
-		}
 		fns = append(fns, kubeadmConfigPlusPatches(node, configData))
-	}
-
-	// then create the kubeadm join config for the worker nodes if any
-	workers, err := nodeutils.SelectNodesByRole(allNodes, constants.WorkerNodeRoleValue)
-	if err != nil {
-		return err
-	}
-	if len(workers) > 0 {
-		// create the workers concurrently
-		for i, node := range workers {
-			node := node             // capture loop variable
-			configData := configData // copy config data
-			configData.ControlPlane = false
-			if len(workerLabels[i]) > 0 {
-				configData.NodeLabels = hashMapLabelsToCommaSeparatedLabels(workerLabels[i]) // updating the config with the respective labels to be written over the current worker node in consideration
-			}
-			fns = append(fns, kubeadmConfigPlusPatches(node, configData))
-		}
 	}
 
 	// Create the kubeadm config in all nodes concurrently
@@ -162,11 +117,6 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 
 	// if we have containerd config, patch all the nodes concurrently
 	if len(ctx.Config.ContainerdConfigPatches) > 0 || len(ctx.Config.ContainerdConfigPatchesJSON6902) > 0 {
-		// we only want to patch kubernetes nodes
-		// this is a cheap workaround to re-use the already listed
-		// workers + control planes
-		kubeNodes := append([]nodes.Node{}, controlPlanes...)
-		kubeNodes = append(kubeNodes, workers...)
 		fns := make([]func() error, len(kubeNodes))
 		for i, node := range kubeNodes {
 			node := node // capture loop variable
@@ -185,8 +135,8 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 					return errors.Wrap(err, "failed to write patched containerd config")
 				}
 				// restart containerd now that we've re-configured it
-				// skip if the systemd (also the containerd) is not running
-				if err := node.Command("bash", "-c", `! systemctl is-system-running || systemctl restart containerd`).Run(); err != nil {
+				// skip if containerd is not running
+				if err := node.Command("bash", "-c", `! pgrep --exact containerd || systemctl restart containerd`).Run(); err != nil {
 					return errors.Wrap(err, "failed to restart containerd after patching config")
 				}
 				return nil
@@ -243,9 +193,28 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.N
 		}
 		data.NodeAddress = nodeAddressIPv6
 		if cfg.Networking.IPFamily == config.DualStackFamily {
-			data.NodeAddress = fmt.Sprintf("%s,%s", nodeAddress, nodeAddressIPv6)
+			// order matters since the nodeAddress will be used later to configure the apiserver advertise address
+			// Ref: #2484
+			primaryServiceSubnet := strings.Split(cfg.Networking.ServiceSubnet, ",")[0]
+			ip, _, err := net.ParseCIDR(primaryServiceSubnet)
+			if err != nil {
+				return "", fmt.Errorf("failed to parse primary Service Subnet %s (%s): %w", primaryServiceSubnet, cfg.Networking.ServiceSubnet, err)
+			}
+			if ip.To4() != nil {
+				data.NodeAddress = fmt.Sprintf("%s,%s", nodeAddress, nodeAddressIPv6)
+			} else {
+				data.NodeAddress = fmt.Sprintf("%s,%s", nodeAddressIPv6, nodeAddress)
+			}
 		}
 	}
+
+	// configure the node labels
+	if len(configNode.Labels) > 0 {
+		data.NodeLabels = hashMapLabelsToCommaSeparatedLabels(configNode.Labels)
+	}
+
+	// set the node role
+	data.ControlPlane = string(configNode.Role) == constants.ControlPlaneNodeRoleValue
 
 	// generate the config contents
 	cf, err := kubeadm.Config(data)
@@ -298,4 +267,13 @@ func writeKubeadmConfig(kubeadmConfig string, node nodes.Node) error {
 	}
 
 	return nil
+}
+
+// hashMapLabelsToCommaSeparatedLabels converts labels in hashmap form to labels in a comma-separated string form like "key1=value1,key2=value2"
+func hashMapLabelsToCommaSeparatedLabels(labels map[string]string) string {
+	output := ""
+	for key, value := range labels {
+		output += fmt.Sprintf("%s=%s,", key, value)
+	}
+	return strings.TrimSuffix(output, ",") // remove the last character (comma) in the output string
 }

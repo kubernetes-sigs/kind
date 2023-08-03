@@ -17,10 +17,13 @@ limitations under the License.
 package podman
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -35,7 +38,16 @@ import (
 func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs []func() error, err error) {
 	// these apply to all container creation
 	nodeNamer := common.MakeNodeNamer(cfg.Name)
-	genericArgs, err := commonArgs(cfg, networkName)
+	names := make([]string, len(cfg.Nodes))
+	for i, node := range cfg.Nodes {
+		name := nodeNamer(string(node.Role)) // name the node
+		names[i] = name
+	}
+	haveLoadbalancer := config.ClusterHasImplicitLoadBalancer(cfg)
+	if haveLoadbalancer {
+		names = append(names, nodeNamer(constants.ExternalLoadBalancerNodeRoleValue))
+	}
+	genericArgs, err := commonArgs(cfg, networkName, names)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +55,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 	// only the external LB should reflect the port if we have multiple control planes
 	apiServerPort := cfg.Networking.APIServerPort
 	apiServerAddress := cfg.Networking.APIServerAddress
-	if clusterHasImplicitLoadBalancer(cfg) {
+	if config.ClusterHasImplicitLoadBalancer(cfg) {
 		// TODO: picking ports locally is less than ideal with a remote runtime
 		// (does podman have this?)
 		// but this is supposed to be an implementation detail and NOT picking
@@ -56,20 +68,20 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 			apiServerAddress = "::1" // only the LB needs to be non-local
 		}
 		// plan loadbalancer node
-		name := nodeNamer(constants.ExternalLoadBalancerNodeRoleValue)
+		name := names[len(names)-1]
 		createContainerFuncs = append(createContainerFuncs, func() error {
 			args, err := runArgsForLoadBalancer(cfg, name, genericArgs)
 			if err != nil {
 				return err
 			}
-			return createContainer(args)
+			return createContainer(name, args)
 		})
 	}
 
 	// plan normal nodes
-	for _, node := range cfg.Nodes {
-		node := node.DeepCopy()              // copy so we can modify
-		name := nodeNamer(string(node.Role)) // name the node
+	for i, node := range cfg.Nodes {
+		node := node.DeepCopy() // copy so we can modify
+		name := names[i]
 
 		// fixup relative paths, podman can only handle absolute paths
 		for i := range node.ExtraMounts {
@@ -96,7 +108,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 				if err != nil {
 					return err
 				}
-				return createContainer(args)
+				return createContainerWithWaitUntilSystemdReachesMultiUserSystem(name, args)
 			})
 		case config.WorkerRole:
 			createContainerFuncs = append(createContainerFuncs, func() error {
@@ -104,7 +116,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 				if err != nil {
 					return err
 				}
-				return createContainer(args)
+				return createContainerWithWaitUntilSystemdReachesMultiUserSystem(name, args)
 			})
 		default:
 			return nil, errors.Errorf("unknown node role: %q", node.Role)
@@ -113,30 +125,8 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 	return createContainerFuncs, nil
 }
 
-func createContainer(args []string) error {
-	if err := exec.Command("podman", args...).Run(); err != nil {
-		return errors.Wrap(err, "podman run error")
-	}
-	return nil
-}
-
-func clusterIsIPv6(cfg *config.Cluster) bool {
-	return cfg.Networking.IPFamily == config.IPv6Family || cfg.Networking.IPFamily == config.DualStackFamily
-}
-
-func clusterHasImplicitLoadBalancer(cfg *config.Cluster) bool {
-	controlPlanes := 0
-	for _, configNode := range cfg.Nodes {
-		role := string(configNode.Role)
-		if role == constants.ControlPlaneNodeRoleValue {
-			controlPlanes++
-		}
-	}
-	return controlPlanes > 1
-}
-
 // commonArgs computes static arguments that apply to all containers
-func commonArgs(cfg *config.Cluster, networkName string) ([]string, error) {
+func commonArgs(cfg *config.Cluster, networkName string, nodeNames []string) ([]string, error) {
 	// standard arguments all nodes containers need, computed once
 	args := []string{
 		"--detach",           // run the container detached
@@ -146,15 +136,17 @@ func commonArgs(cfg *config.Cluster, networkName string) ([]string, error) {
 		"--label", fmt.Sprintf("%s=%s", clusterLabelKey, cfg.Name),
 		// specify container implementation to systemd
 		"-e", "container=podman",
+		// this is the default in cgroupsv2 but not in v1
+		"--cgroupns=private",
 	}
 
 	// enable IPv6 if necessary
-	if clusterIsIPv6(cfg) {
+	if config.ClusterHasIPv6(cfg) {
 		args = append(args, "--sysctl=net.ipv6.conf.all.disable_ipv6=0", "--sysctl=net.ipv6.conf.all.forwarding=1")
 	}
 
 	// pass proxy environment variables
-	proxyEnv, err := getProxyEnv(cfg, networkName)
+	proxyEnv, err := getProxyEnv(cfg, networkName, nodeNames)
 	if err != nil {
 		return nil, errors.Wrap(err, "proxy setup error")
 	}
@@ -166,6 +158,16 @@ func commonArgs(cfg *config.Cluster, networkName string) ([]string, error) {
 	// https://github.com/kubernetes-sigs/kind/issues/1416#issuecomment-606514724
 	if mountDevMapper() {
 		args = append(args, "--volume", "/dev/mapper:/dev/mapper")
+	}
+
+	// rootless: use fuse-overlayfs by default
+	// https://github.com/kubernetes-sigs/kind/issues/2275
+	if mountFuse() {
+		args = append(args, "--device", "/dev/fuse")
+	}
+
+	if cfg.Networking.DNSSearch != nil {
+		args = append(args, "-e", "KIND_DNS_SEARCH="+strings.Join(*cfg.Networking.DNSSearch, " "))
 	}
 
 	return args, nil
@@ -180,9 +182,7 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 	}
 
 	args = append([]string{
-		"run",
 		"--hostname", name, // make hostname match container name
-		"--name", name, // ... and set the container name
 		// label the node with the role ID
 		"--label", fmt.Sprintf("%s=%s", nodeRoleLabelKey, node.Role),
 		// running containers in a container requires privileged
@@ -208,9 +208,6 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		"--volume", "/lib/modules:/lib/modules:ro",
 		// propagate KIND_EXPERIMENTAL_CONTAINERD_SNAPSHOTTER to the entrypoint script
 		"-e", "KIND_EXPERIMENTAL_CONTAINERD_SNAPSHOTTER",
-		// enable /dev/fuse explicitly for fuse-overlayfs
-		// (Rootless Podman does not automatically mount /dev/fuse with --privileged)
-		"--device", "/dev/fuse",
 	},
 		args...,
 	)
@@ -235,9 +232,7 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 
 func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) ([]string, error) {
 	args = append([]string{
-		"run",
 		"--hostname", name, // make hostname match container name
-		"--name", name, // ... and set the container name
 		// label the node with the role ID
 		"--label", fmt.Sprintf("%s=%s", nodeRoleLabelKey, constants.ExternalLoadBalancerNodeRoleValue),
 	},
@@ -262,7 +257,7 @@ func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) ([]
 	return append(args, image), nil
 }
 
-func getProxyEnv(cfg *config.Cluster, networkName string) (map[string]string, error) {
+func getProxyEnv(cfg *config.Cluster, networkName string, nodeNames []string) (map[string]string, error) {
 	envs := common.GetProxyEnvs(cfg)
 	// Specifically add the podman network subnets to NO_PROXY if we are using a proxy
 	if len(envs) > 0 {
@@ -272,11 +267,13 @@ func getProxyEnv(cfg *config.Cluster, networkName string) (map[string]string, er
 			return nil, err
 		}
 		noProxyList := append(subnets, envs[common.NOProxy])
-		// Add pod and service dns names to no_proxy to allow in cluster
+		noProxyList = append(noProxyList, nodeNames...)
+		// Add pod,service and all the cluster nodes' dns names to no_proxy to allow in cluster
 		// Note: this is best effort based on the default CoreDNS spec
 		// https://github.com/kubernetes/dns/blob/master/docs/specification.md
 		// Any user created pod/service hostnames, namespaces, custom DNS services
 		// are expected to be no-proxied by the user explicitly.
+
 		noProxyList = append(noProxyList, ".svc", ".svc.cluster", ".svc.cluster.local")
 		noProxyJoined := strings.Join(noProxyList, ",")
 		envs[common.NOProxy] = noProxyJoined
@@ -285,15 +282,54 @@ func getProxyEnv(cfg *config.Cluster, networkName string) (map[string]string, er
 	return envs, nil
 }
 
+type podmanNetworks []struct {
+	// v4+
+	Subnets []struct {
+		Subnet  string `json:"subnet"`
+		Gateway string `json:"gateway"`
+	} `json:"subnets"`
+	// v3 and anything still using CNI/IPAM
+	Plugins []struct {
+		Ipam struct {
+			Ranges [][]struct {
+				Gateway string `json:"gateway"`
+				Subnet  string `json:"subnet"`
+			} `json:"ranges"`
+		} `json:"ipam,omitempty"`
+	} `json:"plugins"`
+}
+
 func getSubnets(networkName string) ([]string, error) {
-	// TODO: unmarshall json and get rid of this complex query
-	format := `{{ range (index (index (index (index . "plugins") 0 ) "ipam" ) "ranges")}}{{ index ( index . 0 ) "subnet" }} {{end}}`
-	cmd := exec.Command("podman", "network", "inspect", "-f", format, networkName)
-	lines, err := exec.OutputLines(cmd)
+	cmd := exec.Command("podman", "network", "inspect", networkName)
+	out, err := exec.Output(cmd)
+
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get subnets")
 	}
-	return strings.Split(strings.TrimSpace(lines[0]), " "), nil
+
+	networks := podmanNetworks{}
+	jsonErr := json.Unmarshal([]byte(out), &networks)
+	if jsonErr != nil {
+		return nil, errors.Wrap(jsonErr, "failed to get subnets")
+	}
+	subnets := []string{}
+	for _, network := range networks {
+		if len(network.Subnets) > 0 {
+			for _, subnet := range network.Subnets {
+				subnets = append(subnets, subnet.Subnet)
+			}
+		}
+		if len(network.Plugins) > 0 {
+			for _, plugin := range network.Plugins {
+				for _, r := range plugin.Ipam.Ranges {
+					for _, rr := range r {
+						subnets = append(subnets, rr.Subnet)
+					}
+				}
+			}
+		}
+	}
+	return subnets, nil
 }
 
 // generateMountBindings converts the mount list to a list of args for podman
@@ -341,7 +377,7 @@ func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings .
 		// in a future API revision we will handle this at the API level and remove this
 		if pm.ListenAddress == "" {
 			switch clusterIPFamily {
-			case config.IPv4Family:
+			case config.IPv4Family, config.DualStackFamily:
 				pm.ListenAddress = "0.0.0.0"
 			case config.IPv6Family:
 				pm.ListenAddress = "::"
@@ -379,4 +415,22 @@ func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings .
 		args = append(args, fmt.Sprintf("--publish=%s:%d/%s", hostPortBinding, pm.ContainerPort, strings.ToLower(protocol)))
 	}
 	return args, nil
+}
+
+func createContainer(name string, args []string) error {
+	if err := exec.Command("podman", append([]string{"run", "--name", name}, args...)...).Run(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func createContainerWithWaitUntilSystemdReachesMultiUserSystem(name string, args []string) error {
+	if err := exec.Command("podman", append([]string{"run", "--name", name}, args...)...).Run(); err != nil {
+		return err
+	}
+
+	logCtx, logCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer logCancel()
+	logCmd := exec.CommandContext(logCtx, "podman", "logs", "-f", name)
+	return common.WaitUntilLogRegexpMatches(logCtx, logCmd, common.NodeReachedCgroupsReadyRegexp())
 }

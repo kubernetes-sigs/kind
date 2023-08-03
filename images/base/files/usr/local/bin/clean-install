@@ -26,6 +26,7 @@ if [ $# = 0 ]; then
 fi
 
 apt-get update
+apt-get upgrade -y
 apt-get install -y --no-install-recommends "$@"
 apt-get clean -y
 rm -rf \
@@ -35,5 +36,6 @@ rm -rf \
    /tmp/* \
    /var/tmp/* \
    /usr/share/doc/* \
+   /usr/share/doc-base/* \
    /usr/share/man/* \
    /usr/share/local/*

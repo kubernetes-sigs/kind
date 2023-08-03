@@ -17,57 +17,20 @@
 # For systemd + docker configuration used below, see the following references:
 # https://systemd.io/CONTAINER_INTERFACE/
 
-# start from ubuntu 20.10, this image is reasonably small as a starting point
-# for a kubernetes node image, it doesn't contain much we don't need
-ARG BASE_IMAGE=ubuntu:21.04
-FROM $BASE_IMAGE
-
-# `docker buildx` automatically sets this arg value, but we add the arg for
-# regular `docker bulid` invocations to force a selection
-ARG TARGETARCH
-
-# Configure containerd and runc binaries from kind-ci/containerd-nightlies repository
-# The repository contains latest stable releases and nightlies built for multiple architectures
-ARG CONTAINERD_VERSION="1.5.2"
-ARG CONTAINERD_BASE_URL="https://github.com/kind-ci/containerd-nightlies/releases/download/containerd-${CONTAINERD_VERSION}"
-ARG CONTAINERD_URL="${CONTAINERD_BASE_URL}/containerd-${CONTAINERD_VERSION}.linux-${TARGETARCH}.tar.gz"
-ARG CONTAINERD_AMD64_SHA256SUM="1e39c79905adfde0aca9ed7347f37be9fb8b89776f4df829337eeeda983bf422"
-ARG CONTAINERD_ARM64_SHA256SUM="2aac475f960ee8a3a331256fd80e6ffb5f05328161e0f577d9b8691424a39584"
-ARG CONTAINERD_PPC64LE_SHA256SUM="21f7a229c431d0f66616312e437e5b4d01ae56302b0b2aa18ec315ced0876e60"
-
-ARG RUNC_URL="${CONTAINERD_BASE_URL}/runc.${TARGETARCH}"
-ARG RUNC_AMD64_SHA256SUM="ed9896e8c010b2f06cdfb55ec575865f9382e1a599078c06dcbddb86b97be285"
-ARG RUNC_ARM64_SHA256SUM="75de65187fa809ae92eaeb49cbf725c7d9f226fbc589f84bd637e31aae38c453"
-ARG RUNC_PPC64LE_SHA256SUM="40b42ff58de2e71164f03db931aa70cc0fee6eb35aa96915e23290341ca9fd49"
-
-# Configure crictl binary from upstream
-ARG CRICTL_VERSION="v1.21.0"
-ARG CRICTL_URL="https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${TARGETARCH}.tar.gz"
-ARG CRICTL_AMD64_SHA256SUM="85c78a35584971625bf1c3bcd46e5404a90396f979d7586f18b11119cb623e24"
-ARG CRICTL_ARM64_SHA256SUM="454eecd29fe636282339af5b73c60234a7d10e4b11b9e18937e33056763d72cf"
-ARG CRICTL_PPC64LE_SHA256SUM="0770100d30d430dbb67a58119ffed459856163ba01b6d71ac6fd4be7336253cf"
-
-# Configure CNI binaries from upstream
-ARG CNI_PLUGINS_VERSION="v0.9.1"
-ARG CNI_PLUGINS_TARBALL="${CNI_PLUGINS_VERSION}/cni-plugins-linux-${TARGETARCH}-${CNI_PLUGINS_VERSION}.tgz"
-ARG CNI_PLUGINS_URL="https://github.com/containernetworking/plugins/releases/download/${CNI_PLUGINS_TARBALL}"
-ARG CNI_PLUGINS_AMD64_SHA256SUM="962100bbc4baeaaa5748cdbfce941f756b1531c2eadb290129401498bfac21e7"
-ARG CNI_PLUGINS_ARM64_SHA256SUM="ef17764ffd6cdcb16d76401bac1db6acc050c9b088f1be5efa0e094ea3b01df0"
-ARG CNI_PLUGINS_PPC64LE_SHA256SUM="5bd3c82ef248e5c6cc388f25545aa5a7d318778e5f9bc0a31475361bb27acefe"
-
-# Configure containerd-fuse-overlayfs snapshotter binary from upstream
-ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="1.0.2"
-ARG CONTAINERD_FUSE_OVERLAYFS_TARBALL="v${CONTAINERD_FUSE_OVERLAYFS_VERSION}/containerd-fuse-overlayfs-${CONTAINERD_FUSE_OVERLAYFS_VERSION}-linux-${TARGETARCH}.tar.gz"
-ARG CONTAINERD_FUSE_OVERLAYFS_URL="https://github.com/containerd/fuse-overlayfs-snapshotter/releases/download/${CONTAINERD_FUSE_OVERLAYFS_TARBALL}"
-ARG CONTAINERD_FUSE_OVERLAYFS_AMD64_SHA256SUM="1f1e69f71b5ea568e93e40059af1b02a377ac0966d2acd27e4cce388a27af218"
-ARG CONTAINERD_FUSE_OVERLAYFS_ARM64_SHA256SUM="7ade1a44d880b3fb8eaa3c5ff7d3890a43b777d06ec80439c9a51ae35626c83c"
-ARG CONTAINERD_FUSE_OVERLAYFS_PPC64LE_SHA256SUM="eaf9bdd3de4514546945ea93119acea2b7bfa55ced43766e20adabddd5d20978"
+# start from debian slim, this image is reasonably small as a starting point
+# for a kubernetes node image, it doesn't contain much (anything?) we don't need
+# this stage will install basic files and packages
+ARG BASE_IMAGE=debian:bullseye-slim
+FROM $BASE_IMAGE as base
 
 # copy in static files
-# all scripts are 0755: http://www.filepermissions.com/file-permission/0755
+# all scripts are 0755 (rwx r-x r-x)
 COPY --chmod=0755 files/usr/local/bin/* /usr/local/bin/
+COPY --chmod=0755 files/kind/bin/* /kind/bin/
 
-# all configs are 0644: http://www.filepermissions.com/file-permission/0644
+# all non-scripts are 0644 (rw- r-- r--)
+COPY --chmod=0644 files/kind/* /kind/
+COPY --chmod=0644 files/LICENSES/* /LICENSES/*
 COPY --chmod=0644 files/etc/* /etc/
 COPY --chmod=0644 files/etc/containerd/* /etc/containerd/
 COPY --chmod=0644 files/etc/default/* /etc/default/
@@ -80,10 +43,11 @@ COPY --chmod=0644 files/etc/systemd/system/kubelet.service.d/* /etc/systemd/syst
 #
 # First we must ensure that our util scripts are executable.
 #
-# The base image already has: ssh, apt, snapd, but we need to install more packages.
+# The base image already has a basic userspace + apt but we need to install more packages.
 # Packages installed are broken down into (each on a line):
 # - packages needed to run services (systemd)
 # - packages needed for kubernetes components
+# - packages needed for networked backed storage with kubernetes
 # - packages needed by the container runtime
 # - misc packages kind uses itself
 # - packages that provide semi-core kubernetes functionality
@@ -107,10 +71,10 @@ COPY --chmod=0644 files/etc/systemd/system/kubelet.service.d/* /etc/systemd/syst
 RUN echo "Installing Packages ..." \
     && DEBIAN_FRONTEND=noninteractive clean-install \
       systemd \
-      conntrack iptables iproute2 ethtool socat util-linux mount ebtables udev kmod \
-      libseccomp2 pigz \
-      bash ca-certificates curl rsync \
-      nfs-common fuse-overlayfs \
+      conntrack iptables iproute2 ethtool util-linux mount ebtables kmod \
+      libseccomp2 pigz fuse-overlayfs \
+      nfs-common open-iscsi \
+      bash ca-certificates curl jq procps \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
     && rm -f /lib/systemd/system/multi-user.target.wants/* \
     && rm -f /etc/systemd/system/*.wants/* \
@@ -119,72 +83,149 @@ RUN echo "Installing Packages ..." \
     && rm -f /lib/systemd/system/sockets.target.wants/*initctl* \
     && rm -f /lib/systemd/system/basic.target.wants/* \
     && echo "ReadKMsg=no" >> /etc/systemd/journald.conf \
-    && ln -s "$(which systemd)" /sbin/init \
- && echo "Enabling kubelet ... " \
-    && systemctl enable kubelet.service \
- && echo "Installing containerd ..." \
-    && curl -sSL --retry 5 --output /tmp/containerd.${TARGETARCH}.tgz "${CONTAINERD_URL}" \
-    && echo "${CONTAINERD_AMD64_SHA256SUM}  /tmp/containerd.amd64.tgz" | tee /tmp/containerd.sha256 \
-    && echo "${CONTAINERD_ARM64_SHA256SUM}  /tmp/containerd.arm64.tgz" | tee -a /tmp/containerd.sha256 \
-    && echo "${CONTAINERD_PPC64LE_SHA256SUM}  /tmp/containerd.ppc64le.tgz" | tee -a /tmp/containerd.sha256 \
-    && sha256sum --ignore-missing -c /tmp/containerd.sha256 \
-    && rm -f /tmp/containerd.sha256 \
-    && tar -C /usr/local -xzvf /tmp/containerd.${TARGETARCH}.tgz \
-    && rm -rf /tmp/containerd.${TARGETARCH}.tgz \
-    && rm -f /usr/local/bin/containerd-stress /usr/local/bin/containerd-shim-runc-v1 \
-    && curl -sSL --retry 5 --output /tmp/runc.${TARGETARCH} "${RUNC_URL}" \
-    && echo "${RUNC_AMD64_SHA256SUM}  /tmp/runc.amd64" | tee /tmp/runc.sha256 \
-    && echo "${RUNC_ARM64_SHA256SUM}  /tmp/runc.arm64" | tee -a /tmp/runc.sha256 \
-    && echo "${RUNC_PPC64LE_SHA256SUM}  /tmp/runc.ppc64le" | tee -a /tmp/runc.sha256 \
-    && sha256sum --ignore-missing -c /tmp/runc.sha256 \
-    && mv /tmp/runc.${TARGETARCH} /usr/local/sbin/runc \
-    && chmod 755 /usr/local/sbin/runc \
-    && containerd --version \
-    && runc --version \
-    && systemctl enable containerd \
- && echo "Installing crictl ..." \
-    && curl -sSL --retry 5 --output /tmp/crictl.${TARGETARCH}.tgz "${CRICTL_URL}" \
-    && echo "${CRICTL_AMD64_SHA256SUM}  /tmp/crictl.amd64.tgz" | tee /tmp/crictl.sha256 \
-    && echo "${CRICTL_ARM64_SHA256SUM}  /tmp/crictl.arm64.tgz" | tee -a /tmp/crictl.sha256 \
-    && echo "${CRICTL_PPC64LE_SHA256SUM}  /tmp/crictl.ppc64le.tgz" | tee -a /tmp/crictl.sha256 \
-    && sha256sum --ignore-missing -c /tmp/crictl.sha256 \
-    && rm -f /tmp/crictl.sha256 \
-    && tar -C /usr/local/bin -xzvf /tmp/crictl.${TARGETARCH}.tgz \
-    && rm -rf /tmp/crictl.${TARGETARCH}.tgz \
- && echo "Installing CNI plugin binaries ..." \
-    && curl -sSL --retry 5 --output /tmp/cni.${TARGETARCH}.tgz "${CNI_PLUGINS_URL}" \
-    && echo "${CNI_PLUGINS_AMD64_SHA256SUM}  /tmp/cni.amd64.tgz" | tee /tmp/cni.sha256 \
-    && echo "${CNI_PLUGINS_ARM64_SHA256SUM}  /tmp/cni.arm64.tgz" | tee -a /tmp/cni.sha256 \
-    && echo "${CNI_PLUGINS_PPC64LE_SHA256SUM}  /tmp/cni.ppc64le.tgz" | tee -a /tmp/cni.sha256 \
-    && sha256sum --ignore-missing -c /tmp/cni.sha256 \
-    && rm -f /tmp/cni.sha256 \
-    && mkdir -p /opt/cni/bin \
-    && tar -C /opt/cni/bin -xzvf /tmp/cni.${TARGETARCH}.tgz \
-    && rm -rf /tmp/cni.${TARGETARCH}.tgz \
-    && find /opt/cni/bin -type f -not \( \
-         -iname host-local \
-         -o -iname ptp \
-         -o -iname portmap \
-         -o -iname loopback \
-      \) \
-      -delete \
- && echo "Installing containerd-fuse-overlayfs ..." \
-    && curl -sSL --retry 5 --output /tmp/containerd-fuse-overlayfs.${TARGETARCH}.tgz "${CONTAINERD_FUSE_OVERLAYFS_URL}" \
-    && echo "${CONTAINERD_FUSE_OVERLAYFS_AMD64_SHA256SUM}  /tmp/containerd-fuse-overlayfs.amd64.tgz" | tee /tmp/containerd-fuse-overlayfs.sha256 \
-    && echo "${CONTAINERD_FUSE_OVERLAYFS_ARM64_SHA256SUM}  /tmp/containerd-fuse-overlayfs.arm64.tgz" | tee -a /tmp/containerd-fuse-overlayfs.sha256 \
-    && echo "${CONTAINERD_FUSE_OVERLAYFS_PPC64LE_SHA256SUM}  /tmp/containerd-fuse-overlayfs.ppc64le.tgz" | tee -a /tmp/containerd-fuse-overlayfs.sha256 \
-    && sha256sum --ignore-missing -c /tmp/containerd-fuse-overlayfs.sha256 \
-    && rm -f /tmp/containerd-fuse-overlayfs.sha256 \
-    && tar -C /usr/local/bin -xzvf /tmp/containerd-fuse-overlayfs.${TARGETARCH}.tgz \
-    && rm -rf /tmp/containerd-fuse-overlayfs.${TARGETARCH}.tgz \
- && echo "Ensuring /etc/kubernetes/manifests" \
-    && mkdir -p /etc/kubernetes/manifests \
- && echo "Adjusting systemd-tmpfiles timer" \
-    && sed -i /usr/lib/systemd/system/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#' \
- && echo "Disabling udev" \
-    && systemctl disable udev.service
+    && ln -s "$(which systemd)" /sbin/init
 
-# tell systemd that it is in docker (it will check for the container env)
+RUN echo "Enabling services ... " \
+    && systemctl enable kubelet.service \
+    && systemctl enable containerd.service \
+    && systemctl enable undo-mount-hacks.service
+
+RUN echo "Ensuring /etc/kubernetes/manifests" \
+    && mkdir -p /etc/kubernetes/manifests
+
+# shared stage to setup go version for building binaries
+# NOTE we will be cross-compiling for performance reasons
+# This is also why we start again FROM the same base image but a different
+# platform and only the files needed for building
+# We will copy the built binaries from later stages to the final stage(s)
+FROM --platform=$BUILDPLATFORM $BASE_IMAGE as go-build
+COPY --chmod=0755 files/usr/local/bin/* /usr/local/bin/
+COPY --chmod=0755 scripts/third_party/gimme/gimme /usr/local/bin/
+COPY --chmod=0755 scripts/target-cc /usr/local/bin/
+# tools needed at build-time only
+# first ensure we can install packages for both architectures
+RUN dpkg --add-architecture arm64 && dpkg --add-architecture amd64 \
+    && clean-install bash ca-certificates curl git make pkg-config \
+    crossbuild-essential-amd64 crossbuild-essential-arm64 \
+    libseccomp-dev:amd64 libseccomp-dev:arm64
+# set by makefile to .go-version
+ARG GO_VERSION
+RUN eval "$(gimme "${GO_VERSION}")" \
+    && GOBIN=/usr/local/bin go install github.com/google/go-licenses@latest
+
+
+# stage for building containerd
+FROM go-build as build-containerd
+ARG TARGETARCH GO_VERSION
+ARG CONTAINERD_VERSION="v1.7.1"
+ARG CONTAINERD_CLONE_URL="https://github.com/containerd/containerd"
+# we don't build with optional snapshotters, we never select any of these
+# they're not ideal inside kind anyhow, and we save some disk space
+ARG BUILDTAGS="no_aufs no_zfs no_btrfs no_devmapper"
+RUN git clone --filter=tree:0 "${CONTAINERD_CLONE_URL}" /containerd \
+    && cd /containerd \
+    && git checkout "${CONTAINERD_VERSION}" \
+    && eval "$(gimme "${GO_VERSION}")" \
+    && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
+    && make bin/ctr bin/containerd bin/containerd-shim-runc-v2 \
+    && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES \
+        ./cmd/ctr ./cmd/containerd ./cmd/containerd-shim-runc-v2
+
+# stage for building runc
+FROM go-build as build-runc
+ARG TARGETARCH GO_VERSION
+ARG RUNC_VERSION="v1.1.7"
+ARG RUNC_CLONE_URL="https://github.com/opencontainers/runc"
+RUN git clone --filter=tree:0 "${RUNC_CLONE_URL}" /runc \
+    && cd /runc \
+    && git checkout "${RUNC_VERSION}" \
+    && eval "$(gimme "${GO_VERSION}")" \
+    && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
+    && make runc \
+    && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES .
+
+# stage for building crictl
+FROM go-build as build-crictl
+ARG TARGETARCH GO_VERSION
+ARG CRI_TOOLS_CLONE_URL="https://github.com/kubernetes-sigs/cri-tools"
+ARG CRICTL_VERSION="v1.27.0"
+RUN git clone --filter=tree:0 "${CRI_TOOLS_CLONE_URL}" /cri-tools \
+    && cd /cri-tools \
+    && git checkout "${CRICTL_VERSION}" \
+    && eval "$(gimme "${GO_VERSION}")" \
+    && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
+    && make BUILD_BIN_PATH=./build crictl \
+    && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES ./cmd/crictl
+
+# stage for building cni-plugins
+FROM go-build as build-cni
+ARG TARGETARCH GO_VERSION
+ARG CNI_PLUGINS_VERSION="v1.3.0"
+ARG CNI_PLUGINS_CLONE_URL="https://github.com/containernetworking/plugins"
+RUN git clone --filter=tree:0 "${CNI_PLUGINS_CLONE_URL}" /cni-plugins \
+    && cd /cni-plugins \
+    && git checkout "${CNI_PLUGINS_VERSION}" \
+    && eval "$(gimme "${GO_VERSION}")" \
+    && mkdir ./bin \
+    && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
+    && go build -o ./bin/host-local -mod=vendor ./plugins/ipam/host-local \
+    && go build -o ./bin/loopback -mod=vendor ./plugins/main/loopback \
+    && go build -o ./bin/ptp -mod=vendor ./plugins/main/ptp \
+    && go build -o ./bin/portmap -mod=vendor ./plugins/meta/portmap \
+    && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES \
+        ./plugins/ipam/host-local \
+        ./plugins/main/loopback ./plugins/main/ptp \
+        ./plugins/meta/portmap
+
+# stage for building containerd-fuse-overlayfs
+FROM go-build as build-fuse-overlayfs
+ARG TARGETARCH GO_VERSION
+ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="v1.0.5"
+ARG CONTAINERD_FUSE_OVERLAYFS_CLONE_URL="https://github.com/containerd/fuse-overlayfs-snapshotter"
+RUN git clone --filter=tree:0 "${CONTAINERD_FUSE_OVERLAYFS_CLONE_URL}" /fuse-overlayfs-snapshotter \
+    && cd /fuse-overlayfs-snapshotter \
+    && git checkout "${CONTAINERD_FUSE_OVERLAYFS_VERSION}" \
+    && eval "$(gimme "${GO_VERSION}")" \
+    && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
+    && make bin/containerd-fuse-overlayfs-grpc \
+    && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES ./cmd/containerd-fuse-overlayfs-grpc
+
+
+# build final image layout from other stages
+FROM base as build
+# copy over containerd build and install
+COPY --from=build-containerd /containerd/bin/containerd /usr/local/bin/
+COPY --from=build-containerd /containerd/bin/ctr /usr/local/bin/
+COPY --from=build-containerd /containerd/bin/containerd-shim-runc-v2 /usr/local/bin/
+RUN ctr oci spec \
+        | jq '.hooks.createContainer[.hooks.createContainer| length] |= . + {"path": "/kind/bin/mount-product-files.sh"}' \
+        | jq 'del(.process.rlimits)' \
+        > /etc/containerd/cri-base.json \
+    && containerd --version
+COPY --from=build-containerd /_LICENSES/* /LICENSES/
+# copy over runc build and install
+COPY --from=build-runc /runc/runc /usr/local/sbin/runc
+RUN runc --version
+COPY --from=build-runc /_LICENSES/* /LICENSES/
+# copy over crictl build and install
+COPY --from=build-crictl /cri-tools/build/crictl /usr/local/bin/
+COPY --from=build-crictl /_LICENSES/* /LICENSES/
+# copy over CNI plugins build and install
+RUN  mkdir -p /opt/cni/bin
+COPY --from=build-cni /cni-plugins/bin/host-local /opt/cni/bin/
+COPY --from=build-cni /cni-plugins/bin/loopback /opt/cni/bin/
+COPY --from=build-cni /cni-plugins/bin/ptp /opt/cni/bin/
+COPY --from=build-cni /cni-plugins/bin/portmap /opt/cni/bin/
+COPY --from=build-cni /_LICENSES/* /LICENSES/
+# copy over containerd-fuse-overlayfs and install
+COPY --from=build-fuse-overlayfs /fuse-overlayfs-snapshotter/bin/containerd-fuse-overlayfs-grpc /usr/local/bin/
+COPY --from=build-fuse-overlayfs /_LICENSES/* /LICENSES/
+
+# squash down to one compressed layer, without any lingering whiteout files etc
+FROM scratch
+COPY --from=build / /
+# add metadata, must be done after the squashing
+# first tell systemd that it is in docker (it will check for the container env)
 # https://systemd.io/CONTAINER_INTERFACE/
 ENV container docker
 # systemd exits on SIGRTMIN+3, not SIGTERM (which re-executes it)
