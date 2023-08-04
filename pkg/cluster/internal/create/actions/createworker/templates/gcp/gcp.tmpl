@@ -72,7 +72,7 @@ spec:
           cloud-provider: gce
           allocate-node-cidrs: \"false\"
           cloud-config: /etc/kubernetes/gce.conf
-          bind-address: 0.0.0.0
+          bind-address: \"0.0.0.0\"
         extraVolumes:
           - hostPath: /etc/kubernetes/gce.conf
             mountPath: /etc/kubernetes/gce.conf
@@ -80,11 +80,11 @@ spec:
             pathType: FileOrCreate
       scheduler:
         extraArgs:
-          bind-address: 0.0.0.0
+          bind-address: \"0.0.0.0\"
       etcd:
         local:
           extraArgs:
-            listen-metrics-urls: http://0.0.0.0:2381
+            listen-metrics-urls: \"http://0.0.0.0:2381\"
     files:
       - content: |
           [Global]
@@ -96,12 +96,12 @@ spec:
           # this is a workaround to use a script with preKubeadmCommand to modify the kubeadm config files
           # https://github.com/kubernetes-sigs/cluster-api/issues/4512
           FILE=/run/kubeadm/kubeadm.yaml
-          if [ -f "\$FILE" ]; then
-          cat <<EOF>> "\$FILE"
+          if [ -f \"\$FILE\" ]; then
+          cat <<EOF>> \"\$FILE\"
           ---
           kind: KubeProxyConfiguration
           apiVersion: kubeproxy.config.k8s.io/v1alpha1
-          metricsBindAddress: "0.0.0.0:10249"
+          metricsBindAddress: \"0.0.0.0:10249\"
           EOF
           fi
         path: /usr/local/bin/set-kube-proxy-configuration.sh
@@ -237,7 +237,7 @@ metadata:
 spec:
   template:
     spec:
-      additionalNetworkTags: ["{{ $node.Name }}-md-{{ $index }}"]
+      additionalNetworkTags: [\"{{ $node.Name }}-md-{{ $index }}\"]
       instanceType: "{{ $node.Size }}"
       image: "{{ $node.NodeImage }}"
       {{- if $node.RootVolume.Size }}
