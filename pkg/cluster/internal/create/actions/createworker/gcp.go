@@ -69,7 +69,7 @@ func (b *GCPBuilder) setCapx(managed bool) {
 	} else {
 		b.capxManaged = false
 		b.capxTemplate = "gcp.tmpl"
-		b.csiNamespace = "gce-pd-csi-driver"
+		b.csiNamespace = "kube-system"
 	}
 }
 
@@ -133,13 +133,6 @@ func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
 	var c string
 	var err error
 	var cmd exec.Cmd
-
-	// Create CSI namespace
-	c = "kubectl --kubeconfig " + k + " create namespace " + b.csiNamespace
-	_, err = commons.ExecuteCommand(n, c)
-	if err != nil {
-		return errors.Wrap(err, "failed to create CSI namespace")
-	}
 
 	// Create CSI secret in CSI namespace
 	secret, _ := b64.StdEncoding.DecodeString(strings.Split(b.capxEnvVars[0], "GCP_B64ENCODED_CREDENTIALS=")[1])

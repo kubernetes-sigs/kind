@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"embed"
 	"encoding/base64"
+	"io/ioutil"
 	"path/filepath"
 
 	"reflect"
@@ -34,6 +35,12 @@ import (
 
 //go:embed templates/*/*
 var ctel embed.FS
+
+//go:embed files/*/deny-all-egress-imds_gnetpol.yaml
+var denyAllEgressIMDSgnpFiles embed.FS
+
+//go:embed files/*/allow-egress-imds_gnetpol.yaml
+var allowEgressIMDSgnpFiles embed.FS
 
 const (
 	CAPICoreProvider         = "cluster-api:v1.4.3"
@@ -170,6 +177,36 @@ func (i *Infra) getOverrideVars(p ProviderParams, networks commons.Networks) (ma
 
 func (i *Infra) getAzs(p ProviderParams, networks commons.Networks) ([]string, error) {
 	return i.builder.getAzs(p, networks)
+}
+
+func (p *Provider) getDenyAllEgressIMDSGNetPol() (string, error) {
+	denyAllEgressIMDSGNetPolLocalPath := "files/" + p.capxProvider + "/deny-all-egress-imds_gnetpol.yaml"
+	denyAllEgressIMDSgnpFile, err := denyAllEgressIMDSgnpFiles.Open(denyAllEgressIMDSGNetPolLocalPath)
+	if err != nil {
+		return "", errors.Wrap(err, "error opening the deny all egress IMDS file")
+	}
+	defer denyAllEgressIMDSgnpFile.Close()
+	denyAllEgressIMDSgnpContent, err := ioutil.ReadAll(denyAllEgressIMDSgnpFile)
+	if err != nil {
+		return "", err
+	}
+
+	return string(denyAllEgressIMDSgnpContent), nil
+}
+
+func (p *Provider) getAllowCAPXEgressIMDSGNetPol() (string, error) {
+	allowEgressIMDSGNetPolLocalPath := "files/" + p.capxProvider + "/allow-egress-imds_gnetpol.yaml"
+	allowEgressIMDSgnpFile, err := allowEgressIMDSgnpFiles.Open(allowEgressIMDSGNetPolLocalPath)
+	if err != nil {
+		return "", errors.Wrap(err, "error opening the allow egress IMDS file")
+	}
+	defer allowEgressIMDSgnpFile.Close()
+	allowEgressIMDSgnpContent, err := ioutil.ReadAll(allowEgressIMDSgnpFile)
+	if err != nil {
+		return "", err
+	}
+
+	return string(allowEgressIMDSgnpContent), nil
 }
 
 func installCalico(n nodes.Node, k string, keosCluster commons.KeosCluster, allowCommonEgressNetPolPath string) error {

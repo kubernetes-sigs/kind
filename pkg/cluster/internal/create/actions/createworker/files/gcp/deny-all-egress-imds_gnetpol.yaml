@@ -1,0 +1,16 @@
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: deny-all-traffic-to-gcp-imds
+spec:
+  egress:
+  - action: Deny
+    destination:
+      nets:
+      - 169.254.169.254/32
+    protocol: TCP
+  order: 10
+  selector: all()
+  types:
+  - Egress
