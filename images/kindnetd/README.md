@@ -16,8 +16,8 @@ cd to this directory on mac / linux with docker installed and run `make quick`.
 
 To push an image run `make push`.
 
-[ptp]: https://github.com/containernetworking/plugins/tree/master/plugins/main/ptp/README.md
-[host-local]: https://github.com/containernetworking/plugins/blob/master/plugins/ipam/host-local/README.md
+[ptp]: https://www.cni.dev/plugins/current/main/ptp/
+[host-local]: https://www.cni.dev/plugins/current/ipam/host-local/
 [plugins]: https://github.com/containernetworking/plugins
 [aojea/kindnet]: https://github.com/aojea/kindnet
 [leblancd/kube-v6-test]: https://github.com/leblancd/kube-v6-test/tree/master
