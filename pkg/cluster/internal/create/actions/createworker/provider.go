@@ -469,7 +469,7 @@ func resto(n int, i int, azs int) int {
 	return r
 }
 
-func GetClusterManifest(flavor string, params commons.TemplateParams, azs []string) (string, error) {
+func GetClusterManifest(params commons.TemplateParams) (string, error) {
 	funcMap := template.FuncMap{
 		"loop": func(az string, zd string, qa int, maxsize int, minsize int) <-chan Node {
 			ch := make(chan Node)
@@ -480,14 +480,14 @@ func GetClusterManifest(flavor string, params commons.TemplateParams, azs []stri
 				if az != "" {
 					ch <- Node{AZ: az, QA: qa, MaxSize: maxsize, MinSize: minsize}
 				} else {
-					for i, a := range azs {
+					for i, a := range params.AZs {
 						if zd == "unbalanced" {
-							q = qa/len(azs) + resto(qa, i, len(azs))
-							mx = maxsize/len(azs) + resto(maxsize, i, len(azs))
-							mn = minsize/len(azs) + resto(minsize, i, len(azs))
+							q = qa/len(params.AZs) + resto(qa, i, len(params.AZs))
+							mx = maxsize/len(params.AZs) + resto(maxsize, i, len(params.AZs))
+							mn = minsize/len(params.AZs) + resto(minsize, i, len(params.AZs))
 							ch <- Node{AZ: a, QA: q, MaxSize: mx, MinSize: mn}
 						} else {
-							ch <- Node{AZ: a, QA: qa / len(azs), MaxSize: maxsize / len(azs), MinSize: minsize / len(azs)}
+							ch <- Node{AZ: a, QA: qa / len(params.AZs), MaxSize: maxsize / len(params.AZs), MinSize: minsize / len(params.AZs)}
 						}
 					}
 				}
@@ -514,7 +514,7 @@ func GetClusterManifest(flavor string, params commons.TemplateParams, azs []stri
 		"sub":   func(a, b int) int { return a - b },
 		"split": strings.Split,
 	}
-	templatePath := filepath.Join("templates", params.KeosCluster.Spec.InfraProvider, flavor)
+	templatePath := filepath.Join("templates", params.KeosCluster.Spec.InfraProvider, params.Flavor)
 
 	var tpl bytes.Buffer
 	t, err := template.New("").Funcs(funcMap).ParseFS(ctel, templatePath)
@@ -522,7 +522,7 @@ func GetClusterManifest(flavor string, params commons.TemplateParams, azs []stri
 		return "", err
 	}
 
-	err = t.ExecuteTemplate(&tpl, flavor, params)
+	err = t.ExecuteTemplate(&tpl, params.Flavor, params)
 	if err != nil {
 		return "", err
 	}

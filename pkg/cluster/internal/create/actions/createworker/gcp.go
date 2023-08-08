@@ -61,13 +61,11 @@ func (b *GCPBuilder) setCapx(managed bool) {
 	b.capxVersion = "v1.4.0"
 	b.capxImageVersion = "v1.4.0"
 	b.capxName = "capg"
-
+	b.capxManaged = managed
 	if managed {
-		b.capxManaged = true
 		b.capxTemplate = "gcp.gke.tmpl"
 		b.csiNamespace = ""
 	} else {
-		b.capxManaged = false
 		b.capxTemplate = "gcp.tmpl"
 		b.csiNamespace = "kube-system"
 	}

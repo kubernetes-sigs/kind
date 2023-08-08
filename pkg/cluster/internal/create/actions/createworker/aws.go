@@ -58,14 +58,11 @@ func (b *AWSBuilder) setCapx(managed bool) {
 	b.capxVersion = "v2.2.0"
 	b.capxImageVersion = "v2.2.0"
 	b.capxName = "capa"
-
+	b.capxManaged = managed
 	b.csiNamespace = "kube-system"
-
 	if managed {
-		b.capxManaged = true
 		b.capxTemplate = "aws.eks.tmpl"
 	} else {
-		b.capxManaged = false
 		b.capxTemplate = "aws.tmpl"
 	}
 }

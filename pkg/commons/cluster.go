@@ -29,13 +29,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Resource struct {
-	ApiVersion string                 `yaml:"apiVersion"`
-	Kind       string                 `yaml:"kind"`
-	Metadata   map[string]interface{} `yaml:"metadata"`
-	Spec       map[string]interface{} `yaml:"spec"`
-}
-
 type KeosCluster struct {
 	APIVersion string   `yaml:"apiVersion" validate:"required"`
 	Kind       string   `yaml:"kind" validate:"required"`
@@ -44,61 +37,61 @@ type KeosCluster struct {
 }
 
 type Metadata struct {
-	Name        string            `json:"name,omitempty" validate:"required,min=3,max=100"`
-	Namespace   string            `json:"namespace,omitempty" `
-	Labels      map[string]string `json:"labels,omitempty"`
-	Annotations map[string]string `json:"annotations,omitempty"`
+	Name        string            `yaml:"name,omitempty" validate:"required,min=3,max=100"`
+	Namespace   string            `yaml:"namespace,omitempty" `
+	Labels      map[string]string `yaml:"labels,omitempty"`
+	Annotations map[string]string `yaml:"annotations,omitempty"`
 }
 
 // Spec represents the YAML structure in the spec field of the descriptor file
 type Spec struct {
 	DeployAutoscaler bool `yaml:"deploy_autoscaler" validate:"boolean"`
 
-	Bastion Bastion `yaml:"bastion"`
+	Bastion Bastion `yaml:"bastion,omitempty"`
 
-	StorageClass StorageClass `yaml:"storageclass"`
+	StorageClass StorageClass `yaml:"storageclass,omitempty"`
 
-	Credentials Credentials `yaml:"credentials"`
+	Credentials Credentials `yaml:"credentials,omitempty"`
 
 	InfraProvider string `yaml:"infra_provider" validate:"required,oneof='aws' 'gcp' 'azure'"`
 
 	K8SVersion string `yaml:"k8s_version" validate:"required"`
 	Region     string `yaml:"region" validate:"required"`
 
-	Networks Networks `yaml:"networks"`
+	Networks Networks `yaml:"networks,omitempty"`
 
 	Dns struct {
-		ManageZone bool     `yaml:"manage_zone" validate:"boolean"`
-		Forwarders []string `yaml:"forwarders" validate:"omitempty,dive,ip_addr"`
-	} `yaml:"dns"`
+		ManageZone bool     `yaml:"manage_zone,omitempty" validate:"boolean"`
+		Forwarders []string `yaml:"forwarders,omitempty" validate:"omitempty,ip_addr"`
+	} `yaml:"dns,omitempty"`
 
 	DockerRegistries []DockerRegistry `yaml:"docker_registries" validate:"required,dive"`
 
-	ExternalDomain string `yaml:"external_domain" validate:"fqdn"`
+	ExternalDomain string `yaml:"external_domain,omitempty" validate:"fqdn"`
 
 	Security struct {
-		NodesIdentity string `yaml:"nodes_identity"`
+		NodesIdentity string `yaml:"nodes_identity,omitempty"`
 		AWS           struct {
 			CreateIAM bool `yaml:"create_iam" validate:"boolean"`
-		} `yaml:"aws"`
-	} `yaml:"security"`
+		} `yaml:"aws,omitempty"`
+	} `yaml:"security,omitempty"`
 
 	Keos struct {
-		Flavour string `yaml:"flavour"`
-		Version string `yaml:"version"`
-	} `yaml:"keos"`
+		Flavour string `yaml:"flavour,omitempty"`
+		Version string `yaml:"version,omitempty"`
+	} `yaml:"keos,omitempty"`
 
 	ControlPlane struct {
 		Managed         bool                `yaml:"managed" validate:"boolean"`
-		Name            string              `yaml:"name"`
-		NodeImage       string              `yaml:"node_image"`
+		Name            string              `yaml:"name,omitempty"`
+		NodeImage       string              `yaml:"node_image,omitempty"`
 		HighlyAvailable bool                `yaml:"highly_available" validate:"boolean"`
-		Size            string              `yaml:"size" validate:"required_if=Managed false"`
-		RootVolume      RootVolume          `yaml:"root_volume"`
-		Tags            []map[string]string `yaml:"tags"`
-		AWS             AWSCP               `yaml:"aws"`
-		Azure           AzureCP             `yaml:"azure"`
-		ExtraVolumes    []ExtraVolume       `yaml:"extra_volumes" validate:"dive"`
+		Size            string              `yaml:"size,omitempty" validate:"required_if=Managed false"`
+		RootVolume      RootVolume          `yaml:"root_volume,omitempty"`
+		Tags            []map[string]string `yaml:"tags,omitempty"`
+		AWS             AWSCP               `yaml:"aws,omitempty"`
+		Azure           AzureCP             `yaml:"azure,omitempty"`
+		ExtraVolumes    []ExtraVolume       `yaml:"extra_volumes,omitempty" validate:"dive"`
 	} `yaml:"control_plane"`
 
 	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
@@ -106,22 +99,22 @@ type Spec struct {
 
 type Networks struct {
 	VPCID         string    `yaml:"vpc_id"`
-	VPCCidrBlock  string    `yaml:"vpc_cidr" validate:"omitempty,cidrv4"`
-	PodsCidrBlock string    `yaml:"pods_cidr" validate:"omitempty,cidrv4"`
-	PodsSubnets   []Subnets `yaml:"pods_subnets" validate:"dive"`
-	Subnets       []Subnets `yaml:"subnets" validate:"dive"`
-	ResourceGroup string    `yaml:"resource_group"`
+	VPCCidrBlock  string    `yaml:"vpc_cidr,omitempty" validate:"omitempty,cidrv4"`
+	PodsCidrBlock string    `yaml:"pods_cidr,omitempty" validate:"omitempty,cidrv4"`
+	PodsSubnets   []Subnets `yaml:"pods_subnets,omitempty" validate:"dive"`
+	Subnets       []Subnets `yaml:"subnets,omitempty" validate:"dive"`
+	ResourceGroup string    `yaml:"resource_group,omitempty"`
 }
 
 type Subnets struct {
 	SubnetId  string `yaml:"subnet_id"`
-	CidrBlock string `yaml:"cidr" validate:"omitempty,cidrv4"`
-	Role      string `yaml:"role" validate:"omitempty,oneof='control-plane' 'node'"`
+	CidrBlock string `yaml:"cidr,omitempty" validate:"omitempty,cidrv4"`
+	Role      string `yaml:"role,omitempty" validate:"omitempty,oneof='control-plane' 'node'"`
 }
 
 type AWSCP struct {
-	AssociateOIDCProvider bool   `yaml:"associate_oidc_provider" validate:"boolean"`
-	EncryptionKey         string `yaml:"encryption_key"`
+	AssociateOIDCProvider bool   `yaml:"associate_oidc_provider,omitempty" validate:"boolean"`
+	EncryptionKey         string `yaml:"encryption_key,omitempty"`
 	Logging               struct {
 		ApiServer         bool `yaml:"api_server" validate:"boolean"`
 		Audit             bool `yaml:"audit" validate:"boolean"`
@@ -137,19 +130,19 @@ type AzureCP struct {
 
 type WorkerNodes []struct {
 	Name             string            `yaml:"name" validate:"required"`
-	NodeImage        string            `yaml:"node_image"`
+	NodeImage        string            `yaml:"node_image,omitempty"`
 	Quantity         int               `yaml:"quantity" validate:"required,numeric,gt=0"`
 	Size             string            `yaml:"size" validate:"required"`
-	ZoneDistribution string            `yaml:"zone_distribution" validate:"omitempty,oneof='balanced' 'unbalanced'"`
-	AZ               string            `yaml:"az" validate:"required_if=ZoneDistribution unbalanced"`
-	SSHKey           string            `yaml:"ssh_key"`
+	ZoneDistribution string            `yaml:"zone_distribution,omitempty" validate:"omitempty,oneof='balanced' 'unbalanced'"`
+	AZ               string            `yaml:"az,omitempty" validate:"required_if=ZoneDistribution unbalanced"`
+	SSHKey           string            `yaml:"ssh_key,omitempty"`
 	Spot             bool              `yaml:"spot" validate:"boolean"`
-	Labels           map[string]string `yaml:"labels"`
-	Taints           []string          `yaml:"taints"`
-	NodeGroupMaxSize int               `yaml:"max_size" validate:"required_with=NodeGroupMinSize,numeric,omitempty"`
-	NodeGroupMinSize int               `yaml:"min_size" validate:"required_with=NodeGroupMaxSize,numeric,omitempty"`
-	RootVolume       RootVolume        `yaml:"root_volume"`
-	ExtraVolumes     []ExtraVolume     `yaml:"extra_volumes" validate:"dive"`
+	Labels           map[string]string `yaml:"labels,omitempty"`
+	Taints           []string          `yaml:"taints,omitempty"`
+	NodeGroupMaxSize int               `yaml:"max_size,omitempty" validate:"required_with=NodeGroupMinSize,numeric,omitempty"`
+	NodeGroupMinSize int               `yaml:"min_size,omitempty" validate:"required_with=NodeGroupMaxSize,numeric,omitempty"`
+	RootVolume       RootVolume        `yaml:"root_volume,omitempty"`
+	ExtraVolumes     []ExtraVolume     `yaml:"extra_volumes,omitempty" validate:"dive"`
 }
 
 // Bastion represents the bastion VM
@@ -161,20 +154,20 @@ type Bastion struct {
 }
 
 type RootVolume struct {
-	Size          int    `yaml:"size"`
-	Type          string `yaml:"type"`
-	Encrypted     bool   `yaml:"encrypted"`
-	EncryptionKey string `yaml:"encryption_key"`
+	Size          int    `yaml:"size,omitempty"`
+	Type          string `yaml:"type,omitempty"`
+	Encrypted     bool   `yaml:"encrypted,omitempty"`
+	EncryptionKey string `yaml:"encryption_key,omitempty"`
 }
 
 type ExtraVolume struct {
-	Name          string `yaml:"name"`
-	DeviceName    string `yaml:"device_name"`
+	Name          string `yaml:"name,omitempty"`
+	DeviceName    string `yaml:"device_name,omitempty"`
 	Size          int    `yaml:"size" validate:"required,numeric"`
-	Type          string `yaml:"type"`
+	Type          string `yaml:"type,omitempty"`
 	Label         string `yaml:"label" validate:"required"`
-	Encrypted     bool   `yaml:"encrypted" validate:"boolean"`
-	EncryptionKey string `yaml:"encryption_key"`
+	Encrypted     bool   `yaml:"encrypted,omitempty" validate:"boolean"`
+	EncryptionKey string `yaml:"encryption_key,omitempty"`
 	MountPath     string `yaml:"mount_path" validate:"required"`
 }
 
@@ -232,6 +225,8 @@ type TemplateParams struct {
 	KeosCluster      KeosCluster
 	Credentials      map[string]string
 	DockerRegistries []map[string]interface{}
+	AZs              []string
+	Flavor           string
 }
 
 type AWS struct {
@@ -266,7 +261,7 @@ type EFS struct {
 }
 
 type StorageClass struct {
-	EFS           EFS          `yaml:"efs"`
+	EFS           EFS          `yaml:"efs,omitempty"`
 	EncryptionKey string       `yaml:"encryptionKey,omitempty"`
 	Class         string       `yaml:"class,omitempty" validate:"omitempty,oneof='standard' 'premium'"`
 	Parameters    SCParameters `yaml:"parameters,omitempty"`
@@ -338,11 +333,12 @@ func (s Spec) Init() Spec {
 
 // Read descriptor file
 func GetClusterDescriptor(descriptorPath string) (*KeosCluster, error) {
+	var keosCluster KeosCluster
+
 	_, err := os.Stat(descriptorPath)
 	if err != nil {
 		return nil, errors.New("No exists any cluster descriptor as " + descriptorPath)
 	}
-	var keosCluster KeosCluster
 
 	descriptorRAW, err := os.ReadFile(descriptorPath)
 	if err != nil {
@@ -354,18 +350,32 @@ func GetClusterDescriptor(descriptorPath string) (*KeosCluster, error) {
 	if err != nil {
 		return nil, err
 	}
-	validate := validator.New()
 
-	validate.RegisterCustomTypeFunc(CustomTypeAWSCredsFunc, AWSCredentials{})
-	validate.RegisterCustomTypeFunc(CustomTypeGCPCredsFunc, GCPCredentials{})
+	validate := validator.New()
 	validate.RegisterValidation("gte_param_if_exists", gteParamIfExists)
 	validate.RegisterValidation("lte_param_if_exists", lteParamIfExists)
 	validate.RegisterValidation("required_if_for_bool", requiredIfForBool)
-
 	err = validate.Struct(keosCluster)
 	if err != nil {
 		return nil, err
 	}
+
+	// Clean keosCluster data
+	if keosCluster.Spec.InfraProvider != "azure" {
+		keosCluster.Spec.ControlPlane.Azure = AzureCP{}
+	}
+	if keosCluster.Spec.InfraProvider != "aws" {
+		keosCluster.Spec.ControlPlane.AWS = AWSCP{}
+		keosCluster.Spec.Security.AWS = struct {
+			CreateIAM bool `yaml:"create_iam" validate:"boolean"`
+		}{}
+	}
+	if keosCluster.Spec.InfraProvider == "aws" && !keosCluster.Spec.ControlPlane.Managed {
+		keosCluster.Spec.ControlPlane.AWS = AWSCP{}
+	}
+
+	keosCluster.Metadata.Namespace = "cluster-" + keosCluster.Metadata.Name
+
 	return &keosCluster, nil
 }
 
@@ -403,20 +413,6 @@ func IfExistsStructField(fl validator.FieldLevel) bool {
 
 	// Exclude field is set to false or invalid, so don't exclude this field
 	return reflect.DeepEqual(excludeField, reflect.Zero(reflect.TypeOf(excludeField)).Interface())
-}
-
-func CustomTypeAWSCredsFunc(field reflect.Value) interface{} {
-	if value, ok := field.Interface().(AWSCredentials); ok {
-		return value.AccessKey
-	}
-	return nil
-}
-
-func CustomTypeGCPCredsFunc(field reflect.Value) interface{} {
-	if value, ok := field.Interface().(GCPCredentials); ok {
-		return value.ClientEmail
-	}
-	return nil
 }
 
 func gteParamIfExists(fl validator.FieldLevel) bool {

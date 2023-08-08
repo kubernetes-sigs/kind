@@ -23,6 +23,10 @@ ENV CAPA=v2.2.0
 ENV CAPG=v1.4.0
 ENV CAPZ=v1.10.0
 
+# Cluster-operator helm chart
+ENV NEXUS_STRATIO_REPO=helm-all
+ENV CLUSTER_OPERATOR_VERSION=0.1.0-SNAPSHOT
+
 # Install vim
 RUN apt-get update && apt-get install -y \
   vim \
@@ -34,6 +38,7 @@ RUN echo 'alias k="kubectl"' >> ~/.bash_aliases \
     && echo 'alias capa-logs="kubectl -n capa-system logs -f deploy/capa-controller-manager"' >> ~/.bash_aliases \
     && echo 'alias capg-logs="kubectl -n capg-system logs -f deploy/capg-controller-manager"' >> ~/.bash_aliases \
     && echo 'alias capz-logs="kubectl -n capz-system logs -f deploy/capz-controller-manager"' >> ~/.bash_aliases \
+    && echo 'alias kc-logs="kubectl -n kube-system logs -f deploy/keoscluster-controller-manager"' >> ~/.bash_aliases \
     && echo 'alias kw="kubectl --kubeconfig /kind/worker-cluster.kubeconfig"' >> ~/.bash_aliases
 
 # Download clusterctl
@@ -71,3 +76,7 @@ RUN for i in metadata.yaml infrastructure-components.yaml; do \
       curl -L https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/download/${CAPA}/${i} -o ${CAPI_REPO}/infrastructure-aws/${CAPA}/${i} \
       && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-gcp/releases/download/${CAPG}/${i} -o ${CAPI_REPO}/infrastructure-gcp/${CAPG}/${i} \
       && curl -L https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases/download/${CAPZ}/${i} -o ${CAPI_REPO}/infrastructure-azure/${CAPZ}/${i}; done
+
+# Download cluster-operator artifacts
+RUN curl -L http://qa.int.stratio.com/repository/${NEXUS_STRATIO_REPO}/cluster-operator-${CLUSTER_OPERATOR_VERSION}.tgz -o /stratio/helm/cluster-operator.tgz \
+  && tar -xf /stratio/helm/cluster-operator.tgz -C /stratio/helm

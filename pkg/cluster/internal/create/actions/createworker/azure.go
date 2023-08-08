@@ -19,6 +19,7 @@ package createworker
 import (
 	"context"
 	_ "embed"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -64,14 +65,11 @@ func (b *AzureBuilder) setCapx(managed bool) {
 	b.capxVersion = "v1.10.0"
 	b.capxImageVersion = "v1.10.0"
 	b.capxName = "capz"
-
+	b.capxManaged = managed
 	b.csiNamespace = "kube-system"
-
 	if managed {
-		b.capxManaged = true
 		b.capxTemplate = "azure.aks.tmpl"
 	} else {
-		b.capxManaged = false
 		b.capxTemplate = "azure.tmpl"
 	}
 }
@@ -104,6 +102,10 @@ func (b *AzureBuilder) setSC(p ProviderParams) {
 func (b *AzureBuilder) setCapxEnvVars(p ProviderParams) {
 	b.capxEnvVars = []string{
 		"AZURE_CLIENT_SECRET=" + p.Credentials["ClientSecret"],
+		"AZURE_SUBSCRIPTION_ID_B64=" + base64.StdEncoding.EncodeToString([]byte(p.Credentials["SubscriptionID"])),
+		"AZURE_TENANT_ID_B64=" + base64.StdEncoding.EncodeToString([]byte(p.Credentials["TenantID"])),
+		"AZURE_CLIENT_ID_B64=" + base64.StdEncoding.EncodeToString([]byte(p.Credentials["ClientID"])),
+		"AZURE_CLIENT_SECRET_B64=" + base64.StdEncoding.EncodeToString([]byte(p.Credentials["ClientSecret"])),
 		"EXP_MACHINE_POOL=true",
 	}
 	if p.GithubToken != "" {
