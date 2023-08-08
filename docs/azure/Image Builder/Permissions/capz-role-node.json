@@ -1,0 +1,23 @@
+{
+    "Name": "capz-role-node",
+    "IsCustom": true,
+    "Description": "Workers role for testing permissions",
+    "Actions": [
+        "Microsoft.ManagedIdentity/userAssignedIdentities/*/read",
+        "Microsoft.ManagedIdentity/userAssignedIdentities/*/assign/action",
+        "Microsoft.Authorization/*/read",
+        "Microsoft.Insights/alertRules/*",
+        "Microsoft.Resources/subscriptions/resourceGroups/read",
+        "Microsoft.Resources/deployments/*",
+        "Microsoft.Support/*",
+	    "Microsoft.ContainerRegistry/registries/pull/read",
+        "Microsoft.Compute/disks/read",
+        "Microsoft.Compute/disks/write"
+    ],
+    "NotActions": [
+        "Microsoft.Compute/galleries/share/action"
+    ],
+    "AssignableScopes": [
+        "/subscriptions/6e2a38cd-ef16-47b3-a75e-5a4960cedf65/"
+    ]
+}
