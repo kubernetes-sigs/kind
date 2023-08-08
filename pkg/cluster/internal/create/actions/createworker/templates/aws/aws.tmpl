@@ -161,7 +161,7 @@ spec:
       filesystems:
         {{- range $index, $vol := .KeosCluster.Spec.ControlPlane.ExtraVolumes }}
         - device: /dev/nvme{{ len (printf "a%*s" $index "") }}n1
-          filesystem: xfs
+          filesystem: ext4
           label: {{ $vol.Label }}
         {{- end }}
       partitions:
@@ -211,7 +211,7 @@ spec:
         {{- end }}
       {{- end }}
       rootVolume:
-        size: {{- if .KeosCluster.Spec.ControlPlane.RootVolume.Size }} {{ .KeosCluster.Spec.ControlPlane.RootVolume.Size }} {{ else }} 30 {{ end }}
+        size: {{- if .KeosCluster.Spec.ControlPlane.RootVolume.Size }} {{ .KeosCluster.Spec.ControlPlane.RootVolume.Size }} {{- else }} 30 {{- end }}
         {{- if .KeosCluster.Spec.ControlPlane.RootVolume.Type }}
         type: {{ .KeosCluster.Spec.ControlPlane.RootVolume.Type }}
         {{- end }}
@@ -283,7 +283,7 @@ spec:
         {{- end }}
       {{- end }}
       rootVolume:
-        size: {{- if $node.RootVolume.Size }} {{ $node.RootVolume.Size }} {{ else }} 30 {{ end }}
+        size: {{- if $node.RootVolume.Size }} {{ $node.RootVolume.Size }} {{- else }} 30 {{- end }}
         {{- if $node.RootVolume.Type }}
         type: {{ $node.RootVolume.Type }}
         {{- end }}
