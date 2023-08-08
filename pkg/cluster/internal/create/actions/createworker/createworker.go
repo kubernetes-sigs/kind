@@ -307,6 +307,9 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to wait for keoscluster-controller-manager deployment")
 	}
 
+	// TODO: Change this when status is available in keoscluster-controller-manager
+	time.Sleep(10 * time.Second)
+
 	defer ctx.Status.End(true) // End installing keos cluster operator
 
 	if !a.avoidCreation {
