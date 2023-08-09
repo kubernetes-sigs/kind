@@ -26,11 +26,15 @@ import (
 )
 
 type KEOSDescriptor struct {
-	ExternalRegistry struct {
+	DockerRegistry struct {
 		AuthRequired bool   `yaml:"auth_required"`
 		Type         string `yaml:"type"`
 		URL          string `yaml:"url"`
-	} `yaml:"external_registry"`
+	} `yaml:"docker_registry"`
+	HelmRepository struct {
+		AuthRequired bool   `yaml:"auth_required"`
+		URL          string `yaml:"url"`
+	} `yaml:"helm_repository"`
 	AWS struct {
 		Enabled bool `yaml:"enabled"`
 		EKS     bool `yaml:"eks"`
@@ -89,11 +93,15 @@ func createKEOSDescriptor(keosCluster commons.KeosCluster, storageClass string) 
 	// External registry
 	for _, registry := range keosCluster.Spec.DockerRegistries {
 		if registry.KeosRegistry {
-			keosDescriptor.ExternalRegistry.URL = registry.URL
-			keosDescriptor.ExternalRegistry.AuthRequired = registry.AuthRequired
-			keosDescriptor.ExternalRegistry.Type = registry.Type
+			keosDescriptor.DockerRegistry.URL = registry.URL
+			keosDescriptor.DockerRegistry.AuthRequired = registry.AuthRequired
+			keosDescriptor.DockerRegistry.Type = registry.Type
 		}
 	}
+
+	// Helm repository
+	keosDescriptor.HelmRepository.URL = keosCluster.Spec.HelmRepository.URL
+	keosDescriptor.HelmRepository.AuthRequired = keosCluster.Spec.HelmRepository.AuthRequired
 
 	// AWS
 	if keosCluster.Spec.InfraProvider == "aws" {

@@ -52,6 +52,11 @@ func validateCredentials(params ValidateParams) (commons.ClusterCredentials, err
 		return commons.ClusterCredentials{}, err
 	}
 
+	creds.HelmRepositoryCredentials, err = validateHelmCredentials(secrets, params.KeosCluster.Spec)
+	if err != nil {
+		return commons.ClusterCredentials{}, err
+	}
+
 	creds.GithubToken, err = validateGithubToken(secrets, params.KeosCluster.Spec)
 	if err != nil {
 		return commons.ClusterCredentials{}, err
@@ -140,6 +145,34 @@ func validateRegistryCredentials(secrets commons.Secrets, spec commons.Spec) (ma
 		return nil, nil, errors.New("there isn't any docker_registry defined as keos_registry")
 	}
 	return resultKeosRegistry, resultDockerRegistries, nil
+}
+
+func validateHelmCredentials(secrets commons.Secrets, spec commons.Spec) (map[string]string, error) {
+	var helmRepository commons.HelmRepositoryCredentials
+	var resultHelmRepository map[string]string
+
+	if secrets.HelmRepository.URL != "" && secrets.HelmRepository.User != "" && secrets.HelmRepository.Pass != "" {
+		helmRepository = secrets.HelmRepository
+	} else {
+		helmRepository = spec.Credentials.HelmRepository
+	}
+
+	if spec.HelmRepository.AuthRequired {
+		existCredentials := false
+		if helmRepository.URL == spec.HelmRepository.URL {
+			existCredentials = true
+			err := validateStruct(helmRepository)
+			if err != nil {
+				return nil, errors.Wrap(err, "there aren't valid credentials for the repository: "+helmRepository.URL)
+			}
+			registryMap := structs.Map(helmRepository)
+			resultHelmRepository = convertToMapStringString(registryMap)
+		}
+		if !existCredentials {
+			return nil, errors.New("there aren't valid credentials for the repository: " + helmRepository.URL)
+		}
+	}
+	return resultHelmRepository, nil
 }
 
 func validateGithubToken(secrets commons.Secrets, spec commons.Spec) (string, error) {

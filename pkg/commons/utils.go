@@ -66,8 +66,9 @@ func EnsureSecretsFile(spec Spec, vaultPassword string, clusterCredentials Clust
 	edited := false
 
 	credentials := clusterCredentials.ProviderCredentials
-	externalRegistry := clusterCredentials.KeosRegistryCredentials
+	dockerRegistry := clusterCredentials.KeosRegistryCredentials
 	dockerRegistries := clusterCredentials.DockerRegistriesCredentials
+	helmRepository := clusterCredentials.HelmRepositoryCredentials
 	github_token := clusterCredentials.GithubToken
 
 	_, err = os.Stat(secretPath)
@@ -82,10 +83,10 @@ func EnsureSecretsFile(spec Spec, vaultPassword string, clusterCredentials Clust
 			secretMap[spec.InfraProvider] = map[string]interface{}{"credentials": creds}
 		}
 
-		if len(externalRegistry) > 0 {
-			externalReg := convertStringMapToInterfaceMap(externalRegistry)
+		if len(dockerRegistry) > 0 {
+			externalReg := convertStringMapToInterfaceMap(dockerRegistry)
 			externalReg = ConvertMapKeysToSnakeCase(externalReg)
-			secretMap["external_registry"] = externalReg
+			secretMap["docker_registry"] = externalReg
 		}
 
 		if len(dockerRegistries) > 0 {
@@ -93,6 +94,12 @@ func EnsureSecretsFile(spec Spec, vaultPassword string, clusterCredentials Clust
 				dockerRegistries[i] = ConvertMapKeysToSnakeCase(dockerReg)
 			}
 			secretMap["docker_registries"] = dockerRegistries
+		}
+
+		if len(helmRepository) > 0 {
+			helmRepo := convertStringMapToInterfaceMap(helmRepository)
+			helmRepo = ConvertMapKeysToSnakeCase(helmRepo)
+			secretMap["helm_repository"] = helmRepo
 		}
 
 		secretFileMap := map[string]map[string]interface{}{
@@ -123,11 +130,17 @@ func EnsureSecretsFile(spec Spec, vaultPassword string, clusterCredentials Clust
 		secretMap["secrets"][spec.InfraProvider] = map[string]interface{}{"credentials": creds}
 	}
 
-	if secretMap["secrets"]["external_registry"] == nil && len(externalRegistry) > 0 {
+	if secretMap["secrets"]["docker_registry"] == nil && len(dockerRegistry) > 0 {
 		edited = true
-		externalReg := convertStringMapToInterfaceMap(externalRegistry)
+		externalReg := convertStringMapToInterfaceMap(dockerRegistry)
 		externalReg = ConvertMapKeysToSnakeCase(externalReg)
-		secretMap["secrets"]["external_registry"] = externalReg
+		secretMap["secrets"]["docker_registry"] = externalReg
+	}
+	if secretMap["secrets"]["helm_repository"] == nil && len(helmRepository) > 0 {
+		edited = true
+		helmRepo := convertStringMapToInterfaceMap(helmRepository)
+		helmRepo = ConvertMapKeysToSnakeCase(helmRepo)
+		secretMap["secrets"]["docker_registry"] = helmRepo
 	}
 	if secretMap["secrets"]["github_token"] == nil && github_token != "" {
 		edited = true
