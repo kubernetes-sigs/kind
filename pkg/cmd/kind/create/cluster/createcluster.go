@@ -52,6 +52,7 @@ type flagpole struct {
 	MoveManagement bool
 	AvoidCreation  bool
 	ForceDelete    bool
+	ValidateOnly   bool
 }
 
 const clusterDefaultPath = "./cluster.yaml"
@@ -139,6 +140,12 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		false,
 		"by setting this flag the local cluster container will be deleted",
 	)
+	cmd.Flags().BoolVar(
+		&flags.ValidateOnly,
+		"validate-only",
+		false,
+		"by setting this flag the descriptor will be validated and the cluster won't be created",
+	)
 
 	return cmd
 }
@@ -177,6 +184,11 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to validate cluster")
+	}
+
+	if flags.ValidateOnly {
+		fmt.Println("Cluster descriptor is valid")
+		return nil
 	}
 
 	// handle config flag, we might need to read from stdin
