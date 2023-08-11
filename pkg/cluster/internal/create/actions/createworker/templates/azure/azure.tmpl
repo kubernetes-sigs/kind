@@ -213,10 +213,10 @@ spec:
       image:
         id: {{ .KeosCluster.Spec.ControlPlane.NodeImage }}
       {{- end }}
-      {{- if .KeosCluster.Spec.Security.NodesIdentity }}
+      {{- if ne .KeosCluster.Spec.Security.ControlPlaneIdentity "" }}
       identity: UserAssigned
       userAssignedIdentities:
-        - providerID: {{ .KeosCluster.Spec.Security.NodesIdentity }}
+        - providerID: \"{{ .KeosCluster.Spec.Security.ControlPlaneIdentity }}\"
       {{- end }}
       osDisk:
         {{- if .KeosCluster.Spec.ControlPlane.RootVolume.Size }}
@@ -288,10 +288,10 @@ spec:
       image:
         id: {{ $node.NodeImage }}
       {{- end }}
-      {{- if $.KeosCluster.Spec.Security.NodesIdentity }}
+      {{- if ne $.KeosCluster.Spec.Security.NodesIdentity "" }}
       identity: UserAssigned
       userAssignedIdentities:
-        - providerID: {{ $.KeosCluster.Spec.Security.NodesIdentity }}
+        - providerID: \"{{ $.KeosCluster.Spec.Security.NodesIdentity }}\"
       {{- end }}
       osDisk:
         {{- if $node.RootVolume.Size }}
