@@ -204,7 +204,8 @@ kubectl --kubeconfig local_kubeconfig -n cluster-eks-cl01 delete cluster eks-cl0
 | ec2:DeleteNatGateway | failed to delete NAT gateway "nat-0a0b0c0d0e0f0a0b0" | DeleteNatGateway | * | cloud-provisioner |
 | ec2:ReleaseAddress | failed to release ElasticIP "eipalloc-0b9b95649ebe9fe11": UnauthorizedOperation: | ReleaseAddress | * | cloud-provisioner |
 | ec2:DetachInternetGateway | failed to detach internet gateway "igw-027278b62139ce652": UnauthorizedOperation: You are not authorized | DetachInternetGateway | * | cloud-provisioner |
-|   |failed to delete subnet "subnet-0c5ff226c483b3818": UnauthorizedOperation | DeleteSubnet | * | cloud-provisioner |
+| ec2:DeleteSubnet |failed to delete subnet "subnet-0c5ff226c483b3818": UnauthorizedOperation | DeleteSubnet | * | cloud-provisioner |
+| ec2:DeleteInternetGateway | failed to delete internet gateway "igw-027278b62139ce652": UnauthorizedOperation: You are not authorized | DeleteInternetGateway | * | cloud-provisioner |
 
 **Test**: Keos Install
 
@@ -222,3 +223,18 @@ kubectl --kubeconfig local_kubeconfig -n cluster-eks-cl01 delete cluster eks-cl0
 | Permission | Needed for | Description | Resource | Application |
 | --- | --- | --- | --- | --- |
 | ec2:DescribeInstanceTypes | not authorized to perform: ec2:DescribeInstanceTypes | DescribeInstanceTypes | * | cluster-api-provider-aws |
+
+**AWS Unmanaged**: Create EC2 cluster
+| Permission | Needed for | Description | Resource | Application |
+| --- | --- | --- | --- | --- |
+| ec2:AuthorizeSecurityGroupIngress | failed to authorize security group "sg-04980f574d329b786" ingress rules | arn:aws:ec2:*:268367799918:security-group/* | cloud-provisioner |
+| elasticloadbalancing:DescribeLoadBalancers | not authorized to perform: elasticloadbalancing:DescribeLoadBalancers | * | cloud-provisioner |
+| elasticloadbalancing:CreateLoadBalancer | not authorized to perform: elasticloadbalancing:CreateLoadBalancer | arn:aws:elasticloadbalancing:*:268367799918:loadbalancer/* | cloud-provisioner |
+| elasticloadbalancing:AddTags | Dependencie from CreateLoadBalancer | arn:aws:elasticloadbalancing:*:268367799918:loadbalancer/* | cloud-provisioner | 
+| elasticloadbalancing:DescribeLoadBalancerAttributes | failed to describe classic load balancer "eks-cl02-apiserver" attributes | arn:aws:elasticloadbalancing:*:268367799918:loadbalancer/* | cloud-provisioner |
+| elasticloadbalancing:DescribeTags | not authorized to perform: elasticloadbalancing:DescribeTags | * | cloud-provisioner |
+| elasticloadbalancing:ModifyLoadBalancerAttributes | not authorized to perform: elasticloadbalancing:ModifyLoadBalancerAttributes | arn:aws:elasticloadbalancing:*:268367799918:loadbalancer/* | cloud-provisioner |
+| elasticloadbalancing:RegisterInstancesWithLoadBalancer | not authorized to perform: elasticloadbalancing:RegisterInstancesWithLoadBalancer | arn:aws:elasticloadbalancing:*:268367799918:loadbalancer/* | cloud-provisioner |
+| elasticloadbalancing:DeleteLoadBalancer | not authorized to perform: elasticloadbalancing:RegisterInstancesWithLoadBalancer | arn:aws:elasticloadbalancing:*:268367799918:loadbalancer/* | cloud-provisioner |
+| ec2:RevokeSecurityGroupIngress | not authorized to perform this operation | arn:aws:ec2:*:268367799918:security-group/* | cloud-provisioner |
+
