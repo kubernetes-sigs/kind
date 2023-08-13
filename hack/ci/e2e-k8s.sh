@@ -73,6 +73,9 @@ build() {
   fi
   # make sure we have e2e requirements
   make all WHAT="cmd/kubectl test/e2e/e2e.test ${GINKGO_SRC_DIR}"
+
+  # Ensure the built kubecl is used instead of system
+  export PATH="${PWD}/_output/bin:$PATH"
 }
 
 check_structured_log_support() {
