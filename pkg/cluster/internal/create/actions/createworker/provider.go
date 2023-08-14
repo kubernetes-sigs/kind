@@ -281,7 +281,7 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 		c = "helm repo add stratio-helm-repo " + helmRepository.url
 		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
-			return errors.Wrap(err, "failed to authenticate to helm repo: "+helmRepository.url)
+			return errors.Wrap(err, "failed to add helm repo: "+helmRepository.url)
 		}
 	}
 
