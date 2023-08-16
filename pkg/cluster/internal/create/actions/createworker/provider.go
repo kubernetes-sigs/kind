@@ -51,6 +51,9 @@ const (
 	CAPIControlPlaneProvider = "kubeadm:v1.4.3"
 
 	scName = "keos"
+
+	keosClusterChart = "0.1.0-SNAPSHOT"
+	keosClusterImage = "0.1.0-SNAPSHOT"
 )
 
 const machineHealthCheckWorkerNodePath = "/kind/manifests/machinehealthcheckworkernode.yaml"
@@ -119,10 +122,9 @@ type DefaultStorageClass struct {
 }
 
 type helmRepository struct {
-	url          string
-	user         string
-	pass         string
-	authRequired bool
+	url  string
+	user string
+	pass string
 }
 
 var scTemplate = DefaultStorageClass{
@@ -219,86 +221,77 @@ func (p *Provider) getAllowCAPXEgressIMDSGNetPol() (string, error) {
 	return string(allowEgressIMDSgnpContent), nil
 }
 
-func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, clusterCredentials commons.ClusterCredentials, keosRegistry keosRegistry) error {
+func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, clusterCredentials commons.ClusterCredentials, keosRegistry keosRegistry, kubeconfigPath string) error {
 	var c string
+	var err error
+	var jsonDockerRegistriesCredentials []byte
 	var helmRepository helmRepository
 
-	// Clean keos cluster file
-	keosCluster.Spec.Credentials = commons.Credentials{}
-	keosCluster.Spec.StorageClass = commons.StorageClass{}
-	keosCluster.Spec.Security.AWS = struct {
-		CreateIAM bool "yaml:\"create_iam\" validate:\"boolean\""
-	}{}
-	keosCluster.Spec.Keos = struct {
-		Flavour string `yaml:"flavour,omitempty"`
-		Version string `yaml:"version,omitempty"`
-	}{}
-
-	keosClusterYAML, err := yaml.Marshal(keosCluster)
-	if err != nil {
-		return err
-	}
-	c = "echo '" + string(keosClusterYAML) + "' > " + manifestsPath + "/keoscluster.yaml"
-	_, err = commons.ExecuteCommand(n, c)
-	if err != nil {
-		return errors.Wrap(err, "failed to write the keoscluster file")
+	if kubeconfigPath == "" {
+		// Clean keoscluster file
+		keosCluster.Spec.Credentials = commons.Credentials{}
+		keosCluster.Spec.StorageClass = commons.StorageClass{}
+		keosCluster.Spec.Security.AWS = struct {
+			CreateIAM bool "yaml:\"create_iam\" validate:\"boolean\""
+		}{}
+		keosCluster.Spec.Keos = struct {
+			Flavour string `yaml:"flavour,omitempty"`
+			Version string `yaml:"version,omitempty"`
+		}{}
+		keosClusterYAML, err := yaml.Marshal(keosCluster)
+		if err != nil {
+			return err
+		}
+		// Write keoscluster file
+		c = "echo '" + string(keosClusterYAML) + "' > " + manifestsPath + "/keoscluster.yaml"
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
+			return errors.Wrap(err, "failed to write the keoscluster file")
+		}
+		// Prepare docker registries credentials
+		if clusterCredentials.DockerRegistriesCredentials != nil {
+			jsonDockerRegistriesCredentials, err = json.Marshal(clusterCredentials.DockerRegistriesCredentials)
+			if err != nil {
+				return errors.Wrap(err, "failed to marshal docker registries credentials")
+			}
+		}
+		// Add helm repository
+		helmRepository.url = keosCluster.Spec.HelmRepository.URL
+		if keosCluster.Spec.HelmRepository.AuthRequired {
+			helmRepository.user = clusterCredentials.HelmRepositoryCredentials["User"]
+			helmRepository.pass = clusterCredentials.HelmRepositoryCredentials["Pass"]
+			c = "helm repo add stratio-helm-repo " + helmRepository.url + " --username " + helmRepository.user + " --password " + helmRepository.pass
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
+				return errors.Wrap(err, "failed to add and authenticate to helm repository: "+helmRepository.url)
+			}
+		} else {
+			c = "helm repo add stratio-helm-repo " + helmRepository.url
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
+				return errors.Wrap(err, "failed to add helm repository: "+helmRepository.url)
+			}
+		}
+		// Pull cluster operator helm chart
+		c = "helm pull cluster-operator --repo " + helmRepository.url +
+			" --version " + keosClusterChart +
+			" --untar --untardir /stratio/helm"
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
+			return errors.Wrap(err, "failed to pull cluster operator helm chart")
+		}
 	}
 
 	// Create the docker registries credentials secret for keoscluster-controller-manager
 	if clusterCredentials.DockerRegistriesCredentials != nil {
-		jsonDockerRegistriesCredentials, err := json.Marshal(clusterCredentials.DockerRegistriesCredentials)
-		if err != nil {
-			return errors.Wrap(err, "failed to marshal docker registries credentials")
-		}
 		c = "kubectl -n kube-system create secret generic keoscluster-registries --from-literal=credentials='" + string(jsonDockerRegistriesCredentials) + "'"
+		if kubeconfigPath != "" {
+			c = c + " --kubeconfig " + kubeconfigPath
+		}
 		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to create keoscluster-registries secret")
 		}
-	}
-
-	helmRepository.url = keosCluster.Spec.HelmRepository.URL
-	helmRepository.authRequired = keosCluster.Spec.HelmRepository.AuthRequired
-	clusterOperatorHelmVersion := "0.1.0-SNAPSHOT"
-
-	if helmRepository.authRequired {
-		helmRepository.user = clusterCredentials.HelmRepositoryCredentials["User"]
-		helmRepository.pass = clusterCredentials.HelmRepositoryCredentials["Pass"]
-	}
-
-	// Add helm repo
-	if helmRepository.authRequired {
-		helmRepository.user = clusterCredentials.HelmRepositoryCredentials["User"]
-		helmRepository.pass = clusterCredentials.HelmRepositoryCredentials["Pass"]
-
-		c = "helm repo add stratio-helm-repo " + helmRepository.url +
-			" --username " + helmRepository.user + " --password " + helmRepository.pass
-		_, err = commons.ExecuteCommand(n, c)
-		if err != nil {
-			return errors.Wrap(err, "failed to add and authenticate to helm repo: "+helmRepository.url)
-		}
-	} else {
-		c = "helm repo add stratio-helm-repo " + helmRepository.url
-		_, err = commons.ExecuteCommand(n, c)
-		if err != nil {
-			return errors.Wrap(err, "failed to add helm repo: "+helmRepository.url)
-		}
-	}
-
-	// Update helm repo
-	c = "helm repo update"
-	_, err = commons.ExecuteCommand(n, c)
-	if err != nil {
-		return errors.Wrap(err, "failed to update helm repo: "+helmRepository.url)
-	}
-
-	// Pull cluster operator helm chart
-	c = "helm pull cluster-operator --repo " + helmRepository.url +
-		" --version " + clusterOperatorHelmVersion +
-		" --untar --untardir /stratio/helm"
-	_, err = commons.ExecuteCommand(n, c)
-	if err != nil {
-		return errors.Wrap(err, "failed to pull cluster operator helm chart")
 	}
 
 	// Deploy keoscluster-controller-manager chart
@@ -306,9 +299,14 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 		" --namespace kube-system" +
 		" --set app.containers.controllerManager.image.registry=" + keosRegistry.url +
 		" --set app.containers.controllerManager.image.repository=stratio/cluster-operator" +
-		" --set app.containers.controllerManager.image.tag=" + keosClusterVersion +
-		" --set app.containers.controllerManager.imagePullSecrets.enabled=true" +
-		" --set app.containers.controllerManager.imagePullSecrets.name=regcred"
+		" --set app.containers.controllerManager.image.tag=" + keosClusterImage
+	if kubeconfigPath == "" {
+		c = c +
+			" --set app.containers.controllerManager.imagePullSecrets.enabled=true" +
+			" --set app.containers.controllerManager.imagePullSecrets.name=regcred"
+	} else {
+		c = c + " --kubeconfig " + kubeconfigPath
+	}
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy keoscluster-controller-manager chart")

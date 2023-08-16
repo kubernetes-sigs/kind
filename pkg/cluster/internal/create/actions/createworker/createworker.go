@@ -54,8 +54,6 @@ const (
 	cloudProviderBackupPath = "/kind/backup/objects"
 	localBackupPath         = "backup"
 	manifestsPath           = "/kind/manifests"
-
-	keosClusterVersion = "0.1.0-SNAPSHOT"
 )
 
 var PathsToBackupLocally = []string{
@@ -86,7 +84,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	var c string
 	var err error
 	var keosRegistry keosRegistry
-	var jsonDockerRegistriesCredentials []byte
 
 	// Get the target node
 	n, err := ctx.GetNode()
@@ -250,7 +247,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Installing keos cluster operator 💻")
 	defer ctx.Status.End(false)
 
-	err = deployClusterOperator(n, a.keosCluster, a.clusterCredentials, keosRegistry)
+	err = deployClusterOperator(n, a.keosCluster, a.clusterCredentials, keosRegistry, "")
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy cluster operator")
 	}
@@ -637,37 +634,12 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 			ctx.Status.Start("Moving the cluster-operator 🗝️")
 
-			// Create the docker registries credentials secret for keoscluster-controller-manager
-			if a.clusterCredentials.DockerRegistriesCredentials != nil {
-				c = "kubectl --kubeconfig " + kubeconfigPath + " -n kube-system create secret generic keoscluster-registries --from-literal=credentials='" + string(jsonDockerRegistriesCredentials) + "'"
-				_, err = commons.ExecuteCommand(n, c)
-				if err != nil {
-					return errors.Wrap(err, "failed to create keoscluster-registries secret")
-				}
-			}
-
-			// Deploy cluster-operator chart in workload cluster
-			c = "helm install cluster-operator /stratio/helm/cluster-operator" +
-				" --kubeconfig " + kubeconfigPath +
-				" --namespace kube-system" +
-				" --set app.containers.controllerManager.image.registry=" + keosRegistry.url +
-				" --set app.containers.controllerManager.image.repository=stratio/cluster-operator" +
-				" --set app.containers.controllerManager.image.tag=" + keosClusterVersion
-			_, err = commons.ExecuteCommand(n, c)
+			err = deployClusterOperator(n, a.keosCluster, a.clusterCredentials, keosRegistry, kubeconfigPath)
 			if err != nil {
-				return errors.Wrap(err, "failed to deploy cluster-operator chart in workload cluster")
+				return errors.Wrap(err, "failed to deploy cluster operator in workload cluster")
 			}
 
-			// Wait for keoscluster-controller-manager deployment
-			c = "kubectl --kubekubeconfig " + kubeconfigPath + " -n kube-system rollout status deploy/keoscluster-controller-manager --timeout=3m"
-			_, err = commons.ExecuteCommand(n, c)
-			if err != nil {
-				return errors.Wrap(err, "failed to wait for keoscluster-controller-manager deployment in workload cluster")
-			}
-
-			time.Sleep(10 * time.Second)
-
-			//
+			// Move keoscluster to workload cluster
 			c = "kubectl -n " + capiClustersNamespace + " get keoscluster " + a.keosCluster.Metadata.Name + " -o yaml | kubectl apply --kubeconfig " + kubeconfigPath + " -f-"
 			_, err = commons.ExecuteCommand(n, c)
 			if err != nil {
