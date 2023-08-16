@@ -112,7 +112,7 @@ func validateAzure(spec commons.Spec, providerSecrets map[string]string) error {
 			}
 			for _, ev2 := range spec.ControlPlane.ExtraVolumes[i+1:] {
 				if ev.Name == ev2.Name {
-					return errors.Wrap(err, "spec.control_plane.extra_volumes["+strconv.Itoa(i)+"]: Invalid value: \"name\": is duplicated")
+					return errors.New("spec.control_plane.extra_volumes[" + strconv.Itoa(i) + "]: Invalid value: \"name\": is duplicated")
 				}
 			}
 		}
@@ -131,7 +131,7 @@ func validateAzure(spec commons.Spec, providerSecrets map[string]string) error {
 			}
 			for i, ev := range wn.ExtraVolumes {
 				if ev.Name == "" {
-					return errors.Wrap(err, "spec.worker_nodes."+wn.Name+".extra_volumes["+strconv.Itoa(i)+"]: Required value: \"name\"")
+					return errors.New("spec.worker_nodes." + wn.Name + ".extra_volumes[" + strconv.Itoa(i) + "]: Required value: \"name\"")
 				}
 				if err := validateVolumeType(ev.Type, AzureVolumes); err != nil {
 					return errors.Wrap(err, "spec.worker_nodes."+wn.Name+".extra_volumes["+strconv.Itoa(i)+"]: Invalid value: \"type\"")

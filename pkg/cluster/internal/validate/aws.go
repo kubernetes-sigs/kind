@@ -82,9 +82,10 @@ func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 		if err := validateVolumeType(spec.ControlPlane.RootVolume.Type, AWSVolumes); err != nil {
 			return errors.Wrap(err, "spec.control_plane.root_volume: Invalid value: \"type\"")
 		}
+
 		for i, ev := range spec.ControlPlane.ExtraVolumes {
 			if ev.DeviceName == "" {
-				return errors.Wrap(err, "spec.control_plane.extra_volumes["+strconv.Itoa(i)+"]: Invalid value: \"device_name\": is required")
+				return errors.New("spec.control_plane.extra_volumes[" + strconv.Itoa(i) + "]: Invalid value: \"device_name\": is required")
 			}
 			if err := validateVolumeType(ev.Type, AWSVolumes); err != nil {
 				return errors.Wrap(err, "spec.control_plane.extra_volumes["+strconv.Itoa(i)+"]: Invalid value: \"type\"")
@@ -92,7 +93,7 @@ func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 			for j, ev2 := range spec.ControlPlane.ExtraVolumes {
 				if i != j {
 					if ev.DeviceName == ev2.DeviceName {
-						return errors.Wrap(err, "spec.control_plane.extra_volumes["+strconv.Itoa(i)+"]: Invalid value: \"device_name\": is duplicated")
+						return errors.New("spec.control_plane.extra_volumes[" + strconv.Itoa(i) + "]: Invalid value: \"device_name\": is duplicated")
 					}
 				}
 			}
@@ -110,7 +111,7 @@ func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 		}
 		for i, ev := range wn.ExtraVolumes {
 			if ev.DeviceName == "" {
-				return errors.Wrap(err, "spec.worker_nodes."+wn.Name+".extra_volumes["+strconv.Itoa(i)+"]: Invalid value: \"device_name\": is required")
+				return errors.New("spec.worker_nodes." + wn.Name + ".extra_volumes[" + strconv.Itoa(i) + "]: Invalid value: \"device_name\": is required")
 			}
 			if err := validateVolumeType(ev.Type, AWSVolumes); err != nil {
 				return errors.Wrap(err, "spec.worker_nodes."+wn.Name+".extra_volumes["+strconv.Itoa(i)+"]: Invalid value: \"type\"")
@@ -118,7 +119,7 @@ func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 			for j, ev2 := range spec.ControlPlane.ExtraVolumes {
 				if i != j {
 					if ev.DeviceName == ev2.DeviceName {
-						return errors.Wrap(err, "spec.worker_nodes."+wn.Name+".extra_volumes["+strconv.Itoa(i)+"]: Invalid value: \"device_name\": is duplicated")
+						return errors.New("spec.worker_nodes." + wn.Name + ".extra_volumes[" + strconv.Itoa(i) + "]: Invalid value: \"device_name\": is duplicated")
 					}
 				}
 			}
@@ -141,7 +142,7 @@ func validateAWSNetwork(ctx context.Context, cfg aws.Config, spec commons.Spec) 
 	if len(spec.Networks.Subnets) > 0 {
 		for _, s := range spec.Networks.Subnets {
 			if s.SubnetId == "" {
-				return errors.New("\"subnet_id\": required")
+				return errors.New("\"subnet_id\": is required")
 			}
 		}
 		if err = validateAWSAZs(ctx, cfg, spec); err != nil {
