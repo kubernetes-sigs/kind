@@ -57,20 +57,31 @@ func validateAzure(spec commons.Spec, providerSecrets map[string]string) error {
 		return err
 	}
 
-	if spec.Security.NodesIdentity != "" {
-		if !isAzureIdentity(spec.Security.NodesIdentity) {
-			return errors.New("incorrect identity format. It must have the format " + AzureIdentityFormat)
-		}
-	}
-
 	if (spec.StorageClass != commons.StorageClass{}) {
 		if err = validateAzureStorageClass(spec.StorageClass, spec.WorkerNodes); err != nil {
-			return errors.Wrap(err, "invalid storage class")
+			return errors.Wrap(err, "spec.storageclass: Invalid value")
 		}
 	}
 	if !reflect.ValueOf(spec.Networks).IsZero() {
 		if err = validateAzureNetwork(spec.Networks, spec.ControlPlane.Managed); err != nil {
-			return errors.Wrap(err, "invalid network")
+			return errors.Wrap(err, "spec.networks: Invalid value")
+		}
+	}
+	if !isAzureIdentity(spec.Security.ControlPlaneIdentity) {
+		return errors.New("spec.security: Invalid value: \"control_plane_identity\": is required and have the format " + AzureIdentityFormat)
+	}
+	if spec.Security.NodesIdentity != "" {
+		if !isAzureIdentity(spec.Security.NodesIdentity) {
+			return errors.New("spec.security: Invalid value: \"nodes_identity\": it must have the format " + AzureIdentityFormat)
+		}
+	}
+
+	for i, dr := range spec.DockerRegistries {
+		if dr.Type == "ecr" {
+			return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Invalid value: \"type\": ecr is not supported in Azure/AKS")
+		}
+		if dr.Type != "acr" && spec.ControlPlane.Managed {
+			return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Invalid value: \"type\": acr is not supported in AKS")
 		}
 	}
 
@@ -86,20 +97,53 @@ func validateAzure(spec commons.Spec, providerSecrets map[string]string) error {
 	if !spec.ControlPlane.Managed {
 		if spec.ControlPlane.NodeImage != "" {
 			if !isAzureNodeImage(spec.ControlPlane.NodeImage) {
-				return errors.New("incorrect control plane node image. It must have the format " + AzureNodeImageFormat)
+				return errors.New("spec.control_plane: Invalid value: \"node_image\": must have the format " + AzureNodeImageFormat)
 			}
 		}
-		if err = validateAzureVolumes(spec.ControlPlane.RootVolume, spec.ControlPlane.ExtraVolumes, spec.ControlPlane.Size); err != nil {
-			return errors.Wrap(err, "invalid control plane volumes")
+		if err := validateVolumeType(spec.ControlPlane.RootVolume.Type, AzureVolumes); err != nil {
+			return errors.Wrap(err, "spec.control_plane.root_volume: Invalid value: \"type\"")
+		}
+		for i, ev := range spec.ControlPlane.ExtraVolumes {
+			if ev.Name == "" {
+				return errors.New("spec.control_plane.extra_volumes[" + strconv.Itoa(i) + "]: Required value: \"name\"")
+			}
+			if err := validateVolumeType(ev.Type, AzureVolumes); err != nil {
+				return errors.Wrap(err, "spec.control_plane.extra_volumes["+strconv.Itoa(i)+"]: Invalid value: \"type\"")
+			}
+			for _, ev2 := range spec.ControlPlane.ExtraVolumes[i+1:] {
+				if ev.Name == ev2.Name {
+					return errors.Wrap(err, "spec.control_plane.extra_volumes["+strconv.Itoa(i)+"]: Invalid value: \"name\": is duplicated")
+				}
+			}
 		}
 		for _, wn := range spec.WorkerNodes {
 			if wn.NodeImage != "" {
 				if !isAzureNodeImage(wn.NodeImage) {
-					return errors.New("incorrect worker " + wn.Name + " node image. It must have the format " + AzureNodeImageFormat)
+					return errors.New("spec.worker_nodes." + wn.Name + ": \"node_image\": must have the format " + AzureNodeImageFormat)
 				}
 			}
-			if err = validateAzureVolumes(wn.RootVolume, wn.ExtraVolumes, wn.Size); err != nil {
-				return errors.Wrap(err, "invalid worker node volumes")
+			if err := validateVolumeType(wn.RootVolume.Type, AzureVolumes); err != nil {
+				return errors.Wrap(err, "spec.worker_nodes."+wn.Name+".root_volume: Invalid value: \"type\"")
+			}
+			premiumStorage := hasAzurePremiumStorage(wn.Size)
+			if isPremium(wn.RootVolume.Type) && !premiumStorage {
+				return errors.New("spec.worker_nodes." + wn.Name + ".root_volume: Invalid value: \"type\": size doesn't support premium storage")
+			}
+			for i, ev := range wn.ExtraVolumes {
+				if ev.Name == "" {
+					return errors.Wrap(err, "spec.worker_nodes."+wn.Name+".extra_volumes["+strconv.Itoa(i)+"]: Required value: \"name\"")
+				}
+				if err := validateVolumeType(ev.Type, AzureVolumes); err != nil {
+					return errors.Wrap(err, "spec.worker_nodes."+wn.Name+".extra_volumes["+strconv.Itoa(i)+"]: Invalid value: \"type\"")
+				}
+				if isPremium(ev.Type) && !premiumStorage {
+					return errors.New("spec.worker_nodes." + wn.Name + ".extra_volumes[" + strconv.Itoa(i) + "]: Invalid value: \"type\": size doesn't support premium storage")
+				}
+				for _, ev2 := range wn.ExtraVolumes[i+1:] {
+					if ev.Name == ev2.Name {
+						return errors.New("spec.worker_nodes." + wn.Name + ".extra_volumes[" + strconv.Itoa(i) + "]: Invalid value: \"name\": is duplicated")
+					}
+				}
 			}
 		}
 	}
@@ -216,7 +260,7 @@ func validateAKSVersion(spec commons.Spec, creds *azidentity.ClientSecretCredent
 	}
 	if !slices.Contains(availableVersions, strings.ReplaceAll(spec.K8SVersion, "v", "")) {
 		a, _ := json.Marshal(availableVersions)
-		return errors.New("AKS only supports Kubernetes versions: " + string(a))
+		return errors.New("spec: Invalid value: \"k8s_version\": AKS only supports Kubernetes versions: " + string(a))
 	}
 	return nil
 }
@@ -226,34 +270,6 @@ func validateAKSNodes(workerNodes commons.WorkerNodes) error {
 	for _, node := range workerNodes {
 		if !isLetter(node.Name) || len(node.Name) >= AKSMaxNodeNameLength {
 			return errors.New("AKS node names must be " + strconv.Itoa(AKSMaxNodeNameLength) + " characters or less & contain only lowercase alphanumeric characters")
-		}
-	}
-	return nil
-}
-
-func validateAzureVolumes(rootVol commons.RootVolume, extraVols []commons.ExtraVolume, size string) error {
-	var err error
-	premiumStorage := hasAzurePremiumStorage(size)
-	if err = validateVolumeType(rootVol.Type, AzureVolumes); err != nil {
-		return errors.Wrap(err, "invalid root volume type")
-	}
-	if isPremium(rootVol.Type) && !premiumStorage {
-		return errors.New("root_volume type doesn't support premium storage")
-	}
-	for i, v := range extraVols {
-		if v.Name == "" {
-			return errors.New("extra_volumes name cannot be empty")
-		}
-		for _, v2 := range extraVols[i+1:] {
-			if v.Name == v2.Name {
-				return errors.New("extra_volumes name is duplicated")
-			}
-		}
-		if err = validateVolumeType(v.Type, AzureVolumes); err != nil {
-			return errors.Wrap(err, "invalid extra volume type")
-		}
-		if isPremium(v.Type) && !premiumStorage {
-			return errors.New("root_volume type doesn't support premium storage")
 		}
 	}
 	return nil

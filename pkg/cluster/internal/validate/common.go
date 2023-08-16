@@ -32,11 +32,15 @@ const (
 )
 
 func validateCommon(spec commons.Spec) error {
-	if err := validateK8SVersion(spec.K8SVersion); err != nil {
+	var err error
+	if err = validateK8SVersion(spec.K8SVersion); err != nil {
 		return err
 	}
-	if err := validateWorkers(spec.WorkerNodes); err != nil {
-		return errors.Wrap(err, "worker_nodes validation failed")
+	if err = validateWorkers(spec.WorkerNodes); err != nil {
+		return err
+	}
+	if err = validateVolumes(spec); err != nil {
+		return err
 	}
 	return nil
 }
@@ -44,7 +48,7 @@ func validateCommon(spec commons.Spec) error {
 func validateK8SVersion(v string) error {
 	var isVersion = regexp.MustCompile(`^v\d.\d{2}.\d{1,2}$`).MatchString
 	if !isVersion(v) {
-		return errors.New("incorrect format. Must have the format 'v1.24.2'")
+		return errors.New("spec: Invalid value: \"k8s_version\": must have the format 'v1.24.2'")
 	}
 	return nil
 }
@@ -142,9 +146,37 @@ func validateWorkersType(wns commons.WorkerNodes) error {
 	return nil
 }
 
+func validateVolumes(spec commons.Spec) error {
+	if !spec.ControlPlane.Managed {
+		for i, ev := range spec.ControlPlane.ExtraVolumes {
+			for _, ev2 := range spec.ControlPlane.ExtraVolumes[i+1:] {
+				if ev.Label == ev2.Label {
+					return errors.New("spec.control_plane.extra_volumes[" + strconv.Itoa(i) + "]: Invalid value: \"label\": is duplicated")
+				}
+				if ev.MountPath == ev2.MountPath {
+					return errors.New("spec.control_plane.extra_volumes[" + strconv.Itoa(i) + "]: Invalid value: \"mount_path\": is duplicated")
+				}
+			}
+		}
+	}
+	for _, wn := range spec.WorkerNodes {
+		for i, ev := range wn.ExtraVolumes {
+			for _, ev2 := range wn.ExtraVolumes[i+1:] {
+				if ev.Label == ev2.Label {
+					return errors.New("spec.worker_nodes." + wn.Name + ".extra_volumes[" + strconv.Itoa(i) + "]: Invalid value: \"label\": is duplicated")
+				}
+				if ev.MountPath == ev2.MountPath {
+					return errors.New("spec.worker_nodes." + wn.Name + ".extra_volumes[" + strconv.Itoa(i) + "]: Invalid value: \"mount_path\": is duplicated")
+				}
+			}
+		}
+	}
+	return nil
+}
+
 func validateVolumeType(t string, supportedTypes []string) error {
 	if t != "" && !commons.Contains(supportedTypes, t) {
-		return errors.New("unsupported type: " + t + ". Supported types: " + fmt.Sprint(strings.Join(supportedTypes, ", ")))
+		return errors.New(t + ", supported types: " + fmt.Sprint(strings.Join(supportedTypes, ", ")))
 	}
 	return nil
 }

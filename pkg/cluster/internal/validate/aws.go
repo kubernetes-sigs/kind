@@ -57,35 +57,71 @@ func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 
 	if (spec.StorageClass != commons.StorageClass{}) {
 		if err = validateAWSStorageClass(spec.StorageClass, spec.WorkerNodes); err != nil {
-			return errors.Wrap(err, "invalid storage class")
+			return errors.Wrap(err, "spec.storageclass: Invalid value")
 		}
 	}
 
 	if !reflect.ValueOf(spec.Networks).IsZero() {
 		if err = validateAWSNetwork(ctx, cfg, spec); err != nil {
-			return errors.Wrap(err, "invalid network")
+			return errors.Wrap(err, "spec.networks: Invalid value")
+		}
+	}
+
+	for i, dr := range spec.DockerRegistries {
+		if dr.Type == "acr" {
+			return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Invalid value: \"type\": acr is not supported in AWS")
 		}
 	}
 
 	if !spec.ControlPlane.Managed {
 		if spec.ControlPlane.NodeImage != "" {
 			if !isAWSNodeImage(spec.ControlPlane.NodeImage) {
-				return errors.New("incorrect control plane node image. It must have the format " + AWSNodeImageFormat)
+				return errors.New("spec.control_plane: Invalid value: \"node_image\": must have the format " + AWSNodeImageFormat)
 			}
 		}
-		if err = validateAWSVolumes(spec.ControlPlane.RootVolume, spec.ControlPlane.ExtraVolumes); err != nil {
-			return errors.Wrap(err, "invalid control plane volumes")
+		if err := validateVolumeType(spec.ControlPlane.RootVolume.Type, AWSVolumes); err != nil {
+			return errors.Wrap(err, "spec.control_plane.root_volume: Invalid value: \"type\"")
+		}
+		for i, ev := range spec.ControlPlane.ExtraVolumes {
+			if ev.DeviceName == "" {
+				return errors.Wrap(err, "spec.control_plane.extra_volumes["+strconv.Itoa(i)+"]: Invalid value: \"device_name\": is required")
+			}
+			if err := validateVolumeType(ev.Type, AWSVolumes); err != nil {
+				return errors.Wrap(err, "spec.control_plane.extra_volumes["+strconv.Itoa(i)+"]: Invalid value: \"type\"")
+			}
+			for j, ev2 := range spec.ControlPlane.ExtraVolumes {
+				if i != j {
+					if ev.DeviceName == ev2.DeviceName {
+						return errors.Wrap(err, "spec.control_plane.extra_volumes["+strconv.Itoa(i)+"]: Invalid value: \"device_name\": is duplicated")
+					}
+				}
+			}
 		}
 	}
 
 	for _, wn := range spec.WorkerNodes {
 		if wn.NodeImage != "" {
 			if !isAWSNodeImage(wn.NodeImage) {
-				return errors.New("incorrect worker " + wn.Name + " node image. It must have the format " + AWSNodeImageFormat)
+				return errors.New("spec.worker_nodes." + wn.Name + ": \"node_image\": must have the format " + AWSNodeImageFormat)
 			}
 		}
-		if err = validateAWSVolumes(wn.RootVolume, wn.ExtraVolumes); err != nil {
-			return errors.Wrap(err, "invalid worker node volumes")
+		if err := validateVolumeType(wn.RootVolume.Type, AWSVolumes); err != nil {
+			return errors.Wrap(err, "spec.worker_nodes."+wn.Name+".root_volume: Invalid value: \"type\"")
+		}
+		for i, ev := range wn.ExtraVolumes {
+			if ev.DeviceName == "" {
+				return errors.Wrap(err, "spec.worker_nodes."+wn.Name+".extra_volumes["+strconv.Itoa(i)+"]: Invalid value: \"device_name\": is required")
+			}
+			if err := validateVolumeType(ev.Type, AWSVolumes); err != nil {
+				return errors.Wrap(err, "spec.worker_nodes."+wn.Name+".extra_volumes["+strconv.Itoa(i)+"]: Invalid value: \"type\"")
+			}
+			for j, ev2 := range spec.ControlPlane.ExtraVolumes {
+				if i != j {
+					if ev.DeviceName == ev2.DeviceName {
+						return errors.Wrap(err, "spec.worker_nodes."+wn.Name+".extra_volumes["+strconv.Itoa(i)+"]: Invalid value: \"device_name\": is duplicated")
+					}
+				}
+			}
 		}
 	}
 
@@ -95,7 +131,7 @@ func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 func validateAWSNetwork(ctx context.Context, cfg aws.Config, spec commons.Spec) error {
 	var err error
 	if spec.Networks.VPCID == "" {
-		return errors.New("vpc_id is required")
+		return errors.New("\"vpc_id\": is required")
 	}
 	if spec.Networks.PodsCidrBlock != "" {
 		if err = validateAWSPodsNetwork(spec.Networks.PodsCidrBlock); err != nil {
@@ -105,7 +141,7 @@ func validateAWSNetwork(ctx context.Context, cfg aws.Config, spec commons.Spec) 
 	if len(spec.Networks.Subnets) > 0 {
 		for _, s := range spec.Networks.Subnets {
 			if s.SubnetId == "" {
-				return errors.New("subnet_id is required")
+				return errors.New("\"subnet_id\": required")
 			}
 		}
 		if err = validateAWSAZs(ctx, cfg, spec); err != nil {
@@ -129,17 +165,17 @@ func validateAWSPodsNetwork(podsNetwork string) error {
 
 	_, ipv4Net, err := net.ParseCIDR(podsNetwork)
 	if err != nil {
-		return errors.New("invalid parameter pods_cidr, CIDR block must be a valid IPv4 CIDR block")
+		return errors.New("\"pods_cidr\": CIDR block must be a valid IPv4 CIDR block")
 	}
 
 	cidrSize := cidr.AddressCount(ipv4Net)
 	if cidrSize > cidrSizeMax || cidrSize < cidrSizeMin {
-		return errors.New("invalid parameter pods_cidr, CIDR block sizes must be between a /16 and /28 netmask")
+		return errors.New("\"pods_cidr\": CIDR block sizes must be between a /16 and /28 netmask")
 	}
 
 	start, end := cidr.AddressRange(ipv4Net)
 	if (!validRange1.Contains(start) || !validRange1.Contains(end)) && (!validRange2.Contains(start) || !validRange2.Contains(end)) {
-		return errors.New("invalid parameter pods_cidr, CIDR block must be between " + validRange1.String() + " and " + validRange2.String())
+		return errors.New("\"pods_cidr\": CIDR block must be between " + validRange1.String() + " and " + validRange2.String())
 	}
 	return nil
 }
@@ -162,22 +198,22 @@ func validateAWSStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) er
 	// Validate encryptionKey format
 	if sc.EncryptionKey != "" {
 		if !isKeyValid(sc.EncryptionKey) {
-			return errors.New("incorrect encryptionKey format. It must have the format arn:aws:kms:[REGION]:[ACCOUNT_ID]:key/[KEY_ID]")
+			return errors.New("\"encryptionKey\": it must have the format arn:aws:kms:[REGION]:[ACCOUNT_ID]:key/[KEY_ID]")
 		}
 	}
 	// Validate diskEncryptionSetID format
 	if sc.Parameters.KmsKeyId != "" {
 		if !isKeyValid(sc.Parameters.KmsKeyId) {
-			return errors.New("incorrect kmsKeyId format. It must have the format arn:aws:kms:[REGION]:[ACCOUNT_ID]:key/[KEY_ID]")
+			return errors.New("\"kmsKeyId\": it must have the format arn:aws:kms:[REGION]:[ACCOUNT_ID]:key/[KEY_ID]")
 		}
 	}
 	// Validate type
 	if sc.Parameters.Type != "" && !commons.Contains(AWSVolumes, sc.Parameters.Type) {
-		return errors.New("unsupported type: " + sc.Parameters.Type)
+		return errors.New("\"type\": unsupported " + sc.Parameters.Type + ", supported types: " + fmt.Sprint(strings.Join(AWSVolumes, ", ")))
 	}
 	// Validate fsType
 	if sc.Parameters.FsType != "" && !commons.Contains(AWSFSTypes, sc.Parameters.FsType) {
-		return errors.New("unsupported fsType: " + sc.Parameters.FsType + ". Supported types: " + fmt.Sprint(strings.Join(AWSFSTypes, ", ")))
+		return errors.New("\fsType\": unsupported " + sc.Parameters.FsType + ", supported types: " + fmt.Sprint(strings.Join(AWSFSTypes, ", ")))
 	}
 	// Validate iops
 	if sc.Parameters.Iops != "" {
@@ -211,22 +247,6 @@ func validateAWSStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) er
 	if sc.Parameters.Labels != "" {
 		if err = validateLabel(sc.Parameters.Labels); err != nil {
 			return errors.Wrap(err, "invalid labels")
-		}
-	}
-	return nil
-}
-
-func validateAWSVolumes(rootVol commons.RootVolume, extraVols []commons.ExtraVolume) error {
-	var err error
-	if err = validateVolumeType(rootVol.Type, AWSVolumes); err != nil {
-		return errors.Wrap(err, "invalid root volume")
-	}
-	for _, v := range extraVols {
-		if v.DeviceName == "" {
-			return errors.New("device_name is required for extra volumes")
-		}
-		if err = validateVolumeType(v.Type, AWSVolumes); err != nil {
-			return errors.Wrap(err, "invalid extra volume")
 		}
 	}
 	return nil
