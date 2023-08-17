@@ -38,6 +38,7 @@ const (
 )
 
 var AzureVolumes = []string{"Standard_LRS", "Premium_LRS", "StandardSSD_LRS", "UltraSSD_LRS", "Premium_ZRS", "StandardSSD_ZRS", "PremiumV2_LRS"}
+var AzureAKSVolumes = []string{"Managed", "Ephemeral"}
 var AzureFSTypes = []string{"xfs", "ext3", "ext4", "ext2", "btrfs"}
 var AzureSCFields = []string{"FsType", "Kind", "CachingMode", "DiskAccessID", "DiskEncryptionType", "EnableBursting", "EnablePerformancePlus", "NetworkAccessPolicy", "Provisioner", "PublicNetworkAccess", "ResourceGroup", "SkuName", "SubscriptionID", "Tags"}
 
@@ -90,7 +91,7 @@ func validateAzure(spec commons.Spec, providerSecrets map[string]string) error {
 			return err
 		}
 		if err = validateAKSNodes(spec.WorkerNodes); err != nil {
-			return errors.Wrap(err, "invalid worker nodes")
+			return err
 		}
 	}
 
@@ -265,11 +266,14 @@ func validateAKSVersion(spec commons.Spec, creds *azidentity.ClientSecretCredent
 	return nil
 }
 
-func validateAKSNodes(workerNodes commons.WorkerNodes) error {
+func validateAKSNodes(wn commons.WorkerNodes) error {
 	var isLetter = regexp.MustCompile(`^[a-z0-9]+$`).MatchString
-	for _, node := range workerNodes {
-		if !isLetter(node.Name) || len(node.Name) >= AKSMaxNodeNameLength {
-			return errors.New("AKS node names must be " + strconv.Itoa(AKSMaxNodeNameLength) + " characters or less & contain only lowercase alphanumeric characters")
+	for _, n := range wn {
+		if !isLetter(n.Name) || len(n.Name) >= AKSMaxNodeNameLength {
+			return errors.New("spec.worker_nodes." + n.Name + " : Invalid value \"name\": in AKS must be " + strconv.Itoa(AKSMaxNodeNameLength) + " characters or less & contain only lowercase alphanumeric characters")
+		}
+		if n.RootVolume.Type != "" && !commons.Contains(AzureAKSVolumes, n.RootVolume.Type) {
+			return errors.New("spec.worker_nodes." + n.Name + ".root_volume: Invalid value \"type\": " + n.RootVolume.Type + " unsupported, supported types: " + fmt.Sprint(strings.Join(AzureAKSVolumes, ", ")))
 		}
 	}
 	return nil
