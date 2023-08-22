@@ -14,10 +14,9 @@ Starting with kind 0.11.0, [Rootless Docker](https://docs.docker.com/go/rootless
 
 ## Host requirements
 The host needs to be running with cgroup v2.
-
-cgroup v2 is enabled by default on Fedora.
-On other distros, cgroup v2 can be typically enabled by adding `GRUB_CMDLINE_LINUX="systemd.unified_cgroup_hierarchy=1"` to `/etc/default/grub` and
-running `sudo update-grub`.
+Make sure that the result of the `docker info` command contains `Cgroup Version: 2`.
+If it prints `Cgroup Version: 1`, try adding `GRUB_CMDLINE_LINUX="systemd.unified_cgroup_hierarchy=1"` to `/etc/default/grub` and
+running `sudo update-grub` to enable cgroup v2.
 
 Also, depending on the host configuration, the following steps might be needed:
 
