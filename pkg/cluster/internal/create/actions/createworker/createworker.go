@@ -298,6 +298,13 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			return errors.Wrap(err, "failed to get workload cluster kubeconfig")
 		}
 
+		// Create worker-kubeconfig secret for keos cluster
+		c = "kubectl -n " + capiClustersNamespace + " create secret generic worker-kubeconfig --from-file " + kubeconfigPath
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
+			return errors.Wrap(err, "failed to create worker-kubeconfig secret")
+		}
+
 		workKubeconfigBasePath := strings.Split(workKubeconfigPath, "/")[0]
 		_, err = os.Stat(workKubeconfigBasePath)
 		if err != nil {

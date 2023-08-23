@@ -283,6 +283,10 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 
 	// Create the docker registries credentials secret for keoscluster-controller-manager
 	if clusterCredentials.DockerRegistriesCredentials != nil {
+		jsonDockerRegistriesCredentials, err = json.Marshal(clusterCredentials.DockerRegistriesCredentials)
+		if err != nil {
+			return errors.Wrap(err, "failed to marshal docker registries credentials")
+		}
 		c = "kubectl -n kube-system create secret generic keoscluster-registries --from-literal=credentials='" + string(jsonDockerRegistriesCredentials) + "'"
 		if kubeconfigPath != "" {
 			c = c + " --kubeconfig " + kubeconfigPath
