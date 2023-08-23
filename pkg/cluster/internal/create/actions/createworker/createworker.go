@@ -200,7 +200,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		KeosCluster:      a.keosCluster,
 		Credentials:      a.clusterCredentials.ProviderCredentials,
 		DockerRegistries: a.clusterCredentials.DockerRegistriesCredentials,
-		AZs:              azs,
+		ProviderAZs:      azs,
 		Flavor:           provider.capxTemplate,
 	}
 

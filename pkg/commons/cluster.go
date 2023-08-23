@@ -241,7 +241,7 @@ type TemplateParams struct {
 	KeosCluster      KeosCluster
 	Credentials      map[string]string
 	DockerRegistries []map[string]interface{}
-	AZs              []string
+	ProviderAZs      []string
 	Flavor           string
 }
 

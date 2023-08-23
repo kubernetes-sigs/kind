@@ -25,7 +25,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"reflect"
 	"strings"
 	"text/template"
 
@@ -596,14 +595,14 @@ func GetClusterManifest(params commons.TemplateParams) (string, error) {
 				if az != "" {
 					ch <- Node{AZ: az, QA: qa, MaxSize: maxsize, MinSize: minsize}
 				} else {
-					for i, a := range params.AZs {
+					for i, a := range params.ProviderAZs {
 						if zd == "unbalanced" {
-							q = qa/len(params.AZs) + resto(qa, i, len(params.AZs))
-							mx = maxsize/len(params.AZs) + resto(maxsize, i, len(params.AZs))
-							mn = minsize/len(params.AZs) + resto(minsize, i, len(params.AZs))
+							q = qa/len(params.ProviderAZs) + resto(qa, i, len(params.ProviderAZs))
+							mx = maxsize/len(params.ProviderAZs) + resto(maxsize, i, len(params.ProviderAZs))
+							mn = minsize/len(params.ProviderAZs) + resto(minsize, i, len(params.ProviderAZs))
 							ch <- Node{AZ: a, QA: q, MaxSize: mx, MinSize: mn}
 						} else {
-							ch <- Node{AZ: a, QA: qa / len(params.AZs), MaxSize: maxsize / len(params.AZs), MinSize: minsize / len(params.AZs)}
+							ch <- Node{AZ: a, QA: qa / len(params.ProviderAZs), MaxSize: maxsize / len(params.ProviderAZs), MinSize: minsize / len(params.ProviderAZs)}
 						}
 					}
 				}
@@ -613,13 +612,6 @@ func GetClusterManifest(params commons.TemplateParams) (string, error) {
 		},
 		"hostname": func(s string) string {
 			return strings.Split(s, "/")[0]
-		},
-		"checkReference": func(v interface{}) bool {
-			defer func() { recover() }()
-			return v != nil && !reflect.ValueOf(v).IsNil() && v != "nil" && v != "<nil>"
-		},
-		"isNotEmpty": func(v interface{}) bool {
-			return !reflect.ValueOf(v).IsZero()
 		},
 		"inc": func(i int) int {
 			return i + 1
