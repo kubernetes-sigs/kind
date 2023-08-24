@@ -1,6 +1,6 @@
 module sigs.k8s.io/kind/images/kindnetd
 
-go 1.17
+go 1.18
 
 require (
 	github.com/coreos/go-iptables v0.6.0
