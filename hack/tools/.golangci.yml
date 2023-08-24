@@ -4,17 +4,12 @@ run:
 linters:
   disable-all: true
   enable:
-    # default golangci-lint lints
-    # NOTE: https://github.com/golangci/golangci-lint/issues/1841
     - errcheck
     - gosimple
     - govet
     - ineffassign
     - staticcheck
     - typecheck
-    - unused
-
-    # additional lints
     - gochecknoinits
     - gofmt
     - revive # replaces golint for now
@@ -26,6 +21,13 @@ linters-settings:
   staticcheck:
     checks:
     - all
-    # TODO: require go1.16 for kind and sort out migrating without breakage
-    # until then, we still use io/ioutil for now
-    - '-SA1019'
+
+issues:
+  exclude-rules:
+    # this requires renaming all unused parameters, we'd rather leave a preferred
+    # placeholder name in place when implementing an interface etc.
+    # we can revisit this later, right now it's generating a lot of new warnings
+    # after upgrading golangci-lint
+    - text: "^unused-parameter: .*"
+      linters:
+        - revive
