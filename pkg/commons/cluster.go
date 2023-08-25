@@ -383,19 +383,15 @@ func GetClusterDescriptor(descriptorPath string) (*KeosCluster, error) {
 	}
 
 	// Clean keosCluster data
-	if keosCluster.Spec.InfraProvider != "azure" {
+	if keosCluster.Spec.InfraProvider != "azure" || (keosCluster.Spec.InfraProvider == "azure" && !keosCluster.Spec.ControlPlane.Managed) {
 		keosCluster.Spec.ControlPlane.Azure = AzureCP{}
 	}
-	if keosCluster.Spec.InfraProvider != "aws" {
+	if keosCluster.Spec.InfraProvider != "aws" || (keosCluster.Spec.InfraProvider == "aws" && !keosCluster.Spec.ControlPlane.Managed) {
 		keosCluster.Spec.ControlPlane.AWS = AWSCP{}
 		keosCluster.Spec.Security.AWS = struct {
 			CreateIAM bool `yaml:"create_iam" validate:"boolean"`
 		}{}
 	}
-	if keosCluster.Spec.InfraProvider == "aws" && !keosCluster.Spec.ControlPlane.Managed {
-		keosCluster.Spec.ControlPlane.AWS = AWSCP{}
-	}
-
 	keosCluster.Metadata.Namespace = "cluster-" + keosCluster.Metadata.Name
 
 	return &keosCluster, nil
