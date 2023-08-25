@@ -62,8 +62,8 @@ func newAzureBuilder() *AzureBuilder {
 
 func (b *AzureBuilder) setCapx(managed bool) {
 	b.capxProvider = "azure"
-	b.capxVersion = "v1.10.0"
-	b.capxImageVersion = "v1.10.0"
+	b.capxVersion = "v1.9.3"
+	b.capxImageVersion = "v1.9.3"
 	b.capxName = "capz"
 	b.capxManaged = managed
 	b.csiNamespace = "kube-system"
@@ -106,7 +106,9 @@ func (b *AzureBuilder) setCapxEnvVars(p ProviderParams) {
 		"AZURE_TENANT_ID_B64=" + base64.StdEncoding.EncodeToString([]byte(p.Credentials["TenantID"])),
 		"AZURE_CLIENT_ID_B64=" + base64.StdEncoding.EncodeToString([]byte(p.Credentials["ClientID"])),
 		"AZURE_CLIENT_SECRET_B64=" + base64.StdEncoding.EncodeToString([]byte(p.Credentials["ClientSecret"])),
-		"EXP_MACHINE_POOL=true",
+	}
+	if p.Managed {
+		b.capxEnvVars = append(b.capxEnvVars, "EXP_MACHINE_POOL=true")
 	}
 	if p.GithubToken != "" {
 		b.capxEnvVars = append(b.capxEnvVars, "GITHUB_TOKEN="+p.GithubToken)
@@ -180,7 +182,9 @@ func installCloudProvider(n nodes.Node, keosCluster commons.KeosCluster, k strin
 	return nil
 }
 
-func assignUserIdentity(p ProviderParams, i string) error {
+func assignUserIdentity(p ProviderParams, security commons.Security) error {
+	var managedCluster armcontainerservice.ManagedCluster
+	var kubeletidentity *armcontainerservice.ManagedClusterProperties
 	var ctx = context.Background()
 
 	cfg, err := commons.AzureGetConfig(p.Credentials)
@@ -191,36 +195,34 @@ func assignUserIdentity(p ProviderParams, i string) error {
 	if err != nil {
 		return err
 	}
-	managedClustersClient := containerserviceClientFactory.NewManagedClustersClient()
-	pollerResp, err := managedClustersClient.BeginCreateOrUpdate(
-		ctx, p.ClusterName, p.ClusterName,
-		armcontainerservice.ManagedCluster{
-			Location: to.Ptr(p.Region),
-			Identity: &armcontainerservice.ManagedClusterIdentity{
-				Type: to.Ptr(armcontainerservice.ResourceIdentityTypeUserAssigned),
-				UserAssignedIdentities: map[string]*armcontainerservice.ManagedServiceIdentityUserAssignedIdentitiesValue{
-					i: {},
-				},
-			},
-			Properties: &armcontainerservice.ManagedClusterProperties{
-				IdentityProfile: map[string]*armcontainerservice.UserAssignedIdentity{
-					"kubeletidentity": {
-						ResourceID: to.Ptr(i),
-					},
-				},
+	managedCluster = armcontainerservice.ManagedCluster{
+		Location: to.Ptr(p.Region),
+		Identity: &armcontainerservice.ManagedClusterIdentity{
+			Type: to.Ptr(armcontainerservice.ResourceIdentityTypeUserAssigned),
+			UserAssignedIdentities: map[string]*armcontainerservice.ManagedServiceIdentityUserAssignedIdentitiesValue{
+				security.ControlPlaneIdentity: {},
 			},
 		},
-		nil,
-	)
+	}
+	if security.NodesIdentity != "" {
+		kubeletidentity = &armcontainerservice.ManagedClusterProperties{
+			IdentityProfile: map[string]*armcontainerservice.UserAssignedIdentity{
+				"kubeletidentity": {
+					ResourceID: to.Ptr(security.NodesIdentity),
+				},
+			},
+		}
+		managedCluster.Properties = kubeletidentity
+	}
+	managedClustersClient := containerserviceClientFactory.NewManagedClustersClient()
+	pollerResp, err := managedClustersClient.BeginCreateOrUpdate(ctx, p.ClusterName, p.ClusterName, managedCluster, nil)
 	if err != nil {
 		return err
 	}
-
 	_, err = pollerResp.PollUntilDone(ctx, nil)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 

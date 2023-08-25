@@ -71,13 +71,7 @@ type Spec struct {
 
 	ExternalDomain string `yaml:"external_domain" validate:"fqdn"`
 
-	Security struct {
-		ControlPlaneIdentity string `yaml:"control_plane_identity,omitempty"`
-		NodesIdentity        string `yaml:"nodes_identity,omitempty"`
-		AWS                  struct {
-			CreateIAM bool `yaml:"create_iam" validate:"boolean"`
-		} `yaml:"aws,omitempty"`
-	} `yaml:"security,omitempty"`
+	Security Security `yaml:"security,omitempty"`
 
 	Keos struct {
 		Flavour string `yaml:"flavour,omitempty"`
@@ -129,6 +123,14 @@ type AWSCP struct {
 
 type AzureCP struct {
 	Tier string `yaml:"tier" validate:"omitempty,oneof='Free' 'Paid'"`
+}
+
+type Security struct {
+	ControlPlaneIdentity string `yaml:"control_plane_identity,omitempty"`
+	NodesIdentity        string `yaml:"nodes_identity,omitempty"`
+	AWS                  struct {
+		CreateIAM bool `yaml:"create_iam" validate:"boolean"`
+	} `yaml:"aws,omitempty"`
 }
 
 type WorkerNodes []struct {

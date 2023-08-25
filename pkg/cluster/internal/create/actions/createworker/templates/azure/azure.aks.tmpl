@@ -33,14 +33,6 @@ spec:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: AzureClusterIdentity
     name: "{{ .KeosCluster.Metadata.Name }}-identity"
-{{- if ne .KeosCluster.Spec.Security.ControlPlaneIdentity "" }}
-  identity:
-    type: UserAssigned
-    userAssignedIdentityResourceID: \"{{ .KeosCluster.Spec.Security.ControlPlaneIdentity }}\"
-  {{- if ne .KeosCluster.Spec.Security.NodesIdentity "" }}
-  kubeletUserAssignedIdentity: \"{{ .KeosCluster.Spec.Security.NodesIdentity }}\"
-  {{- end }}
-{{- end }}
   location: "{{ .KeosCluster.Spec.Region }}"
   sku:
     tier: "{{ .KeosCluster.Spec.ControlPlane.Azure.Tier }}"
