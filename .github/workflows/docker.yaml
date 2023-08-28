@@ -26,7 +26,7 @@ jobs:
       IP_FAMILY: ${{ matrix.ipFamily }}
     steps:
       - name: Check out code into the Go module directory
-        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
 
       - name: Install kind
         run: sudo make install INSTALL_DIR=/usr/local/bin

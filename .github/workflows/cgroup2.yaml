@@ -29,7 +29,7 @@ jobs:
       JOB_NAME: "cgroup2-${{ matrix.provider }}-${{ matrix.rootless }}"
     steps:
       - name: Check out code
-        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
 
       - name: Boot Fedora
         run: |
