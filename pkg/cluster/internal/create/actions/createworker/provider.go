@@ -300,6 +300,7 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 	// Deploy keoscluster-controller-manager chart
 	c = "helm install --wait cluster-operator /stratio/helm/cluster-operator" +
 		" --namespace kube-system" +
+		" --set app.replicas=2" +
 		" --set app.containers.controllerManager.image.registry=" + keosRegistry.url +
 		" --set app.containers.controllerManager.image.repository=stratio/cluster-operator" +
 		" --set app.containers.controllerManager.image.tag=" + keosClusterImage
