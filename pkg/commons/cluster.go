@@ -80,7 +80,6 @@ type Spec struct {
 
 	ControlPlane struct {
 		Managed         bool                `yaml:"managed" validate:"boolean"`
-		Name            string              `yaml:"name,omitempty"`
 		NodeImage       string              `yaml:"node_image,omitempty"`
 		HighlyAvailable bool                `yaml:"highly_available" validate:"boolean"`
 		Size            string              `yaml:"size,omitempty" validate:"required_if=Managed false"`
