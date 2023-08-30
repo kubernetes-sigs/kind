@@ -238,3 +238,8 @@ kubectl --kubeconfig local_kubeconfig -n cluster-eks-cl01 delete cluster eks-cl0
 | elasticloadbalancing:DeleteLoadBalancer | not authorized to perform: elasticloadbalancing:RegisterInstancesWithLoadBalancer | arn:aws:elasticloadbalancing:*:268367799918:loadbalancer/* | cloud-provisioner |
 | ec2:RevokeSecurityGroupIngress | not authorized to perform this operation | arn:aws:ec2:*:268367799918:security-group/* | cloud-provisioner |
 
+**Test**: keoscluster
+
+| Permission | Needed for | Description | Resource | Application |
+| --- | --- | --- | --- | --- |
+| eks:UpdateClusterConfig | Upgrade loggin | UpdateClusterConfig | arn:aws:eks:*:268367799918:cluster/* | cloud-provisioner |
