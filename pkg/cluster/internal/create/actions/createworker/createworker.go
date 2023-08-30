@@ -552,7 +552,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 
 		if a.keosCluster.Spec.DeployAutoscaler && !azureAKSEnabled {
-			ctx.Status.Start("Adding Cluster-Autoescaler 🗚")
+			ctx.Status.Start("Installing cluster-autoescaler in workload cluster 🗚")
 			defer ctx.Status.End(false)
 
 			c = "helm install cluster-autoscaler /stratio/helm/cluster-autoscaler" +
@@ -566,11 +566,21 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 			_, err = commons.ExecuteCommand(n, c)
 			if err != nil {
-				return errors.Wrap(err, "failed to install chart cluster-autoscaler")
+				return errors.Wrap(err, "failed to deploy cluster-autoscaler in workload cluster")
 			}
 
 			ctx.Status.End(true)
 		}
+
+		ctx.Status.Start("Installing keos cluster operator in workload cluster 💻")
+		defer ctx.Status.End(false)
+
+		err = deployClusterOperator(n, a.keosCluster, a.clusterCredentials, keosRegistry, kubeconfigPath)
+		if err != nil {
+			return errors.Wrap(err, "failed to deploy cluster operator in workload cluster")
+		}
+
+		ctx.Status.End(true)
 
 		// Apply custom CoreDNS configuration
 		if a.keosCluster.Spec.Dns.Forwarders != nil && len(a.keosCluster.Spec.Dns.Forwarders) > 0 && !awsEKSEnabled {
@@ -638,11 +648,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			ctx.Status.End(true) // End Moving the management role
 
 			ctx.Status.Start("Moving the cluster-operator 🗝️")
-
-			err = deployClusterOperator(n, a.keosCluster, a.clusterCredentials, keosRegistry, kubeconfigPath)
-			if err != nil {
-				return errors.Wrap(err, "failed to deploy cluster operator in workload cluster")
-			}
 
 			// Move keoscluster to workload cluster
 			c = "kubectl -n " + capiClustersNamespace + " get keoscluster " + a.keosCluster.Metadata.Name + " -o yaml | kubectl apply --kubeconfig " + kubeconfigPath + " -f-"
