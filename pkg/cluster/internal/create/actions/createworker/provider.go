@@ -300,7 +300,6 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 	// Deploy keoscluster-controller-manager chart
 	c = "helm install --wait cluster-operator /stratio/helm/cluster-operator" +
 		" --namespace kube-system" +
-		" --set app.replicas=2" +
 		" --set app.containers.controllerManager.image.registry=" + keosRegistry.url +
 		" --set app.containers.controllerManager.image.repository=stratio/cluster-operator" +
 		" --set app.containers.controllerManager.image.tag=" + keosClusterImage
@@ -309,7 +308,7 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 			" --set app.containers.controllerManager.imagePullSecrets.enabled=true" +
 			" --set app.containers.controllerManager.imagePullSecrets.name=regcred"
 	} else {
-		c = c + " --kubeconfig " + kubeconfigPath
+		c = c + " --set app.replicas=2" + " --kubeconfig " + kubeconfigPath
 	}
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
