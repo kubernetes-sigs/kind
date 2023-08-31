@@ -1,19 +1,19 @@
 core:
   kind:
-  clusterctl: v1.4.3
-  cluster-api: v1.4.3
-  capi-kubeadm-bootstrap-system: v1.4.3
-  capi-kubeadm-control-plane-system: v1.4.3
+  clusterctl: v1.5.1
+  cluster-api: v1.5.1
+  capi-kubeadm-bootstrap-system: v1.5.1
+  capi-kubeadm-control-plane-system: v1.5.1
   calico:
-    calicoctl: v3.25.1
-    tigera-operator: v1.25.9
+    calicoctl: v3.26.1
+    tigera-operator: v1.30.5
   cluster-autoscaler-chart: v9.29.1
   cluster-autoscaler: v1.27.2
   pause: v3.9
 aws:
-  clusterawsadm: v2.2.0
-  cluster-api-aws: v2.2.0
-  cluster-api-aws-templates: v2.2.0
+  clusterawsadm: v2.2.1
+  cluster-api-aws: v2.2.1
+  cluster-api-aws-templates: v2.2.1
   managed:
     eks-addons:
       aws-ebs-csi-driver: v1.19.0-eksbuild.2
