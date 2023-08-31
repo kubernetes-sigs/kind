@@ -70,7 +70,7 @@ Editar el fichero images/capi/packer/ami/packer.json y modificar el valor de la 
 * Así mismo, debe modificar el valor de la variable "ssh_private_key_file" por la ruta al fichero de la clave privada de la clave ssh que se utilizará para conectarse a la instancia creada a partir de la imagen.
 "ssh_private_key_file": "/home/user/.ssh/my-ssh-keypair.pem"
 
-* La maquina virtual debe ener una ip publica para poder conectarse a ella. Si no tiene una ip publica, puede crear una ip publica para la instancia creada a partir de la imagen editando el fichero images/capi/packer/ami/packer.json y modificando/añadiendo el valor de la variable "associate_public_ip_address" a true en la sección "builders".
+* La maquina virtual debe tener una ip publica para poder conectarse a ella. Si no tiene una ip publica, puede crear una ip publica para la instancia creada a partir de la imagen editando el fichero images/capi/packer/ami/packer.json y modificando/añadiendo el valor de la variable "associate_public_ip_address" a true en la sección "builders".
 "associate_public_ip_address": "true
 
 * Crear/asignar un grupo de seguridad (con permisos al puerto 22) a la instancia creada a partir de la imagen (en la misma red que la instancia creada a partir de la imagen) y modificar/añadir el valor de la variable "security_group_id" con el id del grupo de seguridad creado/asignado en el fichero images/capi/packer/ami/packer.json en la sección "builders".
@@ -110,14 +110,14 @@ Para crear/modificar la configuración de la imagen, puede editar el archivo ima
 Editar el archivo images/capi/packer/ami/packer.json y modificar el valor de la variable "builder_instance_type" por el tipo de instancia (sección "builders")
 deseado.
 
-"builder_instance_type": "t3.mmedium"
+"builder_instance_type": "t3.medium"
 
 .Modificar la región donde crear la instancia para la construcción de la imagen
 Editar el archivo images/capi/packer/ami/packer.json y modificar el valor de la variable "region" por la región donde se creará la instancia. (sección "builders")
 
 "region": "eu-west-1"
 
-.Limitar las regiones donde disponibilizar la imagen
+.Limitar las regiones donde disponibilizar la imagen (sección "variables")
 "ami_regions": ["eu-west-1", "eu-west-2"]
 ====
 
