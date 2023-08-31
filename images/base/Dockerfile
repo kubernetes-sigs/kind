@@ -180,7 +180,7 @@ RUN git clone --filter=tree:0 "${CNI_PLUGINS_CLONE_URL}" /cni-plugins \
 # stage for building containerd-fuse-overlayfs
 FROM go-build as build-fuse-overlayfs
 ARG TARGETARCH GO_VERSION
-ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="v1.0.5"
+ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="v1.0.6"
 ARG CONTAINERD_FUSE_OVERLAYFS_CLONE_URL="https://github.com/containerd/fuse-overlayfs-snapshotter"
 RUN git clone --filter=tree:0 "${CONTAINERD_FUSE_OVERLAYFS_CLONE_URL}" /fuse-overlayfs-snapshotter \
     && cd /fuse-overlayfs-snapshotter \
