@@ -82,7 +82,7 @@ func validateAzure(spec commons.Spec, providerSecrets map[string]string) error {
 			return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Invalid value: \"type\": ecr is not supported in Azure/AKS")
 		}
 		if dr.Type != "acr" && spec.ControlPlane.Managed {
-			return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Invalid value: \"type\": acr is not supported in AKS")
+			return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Invalid value: \"type\": only acr is supported in AKS")
 		}
 	}
 
