@@ -133,6 +133,25 @@ func (b *AzureBuilder) getProvider() Provider {
 	}
 }
 
+func installCloudProvider(n nodes.Node, keosCluster commons.KeosCluster, k string, clusterName string) error {
+	var podsCidrBlock string
+	if keosCluster.Spec.Networks.PodsCidrBlock != "" {
+		podsCidrBlock = keosCluster.Spec.Networks.PodsCidrBlock
+	} else {
+		podsCidrBlock = "192.168.0.0/16"
+	}
+	c := "helm install cloud-provider-azure /stratio/helm/cloud-provider-azure" +
+		" --kubeconfig " + k +
+		" --namespace kube-system" +
+		" --set infra.clusterName=" + clusterName +
+		" --set 'cloudControllerManager.clusterCIDR=" + podsCidrBlock + "'"
+	_, err := commons.ExecuteCommand(n, c)
+	if err != nil {
+		return errors.Wrap(err, "failed to deploy cloud-provider-azure Helm Chart")
+	}
+	return nil
+}
+
 func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	var c string
 	var err error
@@ -160,29 +179,6 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 
 func (b *AzureBuilder) getAzs(p ProviderParams, networks commons.Networks) ([]string, error) {
 	return []string{"1", "2", "3"}, nil
-}
-
-func installCloudProvider(n nodes.Node, keosCluster commons.KeosCluster, k string, clusterName string) error {
-	var c string
-	var err error
-	var podsCidrBlock string
-
-	if keosCluster.Spec.Networks.PodsCidrBlock != "" {
-		podsCidrBlock = keosCluster.Spec.Networks.PodsCidrBlock
-	} else {
-		podsCidrBlock = "192.168.0.0/16"
-	}
-
-	c = "helm install cloud-provider-azure /stratio/helm/cloud-provider-azure" +
-		" --kubeconfig " + k +
-		" --set infra.clusterName=" + clusterName +
-		" --set 'cloudControllerManager.clusterCIDR=" + podsCidrBlock + "'"
-	_, err = commons.ExecuteCommand(n, c)
-	if err != nil {
-		return errors.Wrap(err, "failed to deploy cloud-provider-azure Helm Chart")
-	}
-
-	return nil
 }
 
 func assignUserIdentity(p ProviderParams, security commons.Security) error {
