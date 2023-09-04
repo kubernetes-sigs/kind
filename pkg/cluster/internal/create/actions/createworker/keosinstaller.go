@@ -64,7 +64,7 @@ type KEOSDescriptor struct {
 		// PR fixing exclude_if behaviour https://github.com/go-playground/validator/pull/939
 		Domain          string `yaml:"domain,omitempty"`
 		ExternalDomain  string `yaml:"external_domain,omitempty"`
-		Flavour         string `yaml:"flavour"`
+		Flavour         string `yaml:"flavour,omitempty"`
 		K8sInstallation bool   `yaml:"k8s_installation"`
 		Storage         struct {
 			DefaultStorageClass string   `yaml:"default_storage_class,omitempty"`
