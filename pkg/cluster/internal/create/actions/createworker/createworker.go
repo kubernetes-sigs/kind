@@ -323,15 +323,15 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		// Install unmanaged cluster addons
 		if !a.keosCluster.Spec.ControlPlane.Managed {
 
-			if a.keosCluster.Spec.InfraProvider == "azure" {
+			if a.keosCluster.Spec.InfraProvider != "gcp" {
 				ctx.Status.Start("Installing cloud-provider in workload cluster ☁️")
 				defer ctx.Status.End(false)
 
-				err = installCloudProvider(n, a.keosCluster, kubeconfigPath, a.keosCluster.Metadata.Name)
+				err = infra.installCloudProvider(n, kubeconfigPath, a.keosCluster)
 				if err != nil {
 					return errors.Wrap(err, "failed to install external cloud-provider in workload cluster")
 				}
-				ctx.Status.End(true) // End Installing Calico in workload cluster
+				ctx.Status.End(true) // End Installing cloud-provider in workload cluster
 			}
 
 			ctx.Status.Start("Installing Calico in workload cluster 🔌")
