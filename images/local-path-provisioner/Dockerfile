@@ -27,7 +27,7 @@ RUN eval "$(gimme "${GO_VERSION}")" \
     && GOBIN=/usr/local/bin go install github.com/google/go-licenses@latest \
     && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES .
 
-FROM gcr.io/distroless/base-debian11
+FROM gcr.io/distroless/base-debian12
 COPY --from=0 /usr/local/bin/local-path-provisioner /usr/local/bin/local-path-provisioner
 COPY --from=0 /_LICENSES/* /LICENSES/
 COPY --chmod=0644 files/LICENSES/* /LICENSES/*
