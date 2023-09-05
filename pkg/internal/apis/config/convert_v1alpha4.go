@@ -83,6 +83,7 @@ func convertv1alpha4Networking(in *v1alpha4.Networking, out *Networking) {
 	out.APIServerAddress = in.APIServerAddress
 	out.PodSubnet = in.PodSubnet
 	out.KubeProxyMode = ProxyMode(in.KubeProxyMode)
+	out.IptablesMode = IptablesMode(in.IptablesMode)
 	out.ServiceSubnet = in.ServiceSubnet
 	out.DisableDefaultCNI = in.DisableDefaultCNI
 	out.DNSSearch = in.DNSSearch

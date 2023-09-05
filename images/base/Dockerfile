@@ -228,6 +228,9 @@ COPY --from=build / /
 # first tell systemd that it is in docker (it will check for the container env)
 # https://systemd.io/CONTAINER_INTERFACE/
 ENV container docker
+# override the default iptables mode.
+# possible values are: legacy, nf_tables, auto
+ENV IPTABLES_MODE=auto 
 # systemd exits on SIGRTMIN+3, not SIGTERM (which re-executes it)
 # https://bugzilla.redhat.com/show_bug.cgi?id=1201657
 STOPSIGNAL SIGRTMIN+3

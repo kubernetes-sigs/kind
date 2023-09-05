@@ -209,6 +209,8 @@ func commonArgs(cluster string, cfg *config.Cluster, networkName string, nodeNam
 		args = append(args, "-e", "KIND_DNS_SEARCH="+strings.Join(*cfg.Networking.DNSSearch, " "))
 	}
 
+	args = append(args, "-e", "IPTABLES_MODE="+string(cfg.Networking.IptablesMode))
+
 	return args, nil
 }
 

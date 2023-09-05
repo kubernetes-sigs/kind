@@ -152,6 +152,9 @@ type Networking struct {
 	KubeProxyMode ProxyMode
 	// DNSSearch defines the DNS search domain to use for nodes. If not set, this will be inherited from the host.
 	DNSSearch *[]string
+	// IptablesMode allows to force the iptables mode used by the node between "auto", "legacy" and "nf_tables".
+	// Defaults to "auto" mode.
+	IptablesMode IptablesMode `yaml:"iptablesMode,omitempty" json:"iptablesMode,omitempty"`
 }
 
 // ClusterIPFamily defines cluster network IP family
@@ -176,6 +179,18 @@ const (
 	IPVSProxyMode ProxyMode = "ipvs"
 	// NoneProxyMode disables kube-proxy
 	NoneProxyMode ProxyMode = "none"
+)
+
+// IptablesMode defines a iptables mode for the node
+type IptablesMode string
+
+const (
+	// AutoIptablesMode sets IptablesMode to auto
+	AutoIptablesMode IptablesMode = "auto"
+	// LegacyIptablesMode sets IptablesMode to legacy
+	LegacyIptablesMode IptablesMode = "legacy"
+	// NFTIptablesMode sets IptablesMode to nf_tables
+	NFTIptablesMode IptablesMode = "nf_tables"
 )
 
 // PatchJSON6902 represents an inline kustomize json 6902 patch
