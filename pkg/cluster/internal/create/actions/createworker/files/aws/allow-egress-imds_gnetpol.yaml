@@ -12,6 +12,6 @@ spec:
     protocol: TCP
   order: 0
   namespaceSelector: kubernetes.io/metadata.name in { 'kube-system', 'capa-system' }
-  selector: app.kubernetes.io/name == 'aws-ebs-csi-driver' || cluster.x-k8s.io/provider == 'infrastructure-aws'
+  selector: app.kubernetes.io/name == 'aws-ebs-csi-driver' || cluster.x-k8s.io/provider == 'infrastructure-aws' || k8s-app == 'aws-cloud-controller-manager'
   types:
   - Egress
