@@ -15,7 +15,7 @@
 # This image is contains the binaries needed for the local-path-provisioner
 # helper pod. Currently that means: sh, rm, mkdir
 
-ARG BASE="registry.k8s.io/build-image/debian-base:bookworm-v1.0.0"
+ARG BASE="registry.k8s.io/build-image/debian-base:bullseye-v1.4.3"
 FROM ${BASE} as build
 
 # NOTE: copyrights.tar.gz is a quirk of Kubernetes's debian-base image
@@ -42,6 +42,6 @@ RUN mkdir -p "${STAGE_DIR}" && \
     find "${STAGE_DIR}"
 
 # copy staged binary + deps + copyright into distroless
-FROM "gcr.io/distroless/static-debian12"
+FROM "gcr.io/distroless/static-debian11"
 ARG STAGE_DIR="/opt/stage"
 COPY --from=build "${STAGE_DIR}/" /
