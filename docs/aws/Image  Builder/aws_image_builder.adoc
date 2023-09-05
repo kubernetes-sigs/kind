@@ -14,7 +14,7 @@ AWS IMAGE BUILDER
 :icon-set: fa
 // Definimos el directorio de imagenes
 :imagesdir: ../images
-// // Refs:
+// Refs:
 :url-project: https://asciidoctor.org
 :url-docs: {url-project}/docs
 :url-issues:  https://github.com/asciidoctor/asciidoctor
@@ -27,12 +27,15 @@ AWS IMAGE BUILDER
 :source-highlighter: rouge
 :rouge-style: monokai
 
-== https://image-builder.sigs.k8s.io/capi/providers/aws.html[Introducción]
+== Introducción
 
 Image Builder se puede utilizar para crear imágenes destinadas a su uso con proveedores de CAPI de Kubernetes. Cada proveedor tiene su propio formato de imágenes con el que puede trabajar. Por ejemplo, las instancias de AWS utilizan AMI.
 
+🔗 https://image-builder.sigs.k8s.io/capi/capi.html[Kubernetes Image Builder]
+
 == Prerequisitos
-=== Prerequisitos Globales
+
+=== Globales
 Packer y Ansible se utilizan para construir estas imágenes. Esta herramienta se ha bifurcado y ampliado del proyecto Wardroom.
 
 Versión del empaquetador (Packer) >= 1.6.0
@@ -43,12 +46,16 @@ Versión de Ansible >= 2.10.0
 
 Si los archivos binarios necesarios no están presentes, se pueden instalar en images/capi/.bin con el comando make deps-ami. Este directorio deberá agregarse a su $PATH.
 
-=== Prerequisitos de AWS
+=== AWS
 
-==== Prerequisitos Amazon Web Services
-* Cuenta de AWS
-** https://image-builder.sigs.k8s.io/capi/providers/aws.html#configuration:~:text=Required%20Permissions%20to%20Build%20the%20AWS%20AMIs[IAM User con permisos los minimos necesarios para crear una imagen]
-* https://docs.aws.amazon.com/es_es/cli/latest/userguide/cli-chap-configure.html[AWS CLI instalado y configurado]
+* Cuenta de servicio de AWS con los permisos necesarios
+
+🔗 https://image-builder.sigs.k8s.io/capi/providers/aws.html#configuration:~:text=Required%20Permissions%20to%20Build%20the%20AWS%20AMIs[Required Permissions to Build the AWS AMIs]
+
+* AWS CLI instalado y configurado
+
+🔗 https://docs.aws.amazon.com/es_es/cli/latest/userguide/cli-chap-configure.html[Configuración del AWS CLI]
+
 * VPC por defecto para el usuario de AWS
 
 [NOTE]
@@ -87,63 +94,120 @@ image:https://user-images.githubusercontent.com/112587171/232501256-7383320b-cc4
 
 ====
 
-== https://image-builder.sigs.k8s.io/capi/capi.html#customization[Configuraciones de la imagen]
+== Configuraciones de la imagen
 
-=== https://github.com/kubernetes-sigs/image-builder/tree/1510769a271725cda3d46907182a2843ef5c1c8b/images/capi/packer/ami[Imágenes Disponibles]
-Para crear/modificar la configuración de la imagen, puede editar el archivo images/capi/packer/config/ami-<OS>.json. Los parámetros de configuración se pueden encontrar en la documentación de Packer (Haz click en la sección de este documento a tal efecto).
+Para modificar la configuración de la imagen, puede editar el archivo _images/capi/packer/ami/ubuntu-<osversion>.json_.
+
+Los parámetros de configuración se pueden encontrar en la documentación de Packer.
+
+🔗 https://image-builder.sigs.k8s.io/capi/capi.html#customization[Image build customization]
 
 [TIP]
 ====
-.Modificar las versiones de Kubernetes
-📂 https://github.com/kubernetes-sigs/image-builder/blob/3b70f45036617ba8752b0711ee6d212f9591a514/images/capi/packer/config/kubernetes.json[Version de  Kubernetes]::
+📂 *Version de Kubernetes*
 [%autowidth]
+
+Hay que editar el fichero _images/capi/packer/config/kubernetes.json_
+[%hardbreaks]
+🔗 https://kubernetes.io/releases/[Kubernetes releases]
+
 |===
-| *kubernetes_deb_version* | 1.24.10-00 | Version de kubernetes para Debian
-| *kubernetes_rpm_version* | 1.24.10-0 | Versión de kubernetes para RPM
-| *kubernetes_semver* | 1.24.10 | Versión semántica de Kubernetes que se instalará en la imagen
-| *kubernetes_series* | 1.24 | Versión de la serie de Kubernetes que se instalará en la imagen
+| *crictl_version* | 1.26.1 | Version de las critools
+| *kubernetes_deb_version* | 1.26.8-00 | Version de kubernetes para Debian
+| *kubernetes_rpm_version* | 1.26.8-0 | Versión de kubernetes para RPM
+| *kubernetes_semver* | 1.26.8 | Versión semántica de Kubernetes que se instalará en la imagen
+| *kubernetes_series* | 1.26 | Versión de la serie de Kubernetes que se instalará en la imagen
 |===
 
-📂 https://github.com/kubernetes-sigs/image-builder/blob/3b70f45036617ba8752b0711ee6d212f9591a514/images/capi/packer/ami/packer.json[Tipo de instancia]::
+📂 *Version de las critools*
 [%autowidth]
-.Cambiar el tipo de instancia de la imagen
-Editar el archivo images/capi/packer/ami/packer.json y modificar el valor de la variable "builder_instance_type" por el tipo de instancia (sección "builders")
-deseado.
+La versión de las critools tiene que ir pareja con la versión de kubernetes que estemos usando.
+[%hardbreaks]
+🔗 https://github.com/kubernetes-sigs/cri-tools/tags[Critools releases]
+
+|===
+| *crictl version* | *kubernetes version*
+| 1.26.1 | 1.24, 1.25, 1.26
+| 1.27.1 | 1.27
+| 1.28.0 | 1.28
+|===
+
+📂 *Parámetros del kernel*
+[%autowidth]
+Hay que editar el fichero _ansible/roles/node/tasks/main.yml_ y dentro editar la tarea con el nombre '_Set and persist kernel params_' para añadir vm.max_map_count con valor 262144
+
+[source,yaml]
+
+- name: Set and persist kernel params
+  sysctl:
+    name: "{{ item.param }}"
+    value: "{{ item.val }}"
+    state: present
+    sysctl_set: yes
+    sysctl_file: "{{ sysctl_conf_file }}"
+    reload: yes
+  loop:
+    - { param: net.bridge.bridge-nf-call-iptables, val: 1 }
+    - { param: net.bridge.bridge-nf-call-ip6tables, val: 1 }
+    - { param: net.ipv4.ip_forward, val: 1 }
+    - { param: net.ipv6.conf.all.forwarding, val: 1 }
+    - { param: net.ipv6.conf.all.disable_ipv6, val: 0 }
+    - { param: net.ipv4.tcp_congestion_control, val: bbr }
+    - { param: vm.overcommit_memory, val: 1 }
+    - { param: kernel.panic, val: 10 }
+    - { param: kernel.panic_on_oops, val: 1 }
+    - { param: fs.inotify.max_user_instances, val: 8192 }
+    - { param: fs.inotify.max_user_watches, val: 524288 }
+    - { param: vm.max_map_count, val: 262144 }
+
+📂 *Tipo de instancia*
+[%autowidth]
+Editar el archivo _images/capi/packer/ami/packer.json_ y modificar el valor de la variable "builder_instance_type" por el tipo de instancia deseado.
 
 "builder_instance_type": "t3.medium"
 
-.Modificar la región donde crear la instancia para la construcción de la imagen
-Editar el archivo images/capi/packer/ami/packer.json y modificar el valor de la variable "region" por la región donde se creará la instancia. (sección "builders")
+📂 *Modificar la región donde crear la instancia para la construcción de la imagen*
+[%autowidth]
+Editar el archivo _images/capi/packer/ami/packer.json_ y modificar el valor de la variable "region" por la región deseada.
 
 "region": "eu-west-1"
 
-.Limitar las regiones donde disponibilizar la imagen (sección "variables")
+📂 *Limitar las regiones donde disponibilizar la imagen*
+[%autowidth]
+Editar el archivo _images/capi/packer/ami/packer.json_ y modificar el valor de la variable "ami_regions" indicando la región o regiones desesadas.
+
 "ami_regions": ["eu-west-1", "eu-west-2"]
+
 ====
 
 == Construcción de la imagen
-El siguiente comando instala/comprueba las dependencias necesarias para construir la imagen:
-Path: images/capi
-[source,shell]
-----
-# make deps-ami
-----
+
+. Preparar el repositorio de image-builder
+
+.. Clonar el repositorio de image-builder si no lo tienías previamente
+[source,console]
+git clone https://github.com/kubernetes-sigs/image-builder.git
+cd image-builder/images/capi/
+
+.. Actualizar el repositorio de image-builder si ya lo tenías previamente
+[source,console]
+cd image-builder
+git pull
+cd images/capi/
+
+. Instalar las dependencias necesarias para crear la imagen
+[source,console]
+make deps-ami
 
 image:https://user-images.githubusercontent.com/112587171/232500797-a8168ab5-23c9-43bc-b9bb-c0af20e0093d.png[Make deps, width=100%]
 
-Desde el directorio images/capi, ejecute make build-ami-<OS>, donde <OS> es el sistema operativo deseado.
+. Consultar las imágenes que podemos construir
+[source,console]
+make help | grep build-ami
 
-Las opciones disponibles se enumeran a través del comando:
-[source,shell]
-----
-# make help
-# make help | grep -i "build-ami"
-----
-Por ejemplo, para construir una imagen de Ubuntu 20.04, ejecute:
-[source,shell]
-----
-# make build-ami-ubuntu-2204
-----
+. Generar la imágen deseada
+[source,console]
+make build-ami-ubuntu-2204
 
 image:https://user-images.githubusercontent.com/112587171/232500876-2985090a-86b7-4216-b2c6-8aa544a741f5.png[Make build, width=100%]
 ...
@@ -151,15 +215,8 @@ image:https://user-images.githubusercontent.com/112587171/232500916-6d39cb1b-d6e
 
 image:https://user-images.githubusercontent.com/112587171/232500986-ec972a0a-7866-40a4-b945-ec5b9f0bdd2a.png[Make build, width=100%]
 
-Para compilar todos los sistemas operativos disponibles, utiliza el objetivo -all. Si desea compilarlos en paralelo, use make -j.
-[source,shell]
-----
-# make -j build-ami-all
-----
-
 == Debug
 
 Podemos debugear el proceso de creación de la imagen con la variable de entorno PACKER_LOG
-====
+[source,console]
 export PACKER_LOG=1
-====

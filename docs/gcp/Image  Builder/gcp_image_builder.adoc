@@ -14,7 +14,7 @@ GCP IMAGE BUILDER
 :icon-set: fa
 // Definimos el directorio de imagenes
 :imagesdir: ../images
-// // Refs:
+// Refs:
 :url-project: https://asciidoctor.org
 :url-docs: {url-project}/docs
 :url-issues:  https://github.com/asciidoctor/asciidoctor
@@ -27,12 +27,15 @@ GCP IMAGE BUILDER
 :source-highlighter: rouge
 :rouge-style: monokai
 
-== https://image-builder.sigs.k8s.io/capi/capi.html[Introducción]
+== Introducción
 
 Image Builder se puede utilizar para crear imágenes destinadas a su uso con proveedores de CAPI de Kubernetes. Cada proveedor tiene su propio formato de imágenes con el que puede trabajar. Por ejemplo, las instancias de AWS utilizan AMI.
 
+🔗 https://image-builder.sigs.k8s.io/capi/capi.html[Kubernetes Image Builder]
+
 == Prerequisitos
-=== Prerequisitos Globales
+
+=== Globales
 Packer y Ansible se utilizan para construir estas imágenes. Esta herramienta se ha bifurcado y ampliado del proyecto Wardroom.
 
 Versión del empaquetador >= 1.6.0
@@ -40,9 +43,14 @@ Complemento de Goss para la versión de Packer >= 1.2.0
 Versión de Ansible >= 2.10.0
 Si los archivos binarios necesarios no están presentes, se pueden instalar en images/capi/.bin con el comando make deps. Este directorio deberá agregarse a su $PATH.
 
-=== Prerequisitos de Google Cloud Platform
+=== Google Cloud Platform
 
-==== https://cloud.google.com/iam/docs/creating-managing-service-accounts#creating[Crear un cuenta de Servicio]
+==== Cuenta de servicio
+
+🔗 https://cloud.google.com/iam/docs/creating-managing-service-accounts#creating[Crea una cuenta de servicio]
+
+==== Permisos
+
 [source,text]
 ----
 compute.disks.create
@@ -73,74 +81,132 @@ compute.zoneOperations.get
 compute.zones.get
 iam.serviceAccounts.actAs
 ----
-==== https://cloud.google.com/iam/docs/keys-create-delete?hl=es-419[Google Service Account Key]
+
+==== Clave de la cuenta de servicio
+
+🔗 https://cloud.google.com/iam/docs/keys-create-delete?hl=es-419[Crea y borra claves de cuentas de servicio]
+
 image:https://user-images.githubusercontent.com/112587171/233296971-6e999cac-cfab-42d4-a20e-93429dbcbc2f.png[alt="Google Service Account Key"]
-==== https://image-builder.sigs.k8s.io/capi/providers/gcp.html#install-ansible-and-packer:~:text=compliant%20VM%20image.-,Install%20Ansible%20and%20Packer,-Start%20by%20launching[Ansible y Packer]
-==== https://cloud.google.com/sdk/docs/install?hl=es-419[Gcloud]
 
-== https://image-builder.sigs.k8s.io/capi/capi.html#customization[Configuraciones de la imagen]
+==== Google Cloud SDK (Opcional)
 
-=== https://github.com/kubernetes-sigs/image-builder/tree/1510769a271725cda3d46907182a2843ef5c1c8b/images/capi/packer/gce[Imágenes Disponibles]
-Para modificar la configuración de la imagen, puede editar el archivo images/capi/packer/config/ami-<OS>.json. Los parámetros de configuración se pueden encontrar en la documentación de Packer (Haz click en la sección de este documento a tal efecto).
+🔗 https://cloud.google.com/sdk/docs/install?hl=es-419[Instala la CLI de gcloud]
+
+== Imágenes Disponibles
+
+🔗 https://github.com/kubernetes-sigs/image-builder/tree/1510769a271725cda3d46907182a2843ef5c1c8b/images/capi/packer/gce[Imágenes Disponibles]
+
+== Configuraciones de la imagen
+
+Para modificar la configuración de la imagen, puede editar el archivo _images/capi/packer/gce/<osdistribution>-<osversion>.json_.
+
+Los parámetros de configuración se pueden encontrar en la documentación de Packer.
+
+🔗 https://image-builder.sigs.k8s.io/capi/capi.html#customization[Image build customization]
 
 [TIP]
 ====
-.Modificar las versiones de Kubernetes
-📂 https://github.com/kubernetes-sigs/image-builder/blob/3b70f45036617ba8752b0711ee6d212f9591a514/images/capi/packer/config/kubernetes.json[Version de  Kubernetes]::
+📂 *Version de Kubernetes*
 [%autowidth]
+
+Hay que editar el fichero _images/capi/packer/config/kubernetes.json_
+[%hardbreaks]
+🔗 https://kubernetes.io/releases/[Kubernetes releases]
+
 |===
-| *kubernetes_deb_version* | 1.24.10-00 | Version de kubernetes para Debian
-| *kubernetes_rpm_version* | 1.24.10-0 | Versión de kubernetes para RPM
-| *kubernetes_semver* | 1.24.10 | Versión semántica de Kubernetes que se instalará en la imagen
-| *kubernetes_series* | 1.24 | Versión de la serie de Kubernetes que se instalará en la imagen
+| *crictl_version* | 1.26.1 | Version de las critools
+| *kubernetes_deb_version* | 1.26.8-00 | Version de kubernetes para Debian
+| *kubernetes_rpm_version* | 1.26.8-0 | Versión de kubernetes para RPM
+| *kubernetes_semver* | 1.26.8 | Versión semántica de Kubernetes que se instalará en la imagen
+| *kubernetes_series* | 1.26 | Versión de la serie de Kubernetes que se instalará en la imagen
 |===
 
-📂 https://github.com/kubernetes-sigs/image-builder/blob/3b70f45036617ba8752b0711ee6d212f9591a514/images/capi/packer/ami/packer.json[Tipo de instancia]::
+📂 *Version de las critools*
 [%autowidth]
-.Cambiar el tipo de instancia de la imagen
-Editar el archivo images/capi/packer/ami/packer.json y modificar el valor de la variable "builder_instance_type" por el tipo de instancia 
-deseado.
+La versión de las critools tiene que ir pareja con la versión de kubernetes que estemos usando.
+[%hardbreaks]
+🔗 https://github.com/kubernetes-sigs/cri-tools/tags[Critools releases]
 
-"builder_instance_type": "t3.mmedium"
+|===
+| *crictl version* | *kubernetes version*
+| 1.26.1 | 1.24, 1.25, 1.26
+| 1.27.1 | 1.27
+| 1.28.0 | 1.28
+|===
+
+📂 *Parámetros del kernel*
+[%autowidth]
+Hay que editar el fichero _ansible/roles/node/tasks/main.yml_ y dentro editar la tarea con el nombre '_Set and persist kernel params_' para añadir vm.max_map_count con valor 262144
+
+[source,yaml]
+
+- name: Set and persist kernel params
+  sysctl:
+    name: "{{ item.param }}"
+    value: "{{ item.val }}"
+    state: present
+    sysctl_set: yes
+    sysctl_file: "{{ sysctl_conf_file }}"
+    reload: yes
+  loop:
+    - { param: net.bridge.bridge-nf-call-iptables, val: 1 }
+    - { param: net.bridge.bridge-nf-call-ip6tables, val: 1 }
+    - { param: net.ipv4.ip_forward, val: 1 }
+    - { param: net.ipv6.conf.all.forwarding, val: 1 }
+    - { param: net.ipv6.conf.all.disable_ipv6, val: 0 }
+    - { param: net.ipv4.tcp_congestion_control, val: bbr }
+    - { param: vm.overcommit_memory, val: 1 }
+    - { param: kernel.panic, val: 10 }
+    - { param: kernel.panic_on_oops, val: 1 }
+    - { param: fs.inotify.max_user_instances, val: 8192 }
+    - { param: fs.inotify.max_user_watches, val: 524288 }
+    - { param: vm.max_map_count, val: 262144 }
+
 ====
 
 == Construcción de la imagen
 
-. Exportar el ID del proyecto GCP en el que desea construir imágenes   
-[source,shell]
-# export GCP_PROJECT_ID=<project-id>  
+. Exportar el ID del proyecto GCP en el que desea construir imágenes
+[source,console]
+export GCP_PROJECT_ID=<project-id>
 
 . Exportar la ruta a las credenciales de la cuenta de servicio creadas en el paso anterior
-[source,shell]
-# export GOOGLE_APPLICATION_CREDENTIALS=</path/to/serviceaccount-key.json>  
+[source,console]
+export GOOGLE_APPLICATION_CREDENTIALS=</path/to/serviceaccount-key.json>
 
-. Clona el repositorio de image-builder si no lo tienías previamente
-[source,shell]
-# git clone https://github.com/kubernetes-sigs/image-builder.git  
-# cd image-builder/images/capi/  
+. Preparar el repositorio de image-builder
 
-. Ejecutar el comando make deps-gce para instalar Ansible y Packer
-[source,shell]
-# make deps-gce  
+.. Clonar el repositorio de image-builder si no lo tienías previamente
+[source,console]
+git clone https://github.com/kubernetes-sigs/image-builder.git
+cd image-builder/images/capi/
+
+.. Actualizar el repositorio de image-builder si ya lo tenías previamente
+[source,console]
+cd image-builder
+git pull
+cd images/capi/
+
+. Instalar las dependencias necesarias para crear la imagen
+[source,console]
+make deps-gce
+
 image:https://user-images.githubusercontent.com/112587171/233297601-f3f2dc5e-0888-429c-ae6a-24e259260240.png[alt="Make deps GCP",width=800]
 
-** Generar imágen específica
-[source,shell]
-# make build-gce-ubuntu-2204
+. Consultar las imágenes que podemos construir
+[source,console]
+make help | grep build-gce
 
-:imagesdir: ../images
+. Generar la imágen deseada
+[source,console]
+make build-gce-ubuntu-2204
+
 image:https://user-images.githubusercontent.com/112587171/233297883-5029b10e-912d-42b7-b7ef-c941993c98c6.png[alt="Make build GCP",width=800]
 
 image:https://user-images.githubusercontent.com/112587171/233298080-c50f610c-85e6-445e-8ed5-77cdc66fad26.png[alt="Make build GCP",width=800]
 
-** Generar todas las disponibles
-[source,shell]
-# make build-gce-all
-
 == Debug
 
 Podemos debugear el proceso de creación de la imagen con la variable de entorno PACKER_LOG
-====
+[source,console]
 export PACKER_LOG=1
-====
-
