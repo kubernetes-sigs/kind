@@ -52,7 +52,7 @@ const (
 	scName = "keos"
 
 	keosClusterChart = "0.1.0-M2"
-	keosClusterImage = "0.1.0-M2"
+	keosClusterImage = "0.1.0-SNAPSHOT"
 )
 
 const machineHealthCheckWorkerNodePath = "/kind/manifests/machinehealthcheckworkernode.yaml"
@@ -370,7 +370,7 @@ func installCalico(n nodes.Node, k string, keosCluster commons.KeosCluster, allo
 	}
 
 	// Wait for calico-system namespace to be created
-	c = "timeout 60s bash -c 'until kubectl --kubeconfig " + kubeconfigPath + " get ns calico-system; do sleep 2s ; done'"
+	c = "timeout 300s bash -c 'until kubectl --kubeconfig " + kubeconfigPath + " get ns calico-system; do sleep 2s ; done'"
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
 		return errors.Wrap(err, "failed to wait for calico-system namespace")
