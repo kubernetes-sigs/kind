@@ -62,6 +62,18 @@ spec:
           protocol: tcp
           fromPort: 10257
           toPort: 10257
+        - description: \"metrics calico-node  (prometheus)\"
+          protocol: tcp
+          fromPort: 9191
+          toPort: 9191
+        - description: \"metrics calico-typha  (prometheus)\"
+          protocol: tcp
+          fromPort: 9093
+          toPort: 9093
+        - description: \"metrics node-exporter (prometheus)\"
+          protocol: tcp
+          fromPort: 9100
+          toPort: 9100
   {{- if ne .KeosCluster.Spec.Networks.VPCID "" }}
     vpc:
       id: {{ .KeosCluster.Spec.Networks.VPCID }}
