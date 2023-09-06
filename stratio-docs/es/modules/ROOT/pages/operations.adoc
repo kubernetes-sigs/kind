@@ -1,0 +1,502 @@
+:caution-caption: ⛔
+= Operaciones
+
+== Obtención del _kubeconfig_
+
+Para comunicarse con el APIserver del _cluster_ creado, es necesario el fichero _kubeconfig_, que se obtendrá de forma diferente según el proveedor _Cloud_ utilizado y la gestión del control-plane del _cluster_.
+
+* Para EKS, se obtendrá de la forma indicada por AWS:
+
+[source,bash]
+-----
+aws eks update-kubeconfig --region eu-west-1 --name example-eks --kubeconfig ./example-eks.kubeconfig
+-----
+
+* Para GCP, Azure no-gestionado y AKS, al finalizar del aprovisionamiento, el _kubeconfig_ se deja en el directorio de ejecución (_workspace_):
+
+[source,bash]
+-----
+ls ./.kube/config
+./.kube/config
+-----
+
+A su vez, podrá utilizarse el alias "kw" desde el container local para interactuar con el cluster worker (en EKS, el token utilizado sólo dura 10 minutos):
+
+[source,bash]
+-----
+root@example-azure-control-plane:/# kw get nodes
+NAME                                STATUS   ROLES           AGE   VERSION
+example-azure-control-plane-6kp94   Ready    control-plane   60m   v1.24.13
+example-azure-control-plane-fgkcc   Ready    control-plane   63m   v1.24.13
+...
+-----
+
+== Autenticación en EKS
+
+Si bien no forma parte de la operativa de _Stratio KEOS_, es importante resaltar la forma de permitir la https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html[autenticación de otros usuarios en un _cluster_ de EKS] (el usuario creador del _cluster_ está autenticado por defecto).
+
+Para dar permisos de kubernetes-admin en el _cluster_, se agregará el ARN del usuario en el _ConfigMap_ indicado a continuación.
+
+[source,bash]
+----
+$ kubectl -n kube-system edit cm aws-auth
+..
+data:
+  mapUsers: |
+    - groups:
+      - system:masters
+      userarn: <user_arn>
+      username: kubernetes-admin
+----
+
+== Operación de la infraestructura
+
+image::controllers.png[]
+
+_Stratio KEOS_ permite realizar múltiples operaciones avanzadas interactuando únicamente con el APIserver (infrastructure as code o IaC), siendo los _controllers_ desplegados quienes, en sus ciclos de reconciliación, realicen las tareas necesarias.
+
+NOTE: Como se verá a continuación, *los grupos de nodos en AKS se gestionan con MachinePools* en vez de MachineDeployments como el resto de providers, lo que deriva en particularidades al momento de realizar algunas operaciones.
+
+=== CRDs
+
+image::crds.png[]
+
+Para la gestión APIficada del _cluster_, se crean los siguientes grupos de objetos según el provider:
+
+===== EKS
+
+- La definición del cluster se hace con los objetos _Cluster_ y _AWSManagedCluster_.
+- Para definir parámetros del _control-plane_ (EKS), se utilizará el objeto _AWSManagedControlPlane_.
+- Para detallar los nodos _workers_ se utilizarán _MachineDeployment_, _EKSConfigTemplate_ y _AWSMachineTemplate_.
+- Para indicar los parámetros del _self-healing_, se utiliza un _MachineHealthCheck_ para todo el _cluster_.
+
+===== GCP
+
+- La definición del cluster se hace con los objetos _Cluster_ y _GCPCluster_.
+- Para la definición de los nodos del _control-plane_, se utilizarán _KubeadmControlPlane_ y _GCPMachineTemplate_.
+- Para detallar los nodos _workers_ se utilizarán _MachineDeployment_, _KubeadmConfigTemplate_ y _GCPMachineTemplate_.
+- Para indicar los parámetros del _self-healing_, se utilizan dos _MachineHealthCheck_, uno para _workers_ y otro para el _control-plane_.
+
+===== Azure no-gestionado
+
+- La definición del cluster se hace con los objetos _Cluster_ y _AzureCluster_.
+- Para la definición de los nodos del _control-plane_, se utilizarán _KubeadmControlPlane_ y _AzureMachineTemplate_.
+- Para detallar los nodos _workers_ se utilizarán _MachineDeployment_, _KubeadmConfigTemplate_ y _AzureMachineTemplate_.
+- Para indicar los parámetros del _self-healing_, se utilizan dos _MachineHealthCheck_, uno para _workers_ y otro para el _control-plane_.
+
+===== AKS
+
+- La definición del cluster se hace con los objetos _Cluster_ y _AzureManagedCluster_.
+- Para definir parámetros del _control-plane_ (AKS), se utilizará el objeto _AzureManagedControlPlane_.
+- Para detallar los nodos _workers_ se utilizarán _MachinePool_ y _AzureManagedMachinePool_.
+- Para indicar los parámetros del _self-healing_, se utiliza un _MachineHealthCheck_ para todo el _cluster_.
+
+=== _Self-healing_
+
+image::self-healing.png[]
+
+La capacidad de _self-healing_ del _cluster_ se gestiona por el objeto _MachineHealthCheck_:
+
+[source,bash]
+----
+$ kubectl -n cluster-example get mhc -o yaml
+...
+  spec:
+    clusterName: example
+    maxUnhealthy: 100%
+    nodeStartupTimeout: 5m0s
+    selector:
+      matchLabels:
+        keos.stratio.com/machine-role: example-worker-node
+    unhealthyConditions:
+    - status: Unknown
+      timeout: 1m0s
+      type: Ready
+    - status: "False"
+      timeout: 1m0s
+      type: Ready
+...
+----
+
+NOTE: Los providers no-gestionados tendrán un MachineHealthCheck para el control-plane y otro para los nodos worker, mientras que los gestionados (EKS, AKS) sólo tendrán el segundo.
+
+==== Prueba de _failover_ en un nodo
+
+En caso de fallo en un nodo, éste será detectado por un _controller_ y se procederá al reemplazo del mismo, eliminándolo y volviendo a crear otro del mismo grupo, lo que asegura las mismas características.
+
+Para simular un fallo en una VM, se eliminará desde la consola web del proveedor de _Cloud_.
+
+La recuperación del nodo comprende las siguientes fases y tiempos estimados (pudiendo variar según el provider y flavour):
+
+[source,bash]
+----
+. Terminate VM from console: 0s
+. New VM is Provisioning: 50s
+. Old Machine is Deleted & the new one is Provisioned: 1m5s
+. New Machine is Running & new k8s node is NotReady: 1m 50s
+. New k8s node is Ready: 2m
+----
+
+=== Escalado estático
+
+Aunque se desaconseja el escalado manual de un grupo de nodos existente, se presentan estas operaciones para casos sin autoescalado o nuevos grupos de nodos.
+
+==== Escalar un grupo de _workers_
+
+image::escalado-manual.png[]
+
+Para escalar manualmente un grupo de _workers_, se usa el objeto _MachineDeployment_, que soporta el comando _scale_ de kubectl:
+
+[source,bash]
+----
+kubectl -n cluster-example-eks scale --replicas 3 MachineDeployment --all
+----
+
+Vemos el nuevo número de réplicas y los nuevos objetos Machine:
+
+[source,bash]
+----
+kubectl -n cluster-example-eks get MachineDeployment
+kubectl -n cluster-example-eks get Machine
+----
+
+===== AKS
+
+El comando "scale" utilizado para el resto de providers, no realiza ninguna acción en los MachinePools.
+
+A su vez, si se cambian las réplicas del objeto MachinePool a mano, éste pasara a estado "Scaling" y volverá al número de répicas anterior, dejando sin efecto el cambio.
+
+NOTE: Los objetos _MachinePools_ del APIserver se corresponden en Azure a _Node pools_ dentro de AKS y sus correspondientes _VM Scale Sets_.
+
+El escalado manual de un grupo de nodos en AKS se deberá hacer desde el portal de Azure en:
+
+_VM Scale set -> <scale_set_name> -> Scalling -> <instance_number>_
+
+o bien desde:
+
+_Kubernetes services_ -> <aks_name> -> Node pools -> <nodepool_name> -> Scale node pool -> Manual -> <node_count>
+
+Las nuevas instancias se pueden ver en _VM Scale set -> Instances_. Para ver las nuevas instancias en el APIserver, hay que consultar el status del objeto MachinePool:
+
+[source,bash]
+----
+kubectl -n cluster-stg-aks get mp <machinepool_name> -o json | jq -r .status.nodeRefs[].name
+----
+Una vez escalado el VM Scale set, se agrega la nueva VM como nodo de k8s y se actualiza el objeto MachinePool con el nuevo numero de instancias. Los tiempos estimados de este proceso son los siguientes:
+
+[source,bash]
+----
+Scale VM Scale set: 0s
+New K8s node is NotReady: 1m
+New K8s node is Ready: 1m 13s
+The MachinePool Scaling: 1m 29s
+The MachinePool is updated: 1m 33s
+----
+
+==== Crear un nuevo grupo de _workers_
+
+===== EKS
+
+En EKS se deberán crear los siguientes tres objetos: _MachineDeployment_, _AWSMachineTemplate_ y _EKSConfigTemplate_.
+
+Una vez confeccionado el _manifest_, la creación del grupo consiste simplemente en aplicarlo al _cluster_ de la siguiente forma:
+
+[source,bash]
+----
+kubectl apply -f xref:attachment$example-eks-md.yaml[example-eks-md.yaml]
+----
+
+Para ver los objetos creados:
+
+[source,bash]
+----
+kubectl -n cluster-example get md,eksct,awsmt
+----
+
+===== GCP y Azure
+
+Para el caso de estos providers, se crearán: _MachineDeployment_, _<provider_name>MachineTemplate_ y _KubeadmConfigTemplate_.
+
+[.underline]#Ejemplo para GCP:#
+
+Creación de un nuevo grupo de _workers_ a partir de un _manifest_:
+
+[source,bash]
+----
+kubectl apply -f xref:attachment$example-gcp-md.yaml[example-gcp-md.yaml]
+----
+
+Para ver los objetos creados (para cada provider):
+
+[source,bash]
+----
+kubectl -n cluster-example get md,gcpmachinetemplate,kubeadmconfigtemplate
+
+kubectl -n cluster-example get md,azuremachinetemplate,kubeadmconfigtemplate
+----
+
+===== AKS
+
+En AKS se deberán crear los objetos: _MachinePool_ y _AzureManagedMachinePool_.
+
+Una vez confeccionado el _manifest_, la creación del grupo consiste simplemente en aplicarlo al _cluster_ de la siguiente forma:
+
+[source,bash]
+----
+kubectl apply -f xref:attachment$example-aks-md.yaml[example-aks-md.yaml]
+----
+
+Para ver los objetos creados:
+
+[source,bash]
+----
+kubectl -n cluster-example get mp,ammp
+----
+
+==== Escalado vertical
+
+CAUTION: *AKS no soporta escalado vertical* de los grupos de nodos. Para este provider se deberá crear un grupo nuevo y eliminar el anterior como lo indica la https://learn.microsoft.com/en-us/azure/aks/resize-node-pool[documentación oficial].
+
+El escalado vertical de un grupo de nodos puede realizarse de varias formas, todas ellas comenzarán por cambiar el tipo de instancia del objeto `<provider_name>MachineTemplate`.
+
+TIP: A pesar de que oficialmente se indica que se cree un nuevo `<provider_name>MachineTemplate` y se referencie desde el _MachineDeployment_, no se recomienda esta opción porque impide mantener la consistencia de nombres entre los objetos que gestionan los grupos de nodos.
+
+El método recomendado se basa en 3 simples pasos:
+
+1. Indicar el nuevo tipo de instancia en `<provider_name>MachineTemplate` (_spec.template.spec.instanceType_). En algunos proveedores, este objeto deberá eliminarse y volver a crearse.
+2. Obtener la versión del nuevo objeto `<provider_name>MachineTemplate` (_metadata.resourceVersion_).
+3. Editar el _MachineDeployment_ actualizando la versión obtenida en el paso anterior (_spec.template.spec.infrastructureRef.resourceVersion_).
+
+===== EKS
+
+Como ejemplo, para un _cluster_ de EKS se haría de la siguiente forma:
+
+[source,bash]
+----
+$ export MACHINE_TYPE="t3.medium"
+$ export MACHINE_DEPLOYMENT="example-eks-xlarge-md-2"
+$ export NAMESPACE="cluster-example-eks"
+
+$ kubectl -n $NAMESPACE patch <provider_name>MachineTemplate $MACHINE_DEPLOYMENT --type merge -p "{\"spec\": {\"template\": {\"spec\": {\"instanceType\": \"$MACHINE_TYPE\"}}}}"
+
+$ RESOURCE_VERSION=$(kubectl -n $NAMESPACE get <provider_name>MachineTemplate $MACHINE_DEPLOYMENT -o json | jq -r .metadata.resourceVersion)
+
+$ kubectl -n $NAMESPACE patch MachineDeployment $MACHINE_DEPLOYMENT --type merge -p "{\"spec\": {\"template\": {\"spec\": {\"infrastructureRef\": {\"resourceVersion\": \"$RESOURCE_VERSION\"}}}}}"
+----
+
+===== GCP y Azure no-gestionado
+
+Para estos providers, el procedimiento es muy similar al de EKS pero varía en que el objeto <provider_name>MachineTemplate no se puede editar, teniendo que eliminarlo y crear uno nuevo.
+
+[source,bash]
+----
+$ export MACHINE_TYPE="t3.medium"
+$ export MACHINE_DEPLOYMENT="example-eks-xlarge-md-2"
+$ export NAMESPACE="cluster-example-eks"
+$ export PROVIDER_NAME="gcp"
+
+$ kubectl -n $NAMESPACE get ${PROVIDER_NAME}machinetemplate $MACHINE_DEPLOYMENT -o yaml > /tmp/$MACHINE_DEPLOYMENT_gcpmt.yaml
+$ sed -i "s/ instanceType:.*/ instanceType: $MACHINE_TYPE/" /tmp/$MACHINE_DEPLOYMENT_gcpmt.yaml 
+$ kubectl delete -f /tmp/$MACHINE_DEPLOYMENT_gcpmt.yaml
+$ kubectl apply -f /tmp/$MACHINE_DEPLOYMENT_gcpmt.yaml
+
+$ RESOURCE_VERSION=$(kubectl -n $NAMESPACE get ${PROVIDER_NAME}MachineTemplate $MACHINE_DEPLOYMENT -o json | jq -r .metadata.resourceVersion)
+
+$ kubectl -n $NAMESPACE patch MachineDeployment $MACHINE_DEPLOYMENT --type merge -p "{\"spec\": {\"template\": {\"spec\": {\"infrastructureRef\": {\"resourceVersion\": \"$RESOURCE_VERSION\"}}}}}"
+----
+
+=== Autoescalado
+
+image::autoescalado.png[]
+
+Para el autoescalado de nodos, se utiliza _cluster-autoscaler_, quien detectará _pods_ pendientes de ejecutar por falta de recursos y escalará el grupo de nodos que considere según los filtros de los despliegues.
+
+Esta operación se realiza en el APIserver, siendo los _controllers_ los encargados de crear las VMs en el proveedor de _Cloud_ y agregarlas al _cluster_ como nodos _workers_ de Kubernetes.
+
+Dado que el autoescalado está basado en el _cluster-autoscaler_, se añadirá el mínimo y máximo en el grupo de nodos _workers_ como _annotations_:
+
+[source,bash]
+----
+$ kubectl -n cluster-example-eks edit MachineDeployment demo-eks-md-2
+
+- apiVersion: cluster.x-k8s.io/v1beta1
+  kind: MachineDeployment
+  metadata:
+    annotations:
+      cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: "6"
+      cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: "2"
+  ...
+----
+
+===== AKS
+
+En este provider, el autoescalado se getiona desde los _VM Scale sets_ de Azure y no con el cluster-autoscaler.
+
+Durante el aprovisionamiento, en el momento de crear los grupos de nodos y como se ha mencionado anteriormente, se crearán los _MachinePools_ y a raíz de ello, se instanciarán los _Node pools_ en AKS y sus respectivos _VM Scale Sets_. Si los grupos de nodos definidos tienen un rango de autoescalado, éstos se trasladarán a los _Node pools_ creados.
+
+Para verlos en el portal de Azure, se deberá consultar:
+
+_Kubernetes services_ -> <aks_name> -> Node pools -> <nodepool_name> -> Scale node pool -> Autoscale
+
+==== Prueba
+
+Para probar el autoescalado, se puede crear un _Deployment_ con suficientes réplicas de modo que no se puedan ejecutar en los nodos actuales:
+
+[source,bash]
+----
+$ kubectl create deploy test --replicas 1500 --image nginx:alpine
+----
+
+Al terminar la prueba, se elimina el _Deployment_:
+
+[source,bash]
+----
+$ kubectl --kubeconfig demo-eks.kubeconfig delete deploy test
+----
+
+==== _Logs_
+
+Los _logs_ del _cluster-autoscaler_ se pueden ver desde su _Deployment_:
+
+[source,bash]
+----
+$ kubectl -n kube-system logs -f -l app.kubernetes.io/name=clusterapi-cluster-autoscaler
+----
+
+=== Actualización de Kubernetes
+
+La actualización del _cluster_ a una versión superior de Kubernetes se realizará en dos partes, primero el _control-plane_ y, una vez que esté en la nueva versión, se procederá a la actualización de los nodos _workers_.
+
+CAUTION: La actualización de la version de Kubernetes de los nodos en los clusters donde no se haya especificado la imágen, puede implicar una actualización del Sistema Operativo.
+
+==== _Control-plane_
+
+image::upgrade-cp.png[]
+
+El upgrade de un cluster en entornos productivos, y especialmente en flavours no-gestionados, deberá hacerse extremando todas las precauciones. En particular, antes del upgrade del cluster, se recomienda realizar un backup de los objetos que gestionan la infraestructura con el siguiente comando:
+
+[source,bash]
+----
+$ clusterctl --kubeconfig ./kubeconfig/path move -n cluster-<cluster_name> --to-directory ./backup/path/
+----
+
+En el caso de _control-plane_ gestionados, se deberá verificar que la versión deseada de Kubernetes está soportada por el provider.
+
+===== EKS
+
+Previo a la actualización de EKS, debemos asegurar que la versión deseada está soportada, para ello, podemos utilizar el siguiente comando:
+
+[source,bash]
+----
+$ aws eks describe-addon-versions | jq -r ".addons[] | .addonVersions[] | .compatibilities[] | .clusterVersion" | sort -nr | uniq | head -4
+----
+
+Para iniciar la actualización, se ejecutará un _patch_ de _spec.version_ en el objeto _AWSManagedControlPlane_.
+
+[source,bash]
+----
+$ kubectl -n cluster-example patch AWSManagedControlPlane example-control-plane --type merge -p '{"spec": {"version": "v1.24.0"}}'
+----
+
+===== GCP y Azure no-gestionado
+
+La GlobalNetworkPolicy creada para el _control-plane_ en la fase de instalación de KEOS, se deberá modificar de modo que *permita toda la red de los nodos momentáneamente* mientras se ejecuta el upgrade.
+
+Una vez finalizada la actualización, se deberán actualizar las IPs internas de los nodos y las de tunel asignadas a dichos nodos:
+
+[source,bash]
+----
+$ kubectl get nodes -l node-role.kubernetes.io/control-plane= -ojson | jq -r '.items[].status.addresses[] | select(.type=="InternalIP").address + "\/32"' 
+----
+
+[source,bash]
+----
+$ IPAMHANDLERS=$(kw get ipamhandles -oname | grep control-plane)
+$ for handler in $IPAMHANDLERS; do kw get $handler -o json | jq -r '.spec.block | keys[]' | sed 's/\/.*/\/32/'; done
+----
+
+Una forma de asegurar que el etcd está correcto después de actualizar un _control-plane_ no-gestionado es abrir una terminal en cualquier Pod de etcd, ver el status del cluster y comparar las IPs de los miembros registrados con las IPs de los nodos del _control-plane_.
+
+[source,bash]
+----
+$ k -n kube-system exec -ti etcd-<control-plane-node> sh
+
+$ alias e="etcdctl --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key --cacert=/etc/kubernetes/pki/etcd/ca.crt "
+$ e endpoint status
+$ e endpoint status -w table --cluster
+$ e member list
+$ e member remove <member-id>
+----
+
+===== AKS
+
+Al igual que para otros flavours gestionados, antes de lanzar la actualización de AKS debemos ver las versiones soportadas en la región utilizada. Para ello, se podrá usar su CLI:
+
+[source,bash]
+----
+$ az aks get-versions --location <region> --output table
+----
+
+Para actualizar AKS, modificaremos la version en el parámetro _spec.version_ del objeto _AzureManagedControlPlane_:
+
+[source,bash]
+----
+$ kubectl -n cluster-example patch AzureManagedControlPlane example-control-plane --type merge -p '{"spec": {"version": "v1.24.0"}}'
+----
+
+==== _Workers_
+
+image::upgrade-w.png[]
+
+Para cada grupo de nodos _workers_ del _cluster_, se ejecutará un _patch_ de _spec.template.spec.version_ en el objeto _MachineDeployment_ correspondiente al grupo.
+
+[source,bash]
+----
+$ kubectl -n cluster-example patch MachineDeployment example-md-1 --type merge -p '{"spec": {"template": {"spec": {"version": "v1.24.0"}}}}'
+----
+
+NOTE: El _controller_ aprovisiona un nuevo nodo del grupo de _workers_ con la versión actualizada y, una vez que esté _Ready_ en Kubernetes, elimina un nodo con la versión vieja. De esta forma, asegura siempre el número de nodos configurado.
+
+===== AKS
+
+En el caso de AKS, se ejecutará un _patch_ de _spec.template.spec.version_ en el objeto _MachinePool_ correspondiente al grupo.
+
+. El MachinePool se quedar'a en estado Provisioned y desde el portal, el VM Scale Set desplegara una maquina nueva extra (se puede ver dentro del scale set, en instancias) y hara el rollout restart
+. La VM aparecera en como nodo de kubernetes con la nueva version, y se eliminara el nodo de una vieja. El MachinePool se queda en Provisioned hasta que se actualicen todas las instancias
+. Una vez actualizadas todas las instancias, el MachinePool vuelve a estado Running 
+. Curiosamente, al terminar de actualizar TODOS los nodos del scale set, elimina el que ha añadido nuevo, quedando la secuencia de instancias dentro del scale set  (0,1,2,..).
+
+=== Eliminación del _cluster_
+
+Previo a la eliminación de los recusos del proveedor _Cloud_ generados por el _cloud-provisioner_, se deberán eliminar aquellos que han sido creados por el _keos-installer_ o cualquier automatismo externo.
+
+. Se crea un _cluster_ local indicando que no se genere ningún objeto en el  proveedor _Cloud_.
++
+[source,bash]
+-----
+[local]$ sudo ./bin/cloud-provisioner create cluster --name prod-cluster --descriptor cluster.yaml --vault-password <my-passphrase> --avoid-creation
+-----
++
+. Se mueve la gestión del _cluster_ _worker_ al _cluster_ local, utilizando el _kubeconfig_ correspondiente (nótese que para los _control-planes_ gestionados se necesitará el _kubeconfig_ del proveedor). Para asegurar este paso, se buscará el siguiente texto en la salida del comando: *Moving Cluster API objects Clusters=1*.
++
+[source,bash]
+-----
+[local]$ sudo clusterctl --kubeconfig $KUBECONFIG move -n cluster-example-eks --to-kubeconfig /root/.kube/config
+-----
++
+. Se accede al _cluster_ local y se elimina el _cluster_ _worker_.
++
+[source,bash]
+-----
+[local]$ sudo docker exec -ti example-eks-control-plane bash
+root@example-eks-control-plane:/# kubectl -n cluster-example-eks delete cl --all
+cluster.cluster.x-k8s.io "example-eks" deleted
+root@example-eks-control-plane:/# 
+-----
++
+. Finalmente, se elimina el _cluster_ local.
++
+[source,bash]
+-----
+[local]$ sudo ./bin/cloud-provisioner delete cluster --name example-eks
+-----

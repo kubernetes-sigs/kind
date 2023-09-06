@@ -1,0 +1,44 @@
+{
+    "Name": "stratio-azure-role",
+    "IsCustom": true,
+    "Description": "Workers and control-plane permissions",
+    "Actions": [
+        "Microsoft.ManagedIdentity/userAssignedIdentities/*/read",
+        "Microsoft.ManagedIdentity/userAssignedIdentities/*/assign/action",
+        "Microsoft.Authorization/*/read",
+        "Microsoft.Insights/alertRules/*",
+        "Microsoft.Resources/subscriptions/resourceGroups/read",
+        "Microsoft.Resources/deployments/*",
+        "Microsoft.Support/*",
+	"Microsoft.ContainerRegistry/registries/pull/read",
+        "Microsoft.Compute/disks/read",
+        "Microsoft.Compute/disks/write",
+        "Microsoft.Compute/*",
+        "Microsoft.Network/loadBalancers/read",
+        "Microsoft.Network/loadBalancers/write",
+        "Microsoft.Network/loadBalancers/delete",
+        "Microsoft.Network/loadBalancers/inboundNatRules/read",
+        "Microsoft.Network/loadBalancers/inboundNatRules/write",
+        "Microsoft.Network/loadBalancers/inboundNatRules/delete",
+        "Microsoft.Network/loadBalancers/backendAddressPools/join/action",       
+        "Microsoft.Network/networkSecurityGroups/read",
+        "Microsoft.Network/networkSecurityGroups/write",
+        "Microsoft.Network/networkSecurityGroups/delete",
+        "Microsoft.Network/networkSecurityGroups/join/action",
+        "Microsoft.Network/networkInterfaces/read",
+        "Microsoft.Network/networkInterfaces/write",
+        "Microsoft.Network/networkInterfaces/delete",
+        "Microsoft.Network/publicIPAddresses/read",
+        "Microsoft.Network/publicIPAddresses/write",
+        "Microsoft.Network/publicIPAddresses/delete",
+        "Microsoft.Network/publicIPAddresses/join/action",
+        "Microsoft.Network/virtualNetworks/subnets/join/action"
+    ],
+    "NotActions": [
+        "Microsoft.Compute/galleries/share/action"
+    ],
+    "AssignableScopes": [
+        "/subscriptions/<subscription_id>/"
+    ]
+}
+

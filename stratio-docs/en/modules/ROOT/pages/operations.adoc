@@ -1,0 +1,297 @@
+= Operations
+
+== Obtaining the _kubeconfig_
+
+To communicate with the API Server of the created cluster, it is necessary the _kubeconfig_ file, which will be obtained differently depending on the cloud provider used and the management of the cluster _control-plane_.
+
+* For EKS, it will be obtained as indicated by AWS:
+
+[source,bash]
+-----
+aws eks update-kubeconfig --region eu-west-1 --name stg-eks --kubeconfig /data/stratio/kubernetes/cluster-api/aws/workspace/stg-eks.kubeconfig
+-----
+
+* For GCP, at the end of provisioning, the _kubeconfig_ is left in the workspace directory:
+
+[source,bash]
+-----
+ls ./.kube/config
+./.kube/config
+-----
+
+== Authentication in EKS
+
+While not part of the _Stratio KEOS_ operation, it is important to highlight how to enable https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html[authentication of other users in an EKS cluster] (the cluster creator user is authenticated by default).
+
+To give Kubernetes-admin permissions on the cluster, the user's ARN will be added in the _ConfigMap_ below.
+
+[source,bash]
+----
+$ k -n kube-system edit cm aws-auth
+..
+data:
+  mapUsers: |
+    - groups:
+      - system:masters
+      userarn: <user_arn>
+      username: kubernetes-admin
+----
+
+== Infrastructure operation
+
+image::controllers.png[]
+
+Using the objects of the previous section, _Stratio KEOS_ is able to perform the following operations by interacting only with the API Server.
+
+The _controllers_ deployed will be the ones to perform the necessary tasks in the reconciliation cycles.
+
+=== CRDs
+
+image::crds.png[]
+
+For the specified API management of the cluster, the following object groups are created:
+
+- _MachineDeployment_, _EKSConfigTemplate_ and _AWSMachineTemplate_ will be used to define workers nodes.
+- To define _control-plane_ (EKS) parameters, the _AWSManagedControlPlane_ object will be used.
+- To indicate the _self-healing_ parameters, a _MachineHealthCheck_ is used for the whole cluster.
+
+=== _Self-healing_
+
+image::self-healing.png[]
+
+The _self-healing_ capability of the cluster is managed by the _MachineHealthCheck_ object:
+
+[source,bash]
+----
+$ k -n cluster-example get mhc -o yaml
+...
+  spec:
+    clusterName: example
+    maxUnhealthy: 100%
+    nodeStartupTimeout: 5m0s
+    selector:
+      matchLabels:
+        keos.stratio.com/machine-role: example-worker-node
+    unhealthyConditions:
+    - status: Unknown
+      timeout: 1m0s
+      type: Ready
+    - status: "False"
+      timeout: 1m0s
+      type: Ready
+...
+----
+
+==== Failover test on a node
+
+In case of failure in a node, it will be detected by a controller and it will be replaced by deleting it and recreating another one of the same group, which ensures the same characteristics.
+
+To simulate a VM failure, it will be deleted from the cloud provider's web console.
+
+Node recovery comprises the following phases and times:
+
+[source,bash]
+----
+. Terminate VM from console: 0s
+. New VM is Provisioning: 50s
+. Old Machine is Deleted & the new one is Provisioned: 1m5s
+. New Machine is Running & new k8s node is NotReady: 1m 50s
+. New k8s node is Ready: 2m
+----
+
+=== Static scaling
+
+Although manual scaling is discouraged, these operations are provided for cases where there is no autoscaling or new node groups.
+
+==== Scaling a workers group
+
+image::escalado-manual.png[]
+
+To manually scale a group of workers, you can use the _MachineDeployment_ object, which supports the _scale_ command of kubectl:
+
+[source,bash]
+----
+kubectl -n cluster-stg-eks scale --replicas 3 MachineDeployment --all
+----
+
+You can see the new number of replicas and the new _Machine_ objects:
+
+[source,bash]
+----
+kubectl -n cluster-stg-eks get MachineDeployment
+kubectl -n cluster-stg-eks get Machine
+----
+
+==== Create a new workers group
+
+===== EKS
+
+The following three objects must be created in EKS: _MachineDeployment_, _AWSMachineTemplate_ and _EKSConfigTemplate_.
+
+Once the manifest has been created, the creation of the group simply consists of applying it to the cluster as follows:
+
+[source,bash]
+----
+kubectl apply -f xref:attachment$example-eks-md.yaml[example-eks-md.yaml]
+----
+
+To view the created objects:
+
+[source,bash]
+----
+kubectl -n cluster-example get md,eksct,awsmt
+----
+
+===== GCP
+
+For GCP, the following will be created: _MachineDeployment_, _GCPMachineTemplate_ and _KubeadmConfigTemplate_.
+
+In the same way, the manifest is applied to create the new workers group:
+
+[source,bash]
+----
+kubectl apply -f xref:attachment$example-gcp-md.yaml[example-gcp-md.yaml]
+----
+
+To see the created objects:
+
+[source,bash]
+----
+kubectl -n cluster-example get md,gcpmachinetemplate,kubeadmconfigtemplate
+----
+
+==== Vertical scaling
+
+Vertical scaling of a node group can be done in several ways, all of which will start by changing the instance type of the `<infra-controller>MachineTemplate` object.
+
+TIP: Although the official guidelines require creating a new `<infra-controller>MachineTemplate` and referencing it from the _MachineDeployment_, this option is not recommended. It prevents maintaining naming consistency between the objects that manage the node groups.
+
+The recommended method is based on 3 simple steps:
+
+. specify the new instance type in `<infra-controller>MachineTemplate` (_spec.template.spec.instanceType_). In some vendors, this object will have to be deleted and created anew.
+. Get the version of the new `<infra-controller>MachineTemplate` object (_metadata.resourceVersion_).
+. Edit the _MachineDeployment_ by updating the version obtained in the previous step (_spec.template.spec.infrastructureRef.resourceVersion_).
+
+An example of an EKS cluster would be as follows:
+
+[source,bash]
+----
+export MACHINE_TYPE="t3.medium"
+export MACHINE_DEPLOYMENT="stg-eks-xlarge-md-2"
+export NAMESPACE="cluster-stg-eks"
+
+$ k -n $NAMESPACE patch awsmt $MACHINE_DEPLOYMENT --type merge -p "{\"spec\": {\"template\": {\"spec\": {\"instanceType\": "$MACHINE_TYPE"}}}}"
+
+$ RESOURCE_VERSION=$(k -n $NAMESPACE get awsmt $MACHINE_DEPLOYMENT -o json | jq -r .metadata.resourceVersion)
+
+$ k -n $NAMESPACE patch md $MACHINE_DEPLOYMENT --type merge -p "{\"spec\": {\"template\": {\"spec\": {\"infrastructureRef\": {\"resourceVersion\": \"$RESOURCE_VERSION\"}}}}}"
+----
+
+=== Autoscaling
+
+image::autoescalado.png[]
+
+The _cluster-autoscaler_ is used for node autoscaling. It will detect pods pending execution due to a lack of resources and it will scale groups of nodes according to the deployment filters.
+
+This operation is performed in the API Server. The controllers are in charge of creating the VMs in the cloud provider and adding them to the cluster as Kubernetes worker nodes.
+
+Since the autoscaling is based on the _cluster-autoscaler_, the minimum and maximum will be added in the worker's node group as annotations:
+
+[source,bash]
+----
+$ kubectl -n cluster-stg-eks edit MachineDeployment demo-eks-md-2
+
+- apiVersion: cluster.x-k8s.io/v1beta1
+  kind: MachineDeployment
+  metadata:
+    annotations:
+      cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: "6"
+      cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: "2"
+  ...
+----
+
+==== Test
+
+To test autoscaling, you can create a deployment with enough replicas to prevent them from running on the current nodes:
+
+[source,bash]
+----
+kubectl create deploy test --replicas 1500 --image nginx:alpine
+----
+
+At the end of the test, remove the deployment:
+
+[source,bash]
+----
+kubectl --kubeconfig demo-eks.kubeconfig delete deploy test
+----
+
+==== Logs
+
+The logs of the _cluster-autoscaler_ can be seen from its deployment:
+
+[source,bash]
+----
+$ k -n kube-system logs -f -l app.kubernetes.io/name=clusterapi-cluster-autoscaler
+----
+
+=== Version upgrade
+
+The upgrade of the cluster to a higher version of Kubernetes will be performed in two parts, first the _control-plane_ and, once this is on the new version, the workers nodes.
+
+==== _Control-plane_
+
+image::upgrade-cp.png[]
+
+For the _control-plane_ update, a _spec.version_ patch will be executed on the _AWSManagedControlPlane_ object.
+
+[source,bash]
+----
+$ kubectl -n cluster-example patch AWSManagedControlPlane example-control-plane --type merge -p '{"spec": {"version": "v1.24.0"}}'
+----
+
+==== Workers
+
+image::upgrade-w.png[]
+
+For each group of worker nodes in the cluster, a _spec.template.spec.version_ patch will be executed on the _MachineDeployment_ object corresponding to the group.
+
+[source,bash]
+----
+$ kubectl -n cluster-example patch MachineDeployment example-md-1 --type merge -p '{"spec": {"template": {"spec": {"version": "v1.24.0"}}}}'
+----
+
+NOTE: The controller provisions a new node in the worker's group with the updated version and, once it is ready in Kubernetes, deletes a node with the old version. This way, it always ensures the configured number of nodes.
+
+=== Cluster removal
+
+Prior to the deletion of the cloud provider resources generated by the _cloud provisioner_, you must delete those that have been created by the _keos-installer_ or any external automation.
+
+. A local cluster is created indicating that no objects are generated in the cloud provider.
++
+[source,bash]
+-----
+[local]$ sudo ./bin/cloud-provisioner create cluster --name prod-cluster --descriptor cluster.yaml --vault-password <my-passphrase> --avoid-creation
+-----
++
+. The management of the cluster worker is moved to the local cluster, using the corresponding _kubeconfig_ (note that for the managed _control-planes_ the _kubeconfig_ of the provider will be needed). To ensure this step, look for the following text in the command output: *Moving Cluster API objects Clusters=1*.
++
+[source,bash]
+-----
+[local]$ sudo clusterctl --kubeconfig $KUBECONFIG move -n cluster-prod-eks --to-kubeconfig /root/.kube/config
+-----
++
+. The cluster local is accessed locally and the cluster worker is removed.
++
+[source,bash]
+-----
+[local]$ sudo docker exec -ti prod-eks-control-plane bash
+root@prod-eks-control-plane:/# k -n cluster-prod-eks delete cl --all
+-----
++
+. Finally, the cluster local is eliminated.
++
+[source,bash]
+-----
+[local]$ sudo ./bin/cloud-provisioner delete cluster --name prod-eks
+-----

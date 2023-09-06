@@ -1,0 +1,240 @@
+= Quick start guide
+
+== EKS
+
+=== Prerequisites
+
+* For a user with the required privileges in AWS:
+** Create a user for installation.
+** Create policy according to xref:attachment$stratio-eks-policy.json[_stratio-eks-policy.json_].
+** Create policy according to xref:attachment$stratio-aws-temp-policy.json[_stratio-aws-temp-policy.json_] (for provisioning only).
+** Attach policies to the user.
+** Create an access key.
+* Private and public hosted zones created in AWS (optional).
+* Custom infrastructure created on AWS (optional).
+* Compose the cluster descriptor file.
+** User credentials (_access$$_$$key_ and _secret$$_$$key_) and account data (region and _account$$_$$id_), which will be encrypted on first run.
+** GitHub token for downloading templates.
+** Account data (region and _account$$_$$id_).
+** Data of the infrastructure already created (optional).
+** DNS zones of the created hosted zones (optional).
+** ECR URL.
+** Enable logging in EKS per component (optional).
+** Node groups.
+** Information required for the installation of _Stratio KEOS_.
+
+Regarding the _control-plane_, in the cluster descriptor you can indicate that it is a *_managed_control-plane_* and the logs that you want to activate (_APIserver_, _audit_, _authenticator_, _controller$$_$$manager_ and/or _scheduler_).
+
+Likewise, *groups of worker nodes* can be indicated with the following options:
+
+* _name_: group name, cannot be repeated.
+* _size_: instance type.
+* _quantity_: number of _workers_ in the group.
+* _min$$_$$size_: minimum number of nodes for autoscaling (optional).
+* _max$$_$$size_: maximum number of nodes for autoscaling (optional).
+* _labels_: node labels in Kubernetes (optional).
+* _root$$_$$volume_: disk specifics (optional).
+** _size_: size in GB (default: 30GB).
+** _type_: disk type (default: gp2).
+** _encrypted_: disk encryption (default: _false_).
+* _ssh$$_$$key_: SSH key for node access (optional). Must exist in the provider.
+* _spot_: indicates if the instance is of spot type (optional).
+* _node$$_$$image_: the image of the worker nodes (optional). The indicated image must exist and be compatible with EKS.
+* _zone$$_$$distribution_: indicates whether the number of nodes must be balanced in the zones or not (default: _balanced_).
+* _az_: zone of the worker's group (optional). If specified, only this one will be used for the whole group. This parameter overrides what is specified in _zone$$_$$distribution_.
+
+NOTE: By default, the distribution of nodes will be done in zones a, b and c of the indicated region in a balanced way, therefore, the rest of the division by three of the number of nodes will be discarded. Example: if 'quantity=7' is specified, only 2 nodes will be deployed in each of the zones.
+
+==== _keos-installer_
+
+In order to facilitate the installation of _Stratio KEOS_, in the provisioning process a functional _keos.yaml_ file is generated and ready to launch the installation. For this purpose, the version and flavor (_production_, _development_ or _minimal_) can be indicated in the cluster descriptor.
+
+[source,bash]
+----
+  keos:
+    version: 0.8.1
+    flavour: development
+----
+
+For any extra customization, the file must be modified before running the _keos-installer_.
+
+==== Considerations
+
+* If you use custom infrastructure, you must indicate the VPC and 3 subnets, one per region zone (a, b and c).
+* The Kubernetes version indicated must be supported by EKS.
+* The _worker$$_$$nodes_ group names cannot be repeated.
+
+TIP: For more details, see the xref:ROOT:installation.adoc[installation guide].
+
+=== Installation
+
+You should run the provisioning and installation of the Kubernetes phase, from a Linux machine with internet access and a Docker installed.
+
+Once you have downloaded the `.tgz` file of the _cloud-provisioner_, proceed to unzip it and run it with the creation parameters:
+
+[source,bash]
+----
+$ tar xvzf cloud-provisioner-*tar.gz
+$ sudo ./bin/cloud-provisioner create cluster --name <cluster_id> --descriptor cluster.yaml
+Creating temporary cluster "example-eks" ...
+ ✓ Ensuring node image (kindest/node:v1.24.7) 🖼
+ ✓ Building Stratio image (stratio-capi-image:v1.24.7) 📸
+ ✓ Preparing nodes 📦
+ ✓ Writing configuration 📜
+ ✓ Starting control-plane 🕹️
+ ✓ Installing CNI 🔌
+ ✓ Installing StorageClass 💾
+ ✓ Installing CAPx 🎖️
+ ✓ Generating workload cluster manifests 📝
+ ✓ Generating secrets file 📝🗝️
+ ✓ [CAPA] Ensuring IAM security 👮
+ ✓ Creating the workload cluster 💥
+ ✓ Saving the workload cluster kubeconfig 📝
+ ✓ Preparing nodes in workload cluster 📦
+ ✓ Enabling workload cluster's self-healing 🏥
+ ✓ Installing CAPx in workload cluster 🎖️
+ ✓ Installing Network Policy Engine in workload cluster 🚧
+ ✓ Adding Cluster-Autoescaler 🗚
+ ✓ Moving the management role 🗝️
+ ✓ Generating the KEOS descriptor 📝
+ ✓ Cleaning up temporary cluster 🧹
+
+The cluster has been installed, please refer to _Stratio KEOS_ documentation on how to proceed.
+----
+
+=== Next steps
+
+At this point, you will have a Kubernetes cluster with the features indicated in the descriptor and you will be able to access the EKS API Server with the AWS CLI as indicated in https://docs.aws.amazon.com/eks/latest/userguide/create-kubeconfig.html[the official documentation].
+
+[source,bash]
+----
+$ aws eks update-kubeconfig --region <region> --name <cluster_id> --kubeconfig ./<cluster_id>.kubeconfig
+
+$ kubectl --kubeconfig ./<cluster_id>.kubeconfig get nodes
+----
+
+Here, the permissions of _clusterawsadm.json_ can be removed.
+
+Next, proceed to deploy _Stratio KEOS_ *using _keos-installer_*.
+
+== GCP
+
+=== Prerequisites
+
+* Create an _IAM Service Account_ with the permissions defined in xref:attachment$stratio-gcp-permissions.list[stratio-gcp-permissions.list].
+* Create a private key for the _IAM Service Account_ of type JSON and download it in a `<project_name>-<id>.json` file. This data will be used for the credentials requested in the cluster descriptor.
+* Deploy a "Cloud NAT" in the region (requires a "Cloud Router", but can be created in the wizard itself).
+* Private and public zones in Cloud DNS created in GCP (optional).
+* Custom infrastructure created in GCP (optional).
+* Compose the cluster descriptor file.
+** User credentials (_private$$_$$key$$_$$id_, _private$$_$$key_ and _client$$_$$email_) and account data (region and _project$$_$$id_), which will be encrypted on first run.
+** GitHub token for template download.
+** Data of the already created infrastructure (optional).
+** DNS zone of the created zones (optional).
+** Docker registry data (URL, credentials).
+** External domain of the cluster.
+** _control-plane_.
+** Node groups.
+** Information necessary for the installation of _Stratio KEOS_.
+
+==== _control-plane_ nodes
+
+For this provider, the _control-plane_ will be deployed in virtual machines, therefore, the following options can be configured:
+
+* _highly$$_$$available_: defines whether the _control-plane_ will have high availability (default: _true_).
+* _managed_: indicates that it is a _control-plane_ in virtual machines.
+* _size_: instance type.
+* _node$$_$$image_: image of the nodes of the _control-plane_. The indicated image must exist in the referenced project.
+* _root$$_$$volume_: disk particularities (optional).
+** _size_: size in GB (default: 30GB).
+** _type_: disk type (default: gp2).
+** _encrypted_: disk encryption (default: _false_).
+
+==== Worker nodes
+
+In the cluster descriptor, groups of worker nodes can be indicated with the following options:
+
+* _name_: group name, cannot be repeated. It must start with "<cluster$$_$$name$$_$$>-".
+* _size_: instance type.
+* _quantity_: number of workers in the group.
+* _min$$_$$size_: minimum number of nodes for autoscaling (optional).
+* _max$$_$$size_: maximum number of nodes for autoscaling (optional).
+* _labels_: node labels in Kubernetes (optional).
+* _root$$_$$volume_: disk specifics (optional).
+** _size_: size in GB (default: 30GB).
+** _type_: disk type (default: gp2).
+** _encrypted_: disk encryption (default: _false_).
+* _ssh$$_$$key_: SSH key for node access (optional). Must exist in the provider.
+* _spot_: indicates if the instance is of type _spot_ (optional).
+* _node$$_$$image_: the image of the worker nodes. The indicated image must exist and be compatible with EKS.
+* _zone$$_$$distribution_: indicates whether the number of nodes must be balanced in the zones or not (default: _balanced_).
+* _az_: zone of the worker's group (optional). If specified, only this one will be used for the whole group. This parameter overrides what is specified in _zone$$_$$distribution_.
+
+NOTE: By default, the distribution of nodes will be done in zones a, b and c of the indicated region in a balanced way, therefore, the rest of the division by three of the number of nodes will be discarded. Example: if 'quantity=7' is specified, only 2 nodes will be deployed in each of the zones.
+
+==== _keos-installer_
+
+In order to facilitate the installation of _Stratio KEOS_, in the provisioning process a functional _keos.yaml_ file is generated and ready to launch the installation. For this purpose, the version and flavor ('production', 'development' or 'minimal') can be indicated in the cluster descriptor.
+
+[source,bash]
+----
+  keos:
+    version: 0.8.1
+    flavour: development
+----
+
+For any extra customization, the file must be modified before running the _keos-installer_.
+
+=== Considerations
+
+* If you use custom infrastructure, you must indicate the VPC and 3 subnets, one per region zone (a, b and c).
+* The configured Kubernetes version must be the one supported in the indicated images.
+* _worker$$_$$nodes_ cluster names cannot be repeated and must start with "<cluster$$_$$name$$_$$>-".
+
+TIP: For more details, see the xref:ROOT:installation.adoc[installation guide].
+
+== Installation
+
+You should run the provisioning and installation of the Kubernetes phase, from a Linux machine with internet access and a Docker installed.
+
+Once you have downloaded the `.tgz` file of the _cloud provisioner_, proceed to unzip it and run it with the creation parameters:
+
+[source,bash]
+----
+$ tar xvzf cloud-provisioner-*tar.gz
+$ sudo ./bin/cloud-provisioner create cluster --name <cluster_id> --descriptor cluster.yaml
+Creating temporary cluster "example-gcp" ...
+ ✓ Ensuring node image (kindest/node:v1.24.7) 🖼
+ ✓ Building Stratio image (stratio-capi-image:v1.24.7) 📸
+ ✓ Preparing nodes 📦
+ ✓ Writing configuration 📜
+ ✓ Starting control-plane 🕹️
+ ✓ Installing CNI 🔌
+ ✓ Installing StorageClass 💾
+ ✓ Installing CAPx 🎖️
+ ✓ Generating workload cluster manifests 📝
+ ✓ Generating secrets file 📝🗝️
+ ✓ Creating the workload cluster 💥
+ ✓ Saving the workload cluster kubeconfig 📝
+ ✓ Installing Calico in workload cluster 🔌
+ ✓ Installing StorageClass in workload cluster 💾
+ ✓ Preparing nodes in workload cluster 📦
+ ✓ Enabling workload cluster's self-healing 🏥
+ ✓ Installing CAPx in workload cluster 🎖️
+ ✓ Adding Cluster-Autoescaler 🗚
+ ✓ Moving the management role 🗝️
+ ✓ Generating the KEOS descriptor 📝
+
+The cluster has been installed, please refer to _Stratio KEOS_ documentation on how to proceed.
+----
+
+== Next steps
+
+At this point, you will have a Kubernetes cluster with the features indicated in the descriptor and you will be able to access the API Server with the _kubeconfig_ generated in the current directory (_.kube/config_):
+
+[source,bash]
+----
+$ kubectl --kubeconfig .kube/config get nodes
+----
+
+Next, proceed to deploy _Stratio KEOS_ *using _keos-installer_*.

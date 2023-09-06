@@ -1,0 +1,73 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  annotations:
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: "3"
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: "1"
+  labels:
+    cluster.x-k8s.io/cluster-name: example
+  name: example-medium
+  namespace: cluster-example
+spec:
+  clusterName: example
+  minReadySeconds: 0
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: example
+      cluster.x-k8s.io/deployment-name: example-medium
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: example
+        cluster.x-k8s.io/deployment-name: example-medium
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+          kind: EKSConfigTemplate
+          name: example-medium
+          namespace: cluster-example
+      clusterName: example
+      failureDomain: eu-west-1c
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: AWSMachineTemplate
+        name: example-medium
+        namespace: cluster-example
+      version: v1.24.0
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSMachineTemplate
+metadata:
+  name: example-medium
+  namespace: cluster-example
+spec:
+  template:
+    metadata: {}
+    spec:
+      ami: {}
+      cloudInit: {}
+      iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io
+      instanceType: t3.medium
+      sshKeyName: null
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+kind: EKSConfigTemplate
+metadata:
+  name: example-medium
+  namespace: cluster-example
+spec:
+  template:
+    spec:
+      kubeletExtraArgs:
+        node-labels: dynamic=true,
+---

@@ -1,0 +1,50 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "iam:AddUserToGroup",
+                "cloudformation:deleteStack",
+                "iam:CreateInstanceProfile",
+                "iam:DeleteGroup",
+                "iam:ListAccessKeys",
+                "iam:RemoveUserFromGroup",
+                "iam:RemoveRoleFromInstanceProfile",
+                "iam:DeletePolicy",
+                "iam:CreateRole",
+                "iam:AttachRolePolicy",
+                "cloudformation:CreateChangeSet",
+                "iam:CreateUser",
+                "iam:AddRoleToInstanceProfile",
+                "cloudformation:updateStack",
+                "iam:PassRole",
+                "cloudformation:DescribeStackEvents",
+                "iam:DetachRolePolicy",
+                "cloudformation:UpdateStack",
+                "iam:DetachGroupPolicy",
+                "cloudformation:DescribeChangeSet",
+                "cloudformation:ExecuteChangeSet",
+                "iam:DeleteInstanceProfile",
+                "iam:GetRole",
+                "cloudformation:ListStacks",
+                "iam:CreateGroup",
+                "iam:GetPolicy",
+                "cloudformation:DescribeStackResources",
+                "iam:DeleteRole",
+                "iam:DeleteUser",
+                "cloudformation:GetTemplateSummary",
+                "cloudformation:DescribeStacks",
+                "iam:CreatePolicy",
+                "iam:ListPolicyVersions",
+                "cloudformation:CreateStack",
+                "iam:AttachGroupPolicy",
+                "cloudformation:DeleteStack",
+                "iam:GetUser",
+                "cloudformation:ValidateTemplate",
+                "cloudformation:createStack"
+            ],
+            "Resource": "*"
+        }
+    ]
+}

@@ -1,0 +1,721 @@
+= Instalación
+
+== Prerrequisitos
+
+=== EKS
+
+* Roles y políticas
++
+Para el aprovisionamiento automatizado en EKS, se necesita ejecutar acciones sobre diversos servicios de AWS como ec2, ecr, eks, elasticloadbalancing, etc. Si bien la utilización o no de estas acciones dependerá del tipo de instalación, el proveedor valida que el usuario indicado tenga estos permisos para poder ejecutarse con normalidad.
++
+** xref:attachment$stratio-eks-policy.json[Descargar permisos permanentes para EKS]
+** xref:attachment$stratio-aws-temp-policy.json[Descargar permisos temporales para EKS]
+
+* Sistemas operativos certificados
++
+Para asegurar las funcionalidades soportadas por el _control-plane_ gestionado de EKS, se deberá utilizar cualquier AMI provista por AWS específicamente para este fin.
++
+Las https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html[AMI optimizadas para Amazon EKS] se crean sobre el sistema operativo _Amazon Linux 2_.
+
+=== GCP
+
+* Permisos
++
+Para los despliegues en Google Cloud Platform, se necesitarán principalmente permisos en _compute_ (instancias, discos, imágenes, _routers_, redes, etc.). Al igual que con otros proveedores soportados, el aprovisionamiento requiere una cuenta con todos los permisos solicitados.
++
+** xref:attachment$stratio-gcp-permissions.list[Descargar permisos para GCP]
+
+* Sistemas operativos certificados
++
+Para los entornos en GCP, se deberá utilizar https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[_image builder_], una herramienta oficial que permite crear y disponibilizar imágenes para _Stratio KEOS_. Para mayor detalle en la construcción de las imágenes ver la xref:ROOT:gcp_image_builder.adoc[guía para GCP].
++
+El sistema operativo recomendado actualmente para este proveedor es Ubuntu 22.04.
+
+=== Azure no-gestionado
+
+* Permisos
++
+Al igual que con otros proveedores soportados, el aprovisionamiento requiere una cuenta con todos los permisos solicitados, pero en este caso además se requiere un role para los nodos del cluster (indicado en el descriptor en _spec.security.nodes_identity_).
++
+** xref:attachment$stratio-azure-role.json[Descargar permisos para Azure]
+** xref:attachment$stratio-azure-nodes-role.json[Descargar permisos para nodos de Azure]
+
+* Sistemas operativos certificados
++
+Para los entornos en Azure, se podrá utilizar https://github.com/kubernetes-sigs/image-builder/tree/master/images/capi[_image builder_], una herramienta oficial que permite crear y disponibilizar imágenes para _Stratio KEOS_. Para mayor detalle en la construcción de las imágenes ver la xref:ROOT:azure_image_builder.adoc[guía para Azure].
++
+El sistema operativo recomendado actualmente para este proveedor es Ubuntu 22.04, siendo el que crea por defecto el controller de este _cloud provider_.
++
+El sistema operativo recomendado actualmente para este proveedor es Ubuntu 22.04.
+
+=== AKS
+
+* Permisos
++
+Para este tipo de clusters se deberá desplegar utilizando una identidad con los roles Contributor, Managed Identity Operator, y la política de AcrPull para el ACR. 
+
+Al igual que para el caso anterior, se requiere un role para los nodos del cluster (indicado en el descriptor en _spec.security.nodes_identity_).
++
+xref:attachment$stratio-azure-nodes-role.json[Descargar permisos para nodos de Azure]
+
+* Sistemas operativos certificados
++
+Este flavour no permite especificar ninguna imágen custom, y despliega por defecto Ubuntu 22.04.
+
+=== Consideraciones para imágenes
+
+Si nos referimos al control-plane, y como es evidente, en EKS y AKS no se podrá indicar una imágen, pero en Azure no-gestionado y en GCP si, siendo obligatorio para este último caso.
+
+Para los nodos workers, es opcional en todos los casos (al no indicarla, el controller asigna una disponibilizada por el _cloud provider_) menos GCP, donde también será obligatorio especificarla ya que no disponibiliza ninguna imágen.
+
+Al momento de crear la imágen para el cluster, se deberán tener en cuenta las necesidades de Sistema Operativo para las aplicaciones que lo requieran (systemd units, DaemonSets, etc.).
+
+==== Elasticsearch
+
+Para soportar los despliegues de Elasticsearch, el Sistema Operativo deberá contar con el parámetro "max_map_count = 262144" del sysctl como indica su https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html[documentación oficial].
+
+Para las imágenes creadas con _image-builder_ (*GCP y Azure unmanaged*), hay que añadir el siguiente elemento en el https://github.com/kubernetes-sigs/image-builder/blob/main/images/capi/ansible/roles/node/tasks/main.yml#L55[loop de los parámetros del kernel] (en _/images/capi/ansible/roles/node/tasks/main.yml_):
+
+[source,bash]
+----
+- { param: vm.max_map_count, val: 262144 }
+----
+
+Las imágenes de _Amazon Linux 2_ utilizadas por *EKS* ya cuentan con este parámetro/valor.
+
+Para el caso de *AKS*, y dado que las imágenes no pueden ser construidas con image-builder, se deberá hacer con el objeto AzureManagedMachinePool, eliminandolo y re-creandolo (no se permite su edición) con el siguiente parámetro:
+
+[source,bash]
+----
+spec:
+  linuxOSConfig:
+    sysctls:
+      vmMaxMapCount: 262144
+----
+
+== Descriptor del _cluster_
+
+Para indicar las particularidades del _cluster_ se utiliza el objeto _KeosCluster_ en un fichero _manifest_.
+
+La cabecera de este descriptor será la misma que la de cualquier objeto de Kubernetes:
+
+[source,bash]
+----
+apiVersion: installer.stratio.com/v1beta1
+kind: KeosCluster
+spec:
+----
+
+=== _spec_
+
+El _spec_ del _KeosCluster_ está compuesto por los siguientes campos:
+
+[cols="1,4,2,1"]
+|===
+^|Nombre ^|Descripción ^|Ejemplo ^|Opcional
+
+|cluster$$_$$id
+|Nombre del _cluster_.
+|my-cluster
+|No
+
+|infra$$_$$provider
+|Nombre del _cloud provider_ (AWS o GCP).
+|AWS
+|No
+
+|<<credentials, credentials>>
+|Set de credenciales del _cloud provider_ usadas en el aprovisionamiento.
+|Ver el <<ejemplo_de_descriptor,Ejemplo de descriptor>>
+|No en 1a ejecución.
+
+|k8s$$_$$version
+|Versión de Kubernetes del _cluster_. Debe estar alineada tanto con el _cloud provider_ como con _Stratio KEOS_. Nota: EKS no tiene en cuenta la _patch version_.
+|v1.24.10
+|No
+
+|region
+|Región del _cloud provider_ usada para el aprovisionamiento.
+|eu-west-1
+|No
+
+|docker$$_$$registries
+|_Registries_ de Docker accesibles por los nodos.
+|-
+|No
+
+|<<networks, networks>>
+|Identificadores de la infraestructura creada previamente.
+|Ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
+|Si
+
+|<<control_plane, control$$_$$plane>>
+|Especificaciones para el _control-plane_ de Kubernetes.
+|Ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
+|No
+
+|<<worker_nodes, worker$$_$$nodes>>
+|Especificaciones de los grupos de nodos _worker_.
+|ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
+|No
+
+|external$$_$$domain
+|Dominio externo al _cluster_.
+|domain.ext
+|No
+
+|<<keos, keos>>
+|Sección de configuraciones para la instalación de _Stratio KEOS_.
+|ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
+|No
+
+|===
+
+=== Credenciales
+
+En la primera ejecución, las credenciales para el aprovisionamiento en el _cloud provider_ se indicarán en este apartado.
+
+Estos secretos se cifran con una _passphrase_ solicitada desde en el aprovisionamiento en el fichero _secrets.yml_, eliminándose todo el apartado de credenciales del descriptor.
+
+En posteriores ejecuciones, simplemente se solicita la _passphrase_ para descifrar el fichero de secretos, de donde se leen las credenciales.
+
+Los siguientes campos son considerados secretos del aprovisionamiento:
+
+[cols="1,4,2,1"]
+|===
+^|Nombre ^|Descripción ^|Ejemplo ^|Opcional
+
+|aws
+|Credenciales para acceso a AWS.
+|Ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
+|No cuando infra$$_$$provider=aws.
+
+|gcp
+|Credenciales para acceso a GCP.
+|ver el <<ejemplo_de_descriptor, Ejemplo de descriptor>>
+|No cuando infra$$_$$provider=gcp.
+
+|github$$_$$token
+|Token de GitHub. Se puede utilizar un _Fine-grained token_ o un token tipo _classic_ y no necesita ningún permiso. Para generarlo, ve a: 'Settings' → 'Developer settings' → 'Personal access tokens'.
+|github$$_$$pat$$_$$11APW.
+|No
+
+|docker$$_$$registries
+|_Registries_ de Docker accesibles por los nodos. Para EKS, no hace falta autenticación, ya que se hace automáticamente con las credenciales del usuario.
+|-
+|Sí
+
+|===
+
+NOTE: Cualquier cambio en spec.credentials debe hacerse con todas las credenciales en el descriptor del cluster y eliminando previamente el secrets.yml.
+
+=== Redes
+
+Como se ha mencionado anteriormente, el instalador permite utilizar elementos de red del _cloud provider_ creados anteriormente (por ejemplo, por un equipo de seguridad de redes), posibilitando así las arquitecturas que mejor se adapten a nuestras necesidades.
+
+Tanto el VPC como las _subnets_ deberán estar creadas en el _cloud provider_. Las _subnets_ podrán ser privadas o públicas, pero en éste último caso, deberán contar con un _NAT gateway_ y un _Internet Gateway_ en el mismo VPC. En caso de indicar _subnets_ de ambos tipos, los nodos _worker_ se desplegarán en _subnets_ privadas.
+
+_Stratio KEOS_ no gestionará el ciclo de vida de los objetos creados previamente.
+
+[cols="1,4,2,1"]
+|===
+^|Nombre ^|Descripción ^|Ejemplo ^|Opcional
+
+|vpc$$_$$id
+|VPC ID.
+|vpc-0264503b8761ff69f
+|Sí
+
+|_subnets_
+|_Array_ de _subnet_'s IDs.
+a|
+[source,bash]
+----
+- subnet_id: subnet-0df..
+- subnet_id: subnet-887..
+----
+|Sí
+
+|===
+
+=== _control-plane_
+
+En este apartado se indican las particularidades para el _control-plane_ de Kubernetes.
+
+[cols="1,4,2,1"]
+|===
+^|Nombre ^|Descripción ^|Ejemplo ^|Opcional
+
+|aws
+|Valores específicos para el _logging_ de EKS (APIserver, audit, authenticator, controller$$_$$manager y/o scheduler).
+a|
+[source,bash]
+----
+logging:
+  api_server: true
+----
+|Sí
+
+|managed
+|Indica si el _control-plane_ es o no gestionado en el _cloud provider_.
+|true
+|No
+
+|===
+
+=== Nodos _worker_
+
+En este apartado se especifican los grupos de nodos _worker_ y sus características.
+
+Las imágenes utilizadas deberán estar soportadas por EKS (ver https://repost.aws/knowledge-center/eks-custom-linux-ami[creación de AMI personalizadas]).
+
+[cols="1,4,2,1"]
+|===
+^|Nombre ^|Descripción ^|Ejemplo ^|Opcional
+
+|name
+|Nombre del grupo. Se utilizará como prefijo de las instancias.
+|eks-prod-gpu
+|No
+
+|quantity
+|Cantidad de nodos del grupo. Se recomienda que sea múltiplo de 3 para no tener zonas desbalanceadas.
+|15
+|No
+
+|size
+|Tipo de instancia.
+|t3.medium
+|No
+
+|max$$_$$size / min$$_$$size
+|Máximo y mínimo número de instancias para el autoescalado.
+|6 / 18.
+|Sí
+
+|az
+|Zona para todo el grupo (invalida el parámetro zone$$_$$distribution).
+|eu-east-1a
+|Sí
+
+|zone$$_$$distribution
+|Indica si los nodos se repartirán equitativamente en las zonas (por defecto) o no.
+|unbalanced
+|Sí
+
+|node$$_$$image
+|Imagen de instancia utilizada para los nodos _worker_.
+|ami-0de933c15c9b49fb5
+|No para infra$$_$$provider: gcp
+
+|_labels_
+|Etiquetas de Kubernetes para los nodos _worker_.
+a|
+[source,bash]
+----
+labels:
+  disktype: standard
+  gpus: true
+----
+|Si
+
+|root$$_$$volume
+|Particularidades del volumen como tamaño, tipo y encriptación.
+a|
+[source,bash]
+----
+root_volume:
+  size: 50
+  type: gp3
+  encrypted: true
+----
+|Si
+
+|ssh$$_$$key
+|Clave SSH pública para acceso a los nodos _worker_. Debe estar creada en AWS previamente. Se recomienda no añadir ninguna clave SSH a los nodos.
+|prod-key
+|Sí
+
+|===
+
+=== _Stratio KEOS_
+
+Los parámetros para la fase del _keos-installer_ se indicarán en este apartado.
+
+[cols="1,4,2,1"]
+|===
+^|Nombre ^|Descripción ^|Ejemplo ^|Opcional
+
+|flavour
+|Sabor de instalación, que indica tamaño del _cluster_ y resiliencia. Por defecto es "production".
+|development
+|Sí
+
+|version
+|Versión del _keos-installer_.
+|0.8.0
+|No
+
+|===
+
+=== Ejemplo de descriptor
+
+Se presentan dos casos de descriptor para demostrar la capacidad del _cloud-provisioner_ en ambos _cloud providers_ soportados.
+
+==== EKS
+
+En este ejemplo se pueden ver las siguientes particularidades:
+
+* _Cluster_ en AWS con _control-plane_ gestionado (EKS).
+* Kubernetes versión 1.24.x (EKS no tiene en cuenta la _patch version_).
+* Uso de ECR como _Docker registry_ (no necesita credenciales).
+* Uso de VPC y _subnets_ personalizadas (creadas anteriormente). Este apartado es opcional.
+* Se habilitan los _logs_ del APIserver en EKS.
+* Grupos de nodos _workers_ con múltiples casuísticas:
+** Diferentes tipos de instancia.
+** Con AMI específica (opcional para este _cloud provider_). Nota: las versiones de los componentes de la imagen deberán estar alineadas con la versión de Kubernetes indicada.
+** Con clave SSH.
+** Con etiquetas de K8s.
+** Con rangos de autoescalado.
+** En una zona fija.
+** Con personalizaciones en el disco.
+** Con instancias tipo _spot_.
+** Casos de distribución en AZs: balanceado y desbalanceado.
+
+[source,bash]
+----
+apiVersion: installer.stratio.com/v1beta1
+kind: KeosCluster
+spec:
+  cluster_id: eks-prod
+  infra_provider: aws
+  credentials:
+    aws:
+      region: eu-west-1
+      access_key: AKIAT4..
+      account_id: '3683675..'
+      secret_key: wq3/Vsc..
+    github_token: github_pat_11APW..
+  k8s_version: v1.24.0
+  region: eu-west-1
+  networks:
+    vpc_id: vpc-02698..
+    subnets:
+      - subnet_id: subnet-0416d..
+      - subnet_id: subnet-0b2f8..
+      - subnet_id: subnet-0df75..
+  docker_registries:
+    - url: AABBCC.dkr.ecr.eu-west-1.amazonaws.com/keos
+      auth_required: false
+      type: ecr
+      keos_registry: true
+  control_plane:
+    aws:
+      logging:
+        api_server: true
+    managed: true
+  worker_nodes:
+    - name: eks-prod-xlarge
+      quantity: 6
+      max_size: 18
+      min_size: 6
+      size: m6i.xlarge
+      labels:
+        disktype: standard
+      root_volume:
+        size: 50
+        type: gp3
+        encrypted: true
+      ssh_key: stg-key
+    - name: eks-prod-medium-spot
+      quantity: 4
+      zone_distribution: unbalanced
+      size: t3.medium
+      spot: true
+      labels:
+        disktype: standard
+    - name: eks-prod-medium-az
+      quantity: 3
+      size: t3.medium
+      az: eu-west-1c
+      node_image:  ami-0de933c15c9b49fb5
+  external_domain: domain.ext
+  keos:
+    domain: cluster.local
+    flavour: production
+    version: 0.8.2
+----
+
+==== GCP
+
+En este ejemplo se pueden ver las siguientes particularidades:
+
+* _Cluster_ en GCP con _control-plane_ no gestionado.
+* Uso de un _Docker registry_ autenticado genérico (con sus credenciales).
+* Sin control de la zona DNS (habilitado por defecto).
+* Características de las VMs para el _control-plane_:
+** Con alta disponibilidad (se despliegan 3 instancias).
+** Con tipo de instancia específico.
+** Con imagen específica (obligatoria para este _cloud provider_). Nota: las versiones de los componentes de la imagen deberán estar alineadas con la versión de Kubernetes indicada.
+** Con personalizaciones en el disco.
+* Grupos de nodos _workers_ con múltiples casuísticas:
+** Diferentes tipos de instancia.
+** Con imagen específica (obligatoria para este _cloud provider_). Nota: las versiones de los componentes de la imagen deberán estar alineadas con la versión de Kubernetes indicada.
+** Con clave SSH.
+** Con etiquetas de K8s.
+** Con rangos de autoescalado.
+** En una zona fija.
+** Con personalizaciones en el disco.
+** Con instancias tipo _spot_.
+** Casos de distribución en AZs: balanceado y desbalanceado.
+
+[source,bash]
+----
+apiVersion: installer.stratio.com/v1beta1
+kind: KeosCluster
+spec:
+  cluster_id: gcp-prod
+  infra_provider: gcp
+  credentials:
+    gcp:
+      private_key_id: "efdf19f5605a.."
+      private_key: "-----BEGIN PRIVATE KEY-----\nMIIEvw.."
+      client_email: keos@stratio.com
+      project_id: gcp-prod
+      region: europe-west4
+      client_id: "6767910929.."
+    github_token: github_pat_11APW..
+    docker_registries:
+      - url: keosregistry.stratio.com/keos
+        user: "myuser"
+        pass: "mypass"
+  k8s_version: v1.24.12
+  region: europe-west4
+  docker_registries:
+    - url: eosregistry.azurecr.io/keos
+      auth_required: false
+      type: acr
+      keos_registry: true
+  dns:
+    manage_zone: false
+  control_plane:
+    managed: false
+    highly_available: true
+    size: c2d-highcpu-4
+    node_image: projects/gcp-prod/global/images/ubuntu-2204-v1-24-12-1679997686
+  worker_nodes:
+    - name: gcp-prod-xlarge
+      quantity: 6
+      max_size: 18
+      min_size: 6
+      size: c2d-highcpu-4
+      labels:
+        disktype: standard
+      root_volume:
+        size: 50
+        type: pd-standard
+        encrypted: true
+      node_image: projects/gcp-prod/global/images/ubuntu-2204-v1-24-12-1679997686
+      ssh_key: stg-key
+    - name: gcp-prod-medium-spot
+      quantity: 4
+      zone_distribution: unbalanced
+      size: c2d-highcpu-4
+      spot: true
+      labels:
+        disktype: standard
+      node_image: projects/gcp-prod/global/images/ubuntu-2204-v1-24-12-1679997686
+    - name: gcp-prod-medium-az
+      quantity: 3
+      size: c2d-highcpu-4
+      az: europe-west4-a
+      node_image: projects/gcp-prod/global/images/ubuntu-2204-v1-24-12-1679997686
+  external_domain: domain.ext
+  keos:
+    domain: cluster.local
+    flavour: production
+    version: 0.8.2
+----
+
+==== Azure no-gestionado
+
+En este ejemplo se pueden ver las siguientes particularidades:
+
+* _Cluster_ en Azure con _control-plane_ no gestionado.
+* Uso de ACR como _Docker registry_ (no necesita credenciales).
+* Uso de un CIDR específico para Pods.
+* Características de las VMs para el _control-plane_:
+** Con alta disponibilidad (se despliegan 3 instancias).
+** Con tipo de instancia específico.
+** Sin imagen específica (opcional para este _cloud provider_).
+** Con personalizaciones en el disco.
+* Grupo de nodos _workers_:
+** Con imagen específica (opcional para este _cloud provider_). Nota: las versiones de los componentes de la imagen deberán estar alineadas con la versión de Kubernetes indicada.
+** Con etiquetas de K8s.
+** Con rangos de autoescalado.
+** Con personalizaciones en el disco.
+
+[source,bash]
+----
+apiVersion: installer.stratio.com/v1beta1
+kind: KeosCluster
+spec:
+  cluster_id: azure-prod
+  infra_provider: azure
+  credentials:
+    client_id: ee435ab0..
+    client_secret: lSF8Q~n..
+    subscription_id: '6e2a38cd-e..'
+    tenant_id: '9c2f8eb6-5..'
+  k8s_version: v1.24.13
+  region: westeurope
+  docker_registries:
+    - url: eosregistry.azurecr.io/keos
+      auth_required: false
+      type: acr
+      keos_registry: true
+  networks:
+      pods_cidr: 172.16.0.0/20
+  security:
+    nodes_identity: "/subscriptions/6e2a38cd-../stratio-nodes"
+  control_plane:
+    managed: false
+    size: Standard_D8_v3
+    root_volume:
+      size: 50
+      type: Standard_LRS
+  worker_nodes:
+    - name: azure-prod-std
+      quantity: 3
+      max_size: 18
+      min_size: 3
+      size: Standard_D8_v3
+      labels:
+        backup: false
+      root_volume:
+        size: 50
+        type: Standard_LRS
+      node_image: "/subscriptions/6e2a38cd-../images/capi-ubuntu-2204-1687262553"
+  external_domain: domain.ext
+  keos:
+    domain: cluster.local
+    flavour: production
+    version: 0.8.2
+----
+
+==== AKS
+
+En este ejemplo se pueden ver las siguientes particularidades:
+
+* _Cluster_ en Azure con _control-plane_ gestionado (AKS).
+* Kubernetes versión 1.24.11 (deberá estar soportada por Azure).
+* Uso de ACR como _Docker registry_ (no necesita credenciales).
+* Con tier _Paid_ de AKS (recomendado para producción).
+* Grupo de nodos _workers_:
+** Instancias tipo Standard_D8s_v3 para poder soportar volúmenes premium.
+** Con etiquetas de K8s.
+** Con rangos de autoescalado.
+** Con personalizaciones en el disco.
+
+[source,bash]
+----
+apiVersion: installer.stratio.com/v1beta1
+kind: KeosCluster
+spec:
+  cluster_id: aks-prod
+  infra_provider: azure
+  credentials:
+    client_id: ee435ab0..
+    client_secret: lSF8Q~n..
+    subscription_id: '6e2a38cd-e..'
+    tenant_id: '9c2f8eb6-5..'
+  k8s_version: v1.24.0
+  region: westeurope
+  docker_registries:
+      - url: eosregistry.azurecr.io/keos
+        auth_required: false
+        type: acr
+        keos_registry: true
+  networks:
+      pods_cidr: 172.16.0.0/20
+  storageclass:
+      encryption_key: myKey
+      class: premium
+  control_plane:
+      azure:
+          identity_id: "/subscriptions/6e2a38cd-../stratio-nodes"
+          tier: Paid
+      managed: true
+  worker_nodes:
+      - name: aks-prod-prem
+        quantity: 3
+        max_size: 21
+        min_size: 3
+        size: Standard_D8s_v3
+        labels:
+          premium_sc: "true"
+        root_volume:
+          size: 50
+          type: Managed
+  external_domain: domain.ext
+  keos:
+      domain: cluster.local
+      flavour: production
+      version: 0.8.2
+----
+
+== Creación del cluster
+
+_cloud-provisioner_ es una herramienta que facilita el aprovisionamiento de los elementos necesarios en el _cloud provider_ especificado para la creación de un _cluster_ de Kubernetes según el <<descriptor_del_cluster, descriptor>> especificado.
+
+Actualmente, este binario incluye las siguientes opciones:
+
+- `--descriptor`: permite indicar la ruta al descriptor del _cluster_.
+- `--vault-password`: permite indicar la _passphrase_ de cifrado de las credenciales.
+- `--avoid-creation`: no se crea el _cluster_ _worker_, sólo el _cluster_ local.
+- `--keep-mgmt`: crea el cluster _worker_ pero deja su gestión en el _cluster_ local.
+- `--retain`: permite mantener el _cluster_ local aún sin gestión.
+
+Para crear un _cluster_, basta con un simple comando (ver particularidades de cada provider en las Quickstart guides):
+
+[source,bash]
+-----
+sudo ./cloud-provisioner create cluster --name stratio-pre --descriptor cluster-gcp.yaml
+Vault Password:
+Rewrite Vault Password:
+Creating temporary cluster "stratio-pre" ...
+ ✓ Ensuring node image (kindest/node:v1.24.7) 🖼
+ ✓ Building Stratio image (stratio-capi-image:v1.24.7) 📸
+ ✓ Preparing nodes 📦
+ ✓ Writing configuration 📜
+ ✓ Starting control-plane 🕹️
+ ✓ Installing CNI 🔌
+ ✓ Installing StorageClass 💾
+ ✓ Installing CAPx 🎖️
+ ✓ Generating workload cluster manifests 📝
+ ✓ Generating secrets file 📝🗝️
+ ✓ Creating the workload cluster 💥
+ ✓ Saving the workload cluster kubeconfig 📝
+ ✓ Installing Calico in workload cluster 🔌
+ ✓ Installing StorageClass in workload cluster 💾
+ ✓ Preparing nodes in workload cluster 📦
+ ✓ Enabling workload cluster's self-healing 🏥
+ ✓ Installing CAPx in workload cluster 🎖️
+ ✓ Adding Cluster-Autoescaler 🗚
+ ✓ Moving the management role 🗝️
+ ✓ Generating the KEOS descriptor 📝
+
+The cluster has been installed, please refer to _Stratio KEOS_ documentation on how to proceed.
+-----
+
+Una vez finalizado el proceso, tendremos los ficheros necesarios (_keos.yaml_ y _secrets.yml_) para instalar _Stratio KEOS_.
+
+NOTE: Dado que el fichero descriptor para la instalación (keos.yaml) se regenera en cada ejecución, se realiza un backup del anterior en el directorio local con la fecha correspondiente (p.ej. _keos.yaml.2023-07-05@11:19:17~_).
+
+=== Load Balancer
+
+Debido a un bug en los distintos controllers (solucionado en ramas master pero aún sin release), el Load Balancer creado en los _cloud providers_ de GCP y Azure para el APIserver de los clusters con control-planes no-gestionados, se genera con un Healthcheck basado en TCP.
+
+Eventualmente, esto podría generar problemas en las peticiones en caso de fallo de alguno de los nodos del control-plane, dado que el Load Balancer enviará peticiones a los nodos del control plane cuyo puerto responda pero no pueda atender peticiones.
+
+Para evitar este problema, se deberá modificar el Healthcheck del LoadBalancer creado, utilizando protocolo HTTPS y path /readyz. El puerto deberá mantenerse, siendo para GCP el 443 y para Azure el 6443.

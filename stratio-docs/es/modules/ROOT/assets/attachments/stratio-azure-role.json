@@ -1,0 +1,70 @@
+{
+    "id": "/subscriptions/6e2a38cd-ef16-47b3-a75e-5a4960cedf65/providers/Microsoft.Authorization/roleDefinitions/4d0b150f-0287-40db-8c84-7662a8fd81eb",
+    "properties": {
+        "roleName": "stratio-azure-role",
+        "description": "Stratio azure role permissions",
+        "assignableScopes": [
+            "/subscriptions/6e2a38cd-ef16-47b3-a75e-5a4960cedf65"
+        ],
+        "permissions": [
+            {
+                "actions": [
+                    "Microsoft.Authorization/*/read",
+                    "Microsoft.Resources/subscriptions/resourcegroups/read",
+                    "Microsoft.Resources/subscriptions/resourcegroups/write",
+                    "Microsoft.Resources/subscriptions/resourcegroups/delete",
+                    "Microsoft.Network/virtualNetworks/read",
+                    "Microsoft.Network/virtualNetworks/write",
+                    "Microsoft.Network/virtualNetworks/delete",
+                    "Microsoft.Network/networkSecurityGroups/read",
+                    "Microsoft.Network/networkSecurityGroups/write",
+                    "Microsoft.Network/networkSecurityGroups/delete",
+                    "Microsoft.Network/networkSecurityGroups/join/action",
+                    "Microsoft.Network/routeTables/read",
+                    "Microsoft.Network/routeTables/write",
+                    "Microsoft.Network/routeTables/delete",
+                    "Microsoft.Network/routeTables/join/action",
+                    "Microsoft.Network/publicIPAddresses/read",
+                    "Microsoft.Network/publicIPAddresses/write",
+                    "Microsoft.Network/publicIPAddresses/delete",
+                    "Microsoft.Network/publicIPAddresses/join/action",
+                    "Microsoft.Network/natGateways/read",
+                    "Microsoft.Network/natGateways/write",
+                    "Microsoft.Network/natGateways/delete",
+                    "Microsoft.Network/virtualNetworks/subnets/read",
+                    "Microsoft.Network/virtualNetworks/subnets/write",
+                    "Microsoft.Network/virtualNetworks/subnets/delete",
+                    "Microsoft.Network/virtualNetworks/subnets/join/action",
+                    "Microsoft.Network/natGateways/join/action",
+                    "Microsoft.Network/loadBalancers/read",
+                    "Microsoft.Network/loadBalancers/write",
+                    "Microsoft.Network/loadBalancers/delete",
+                    "Microsoft.Network/loadBalancers/inboundNatRules/read",
+                    "Microsoft.Network/loadBalancers/inboundNatRules/write",
+                    "Microsoft.Network/loadBalancers/inboundNatRules/delete",
+                    "Microsoft.Network/loadBalancers/backendAddressPools/join/action",
+                    "Microsoft.Network/loadBalancers/inboundNatRules/join/action",
+                    "Microsoft.Network/networkInterfaces/read",
+                    "Microsoft.Network/networkInterfaces/write",
+                    "Microsoft.Network/networkInterfaces/delete",
+                    "Microsoft.Compute/virtualMachines/read",
+                    "Microsoft.Compute/virtualMachines/write",
+                    "Microsoft.Compute/virtualMachines/delete",
+                    "Microsoft.Compute/virtualMachines/extensions/read",
+                    "Microsoft.Compute/virtualMachines/extensions/write",
+                    "Microsoft.Compute/virtualMachines/extensions/delete",
+                    "Microsoft.Compute/images/read",
+                    "Microsoft.Network/networkInterfaces/join/action",
+                    "Microsoft.ManagedIdentity/userAssignedIdentities/read",
+                    "Microsoft.ManagedIdentity/userAssignedIdentities/assign/action",
+                    "Microsoft.Compute/disks/delete",
+                    "Microsoft.Network/dnsZones/read",
+                    "Microsoft.Network/privateDnsZones/read"
+                ],
+                "notActions": [],
+                "dataActions": [],
+                "notDataActions": []
+            }
+        ]
+    }
+}

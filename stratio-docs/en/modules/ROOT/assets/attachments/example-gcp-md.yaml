@@ -1,0 +1,62 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: example-standard
+  namespace: cluster-example
+spec:
+  clusterName: example
+  replicas: 3
+  selector:
+    matchLabels: null
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+          name: example-standard
+      clusterName: example
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: GCPMachineTemplate
+        name: example-standard
+      version: 1.24.11
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: GCPMachineTemplate
+metadata:
+  name: example-standard
+  namespace: cluster-example
+spec:
+  template:
+    spec:
+      image: projects/clusterapi-369611/global/images/cluster-api-ubuntu-2004-v1-24-11-1670424551
+      instanceType: n1-standard-2
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: example-standard
+  namespace: cluster-example
+spec:
+  template:
+    spec:
+      files:
+        - path: /etc/containerd/config.toml
+          content: "version = 2\nimports = [\"/etc/containerd/conf.d/*.toml\"]\n[plugins]\n\
+            \  [plugins.\"io.containerd.grpc.v1.cri\"]\n    sandbox_image = \"k8s.gcr.io/pause:3.6\"\
+            \n  [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc]\n\
+            \    runtime_type = \"io.containerd.runc.v2\"\n  [plugins.\"io.containerd.grpc.v1.cri\"\
+            .containerd.runtimes.runc.options]\n    SystemdCgroup = true\n  [plugins.\"\
+            io.containerd.grpc.v1.cri\".registry]\n    [plugins.\"io.containerd.grpc.v1.cri\"\
+            .registry.mirrors]\n      [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"\
+            docker.io\"]\n        endpoint = [\"https://registry-1.docker.io\"]\n\
+            \    [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"eosregistry.azurecr.io\"\
+            .auth]\n      password = \"fzz7Q~ENWGZLq2EDBe2p_oTvw4ZhzZe0quWGZ\"\n \
+            \     username = \"3bf0da11-ce47-42a7-995d-1f8dd40bc84f\"\n"
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            cloud-provider: gce
+          name: '{{ ds.meta_data.local_hostname.split(".")[0] }}'

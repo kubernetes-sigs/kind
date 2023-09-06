@@ -1,0 +1,48 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachinePool
+metadata:
+  name: example-medium
+  namespace: cluster-example
+spec:
+  clusterName: example
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        keos.stratio.com/machine-role: example-worker-node
+    spec:
+      bootstrap:
+        dataSecretName: ""
+      clusterName: example
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: AzureManagedMachinePool
+        name: example-medium
+      version: v1.24.15
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: AzureManagedMachinePool
+metadata:
+  name: example-medium
+  namespace: cluster-example
+spec:
+  mode: System
+  name: worker1mp0
+  sku: Standard_D8_v3
+  osDiskSizeGB: 50
+  osDiskType: Managed
+  availabilityZones:
+    - "1"
+  scaleSetPriority: Regular
+  scaling:
+    minSize: 1
+    maxSize: 7
+  nodeLabels:
+    backup: "false"
+  taints:
+    - key: "gpu"
+      value: "true"
+      effect: "NoSchedule"
+---
+
