@@ -22,8 +22,8 @@ ENV TIGERA_OPERATOR_CHART=v3.26.1
 ENV CAPI_REPO=/root/.cluster-api/local-repository
 ENV CAPA=v2.2.1
 ENV CAPG=v1.4.0
-ENV CAPZ=v1.10.2
-ENV CAPZMANAGED=v1.9.7
+ENV CAPZ=v1.10.3
+ENV CAPZMANAGED=v1.9.8
 
 # Install vim
 RUN apt-get update && apt-get install -y \

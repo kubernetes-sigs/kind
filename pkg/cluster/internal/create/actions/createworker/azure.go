@@ -67,12 +67,12 @@ func (b *AzureBuilder) setCapx(managed bool) {
 	b.capxManaged = managed
 	b.csiNamespace = "kube-system"
 	if managed {
-		b.capxVersion = "v1.9.7"
-		b.capxImageVersion = "v1.9.7"
+		b.capxVersion = "v1.9.8"
+		b.capxImageVersion = "v1.9.8"
 		b.capxTemplate = "azure.aks.tmpl"
 	} else {
-		b.capxVersion = "v1.10.2"
-		b.capxImageVersion = "v1.10.2"
+		b.capxVersion = "v1.10.3"
+		b.capxImageVersion = "v1.10.3"
 		b.capxTemplate = "azure.tmpl"
 	}
 }

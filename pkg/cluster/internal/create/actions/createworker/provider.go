@@ -45,9 +45,9 @@ var denyAllEgressIMDSgnpFiles embed.FS
 var allowEgressIMDSgnpFiles embed.FS
 
 const (
-	CAPICoreProvider         = "cluster-api:v1.4.6"
-	CAPIBootstrapProvider    = "kubeadm:v1.4.6"
-	CAPIControlPlaneProvider = "kubeadm:v1.4.6"
+	CAPICoreProvider         = "cluster-api:v1.5.1"
+	CAPIBootstrapProvider    = "kubeadm:v1.5.1"
+	CAPIControlPlaneProvider = "kubeadm:v1.5.1"
 
 	scName = "keos"
 
