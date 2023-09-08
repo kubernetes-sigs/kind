@@ -228,7 +228,6 @@ func (p *Provider) getAllowCAPXEgressIMDSGNetPol() (string, error) {
 func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, clusterCredentials commons.ClusterCredentials, keosRegistry keosRegistry, kubeconfigPath string) error {
 	var c string
 	var err error
-	var jsonDockerRegistriesCredentials []byte
 	var helmRepository helmRepository
 
 	if kubeconfigPath == "" {
@@ -251,13 +250,6 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {
 			return errors.Wrap(err, "failed to write the keoscluster file")
-		}
-		// Prepare docker registries credentials
-		if clusterCredentials.DockerRegistriesCredentials != nil {
-			jsonDockerRegistriesCredentials, err = json.Marshal(clusterCredentials.DockerRegistriesCredentials)
-			if err != nil {
-				return errors.Wrap(err, "failed to marshal docker registries credentials")
-			}
 		}
 		// Add helm repository
 		helmRepository.url = keosCluster.Spec.HelmRepository.URL
@@ -288,7 +280,7 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 
 	// Create the docker registries credentials secret for keoscluster-controller-manager
 	if clusterCredentials.DockerRegistriesCredentials != nil {
-		jsonDockerRegistriesCredentials, err = json.Marshal(clusterCredentials.DockerRegistriesCredentials)
+		jsonDockerRegistriesCredentials, err := json.Marshal(clusterCredentials.DockerRegistriesCredentials)
 		if err != nil {
 			return errors.Wrap(err, "failed to marshal docker registries credentials")
 		}
@@ -570,10 +562,10 @@ spec:
   unhealthyConditions:
     - type: Ready
       status: Unknown
-      timeout: 60s
+      timeout: 180s
     - type: Ready
       status: 'False'
-      timeout: 60s`
+      timeout: 180s`
 
 	c = "echo \"" + machineHealthCheck + "\" > " + manifestPath
 	_, err = commons.ExecuteCommand(n, c)
