@@ -27,7 +27,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v3"
-	"github.com/iancoleman/strcase"
 	"golang.org/x/exp/slices"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -39,15 +38,10 @@ const (
 
 var AzureVolumes = []string{"Standard_LRS", "Premium_LRS", "StandardSSD_LRS", "UltraSSD_LRS", "Premium_ZRS", "StandardSSD_ZRS", "PremiumV2_LRS"}
 var AzureAKSVolumes = []string{"Managed", "Ephemeral"}
-var AzureFSTypes = []string{"xfs", "ext3", "ext4", "ext2", "btrfs"}
-var AzureSCFields = []string{"FsType", "Kind", "CachingMode", "DiskAccessID", "DiskEncryptionType", "EnableBursting", "EnablePerformancePlus", "NetworkAccessPolicy", "Provisioner", "PublicNetworkAccess", "ResourceGroup", "SkuName", "SubscriptionID", "Tags"}
-
 var isAzureNodeImage = regexp.MustCompile(`(?i)^\/subscriptions\/[\w-]+\/resourceGroups\/[\w\.-]+\/providers\/Microsoft\.Compute\/images\/[\w\.-]+$`).MatchString
 var AzureNodeImageFormat = "/subscriptions/[SUBSCRIPTION_ID]/resourceGroups/[RESOURCE_GROUP]/providers/Microsoft.Compute/images/[IMAGE_NAME]"
-
 var isAzureIdentity = regexp.MustCompile(`(?i)^\/subscriptions\/[\w-]+\/resourcegroups\/[\w\.-]+\/providers\/Microsoft\.ManagedIdentity\/userAssignedIdentities\/[\w\.-]+$`).MatchString
 var AzureIdentityFormat = "/subscriptions/[SUBSCRIPTION_ID]/resourceGroups/[RESOURCE_GROUP]/providers/Microsoft.ManagedIdentity/userAssignedIdentities/[IDENTITY_NAME]"
-
 var isPremium = regexp.MustCompile(`^(Premium|Ultra).*$`).MatchString
 
 func validateAzure(spec commons.Spec, providerSecrets map[string]string) error {
@@ -163,19 +157,32 @@ func validateAzureCredentials(secrets map[string]string) (*azidentity.ClientSecr
 func validateAzureStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) error {
 	var err error
 	var isKeyValid = regexp.MustCompile(`(?i)^\/subscriptions\/[\w-]+\/resourceGroups\/[\w\.-]+\/providers\/Microsoft\.Compute\/diskEncryptionSets\/[\w\.-]+$`).MatchString
+	var AzureFSTypes = []string{"xfs", "ext3", "ext4", "ext2", "btrfs"}
+	var AzureSCFields = []string{"FsType", "Kind", "CachingMode", "DiskAccessID", "DiskEncryptionSetID", "DiskEncryptionType", "EnableBursting", "EnablePerformancePlus", "NetworkAccessPolicy", "Provisioner", "PublicNetworkAccess", "ResourceGroup", "SkuName", "SubscriptionID", "Tags"}
+	var AzureSCYamlFields = []string{"fsType", "kind", "cachingMode", "diskAccessID", "diskEncryptionSetID", "diskEncryptionType", "enableBursting", "enablePerformancePlus", "networkAccessPolicy", "provisioner", "publicNetworkAccess", "resourceGroup", "skuName", "subscriptionID", "tags"}
 
 	// Validate fields
 	fields := getFieldNames(sc.Parameters)
 	for _, f := range fields {
 		if !commons.Contains(AzureSCFields, f) {
-			return errors.New("field " + strcase.ToLowerCamel(f) + " is not supported in storage class")
+			return errors.New("\"parameters\": unsupported " + f + ", supported fields: " + fmt.Sprint(strings.Join(AzureSCYamlFields, ", ")))
 		}
 	}
-
+	// Validate class
+	if sc.Class != "" && sc.Parameters != (commons.SCParameters{}) {
+		return errors.New("\"class\": cannot be set when \"parameters\" is set")
+	}
+	// Validate type
+	if sc.Parameters.SkuName != "" && !commons.Contains(AzureVolumes, sc.Parameters.SkuName) {
+		return errors.New("\"type\": unsupported " + sc.Parameters.Type + ", supported types: " + fmt.Sprint(strings.Join(AzureVolumes, ", ")))
+	}
 	// Validate encryptionKey format
 	if sc.EncryptionKey != "" {
+		if sc.Parameters != (commons.SCParameters{}) {
+			return errors.New("\"encryptionKey\": cannot be set when \"parameters\" is set")
+		}
 		if !isKeyValid(sc.EncryptionKey) {
-			return errors.New("incorrect encryptionKey format. It must have the format /subscriptions/[SUBSCRIPTION_ID]/resourceGroups/[RESOURCE_GROUP]/providers/Microsoft.ManagedIdentity/diskEncryptionSets/[DISK_ENCRYPION_SETS_NAME]")
+			return errors.New("\"encryptionKey\": it must have the format /subscriptions/[SUBSCRIPTION_ID]/resourceGroups/[RESOURCE_GROUP]/providers/Microsoft.ManagedIdentity/diskEncryptionSets/[DISK_ENCRYPION_SETS_NAME]")
 		}
 	}
 	// Validate diskEncryptionSetID format
@@ -183,10 +190,6 @@ func validateAzureStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) 
 		if !isKeyValid(sc.Parameters.DiskEncryptionSetID) {
 			return errors.New("incorrect diskEncryptionSetID format. It must have the format /subscriptions/[SUBSCRIPTION_ID]/resourceGroups/[RESOURCE_GROUP]/providers/Microsoft.ManagedIdentity/diskEncryptionSets/[DISK_ENCRYPION_SETS_NAME]")
 		}
-	}
-	// Validate type
-	if sc.Parameters.SkuName != "" && !commons.Contains(AzureVolumes, sc.Parameters.SkuName) {
-		return errors.New("unsupported skuname: " + sc.Parameters.SkuName)
 	}
 	// Validate fsType
 	if sc.Parameters.FsType != "" && !commons.Contains(AzureFSTypes, sc.Parameters.FsType) {

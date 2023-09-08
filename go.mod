@@ -34,7 +34,6 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2 v2.2.1
 	github.com/aws/aws-sdk-go-v2 v1.19.0
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.105.1
-	github.com/iancoleman/strcase v0.3.0
 	golang.org/x/exp v0.0.0-20230425010034-47ecfdc1ba53
 )
 
