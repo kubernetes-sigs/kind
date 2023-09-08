@@ -225,7 +225,7 @@ func (p *Provider) getAllowCAPXEgressIMDSGNetPol() (string, error) {
 	return string(allowEgressIMDSgnpContent), nil
 }
 
-func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, clusterCredentials commons.ClusterCredentials, keosRegistry keosRegistry, kubeconfigPath string) error {
+func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, clusterCredentials commons.ClusterCredentials, keosRegistry keosRegistry, kubeconfigPath string, firstInstallation bool) error {
 	var c string
 	var err error
 	var helmRepository helmRepository
@@ -268,13 +268,15 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 				return errors.Wrap(err, "failed to add helm repository: "+helmRepository.url)
 			}
 		}
-		// Pull cluster operator helm chart
-		c = "helm pull cluster-operator --repo " + helmRepository.url +
-			" --version " + keosClusterChart +
-			" --untar --untardir /stratio/helm"
-		_, err = commons.ExecuteCommand(n, c)
-		if err != nil {
-			return errors.Wrap(err, "failed to pull cluster operator helm chart")
+		if firstInstallation {
+			// Pull cluster operator helm chart
+			c = "helm pull cluster-operator --repo " + helmRepository.url +
+				" --version " + keosClusterChart +
+				" --untar --untardir /stratio/helm"
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
+				return errors.Wrap(err, "failed to pull cluster operator helm chart")
+			}
 		}
 	}
 
