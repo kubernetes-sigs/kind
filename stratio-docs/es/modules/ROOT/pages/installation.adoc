@@ -673,7 +673,7 @@ Actualmente, este binario incluye las siguientes opciones:
 - `--descriptor`: permite indicar la ruta al descriptor del _cluster_.
 - `--vault-password`: permite indicar la _passphrase_ de cifrado de las credenciales.
 - `--avoid-creation`: no se crea el _cluster_ _worker_, sólo el _cluster_ local.
-- `--keep-mgmt`: crea el cluster _worker_ pero deja su gestión en el _cluster_ local.
+- `--keep-mgmt`: crea el cluster _worker_ pero deja su gestión en el _cluster_ local (sólo para entornos *no productivos*).
 - `--retain`: permite mantener el _cluster_ local aún sin gestión.
 
 Para crear un _cluster_, basta con un simple comando (ver particularidades de cada provider en las Quickstart guides):
