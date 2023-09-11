@@ -563,10 +563,11 @@ spec:
   cluster_id: azure-prod
   infra_provider: azure
   credentials:
-    client_id: ee435ab0..
-    client_secret: lSF8Q~n..
-    subscription_id: '6e2a38cd-e..'
-    tenant_id: '9c2f8eb6-5..'
+    azure:
+      client_id: ee435ab0..
+      client_secret: lSF8Q~n..
+      subscription_id: '6e2a38cd-e..'
+      tenant_id: '9c2f8eb6-5..'
   k8s_version: v1.24.13
   region: westeurope
   docker_registries:
@@ -625,10 +626,11 @@ spec:
   cluster_id: aks-prod
   infra_provider: azure
   credentials:
-    client_id: ee435ab0..
-    client_secret: lSF8Q~n..
-    subscription_id: '6e2a38cd-e..'
-    tenant_id: '9c2f8eb6-5..'
+    azure:
+      client_id: ee435ab0..
+      client_secret: lSF8Q~n..
+      subscription_id: '6e2a38cd-e..'
+      tenant_id: '9c2f8eb6-5..'
   k8s_version: v1.24.0
   region: westeurope
   docker_registries:
