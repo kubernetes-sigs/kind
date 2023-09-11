@@ -251,7 +251,7 @@ func GCPFilterPublicSubnet(computeService *compute.Service, projectID string, re
 }
 
 func (b *GCPBuilder) getOverrideVars(p ProviderParams, networks commons.Networks) (map[string][]byte, error) {
-	var overrideVars map[string][]byte
+	var overrideVars = make(map[string][]byte)
 
 	requiredInternalNginx, err := b.internalNginx(p, networks)
 	if err != nil {
