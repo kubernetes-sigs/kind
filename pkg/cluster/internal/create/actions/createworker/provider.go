@@ -321,7 +321,11 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 	}
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
-		return errors.Wrap(err, "failed to deploy keoscluster-controller-manager chart")
+		time.Sleep(5 * time.Second)
+		_, err = commons.ExecuteCommand(n, c)
+		if err != nil {
+			return errors.Wrap(err, "failed to deploy keoscluster-controller-manager chart")
+		}
 	}
 
 	// Wait for keoscluster-controller-manager deployment
