@@ -140,7 +140,7 @@ type WorkerNodes []struct {
 	ZoneDistribution string            `yaml:"zone_distribution,omitempty" validate:"omitempty,oneof='balanced' 'unbalanced'"`
 	AZ               string            `yaml:"az,omitempty"`
 	SSHKey           string            `yaml:"ssh_key,omitempty"`
-	Spot             bool              `yaml:"spot" validate:"boolean"`
+	Spot             bool              `yaml:"spot,omitempty" validate:"boolean"`
 	Labels           map[string]string `yaml:"labels,omitempty"`
 	Taints           []string          `yaml:"taints,omitempty"`
 	NodeGroupMaxSize int               `yaml:"max_size,omitempty" validate:"required_with=NodeGroupMinSize,numeric,omitempty"`
