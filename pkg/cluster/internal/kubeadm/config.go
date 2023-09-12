@@ -79,10 +79,6 @@ type ConfigData struct {
 	// RootlessProvider is true if kind is running with rootless mode
 	RootlessProvider bool
 
-	// DisableLocalStorageCapacityIsolation is typically set true based on RootlessProvider
-	// based on the Kubernetes version, if true kubelet localStorageCapacityIsolation is set false
-	DisableLocalStorageCapacityIsolation bool
-
 	// DerivedConfigData contains fields computed from the other fields for use
 	// in the config templates and should only be populated by calling Derive()
 	DerivedConfigData
@@ -422,7 +418,6 @@ evictionHard:
 {{ range $index, $gate := .SortedFeatureGates }}
   "{{ (StructuralData $gate.Name) }}": {{ $gate.Value }}
 {{end}}{{end}}
-{{if .DisableLocalStorageCapacityIsolation}}localStorageCapacityIsolation: false{{end}}
 {{if ne .KubeProxyMode "None"}}
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
@@ -468,16 +463,6 @@ func Config(data ConfigData) (config string, err error) {
 			return "", errors.Errorf("version %q is not compatible with rootless provider (hint: kind v0.11.x may work with this version)", ver)
 		}
 		data.FeatureGates["KubeletInUserNamespace"] = true
-
-		// For avoiding err="failed to get rootfs info: failed to get device for dir \"/var/lib/kubelet\": could not find device with major: 0, minor: 41 in cached partitions map"
-		// https://github.com/kubernetes-sigs/kind/issues/2524
-		if ver.LessThan(version.MustParseSemantic("v1.25.0-alpha.3.440+0064010cddfa00")) {
-			// this feature gate was removed in v1.25 and replaced by an opt-out to disable
-			data.FeatureGates["LocalStorageCapacityIsolation"] = false
-		} else {
-			// added in v1.25 https://github.com/kubernetes/kubernetes/pull/111513
-			data.DisableLocalStorageCapacityIsolation = true
-		}
 	}
 
 	// assume the latest API version, then fallback if the k8s version is too low
