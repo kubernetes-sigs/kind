@@ -244,8 +244,7 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 			keosCluster.Spec.ControlPlane.AWS = commons.AWSCP{}
 		}
 		if keosCluster.Spec.ControlPlane.Managed {
-			// Setting the parameter to false, hides it from the KeosCluster object
-			keosCluster.Spec.ControlPlane.HighlyAvailable = false
+			keosCluster.Spec.ControlPlane.HighlyAvailable = nil
 		}
 		keosCluster.Spec.Keos = struct {
 			Flavour string `yaml:"flavour,omitempty"`

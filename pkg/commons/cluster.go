@@ -81,7 +81,7 @@ type Spec struct {
 	ControlPlane struct {
 		Managed         bool                `yaml:"managed" validate:"boolean"`
 		NodeImage       string              `yaml:"node_image,omitempty"`
-		HighlyAvailable bool                `yaml:"highly_available,omitempty" validate:"boolean"`
+		HighlyAvailable *bool               `yaml:"highly_available,omitempty" validate:"boolean"`
 		Size            string              `yaml:"size,omitempty" validate:"required_if=Managed false"`
 		RootVolume      RootVolume          `yaml:"root_volume,omitempty"`
 		Tags            []map[string]string `yaml:"tags,omitempty"`
@@ -326,7 +326,8 @@ type SCParameters struct {
 
 // Init sets default values for the Spec
 func (s Spec) Init() Spec {
-	s.ControlPlane.HighlyAvailable = true
+	highlyAvailable := true
+	s.ControlPlane.HighlyAvailable = &highlyAvailable
 
 	// AKS
 	s.ControlPlane.Azure.Tier = "Paid"
