@@ -113,6 +113,7 @@ Files:
 *   controllers/templates/aws/aws.eks.tmpl
 
 > [cluster-api-aws / cluster-api-aws-templates](https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases)
+
 | Version | Release Date | Latest Version | Latest Release Date |
 | ------- | ------------ | -------------- | ------------------- |
 | v2.2.1  | 2023-07-20   | v2.2.1         | 2022-07-20          |
@@ -132,6 +133,7 @@ Files:
 *   pkg/cluster/internal/create/actions/createworker/gcp.go
 
 > [cluster-api-azure / cluster-api-azure-templates](https://github.com/kubernetes-sigs/cluster-api-provider-azure/releases)
+
 | Version | Release Date | Latest Version | Latest Release Date |
 | ------- | ------------ | -------------- | ------------------- |
 | v1.10.3 (AKS) | 2023-09-06   | v1.10.3        | 2023-09-06          |
