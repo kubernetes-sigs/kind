@@ -176,7 +176,9 @@ NOTE: El CIDR para Pods no deberá superponerse con la red de los nodos o cualqu
 
 ==== EKS
 
-En este caso, y dado que se utiliza el AWS VPC CNI como IPAM, se permitirá sólo uno de los dos rangos soportados por EKS: 100.64.0.0/16 o 198.19.0.0/16, que se añadirán al VPC como _secondary CIDR_.
+En este caso, y dado que se utiliza el AWS VPC CNI como IPAM, se permitirá sólo uno de los dos rangos soportados por EKS: 100.64.0.0/16 o 198.19.0.0/16 (siempre teniendo en cuenta las restricciones de la https://docs.aws.amazon.com/vpc/latest/userguide/vpc-cidr-blocks.html#add-cidr-block-restrictions[documentación oficial]), que se añadirán al VPC como _secondary CIDR_.
+
+NOTE: Si no se indica infraestructura _custom_, se deberá utilizar el CIDR 100.64.0.0/16.
 
 [source,bash]
 ----
