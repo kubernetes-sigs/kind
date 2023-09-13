@@ -19,7 +19,8 @@ aws:
     eks-addons:
       aws-ebs-csi-driver: v1.19.0-eksbuild.2
       coredns: v1.9.3-eksbuild.3
-      kube-proxy: v1.24.10-eksbuild.2
+      kube-proxy: v1.24.15-eksbuild.2  # k8s 1.24-1.25
+      kube-proxy: v1.26.7-eksbuild.2 # k8s 1.26-...
       vpc-cni: v1.12.6-eksbuild.2
   unmanaged:
     aws-ebs-csi-driver-chart: v2.20.0
