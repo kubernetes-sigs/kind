@@ -64,6 +64,8 @@
 | eks:DescribeAddonVersions | failed reconciling eks addons: getting installed eks addons | DescribeAddonVersions | * | cloud-provisioner |
 | ec2:DescribeImages | failed to get root volume | DescribeImages | * | cloud-provisioner |
 | ec2:RunInstances | Not authorized to perform: ec2:RunInstances | RunInstances | * | cloud-provisioner |
+| ec2:AssociateVpcCidrBlock | failed to associate vpc cidr block | AssociateVpcCidrBlock | * | cloud-provisioner |
+| ec2:DissociateVpcCidrBlock | failed to dissociate vpc cidr block | DissociateVpcCidrBlock | * | cloud-provisioner |
 
 **Test:** cloud-provisioner create cluster --name eks-cl01 --retain --vault-password 123456 (same permissions as --keep-mgmt)
 
