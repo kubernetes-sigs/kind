@@ -127,12 +127,25 @@ func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 
 func validateAWSNetwork(ctx context.Context, cfg aws.Config, spec commons.Spec) error {
 	var err error
-	if spec.Networks.VPCID == "" {
-		return errors.New("\"vpc_id\": is required")
-	}
 	if spec.Networks.PodsCidrBlock != "" {
 		if err = validateAWSPodsNetwork(spec.Networks.PodsCidrBlock); err != nil {
 			return err
+		}
+	} else {
+		if len(spec.Networks.PodsSubnets) > 0 {
+			return errors.New("\"pods_cidr\": is required when \"pods_subnets\" is set")
+		}
+	}
+	if spec.Networks.VPCID != "" {
+		if len(spec.Networks.Subnets) == 0 {
+			return errors.New("\"subnets\": are required when \"vpc_id\" is set")
+		}
+	} else {
+		if len(spec.Networks.Subnets) > 0 {
+			return errors.New("\"vpc_id\": is required when \"subnets\" is set")
+		}
+		if len(spec.Networks.PodsSubnets) > 0 {
+			return errors.New("\"vpc_id\": is required when \"pods_subnets\" is set")
 		}
 	}
 	if len(spec.Networks.Subnets) > 0 {

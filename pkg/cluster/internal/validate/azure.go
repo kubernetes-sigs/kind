@@ -222,22 +222,44 @@ func validateAzureStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) 
 }
 
 func validateAzureNetwork(network commons.Networks, managed bool) error {
-	if network.VPCID == "" {
-		return errors.New("vpc_id is required")
-	}
-	if managed && network.VPCCidrBlock == "" {
-		return errors.New("vpc_cidr is required")
+	if network.VPCID != "" {
+		if len(network.Subnets) == 0 {
+			return errors.New("\"subnets\": are required when \"vpc_id\" is set")
+		}
+		if managed && network.VPCCidrBlock == "" {
+			return errors.New("\"vpc_cidr\": is required when \"vpc_id\" is set")
+		}
+	} else {
+		if len(network.Subnets) > 0 {
+			return errors.New("\"vpc_id\": is required when \"subnets\" is set")
+		}
+		if network.VPCCidrBlock != "" {
+			if managed {
+				return errors.New("\"vpc_id\": is required when \"vpc_cidr\" is set")
+			} else {
+				return errors.New("\"vpc_cidr\": is only supported in azure managed clusters")
+			}
+		}
 	}
 	if len(network.Subnets) > 0 {
 		for _, s := range network.Subnets {
 			if s.SubnetId == "" {
-				return errors.New("subnet_id is required")
+				return errors.New("\"subnet_id\": is required")
 			}
-			if managed && s.CidrBlock == "" {
-				return errors.New("cidr is required")
-			}
-			if !managed && s.Role == "" {
-				return errors.New("role is required")
+			if managed {
+				if s.CidrBlock == "" {
+					return errors.New("\"cidr\": is required")
+				}
+				if s.Role != "" {
+					return errors.New("\"role\": is only supported in azure unmanaged clusters")
+				}
+			} else {
+				if s.Role == "" {
+					return errors.New("\"role\": is required")
+				}
+				if s.CidrBlock != "" {
+					return errors.New("\"cidr\": is only supported in azure managed clusters")
+				}
 			}
 		}
 	}

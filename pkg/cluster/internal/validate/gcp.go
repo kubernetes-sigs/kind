@@ -155,8 +155,14 @@ func validateGCPStorageClass(spec commons.Spec) error {
 }
 
 func validateGCPNetwork(network commons.Networks) error {
-	if network.VPCID == "" {
-		return errors.New("\"vpc_id\": is required")
+	if network.VPCID != "" {
+		if len(network.Subnets) == 0 {
+			return errors.New("\"subnets\": are required when \"vpc_id\" is set")
+		}
+	} else {
+		if len(network.Subnets) > 0 {
+			return errors.New("\"vpc_id\": is required when \"subnets\" is set")
+		}
 	}
 	if len(network.Subnets) > 0 {
 		if len(network.Subnets) > 1 {
