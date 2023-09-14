@@ -4,7 +4,7 @@ core:
   cluster-api: v1.5.1
   capi-kubeadm-bootstrap-system: v1.5.1
   capi-kubeadm-control-plane-system: v1.5.1
-  cluster-operator: v0.1.0-520a6e3
+  cluster-operator: v0.1.0-7facf0b
   calico:
     calicoctl: v3.26.1
     tigera-operator: v1.30.5
