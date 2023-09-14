@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.17.0-0.3.0 (2023-09-12)
+## 0.17.0-0.3.0 (2023-09-14)
 
 * Customize coredns configuration
 * Fix wait conditions for unmanaged clusters
