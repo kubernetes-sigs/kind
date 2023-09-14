@@ -182,21 +182,77 @@ Editar el archivo _images/capi/packer/ami/packer.json_ y modificar el valor de l
 
 == Construcción de la imagen
 
-. Preparar el repositorio de image-builder
+. Preparar repositorios
 
 .. Clonar el repositorio de image-builder si no lo tienías previamente
 [source,console]
 git clone https://github.com/kubernetes-sigs/image-builder.git
-cd image-builder/images/capi/
+
+.. (**_Requerido kubernetes 1.27+_**) Crear binario para la gestión de la autenticación ECR
+[source,console]
+cd ..
+git clone git@github.com:kubernetes/cloud-provider-aws.git
+pushd cloud-provider-aws/cmd/ecr-credential-provider
+GOOS=linux go build -ldflags="-s -w"
+popd
+
+.. (**_Requerido kubernetes 1.27+_**) Añadir binario y fichero de configuración a la automatización
+[source,console]
+mkdir -p image-builder/images/capi/ansible/roles/providers/files
+cp cloud-provider-aws/cmd/ecr-credential-provider/ecr-credential-provider images/capi/ansible/roles/providers/files/
+cat <<EOF >> image-builder/images/capi/ansible/roles/providers/files/ecr-credential-provider-config.yaml
+apiVersion: kubelet.config.k8s.io/v1
+kind: CredentialProviderConfig
+providers:
+  - name: ecr-credential-provider
+    matchImages:
+      - "*.dkr.ecr.*.amazonaws.com"
+      - "*.dkr.ecr.*.amazonaws.com.cn"
+      - "*.dkr.ecr-fips.*.amazonaws.com"
+      - "*.dkr.ecr.us-iso-east-1.c2s.ic.gov"
+      - "*.dkr.ecr.us-isob-east-1.sc2s.sgov.gov"
+    defaultCacheDuration: "12h"
+    apiVersion: credentialprovider.kubelet.k8s.io/v1
+EOF
+
+.. (**_Requerido kubernetes 1.27+_**) Actualizar automatización para configurar los ficheros ecr-credential-provider
+[source,console]
+cat <<EOF >> image-builder/images/capi/ansible/roles/providers/tasks/aws.yml
+- name: Add ecr credentials provider
+  copy:
+    src: files/ecr-credential-provider
+    dest: /usr/local/bin
+    mode: 0755
+    owner: root
+    group: root 
+- name: Ensure credentials config file directory exists
+  file: 
+    path: /etc/aws
+    state: directory
+    mode: 0755
+    owner: root
+    group: root
+- name: Add ecr credentials config file
+  copy:
+    src: files/ecr-credential-provider-config.yaml
+    dest: /etc/aws/credential-provider-config
+    mode: 0644
+    owner: root
+    group: root
+EOF
+
+  Encuentra más información sobre el requerimiento para kubernetes 1.27+ en los siguientes enlances:
+  * link:https://kubernetes.io/docs/tasks/administer-cluster/kubelet-credential-provider[https://kubernetes.io/docs/tasks/administer-cluster/kubelet-credential-provider]
+  * link:https://github.com/kubernetes-sigs/image-builder/issues/1249[https://github.com/kubernetes-sigs/image-builder/issues/1249]
 
 .. Actualizar el repositorio de image-builder si ya lo tenías previamente
 [source,console]
 cd image-builder
 git pull
-cd images/capi/
 
 . Instalar las dependencias necesarias para crear la imagen
 [source,console]
+cd images/capi/
 make deps-ami
 
 image:https://user-images.githubusercontent.com/112587171/232500797-a8168ab5-23c9-43bc-b9bb-c0af20e0093d.png[Make deps, width=100%]
