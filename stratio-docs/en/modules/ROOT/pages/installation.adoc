@@ -296,7 +296,7 @@ The parameters for the _keos-installer_ phase will be indicated in this section.
 
 |version
 |_keos-installer_ version.
-|0.8.0
+|1.0.0
 |No
 
 |===

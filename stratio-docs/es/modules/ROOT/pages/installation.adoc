@@ -353,7 +353,7 @@ Los parámetros para la fase del _keos-installer_ se indicarán en este apartado
 
 |version
 |Versión del _keos-installer_.
-|0.8.0
+|1.0.0
 |No
 
 |===
