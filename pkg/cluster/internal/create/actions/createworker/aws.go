@@ -236,11 +236,12 @@ func (b *AWSBuilder) internalNginx(p ProviderParams, networks commons.Networks) 
 	return false, nil
 }
 
-func getEcrToken(p ProviderParams) (string, error) {
+func getEcrToken(p ProviderParams, u string) (string, error) {
 	var err error
 	var ctx = context.TODO()
 
-	cfg, err := commons.AWSGetConfig(ctx, p.Credentials, p.Region)
+	region := strings.Split(u, ".")[3]
+	cfg, err := commons.AWSGetConfig(ctx, p.Credentials, region)
 	if err != nil {
 		return "", err
 	}

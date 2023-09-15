@@ -119,7 +119,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	if keosRegistry.registryType == "ecr" {
-		ecrToken, err := getEcrToken(providerParams)
+		ecrToken, err := getEcrToken(providerParams, keosRegistry.url)
 		if err != nil {
 			return errors.Wrap(err, "failed to get ECR auth token")
 		}
