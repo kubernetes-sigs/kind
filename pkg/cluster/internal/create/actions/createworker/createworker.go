@@ -566,11 +566,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 			_, err = commons.ExecuteCommand(n, c)
 			if err != nil {
-				time.Sleep(5 * time.Second)
-				_, err = commons.ExecuteCommand(n, c)
-				if err != nil {
-					return errors.Wrap(err, "failed to deploy cluster-autoscaler in workload cluster")
-				}
+				return errors.Wrap(err, "failed to deploy cluster-autoscaler in workload cluster")
 			}
 
 			ctx.Status.End(true)
