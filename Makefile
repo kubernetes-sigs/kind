@@ -26,9 +26,11 @@
 REPO_ROOT:=${CURDIR}
 OUT_DIR=$(REPO_ROOT)/bin
 # record the source commit in the binary, overridable
-COMMIT?=$(shell git rev-parse HEAD 2>/dev/null)
+COMMIT?=$(shell git rev-parse --short HEAD 2>/dev/null)
 # count the commits since the last release
 COMMIT_COUNT?=$(shell git describe --tags | rev | cut -d- -f2 | rev)
+# record the current tag name in the binary
+TAG=$(shell git describe --exact-match --tags 2>/dev/null)
 ################################################################################
 # ========================= Setup Go With Gimme ================================
 # go version to use for build etc.
@@ -57,7 +59,7 @@ KIND_BINARY_NAME?=cloud-provisioner
 # - smaller binaries: -w (trim debugger data, but not panics)
 # - metadata: -X=... to bake in git commit
 KIND_VERSION_PKG:=sigs.k8s.io/kind/pkg/cmd/kind/version
-KIND_BUILD_LD_FLAGS:=-X=$(KIND_VERSION_PKG).gitCommit=$(COMMIT) -X=$(KIND_VERSION_PKG).gitCommitCount=$(COMMIT_COUNT)
+KIND_BUILD_LD_FLAGS:=-X=$(KIND_VERSION_PKG).gitTag=$(TAG) -X=$(KIND_VERSION_PKG).gitCommit=$(COMMIT)
 KIND_BUILD_FLAGS?=-trimpath -ldflags="-buildid= -w $(KIND_BUILD_LD_FLAGS)"
 ################################################################################
 # ================================= Building ===================================
