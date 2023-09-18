@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.0-0.4.0 (upcoming)
+
+* Upcoming changelog
+
 ## 0.17.0-0.3.0 (2023-09-14)
 
 * Customize coredns configuration
