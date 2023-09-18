@@ -70,15 +70,13 @@ func validateWorkers(wn commons.WorkerNodes) error {
 }
 
 func validateWorkersName(workerNodes commons.WorkerNodes) error {
-	regex := regexp.MustCompile(`^[a-zA-Z][\w-]+$`)
+	regex := regexp.MustCompile(`^[-a-z]([-a-z0-9]*[a-z0-9])+$`)
 	for i, worker := range workerNodes {
 		// Validate worker name
 		if !regex.MatchString(worker.Name) {
 			return errors.New(worker.Name + " is invalid: " +
-				"must consist of alphanumeric characters (a-z, A-Z), arabic numerals (0-9), " +
-				"underscore character (_) or the hyphen-minus character (-), " +
-				"& must start with an alphanumeric character",
-			)
+				"must consist of lower case alphanumeric characters, '-' or '.', start with an alphabetic character and end with an alphanumeric character, " +
+				"regex used for validation is '" + regex.String() + "'")
 		}
 		// Validate worker name length
 		if len([]rune(worker.Name)) > MaxWorkerNodeNameLength || len([]rune(worker.Name)) < MinWorkerNodeNameLength {

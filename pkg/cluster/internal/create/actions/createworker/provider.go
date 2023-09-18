@@ -51,8 +51,8 @@ const (
 
 	scName = "keos"
 
-	keosClusterChart = "0.1.0"
-	keosClusterImage = "0.1.0"
+	clusterOperatorChart = "0.1.0"
+	clusterOperatorImage = "0.2.0-SNAPSHOT"
 )
 
 const machineHealthCheckWorkerNodePath = "/kind/manifests/machinehealthcheckworkernode.yaml"
@@ -278,13 +278,13 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 			}
 		}
 		if firstInstallation {
-			// Pull cluster operator helm chart
+			// Pull cluster-operator helm chart
 			c = "helm pull cluster-operator --repo " + helmRepository.url +
-				" --version " + keosClusterChart +
+				" --version " + clusterOperatorChart +
 				" --untar --untardir /stratio/helm"
 			_, err = commons.ExecuteCommand(n, c)
 			if err != nil {
-				return errors.Wrap(err, "failed to pull cluster operator helm chart")
+				return errors.Wrap(err, "failed to pull cluster-operator helm chart")
 			}
 		}
 	}
@@ -305,12 +305,12 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 		}
 	}
 
-	// Deploy keoscluster-controller-manager chart
+	// Deploy cluster-operator chart
 	c = "helm install --wait cluster-operator /stratio/helm/cluster-operator" +
 		" --namespace kube-system" +
 		" --set app.containers.controllerManager.image.registry=" + keosRegistry.url +
 		" --set app.containers.controllerManager.image.repository=stratio/cluster-operator" +
-		" --set app.containers.controllerManager.image.tag=" + keosClusterImage
+		" --set app.containers.controllerManager.image.tag=" + clusterOperatorImage
 	if kubeconfigPath == "" {
 		c = c +
 			" --set app.containers.controllerManager.imagePullSecrets.enabled=true" +
@@ -320,17 +320,17 @@ func deployClusterOperator(n nodes.Node, keosCluster commons.KeosCluster, cluste
 	}
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
-		return errors.Wrap(err, "failed to deploy keoscluster-controller-manager chart")
+		return errors.Wrap(err, "failed to deploy cluster-operator chart")
 	}
 
-	// Wait for keoscluster-controller-manager deployment
+	// Wait for cluster-operator deployment
 	c = "kubectl -n kube-system rollout status deploy/keoscluster-controller-manager --timeout=3m"
 	_, err = commons.ExecuteCommand(n, c)
 	if err != nil {
-		return errors.Wrap(err, "failed to wait for keoscluster-controller-manager deployment")
+		return errors.Wrap(err, "failed to wait for cluster-operator deployment")
 	}
 
-	// TODO: Change this when status is available in keoscluster-controller-manager
+	// TODO: Change this when status is available in cluster-operator
 	time.Sleep(10 * time.Second)
 
 	return nil
