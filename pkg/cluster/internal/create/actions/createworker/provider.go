@@ -19,7 +19,6 @@ package createworker
 import (
 	"bytes"
 	"embed"
-	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
 	"path/filepath"
@@ -70,7 +69,6 @@ type PBuilder interface {
 	installCSI(n nodes.Node, k string) error
 	getProvider() Provider
 	configureStorageClass(n nodes.Node, k string) error
-	getAzs(p ProviderParams, networks commons.Networks) ([]string, error)
 	internalNginx(p ProviderParams, networks commons.Networks) (bool, error)
 	getOverrideVars(p ProviderParams, networks commons.Networks) (map[string][]byte, error)
 }
@@ -81,7 +79,6 @@ type Provider struct {
 	capxImageVersion string
 	capxManaged      bool
 	capxName         string
-	capxTemplate     string
 	capxEnvVars      []string
 	scParameters     commons.SCParameters
 	scProvisioner    string
@@ -189,10 +186,6 @@ func (i *Infra) internalNginx(p ProviderParams, networks commons.Networks) (bool
 
 func (i *Infra) getOverrideVars(p ProviderParams, networks commons.Networks) (map[string][]byte, error) {
 	return i.builder.getOverrideVars(p, networks)
-}
-
-func (i *Infra) getAzs(p ProviderParams, networks commons.Networks) ([]string, error) {
-	return i.builder.getAzs(p, networks)
 }
 
 func (p *Provider) getDenyAllEgressIMDSGNetPol() (string, error) {
@@ -585,69 +578,6 @@ spec:
 	}
 
 	return nil
-}
-
-func resto(n int, i int, azs int) int {
-	var r int
-	r = (n % azs) / (i + 1)
-	if r > 1 {
-		r = 1
-	}
-	return r
-}
-
-func GetClusterManifest(params commons.TemplateParams) (string, error) {
-	funcMap := template.FuncMap{
-		"loop": func(az string, zd string, qa int, maxsize int, minsize int) <-chan Node {
-			ch := make(chan Node)
-			go func() {
-				var q int
-				var mx int
-				var mn int
-				if az != "" {
-					ch <- Node{AZ: az, QA: qa, MaxSize: maxsize, MinSize: minsize}
-				} else {
-					for i, a := range params.ProviderAZs {
-						if zd == "unbalanced" {
-							q = qa/len(params.ProviderAZs) + resto(qa, i, len(params.ProviderAZs))
-							mx = maxsize/len(params.ProviderAZs) + resto(maxsize, i, len(params.ProviderAZs))
-							mn = minsize/len(params.ProviderAZs) + resto(minsize, i, len(params.ProviderAZs))
-							ch <- Node{AZ: a, QA: q, MaxSize: mx, MinSize: mn}
-						} else {
-							ch <- Node{AZ: a, QA: qa / len(params.ProviderAZs), MaxSize: maxsize / len(params.ProviderAZs), MinSize: minsize / len(params.ProviderAZs)}
-						}
-					}
-				}
-				close(ch)
-			}()
-			return ch
-		},
-		"hostname": func(s string) string {
-			return strings.Split(s, "/")[0]
-		},
-		"inc": func(i int) int {
-			return i + 1
-		},
-		"base64": func(s string) string {
-			return base64.StdEncoding.EncodeToString([]byte(s))
-		},
-		"sub":   func(a, b int) int { return a - b },
-		"split": strings.Split,
-	}
-	templatePath := filepath.Join("templates", params.KeosCluster.Spec.InfraProvider, params.Flavor)
-
-	var tpl bytes.Buffer
-	t, err := template.New("").Funcs(funcMap).ParseFS(ctel, templatePath)
-	if err != nil {
-		return "", err
-	}
-
-	err = t.ExecuteTemplate(&tpl, params.Flavor, params)
-	if err != nil {
-		return "", err
-	}
-
-	return tpl.String(), nil
 }
 
 func getManifest(parentPath string, name string, params interface{}) (string, error) {

@@ -42,7 +42,6 @@ type AWSBuilder struct {
 	capxImageVersion string
 	capxManaged      bool
 	capxName         string
-	capxTemplate     string
 	capxEnvVars      []string
 	scParameters     commons.SCParameters
 	scProvisioner    string
@@ -60,11 +59,6 @@ func (b *AWSBuilder) setCapx(managed bool) {
 	b.capxName = "capa"
 	b.capxManaged = managed
 	b.csiNamespace = "kube-system"
-	if managed {
-		b.capxTemplate = "aws.eks.tmpl"
-	} else {
-		b.capxTemplate = "aws.tmpl"
-	}
 }
 
 func (b *AWSBuilder) setCapxEnvVars(p ProviderParams) {
@@ -110,7 +104,6 @@ func (b *AWSBuilder) getProvider() Provider {
 		capxImageVersion: b.capxImageVersion,
 		capxManaged:      b.capxManaged,
 		capxName:         b.capxName,
-		capxTemplate:     b.capxTemplate,
 		capxEnvVars:      b.capxEnvVars,
 		scParameters:     b.scParameters,
 		scProvisioner:    b.scProvisioner,
@@ -186,30 +179,6 @@ spec:
 		return errors.Wrap(err, "failed to run clusterawsadm")
 	}
 	return nil
-}
-
-func (b *AWSBuilder) getAzs(p ProviderParams, networks commons.Networks) ([]string, error) {
-	var err error
-	var azs []string
-	var ctx = context.TODO()
-
-	cfg, err := commons.AWSGetConfig(ctx, p.Credentials, p.Region)
-	if err != nil {
-		return nil, err
-	}
-	svc := ec2.NewFromConfig(cfg)
-	if len(networks.Subnets) > 0 {
-		azs, err = commons.AWSGetPrivateAZs(ctx, svc, networks.Subnets)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		azs, err = commons.AWSGetAZs(ctx, svc)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return azs, nil
 }
 
 func (b *AWSBuilder) internalNginx(p ProviderParams, networks commons.Networks) (bool, error) {

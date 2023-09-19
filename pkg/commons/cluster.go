@@ -238,14 +238,6 @@ type HelmRepository struct {
 	URL          string `yaml:"url" validate:"required"`
 }
 
-type TemplateParams struct {
-	KeosCluster      KeosCluster
-	Credentials      map[string]string
-	DockerRegistries []map[string]interface{}
-	ProviderAZs      []string
-	Flavor           string
-}
-
 type AWS struct {
 	Credentials AWSCredentials `yaml:"credentials"`
 }

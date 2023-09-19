@@ -184,41 +184,9 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return err
 	}
 
-	ctx.Status.End(true) // End Installing CAPx
-
-	ctx.Status.Start("Generating workload cluster manifests 📝")
-	defer ctx.Status.End(false)
-
 	capiClustersNamespace := "cluster-" + a.keosCluster.Metadata.Name
 
-	azs, err := infra.getAzs(providerParams, a.keosCluster.Spec.Networks)
-	if err != nil {
-		return errors.Wrap(err, "failed to get AZs")
-	}
-
-	templateParams := commons.TemplateParams{
-		KeosCluster:      a.keosCluster,
-		Credentials:      a.clusterCredentials.ProviderCredentials,
-		DockerRegistries: a.clusterCredentials.DockerRegistriesCredentials,
-		ProviderAZs:      azs,
-		Flavor:           provider.capxTemplate,
-	}
-
-	// Generate the cluster manifest
-	descriptorData, err := GetClusterManifest(templateParams)
-	if err != nil {
-		return errors.Wrap(err, "failed to generate cluster manifests")
-	}
-
-	// Create the cluster manifests file in the container
-	descriptorPath := manifestsPath + "/cluster_" + a.keosCluster.Metadata.Name + ".yaml"
-	c = "echo \"" + descriptorData + "\" > " + descriptorPath
-	_, err = commons.ExecuteCommand(n, c)
-	if err != nil {
-		return errors.Wrap(err, "failed to write the cluster manifests")
-	}
-
-	ctx.Status.End(true) // End Generating worker cluster manifests
+	ctx.Status.End(true) // End Installing CAPx
 
 	ctx.Status.Start("Generating secrets file 📝🗝️")
 	defer ctx.Status.End(false)
@@ -270,7 +238,6 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		defer ctx.Status.End(false)
 
 		// Apply cluster manifests
-		//c = "kubectl apply -n " + capiClustersNamespace + " -f " + descriptorPath
 		c = "kubectl apply -f " + manifestsPath + "/keoscluster.yaml"
 		_, err = commons.ExecuteCommand(n, c)
 		if err != nil {

@@ -45,7 +45,6 @@ type GCPBuilder struct {
 	capxImageVersion string
 	capxManaged      bool
 	capxName         string
-	capxTemplate     string
 	capxEnvVars      []string
 	scParameters     commons.SCParameters
 	scProvisioner    string
@@ -62,13 +61,7 @@ func (b *GCPBuilder) setCapx(managed bool) {
 	b.capxImageVersion = "v1.4.0"
 	b.capxName = "capg"
 	b.capxManaged = managed
-	if managed {
-		b.capxTemplate = "gcp.gke.tmpl"
-		b.csiNamespace = ""
-	} else {
-		b.capxTemplate = "gcp.tmpl"
-		b.csiNamespace = "kube-system"
-	}
+	b.csiNamespace = "kube-system"
 }
 
 func (b *GCPBuilder) setCapxEnvVars(p ProviderParams) {
@@ -119,7 +112,6 @@ func (b *GCPBuilder) getProvider() Provider {
 		capxVersion:      b.capxVersion,
 		capxImageVersion: b.capxImageVersion,
 		capxName:         b.capxName,
-		capxTemplate:     b.capxTemplate,
 		capxEnvVars:      b.capxEnvVars,
 		scParameters:     b.scParameters,
 		scProvisioner:    b.scProvisioner,
@@ -151,32 +143,6 @@ func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
 	}
 
 	return nil
-}
-
-func (b *GCPBuilder) getAzs(p ProviderParams, networks commons.Networks) ([]string, error) {
-	var azs []string
-	var ctx = context.Background()
-
-	secrets, _ := b64.StdEncoding.DecodeString(strings.Split(b.capxEnvVars[0], "GCP_B64ENCODED_CREDENTIALS=")[1])
-	cfg := option.WithCredentialsJSON(secrets)
-	computeService, err := compute.NewService(ctx, cfg)
-	if err != nil {
-		return nil, err
-	}
-	zones, err := computeService.Zones.List(p.Credentials["ProjectID"]).Filter("name=" + p.Region + "*").Do()
-	if err != nil {
-		return nil, err
-	}
-	if len(zones.Items) < 3 {
-		return nil, errors.New("insufficient availability aones in this region. Must have at least 3")
-	}
-	for i, zone := range zones.Items {
-		if i == 3 {
-			break
-		}
-		azs = append(azs, zone.Name)
-	}
-	return azs, nil
 }
 
 func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string) error {
