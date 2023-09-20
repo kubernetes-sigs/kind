@@ -27,8 +27,6 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/containerservice/armcontainerservice/v3"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v2"
 	"gopkg.in/yaml.v3"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
@@ -61,17 +59,11 @@ func newAzureBuilder() *AzureBuilder {
 
 func (b *AzureBuilder) setCapx(managed bool) {
 	b.capxProvider = "azure"
-
+	b.capxVersion = "v1.10.4"
+	b.capxImageVersion = "v1.10.4"
 	b.capxName = "capz"
 	b.capxManaged = managed
 	b.csiNamespace = "kube-system"
-	if managed {
-		b.capxVersion = "v1.9.8"
-		b.capxImageVersion = "v1.9.8"
-	} else {
-		b.capxVersion = "v1.10.3"
-		b.capxImageVersion = "v1.10.3"
-	}
 }
 
 func (b *AzureBuilder) setSC(p ProviderParams) {
@@ -173,50 +165,6 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	return nil
 }
 
-func assignUserIdentity(p ProviderParams, security commons.Security) error {
-	var managedCluster armcontainerservice.ManagedCluster
-	var kubeletidentity *armcontainerservice.ManagedClusterProperties
-	var ctx = context.Background()
-
-	cfg, err := commons.AzureGetConfig(p.Credentials)
-	if err != nil {
-		return err
-	}
-	containerserviceClientFactory, err := armcontainerservice.NewClientFactory(p.Credentials["SubscriptionID"], cfg, nil)
-	if err != nil {
-		return err
-	}
-	managedCluster = armcontainerservice.ManagedCluster{
-		Location: to.Ptr(p.Region),
-		Identity: &armcontainerservice.ManagedClusterIdentity{
-			Type: to.Ptr(armcontainerservice.ResourceIdentityTypeUserAssigned),
-			UserAssignedIdentities: map[string]*armcontainerservice.ManagedServiceIdentityUserAssignedIdentitiesValue{
-				security.ControlPlaneIdentity: {},
-			},
-		},
-	}
-	if security.NodesIdentity != "" {
-		kubeletidentity = &armcontainerservice.ManagedClusterProperties{
-			IdentityProfile: map[string]*armcontainerservice.UserAssignedIdentity{
-				"kubeletidentity": {
-					ResourceID: to.Ptr(security.NodesIdentity),
-				},
-			},
-		}
-		managedCluster.Properties = kubeletidentity
-	}
-	managedClustersClient := containerserviceClientFactory.NewManagedClustersClient()
-	pollerResp, err := managedClustersClient.BeginCreateOrUpdate(ctx, p.ClusterName, p.ClusterName, managedCluster, nil)
-	if err != nil {
-		return err
-	}
-	_, err = pollerResp.PollUntilDone(ctx, nil)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func getAcrToken(p ProviderParams, acrService string) (string, error) {
 	var ctx = context.Background()
 
@@ -235,14 +183,14 @@ func getAcrToken(p ProviderParams, acrService string) (string, error) {
 		"access_token": {aadToken.Token},
 	}
 	jsonResponse, err := http.PostForm(fmt.Sprintf("https://%s/oauth2/exchange", acrService), formData)
-        if err != nil {
-                return "", err
-        } else if jsonResponse.StatusCode == http.StatusUnauthorized {
-                return "", errors.New("Failed to obtain the ACR token with the provided credentials, please check the roles assigned to the correspondent Azure AD app")
-        }
+	if err != nil {
+		return "", err
+	} else if jsonResponse.StatusCode == http.StatusUnauthorized {
+		return "", errors.New("Failed to obtain the ACR token with the provided credentials, please check the roles assigned to the correspondent Azure AD app")
+	}
 
 	var response map[string]interface{}
-        json.NewDecoder(jsonResponse.Body).Decode(&response)
+	json.NewDecoder(jsonResponse.Body).Decode(&response)
 
 	return response["refresh_token"].(string), nil
 }
