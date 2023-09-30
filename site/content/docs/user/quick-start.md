@@ -120,6 +120,17 @@ On Windows via Chocolatey (https://chocolatey.org/packages/kind)
 choco install kind
 {{< /codeFromInline >}}
 
+On Windows via Scoop (https://scoop.sh/#/apps?q=kind&id=faec311bb7c6b4a174169c8c02358c74a78a10c2)
+{{< codeFromInline lang="powershell" >}}
+scoop bucket add main
+scoop install main/kind
+{{< /codeFromInline >}}
+
+On Windows via Winget (https://github.com/microsoft/winget-pkgs/tree/master/manifests/k/Kubernetes/kind)
+{{< codeFromInline lang="powershell" >}}
+winget install Kubernetes.kind
+{{< /codeFromInline >}}
+
 ## Creating a Cluster
 
 Creating a Kubernetes cluster is as simple as `kind create cluster`.
