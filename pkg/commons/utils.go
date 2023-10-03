@@ -19,6 +19,7 @@ package commons
 import (
 	"bytes"
 	"context"
+	"time"
 	"unicode"
 
 	"os"
@@ -27,9 +28,6 @@ import (
 	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v3"
 
-	"sigs.k8s.io/kind/pkg/cluster/nodes"
-	"sigs.k8s.io/kind/pkg/errors"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -37,6 +35,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	vault "github.com/sosedoff/ansible-vault-go"
+	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/errors"
 )
 
 const secretName = "secrets.yml"
@@ -230,16 +230,25 @@ func removeKey(nodes []*yaml.Node, key string) []*yaml.Node {
 }
 
 func ExecuteCommand(n nodes.Node, command string, envVars ...[]string) (string, error) {
-	raw := bytes.Buffer{}
+	var err error
+	var raw bytes.Buffer
 	cmd := n.Command("sh", "-c", command)
 	if len(envVars) > 0 {
 		cmd.SetEnv(envVars[0]...)
 	}
-	if err := cmd.SetStdout(&raw).SetStderr(&raw).Run(); err != nil {
-		return "", err
+	for i := 0; i < 3; i++ {
+		raw = bytes.Buffer{}
+		err = cmd.SetStdout(&raw).SetStderr(&raw).Run()
+		if err == nil || !strings.Contains(command, "--kubeconfig") || !strings.Contains(raw.String(), "timeout") {
+			break
+		}
+		time.Sleep(5 * time.Second)
 	}
 	if strings.Contains(raw.String(), "Error:") {
-		return "", errors.New(raw.String())
+		return "", errors.Wrap(err, "Command Output: "+raw.String())
+	}
+	if err != nil {
+		return "", err
 	}
 	return raw.String(), nil
 }
