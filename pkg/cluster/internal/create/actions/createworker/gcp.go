@@ -24,6 +24,7 @@ import (
 	"net/url"
 	"strings"
 
+	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/option"
 	"gopkg.in/yaml.v3"
@@ -80,6 +81,10 @@ func (b *GCPBuilder) setCapxEnvVars(p ProviderParams) {
 	jsonData, _ := json.Marshal(data)
 	b.capxEnvVars = []string{
 		"GCP_B64ENCODED_CREDENTIALS=" + b64.StdEncoding.EncodeToString([]byte(jsonData)),
+	}
+	if p.Managed {
+		b.capxEnvVars = append(b.capxEnvVars, "EXP_MACHINE_POOL=true")
+		b.capxEnvVars = append(b.capxEnvVars, "EXP_CAPG_GKE=true")
 	}
 	if p.GithubToken != "" {
 		b.capxEnvVars = append(b.capxEnvVars, "GITHUB_TOKEN="+p.GithubToken)
@@ -143,6 +148,22 @@ func (b *GCPBuilder) installCSI(n nodes.Node, k string) error {
 	}
 
 	return nil
+}
+
+func (b *GCPBuilder) getRegistryCredentials(p ProviderParams, u string) (string, string, error) {
+	var registryUser = "oauth2accesstoken"
+	var ctx = context.Background()
+	scope := "https://www.googleapis.com/auth/cloud-platform"
+	key, _ := b64.StdEncoding.DecodeString(strings.Split(b.capxEnvVars[0], "GCP_B64ENCODED_CREDENTIALS=")[1])
+	creds, err := google.CredentialsFromJSON(ctx, key, scope)
+	if err != nil {
+		return "", "", err
+	}
+	token, err := creds.TokenSource.Token()
+	if err != nil {
+		return "", "", err
+	}
+	return registryUser, token.AccessToken, nil
 }
 
 func (b *GCPBuilder) configureStorageClass(n nodes.Node, k string) error {

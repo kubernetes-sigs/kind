@@ -165,17 +165,21 @@ func (b *AzureBuilder) installCSI(n nodes.Node, k string) error {
 	return nil
 }
 
-func getAcrToken(p ProviderParams, acrService string) (string, error) {
+func (b *AzureBuilder) getRegistryCredentials(p ProviderParams, u string) (string, string, error) {
+	var registryUser = "00000000-0000-0000-0000-000000000000"
+	var registryPass string
 	var ctx = context.Background()
+	var response map[string]interface{}
 
 	cfg, err := commons.AzureGetConfig(p.Credentials)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	aadToken, err := cfg.GetToken(ctx, policy.TokenRequestOptions{Scopes: []string{"https://management.azure.com/.default"}})
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
+	acrService := strings.Split(u, "/")[0]
 	formData := url.Values{
 		"grant_type":   {"access_token"},
 		"service":      {acrService},
@@ -184,15 +188,19 @@ func getAcrToken(p ProviderParams, acrService string) (string, error) {
 	}
 	jsonResponse, err := http.PostForm(fmt.Sprintf("https://%s/oauth2/exchange", acrService), formData)
 	if err != nil {
-		return "", err
+		return "", "", err
 	} else if jsonResponse.StatusCode == http.StatusUnauthorized {
-		return "", errors.New("Failed to obtain the ACR token with the provided credentials, please check the roles assigned to the correspondent Azure AD app")
+		return "", "", errors.New("Failed to obtain the ACR token with the provided credentials, please check the roles assigned to the correspondent Azure AD app")
 	}
-
-	var response map[string]interface{}
 	json.NewDecoder(jsonResponse.Body).Decode(&response)
-
-	return response["refresh_token"].(string), nil
+	if response["access_token"] != nil {
+		registryPass = response["access_token"].(string)
+	} else if response["refresh_token"] != nil {
+		registryPass = response["refresh_token"].(string)
+	} else {
+		return "", "", errors.New("Failed to obtain the ACR token with the provided credentials, please check the roles assigned to the correspondent Azure AD app")
+	}
+	return registryUser, registryPass, nil
 }
 
 func (b *AzureBuilder) configureStorageClass(n nodes.Node, k string) error {

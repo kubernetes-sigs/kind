@@ -64,8 +64,8 @@ func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 	}
 
 	for i, dr := range spec.DockerRegistries {
-		if dr.Type == "acr" {
-			return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Invalid value: \"type\": acr is not supported in AWS")
+		if dr.Type != "ecr" && dr.Type != "generic" {
+			return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Invalid value: \"type\": only 'ecr' or 'generic' are supported in aws clusters")
 		}
 	}
 

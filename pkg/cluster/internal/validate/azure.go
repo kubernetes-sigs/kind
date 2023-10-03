@@ -72,11 +72,11 @@ func validateAzure(spec commons.Spec, providerSecrets map[string]string) error {
 	}
 
 	for i, dr := range spec.DockerRegistries {
-		if dr.Type == "ecr" {
-			return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Invalid value: \"type\": ecr is not supported in Azure/AKS")
-		}
 		if dr.Type != "acr" && spec.ControlPlane.Managed {
-			return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Invalid value: \"type\": only acr is supported in AKS")
+			return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Invalid value: \"type\": only acr is supported in azure managed clusters")
+		}
+		if dr.Type != "acr" && dr.Type != "generic" {
+			return errors.New("spec.docker_registries[" + strconv.Itoa(i) + "]: Invalid value: \"type\": only acr and generic are supported in azure unmanaged clusters")
 		}
 	}
 

@@ -222,7 +222,7 @@ type DockerRegistryCredentials struct {
 
 type DockerRegistry struct {
 	AuthRequired bool   `yaml:"auth_required" validate:"boolean"`
-	Type         string `yaml:"type" validate:"required,oneof='acr' 'ecr' 'generic'"`
+	Type         string `yaml:"type" validate:"required,oneof='acr' 'ecr' 'gar' 'gcr' 'generic'"`
 	URL          string `yaml:"url" validate:"required"`
 	KeosRegistry bool   `yaml:"keos_registry" validate:"boolean"`
 }

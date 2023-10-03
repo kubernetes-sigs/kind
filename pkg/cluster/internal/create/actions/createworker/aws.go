@@ -205,27 +205,28 @@ func (b *AWSBuilder) internalNginx(p ProviderParams, networks commons.Networks) 
 	return false, nil
 }
 
-func getEcrToken(p ProviderParams, u string) (string, error) {
-	var err error
-	var ctx = context.TODO()
+func (b *AWSBuilder) getRegistryCredentials(p ProviderParams, u string) (string, string, error) {
+	var registryUser = "AWS"
+	var registryPass string
+	var ctx = context.Background()
 
 	region := strings.Split(u, ".")[3]
 	cfg, err := commons.AWSGetConfig(ctx, p.Credentials, region)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	svc := ecr.NewFromConfig(cfg)
 	token, err := svc.GetAuthorizationToken(ctx, &ecr.GetAuthorizationTokenInput{})
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	authData := token.AuthorizationData[0].AuthorizationToken
 	data, err := base64.StdEncoding.DecodeString(*authData)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	parts := strings.SplitN(string(data), ":", 2)
-	return parts[1], nil
+	registryPass = strings.SplitN(string(data), ":", 2)[1]
+	return registryUser, registryPass, nil
 }
 
 func (b *AWSBuilder) configureStorageClass(n nodes.Node, k string) error {
