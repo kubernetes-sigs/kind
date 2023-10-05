@@ -28,6 +28,7 @@ import (
 	"github.com/apparentlymart/go-cidr/cidr"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"golang.org/x/exp/slices"
 	"sigs.k8s.io/kind/pkg/commons"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -47,6 +48,11 @@ func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 	var ctx = context.TODO()
 
 	cfg, err := commons.AWSGetConfig(ctx, providerSecrets, spec.Region)
+	if err != nil {
+		return err
+	}
+
+	azs, err := getAwsAzs(ctx, cfg, spec.Region)
 	if err != nil {
 		return err
 	}
@@ -102,6 +108,13 @@ func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 				return errors.New("spec.worker_nodes." + wn.Name + ": \"node_image\": must have the format " + AWSNodeImageFormat)
 			}
 		}
+		if wn.AZ != "" {
+			if len(azs) > 0 {
+				if !commons.Contains(azs, wn.AZ) {
+					return errors.New(wn.AZ + " does not exist in this region, azs: " + fmt.Sprint(azs))
+				}
+			}
+		}
 		if err := validateVolumeType(wn.RootVolume.Type, AWSVolumes); err != nil {
 			return errors.Wrap(err, "spec.worker_nodes."+wn.Name+".root_volume: Invalid value: \"type\"")
 		}
@@ -139,8 +152,21 @@ func validateAWSNetwork(ctx context.Context, cfg aws.Config, spec commons.Spec) 
 		}
 	}
 	if spec.Networks.VPCID != "" {
+		vpcs, _ := getAwsVPCs(cfg)
+		if len(vpcs) > 0 && !commons.Contains(vpcs, spec.Networks.VPCID) {
+			return errors.New("\"vpc_id\": " + spec.Networks.VPCID + " does not exist")
+		}
 		if len(spec.Networks.Subnets) == 0 {
 			return errors.New("\"subnets\": are required when \"vpc_id\" is set")
+		} else {
+			subnets, _ := getAwsSubnets(spec.Networks.VPCID, cfg)
+			if len(subnets) > 0 {
+				for _, subnet := range spec.Networks.Subnets {
+					if !commons.Contains(subnets, subnet.SubnetId) {
+						return errors.New("\"subnets\": " + subnet.SubnetId + " does not belong to vpc with id: " + spec.Networks.VPCID)
+					}
+				}
+			}
 		}
 	} else {
 		if len(spec.Networks.Subnets) > 0 {
@@ -190,6 +216,44 @@ func validateAWSPodsNetwork(podsNetwork string) error {
 		return errors.New("\"pods_cidr\": CIDR block must be between " + validRange1.String() + " and " + validRange2.String())
 	}
 	return nil
+}
+
+func getAwsVPCs(config aws.Config) ([]string, error) {
+	vpcs := []string{}
+
+	client := ec2.NewFromConfig(config)
+	DescribeVpcOpts := &ec2.DescribeVpcsInput{}
+	output, err := client.DescribeVpcs(context.Background(), DescribeVpcOpts)
+	if err != nil {
+		return []string{}, err
+	}
+	for _, vpc := range output.Vpcs {
+		vpcs = append(vpcs, *vpc.VpcId)
+	}
+	return vpcs, nil
+}
+
+func getAwsSubnets(vpcId string, config aws.Config) ([]string, error) {
+	subnets := []string{}
+
+	client := ec2.NewFromConfig(config)
+	vpc_id_filterName := "vpc-id"
+	DescribeSubnetOpts := &ec2.DescribeSubnetsInput{
+		Filters: []types.Filter{
+			{
+				Name:   &vpc_id_filterName,
+				Values: []string{vpcId},
+			},
+		},
+	}
+	output, err := client.DescribeSubnets(context.Background(), DescribeSubnetOpts)
+	if err != nil {
+		return []string{}, err
+	}
+	for _, subnet := range output.Subnets {
+		subnets = append(subnets, *subnet.SubnetId)
+	}
+	return subnets, nil
 }
 
 func validateAWSStorageClass(sc commons.StorageClass, wn commons.WorkerNodes) error {
@@ -308,4 +372,19 @@ func validateAWSAZs(ctx context.Context, cfg aws.Config, spec commons.Spec) erro
 	}
 
 	return nil
+}
+
+func getAwsAzs(ctx context.Context, cfg aws.Config, region string) ([]string, error) {
+	var azs []string
+	svc := ec2.NewFromConfig(cfg)
+	result, err := svc.DescribeAvailabilityZones(ctx, &ec2.DescribeAvailabilityZonesInput{})
+	if err != nil {
+		return nil, err
+	}
+	for _, az := range result.AvailabilityZones {
+		if *az.RegionName == region {
+			azs = append(azs, *az.ZoneName)
+		}
+	}
+	return azs, nil
 }

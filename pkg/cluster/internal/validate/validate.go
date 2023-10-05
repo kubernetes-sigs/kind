@@ -43,9 +43,9 @@ func Cluster(params *ValidateParams) (commons.ClusterCredentials, error) {
 	case "aws":
 		err = validateAWS(params.KeosCluster.Spec, creds.ProviderCredentials)
 	case "gcp":
-		err = validateGCP(params.KeosCluster.Spec)
+		err = validateGCP(params.KeosCluster.Spec, creds.ProviderCredentials)
 	case "azure":
-		err = validateAzure(params.KeosCluster.Spec, creds.ProviderCredentials)
+		err = validateAzure(params.KeosCluster.Spec, creds.ProviderCredentials, params.KeosCluster.Metadata.Name)
 	}
 	if err != nil {
 		return commons.ClusterCredentials{}, err
