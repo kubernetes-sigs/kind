@@ -2,25 +2,41 @@
 {{ $lang := "" }}
 {{ $suffix := findRE "(\\.[^.]+)$" $file 1 }}
 {{ with  $suffix }}
-{{ $lang = (index . 0 | strings.TrimPrefix ".") }}
+  {{ $lang = (index . 0 | strings.TrimPrefix ".") }}
 {{ end }}
 {{ with .Get "lang" }}{{ $lang = . }}{{ end }}
-{{ $virtualPath :=  strings.TrimPrefix `static/` $file }}
+{{ $virtualPath := strings.TrimPrefix `static/` $file }}
 <table class="includecode" id="code-{{ $virtualPath }}">
   <thead>
     <tr>
       <th>
         <a href="/{{ $virtualPath }}">{{ $virtualPath }}</a>
-        <button onclick='copyText("code-{{ $virtualPath }}-hidden-copy-text");' title="Copy to clipboard">
+        <button onclick='copyText("code-{{ $virtualPath }}-hidden-copy-text", "button-{{ $virtualPath }}");' title="Copy to clipboard">
           <img src="{{ "copycode.svg" | relURL }}" alt="Copy">
         </button>
+        <span class="copy-success" id="button-{{ $virtualPath }}-success"></span>
       </th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td>{{- highlight (trim ($file | readFile) "\n") $lang "" | -}}</td>
+      <td>{{- highlight (trim ($file | readFile) "\n") $lang "" -}}</td>
     </tr>
   </tbody>
-  <textarea class="hidden-copy-text" id="code-{{ $virtualPath }}-hidden-copy-text">{{ ($file | readFile) }}</textarea>
+  <textarea class="hidden-copy-text" id="code-{{ $virtualPath }}-hidden-copy-text">{{ $file | readFile }}</textarea>
 </table>
+
+<script>
+  function copyText(elementId, successElementId) {
+    const textarea = document.getElementById(elementId);
+    textarea.select();
+    document.execCommand("copy");
+
+  // Display a success message inside the existing span element
+    const successElement = document.getElementById(successElementId);
+    successElement.textContent = "Copied to clipboard";
+    setTimeout(() => {
+      successElement.textContent = "";
+    }, 2000);
+  }
+</script>
