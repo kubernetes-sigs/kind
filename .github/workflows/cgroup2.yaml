@@ -14,8 +14,9 @@ permissions:
 jobs:
   docker:
     name: Cgroup v2
-    # nested virtualization is only available on macOS hosts
-    runs-on: macos-12
+    # A "larger" instance is used for enabling nested virt
+    # https://docs.github.com/en/actions/using-github-hosted-runners/about-larger-runners/about-larger-runners
+    runs-on: ubuntu-latest-4-cores
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -30,6 +31,21 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
+
+      # https://github.com/containerd/containerd/blob/420503072e58f27a7192ddea4e6e41dced911cb9/.github/workflows/ci.yml#L569-L581
+      - name: Set up vagrant
+        run: |
+          # Canonical's Vagrant 2.2.19 dpkg cannot download Fedora 38 image: https://bugs.launchpad.net/vagrant/+bug/2017828
+          # So we have to install Vagrant >= 2.3.1 from the upstream: https://github.com/opencontainers/runc/blob/v1.1.8/.cirrus.yml#L41-L49
+          curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+          sudo sed -i 's/^# deb-src/deb-src/' /etc/apt/sources.list
+          sudo apt-get update
+          sudo apt-get install -y libvirt-daemon libvirt-daemon-system vagrant
+          sudo systemctl enable --now libvirtd
+          sudo apt-get build-dep -y vagrant ruby-libvirt
+          sudo apt-get install -y --no-install-recommends libxslt-dev libxml2-dev libvirt-dev ruby-bundler ruby-dev zlib1g-dev
+          sudo vagrant plugin install vagrant-libvirt
 
       - name: Boot Fedora
         run: |
