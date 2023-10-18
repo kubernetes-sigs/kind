@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 
 	"syscall"
 	"time"
@@ -161,7 +162,7 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 	}
 
 	if flags.VaultPassword == "" {
-		flags.VaultPassword, err = setPassword()
+		flags.VaultPassword, err = setPassword(secretsDefaultPath)
 		if err != nil {
 			return err
 		}
@@ -238,17 +239,20 @@ func configOption(rawConfigFlag string, stdin io.Reader) (cluster.CreateOption, 
 	return cluster.CreateWithRawConfig(raw), nil
 }
 
-func setPassword() (string, error) {
+func setPassword(secretsDefaultPath string) (string, error) {
 	firstPassword, err := requestPassword("Vault Password: ")
 	if err != nil {
 		return "", err
 	}
-	secondPassword, err := requestPassword("Rewrite Vault Password:")
-	if err != nil {
-		return "", err
-	}
-	if firstPassword != secondPassword {
-		return "", errors.New("The passwords do not match.")
+
+	if _, err := os.Stat(secretsDefaultPath); os.IsNotExist(err) {
+		secondPassword, err := requestPassword("Rewrite Vault Password:")
+		if err != nil {
+			return "", err
+		}
+		if firstPassword != secondPassword {
+			return "", errors.New("The passwords do not match.")
+		}
 	}
 
 	return firstPassword, nil
