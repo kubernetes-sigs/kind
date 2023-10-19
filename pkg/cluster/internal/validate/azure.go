@@ -53,6 +53,16 @@ func validateAzure(spec commons.Spec, providerSecrets map[string]string, cluster
 	if err != nil {
 		return err
 	}
+
+	regions, err := getAzureRegions(creds, providerSecrets["SubscriptionID"])
+	fmt.Println(regions)
+	if err != nil {
+		return err
+	}
+	if !commons.Contains(regions, spec.Region) {
+		return errors.New("spec.region: " + spec.Region + " region does not exist")
+	}
+
 	azs, err := getAzureAzs(creds, providerSecrets["SubscriptionID"], spec.Region)
 	if err != nil {
 		return err
@@ -367,6 +377,30 @@ func getAzureAzs(creds *azidentity.ClientSecretCredential, subscription string, 
 	}
 
 	return azs, nil
+}
+
+func getAzureRegions(creds *azidentity.ClientSecretCredential, subscription string) ([]string, error) {
+	regions := []string{}
+
+	ctx := context.Background()
+	clientFactory, err := armsubscriptions.NewClientFactory(creds, nil)
+	if err != nil {
+		return []string{}, err
+	}
+
+	pager := clientFactory.NewClient().NewListLocationsPager(subscription, &armsubscriptions.ClientListLocationsOptions{IncludeExtendedLocations: nil})
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			return []string{}, err
+		}
+		for _, v := range page.Value {
+			if !commons.Contains(regions, *v.Name) {
+				regions = append(regions, *v.Name)
+			}
+		}
+	}
+	return regions, nil
 }
 
 func getAzureVpcs(creds *azidentity.ClientSecretCredential, subscription string, region string, resourceGroup string) ([]string, error) {

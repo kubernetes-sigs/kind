@@ -43,6 +43,15 @@ func validateGCP(spec commons.Spec, providerSecrets map[string]string) error {
 	var isGKEVersion = regexp.MustCompile(`^v\d.\d{2}.\d{1,2}-gke.\d{3,4}$`).MatchString
 
 	credentialsJson := getGCPCreds(providerSecrets)
+
+	regions, err := getGCPRegions(credentialsJson)
+	if err != nil {
+		return err
+	}
+	if !commons.Contains(regions, spec.Region) {
+		return errors.New("spec.region: " + spec.Region + " region does not exist")
+	}
+
 	azs, err := getGoogleAZs(credentialsJson, spec.Region)
 	if err != nil {
 		return err
@@ -213,6 +222,38 @@ func validateGCPNetwork(network commons.Networks, credentialsJson string, region
 		}
 	}
 	return nil
+}
+
+func getGCPRegions(credentialsJson string) ([]string, error) {
+	var regions_names []string
+	var ctx = context.Background()
+
+	gcpCreds := map[string]string{}
+	err := json.Unmarshal([]byte(credentialsJson), &gcpCreds)
+	if err != nil {
+		return []string{}, err
+	}
+
+	cfg := option.WithCredentialsJSON([]byte(credentialsJson))
+	computeService, err := compute.NewService(ctx, cfg)
+
+	if err != nil {
+		return []string{}, err
+	}
+
+	regions, err := computeService.Regions.List(string(gcpCreds["project_id"])).Do()
+	if err != nil {
+		return []string{}, err
+	}
+
+	for _, region := range regions.Items {
+		if !commons.Contains(regions_names, region.Name) {
+			regions_names = append(regions_names, region.Name)
+		}
+	}
+
+	return regions_names, nil
+
 }
 
 func getGoogleVPCs(credentialsJson string) ([]string, error) {

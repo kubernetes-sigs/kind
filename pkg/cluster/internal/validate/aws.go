@@ -52,7 +52,15 @@ func validateAWS(spec commons.Spec, providerSecrets map[string]string) error {
 		return err
 	}
 
-	azs, err := getAwsAzs(ctx, cfg, spec.Region)
+	regions, err := getAWSRegions(cfg)
+	if err != nil {
+		return err
+	}
+	if !commons.Contains(regions, spec.Region) {
+		return errors.New("spec.region: " + spec.Region + " region does not exist")
+	}
+
+	azs, err := getAWSAzs(ctx, cfg, spec.Region)
 	if err != nil {
 		return err
 	}
@@ -152,14 +160,14 @@ func validateAWSNetwork(ctx context.Context, cfg aws.Config, spec commons.Spec) 
 		}
 	}
 	if spec.Networks.VPCID != "" {
-		vpcs, _ := getAwsVPCs(cfg)
+		vpcs, _ := getAWSVPCs(cfg)
 		if len(vpcs) > 0 && !commons.Contains(vpcs, spec.Networks.VPCID) {
 			return errors.New("\"vpc_id\": " + spec.Networks.VPCID + " does not exist")
 		}
 		if len(spec.Networks.Subnets) == 0 {
 			return errors.New("\"subnets\": are required when \"vpc_id\" is set")
 		} else {
-			subnets, _ := getAwsSubnets(spec.Networks.VPCID, cfg)
+			subnets, _ := getAWSSubnets(spec.Networks.VPCID, cfg)
 			if len(subnets) > 0 {
 				for _, subnet := range spec.Networks.Subnets {
 					if !commons.Contains(subnets, subnet.SubnetId) {
@@ -218,7 +226,30 @@ func validateAWSPodsNetwork(podsNetwork string) error {
 	return nil
 }
 
-func getAwsVPCs(config aws.Config) ([]string, error) {
+func getAWSRegions(config aws.Config) ([]string, error) {
+	regions := []string{}
+
+	// Use a default region to authenticate
+	config.Region = *aws.String("eu-west-1")
+
+	client := ec2.NewFromConfig(config)
+
+	// Describe regions
+	describeRegionsOpts := &ec2.DescribeRegionsInput{}
+	output, err := client.DescribeRegions(context.Background(), describeRegionsOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract region names
+	for _, region := range output.Regions {
+		regions = append(regions, *region.RegionName)
+	}
+
+	return regions, nil
+}
+
+func getAWSVPCs(config aws.Config) ([]string, error) {
 	vpcs := []string{}
 
 	client := ec2.NewFromConfig(config)
@@ -233,7 +264,7 @@ func getAwsVPCs(config aws.Config) ([]string, error) {
 	return vpcs, nil
 }
 
-func getAwsSubnets(vpcId string, config aws.Config) ([]string, error) {
+func getAWSSubnets(vpcId string, config aws.Config) ([]string, error) {
 	subnets := []string{}
 
 	client := ec2.NewFromConfig(config)
@@ -374,7 +405,7 @@ func validateAWSAZs(ctx context.Context, cfg aws.Config, spec commons.Spec) erro
 	return nil
 }
 
-func getAwsAzs(ctx context.Context, cfg aws.Config, region string) ([]string, error) {
+func getAWSAzs(ctx context.Context, cfg aws.Config, region string) ([]string, error) {
 	var azs []string
 	svc := ec2.NewFromConfig(cfg)
 	result, err := svc.DescribeAvailabilityZones(ctx, &ec2.DescribeAvailabilityZonesInput{})
