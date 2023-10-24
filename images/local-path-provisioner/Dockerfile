@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # NOTE the actual go version will be overridden
-FROM --platform=$BUILDPLATFORM golang:latest
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:latest
 COPY --chmod=0755 scripts/third_party/gimme/gimme /usr/local/bin/
 RUN git clone --filter=tree:0 https://github.com/rancher/local-path-provisioner
 ARG VERSION
