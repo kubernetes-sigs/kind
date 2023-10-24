@@ -14,7 +14,7 @@
 
 # first stage build kindnetd binary
 # NOTE: the actual go version will be overridden
-FROM --platform=$BUILDPLATFORM golang:latest
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:latest
 WORKDIR /go/src
 COPY --chmod=0755 scripts/third_party/gimme/gimme /usr/local/bin/
 # make deps fetching cacheable
