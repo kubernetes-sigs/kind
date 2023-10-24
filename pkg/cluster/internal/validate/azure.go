@@ -55,7 +55,6 @@ func validateAzure(spec commons.Spec, providerSecrets map[string]string, cluster
 	}
 
 	regions, err := getAzureRegions(creds, providerSecrets["SubscriptionID"])
-	fmt.Println(regions)
 	if err != nil {
 		return err
 	}
