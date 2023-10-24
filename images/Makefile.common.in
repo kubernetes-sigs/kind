@@ -30,13 +30,24 @@ GO_VERSION=$(shell cat $(CURDIR)/../../.go-version | head -n1)
 # required to enable buildx
 export DOCKER_CLI_EXPERIMENTAL=enabled
 
+ifeq ($(KIND_EXPERIMENTAL_PROVIDER),podman)
+	BUILD_WITH=podman
+else
+	BUILD_WITH=docker
+endif
+
 # build with buildx
 PLATFORMS?=linux/amd64,linux/arm64
 OUTPUT?=
 PROGRESS=auto
 EXTRA_BUILD_OPT?=
-build: ensure-buildx
+build: build-with-$(BUILD_WITH)
+
+build-with-docker: ensure-buildx
 	docker buildx build $(if $(PLATFORMS),--platform=$(PLATFORMS),) $(OUTPUT) --progress=$(PROGRESS) -t ${IMAGE} --pull --build-arg GO_VERSION=$(GO_VERSION) $(EXTRA_BUILD_OPT) .
+
+build-with-podman:
+	podman build $(if $(PLATFORMS),--platform=$(PLATFORMS),) $(OUTPUT) --progress=$(PROGRESS) -t ${IMAGE} --pull --build-arg GO_VERSION=$(GO_VERSION) $(EXTRA_BUILD_OPT) .
 
 # push the cross built image
 push: OUTPUT=--push
