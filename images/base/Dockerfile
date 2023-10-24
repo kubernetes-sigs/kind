@@ -25,11 +25,12 @@ FROM $BASE_IMAGE as base
 
 # copy in static files
 # all scripts are 0755 (rwx r-x r-x)
+# all non-scripts are 0644 (rw- r-- r--)
 COPY --chmod=0755 files/usr/local/bin/* /usr/local/bin/
+
+COPY --chmod=0644 files/kind/ /kind/
 COPY --chmod=0755 files/kind/bin/* /kind/bin/
 
-# all non-scripts are 0644 (rw- r-- r--)
-COPY --chmod=0644 files/kind/* /kind/
 COPY --chmod=0644 files/LICENSES/* /LICENSES/*
 COPY --chmod=0644 files/etc/* /etc/
 COPY --chmod=0644 files/etc/containerd/* /etc/containerd/
