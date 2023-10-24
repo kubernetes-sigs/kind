@@ -17,7 +17,6 @@ limitations under the License.
 package validate
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -55,14 +54,9 @@ func validateK8SVersion(v string) error {
 		return errors.New("spec: Invalid value: \"k8s_version\": regex used for validation is '^v\\d.\\d{2}.\\d{1,2}(-gke.\\d{3,4})?$'")
 	}
 	K8sVersionMM := strings.Split(v, ".")
-	a, _ := json.Marshal(k8sVersionSupported)
-	if len(K8sVersionMM) != 3 {
-		return errors.New("spec: Invalid value: \"k8s_version\":In this version only supports major and minor Kubernetes versions: " + fmt.Sprint(k8sVersionSupported))
-	}
-	k8sVersion := strings.Join(K8sVersionMM[:len(K8sVersionMM)-1], ".")
+	k8sVersion := strings.Join(K8sVersionMM[:2], ".")
 	if !slices.Contains(k8sVersionSupported, strings.ReplaceAll(k8sVersion, "v", "")) {
-
-		return errors.New("spec: Invalid value: \"k8s_version\": In this version only supports  major and minor Kubernetes versions:: " + string(a))
+		return errors.New("spec: Invalid value: \"k8s_version\": kubernetes versions supported: " + fmt.Sprint(strings.Join(k8sVersionSupported, ", ")))
 	}
 	return nil
 }
