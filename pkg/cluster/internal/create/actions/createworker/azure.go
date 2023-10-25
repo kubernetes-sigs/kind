@@ -59,8 +59,8 @@ func newAzureBuilder() *AzureBuilder {
 
 func (b *AzureBuilder) setCapx(managed bool) {
 	b.capxProvider = "azure"
-	b.capxVersion = "v1.10.4"
-	b.capxImageVersion = "v1.10.4"
+	b.capxVersion = "v1.11.3"
+	b.capxImageVersion = "v1.11.3"
 	b.capxName = "capz"
 	b.capxManaged = managed
 	b.csiNamespace = "kube-system"
@@ -93,11 +93,10 @@ func (b *AzureBuilder) setSC(p ProviderParams) {
 
 func (b *AzureBuilder) setCapxEnvVars(p ProviderParams) {
 	b.capxEnvVars = []string{
-		"AZURE_CLIENT_SECRET=" + p.Credentials["ClientSecret"],
+		"AZURE_CLIENT_SECRET_B64=" + base64.StdEncoding.EncodeToString([]byte(p.Credentials["ClientSecret"])),
+		"AZURE_CLIENT_ID_B64=" + base64.StdEncoding.EncodeToString([]byte(p.Credentials["ClientID"])),
 		"AZURE_SUBSCRIPTION_ID_B64=" + base64.StdEncoding.EncodeToString([]byte(p.Credentials["SubscriptionID"])),
 		"AZURE_TENANT_ID_B64=" + base64.StdEncoding.EncodeToString([]byte(p.Credentials["TenantID"])),
-		"AZURE_CLIENT_ID_B64=" + base64.StdEncoding.EncodeToString([]byte(p.Credentials["ClientID"])),
-		"AZURE_CLIENT_SECRET_B64=" + base64.StdEncoding.EncodeToString([]byte(p.Credentials["ClientSecret"])),
 	}
 	if p.Managed {
 		b.capxEnvVars = append(b.capxEnvVars, "EXP_MACHINE_POOL=true")

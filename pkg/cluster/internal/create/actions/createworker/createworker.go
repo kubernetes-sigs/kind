@@ -205,7 +205,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	ctx.Status.Start("Installing keos cluster operator 💻")
 	defer ctx.Status.End(false)
 
-	err = deployClusterOperator(n, a.keosCluster, a.clusterCredentials, keosRegistry, "", true)
+	err = provider.deployClusterOperator(n, a.keosCluster, a.clusterCredentials, keosRegistry, "", true)
 	if err != nil {
 		return errors.Wrap(err, "failed to deploy cluster operator")
 	}
@@ -521,7 +521,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		ctx.Status.Start("Installing keos cluster operator in workload cluster 💻")
 		defer ctx.Status.End(false)
 
-		err = deployClusterOperator(n, a.keosCluster, a.clusterCredentials, keosRegistry, kubeconfigPath, true)
+		err = provider.deployClusterOperator(n, a.keosCluster, a.clusterCredentials, keosRegistry, kubeconfigPath, true)
 		if err != nil {
 			return errors.Wrap(err, "failed to deploy cluster operator in workload cluster")
 		}
@@ -624,7 +624,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 				return errors.Wrap(err, "failed to delete keoscluster in management cluster")
 			}
 
-			err = deployClusterOperator(n, a.keosCluster, a.clusterCredentials, keosRegistry, "", false)
+			err = provider.deployClusterOperator(n, a.keosCluster, a.clusterCredentials, keosRegistry, "", false)
 			if err != nil {
 				return errors.Wrap(err, "failed to deploy cluster operator")
 			}
