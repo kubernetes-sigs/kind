@@ -35,7 +35,7 @@ Also, depending on the host configuration, the following steps might be needed:
 
   Please note that:
 
-  - `/etc/systemd/system/user@.service.d/` folder needs to be created if not already present on your host
+  - `/etc/systemd/system/user@.service.d/` directory needs to be created if not already present on your host
   - If using Docker and it was already running when this step was done, a restart is needed for the changes to take
     effect
       {{< codeFromInline lang="bash" >}}
