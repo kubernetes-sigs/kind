@@ -33,6 +33,15 @@ Also, depending on the host configuration, the following steps might be needed:
   Beware that changing this configuration may affect system
   performance.)
 
+  Please note that:
+
+  - `/etc/systemd/system/user@.service.d/` directory needs to be created if not already present on your host
+  - If using Docker and it was already running when this step was done, a restart is needed for the changes to take
+    effect
+      {{< codeFromInline lang="bash" >}}
+      systemctl --user restart docker
+      {{< /codeFromInline >}}
+
 - Create `/etc/modules-load.d/iptables.conf` with the following content:
 
   ```
