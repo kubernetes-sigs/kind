@@ -17,3 +17,5 @@ else
 	echo "Run 'make build' first"
 	exit 1
 fi
+
+mv "$DIR"/cloud-provisioner-${VERSION}.${EXTENSION} "$DIR"/cloud-provisioner.${EXTENSION}
