@@ -77,7 +77,7 @@ func ensureNetwork(name string) error {
 	// https://github.com/kubernetes-sigs/kind/issues/1544
 	// Otherwise if it's not a pool overlap error, fail
 	// If it is, make more attempts below
-	if isIPv6UnavailableError(err) {
+	if isIPv6UnavailableError(err) || isIPv6UnsupportError(err) {
 		// only one attempt, IPAM is automatic in ipv4 only
 		return createNetworkNoDuplicates(name, "", mtu)
 	}
@@ -262,6 +262,12 @@ func checkIfNetworkExists(name string) (bool, error) {
 func isIPv6UnavailableError(err error) bool {
 	rerr := exec.RunErrorForError(err)
 	return rerr != nil && strings.HasPrefix(string(rerr.Output), "Error response from daemon: Cannot read IPv6 setup for bridge")
+}
+
+// The nerdctl do not support the ipv6 network, https://github.com/containerd/nerdctl/issues/1547
+func isIPv6UnsupportError(err error) bool {
+	rerr := exec.RunErrorForError(err)
+	return rerr != nil && strings.Contains(string(rerr.Output), "unknown flag: --ipv6")
 }
 
 func isPoolOverlapError(err error) bool {
