@@ -280,8 +280,7 @@ func (p *Provider) deployClusterOperator(n nodes.Node, keosCluster commons.KeosC
 
 		if firstInstallation {
 			// Pull cluster-operator helm chart
-			c = "helm pull cluster-operator --repo " + helmRepository.url +
-				" --version " + clusterOperatorChart +
+			c = "helm pull stratio-helm-repo/cluster-operator --version " + clusterOperatorChart +
 				" --untar --untardir /stratio/helm"
 			_, err = commons.ExecuteCommand(n, c)
 			if err != nil {

@@ -355,13 +355,23 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		if isMachinePool {
 			// Wait for all the machine pools to be ready
 			c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=Ready --timeout=15m --all mp"
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
+				return errors.Wrap(err, "failed to create the worker Cluster")
+			}
+			// Wait for all container metrics to be available
+			c = "kubectl --kubeconfig " + kubeconfigPath + " -n kube-system rollout status deployment metrics-server --timeout=90s"
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
+				return errors.Wrap(err, "failed to wait for container metrics to be available")
+			}
 		} else {
 			// Wait for all the machine deployments to be ready
 			c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=Ready --timeout=15m --all md"
-		}
-		_, err = commons.ExecuteCommand(n, c)
-		if err != nil {
-			return errors.Wrap(err, "failed to create the worker Cluster")
+			_, err = commons.ExecuteCommand(n, c)
+			if err != nil {
+				return errors.Wrap(err, "failed to create the worker Cluster")
+			}
 		}
 
 		if !a.keosCluster.Spec.ControlPlane.Managed && *a.keosCluster.Spec.ControlPlane.HighlyAvailable {
@@ -498,7 +508,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 
 		if a.keosCluster.Spec.DeployAutoscaler && !isMachinePool {
-			ctx.Status.Start("Installing cluster-autoescaler in workload cluster 🗚")
+			ctx.Status.Start("Installing cluster-autoscaler in workload cluster 🗚")
 			defer ctx.Status.End(false)
 
 			c = "helm install cluster-autoscaler /stratio/helm/cluster-autoscaler" +

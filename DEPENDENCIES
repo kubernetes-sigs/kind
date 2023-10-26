@@ -34,8 +34,8 @@ aws:
     node-driver-registrar: v2.8.0-eks-1-27-3
     volume-modifier-for-k8s: v0.1.0
 azure:
-  cluster-api-azure: v1.11.3
-  cluster-api-azure-templates: v1.11.3
+  cluster-api-azure: v1.11.4
+  cluster-api-azure-templates: v1.11.4
   unmanaged:
     cloud-provider-azure-chart: v1.28.0
     azure-cloud-controller-manager: v1.24.18
