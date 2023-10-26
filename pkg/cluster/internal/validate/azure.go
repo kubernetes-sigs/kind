@@ -67,6 +67,16 @@ func validateAzure(spec commons.Spec, providerSecrets map[string]string, cluster
 		return err
 	}
 
+	for _, wn := range spec.WorkerNodes {
+		if wn.AZ != "" {
+			if len(azs) > 0 {
+				if !commons.Contains(azs, wn.AZ) {
+					return errors.New(wn.AZ + " does not exist in this region, azs: " + fmt.Sprint(azs))
+				}
+			}
+		}
+	}
+
 	if (spec.StorageClass != commons.StorageClass{}) {
 		if err = validateAzureStorageClass(spec.StorageClass, spec.WorkerNodes); err != nil {
 			return errors.Wrap(err, "spec.storageclass: Invalid value")
@@ -135,13 +145,7 @@ func validateAzure(spec commons.Spec, providerSecrets map[string]string, cluster
 			if err := validateVolumeType(wn.RootVolume.Type, AzureVolumes); err != nil {
 				return errors.Wrap(err, "spec.worker_nodes."+wn.Name+".root_volume: Invalid value: \"type\"")
 			}
-			if wn.AZ != "" {
-				if len(azs) > 0 {
-					if !commons.Contains(azs, wn.AZ) {
-						return errors.New(wn.AZ + " does not exist in this region, azs: " + fmt.Sprint(azs))
-					}
-				}
-			}
+
 			premiumStorage := hasAzurePremiumStorage(wn.Size)
 			if isPremium(wn.RootVolume.Type) && !premiumStorage {
 				return errors.New("spec.worker_nodes." + wn.Name + ".root_volume: Invalid value: \"type\": size doesn't support premium storage")
