@@ -15,7 +15,7 @@ jobs:
   docker:
     name: Cgroup v2
     # nested virtualization is only available on macOS hosts
-    runs-on: macos-12
+    runs-on: macos-13
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -31,6 +31,17 @@ jobs:
       - name: Check out code
         uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
 
+      #fix https://github.com/kubernetes-sigs/kind/issues/3411
+      # brew uninstall virtualbox
+      # vbcask_url="https://raw.githubusercontent.com/Homebrew/homebrew-cask/aa3c55951fc9d687acce43e5c0338f42c1ddff7b/Casks/virtualbox.rb"
+      # curl -LO $vbcask_url
+      # brew install ./virtualbox.rb
+      # rm ./virtualbox.rb
+      - name: Set up Virtualbox
+        run: |
+          brew install --cask vagrant
+          brew install --cask virtualbox
+         
       - name: Boot Fedora
         run: |
           ln -sf ./hack/ci/Vagrantfile ./Vagrantfile
