@@ -26,7 +26,7 @@ This guide will introduce you to important make targets and their usage.
 
 ### Building `kind`
 
-Invoke `make build` and `bin/kind` will contain the freshly build `kind` binary
+Invoke `make build` and `bin/kind` will contain the freshly built `kind` binary
 upon a successful build.
 
 Like other targets, this target automatically manages the correct [`.go-version`][go-version] and doesn't require that you install any tooling (just `make` / `bash`). We accomplish this using a copy of [gimme] in `hack/third_party/gimme`.
