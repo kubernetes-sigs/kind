@@ -37,7 +37,7 @@ type flagpole struct {
 	Config     string
 	ImageName  string
 	Retain     bool
-	Wait       time.Duration
+	Wait       int
 	Kubeconfig string
 }
 
@@ -79,11 +79,12 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		false,
 		"retain nodes for debugging when cluster creation fails",
 	)
-	cmd.Flags().DurationVar(
+
+	cmd.Flags().IntVar(
 		&flags.Wait,
 		"wait",
-		time.Duration(0),
-		"wait for control plane node to be ready (default 0s)",
+		0,
+		"wait for control plane node to be ready expressed in seconds (default 0s)",
 	)
 	cmd.Flags().StringVar(
 		&flags.Kubeconfig,
@@ -112,7 +113,7 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 		withConfig,
 		cluster.CreateWithNodeImage(flags.ImageName),
 		cluster.CreateWithRetain(flags.Retain),
-		cluster.CreateWithWaitForReady(flags.Wait),
+		cluster.CreateWithWaitForReady(time.Duration(flags.Wait) * time.Second),
 		cluster.CreateWithKubeconfigPath(flags.Kubeconfig),
 		cluster.CreateWithDisplayUsage(true),
 		cluster.CreateWithDisplaySalutation(true),
