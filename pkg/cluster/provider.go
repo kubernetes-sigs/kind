@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeconfig"
 	internalproviders "sigs.k8s.io/kind/pkg/cluster/internal/providers"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/docker"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers/nerdctl"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/podman"
 )
 
@@ -115,6 +116,9 @@ func DetectNodeProvider() (ProviderOption, error) {
 	if docker.IsAvailable() {
 		return ProviderWithDocker(), nil
 	}
+	if nerdctl.IsAvailable() {
+		return ProviderWithNerdctl(""), nil
+	}
 	if podman.IsAvailable() {
 		return ProviderWithPodman(), nil
 	}
@@ -164,6 +168,13 @@ func ProviderWithDocker() ProviderOption {
 func ProviderWithPodman() ProviderOption {
 	return providerRuntimeOption(func(p *Provider) {
 		p.provider = podman.NewProvider(p.logger)
+	})
+}
+
+// ProviderWithNerdctl configures the provider to use the nerdctl runtime
+func ProviderWithNerdctl(binaryName string) ProviderOption {
+	return providerRuntimeOption(func(p *Provider) {
+		p.provider = nerdctl.NewProvider(p.logger, binaryName)
 	})
 }
 
