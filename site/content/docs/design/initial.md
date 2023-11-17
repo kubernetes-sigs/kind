@@ -24,7 +24,8 @@ Kubernetes "clusters" where each "node" is a Docker container.
 `kind` is targeted at testing Kubernetes.
 
 `kind` is divided into go packages implementing most of the functionality, a
-command line for users, and a "node" base image. The intent is that the `kind` suite of packages should eventually be importable and reusable by other
+command line for users, and a "node" base image. The intent is that the `kind`
+suite of packages should eventually be importable and reusable by other
 tools (e.g. [kubetest][kubetest])
 while the CLI provides a quick way to use and debug these packages.
 
