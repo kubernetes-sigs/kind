@@ -18,9 +18,9 @@ hose {
         doPackage(conf: config, parameters: "GOCACHE=/tmp")
         doDeploy(conf: config)
         doDocker(conf: config)
-        doAT(conf: config, buildToolOverride: ['BUILDTOOL_IMAGE' : 'qa.int.stratio.com:8443/stratio/kind:%%VERSION', 'BUILDTOOL_PRIVILEGED' : true, 'BUILDTOOL_RUNASUSER' : "0"],  configFiles: [[fileId: "Clouds-EKS-yaml", variable: "credentials"]], runOnPR: true)
+        doAT(conf: config, buildToolOverride: ['BUILDTOOL_IMAGE' : 'qa.int.stratio.com:8443/stratio/kind:%%VERSION', 'BUILDTOOL_PRIVILEGED' : true, 'BUILDTOOL_RUNASUSER' : "0"],  configFiles: [[fileId: "clouds-credentials-yaml", variable: "credentials"]], runOnPR: true)
     }
     INSTALL = { config ->
-        doAT(conf: config, buildToolOverride: ['BUILDTOOL_IMAGE' : 'qa.int.stratio.com:8443/stratio/kind:%%VERSION', 'BUILDTOOL_PRIVILEGED' : true, 'BUILDTOOL_RUNASUSER' : "0"],  configFiles: [[fileId: "Clouds-EKS-yaml", variable: "credentials"]], runOnPR: true)
+        doAT(conf: config, buildToolOverride: ['BUILDTOOL_IMAGE' : 'qa.int.stratio.com:8443/stratio/kind:%%VERSION', 'BUILDTOOL_PRIVILEGED' : true, 'BUILDTOOL_RUNASUSER' : "0"],  configFiles: [[fileId: "clouds-credentials-yaml", variable: "credentials"]], runOnPR: true)
     }
 }
