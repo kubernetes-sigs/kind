@@ -240,10 +240,7 @@ func makeNodesReconciler(cniConfig *CNIConfigWriter, hostIP string, ipFamily IPF
 		var podCIDRs []string
 		if ipFamily == DualStackFamily {
 			podCIDRs = node.Spec.PodCIDRs
-		} else {
-			if node.Spec.PodCIDR == "" {
-				klog.Infof("IPFamily is not dual and node %s has no CIDR, ignoring", node.Name)
-			}
+		} else if node.Spec.PodCIDR != "" {
 			podCIDRs = []string{node.Spec.PodCIDR}
 		}
 		if len(podCIDRs) == 0 {
