@@ -106,9 +106,10 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 						ListenAddress: apiServerAddress,
 						HostPort:      apiServerPort,
 						ContainerPort: common.APIServerInternalPort,
+						Protocol:      config.PortMappingProtocolTCP,
 					},
 				)
-				args, err := runArgsForNode(node, cfg.Networking.IPFamily, name, genericArgs)
+				args, err := runArgsForNode(node, name, genericArgs)
 				if err != nil {
 					return err
 				}
@@ -116,7 +117,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 			})
 		case config.WorkerRole:
 			createContainerFuncs = append(createContainerFuncs, func() error {
-				args, err := runArgsForNode(node, cfg.Networking.IPFamily, name, genericArgs)
+				args, err := runArgsForNode(node, name, genericArgs)
 				if err != nil {
 					return err
 				}
@@ -212,7 +213,7 @@ func commonArgs(cluster string, cfg *config.Cluster, networkName string, nodeNam
 	return args, nil
 }
 
-func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, name string, args []string) ([]string, error) {
+func runArgsForNode(node *config.Node, name string, args []string) ([]string, error) {
 	args = append([]string{
 		"--hostname", name, // make hostname match container name
 		// label the node with the role ID
@@ -244,7 +245,7 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 
 	// convert mounts and port mappings to container run args
 	args = append(args, generateMountBindings(node.ExtraMounts...)...)
-	mappingArgs, err := generatePortMappings(clusterIPFamily, node.ExtraPortMappings...)
+	mappingArgs, err := generatePortMappings(node.ExtraPortMappings...)
 	if err != nil {
 		return nil, err
 	}
@@ -269,13 +270,12 @@ func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) ([]
 	)
 
 	// load balancer port mapping
-	mappingArgs, err := generatePortMappings(cfg.Networking.IPFamily,
-		config.PortMapping{
-			ListenAddress: cfg.Networking.APIServerAddress,
-			HostPort:      cfg.Networking.APIServerPort,
-			ContainerPort: common.APIServerInternalPort,
-		},
-	)
+	mappingArgs, err := generatePortMappings(config.PortMapping{
+		ListenAddress: cfg.Networking.APIServerAddress,
+		HostPort:      cfg.Networking.APIServerPort,
+		ContainerPort: common.APIServerInternalPort,
+		Protocol:      config.PortMappingProtocolTCP,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -357,25 +357,9 @@ func generateMountBindings(mounts ...config.Mount) []string {
 }
 
 // generatePortMappings converts the portMappings list to a list of args for docker
-func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings ...config.PortMapping) ([]string, error) {
+func generatePortMappings(portMappings ...config.PortMapping) ([]string, error) {
 	args := make([]string, 0, len(portMappings))
 	for _, pm := range portMappings {
-		// do provider internal defaulting
-		// in a future API revision we will handle this at the API level and remove this
-		if pm.ListenAddress == "" {
-			switch clusterIPFamily {
-			case config.IPv4Family, config.DualStackFamily:
-				pm.ListenAddress = "0.0.0.0" // this is the docker default anyhow
-			case config.IPv6Family:
-				pm.ListenAddress = "::"
-			default:
-				return nil, errors.Errorf("unknown cluster IP family: %v", clusterIPFamily)
-			}
-		}
-		if string(pm.Protocol) == "" {
-			pm.Protocol = config.PortMappingProtocolTCP // TCP is the default
-		}
-
 		// validate that the provider can handle this binding
 		switch pm.Protocol {
 		case config.PortMappingProtocolTCP:

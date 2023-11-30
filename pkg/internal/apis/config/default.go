@@ -41,14 +41,14 @@ func SetDefaultsCluster(obj *Cluster) {
 			},
 		}
 	}
+	if obj.Networking.IPFamily == "" {
+		obj.Networking.IPFamily = IPv4Family
+	}
 
 	// default nodes
 	for i := range obj.Nodes {
 		a := &obj.Nodes[i]
-		SetDefaultsNode(a)
-	}
-	if obj.Networking.IPFamily == "" {
-		obj.Networking.IPFamily = IPv4Family
+		SetDefaultsNode(a, obj.Networking.IPFamily)
 	}
 
 	// default to listening on 127.0.0.1:randomPort on ipv4
@@ -77,6 +77,7 @@ func SetDefaultsCluster(obj *Cluster) {
 	// https://github.com/kubernetes/kubernetes/blob/746404f82a28e55e0b76ffa7e40306fb88eb3317/cmd/kubeadm/app/apis/kubeadm/v1beta2/defaults.go#L32
 	// Note: kubeadm is using a /12 subnet, that may allocate a 2^20 bitmap in etcd
 	// we allocate a /16 subnet that allows 65535 services (current Kubernetes tested limit is O(10k) services)
+	// default the service CIDR using a different subnet than kubeadm default
 	if obj.Networking.ServiceSubnet == "" {
 		obj.Networking.ServiceSubnet = "10.96.0.0/16"
 		if obj.Networking.IPFamily == IPv6Family {
@@ -93,12 +94,26 @@ func SetDefaultsCluster(obj *Cluster) {
 }
 
 // SetDefaultsNode sets uninitialized fields to their default value.
-func SetDefaultsNode(obj *Node) {
+func SetDefaultsNode(obj *Node, ipFamily ClusterIPFamily) {
 	if obj.Image == "" {
 		obj.Image = defaults.Image
 	}
 
 	if obj.Role == "" {
 		obj.Role = ControlPlaneRole
+	}
+
+	for i := 0; i < len(obj.ExtraPortMappings); i++ {
+		if obj.ExtraPortMappings[i].ListenAddress == "" {
+			if ipFamily == IPv6Family {
+				obj.ExtraPortMappings[i].ListenAddress = "::"
+			} else {
+				obj.ExtraPortMappings[i].ListenAddress = "0.0.0.0"
+			}
+		}
+
+		if string(obj.ExtraPortMappings[i].Protocol) == "" {
+			obj.ExtraPortMappings[i].Protocol = PortMappingProtocolTCP
+		}
 	}
 }

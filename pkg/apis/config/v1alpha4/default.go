@@ -31,13 +31,14 @@ func SetDefaultsCluster(obj *Cluster) {
 			},
 		}
 	}
+	if obj.Networking.IPFamily == "" {
+		obj.Networking.IPFamily = IPv4Family
+	}
+
 	// default the nodes
 	for i := range obj.Nodes {
 		a := &obj.Nodes[i]
-		SetDefaultsNode(a)
-	}
-	if obj.Networking.IPFamily == "" {
-		obj.Networking.IPFamily = IPv4Family
+		SetDefaultsNode(a, obj.Networking.IPFamily)
 	}
 	// default to listening on 127.0.0.1:randomPort on ipv4
 	// and [::1]:randomPort on ipv6
@@ -79,12 +80,26 @@ func SetDefaultsCluster(obj *Cluster) {
 }
 
 // SetDefaultsNode sets uninitialized fields to their default value.
-func SetDefaultsNode(obj *Node) {
+func SetDefaultsNode(obj *Node, ipFamily ClusterIPFamily) {
 	if obj.Image == "" {
 		obj.Image = defaults.Image
 	}
 
 	if obj.Role == "" {
 		obj.Role = ControlPlaneRole
+	}
+
+	for i := 0; i < len(obj.ExtraPortMappings); i++ {
+		if obj.ExtraPortMappings[i].ListenAddress == "" {
+			if ipFamily == IPv6Family {
+				obj.ExtraPortMappings[i].ListenAddress = "::"
+			} else {
+				obj.ExtraPortMappings[i].ListenAddress = "0.0.0.0"
+			}
+		}
+
+		if string(obj.ExtraPortMappings[i].Protocol) == "" {
+			obj.ExtraPortMappings[i].Protocol = PortMappingProtocolTCP
+		}
 	}
 }
