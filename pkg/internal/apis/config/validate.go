@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"sigs.k8s.io/kind/pkg/errors"
@@ -137,7 +138,7 @@ func (n *Node) Validate() error {
 }
 
 func validatePortMappings(portMappings []PortMapping) error {
-	errMsg := "port mapping with same listen address, port and protocol already configured"
+	errMsg := "port mapping with same listen address, host port and protocol already configured"
 
 	wildcardAddrIPv4 := net.ParseIP("0.0.0.0")
 	wildcardAddrIPv6 := net.ParseIP("::")
@@ -152,11 +153,16 @@ func validatePortMappings(portMappings []PortMapping) error {
 	}
 
 	for _, portMapping := range portMappings {
+		// skipping validation if host port is not defined
+		if portMapping.HostPort == 0 {
+			continue
+		}
+
 		addr := net.ParseIP(portMapping.ListenAddress)
 		addrString := addr.String()
 
 		portProtocol := formatPortProtocol(portMapping.HostPort, portMapping.Protocol)
-		possibleErr := fmt.Errorf("%s: %s:%s", errMsg, addrString, portProtocol)
+		possibleErr := fmt.Errorf("%s: %s/%s", errMsg, net.JoinHostPort(addrString, strconv.Itoa(int(portMapping.HostPort))), portMapping.Protocol)
 
 		// in golang 0.0.0.0 and [::] are equivalent, convert [::] -> 0.0.0.0
 		// https://github.com/golang/go/issues/48723

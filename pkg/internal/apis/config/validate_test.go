@@ -18,7 +18,6 @@ package config
 
 import (
 	"fmt"
-	"sigs.k8s.io/kind/pkg/internal/assert"
 	"testing"
 
 	"sigs.k8s.io/kind/pkg/errors"
@@ -44,7 +43,7 @@ func TestClusterValidate(t *testing.T) {
 			Cluster: func() Cluster {
 				c := Cluster{}
 				SetDefaultsCluster(&c)
-				c.Nodes = append(c.Nodes, newDefaultedNode(WorkerRole), newDefaultedNode(WorkerRole))
+				c.Nodes = append(c.Nodes, newDefaultedNode(WorkerRole, IPv4Family), newDefaultedNode(WorkerRole, IPv4Family))
 				return c
 			}(),
 		},
@@ -276,12 +275,12 @@ func TestClusterValidate(t *testing.T) {
 	}
 }
 
-func newDefaultedNode(role NodeRole) Node {
+func newDefaultedNode(role NodeRole, ipFamily ClusterIPFamily) Node {
 	n := Node{
 		Role:  role,
 		Image: "myImage:latest",
 	}
-	SetDefaultsNode(&n)
+	SetDefaultsNode(&n, ipFamily)
 	return n
 }
 
@@ -294,18 +293,18 @@ func TestNodeValidate(t *testing.T) {
 	}{
 		{
 			TestName:     "Canonical node",
-			Node:         newDefaultedNode(ControlPlaneRole),
+			Node:         newDefaultedNode(ControlPlaneRole, IPv4Family),
 			ExpectErrors: 0,
 		},
 		{
 			TestName:     "Canonical node 2",
-			Node:         newDefaultedNode(WorkerRole),
+			Node:         newDefaultedNode(WorkerRole, IPv4Family),
 			ExpectErrors: 0,
 		},
 		{
 			TestName: "Empty image field",
 			Node: func() Node {
-				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg := newDefaultedNode(ControlPlaneRole, IPv4Family)
 				cfg.Image = ""
 				return cfg
 			}(),
@@ -314,7 +313,7 @@ func TestNodeValidate(t *testing.T) {
 		{
 			TestName: "Empty role field",
 			Node: func() Node {
-				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg := newDefaultedNode(ControlPlaneRole, IPv4Family)
 				cfg.Role = ""
 				return cfg
 			}(),
@@ -323,7 +322,7 @@ func TestNodeValidate(t *testing.T) {
 		{
 			TestName: "Unknown role field",
 			Node: func() Node {
-				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg := newDefaultedNode(ControlPlaneRole, IPv4Family)
 				cfg.Role = "ssss"
 				return cfg
 			}(),
@@ -332,7 +331,7 @@ func TestNodeValidate(t *testing.T) {
 		{
 			TestName: "Invalid ContainerPort",
 			Node: func() Node {
-				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg := newDefaultedNode(ControlPlaneRole, IPv4Family)
 				cfg.ExtraPortMappings = []PortMapping{
 					{
 						ContainerPort: 999999999,
@@ -346,11 +345,29 @@ func TestNodeValidate(t *testing.T) {
 		{
 			TestName: "Invalid HostPort",
 			Node: func() Node {
-				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg := newDefaultedNode(ControlPlaneRole, IPv4Family)
 				cfg.ExtraPortMappings = []PortMapping{
 					{
 						ContainerPort: 8080,
 						HostPort:      999999999,
+					},
+				}
+				return cfg
+			}(),
+			ExpectErrors: 1,
+		},
+		{
+			TestName: "Duplicate HostPort",
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole, DualStackFamily)
+				cfg.ExtraPortMappings = []PortMapping{
+					{
+						ContainerPort: 8080,
+						HostPort:      9999,
+					},
+					{
+						ContainerPort: 5000,
+						HostPort:      9999,
 					},
 				}
 				return cfg
@@ -432,45 +449,66 @@ func TestPortValidate(t *testing.T) {
 }
 
 func TestValidatePortMappings(t *testing.T) {
-	newPortMapping := func(addr string, port int, protocol string) PortMapping {
+	newPortMapping := func(addr string, hostPort, containerPort int, protocol string) PortMapping {
 		return PortMapping{
-			HostPort:      int32(port),
+			HostPort:      int32(hostPort),
+			ContainerPort: int32(containerPort),
 			ListenAddress: addr,
 			Protocol:      PortMappingProtocol(protocol),
 		}
 	}
-	errMsg := "port mapping with same listen address, port and protocol already configured"
+	errMsg := "port mapping with same listen address, host port and protocol already configured"
 	cases := []struct {
 		testName     string
 		portMappings []PortMapping
 		expectErr    string
 	}{
 		{
+			testName: "unique container ports",
+			portMappings: []PortMapping{
+				newPortMapping("", 0, 1000, ""),
+				newPortMapping("", 0, 2000, ""),
+				newPortMapping("", 0, 3000, ""),
+				newPortMapping("", 0, 4000, ""),
+			},
+			expectErr: "",
+		},
+		{
+			testName: "duplicate container ports",
+			portMappings: []PortMapping{
+				newPortMapping("", 0, 1000, ""),
+				newPortMapping("", 0, 2000, ""),
+				newPortMapping("", 0, 3000, ""),
+				newPortMapping("", 0, 3000, ""),
+			},
+			expectErr: "",
+		},
+		{
 			testName: "unique port mappings ipv4",
 			portMappings: []PortMapping{
-				newPortMapping("127.0.0.1", 80, "UDP"),
-				newPortMapping("127.0.0.1", 80, "TCP"),
-				newPortMapping("0.0.0.0", 3000, "UDP"),
-				newPortMapping("0.0.0.0", 5000, "TCP"),
+				newPortMapping("127.0.0.1", 80, 5000, "UDP"),
+				newPortMapping("127.0.0.1", 80, 5000, "TCP"),
+				newPortMapping("0.0.0.0", 3000, 8000, "UDP"),
+				newPortMapping("0.0.0.0", 5000, 8000, "TCP"),
 			},
 			expectErr: "",
 		},
 		{
 			testName: "unique port mappings ipv6",
 			portMappings: []PortMapping{
-				newPortMapping("::1", 80, "UDP"),
-				newPortMapping("::1", 80, "TCP"),
-				newPortMapping("1e3d:6e85:424d:a011:a72e:9780:5f6f:a6fc", 3000, "UDP"),
-				newPortMapping("6516:944d:e070:a1d1:2e91:8437:a6b3:edf9", 5000, "TCP"),
+				newPortMapping("::1", 80, 5000, "UDP"),
+				newPortMapping("::1", 80, 5000, "TCP"),
+				newPortMapping("1e3d:6e85:424d:a011:a72e:9780:5f6f:a6fc", 3000, 8000, "UDP"),
+				newPortMapping("6516:944d:e070:a1d1:2e91:8437:a6b3:edf9", 5000, 8000, "TCP"),
 			},
 			expectErr: "",
 		},
 		{
 			testName: "exact duplicate port mappings ipv4",
 			portMappings: []PortMapping{
-				newPortMapping("127.0.0.1", 80, "TCP"),
-				newPortMapping("127.0.0.1", 80, "UDP"),
-				newPortMapping("127.0.0.1", 80, "TCP"),
+				newPortMapping("127.0.0.1", 80, 3000, "TCP"),
+				newPortMapping("127.0.0.1", 80, 5000, "UDP"),
+				newPortMapping("127.0.0.1", 80, 8000, "TCP"),
 			},
 			// error expected: exact duplicate
 			expectErr: fmt.Sprintf("%s: 127.0.0.1:80/TCP", errMsg),
@@ -479,9 +517,9 @@ func TestValidatePortMappings(t *testing.T) {
 		{
 			testName: "exact duplicate port mappings ipv6",
 			portMappings: []PortMapping{
-				newPortMapping("::1", 80, "TCP"),
-				newPortMapping("::1", 80, "UDP"),
-				newPortMapping("::1", 80, "TCP"),
+				newPortMapping("::1", 80, 3000, "TCP"),
+				newPortMapping("::1", 80, 5000, "UDP"),
+				newPortMapping("::1", 80, 8000, "TCP"),
 			},
 			// error expected: exact duplicate
 			expectErr: fmt.Sprintf("%s: [::1]:80/TCP", errMsg),
@@ -489,10 +527,10 @@ func TestValidatePortMappings(t *testing.T) {
 		{
 			testName: "wildcard ipv4 & ipv6",
 			portMappings: []PortMapping{
-				newPortMapping("127.0.0.1", 80, "TCP"),
-				newPortMapping("0.0.0.0", 80, "UDP"),
-				newPortMapping("::1", 80, "TCP"),
-				newPortMapping("::", 80, "UDP"),
+				newPortMapping("127.0.0.1", 80, 3000, "TCP"),
+				newPortMapping("0.0.0.0", 80, 5000, "UDP"),
+				newPortMapping("::1", 80, 3000, "TCP"),
+				newPortMapping("::", 80, 5000, "UDP"),
 			},
 			// error expected: 0.0.0.0 & [::] are same in golang
 			// https://github.com/golang/go/issues/48723
@@ -501,8 +539,8 @@ func TestValidatePortMappings(t *testing.T) {
 		{
 			testName: "subset already configured ipv4",
 			portMappings: []PortMapping{
-				newPortMapping("127.0.0.1", 80, "TCP"),
-				newPortMapping("0.0.0.0", 80, "TCP"),
+				newPortMapping("127.0.0.1", 80, 3000, "TCP"),
+				newPortMapping("0.0.0.0", 80, 5000, "TCP"),
 			},
 			// error expected: subset of 0.0.0.0 -> 127.0.0.1 is already defined for same port and protocol
 			expectErr: fmt.Sprintf("%s: 0.0.0.0:80/TCP", errMsg),
@@ -510,8 +548,8 @@ func TestValidatePortMappings(t *testing.T) {
 		{
 			testName: "subset already configured ipv6",
 			portMappings: []PortMapping{
-				newPortMapping("::1", 80, "TCP"),
-				newPortMapping("::", 80, "TCP"),
+				newPortMapping("::1", 80, 3000, "TCP"),
+				newPortMapping("::", 80, 5000, "TCP"),
 			},
 			// error expected: subset of :: -> ::1 is already defined for same port and protocol
 			expectErr: fmt.Sprintf("%s: [::]:80/TCP", errMsg),
@@ -519,8 +557,8 @@ func TestValidatePortMappings(t *testing.T) {
 		{
 			testName: "port mapping already configured via wildcard ipv4",
 			portMappings: []PortMapping{
-				newPortMapping("0.0.0.0", 80, "TCP"),
-				newPortMapping("127.0.0.1", 80, "TCP"),
+				newPortMapping("0.0.0.0", 80, 5000, "TCP"),
+				newPortMapping("127.0.0.1", 80, 5000, "TCP"),
 			},
 			// error expected: port mapping is already defined for wildcard interface - 0.0.0.0
 			expectErr: fmt.Sprintf("%s: 127.0.0.1:80/TCP", errMsg),
@@ -528,8 +566,8 @@ func TestValidatePortMappings(t *testing.T) {
 		{
 			testName: "port mapping already configured via wildcard ipv6",
 			portMappings: []PortMapping{
-				newPortMapping("::", 80, "SCTP"),
-				newPortMapping("::1", 80, "SCTP"),
+				newPortMapping("::", 80, 5000, "SCTP"),
+				newPortMapping("::1", 80, 5000, "SCTP"),
 			},
 			// error expected: port mapping is already defined for wildcard interface - ::
 			expectErr: fmt.Sprintf("%s: [::1]:80/SCTP", errMsg),
@@ -542,7 +580,16 @@ func TestValidatePortMappings(t *testing.T) {
 			t.Parallel()
 
 			err := validatePortMappings(tc.portMappings)
-			assert.ExpectError(t, len(tc.expectErr) > 0, err)
+
+			// the error can be:
+			// - nil, in which case we should expect no errors or fail
+			if err == nil && len(tc.expectErr) > 0 {
+				t.Errorf("Test failed, unexpected error: %s", tc.expectErr)
+			}
+
+			if err != nil && err.Error() != tc.expectErr {
+				t.Errorf("Test failed, error: %s expected error: %s", err, tc.expectErr)
+			}
 		})
 	}
 }
