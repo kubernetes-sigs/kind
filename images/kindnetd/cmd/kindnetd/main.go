@@ -236,11 +236,11 @@ func makeNodesReconciler(cniConfig *CNIConfigWriter, hostIP string, ipFamily IPF
 		}
 
 		// This is another node. Add routes to the POD subnets in the other nodes
-		// don't do anything unless there is a PodCIDR
+		// don't do anything unless there is a non-empty PodCIDR
 		var podCIDRs []string
 		if ipFamily == DualStackFamily {
 			podCIDRs = node.Spec.PodCIDRs
-		} else {
+		} else if node.Spec.PodCIDR != "" {
 			podCIDRs = []string{node.Spec.PodCIDR}
 		}
 		if len(podCIDRs) == 0 {
