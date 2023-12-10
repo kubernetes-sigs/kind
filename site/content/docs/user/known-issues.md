@@ -33,7 +33,7 @@ description: |-
 * [Pod Errors Due to "too many open files"](#pod-errors-due-to-too-many-open-files) (likely [inotify] limits which are not namespaced)
 * [Docker Permission Denied](#docker-permission-denied) (ensure you have permission to use docker)
 * [Windows Containers](#windows-containers) (unsupported / infeasible)
-* [Non AMD64 and ARM64 Architectures](#non-amd64-and-arm64-architectures) (images not pre-built yet)
+* [Unsupported Architectures](#unsupported-architectures) (images not pre-built yet)
 * [Unable to Pull Images](#unable-to-pull-images) (various)
 * [Chrome OS](#chrome-os) (needs KubeletInUserNamespace)
 * [AppArmor](#apparmor) (may break things, consider disabling)
@@ -265,10 +265,10 @@ This has to to with `/sbin/init` not running as process id 1.
 
 Windows containers are not like Linux containers and do not support running docker in docker and therefore cannot support kind.
 
-## Non AMD64 and ARM64 Architectures
+## Unsupported Architectures
 
-KIND currently only ships pre-built images for AMD64 and ARM64 architectures.
-In the future we may, but currently demand has been low and the cost to build
+KIND currently ships pre-built images for AMD64 and ARM64 architectures.
+In the future we may support others, but currently demand has been low and the cost to build
 has been high.
 
 To use kind on other architectures, you need to first build a base image
