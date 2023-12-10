@@ -33,6 +33,7 @@ description: |-
 * [Pod Errors Due to "too many open files"](#pod-errors-due-to-too-many-open-files) (likely [inotify] limits which are not namespaced)
 * [Docker Permission Denied](#docker-permission-denied) (ensure you have permission to use docker)
 * [Windows Containers](#windows-containers) (unsupported / infeasible)
+* [Non AMD64 and ARM64 Architectures](#non-amd64-and-arm64-architectures) (images not pre-built yet)
 * [Unable to Pull Images](#unable-to-pull-images) (various)
 * [Chrome OS](#chrome-os) (needs KubeletInUserNamespace)
 * [AppArmor](#apparmor) (may break things, consider disabling)
@@ -263,6 +264,19 @@ This has to to with `/sbin/init` not running as process id 1.
 `kind` for Windows requires Linux containers. To switch between Linux and Windows containers see [this page][switch between windows and linux containers].
 
 Windows containers are not like Linux containers and do not support running docker in docker and therefore cannot support kind.
+
+## Non AMD64 and ARM64 Architectures
+
+KIND currently only ships pre-built images for AMD64 and ARM64 architectures.
+In the future we may, but currently demand has been low and the cost to build
+has been high.
+
+To use kind on other architectures, you need to first build a base image
+and then build a node image.
+
+Run `images/base/build.sh` and then taking note of the built image name use `kind build node-image --base-image=kindest/base:tag-i-built`.
+
+There are more details about how to do this in the [Quick Start] guide.
 
 ## Unable to pull images
 
