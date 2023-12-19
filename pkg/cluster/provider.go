@@ -35,6 +35,7 @@ import (
 	internalproviders "sigs.k8s.io/kind/pkg/cluster/internal/providers"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/docker"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/podman"
+	internalstart "sigs.k8s.io/kind/pkg/cluster/internal/start"
 )
 
 // DefaultName is the default cluster name
@@ -184,6 +185,11 @@ func (p *Provider) Create(name string, options ...CreateOption) error {
 // Delete tears down a kubernetes-in-docker cluster
 func (p *Provider) Delete(name, explicitKubeconfigPath string) error {
 	return internaldelete.Cluster(p.logger, p.provider, defaultName(name), explicitKubeconfigPath)
+}
+
+// Start a kubernetes-in-docker cluster
+func (p *Provider) Start(name string) error {
+	return internalstart.Cluster(p.logger, p.provider, defaultName(name))
 }
 
 // List returns a list of clusters for which nodes exist

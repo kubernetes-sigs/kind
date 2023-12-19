@@ -171,6 +171,25 @@ func (p *provider) DeleteNodes(n []nodes.Node) error {
 	return deleteVolumes(nodeVolumes)
 }
 
+// StartNodes is part of the providers.Provider interface
+func (p *provider) StartNodes(n []nodes.Node) error {
+	if len(n) == 0 {
+		return nil
+	}
+	const command = "podman"
+	args := make([]string, 0, len(n)+1) // allocate once
+	args = append(args,
+		"start",
+	)
+	for _, node := range n {
+		args = append(args, node.String())
+	}
+	if err := exec.Command(command, args...).Run(); err != nil {
+		return errors.Wrap(err, "failed to start nodes")
+	}
+	return nil
+}
+
 // GetAPIServerEndpoint is part of the providers.Provider interface
 func (p *provider) GetAPIServerEndpoint(cluster string) (string, error) {
 	// locate the node that hosts this
