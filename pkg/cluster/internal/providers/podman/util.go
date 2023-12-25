@@ -29,7 +29,7 @@ import (
 
 // IsAvailable checks if podman is available in the system
 func IsAvailable() bool {
-	cmd := exec.Command("podman", "-v")
+	cmd := newPodmanCmd("-v")
 	lines, err := exec.OutputLines(cmd)
 	if err != nil || len(lines) != 1 {
 		return false
@@ -38,7 +38,7 @@ func IsAvailable() bool {
 }
 
 func getPodmanVersion() (*version.Version, error) {
-	cmd := exec.Command("podman", "--version")
+	cmd := newPodmanCmd("--version")
 	lines, err := exec.OutputLines(cmd)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func ensureMinVersion() error {
 // with the specified label=true
 // returns the name of the volume created
 func createAnonymousVolume(label string) (string, error) {
-	cmd := exec.Command("podman",
+	cmd := newPodmanCmd(
 		"volume",
 		"create",
 		// podman only support filter on key during list
@@ -90,7 +90,7 @@ func createAnonymousVolume(label string) (string, error) {
 
 // getVolumes gets volume names filtered on specified label
 func getVolumes(label string) ([]string, error) {
-	cmd := exec.Command("podman",
+	cmd := newPodmanCmd(
 		"volume",
 		"ls",
 		"--filter", fmt.Sprintf("label=%s", label),
@@ -117,13 +117,13 @@ func deleteVolumes(names []string) error {
 		"--force",
 	}
 	args = append(args, names...)
-	cmd := exec.Command("podman", args...)
+	cmd := newPodmanCmd(args...)
 	return cmd.Run()
 }
 
 // mountDevMapper checks if the podman storage driver is Btrfs or ZFS
 func mountDevMapper() bool {
-	cmd := exec.Command("podman", "info", "--format", "json")
+	cmd := newPodmanCmd("info", "--format", "json")
 	out, err := exec.Output(cmd)
 	if err != nil {
 		return false

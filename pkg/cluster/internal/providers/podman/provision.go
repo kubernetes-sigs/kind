@@ -300,7 +300,7 @@ type podmanNetworks []struct {
 }
 
 func getSubnets(networkName string) ([]string, error) {
-	cmd := exec.Command("podman", "network", "inspect", networkName)
+	cmd := newPodmanCmd("network", "inspect", networkName)
 	out, err := exec.Output(cmd)
 
 	if err != nil {
@@ -418,19 +418,19 @@ func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings .
 }
 
 func createContainer(name string, args []string) error {
-	if err := exec.Command("podman", append([]string{"run", "--name", name}, args...)...).Run(); err != nil {
+	if err := newPodmanCmd(append([]string{"run", "--name", name}, args...)...).Run(); err != nil {
 		return err
 	}
 	return nil
 }
 
 func createContainerWithWaitUntilSystemdReachesMultiUserSystem(name string, args []string) error {
-	if err := exec.Command("podman", append([]string{"run", "--name", name}, args...)...).Run(); err != nil {
+	if err := newPodmanCmd(append([]string{"run", "--name", name}, args...)...).Run(); err != nil {
 		return err
 	}
 
 	logCtx, logCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer logCancel()
-	logCmd := exec.CommandContext(logCtx, "podman", "logs", "-f", name)
+	logCmd := newPodmanCmdWithContext(logCtx, "logs", "-f", name)
 	return common.WaitUntilLogRegexpMatches(logCtx, logCmd, common.NodeReachedCgroupsReadyRegexp())
 }

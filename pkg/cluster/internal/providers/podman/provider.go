@@ -102,7 +102,7 @@ func (p *provider) Provision(status *cli.Status, cfg *config.Cluster) (err error
 
 // ListClusters is part of the providers.Provider interface
 func (p *provider) ListClusters() ([]string, error) {
-	cmd := exec.Command("podman",
+	cmd := newPodmanCmd(
 		"ps",
 		"-a", // show stopped nodes
 		// filter for nodes with the cluster label
@@ -119,7 +119,7 @@ func (p *provider) ListClusters() ([]string, error) {
 
 // ListNodes is part of the providers.Provider interface
 func (p *provider) ListNodes(cluster string) ([]nodes.Node, error) {
-	cmd := exec.Command("podman",
+	cmd := newPodmanCmd(
 		"ps",
 		"-a", // show stopped nodes
 		// filter for nodes with the cluster label
@@ -144,7 +144,6 @@ func (p *provider) DeleteNodes(n []nodes.Node) error {
 	if len(n) == 0 {
 		return nil
 	}
-	const command = "podman"
 	args := make([]string, 0, len(n)+3) // allocate once
 	args = append(args,
 		"rm",
@@ -154,7 +153,7 @@ func (p *provider) DeleteNodes(n []nodes.Node) error {
 	for _, node := range n {
 		args = append(args, node.String())
 	}
-	if err := exec.Command(command, args...).Run(); err != nil {
+	if err := newPodmanCmd(args...).Run(); err != nil {
 		return errors.Wrap(err, "failed to delete nodes")
 	}
 	var nodeVolumes []string
@@ -195,8 +194,8 @@ func (p *provider) GetAPIServerEndpoint(cluster string) (string, error) {
 		v.LessThan(version.MustParseSemantic("3.0.0")) {
 		p.logger.Warnf("WARNING: podman version %s not fully supported, please use versions 3.0.0+")
 
-		cmd := exec.Command(
-			"podman", "inspect",
+		cmd := newPodmanCmd(
+			"inspect",
 			"--format",
 			"{{range .NetworkSettings.Ports }}{{range .}}{{.HostIP}}/{{.HostPort}}{{end}}{{end}}",
 			n.String(),
@@ -223,8 +222,8 @@ func (p *provider) GetAPIServerEndpoint(cluster string) (string, error) {
 		return net.JoinHostPort(host, strconv.Itoa(port)), nil
 	}
 
-	cmd := exec.Command(
-		"podman", "inspect",
+	cmd := newPodmanCmd(
+		"inspect",
 		"--format",
 		"{{ json .NetworkSettings.Ports }}",
 		n.String(),
@@ -323,7 +322,7 @@ func (p *provider) CollectLogs(dir string, nodes []nodes.Node) error {
 	fns := []func() error{
 		// record info about the host podman
 		execToPathFn(
-			exec.Command("podman", "info"),
+			newPodmanCmd("info"),
 			filepath.Join(dir, "podman-info.txt"),
 		),
 	}
@@ -340,7 +339,7 @@ func (p *provider) CollectLogs(dir string, nodes []nodes.Node) error {
 
 		fns = append(fns,
 			func() error { return common.CollectLogs(node, path) },
-			execToPathFn(exec.Command("podman", "inspect", name), filepath.Join(path, "inspect.json")),
+			execToPathFn(newPodmanCmd("inspect", name), filepath.Join(path, "inspect.json")),
 			func() error {
 				f, err := common.FileOnHost(filepath.Join(path, "serial.log"))
 				if err != nil {
@@ -386,7 +385,7 @@ type podmanInfo struct {
 func info(logger log.Logger) (*providers.ProviderInfo, error) {
 	const podman = "podman"
 	args := []string{"info", "--format", "json"}
-	cmd := exec.Command(podman, args...)
+	cmd := newPodmanCmd(args...)
 	out, err := exec.Output(cmd)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get podman info (%s %s): %q",

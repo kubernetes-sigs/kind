@@ -36,7 +36,7 @@ func (n *node) String() string {
 }
 
 func (n *node) Role() (string, error) {
-	cmd := exec.Command("podman", "inspect",
+	cmd := newPodmanCmd("inspect",
 		"--format", fmt.Sprintf(`{{ index .Config.Labels "%s"}}`, nodeRoleLabelKey),
 		n.name,
 	)
@@ -52,7 +52,7 @@ func (n *node) Role() (string, error) {
 
 func (n *node) IP() (ipv4 string, ipv6 string, err error) {
 	// retrieve the IP address of the node using podman inspect
-	cmd := exec.Command("podman", "inspect",
+	cmd := newPodmanCmd("inspect",
 		"-f", "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}",
 		n.name, // ... against the "node" container
 	)
@@ -130,9 +130,9 @@ func (c *nodeCmd) Run() error {
 	)
 	var cmd exec.Cmd
 	if c.ctx != nil {
-		cmd = exec.CommandContext(c.ctx, "podman", args...)
+		cmd = newPodmanCmdWithContext(c.ctx, args...)
 	} else {
-		cmd = exec.Command("podman", args...)
+		cmd = newPodmanCmd(args...)
 	}
 	if c.stdin != nil {
 		cmd.SetStdin(c.stdin)
@@ -167,5 +167,5 @@ func (c *nodeCmd) SetStderr(w io.Writer) exec.Cmd {
 }
 
 func (n *node) SerialLogs(w io.Writer) error {
-	return exec.Command("podman", "logs", n.name).SetStdout(w).SetStderr(w).Run()
+	return newPodmanCmd("logs", n.name).SetStdout(w).SetStderr(w).Run()
 }
