@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # NOTE the actual go version will be overridden
-FROM --platform=$BUILDPLATFORM docker.io/library/golang:latest
+FROM --platform=$BUILDPLATFORM docker.io/library/golang@sha256:672a2286da3ee7a854c3e0a56e0838918d0dbb1c18652992930293312de898a6
 COPY --chmod=0755 scripts/third_party/gimme/gimme /usr/local/bin/
 RUN git clone --filter=tree:0 https://github.com/rancher/local-path-provisioner
 ARG VERSION
@@ -27,7 +27,7 @@ RUN eval "$(gimme "${GO_VERSION}")" \
     && GOBIN=/usr/local/bin go install github.com/google/go-licenses@latest \
     && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES .
 
-FROM gcr.io/distroless/base-debian11
+FROM gcr.io/distroless/base-debian11@sha256:6c1e34e2f084fe6df17b8bceb1416f1e11af0fcdb1cef11ee4ac8ae127cb507c
 COPY --from=0 /usr/local/bin/local-path-provisioner /usr/local/bin/local-path-provisioner
 COPY --from=0 /_LICENSES/* /LICENSES/
 COPY --chmod=0644 files/LICENSES/* /LICENSES/*

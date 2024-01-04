@@ -1,6 +1,38 @@
 ---
 version: 2
 updates:
+  - package-ecosystem: "docker"
+    directory: "/images/base"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "area/dependency"
+      - "release-note-none"
+      - "ok-to-test"
+  - package-ecosystem: "docker"
+    directory: "/images/haproxy"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "area/dependency"
+      - "release-note-none"
+      - "ok-to-test"
+  - package-ecosystem: "docker"
+    directory: "/images/local-path-provisioner"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "area/dependency"
+      - "release-note-none"
+      - "ok-to-test"
+  - package-ecosystem: "docker"
+    directory: "/images/kindnetd"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "area/dependency"
+      - "release-note-none"
+      - "ok-to-test"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
