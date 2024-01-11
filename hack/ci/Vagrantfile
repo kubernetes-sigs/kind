@@ -11,8 +11,11 @@ Vagrant.configure("2") do |config|
   # macOS github actions runners have 3 cores and 14 GB of ram
   # assume some ram is needed for the host environment but very little CPU
   # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners
-  memory = 10240
-  cpus = 3
+  # however per
+  # https://github.com/actions/runner-images/issues/8730#issuecomment-1872615814
+  # reducing the requirements may make this more reliable.
+  memory = 6*1024
+  cpus = 2
   config.vm.provider :virtualbox do |v|
     v.memory = memory
     v.cpus = cpus
