@@ -98,6 +98,16 @@ func TestClusterValidate(t *testing.T) {
 			ExpectErrors: 1,
 		},
 		{
+			Name: "bogus ipFamily",
+			Cluster: func() Cluster {
+				c := Cluster{}
+				SetDefaultsCluster(&c)
+				c.Networking.IPFamily = "ds"
+				return c
+			}(),
+			ExpectErrors: 1,
+		},
+		{
 			Name: "bogus serviceSubnet",
 			Cluster: func() Cluster {
 				c := Cluster{}
