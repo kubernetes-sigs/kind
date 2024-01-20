@@ -8,9 +8,7 @@ Vagrant.configure("2") do |config|
   # Mirrors can be found at here: https://admin.fedoraproject.org/mirrormanager/mirrors/Fedora/37/x86_64
   config.vm.box = "dummy"
   config.vm.box_url = "https://iad.mirror.rackspace.com/fedora/releases/37/Cloud/x86_64/images/Fedora-Cloud-Base-Vagrant-37-1.7.x86_64.vagrant-virtualbox.box"
-  # macOS github actions runners have 3 cores and 14 GB of ram
   # assume some ram is needed for the host environment but very little CPU
-  # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners
   memory = 10240
   cpus = 3
   config.vm.provider :virtualbox do |v|
