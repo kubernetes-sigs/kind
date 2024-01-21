@@ -1,4 +1,4 @@
-name: Cgroup v2
+name: VM
 
 on:
   workflow_dispatch:
@@ -12,8 +12,9 @@ permissions:
   contents: read
 
 jobs:
-  docker:
-    name: Cgroup v2
+  vm:
+    # Fedora is different from Ubuntu in LSM (SELinux), filesystem (btrfs), kernel version, etc.
+    name: "VM (Fedora)"
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     strategy:

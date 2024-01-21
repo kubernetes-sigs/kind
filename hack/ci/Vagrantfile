@@ -1,7 +1,7 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-# Vagrant box for testing kind with cgroup v2
+# Vagrant box for testing kind with non-Ubuntu
 Vagrant.configure("2") do |config|
   # `config.vm.box = "fedora/37-cloud-base"` seems flaky,
   # so we specify the URL explicitly.
