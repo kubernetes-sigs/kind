@@ -18,7 +18,6 @@ package nodeimage
 
 import (
 	"fmt"
-	"io"
 	"math/rand"
 	"os"
 	"path"
@@ -185,13 +184,16 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVers
 	// correct set of built tags using the same logic we will use to rewrite
 	// the tags as we load the archives
 	fixedImages := sets.NewString()
+	fixedImagesMap := make(map[string]string, builtImages.Len()) // key: original images, value: fixed images
 	for _, image := range builtImages.List() {
 		registry, tag, err := docker.SplitImage(image)
 		if err != nil {
 			return nil, err
 		}
 		registry = fixRepository(registry)
-		fixedImages.Insert(registry + ":" + tag)
+		fixedImage := registry + ":" + tag
+		fixedImages.Insert(fixedImage)
+		fixedImagesMap[image] = fixedImage
 	}
 	builtImages = fixedImages
 	c.logger.V(1).Info("Detected built images: " + strings.Join(builtImages.List(), ", "))
@@ -286,20 +288,31 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVers
 				return err
 			}
 			defer f.Close()
-			//return importer.LoadCommand().SetStdout(os.Stdout).SetStderr(os.Stderr).SetStdin(f).Run()
-			// we will rewrite / correct the tags as we load the image
-			if err := exec.RunWithStdinWriter(importer.LoadCommand().SetStdout(os.Stdout).SetStderr(os.Stdout), func(w io.Writer) error {
-				return docker.EditArchive(f, w, fixRepository, c.arch)
-			}); err != nil {
-				return err
-			}
-			return nil
+			return importer.LoadCommand().SetStdout(os.Stdout).SetStderr(os.Stderr).SetStdin(f).Run()
+			// we will rewrite / correct the tags in tagFns below
 		})
 	}
 
 	// run all image loading concurrently until one fails or all succeed
 	if err := errors.UntilErrorConcurrent(loadFns); err != nil {
 		c.logger.Errorf("Image build Failed! Failed to load images %v", err)
+		return nil, err
+	}
+
+	// create a plan of image re-tagging
+	tagFns := []func() error{}
+	for unfixed, fixed := range fixedImagesMap {
+		unfixed, fixed := unfixed, fixed // capture loop var
+		if unfixed != fixed {
+			tagFns = append(tagFns, func() error {
+				return importer.Tag(unfixed, fixed)
+			})
+		}
+	}
+
+	// run all image re-tragging concurrently until one fails or all succeed
+	if err := errors.UntilErrorConcurrent(tagFns); err != nil {
+		c.logger.Errorf("Image build Failed! Failed to re-tag images %v", err)
 		return nil, err
 	}
 
