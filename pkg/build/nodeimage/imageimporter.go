@@ -59,6 +59,12 @@ func (c *containerdImporter) LoadCommand() exec.Cmd {
 	)
 }
 
+func (c *containerdImporter) Tag(src, target string) error {
+	return c.containerCmder.Command(
+		"ctr", "--namespace=k8s.io", "images", "tag", "--force", src, target,
+	).Run()
+}
+
 func (c *containerdImporter) ListImported() ([]string, error) {
 	return exec.OutputLines(c.containerCmder.Command("ctr", "--namespace=k8s.io", "images", "list", "-q"))
 }
