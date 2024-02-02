@@ -22,12 +22,14 @@ COPY go.mod go.sum ./
 # set by makefile to .go-version
 ARG GO_VERSION
 RUN eval "$(gimme "${GO_VERSION}")" \
+    && export GOTOOLCHAIN="go${GO_VERSION}" \
     && go mod download \
     && GOBIN=/usr/local/bin go install github.com/google/go-licenses@latest
 # build
 COPY . .
 ARG TARGETARCH
 RUN eval "$(gimme "${GO_VERSION}")" \
+    && export GOTOOLCHAIN="go${GO_VERSION}" \
     && CGO_ENABLED=0 GOARCH=$TARGETARCH go build -o ./kindnetd ./cmd/kindnetd \
     && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES ./cmd/kindnetd
 
