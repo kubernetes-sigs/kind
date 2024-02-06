@@ -142,6 +142,17 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		}
 	}
 
+	// Kubeadm will add `node.kubernetes.io/exclude-from-external-load-balancers` on control plane nodes.
+	// For single node clusters, this means we cannot have a load balancer at all (MetalLB, etc), so remove the label.
+	if len(allNodes) == 1 {
+		labelArgs := []string{"--kubeconfig=/etc/kubernetes/admin.conf", "label", "nodes", "--all", "node.kubernetes.io/exclude-from-external-load-balancers-"}
+		if err := node.Command(
+			"kubectl", labelArgs...,
+		).Run(); err != nil {
+			return errors.Wrap(err, "failed to remove control plane load balancer label")
+		}
+	}
+
 	// mark success
 	ctx.Status.End(true)
 	return nil
