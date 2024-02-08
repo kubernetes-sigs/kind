@@ -15,7 +15,7 @@
 # shared makefile for all images
 
 # get image name from directory we're building
-IMAGE_NAME=$(notdir $(CURDIR))
+IMAGE_NAME?=$(notdir $(CURDIR))
 # docker image registry, default to upstream
 REGISTRY?=gcr.io/k8s-staging-kind
 # for appending build-meta like "_containerd-v1.7.1"
