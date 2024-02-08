@@ -86,10 +86,12 @@ RUN echo "Installing Packages ..." \
     && echo "ReadKMsg=no" >> /etc/systemd/journald.conf \
     && ln -s "$(which systemd)" /sbin/init
 
-RUN echo "Enabling services ... " \
+# NOTE: systemd-binfmt.service will register things into binfmt_misc which is kernel-global
+RUN echo "Enabling / Disabling services ... " \
     && systemctl enable kubelet.service \
     && systemctl enable containerd.service \
-    && systemctl enable undo-mount-hacks.service
+    && systemctl enable undo-mount-hacks.service \
+    && systemctl mask systemd-binfmt.service
 
 RUN echo "Ensuring /etc/kubernetes/manifests" \
     && mkdir -p /etc/kubernetes/manifests
