@@ -34,6 +34,15 @@ import (
 	"sigs.k8s.io/kind/pkg/internal/version"
 )
 
+const (
+	// httpProxy is the HTTP_PROXY environment variable key
+	httpProxy = "HTTP_PROXY"
+	// httpsProxy is the HTTPS_PROXY environment variable key
+	httpsProxy = "HTTPS_PROXY"
+	// noProxy is the NO_PROXY environment variable key
+	noProxy = "NO_PROXY"
+)
+
 // buildContext is used to build the kind node image, and contains
 // build configuration
 type buildContext struct {
@@ -134,6 +143,9 @@ func (c *buildContext) buildImage(bits kube.Bits) error {
 		"docker", "commit",
 		// we need to put this back after changing it when running the image
 		"--change", `ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]`,
+		// remove proxy settings since they're for the building process
+		// and should not be carried with the built image
+		"--change", `ENV HTTP_PROXY="" HTTPS_PROXY="" NO_PROXY=""`,
 		containerID, c.image,
 	).Run(); err != nil {
 		c.logger.Errorf("Image build Failed! Failed to save image: %v", err)
@@ -327,16 +339,28 @@ func (c *buildContext) createBuildContainer() (id string, err error) {
 	// and a little random bits in case we have multiple builds simultaneously
 	random := rand.New(rand.NewSource(time.Now().UnixNano())).Int31()
 	id = fmt.Sprintf("kind-build-%d-%d", time.Now().UTC().Unix(), random)
+	runArgs := []string{
+		"-d", // make the client exit while the container continues to run
+		// the container should hang forever, so we can exec in it
+		"--entrypoint=sleep",
+		"--name=" + id,
+		"--platform=" + dockerBuildOsAndArch(c.arch),
+		"--security-opt", "seccomp=unconfined", // ignore seccomp
+	}
+	// pass proxy settings from environment variables to the building container
+	// to make them work during the building process
+	for _, name := range []string{httpProxy, httpsProxy, noProxy} {
+		val := os.Getenv(name)
+		if val == "" {
+			val = os.Getenv(strings.ToLower(name))
+		}
+		if val != "" {
+			runArgs = append(runArgs, "--env", name+"="+val)
+		}
+	}
 	err = docker.Run(
 		c.baseImage,
-		[]string{
-			"-d", // make the client exit while the container continues to run
-			// the container should hang forever, so we can exec in it
-			"--entrypoint=sleep",
-			"--name=" + id,
-			"--platform=" + dockerBuildOsAndArch(c.arch),
-			"--security-opt", "seccomp=unconfined", // ignore seccomp
-		},
+		runArgs,
 		[]string{
 			"infinity", // sleep infinitely to keep the container around
 		},
