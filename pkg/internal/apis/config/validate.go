@@ -152,6 +152,11 @@ func validatePortMappings(portMappings []PortMapping) error {
 	}
 
 	for _, portMapping := range portMappings {
+		if portMapping.HostPort == -1 || portMapping.HostPort == 0 {
+			// Port -1 and 0 cause a random port to be selected, thus duplicates are allowed
+			continue
+		}
+
 		addr := net.ParseIP(portMapping.ListenAddress)
 		addrString := addr.String()
 

@@ -357,6 +357,40 @@ func TestNodeValidate(t *testing.T) {
 			}(),
 			ExpectErrors: 1,
 		},
+		{
+			TestName: "Multiple random HostPort",
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg.ExtraPortMappings = []PortMapping{
+					{
+						ContainerPort: 80,
+					},
+					{
+						ContainerPort: 443,
+					},
+				}
+				return cfg
+			}(),
+			ExpectErrors: 0,
+		},
+		{
+			TestName: "Multiple random -1 HostPort",
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg.ExtraPortMappings = []PortMapping{
+					{
+						ContainerPort: 80,
+						HostPort:      -1,
+					},
+					{
+						ContainerPort: 443,
+						HostPort:      -1,
+					},
+				}
+				return cfg
+			}(),
+			ExpectErrors: 0,
+		},
 	}
 
 	for _, tc := range cases {
