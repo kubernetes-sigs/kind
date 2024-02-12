@@ -24,12 +24,14 @@ ARG BASE_IMAGE=debian:bookworm-slim
 FROM $BASE_IMAGE as base
 
 # copy in static files
-# all scripts are 0755 (rwx r-x r-x)
+# all scripts and directories are 0755 (rwx r-x r-x)
 # all non-scripts are 0644 (rw- r-- r--)
 COPY --chmod=0755 files/usr/local/bin/* /usr/local/bin/
 
 COPY --chmod=0644 files/kind/ /kind/
-COPY --chmod=0755 files/kind/bin/* /kind/bin/
+# COPY only applies to files, not the directory itself, so the permissions are
+# fixed in RUN below with a chmod.
+COPY --chmod=0755 files/kind/bin/ /kind/bin/
 
 COPY --chmod=0644 files/LICENSES/* /LICENSES/*
 COPY --chmod=0644 files/etc/* /etc/
@@ -41,8 +43,6 @@ COPY --chmod=0644 files/etc/systemd/system/kubelet.service.d/* /etc/systemd/syst
 
 # Install dependencies, first from apt, then from release tarballs.
 # NOTE: we use one RUN to minimize layers.
-#
-# First we must ensure that our util scripts are executable.
 #
 # The base image already has a basic userspace + apt but we need to install more packages.
 # Packages installed are broken down into (each on a line):
@@ -69,7 +69,8 @@ COPY --chmod=0644 files/etc/systemd/system/kubelet.service.d/* /etc/systemd/syst
 # Finally we adjust tempfiles cleanup to be 1 minute after "boot" instead of 15m
 # This is plenty after we've done initial setup for a node, but before we are
 # likely to try to export logs etc.
-RUN echo "Installing Packages ..." \
+RUN chmod 755 /kind/bin && \
+    echo "Installing Packages ..." \
     && DEBIAN_FRONTEND=noninteractive clean-install \
       systemd \
       conntrack iptables iproute2 ethtool util-linux mount ebtables kmod \
