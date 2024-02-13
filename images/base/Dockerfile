@@ -97,6 +97,11 @@ RUN echo "Enabling / Disabling services ... " \
 RUN echo "Ensuring /etc/kubernetes/manifests" \
     && mkdir -p /etc/kubernetes/manifests
 
+# Used as mount points for private copies of proc and sys filesystems in entrypoint.
+RUN echo "Ensuring /kind/private" \
+    && mkdir -p /kind/private/proc /kind/private/sys \
+    && chmod 0700 /kind/private /kind/private/proc /kind/private/sys
+
 # shared stage to setup go version for building binaries
 # NOTE we will be cross-compiling for performance reasons
 # This is also why we start again FROM the same base image but a different
