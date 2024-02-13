@@ -76,8 +76,10 @@ Apply it by running:
 kubectl patch daemonsets -n projectcontour envoy -p '{{< minify file="static/examples/ingress/contour/patch.json" >}}'
 {{< /codeFromInline >}}
 
-Now the Contour is all setup to be used.
-Refer to [Using Ingress](#using-ingress) for a basic example usage.
+Now Contour is ready to be used.
+Refer to Contour's [Getting Started](https://projectcontour.io/getting-started/#test-it-out) documentation for a basic usage example.
+
+Note, the example in [Using Ingress](#using-ingress) will not work with Contour because it uses nginx-specific annotations on the Ingress resource.
 
 Additional information about Contour can be found at: [projectcontour.io](https://projectcontour.io)
 
@@ -151,6 +153,8 @@ Refer [Using Ingress](#using-ingress) for a basic example usage.
 
 The following example creates simple http-echo services
 and an Ingress object to route to these services.
+
+Note, this example uses an nginx-specific Ingress annotation which may not be supported by all Ingress implementations.
 
 ```yaml
 {{% readFile "static/examples/ingress/usage.yaml" %}}
