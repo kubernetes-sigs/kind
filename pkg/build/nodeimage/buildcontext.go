@@ -96,13 +96,6 @@ func (c *buildContext) buildImage(bits kube.Bits) error {
 
 	c.logger.V(0).Info("Building in container: " + containerID)
 
-	// make artifacts directory
-	// TODO: remove this after the next release, we pre-create this in the base image now
-	if err = cmder.Command("mkdir", "-p", "/kind/").Run(); err != nil {
-		c.logger.Errorf("Image build Failed! Failed to make directory %v", err)
-		return err
-	}
-
 	// copy artifacts in
 	for _, binary := range bits.BinaryPaths() {
 		// TODO: probably should be /usr/local/bin, but the existing kubelet
