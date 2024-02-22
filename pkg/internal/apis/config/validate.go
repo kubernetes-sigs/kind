@@ -52,6 +52,11 @@ func (c *Cluster) Validate() error {
 		}
 	}
 
+	// ipFamily should be ipv4, ipv6, or dual
+	if c.Networking.IPFamily != IPv4Family && c.Networking.IPFamily != IPv6Family && c.Networking.IPFamily != DualStackFamily {
+		errs = append(errs, errors.Errorf("invalid ipFamily: %s", c.Networking.IPFamily))
+	}
+
 	// podSubnet should be a valid CIDR
 	if err := validateSubnets(c.Networking.PodSubnet, c.Networking.IPFamily); err != nil {
 		errs = append(errs, errors.Errorf("invalid pod subnet %v", err))
