@@ -55,6 +55,11 @@ jobs:
           # https://github.com/actions/virtual-environments/issues/2708
           sudo apt-get update
           sudo apt-get -y install dnsmasq
+          # crun >= 1.9.1 is required on Ubuntu 20.04.6
+          # https://github.com/kubernetes-sigs/kind/issues/3526
+          curl -Lo ./crun https://github.com/containers/crun/releases/download/1.14.3/crun-1.14.3-linux-amd64
+          chmod +x ./crun
+          sudo mv ./crun /usr/bin/crun
 
       - name: Create single node cluster
         if: ${{ matrix.deployment == 'singleNode' }}
