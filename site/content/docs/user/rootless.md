@@ -6,11 +6,12 @@ menu:
     identifier: "rootless"
     weight: 3
 ---
-Starting with kind 0.11.0, [Rootless Docker](https://docs.docker.com/go/rootless/) and [Rootless Podman](https://github.com/containers/podman/blob/master/docs/tutorials/rootless_tutorial.md) can be used as the node provider of kind.
+Starting with kind 0.11.0, [Rootless Docker](https://docs.docker.com/go/rootless/), [Rootless Podman](https://github.com/containers/podman/blob/master/docs/tutorials/rootless_tutorial.md) and [Rootless nerdctl](https://github.com/containerd/nerdctl/blob/main/docs/rootless.md) can be used as the node provider of kind.
 
 ## Provider requirements
 - Docker: 20.10 or later
 - Podman: 3.0 or later
+- nerdctl: 1.7 or later
 
 ## Host requirements
 The host needs to be running with cgroup v2.
@@ -78,6 +79,13 @@ $ KIND_EXPERIMENTAL_PROVIDER=podman kind create cluster
 On some distributions, you might need to use systemd-run to start kind into its own cgroup scope:
 ```console
 $ systemd-run --scope --user kind create cluster
+```
+
+## Creating a kind cluster with Rootless nerdctl
+
+To create a kind cluster with nerdctl, just run:
+```console
+$ KIND_EXPERIMENTAL_PROVIDER=nerdctl kind create cluster
 ```
 
 ## Tips

@@ -21,7 +21,7 @@ labels: kind/bug
 **Environment:**
 
 - kind version: (use `kind version`):
-- Runtime info: (use `docker info` or `podman info`):
+- Runtime info: (use `docker info`, `podman info` or `nerdctl info`):
 - OS (e.g. from `/etc/os-release`):
 - Kubernetes version: (use `kubectl version`):
 - Any proxies or other special environment settings?:

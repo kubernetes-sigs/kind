@@ -144,6 +144,9 @@ wait for 30 seconds, do `--wait 30s`, for 5 minutes do `--wait 5m`, etc.
 
 More usage can be discovered with `kind create cluster --help`.
 
+The kind can auto-detect the [docker], [podman], or [nerdctl] installed and choose the available one. If you want to turn off the auto-detect, use the environment variable `KIND_EXPERIMENTAL_PROVIDER=docker`, `KIND_EXPERIMENTAL_PROVIDER=podman` or `KIND_EXPERIMENTAL_PROVIDER=nerdctl` to
+select the runtime.
+
 ## Interacting With Your Cluster
 
 After [creating a cluster](#creating-a-cluster), you can use [kubectl][kubectl]
@@ -433,6 +436,9 @@ kind, the Kubernetes cluster itself, etc.
 
 [modules]: https://github.com/golang/go/wiki/Modules
 [go-supported]: https://golang.org/doc/devel/release.html#policy
+[docker]: https://www.docker.com/
+[podman]: https://podman.io/
+[nerdctl]: https://github.com/containerd/nerdctl
 [known issues]: /docs/user/known-issues
 [releases]: https://github.com/kubernetes-sigs/kind/releases
 [node image]: /docs/design/node-image

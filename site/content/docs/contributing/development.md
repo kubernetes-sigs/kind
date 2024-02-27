@@ -153,7 +153,7 @@ with kind at HEAD to have the latest fixes for running bleeding edge Kubernetes.
 We ensure that the tests continue to work in the kind repo before merging any code changes.
 
 We also have some limited usage experiments with [GitHub Actions], currently
-only for testing `podman` support in kind.
+only for testing `podman` or `nerdctl` support in kind.
 
 ### Configuration
 
