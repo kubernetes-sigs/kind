@@ -74,6 +74,9 @@ jobs:
             ipFamily: ${IP_FAMILY}
           EOF
 
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
+
       - name: Create multi node cluster
         if: ${{ matrix.deployment == 'multiNode' }}
         run: |
