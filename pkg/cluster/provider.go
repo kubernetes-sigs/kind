@@ -103,8 +103,8 @@ var NoNodeProviderDetectedError = errors.NewWithoutStack("failed to detect any s
 // Pass the returned ProviderOption to NewProvider to pass the auto-detect Docker
 // or Podman option explicitly (in the future there will be more options)
 //
-// NOTE: The kind *cli* also checks `KIND_EXPERIMENTAL_PROVIDER` for "podman" or
-// "docker" currently and does not auto-detect / respects this if set.
+// NOTE: The kind *cli* also checks `KIND_EXPERIMENTAL_PROVIDER` for "podman",
+// "nerctl" or "docker" currently and does not auto-detect / respects this if set.
 //
 // This will be replaced with some other mechanism in the future (likely when
 // podman support is GA), in the meantime though your tool may wish to match this.
