@@ -49,6 +49,11 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 			}
 			return nil
 		},
+		PreRun: func(cmd *cobra.Command, args []string) {
+			if len(args) > 1 {
+				logger.Warn("It is suggested that you save multiple images into a common archive and load that instead of loading multiple archives for better performance")
+			}
+		},
 		Use:   "image-archive <IMAGE.tar>",
 		Short: "Loads docker image from archive into nodes",
 		Long:  "Loads docker image from archive into all or specified nodes by name",
@@ -79,19 +84,28 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 		runtime.GetDefault(logger),
 	)
 
-	// Check if file exists
-	imageTarPath := args[0]
-	if _, err := os.Stat(imageTarPath); err != nil {
-		return err
+	for _, imageTarPath := range args {
+		if _, err := os.Stat(imageTarPath); err != nil {
+			return err
+		}
 	}
 
+	for _, imageTarPath := range args {
+		if err := loadArchiveToNodes(logger, provider, flags.Name, flags.Nodes, imageTarPath); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func loadArchiveToNodes(logger log.Logger, provider *cluster.Provider, clusterName string, nodeNames []string, imageArchivePath string) error {
 	// Check if the cluster nodes exist
-	nodeList, err := provider.ListInternalNodes(flags.Name)
+	nodeList, err := provider.ListInternalNodes(clusterName)
 	if err != nil {
 		return err
 	}
 	if len(nodeList) == 0 {
-		return fmt.Errorf("no nodes found for cluster %q", flags.Name)
+		return fmt.Errorf("no nodes found for cluster %q", clusterName)
 	}
 
 	// map cluster nodes by their name
@@ -105,9 +119,9 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 	// pick only the user selected nodes and ensure they exist
 	// the default is all nodes unless flags.Nodes is set
 	selectedNodes := nodeList
-	if len(flags.Nodes) > 0 {
+	if len(nodeNames) > 0 {
 		selectedNodes = []nodes.Node{}
-		for _, name := range flags.Nodes {
+		for _, name := range nodeNames {
 			node, ok := nodesByName[name]
 			if !ok {
 				return fmt.Errorf("unknown node: %s", name)
@@ -121,18 +135,19 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 	for _, selectedNode := range selectedNodes {
 		selectedNode := selectedNode // capture loop variable
 		fns = append(fns, func() error {
-			return loadImage(imageTarPath, selectedNode)
+			return loadImage(logger, imageArchivePath, selectedNode)
 		})
 	}
 	return errors.UntilErrorConcurrent(fns)
 }
 
 // loads an image tarball onto a node
-func loadImage(imageTarName string, node nodes.Node) error {
+func loadImage(logger log.Logger, imageTarName string, node nodes.Node) error {
 	f, err := os.Open(imageTarName)
 	if err != nil {
 		return errors.Wrap(err, "failed to open image")
 	}
 	defer f.Close()
+	logger.V(2).Infof("Loading Docker Image from archive %s to node %s", imageTarName, node.String())
 	return nodeutils.LoadImageArchive(node, f)
 }
