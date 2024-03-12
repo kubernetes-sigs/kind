@@ -81,6 +81,9 @@ Move-Item .\kind-windows-amd64.exe c:\some-dir-in-your-PATH\kind.exe
 
 # OR via Chocolatey (https://chocolatey.org/packages/kind)
 choco install kind
+
+# OR via Winget (https://github.com/microsoft/winget-cli)
+winget install Kubernetes.kind
 ```
 
 To use kind, you will need to [install docker].
