@@ -40,10 +40,11 @@ type flagpole struct {
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
-		Args:  cobra.NoArgs,
-		Use:   "nodes",
-		Short: "Lists existing kind nodes by their name",
-		Long:  "Lists existing kind nodes by their name",
+		Args:    cobra.NoArgs,
+		Use:     "nodes",
+		Aliases: []string{"node"},
+		Short:   "Lists existing kind nodes by their name",
+		Long:    "Lists existing kind nodes by their name",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cli.OverrideDefaultName(cmd.Flags())
 			return runE(logger, streams, flags)

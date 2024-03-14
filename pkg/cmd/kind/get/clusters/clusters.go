@@ -34,9 +34,10 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
-		Use:   "clusters",
-		Short: "Lists existing kind clusters by their name",
-		Long:  "Lists existing kind clusters by their name",
+		Use:     "clusters",
+		Aliases: []string{"cluster"},
+		Short:   "Lists existing kind clusters by their name",
+		Long:    "Lists existing kind clusters by their name",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(logger, streams)
 		},
