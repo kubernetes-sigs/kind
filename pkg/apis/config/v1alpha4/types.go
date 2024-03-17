@@ -32,6 +32,10 @@ type Cluster struct {
 
 	/* Advanced fields */
 
+	DockerIP DockerIP `yaml:"dockerIP,omitempty" json:"dockerIP,omitempty"`
+
+	LoadBalancer LoadBalancer `yaml:"loadBalancer,omitempty" json:"loadBalancer,omitempty"`
+
 	// Networking contains cluster wide network settings
 	Networking Networking `yaml:"networking,omitempty" json:"networking,omitempty"`
 
@@ -90,6 +94,23 @@ type TypeMeta struct {
 	APIVersion string `yaml:"apiVersion,omitempty" json:"apiVersion,omitempty"`
 }
 
+type DockerIP struct {
+	// FromDNS If true, an '--ip' option is added on each 'docker run...' with a value resolved from the container
+	// name. Require setting of entries in a local DNS or /etc/hosts.
+	FromDNS bool `yaml:"fromDNS,omitempty" json:"fromDNS,omitempty"`
+}
+
+// LoadBalancer allow configuration of the LoadBalancer container
+type LoadBalancer struct {
+	// Enabled to control LoadBalancer creation
+	// For future use.
+	// Enabled *bool `yaml:"enabled,omitempty" json:"enabled,omitempty"`
+
+	// DockerIP allow to specify the container IP address. Must be in the 'kind' network subnet
+	// WARNING: Docker specific
+	DockerIP string `yaml:"dockerIP,omitempty" json:"dockerIP,omitempty"`
+}
+
 // Node contains settings for a node in the `kind` Cluster.
 // A node in kind config represent a container that will be provisioned with all the components
 // required for the assigned role in the Kubernetes cluster
@@ -120,7 +141,7 @@ type Node struct {
 
 	// DockerIP allow to specify the container IP address. Must be in the 'kind' network subnet
 	// WARNING: Docker specific
-	DockerIp string `yaml:"dockerIp,omitempty" json:"dockerIp,omitempty"`
+	DockerIP string `yaml:"dockerIP,omitempty" json:"dockerIP,omitempty"`
 
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// merge patches. The `kind` field must match the target object, and

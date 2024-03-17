@@ -14,11 +14,13 @@ https://github.com/kubernetes-sigs/kind/issues/2579
 
 
 ```
-make build && ./bin/kind create cluster --config private/sn-config.yaml 
+make build && ./bin/kind create cluster --config private/sn1-config.yaml 
 
-make build && ./bin/kind create cluster --config private/ha-config.yaml
+make build && ./bin/kind create cluster --config private/ha1-config.yaml
 
-./bin/kind delete cluster
+./bin/kind delete cluster --name ha1
+./bin/kind delete cluster --name sn1
+
  
 docker network rm kind
 

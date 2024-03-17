@@ -20,7 +20,6 @@ package kubeconfig
 
 import (
 	"bytes"
-
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/errors"
 
@@ -34,6 +33,7 @@ import (
 // This will always be an external kubeconfig
 func Export(p providers.Provider, name, explicitPath string, external bool) error {
 	cfg, err := get(p, name, external)
+	//fmt.Printf("EXPORT cfg:%+v\n", cfg)
 	if err != nil {
 		return err
 	}

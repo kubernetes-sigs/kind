@@ -19,7 +19,6 @@ package exec
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	osexec "os/exec"
 	"sync"
@@ -121,7 +120,7 @@ func (cmd *LocalCmd) Run() error {
 		}
 	}
 
-	fmt.Printf("EXEC: %v\n", cmd.Cmd.Args)
+	//fmt.Printf("EXEC: %v\n", cmd.Cmd.Args)
 
 	// TODO: should be in the caller or logger should be injected somehow ...
 	if err := cmd.Cmd.Run(); err != nil {

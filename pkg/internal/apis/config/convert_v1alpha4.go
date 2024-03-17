@@ -32,6 +32,13 @@ func Convertv1alpha4(in *v1alpha4.Cluster) *Cluster {
 		KubeadmConfigPatchesJSON6902:    make([]PatchJSON6902, len(in.KubeadmConfigPatchesJSON6902)),
 		ContainerdConfigPatches:         in.ContainerdConfigPatches,
 		ContainerdConfigPatchesJSON6902: in.ContainerdConfigPatchesJSON6902,
+		LoadBalancer: LoadBalancer{
+			// Enabled:  in.LoadBalancer.Enabled,
+			DockerIP: in.LoadBalancer.DockerIP,
+		},
+		DockerIP: DockerIP{
+			FromDNS: in.DockerIP.FromDNS,
+		},
 	}
 
 	for i := range in.Nodes {
@@ -55,7 +62,7 @@ func convertv1alpha4Node(in *v1alpha4.Node, out *Node) {
 	out.KubeadmConfigPatches = in.KubeadmConfigPatches
 	out.ExtraMounts = make([]Mount, len(in.ExtraMounts))
 	out.ExtraPortMappings = make([]PortMapping, len(in.ExtraPortMappings))
-	out.DockerIp = in.DockerIp
+	out.DockerIP = in.DockerIP
 	out.KubeadmConfigPatchesJSON6902 = make([]PatchJSON6902, len(in.KubeadmConfigPatchesJSON6902))
 
 	for i := range in.ExtraMounts {

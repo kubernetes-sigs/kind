@@ -33,7 +33,7 @@ func KINDFromRawKubeadm(rawKubeadmKubeConfig, clusterName, server string) (*Conf
 	if err := yaml.Unmarshal([]byte(rawKubeadmKubeConfig), cfg); err != nil {
 		return nil, err
 	}
-
+	//fmt.Printf("\n\nserver:%s\nKINDFromRawKubeadm() cfg:%+v\n\n", server, cfg)
 	// verify assumptions about kubeadm kubeconfigs
 	if err := checkKubeadmExpectations(cfg); err != nil {
 		return nil, err

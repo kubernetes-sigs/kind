@@ -76,6 +76,7 @@ func SetDefaultsCluster(obj *Cluster) {
 	if obj.Networking.KubeProxyMode == "" {
 		obj.Networking.KubeProxyMode = IPTablesProxyMode
 	}
+
 }
 
 // SetDefaultsNode sets uninitialized fields to their default value.

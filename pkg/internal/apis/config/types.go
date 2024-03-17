@@ -36,6 +36,9 @@ type Cluster struct {
 
 	/* Advanced fields */
 
+	DockerIP     DockerIP
+	LoadBalancer LoadBalancer
+
 	// Networking contains cluster wide network settings
 	Networking Networking
 
@@ -71,6 +74,23 @@ type Cluster struct {
 	ContainerdConfigPatchesJSON6902 []string
 }
 
+type DockerIP struct {
+	// FromDNS If true, an '--ip' option is added on each 'docker run...' with a value resolved from the container
+	// name. Require setting of entries in a local DNS or /etc/hosts.
+	FromDNS bool
+}
+
+// LoadBalancer allow configuration of the LoadBalancer container
+type LoadBalancer struct {
+	// Enabled to control LoadBalancer creation
+	// Default: true if more than one control plane (result of config.ClusterHasImplicitLoadBalancer(cfg))
+	//
+	// Enabled *bool
+	// DockerIP allow to specify the container IP address. Must be in the 'kind' network subnet
+	// WARNING: Docker specific
+	DockerIP string
+}
+
 // Node contains settings for a node in the `kind` Cluster.
 // A node in kind config represent a container that will be provisioned with all the components
 // required for the assigned role in the Kubernetes cluster
@@ -100,7 +120,7 @@ type Node struct {
 
 	// DockerIP allow to specify the container IP address. Must be in the 'kind' network subnet
 	// WARNING: Docker specific
-	DockerIp string
+	DockerIP string
 
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// strategic merge patches to `kustomize build` internally

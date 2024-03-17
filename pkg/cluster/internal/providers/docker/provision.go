@@ -48,6 +48,9 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 	if haveLoadbalancer {
 		names = append(names, nodeNamer(constants.ExternalLoadBalancerNodeRoleValue))
 	}
+	//if cfg.LoadBalancer.Enabled != nil {
+	//	haveLoadbalancer = *cfg.LoadBalancer.Enabled
+	//}
 
 	// these apply to all container creation
 	genericArgs, err := commonArgs(cfg.Name, cfg, networkName, names)
@@ -108,7 +111,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 						ContainerPort: common.APIServerInternalPort,
 					},
 				)
-				args, err := runArgsForNode(node, cfg.Networking.IPFamily, name, genericArgs)
+				args, err := runArgsForNode(node, cfg.Networking.IPFamily, name, genericArgs, cfg.DockerIP.FromDNS)
 				if err != nil {
 					return err
 				}
@@ -116,7 +119,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 			})
 		case config.WorkerRole:
 			createContainerFuncs = append(createContainerFuncs, func() error {
-				args, err := runArgsForNode(node, cfg.Networking.IPFamily, name, genericArgs)
+				args, err := runArgsForNode(node, cfg.Networking.IPFamily, name, genericArgs, cfg.DockerIP.FromDNS)
 				if err != nil {
 					return err
 				}
@@ -212,7 +215,7 @@ func commonArgs(cluster string, cfg *config.Cluster, networkName string, nodeNam
 	return args, nil
 }
 
-func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, name string, args []string) ([]string, error) {
+func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, name string, args []string, dockerIPFromDNS bool) ([]string, error) {
 	args = append([]string{
 		"--hostname", name, // make hostname match container name
 		// label the node with the role ID
@@ -250,8 +253,18 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 	}
 	args = append(args, mappingArgs...)
 
-	if node.DockerIp != "" {
-		args = append(args, "--ip", node.DockerIp)
+	if node.DockerIP != "" {
+		ips, err := net.LookupIP(node.DockerIP)
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, "--ip", ips[0].String())
+	} else if dockerIPFromDNS {
+		ips, err := net.LookupIP(name)
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, "--ip", ips[0].String())
 	}
 
 	switch node.Role {
@@ -284,6 +297,20 @@ func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) ([]
 		return nil, err
 	}
 	args = append(args, mappingArgs...)
+
+	if cfg.LoadBalancer.DockerIP != "" {
+		ips, err := net.LookupIP(cfg.LoadBalancer.DockerIP)
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, "--ip", ips[0].String())
+	} else if cfg.DockerIP.FromDNS {
+		ips, err := net.LookupIP(name)
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, "--ip", ips[0].String())
+	}
 
 	// finally, specify the image to run
 	return append(args, loadbalancer.Image), nil

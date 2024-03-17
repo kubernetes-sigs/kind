@@ -1,9 +1,11 @@
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
-name: ha1
+name: ha2
+loadBalancer:
+  dockerIP: ha2-external-load-balancer
 nodes:
   - role: control-plane
-    dockerIp: 172.19.101.1
+    dockerIP: ha2-control-plane
     kubeadmConfigPatches:
       - |
         kind: InitConfiguration
@@ -11,7 +13,7 @@ nodes:
           kubeletExtraArgs:
             node-labels: "ingress-ready=false"
   - role: control-plane
-    dockerIp: 172.19.101.2
+    dockerIP: ha2-control-plane2
     kubeadmConfigPatches:
       - |
         kind: JoinConfiguration
@@ -19,7 +21,7 @@ nodes:
           kubeletExtraArgs:
             node-labels: "ingress-ready=false"
   - role: control-plane
-    dockerIp: 172.19.101.3
+    dockerIP: ha2-control-plane3
     kubeadmConfigPatches:
       - |
         kind: JoinConfiguration
@@ -27,7 +29,7 @@ nodes:
           kubeletExtraArgs:
             node-labels: "ingress-ready=false"
   - role: worker
-    dockerIp: 172.19.101.4
+    dockerIP: ha2-worker
     kubeadmConfigPatches:
       - |
         kind: JoinConfiguration
@@ -35,7 +37,7 @@ nodes:
           kubeletExtraArgs:
             node-labels: "ingress-ready=true"
   - role: worker
-    dockerIp: 172.19.101.5
+    dockerIP: ha2-worker2
     kubeadmConfigPatches:
       - |
         kind: JoinConfiguration
