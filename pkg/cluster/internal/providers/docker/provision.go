@@ -250,6 +250,10 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 	}
 	args = append(args, mappingArgs...)
 
+	if node.DockerIp != "" {
+		args = append(args, "--ip", node.DockerIp)
+	}
+
 	switch node.Role {
 	case config.ControlPlaneRole:
 		args = append(args, "-e", "KUBECONFIG=/etc/kubernetes/admin.conf")

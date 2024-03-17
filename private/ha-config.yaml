@@ -1,7 +1,9 @@
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
+name: ha1
 nodes:
   - role: control-plane
+    dockerIp: 172.19.101.1
     kubeadmConfigPatches:
       - |
         kind: InitConfiguration
@@ -9,6 +11,7 @@ nodes:
           kubeletExtraArgs:
             node-labels: "ingress-ready=false"
   - role: control-plane
+    dockerIp: 172.19.101.2
     kubeadmConfigPatches:
       - |
         kind: JoinConfiguration
@@ -16,6 +19,7 @@ nodes:
           kubeletExtraArgs:
             node-labels: "ingress-ready=false"
   - role: control-plane
+    dockerIp: 172.19.101.3
     kubeadmConfigPatches:
       - |
         kind: JoinConfiguration
@@ -23,6 +27,7 @@ nodes:
           kubeletExtraArgs:
             node-labels: "ingress-ready=false"
   - role: worker
+    dockerIp: 172.19.101.4
     kubeadmConfigPatches:
       - |
         kind: JoinConfiguration
@@ -30,6 +35,7 @@ nodes:
           kubeletExtraArgs:
             node-labels: "ingress-ready=true"
   - role: worker
+    dockerIp: 172.19.101.5
     kubeadmConfigPatches:
       - |
         kind: JoinConfiguration

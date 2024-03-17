@@ -1,7 +1,9 @@
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
+name: sn1
 nodes:
   - role: control-plane
+    dockerIp: 172.19.100.1
     kubeadmConfigPatches:
       - |
         kind: InitConfiguration

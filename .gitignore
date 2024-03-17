@@ -2,6 +2,7 @@
 /bin/
 /_output/
 /_artifacts/
+/tmp
 
 # used for the code generators only
 /vendor/

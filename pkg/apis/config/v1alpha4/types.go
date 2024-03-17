@@ -118,6 +118,10 @@ type Node struct {
 	// binded to a host Port
 	ExtraPortMappings []PortMapping `yaml:"extraPortMappings,omitempty" json:"extraPortMappings,omitempty"`
 
+	// DockerIP allow to specify the container IP address. Must be in the 'kind' network subnet
+	// WARNING: Docker specific
+	DockerIp string `yaml:"dockerIp,omitempty" json:"dockerIp,omitempty"`
+
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// merge patches. The `kind` field must match the target object, and
 	// if `apiVersion` is specified it will only be applied to matching objects.
