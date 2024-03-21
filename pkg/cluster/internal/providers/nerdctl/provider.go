@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	osexec "os/exec"
 	"path/filepath"
 	"strings"
 
@@ -40,9 +41,21 @@ import (
 
 // NewProvider returns a new provider based on executing `nerdctl ...`
 func NewProvider(logger log.Logger, binaryName string) providers.Provider {
-	// if unset, default to nerdctl
+	// if binaryName is unset, do a lookup; we may be here via a
+	// library call to provider.DetectNodeProvider(), which returns
+	// true from nerdctl.IsAvailable() by checking for both finch
+	// and nerdctl. If we don't redo the lookup here, then a finch
+	// install that triggered IsAvailable() to be true would fail
+	// to be used if we default to nerdctl when unset.
 	if binaryName == "" {
+		// default to "nerdctl"; but look for "finch" if
+		// nerctl binary lookup fails
 		binaryName = "nerdctl"
+		if _, err := osexec.LookPath("nerdctl"); err != nil {
+			if _, err := osexec.LookPath("finch"); err == nil {
+				binaryName = "finch"
+			}
+		}
 	}
 	return &provider{
 		logger:     logger,
