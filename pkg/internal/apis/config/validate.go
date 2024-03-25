@@ -22,6 +22,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/container-orchestrated-devices/container-device-interface/pkg/parser"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/internal/sets"
 )
@@ -119,6 +120,10 @@ func (n *Node) Validate() error {
 		errs = append(errs, errors.New("image is a required field"))
 	}
 
+	if err := validateDevices(n.CDIDevices); err != nil {
+		errs = append(errs, errors.Wrapf(err, "invalid devices"))
+	}
+
 	// validate extra port forwards
 	for _, mapping := range n.ExtraPortMappings {
 		if err := validatePort(mapping.HostPort); err != nil {
@@ -198,6 +203,23 @@ func validatePortMappings(portMappings []PortMapping) error {
 
 		// add the entry to bindMap
 		bindMap[portProtocol].Insert(addrString)
+	}
+	return nil
+}
+
+func validateDevices(cdiDevices []string) error {
+	for _, device := range cdiDevices {
+		device := strings.TrimSpace(device)
+		// validate device string is not empty
+		if len(device) == 0 {
+			return errors.Errorf("invalid device string: '%v'. Empty Strings not allowed", device)
+		}
+
+		// validate device string is valid
+		_, _, _, err := parser.ParseQualifiedName(device)
+		if err != nil {
+			return errors.Errorf("invalid device string: '%v'. %v", device, err)
+		}
 	}
 	return nil
 }

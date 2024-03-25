@@ -33,6 +33,16 @@ func IsAvailable() bool {
 	return strings.HasPrefix(lines[0], "Docker version")
 }
 
+// Version gets the version of docker available on the system
+func Version() string {
+	cmd := exec.Command("docker", "version", "--format", "'{{.Server.Version}}'")
+	lines, err := exec.OutputLines(cmd)
+	if err != nil || len(lines) != 1 {
+		return ""
+	}
+	return strings.Trim(lines[0], "'")
+}
+
 // usernsRemap checks if userns-remap is enabled in dockerd
 func usernsRemap() bool {
 	cmd := exec.Command("docker", "info", "--format", "'{{json .SecurityOptions}}'")

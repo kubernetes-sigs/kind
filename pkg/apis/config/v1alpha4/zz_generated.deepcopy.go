@@ -141,6 +141,11 @@ func (in *Node) DeepCopyInto(out *Node) {
 		*out = make([]PortMapping, len(*in))
 		copy(*out, *in)
 	}
+	if in.CDIDevices != nil {
+		in, out := &in.CDIDevices, &out.CDIDevices
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.KubeadmConfigPatches != nil {
 		in, out := &in.KubeadmConfigPatches, &out.KubeadmConfigPatches
 		*out = make([]string, len(*in))

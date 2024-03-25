@@ -18,10 +18,10 @@ package config
 
 import (
 	"fmt"
-	"sigs.k8s.io/kind/pkg/internal/assert"
 	"testing"
 
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/internal/assert"
 )
 
 func TestClusterValidate(t *testing.T) {
@@ -261,7 +261,7 @@ func TestClusterValidate(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc //capture loop variable
+		tc := tc // capture loop variable
 		t.Run(tc.Name, func(t *testing.T) {
 			t.Parallel()
 			err := tc.Cluster.Validate()
@@ -354,6 +354,33 @@ func TestNodeValidate(t *testing.T) {
 			ExpectErrors: 1,
 		},
 		{
+			TestName: "Empty Devices",
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg.CDIDevices = []string{"    ", ""}
+				return cfg
+			}(),
+			ExpectErrors: 1,
+		},
+		{
+			TestName: "Invalid Device String",
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg.CDIDevices = []string{"thisdeviceisnotvalid"}
+				return cfg
+			}(),
+			ExpectErrors: 1,
+		},
+		{
+			TestName: "Valid Devices",
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg.CDIDevices = []string{"vendor1.com/device=test", "nvidia.com/gpu=1", "nvidia.com/gpu=all", "vendor.com/foo=1", "foo.bar.baz/foo-bar123.B_az=all"}
+				return cfg
+			}(),
+			ExpectErrors: 0,
+		},
+		{
 			TestName: "Invalid HostPort",
 			Node: func() Node {
 				cfg := newDefaultedNode(ControlPlaneRole)
@@ -404,7 +431,7 @@ func TestNodeValidate(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc //capture loop variable
+		tc := tc // capture loop variable
 		t.Run(tc.TestName, func(t *testing.T) {
 			t.Parallel()
 			err := tc.Node.Validate()
@@ -458,7 +485,7 @@ func TestPortValidate(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc //capture loop variable
+		tc := tc // capture loop variable
 		t.Run(tc.TestName, func(t *testing.T) {
 			t.Parallel()
 			err := validatePort(tc.Port)
@@ -581,7 +608,7 @@ func TestValidatePortMappings(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc //capture loop variable
+		tc := tc // capture loop variable
 		t.Run(tc.testName, func(t *testing.T) {
 			t.Parallel()
 

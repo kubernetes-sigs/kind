@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/BurntSushi/toml v1.0.0
 	github.com/alessio/shellescape v1.4.1
+	github.com/container-orchestrated-devices/container-device-interface v0.6.0
 	github.com/evanphx/json-patch/v5 v5.6.0
 	github.com/google/safetext v0.0.0-20220905092116-b49f7bc46da2
 	github.com/mattn/go-isatty v0.0.14
