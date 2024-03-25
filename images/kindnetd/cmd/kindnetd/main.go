@@ -252,7 +252,7 @@ func makeNodesReconciler(cniConfig *CNIConfigWriter, hostIP string, ipFamily IPF
 
 		// obtain the PodCIDR gateway
 		var nodeIPv4, nodeIPv6 string
-		for _, ip := range nodeIPs.List() {
+		for _, ip := range sets.List(nodeIPs) {
 			if isIPv6String(ip) {
 				nodeIPv6 = ip
 			} else {
@@ -285,8 +285,8 @@ func makeNodesReconciler(cniConfig *CNIConfigWriter, hostIP string, ipFamily IPF
 }
 
 // internalIPs returns the internal IP addresses for node
-func internalIPs(node corev1.Node) sets.String {
-	ips := sets.NewString()
+func internalIPs(node corev1.Node) sets.Set[string] {
+	ips := sets.New[string]()
 	// check the node.Status.Addresses
 	for _, address := range node.Status.Addresses {
 		if address.Type == "InternalIP" {

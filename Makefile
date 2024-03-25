@@ -33,6 +33,7 @@ COMMIT_COUNT?=$(shell git describe --tags | rev | cut -d- -f2 | rev)
 # ========================= Setup Go With Gimme ================================
 # go version to use for build etc.
 # setup correct go version with gimme
+GOTOOLCHAIN:=$(shell . hack/build/gotoolchain.sh && echo "$${GOTOOLCHAIN}")
 PATH:=$(shell . hack/build/setup-go.sh && echo "$${PATH}")
 # go1.9+ can autodetect GOROOT, but if some other tool sets it ...
 GOROOT:=
@@ -40,7 +41,7 @@ GOROOT:=
 GO111MODULE=on
 # disable CGO by default for static binaries
 CGO_ENABLED=0
-export PATH GOROOT GO111MODULE CGO_ENABLED
+export PATH GOROOT GO111MODULE CGO_ENABLED GOTOOLCHAIN
 # work around broken PATH export
 SPACE:=$(subst ,, )
 SHELL:=env PATH=$(subst $(SPACE),\$(SPACE),$(PATH)) $(SHELL)

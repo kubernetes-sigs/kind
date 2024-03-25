@@ -421,10 +421,7 @@ func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings .
 }
 
 func createContainer(name string, args []string) error {
-	if err := exec.Command("podman", append([]string{"run", "--name", name}, args...)...).Run(); err != nil {
-		return err
-	}
-	return nil
+	return exec.Command("podman", append([]string{"run", "--name", name}, args...)...).Run()
 }
 
 func createContainerWithWaitUntilSystemdReachesMultiUserSystem(name string, args []string) error {
