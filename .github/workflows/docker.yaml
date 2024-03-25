@@ -14,13 +14,14 @@ permissions:
 jobs:
   docker:
     name: Docker
-    runs-on: ubuntu-20.04
+    runs-on: "ubuntu-${{ matrix.ubuntu }}"
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         ipFamily: [ipv4, ipv6]
         deployment: [singleNode, multiNode]
+        ubuntu: [20.04, 22.04]
     env:
       JOB_NAME: "docker-${{ matrix.deployment }}-${{ matrix.ipFamily }}"
       IP_FAMILY: ${{ matrix.ipFamily }}

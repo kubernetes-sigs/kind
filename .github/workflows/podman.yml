@@ -14,15 +14,17 @@ permissions:
 jobs:
   podman:
     name: Podman
-    runs-on: ubuntu-20.04
+    runs-on: "ubuntu-${{ matrix.ubuntu }}"
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         ipFamily: [ipv4, ipv6]
         deployment: [singleNode, multiNode]
+        ubuntu: [20.04, 22.04]
         exclude:
           - ipFamily: ipv6
+          - ubuntu: 22.04
     env:
       JOB_NAME: "podman-${{ matrix.deployment }}-${{ matrix.ipFamily }}"
       KIND_EXPERIMENTAL_PROVIDER: "podman"
