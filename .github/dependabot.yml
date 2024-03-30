@@ -10,3 +10,8 @@ updates:
       - "release-note-none"
       - "ok-to-test"
     open-pull-requests-limit: 10
+    groups:
+      actions:
+        update-types:
+          - "minor"
+          - "patch"
