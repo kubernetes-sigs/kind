@@ -73,7 +73,7 @@ RUN chmod 755 /kind/bin && \
     echo "Installing Packages ..." \
     && DEBIAN_FRONTEND=noninteractive clean-install \
       systemd \
-      conntrack iptables nftables iproute2 ethtool util-linux mount ebtables kmod \
+      conntrack iptables nftables iproute2 ethtool util-linux mount kmod \
       libseccomp2 pigz fuse-overlayfs \
       nfs-common open-iscsi \
       bash ca-certificates curl jq procps \
