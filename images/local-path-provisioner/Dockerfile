@@ -20,6 +20,7 @@ ARG VERSION
 # set by makefile to .go-version
 ARG TARGETARCH GO_VERSION
 RUN eval "$(gimme "${GO_VERSION}")" \
+    && export GOTOOLCHAIN="go${GO_VERSION}" \
     && cd local-path-provisioner \
     && git fetch && git checkout "${VERSION}" \
     && GOARCH=$TARGETARCH scripts/build \

@@ -115,6 +115,7 @@ RUN dpkg --add-architecture arm64 && dpkg --add-architecture amd64 \
 # set by makefile to .go-version
 ARG GO_VERSION
 RUN eval "$(gimme "${GO_VERSION}")" \
+    && export GOTOOLCHAIN="go${GO_VERSION}" \
     && GOBIN=/usr/local/bin go install github.com/google/go-licenses@latest
 
 
@@ -130,6 +131,7 @@ RUN git clone --filter=tree:0 "${CONTAINERD_CLONE_URL}" /containerd \
     && cd /containerd \
     && git checkout "${CONTAINERD_VERSION}" \
     && eval "$(gimme "${GO_VERSION}")" \
+    && export GOTOOLCHAIN="go${GO_VERSION}" \
     && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
     && make bin/ctr bin/containerd bin/containerd-shim-runc-v2 \
     && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES \
@@ -144,6 +146,7 @@ RUN git clone --filter=tree:0 "${RUNC_CLONE_URL}" /runc \
     && cd /runc \
     && git checkout "${RUNC_VERSION}" \
     && eval "$(gimme "${GO_VERSION}")" \
+    && export GOTOOLCHAIN="go${GO_VERSION}" \
     && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
     && make runc \
     && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES .
@@ -157,6 +160,7 @@ RUN git clone --filter=tree:0 "${CRI_TOOLS_CLONE_URL}" /cri-tools \
     && cd /cri-tools \
     && git checkout "${CRICTL_VERSION}" \
     && eval "$(gimme "${GO_VERSION}")" \
+    && export GOTOOLCHAIN="go${GO_VERSION}" \
     && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
     && make BUILD_BIN_PATH=./build crictl \
     && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES ./cmd/crictl
@@ -170,6 +174,7 @@ RUN git clone --filter=tree:0 "${CNI_PLUGINS_CLONE_URL}" /cni-plugins \
     && cd /cni-plugins \
     && git checkout "${CNI_PLUGINS_VERSION}" \
     && eval "$(gimme "${GO_VERSION}")" \
+    && export GOTOOLCHAIN="go${GO_VERSION}" \
     && mkdir ./bin \
     && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
     && go build -o ./bin/host-local -mod=vendor ./plugins/ipam/host-local \
@@ -190,6 +195,7 @@ RUN git clone --filter=tree:0 "${CONTAINERD_FUSE_OVERLAYFS_CLONE_URL}" /fuse-ove
     && cd /fuse-overlayfs-snapshotter \
     && git checkout "${CONTAINERD_FUSE_OVERLAYFS_VERSION}" \
     && eval "$(gimme "${GO_VERSION}")" \
+    && export GOTOOLCHAIN="go${GO_VERSION}" \
     && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
     && make bin/containerd-fuse-overlayfs-grpc \
     && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES ./cmd/containerd-fuse-overlayfs-grpc
