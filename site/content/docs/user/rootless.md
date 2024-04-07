@@ -83,7 +83,7 @@ $ systemd-run --scope --user kind create cluster
 
 ## Creating a kind cluster with Rootless nerdctl
 
-**Note: containerd v2.7+ is required**
+**Note: containerd v1.7+ is required**
 
 To create a kind cluster with nerdctl, just run:
 ```console
