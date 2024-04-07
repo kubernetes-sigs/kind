@@ -107,6 +107,8 @@ func (p *provider) Provision(status *cli.Status, cfg *config.Cluster) (err error
 	}
 
 	// actually create nodes
+	// TODO: remove once nerdctl handles concurrency better
+	// xref: https://github.com/containerd/nerdctl/issues/2908
 	for _, f := range createContainerFuncs {
 		if err := f(); err != nil {
 			return err
