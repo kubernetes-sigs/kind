@@ -40,3 +40,9 @@ version = 2
   tolerate_missing_hugepages_controller = true
   # restrict_oom_score_adj needs to be true when running inside UserNS (rootless)
   restrict_oom_score_adj = false
+
+# For now it is not the default, but eventually it will. This config is added
+# automatically at run time if the folder /etc/containerd/certs.d is detected in
+# the node image.
+#[plugins."io.containerd.grpc.v1.cri".registry]
+#  config_path = "/etc/containerd/certs.d"
