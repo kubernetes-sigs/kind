@@ -32,7 +32,6 @@ import (
 // NewCommand returns a new cobra.Command for cluster creation
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
-		Args:  cobra.NoArgs,
 		Use:   "completion",
 		Short: "Output shell completion code for the specified shell (bash, zsh or fish)",
 		Long:  longDescription,
