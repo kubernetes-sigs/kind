@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/log"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/common"
@@ -35,7 +36,7 @@ import (
 )
 
 // planCreation creates a slice of funcs that will create the containers
-func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs []func() error, err error) {
+func planCreation(cfg *config.Cluster, networkName string, logger log.Logger) (createContainerFuncs []func() error, err error) {
 	// these apply to all container creation
 	nodeNamer := common.MakeNodeNamer(cfg.Name)
 	names := make([]string, len(cfg.Nodes))
@@ -108,7 +109,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 				if err != nil {
 					return err
 				}
-				return createContainerWithWaitUntilSystemdReachesMultiUserSystem(name, args)
+				return createContainerWithWaitUntilSystemdReachesMultiUserSystem(name, args, logger)
 			})
 		case config.WorkerRole:
 			createContainerFuncs = append(createContainerFuncs, func() error {
@@ -116,7 +117,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 				if err != nil {
 					return err
 				}
-				return createContainerWithWaitUntilSystemdReachesMultiUserSystem(name, args)
+				return createContainerWithWaitUntilSystemdReachesMultiUserSystem(name, args, logger)
 			})
 		default:
 			return nil, errors.Errorf("unknown node role: %q", node.Role)
@@ -424,7 +425,7 @@ func createContainer(name string, args []string) error {
 	return exec.Command("podman", append([]string{"run", "--name", name}, args...)...).Run()
 }
 
-func createContainerWithWaitUntilSystemdReachesMultiUserSystem(name string, args []string) error {
+func createContainerWithWaitUntilSystemdReachesMultiUserSystem(name string, args []string, logger log.Logger) error {
 	if err := exec.Command("podman", append([]string{"run", "--name", name}, args...)...).Run(); err != nil {
 		return err
 	}
@@ -432,5 +433,5 @@ func createContainerWithWaitUntilSystemdReachesMultiUserSystem(name string, args
 	logCtx, logCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer logCancel()
 	logCmd := exec.CommandContext(logCtx, "podman", "logs", "-f", name)
-	return common.WaitUntilLogRegexpMatches(logCtx, logCmd, common.NodeReachedCgroupsReadyRegexp())
+	return common.WaitUntilLogRegexpMatches(logCtx, logCmd, common.NodeReachedCgroupsReadyRegexp(), logger)
 }
