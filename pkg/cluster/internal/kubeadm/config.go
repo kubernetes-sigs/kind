@@ -57,7 +57,7 @@ type ConfigData struct {
 	// The Token for TLS bootstrap
 	Token string
 
-	// KubeProxyMode defines the kube-proxy mode between iptables or ipvs
+	// KubeProxyMode defines the kube-proxy mode between iptables, ipvs or nftables
 	KubeProxyMode string
 	// The subnet used for pods
 	PodSubnet string

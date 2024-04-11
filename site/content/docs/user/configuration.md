@@ -217,14 +217,14 @@ networking:
 
 #### kube-proxy mode
 
-You can configure the kube-proxy mode that will be used, between iptables and ipvs. By
-default iptables is used
+You can configure the kube-proxy mode that will be used, between iptables, ipvs and nftables.
+By default iptables is used
 
 {{< codeFromInline lang="yaml" >}}
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 networking:
-  kubeProxyMode: "ipvs"
+  kubeProxyMode: "nftables"
 {{< /codeFromInline >}}
 
 To disable kube-proxy, set the mode to `"none"`.
