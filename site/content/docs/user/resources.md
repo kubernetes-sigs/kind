@@ -52,6 +52,12 @@ The authors have given the following talks relating to KIND:
 
 ### Deep Dive: KIND - Benjamin Elder & Antonio Ojea
 
+At KubeCon EU 2024 we spoke about - [Keep Calm and Load Balance on KIND - Antonio Ojea & Benjamin Elder, Google](https://sched.co/1YhhY)
+
+{{< youtube id="U6_-y24rJnI" class="video-wrapper" >}}
+
+### Deep Dive: KIND - Benjamin Elder & Antonio Ojea
+
 At KubeCon US 2019 we spoke about [KIND internals and the challenges ahead on the road to 1.0][kind-deep-dive].
 
 {{< youtube id="tT-GiZAr6eQ" class="video-wrapper" >}}
