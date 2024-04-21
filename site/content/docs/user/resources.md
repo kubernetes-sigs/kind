@@ -50,9 +50,9 @@ https://docs.gitlab.com/charts/development/kind/
 
 The authors have given the following talks relating to KIND:
 
-### Deep Dive: KIND - Benjamin Elder & Antonio Ojea
+### Keep Calm and Load Balance on KIND - Benjamin Elder & Antonio Ojea
 
-At KubeCon EU 2024 we spoke about - [Keep Calm and Load Balance on KIND - Antonio Ojea & Benjamin Elder, Google](https://sched.co/1YhhY)
+At KubeCon EU 2024 we spoke about [Cloud Provider KIND and how to use Load Balancers Services with KIND](https://sched.co/1YhhY)
 
 {{< youtube id="U6_-y24rJnI" class="video-wrapper" >}}
 
