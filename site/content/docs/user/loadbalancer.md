@@ -26,7 +26,7 @@ Cloud Provider KIND can be installed using golang
 go install sigs.k8s.io/cloud-provider-kind@latest
 {{< /codeFromInline >}}
 
-or downlading one of the [released binaries](https://github.com/kubernetes-sigs/cloud-provider-kind/releases).
+or downloading one of the [released binaries](https://github.com/kubernetes-sigs/cloud-provider-kind/releases).
 
 Cloud Provider KIND runs as a standalone binary in your host and connects to your KIND cluster and provisions new Load Balancer containers for your Services. It requires privileges to open ports on the system and to connect to the container runtime.
 
