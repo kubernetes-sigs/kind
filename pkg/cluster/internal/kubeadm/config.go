@@ -285,7 +285,7 @@ evictionHard:
 {{ range $index, $gate := .SortedFeatureGates }}
   "{{ (StructuralData $gate.Name) }}": {{ $gate.Value }}
 {{end}}{{end}}
-{{if ne .KubeProxyMode "None"}}
+{{if ne .KubeProxyMode "none"}}
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
@@ -302,6 +302,12 @@ conntrack:
 # Skip setting sysctl value "net.netfilter.nf_conntrack_max"
 # It is a global variable that affects other namespaces
   maxPerCore: 0
+# Set sysctl value "net.netfilter.nf_conntrack_tcp_be_liberal"
+# for nftables proxy (theoretically for kernels older than 6.1)
+# xref: https://github.com/kubernetes/kubernetes/issues/117924
+{{if and (eq .KubeProxyMode "nftables") (not .RootlessProvider)}}
+  tcpBeLiberal: true
+{{end}}
 {{if .RootlessProvider}}
 # Skip setting "net.netfilter.nf_conntrack_tcp_timeout_established"
   tcpEstablishedTimeout: 0s
@@ -423,7 +429,7 @@ evictionHard:
   "{{ (StructuralData $gate.Name) }}": {{ $gate.Value }}
 {{end}}{{end}}
 {{if .DisableLocalStorageCapacityIsolation}}localStorageCapacityIsolation: false{{end}}
-{{if ne .KubeProxyMode "None"}}
+{{if ne .KubeProxyMode "none"}}
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
@@ -440,6 +446,12 @@ conntrack:
 # Skip setting sysctl value "net.netfilter.nf_conntrack_max"
 # It is a global variable that affects other namespaces
   maxPerCore: 0
+# Set sysctl value "net.netfilter.nf_conntrack_tcp_be_liberal"
+# for nftables proxy (theoretically for kernels older than 6.1)
+# xref: https://github.com/kubernetes/kubernetes/issues/117924
+{{if and (eq .KubeProxyMode "nftables") (not .RootlessProvider)}}
+  tcpBeLiberal: true
+{{end}}
 {{if .RootlessProvider}}
 # Skip setting "net.netfilter.nf_conntrack_tcp_timeout_established"
   tcpEstablishedTimeout: 0s
