@@ -302,6 +302,12 @@ conntrack:
 # Skip setting sysctl value "net.netfilter.nf_conntrack_max"
 # It is a global variable that affects other namespaces
   maxPerCore: 0
+# Set sysctl value "net.netfilter.nf_conntrack_tcp_be_liberal"
+# for nftables proxy (theoretically for kernels older than 6.1)
+# xref: https://github.com/kubernetes/kubernetes/issues/117924
+{{if and (eq .KubeProxyMode "nftables") (not .RootlessProvider)}}
+  tcpBeLiberal: true
+{{end}}
 {{if .RootlessProvider}}
 # Skip setting "net.netfilter.nf_conntrack_tcp_timeout_established"
   tcpEstablishedTimeout: 0s
@@ -440,6 +446,12 @@ conntrack:
 # Skip setting sysctl value "net.netfilter.nf_conntrack_max"
 # It is a global variable that affects other namespaces
   maxPerCore: 0
+# Set sysctl value "net.netfilter.nf_conntrack_tcp_be_liberal"
+# for nftables proxy (theoretically for kernels older than 6.1)
+# xref: https://github.com/kubernetes/kubernetes/issues/117924
+{{if and (eq .KubeProxyMode "nftables") (not .RootlessProvider)}}
+  tcpBeLiberal: true
+{{end}}
 {{if .RootlessProvider}}
 # Skip setting "net.netfilter.nf_conntrack_tcp_timeout_established"
   tcpEstablishedTimeout: 0s
