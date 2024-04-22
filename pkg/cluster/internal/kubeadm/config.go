@@ -285,7 +285,7 @@ evictionHard:
 {{ range $index, $gate := .SortedFeatureGates }}
   "{{ (StructuralData $gate.Name) }}": {{ $gate.Value }}
 {{end}}{{end}}
-{{if ne .KubeProxyMode "None"}}
+{{if ne .KubeProxyMode "none"}}
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
@@ -423,7 +423,7 @@ evictionHard:
   "{{ (StructuralData $gate.Name) }}": {{ $gate.Value }}
 {{end}}{{end}}
 {{if .DisableLocalStorageCapacityIsolation}}localStorageCapacityIsolation: false{{end}}
-{{if ne .KubeProxyMode "None"}}
+{{if ne .KubeProxyMode "none"}}
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
