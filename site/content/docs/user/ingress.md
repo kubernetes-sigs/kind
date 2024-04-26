@@ -85,34 +85,34 @@ Additional information about Contour can be found at: [projectcontour.io](https:
 
 ### Ingress Kong
 
-Deploy [Kong Ingress Controller (KIC)](https://docs.konghq.com/kubernetes-ingress-controller/2.1.x/concepts/design/).
+Create a [Kong Ingress Controller (KIC)](https://docs.konghq.com/kubernetes-ingress-controller/latest/) configuration file to forward the `hostPorts` to the ingress controller, set taint tolerations, and schedule it to the custom labeled node.
 
 {{< codeFromInline lang="bash" >}}
-kubectl apply -f https://raw.githubusercontent.com/Kong/kubernetes-ingress-controller/master/deploy/single/all-in-one-dbless.yaml
+cat <<EOF > values.yaml
+proxy:
+ type: NodePort
+ http:
+   hostPort: 80
+ tls:
+   hostPort: 443
+nodeSelector:
+  ingress-ready: "true"
+tolerations:
+- key: node-role.kubernetes.io/control-plane
+  operator: Equal
+  effect: NoSchedule
+- key: node-role.kubernetes.io/master
+  operator: Equal
+  effect: NoSchedule
+EOF
 {{< /codeFromInline >}}
 
-Apply kind specific patches to forward the `hostPorts` to the ingress controller, set taint tolerations, and schedule it to the custom labeled node.
-
-```json
-{{% readFile "static/examples/ingress/kong/deployment.patch.json" %}}
-```
-
-Apply it by running:
+Deploy KIC with the file created above.
 
 {{< codeFromInline lang="bash" >}}
-kubectl patch deployment -n kong proxy-kong -p '{{< minify file="static/examples/ingress/kong/deployment.patch.json" >}}'
-{{< /codeFromInline >}}
-
-Apply kind specific patch to change service type to `NodePort`:
-
-```json
-{{% readFile "static/examples/ingress/kong/service.patch.json" %}}
-```
-
-Apply it by running:
-
-{{< codeFromInline lang="bash" >}}
-kubectl patch service -n kong kong-proxy -p '{{< minify file="static/examples/ingress/kong/service.patch.json" >}}'
+helm repo add kong https://charts.konghq.com
+helm repo update
+helm install kong/kong --generate-name --set ingressController.installCRDs=false -f values.yaml
 {{< /codeFromInline >}}
 
 KIC can be used to configure ingress now.
