@@ -107,7 +107,7 @@ If you installed Docker with [snap], it is likely that `docker` commands do not
 have access to `$TMPDIR`. This may break some kind commands which depend
 on using temp directories (`kind build ...`).
 
-Currently a workaround for this is setting the `TEMPDIR` environment variable to
+Currently a workaround for this is setting the `TMPDIR` environment variable to
 a directory snap does have access to when working with kind.
 This can for example be some directory under `$HOME`.
 
