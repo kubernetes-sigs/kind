@@ -122,7 +122,7 @@ RUN eval "$(gimme "${GO_VERSION}")" \
 # stage for building containerd
 FROM go-build as build-containerd
 ARG TARGETARCH GO_VERSION
-ARG CONTAINERD_VERSION="v1.7.15"
+ARG CONTAINERD_VERSION="v1.7.16"
 ARG CONTAINERD_CLONE_URL="https://github.com/containerd/containerd"
 # we don't build with optional snapshotters, we never select any of these
 # they're not ideal inside kind anyhow, and we save some disk space
