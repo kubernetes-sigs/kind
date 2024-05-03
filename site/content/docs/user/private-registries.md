@@ -91,8 +91,8 @@ See Google's [upstream docs][keyFileAuthentication] on key file authentication f
 #### Use a Certificate
 
 If you have a registry authenticated with certificates, and both certificates and keys
-reside on your host folder, it is possible to mount and use them into the `containerd` plugin
-patching the default configuration, like in the example:
+reside on your host folder, it is possible to mount to docker config which is compatible
+with containerd, like in this example:
 
 {{< codeFromInline lang="yaml" >}}
 kind: Cluster
@@ -100,13 +100,13 @@ apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
   - role: control-plane
     # This option mounts the host docker registry folder into
-    # the control-plane node, allowing containerd to access them. 
+    # the control-plane node, allowing containerd to access them.
     extraMounts:
       - containerPath: /etc/docker/certs.d/registry.dev.example.com
-        hostPath: /etc/docker/certs.d/registry.dev.example.com
-containerdConfigPatches:
-  - |-
-    [plugins."io.containerd.grpc.v1.cri".registry.configs."registry.dev.example.com".tls]
-      cert_file = "/etc/docker/certs.d/registry.dev.example.com/ba_client.cert"
-      key_file  = "/etc/docker/certs.d/registry.dev.example.com/ba_client.key"
+        hostPath: /etc/containerd/certs.d/registry.dev.example.com
 {{< /codeFromInline >}}
+
+Note that if you have a hosts.toml file inside the registry configuration, this file needs
+to explicitly mention the TLS certificates/keys, see the [CRI documentation][criDocumentation]
+
+[criDocumentation]: https://github.com/containerd/containerd/blob/main/docs/hosts.md
