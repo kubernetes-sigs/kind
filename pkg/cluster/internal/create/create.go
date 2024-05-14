@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	configaction "sigs.k8s.io/kind/pkg/cluster/internal/create/actions/config"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installcni"
+	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installnetworkpolicies"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/installstorage"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/kubeadminit"
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions/kubeadmjoin"
@@ -119,6 +120,11 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 		if !opts.Config.Networking.DisableDefaultCNI {
 			actionsToRun = append(actionsToRun,
 				installcni.NewAction(), // install CNI
+			)
+		}
+		if opts.Config.Networking.NetworkPolicies {
+			actionsToRun = append(actionsToRun,
+				installnetworkpolicies.NewAction(), // install Network Policies
 			)
 		}
 		// add remaining steps
