@@ -214,6 +214,20 @@ networking:
   disableDefaultCNI: true
 {{< /codeFromInline >}}
 
+#### Network Policies
+
+KIND ships with an implementation of Kubernetes Network Policies
+[kube-network-policies](https://github.com/kubernetes-sigs/kube-network-policies) that
+is disabled by default.
+
+You may enable this option by setting the corresponding configuration.
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  networkPolicies: true
+{{< /codeFromInline >}}
+
 
 #### kube-proxy mode
 
