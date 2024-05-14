@@ -51,7 +51,8 @@ type buildContext struct {
 	baseImage string
 	logger    log.Logger
 	arch      string
-	kubeRoot  string
+	buildType string
+	kubeParam string
 	// non-option fields
 	builder kube.Builder
 }

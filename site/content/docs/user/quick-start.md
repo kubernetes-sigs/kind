@@ -259,7 +259,7 @@ container.
 
 Currently, kind supports one default way to build a `node-image`
 if you have the [Kubernetes][kubernetes] source in your host machine
-(`$GOPATH/src/k8s.io/kubernetes`), by using `docker`.
+(`$GOPATH/src/k8s.io/kubernetes`), by using `source`.
 
 You can also specify a different path to kubernetes source using 
 ```
@@ -269,6 +269,30 @@ kind build node-image /path/to/kubernetes/source
 > **NOTE**: Building Kubernetes node-images requires everything building upstream
 > Kubernetes requires, we wrap the upstream build. This includes Docker with buildx.
 > See: https://git.k8s.io/community/contributors/devel/development.md#building-kubernetes-with-docker
+
+One shortcut to use a kubernetes release is to specify the version
+directly to pick up the official tar-gzipped files:
+```
+kind build node-image v1.30.0
+```
+
+If you prefer to use existing tar-gzipped files like the ones from the kubernetes
+release, you can specify those as well from a URL or local directory, for example:
+```
+kind build node-image https://dl.k8s.io/v1.30.0/kubernetes-server-linux-arm64.tar.gz
+kind build node-image $HOME/Downloads/kubernetes-server-linux-amd64.tar.gz
+```
+
+To clear any confusion, you can specify the type of build explicitly
+using `--type` parameter, please see the following examples:
+```
+kind build node-image --type url https://dl.k8s.io/v1.30.0/kubernetes-server-linux-arm64.tar.gz
+kind build node-image --type file $HOME/Downloads/kubernetes-server-linux-amd64.tar.gz
+kind build node-image --type release v1.30.0
+kind build node-image --type source $HOME/go/src/k8s.io/kubernetes/
+```
+> **NOTE**: modes other than source directory namely `url`, `file` and `release` are only
+> available in kind v0.24 and above.
 
 ### Settings for Docker Desktop
 
