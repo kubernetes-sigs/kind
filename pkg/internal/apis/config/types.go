@@ -148,6 +148,8 @@ type Networking struct {
 	// If DisableDefaultCNI is true, kind will not install the default CNI setup.
 	// Instead the user should install their own CNI after creating the cluster.
 	DisableDefaultCNI bool
+	// If NetworkPolicies is true, kind will install the default Network Policy setup.
+	NetworkPolicies bool
 	// KubeProxyMode defines if kube-proxy should operate in iptables, ipvs or nftables mode
 	KubeProxyMode ProxyMode
 	// DNSSearch defines the DNS search domain to use for nodes. If not set, this will be inherited from the host.

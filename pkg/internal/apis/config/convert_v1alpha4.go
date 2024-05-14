@@ -85,6 +85,7 @@ func convertv1alpha4Networking(in *v1alpha4.Networking, out *Networking) {
 	out.KubeProxyMode = ProxyMode(in.KubeProxyMode)
 	out.ServiceSubnet = in.ServiceSubnet
 	out.DisableDefaultCNI = in.DisableDefaultCNI
+	out.NetworkPolicies = in.NetworkPolicies
 	out.DNSSearch = in.DNSSearch
 }
 

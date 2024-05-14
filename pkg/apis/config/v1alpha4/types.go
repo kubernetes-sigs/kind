@@ -186,6 +186,8 @@ type Networking struct {
 	// If DisableDefaultCNI is true, kind will not install the default CNI setup.
 	// Instead the user should install their own CNI after creating the cluster.
 	DisableDefaultCNI bool `yaml:"disableDefaultCNI,omitempty" json:"disableDefaultCNI,omitempty"`
+	// If NetworkPolicies is true, kind will install the default Network Policy setup.
+	NetworkPolicies bool `yaml:"networkPolicies,omitempty" json:"networkPolicies,omitempty"`
 	// KubeProxyMode defines if kube-proxy should operate in iptables, ipvs or nftables mode
 	// Defaults to 'iptables' mode
 	KubeProxyMode ProxyMode `yaml:"kubeProxyMode,omitempty" json:"kubeProxyMode,omitempty"`
