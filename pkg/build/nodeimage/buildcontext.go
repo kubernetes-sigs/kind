@@ -251,6 +251,14 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVers
 	// all builds should install the default storage driver images currently
 	requiredImages = append(requiredImages, defaultStorageImages...)
 
+	// write the default Network Policy manifest
+	if err := createFile(cmder, defaultNetworkPolicyManifestLocation, defaultNetworkPolicyManifest); err != nil {
+		c.logger.Errorf("Image build Failed! Failed write default Network Policy Manifest: %v", err)
+		return nil, err
+	}
+	// all builds should install the default network policies images currently
+	requiredImages = append(requiredImages, defaultNetworkPolicyImage...)
+
 	// setup image importer
 	importer := newContainerdImporter(cmder)
 	if err := importer.Prepare(); err != nil {
