@@ -107,6 +107,10 @@ type DerivedConfigData struct {
 	IPv6 bool
 	// kubelet cgroup driver, based on kubernetes version
 	CgroupDriver string
+	// JoinSkipPhases are the skipPhases values for the JoinConfiguration.
+	JoinSkipPhases []string
+	// InitSkipPhases are the skipPhases values for the InitConfiguration.
+	InitSkipPhases []string
 }
 
 type FeatureGate struct {
@@ -166,6 +170,14 @@ func (c *ConfigData) Derive() {
 		runtimeConfig = append(runtimeConfig, fmt.Sprintf("%s=%s", k, v))
 	}
 	c.RuntimeConfigString = strings.Join(runtimeConfig, ",")
+
+	// skip preflight checks, as these have undesirable side effects
+	// and don't tell us much. requires kubeadm 1.22+
+	c.JoinSkipPhases = []string{"preflight"}
+	c.InitSkipPhases = []string{"preflight"}
+	if c.KubeProxyMode == string(config.NoneProxyMode) {
+		c.InitSkipPhases = append(c.InitSkipPhases, "addon/kube-proxy")
+	}
 }
 
 // See docs for these APIs at:
@@ -380,6 +392,12 @@ nodeRegistration:
     node-ip: "{{ .NodeAddress }}"
     provider-id: "kind://{{.NodeProvider}}/{{.ClusterName}}/{{.NodeName}}"
     node-labels: "{{ .NodeLabels }}"
+{{ if .InitSkipPhases -}}
+skipPhases:
+  {{ range $phase := .InitSkipPhases -}}
+  - "{{ $phase }}"
+  {{- end }}
+{{- end }}
 ---
 # no-op entry that exists solely so it can be patched
 apiVersion: kubeadm.k8s.io/v1beta3
@@ -403,6 +421,12 @@ discovery:
     apiServerEndpoint: "{{ .ControlPlaneEndpoint }}"
     token: "{{ .Token }}"
     unsafeSkipCAVerification: true
+{{ if .JoinSkipPhases -}}
+skipPhases:
+  {{ range $phase := .JoinSkipPhases -}}
+  - "{{ $phase }}"
+  {{- end }}
+{{- end }}
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
