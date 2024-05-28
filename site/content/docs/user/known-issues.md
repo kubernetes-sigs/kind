@@ -43,6 +43,7 @@ description: |-
 * [Failed to get rootfs info](#failed-to-get-rootfs-info--stat-failed-on-dev)
 * [Failure to Create Cluster with Docker Desktop as Container Runtime](#failure-to-create-cluster-with-docker-desktop-as-container-runtime)
 * [Docker Desktop for macOS and Windows](#docker-desktop-for-macos-and-windows)
+* [Older Linux Distributions](#older-linux-distributions)
 
 ## Troubleshooting Kind
 
@@ -435,3 +436,18 @@ restarting the Docker Engine, the VM used by Docker Desktop will use cgroupv1.
 ## Docker Desktop for macOS and Windows
 
 Docker containers cannot be executed natively on macOS and Windows, therefore Docker Desktop runs them in a Linux VM. As a consequence, the container networks are not exposed to the host and you cannot reach the kind nodes via IP. You can work around this limitation by configuring [extra port mappings](https://kind.sigs.k8s.io/docs/user/configuration/#extra-port-mappings) though.
+
+## Older Linux Distributions
+
+KIND uses a cgroup setting of `cgroupns=private`. The cgroup namespace functionality was added in 2016, so some of the
+older Linux distributions, using older kernels, do not have the required functionality for KIND to work. Notably, distros
+like Red Hat Enterprise Linux 7 and its clones.
+
+Attempting to create a KIND cluster on a system with an older kernel will result in a failure, with an error message similar to:
+
+```txt
+Command Output: WARNING: Your kernel does not support cgroup namespaces.  Cgroup namespace setting discarded.
+```
+
+Using KIND in these environments will require upgrading your OS to a more recent version that supports cgroup namespaces.
+Another option is to run a virtual machine using a newer kernel.
