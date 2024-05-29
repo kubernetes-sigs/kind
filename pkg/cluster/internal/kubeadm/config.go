@@ -171,8 +171,9 @@ func (c *ConfigData) Derive() {
 	}
 	c.RuntimeConfigString = strings.Join(runtimeConfig, ",")
 
-	// skip preflight checks, as these have undesirable side effects
-	// and don't tell us much. requires kubeadm 1.22+
+	// Skip preflight to avoid pulling images.
+	// Kind pre-pulls images and preflight may conflict with that.
+	// requires kubeadm 1.22+
 	c.JoinSkipPhases = []string{"preflight"}
 	c.InitSkipPhases = []string{"preflight"}
 	if c.KubeProxyMode == string(config.NoneProxyMode) {
