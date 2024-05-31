@@ -81,8 +81,8 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	// Newer versions set this in the config file.
 	if kubeVersion.LessThan(version.MustParseSemantic("v1.23.0")) {
-		// skip preflight checks, as these have undesirable side effects
-		// and don't tell us much. requires kubeadm 1.13+
+		// Skip preflight to avoid pulling images.
+		// Kind pre-pulls images and preflight may conflict with that.
 		skipPhases := "preflight"
 		if a.skipKubeProxy {
 			skipPhases += ",addon/kube-proxy"
