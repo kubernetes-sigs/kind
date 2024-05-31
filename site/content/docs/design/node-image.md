@@ -13,13 +13,13 @@ nested containers, systemd, and Kubernetes components.
 
 This image is built on top of the ["base" image][base image].
 
-Logic for building ["node" image][node image] can be found in [`pkg/build`][build package],
+Logic for building the ["node" image][node image] can be found in [`pkg/build`][build package],
 and it can be built with `kind build node-image` respectively.
 
 ## Design
 
-Other than the requirement that this image inherits from the "base" image, which
-provides most of the tools statically needed for a kubernetes deployment
+Other than the requirements that this image inherits from the "base" image, which
+provides most of the tools statically needed for a Kubernetes deployment
 (eg `systemd`), variants of this image have the following properties:
 
 - `/kind/images/` contains various `*.tar` files which are 
