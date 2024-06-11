@@ -3,11 +3,9 @@
 
 # Vagrant box for testing kind with non-Ubuntu
 Vagrant.configure("2") do |config|
-  # `config.vm.box = "fedora/37-cloud-base"` seems flaky,
-  # so we specify the URL explicitly.
-  # Mirrors can be found at here: https://admin.fedoraproject.org/mirrormanager/mirrors/Fedora/37/x86_64
-  config.vm.box = "dummy"
-  config.vm.box_url = "https://mirror.math.princeton.edu/pub/fedora-archive/fedora/linux/releases/37/Cloud/x86_64/images/Fedora-Cloud-Base-Vagrant-37-1.7.x86_64.vagrant-virtualbox.box"
+  config.vm.box = "fedora/39-cloud-base"
+  # https://mirrormanager.fedoraproject.org/mirrors/Fedora/39/x86_64
+  config.vm.box_url = "https://gsl-syd.mm.fcix.net/fedora/linux/releases/39/Cloud/x86_64/images/Fedora-Cloud-Base-Vagrant-39-1.5.x86_64.vagrant-virtualbox.box"
   # assume some ram is needed for the host environment but very little CPU
   memory = 10240
   cpus = 3
