@@ -7,7 +7,7 @@ Vagrant.configure("2") do |config|
   # so we specify the URL explicitly.
   # Mirrors can be found at here: https://admin.fedoraproject.org/mirrormanager/mirrors/Fedora/37/x86_64
   config.vm.box = "dummy"
-  config.vm.box_url = "https://iad.mirror.rackspace.com/fedora/releases/37/Cloud/x86_64/images/Fedora-Cloud-Base-Vagrant-37-1.7.x86_64.vagrant-virtualbox.box"
+  config.vm.box_url = "https://mirror.math.princeton.edu/pub/fedora-archive/fedora/linux/releases/37/Cloud/x86_64/images/Fedora-Cloud-Base-Vagrant-37-1.7.x86_64.vagrant-virtualbox.box"
   # assume some ram is needed for the host environment but very little CPU
   memory = 10240
   cpus = 3
