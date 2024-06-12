@@ -14,7 +14,7 @@ permissions:
 jobs:
   vm:
     # Fedora is different from Ubuntu in LSM (SELinux), filesystem (btrfs), kernel version, etc.
-    name: "VM (Fedora)"
+    name: "CGroupv2 (Fedora)"
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     strategy:
