@@ -27,27 +27,6 @@ Stable tagged releases (currently {{< stableVersion >}}) are generally strongly 
 
 You may need to install the latest code from source at HEAD if you are developing Kubernetes itself at HEAD / the latest sources.
 
-### Installing With A Package Manager
-
-The kind community has enabled installation via the following package managers.
-
-On macOS via Homebrew:
-
-{{< codeFromInline lang="bash" >}}
-brew install kind
-{{< /codeFromInline >}}
-
-On macOS via MacPorts:
-
-{{< codeFromInline lang="bash" >}}
-sudo port selfupdate && sudo port install kind
-{{< /codeFromInline >}}
-
-On Windows via Chocolatey (https://chocolatey.org/packages/kind)
-{{< codeFromInline lang="powershell" >}}
-choco install kind
-{{< /codeFromInline >}}
-
 ### Installing From Release Binaries
 
 Pre-built binaries are available on our [releases page](https://github.com/kubernetes-sigs/kind/releases).
@@ -117,6 +96,29 @@ for more on this.
 You may need to add that directory to your `$PATH` if you encounter the error
 `kind: command not found` after installation, you can find a guide for adding a directory to your `PATH` at https://gist.github.com/nex3/c395b2f8fd4b02068be37c961301caa7#file-path-md.
 
+### Installing With A Package Manager
+
+The kind community has enabled installation via the following package managers.
+
+> **NOTE**: The following are community supported efforts. The `kind` maintainers are not involved in the creation
+> of these packages, and the upstream community makes no claims on the validity, safety, or content of them.
+
+On macOS via Homebrew:
+
+{{< codeFromInline lang="bash" >}}
+brew install kind
+{{< /codeFromInline >}}
+
+On macOS via MacPorts:
+
+{{< codeFromInline lang="bash" >}}
+sudo port selfupdate && sudo port install kind
+{{< /codeFromInline >}}
+
+On Windows via Chocolatey (https://chocolatey.org/packages/kind)
+{{< codeFromInline lang="powershell" >}}
+choco install kind
+{{< /codeFromInline >}}
 
 ## Creating a Cluster
 
