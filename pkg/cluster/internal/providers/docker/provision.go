@@ -320,41 +320,73 @@ func getSubnets(networkName string) ([]string, error) {
 }
 
 // generateMountBindings converts the mount list to a list of args for docker
-// '<HostPath>:<ContainerPath>[:options]', where 'options'
-// is a comma-separated list of the following strings:
+// for volumes, the format is '<HostPath>:<ContainerPath>[:options]'
+// where 'options' is a comma-separated list of the following strings:
 // 'ro', if the path is read only
 // 'Z', if the volume requires SELinux relabeling
+// for bind mounts, the format is 'type=bind,src=<HostPath>,dst=<ContainerPath>[:options]'
 func generateMountBindings(mounts ...config.Mount) []string {
 	args := make([]string, 0, len(mounts))
 	for _, m := range mounts {
-		bind := fmt.Sprintf("%s:%s", m.HostPath, m.ContainerPath)
-		var attrs []string
-		if m.Readonly {
-			attrs = append(attrs, "ro")
+		if strings.Contains(m.HostPath, ":") || strings.Contains(m.ContainerPath, ":") {
+			// if either path contains a colon, docker requires it to be a bind mount
+			bind := fmt.Sprintf("--mount type=bind,src=%s,dst=%s", m.HostPath, m.ContainerPath)
+			bind = strings.Join(append([]string{bind}, mountAttrs(m)...), ",")
+			args = append(args, bind)
+		} else {
+			// otherwise it's safe to use a volume mount
+			bind := fmt.Sprintf("%s:%s", m.HostPath, m.ContainerPath)
+			var attrs = volumeAttrs(m)
+			if len(attrs) > 0 {
+				bind = fmt.Sprintf("%s:%s", bind, strings.Join(attrs, ","))
+			}
+			args = append(args, fmt.Sprintf("--volume=%s", bind))
 		}
-		// Only request relabeling if the pod provides an SELinux context. If the pod
-		// does not provide an SELinux context relabeling will label the volume with
-		// the container's randomly allocated MCS label. This would restrict access
-		// to the volume to the container which mounts it first.
-		if m.SelinuxRelabel {
-			attrs = append(attrs, "Z")
-		}
-		switch m.Propagation {
-		case config.MountPropagationNone:
-			// noop, private is default
-		case config.MountPropagationBidirectional:
-			attrs = append(attrs, "rshared")
-		case config.MountPropagationHostToContainer:
-			attrs = append(attrs, "rslave")
-		default: // Falls back to "private"
-		}
-		if len(attrs) > 0 {
-			bind = fmt.Sprintf("%s:%s", bind, strings.Join(attrs, ","))
-		}
-		args = append(args, fmt.Sprintf("--volume=%s", bind))
 	}
 	return args
 }
+
+// mountAttrs returns the attributes for a mount
+func mountAttrs(m config.Mount) []string {
+	attrs := []string{}
+	if m.Readonly {
+		attrs = append(attrs, "readonly")
+	}
+	switch m.Propagation {
+	case config.MountPropagationNone:
+		// noop, private is default
+	case config.MountPropagationBidirectional:
+		attrs = append(attrs, "bind-propagation=rshared")
+	case config.MountPropagationHostToContainer:
+		attrs = append(attrs, "bind-propagation=rslave")
+	default: // Falls back to "private"
+	}
+	return attrs
+}
+
+// volumeAttrs returns the attributes for a volume mount
+func volumeAttrs(m config.Mount) []string {
+	if m.Readonly {
+		attrs = append(attrs, "ro")
+	}
+	// Only request relabeling if the pod provides an SELinux context. If the pod
+	// does not provide an SELinux context relabeling will label the volume with
+	// the container's randomly allocated MCS label. This would restrict access
+	// to the volume to the container which mounts it first.
+	if m.SelinuxRelabel {
+		attrs = append(attrs, "Z")
+	}
+	switch m.Propagation {
+	case config.MountPropagationNone:
+		// noop, private is default
+	case config.MountPropagationBidirectional:
+		attrs = append(attrs, "rshared")
+	case config.MountPropagationHostToContainer:
+		attrs = append(attrs, "rslave")
+	default: // Falls back to "private"
+	}
+}
+
 
 // generatePortMappings converts the portMappings list to a list of args for docker
 func generatePortMappings(clusterIPFamily config.ClusterIPFamily, portMappings ...config.PortMapping) ([]string, error) {
