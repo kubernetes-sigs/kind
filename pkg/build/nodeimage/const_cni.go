@@ -99,6 +99,7 @@ spec:
       containers:
       - name: kindnet-cni
         image: ` + kindnetdImage + `
+        imagePullPolicy: IfNotPresent
         env:
         - name: HOST_IP
           valueFrom:
