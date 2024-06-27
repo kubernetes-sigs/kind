@@ -20,10 +20,12 @@ by the ingress controller `nodeSelector`.
 
 
 1. [Create a cluster](#create-cluster)
-2. Deploy an Ingress controller, the following ingress controllers are known to work:
-    - [Contour](#contour)
-    - [Ingress Kong](#ingress-kong)
-    - [Ingress NGINX](#ingress-nginx)
+2. Deploy an Ingress controller, we document [Ingress NGINX](#ingress-nginx) here but other ingresses may work including [Contour](https://projectcontour.io/docs/main/guides/kind/) and Kong, you should follow their docs if you choose to use them.
+
+> **NOTE**: You may also want to consider using [Gateway API](https://gateway-api.sigs.k8s.io/) instead of Ingress.
+> Gateway API has an [Ingress migration guide](ttps://gateway-api.sigs.k8s.io/guides/migrating-from-ingress/).
+>
+> You can use blixit to test Gateway API with kind https://github.com/kubernetes-sigs/blixt#usage
 
 ### Create Cluster
 
@@ -53,35 +55,6 @@ nodes:
     protocol: TCP
 EOF
 {{< /codeFromInline >}}
-
-### Contour
-
-Deploy [Contour components](https://projectcontour.io/quickstart/contour.yaml).
-
-{{< codeFromInline lang="bash" >}}
-kubectl apply -f https://projectcontour.io/quickstart/contour.yaml
-{{< /codeFromInline >}}
-
-Apply kind specific patches to forward the hostPorts to the
-ingress controller, set taint tolerations and
-schedule it to the custom labelled node.
-
-```json
-{{% readFile "static/examples/ingress/contour/patch.json" %}}
-```
-
-Apply it by running:
-
-{{< codeFromInline lang="bash" >}}
-kubectl patch daemonsets -n projectcontour envoy -p '{{< minify file="static/examples/ingress/contour/patch.json" >}}'
-{{< /codeFromInline >}}
-
-Now Contour is ready to be used.
-Refer to Contour's [Getting Started](https://projectcontour.io/getting-started/#test-it-out) documentation for a basic usage example.
-
-Note, the example in [Using Ingress](#using-ingress) will not work with Contour because it uses nginx-specific annotations on the Ingress resource.
-
-Additional information about Contour can be found at: [projectcontour.io](https://projectcontour.io)
 
 ### Ingress NGINX
 
