@@ -71,7 +71,6 @@ for arch in "${__arches__[@]}"; do
 done
 
 # combine to manifest list tagged with kubernetes version
-export DOCKER_CLI_EXPERIMENTAL=enabled
 # images must be pushed to be referenced by docker manifest
 # we push only after all builds have succeeded
 for image in "${images[@]}"; do
