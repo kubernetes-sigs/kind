@@ -27,9 +27,6 @@ IMAGE?=$(REGISTRY)/$(IMAGE_NAME):$(TAG)$(TAG_SUFFIX)
 # Go version to use, respected by images that build go binaries
 GO_VERSION=$(shell cat $(CURDIR)/../../.go-version | head -n1)
 
-# required to enable buildx
-export DOCKER_CLI_EXPERIMENTAL=enabled
-
 # build with buildx
 PLATFORMS?=linux/amd64,linux/arm64
 OUTPUT?=
