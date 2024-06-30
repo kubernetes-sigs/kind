@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -55,8 +56,11 @@ type IPMasqAgent struct {
 // these rules only needs to be installed once, but we run it periodically to check that are
 // not deleted by an external program. It fails if can't sync the rules during 3 iterations
 // TODO: aggregate errors
-func (ma *IPMasqAgent) SyncRulesForever(interval time.Duration) error {
+func (ma *IPMasqAgent) SyncRulesForever(ctx context.Context, interval time.Duration) error {
 	errs := 0
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
 	for {
 		if err := ma.SyncRules(); err != nil {
 			errs++
@@ -66,7 +70,10 @@ func (ma *IPMasqAgent) SyncRulesForever(interval time.Duration) error {
 		} else {
 			errs = 0
 		}
-		time.Sleep(interval)
+		select {
+		case <-ctx.Done():
+		case <-ticker.C:
+		}
 	}
 }
 
