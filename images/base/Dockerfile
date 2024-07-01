@@ -237,7 +237,7 @@ COPY --from=build / /
 # add metadata, must be done after the squashing
 # first tell systemd that it is in docker (it will check for the container env)
 # https://systemd.io/CONTAINER_INTERFACE/
-ENV container docker
+ENV container=docker
 # systemd exits on SIGRTMIN+3, not SIGTERM (which re-executes it)
 # https://bugzilla.redhat.com/show_bug.cgi?id=1201657
 STOPSIGNAL SIGRTMIN+3
