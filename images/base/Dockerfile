@@ -140,7 +140,7 @@ RUN git clone --filter=tree:0 "${CONTAINERD_CLONE_URL}" /containerd \
 # stage for building runc
 FROM go-build as build-runc
 ARG TARGETARCH GO_VERSION
-ARG RUNC_VERSION="v1.1.12"
+ARG RUNC_VERSION="v1.1.13"
 ARG RUNC_CLONE_URL="https://github.com/opencontainers/runc"
 RUN git clone --filter=tree:0 "${RUNC_CLONE_URL}" /runc \
     && cd /runc \
