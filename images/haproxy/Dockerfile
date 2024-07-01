@@ -16,7 +16,7 @@
 # while we rewrite the config at runtime and signal haproxy to reload.
 
 ARG BASE="registry.k8s.io/build-image/debian-base:bullseye-v1.4.3"
-FROM ${BASE} as build
+FROM ${BASE} AS build
 
 # NOTE: copyrights.tar.gz is a quirk of Kubernetes's debian-base image
 # We extract these here so we can grab the relevant files are easily

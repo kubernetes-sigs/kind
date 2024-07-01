@@ -21,7 +21,7 @@
 # for a kubernetes node image, it doesn't contain much (anything?) we don't need
 # this stage will install basic files and packages
 ARG BASE_IMAGE=debian:bookworm-slim
-FROM $BASE_IMAGE as base
+FROM $BASE_IMAGE AS base
 
 # copy in static files
 # all scripts and directories are 0755 (rwx r-x r-x)
@@ -102,7 +102,7 @@ RUN echo "Ensuring /etc/kubernetes/manifests" \
 # This is also why we start again FROM the same base image but a different
 # platform and only the files needed for building
 # We will copy the built binaries from later stages to the final stage(s)
-FROM --platform=$BUILDPLATFORM $BASE_IMAGE as go-build
+FROM --platform=$BUILDPLATFORM $BASE_IMAGE AS go-build
 COPY --chmod=0755 files/usr/local/bin/* /usr/local/bin/
 COPY --chmod=0755 scripts/third_party/gimme/gimme /usr/local/bin/
 COPY --chmod=0755 scripts/target-cc /usr/local/bin/
@@ -120,7 +120,7 @@ RUN eval "$(gimme "${GO_VERSION}")" \
 
 
 # stage for building containerd
-FROM go-build as build-containerd
+FROM go-build AS build-containerd
 ARG TARGETARCH GO_VERSION
 ARG CONTAINERD_VERSION="v1.7.18"
 ARG CONTAINERD_CLONE_URL="https://github.com/containerd/containerd"
@@ -138,7 +138,7 @@ RUN git clone --filter=tree:0 "${CONTAINERD_CLONE_URL}" /containerd \
         ./cmd/ctr ./cmd/containerd ./cmd/containerd-shim-runc-v2
 
 # stage for building runc
-FROM go-build as build-runc
+FROM go-build AS build-runc
 ARG TARGETARCH GO_VERSION
 ARG RUNC_VERSION="v1.1.13"
 ARG RUNC_CLONE_URL="https://github.com/opencontainers/runc"
@@ -152,7 +152,7 @@ RUN git clone --filter=tree:0 "${RUNC_CLONE_URL}" /runc \
     && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES .
 
 # stage for building crictl
-FROM go-build as build-crictl
+FROM go-build AS build-crictl
 ARG TARGETARCH GO_VERSION
 ARG CRI_TOOLS_CLONE_URL="https://github.com/kubernetes-sigs/cri-tools"
 ARG CRICTL_VERSION="v1.30.0"
@@ -166,7 +166,7 @@ RUN git clone --filter=tree:0 "${CRI_TOOLS_CLONE_URL}" /cri-tools \
     && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES ./cmd/crictl
 
 # stage for building cni-plugins
-FROM go-build as build-cni
+FROM go-build AS build-cni
 ARG TARGETARCH GO_VERSION
 ARG CNI_PLUGINS_VERSION="v1.5.1"
 ARG CNI_PLUGINS_CLONE_URL="https://github.com/containernetworking/plugins"
@@ -187,7 +187,7 @@ RUN git clone --filter=tree:0 "${CNI_PLUGINS_CLONE_URL}" /cni-plugins \
         ./plugins/meta/portmap
 
 # stage for building containerd-fuse-overlayfs
-FROM go-build as build-fuse-overlayfs
+FROM go-build AS build-fuse-overlayfs
 ARG TARGETARCH GO_VERSION
 ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="v1.0.8"
 ARG CONTAINERD_FUSE_OVERLAYFS_CLONE_URL="https://github.com/containerd/fuse-overlayfs-snapshotter"
@@ -202,7 +202,7 @@ RUN git clone --filter=tree:0 "${CONTAINERD_FUSE_OVERLAYFS_CLONE_URL}" /fuse-ove
 
 
 # build final image layout from other stages
-FROM base as build
+FROM base AS build
 # copy over containerd build and install
 COPY --from=build-containerd /containerd/bin/containerd /usr/local/bin/
 COPY --from=build-containerd /containerd/bin/ctr /usr/local/bin/
