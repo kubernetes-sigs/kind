@@ -34,7 +34,7 @@ RUN eval "$(gimme "${GO_VERSION}")" \
     && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES ./cmd/kindnetd
 
 # build real kindnetd image
-FROM registry.k8s.io/build-image/distroless-iptables:v0.2.3
+FROM registry.k8s.io/build-image/distroless-iptables:v0.5.5
 COPY --from=0 --chown=root:root ./go/src/kindnetd /bin/kindnetd
 COPY --from=0 /_LICENSES/* /LICENSES/
 COPY --chmod=0644 files/LICENSES/* /LICENSES/*

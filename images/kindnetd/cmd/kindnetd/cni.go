@@ -38,7 +38,7 @@ type CNIConfigInputs struct {
 }
 
 // ComputeCNIConfigInputs computes the template inputs for CNIConfigWriter
-func ComputeCNIConfigInputs(node corev1.Node) CNIConfigInputs {
+func ComputeCNIConfigInputs(node *corev1.Node) CNIConfigInputs {
 
 	defaultRoutes := []string{"0.0.0.0/0", "::/0"}
 	// check if is a dualstack cluster
