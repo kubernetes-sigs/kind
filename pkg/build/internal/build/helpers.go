@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,13 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package docker
+package build
 
-import (
-	"sigs.k8s.io/kind/pkg/exec"
-)
+// SupportedArch checks whether the requested arch is one that is officially supportedf
+// by the project.
+func SupportedArch(arch string) bool {
+	switch arch {
+	default:
+		return false
+	// currently we nominally support building node images for these
+	case "amd64":
+	case "arm64":
+	}
+	return true
+}
 
-// Save saves image to dest, as in `docker save`
-func Save(image, dest string) error {
-	return exec.Command("docker", "save", "-o", dest, image).Run()
+func DockerBuildOsAndArch(arch string) string {
+	return "linux/" + arch
 }
