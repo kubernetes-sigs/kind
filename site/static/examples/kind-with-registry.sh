@@ -12,7 +12,9 @@ fi
 
 # 2. Create kind cluster with containerd registry config dir enabled
 # TODO: kind will eventually enable this by default and this patch will
-# be unnecessary.
+# be unnecessary. Current versions don't need to be patched if the node
+# image comes with a /etc/containerd/certs.d directory, or if this folder
+# is created at runtime via bind mounts.
 #
 # See:
 # https://github.com/kubernetes-sigs/kind/issues/2875
