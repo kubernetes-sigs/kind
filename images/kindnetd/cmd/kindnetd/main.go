@@ -36,6 +36,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/kube-network-policies/pkg/networkpolicy"
 )
 
 const (
@@ -207,6 +208,38 @@ func main() {
 
 	// setup nodes reconcile function, closes over arguments
 	reconcileNodes := makeNodesReconciler(cniConfigWriter, hostIP, ipFamily)
+
+	// network policies
+
+	// on kind nodes the hostname matches the node name
+	nodeName, err := os.Hostname()
+	if err != nil {
+		klog.Fatalf("couldn't determine hostname: %v", err)
+	}
+
+	cfg := networkpolicy.Config{
+		FailOpen: true,
+		QueueID:  100,
+		NodeName: nodeName,
+	}
+
+	networkPolicyController, err := networkpolicy.NewController(
+		clientset,
+		informersFactory.Networking().V1().NetworkPolicies(),
+		informersFactory.Core().V1().Namespaces(),
+		informersFactory.Core().V1().Pods(),
+		nodeInformer,
+		nil,
+		nil,
+		nil,
+		cfg)
+	if err != nil {
+		klog.Infof("Error creating network policy controller: %v, skipping network policies", err)
+	} else {
+		go func() {
+			_ = networkPolicyController.Run(ctx)
+		}()
+	}
 
 	// main control loop
 	informersFactory.Start(ctx.Done())
