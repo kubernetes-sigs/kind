@@ -52,6 +52,14 @@ Also, depending on the host configuration, the following steps might be needed:
   iptable_nat
   ```
 
+- If using podman, be aware that by default there is a [limit](https://docs.podman.io/en/v4.3/markdown/options/pids-limit.html#pids-limit-limit) to the number of pids that can be created. This can cause problems like nginx workers inside a container not spawning correctly.
+    - If you want to disable this limit, edit your `containers.conf` file (generally located in `/etc/containers/containers.conf`). Note that this could cause things like pid exhaustion to happen on the host machine. Alternatively, change `0` to your desired new limit:
+
+    ```ini
+    [containers]
+    pids_limit = 0
+    ```
+
 ## Restrictions
 
 The restrictions of Rootless Docker apply to kind clusters as well.
