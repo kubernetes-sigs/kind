@@ -40,6 +40,7 @@ description: |-
 * [Failed to get rootfs info](#failed-to-get-rootfs-info--stat-failed-on-dev)
 * [Docker Desktop for macOS and Windows](#docker-desktop-for-macos-and-windows)
 * [Older Linux Distributions](#older-linux-distributions)
+* [Failure to Create Cluster on WSL2](#failure-to-create-cluster-on-wsl2)
 
 ## Troubleshooting Kind
 
@@ -376,7 +377,14 @@ Although the policy has been fixed in Fedora 34, the fix has not been backported
 
 ## Docker Desktop for macOS and Windows
 
-Docker containers cannot be executed natively on macOS and Windows, therefore Docker Desktop runs them in a Linux VM. As a consequence, the container networks are not exposed to the host and you cannot reach the kind nodes via IP. You can work around this limitation by configuring [extra port mappings](https://kind.sigs.k8s.io/docs/user/configuration/#extra-port-mappings) though.
+Docker containers cannot be executed natively on macOS and Windows, therefore
+Docker Desktop runs them in a Linux VM. As a consequence, the container networks
+are not exposed to the host and you cannot reach the kind nodes via IP.
+
+You may be able to work around this limitation by configuring [extra port
+mappings](https://kind.sigs.k8s.io/docs/user/configuration/#extra-port-mappings),
+leveraging [cloud-provider-kind](https://github.com/kubernetes-sigs/cloud-provider-kind),
+using a network proxy, or other solution specific to your environment.
 
 ## Older Linux Distributions
 
@@ -392,6 +400,21 @@ Command Output: WARNING: Your kernel does not support cgroup namespaces.  Cgroup
 
 Using KIND in these environments will require upgrading your OS to a more recent version that supports cgroup namespaces.
 Another option is to run a virtual machine using a newer kernel.
+
+## Failure to Create Cluster on WSL2
+
+Some Linux kernel options for WSL2 do not have cgroup configured in a way that
+KIND and other Linux-focused tools may expect. This may result in a failure
+message when attempting to create a cluster, similar to:
+
+```txt
+unable to start container process: error adding pid 655569 to cgroups
+```
+
+The KIND development team is not able to provide support with Windows and WSL, so
+the project relies on community support and feedback. It has been noted that the
+steps detailed in [https://github.com/spurin/wsl-cgroupsv2](https://github.com/spurin/wsl-cgroupsv2)
+have been necessary to resolve this issue.
 
 [kind#156]: https://github.com/kubernetes-sigs/kind/issues/156
 [kind#229]: https://github.com/kubernetes-sigs/kind/issues/229
