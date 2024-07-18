@@ -154,3 +154,14 @@ func ReTagImage(n nodes.Node, imageID, imageName string) error {
 	var out bytes.Buffer
 	return n.Command("ctr", "--namespace=k8s.io", "images", "tag", "--force", imageID, imageName).SetStdout(&out).Run()
 }
+
+// RemoveNode remove a node from a node list.
+func RemoveNode(nodeName string, nodes []nodes.Node) []nodes.Node {
+	for i := 0; i < len(nodes); i++ {
+		if nodes[i].String() == nodeName {
+			nodes = append(nodes[:i], nodes[i+1:]...)
+			i--
+		}
+	}
+	return nodes
+}

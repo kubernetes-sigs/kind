@@ -43,8 +43,9 @@ type (
 )
 
 type flagpole struct {
-	Name  string
-	Nodes []string
+	Name         string
+	Nodes        []string
+	ExcludeNodes []string
 }
 
 // NewCommand returns a new cobra.Command for loading an image into a cluster
@@ -77,6 +78,12 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		"nodes",
 		nil,
 		"comma separated list of nodes to load images into",
+	)
+	cmd.Flags().StringSliceVar(
+		&flags.ExcludeNodes,
+		"exclude-nodes",
+		nil,
+		"comma separated list of exclude nodes not to load images into",
 	)
 	return cmd
 }
@@ -126,6 +133,16 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 				return fmt.Errorf("unknown node: %q", name)
 			}
 			candidateNodes = append(candidateNodes, node)
+		}
+	}
+
+	if len(flags.ExcludeNodes) > 0 {
+		for _, name := range flags.ExcludeNodes {
+			_, ok := nodesByName[name]
+			if !ok {
+				return fmt.Errorf("unknown node: %q", name)
+			}
+			candidateNodes = nodeutils.RemoveNode(name, candidateNodes)
 		}
 	}
 

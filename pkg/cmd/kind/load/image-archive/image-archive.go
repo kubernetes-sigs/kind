@@ -35,8 +35,9 @@ import (
 )
 
 type flagpole struct {
-	Name  string
-	Nodes []string
+	Name         string
+	Nodes        []string
+	ExcludeNodes []string
 }
 
 // NewCommand returns a new cobra.Command for loading an image into a cluster
@@ -75,6 +76,12 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		nil,
 		"comma separated list of nodes to load images into",
 	)
+	cmd.Flags().StringSliceVar(
+		&flags.ExcludeNodes,
+		"exclude-nodes",
+		nil,
+		"comma separated list of exclude nodes not to load images into",
+	)
 	return cmd
 }
 
@@ -91,14 +98,14 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 	}
 
 	for _, imageTarPath := range args {
-		if err := loadArchiveToNodes(logger, provider, flags.Name, flags.Nodes, imageTarPath); err != nil {
+		if err := loadArchiveToNodes(logger, provider, flags.Name, flags.Nodes, flags.ExcludeNodes, imageTarPath); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func loadArchiveToNodes(logger log.Logger, provider *cluster.Provider, clusterName string, nodeNames []string, imageArchivePath string) error {
+func loadArchiveToNodes(logger log.Logger, provider *cluster.Provider, clusterName string, nodeNames []string, excludeNodeNames []string, imageArchivePath string) error {
 	// Check if the cluster nodes exist
 	nodeList, err := provider.ListInternalNodes(clusterName)
 	if err != nil {
@@ -127,6 +134,16 @@ func loadArchiveToNodes(logger log.Logger, provider *cluster.Provider, clusterNa
 				return fmt.Errorf("unknown node: %s", name)
 			}
 			selectedNodes = append(selectedNodes, node)
+		}
+	}
+
+	if len(excludeNodeNames) > 0 {
+		for _, name := range excludeNodeNames {
+			_, ok := nodesByName[name]
+			if !ok {
+				return fmt.Errorf("unknown node: %q", name)
+			}
+			selectedNodes = nodeutils.RemoveNode(name, selectedNodes)
 		}
 	}
 
