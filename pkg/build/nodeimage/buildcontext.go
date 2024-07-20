@@ -187,8 +187,8 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVers
 		return repository
 	}
 
-	// correct set of built tags using the same logic we will use to rewrite
-	// the tags as we load the archives
+	// Determine accurate built tags using the logic that will be applied
+	// when rewriting tags during archive loading
 	fixedImages := sets.NewString()
 	fixedImagesMap := make(map[string]string, builtImages.Len()) // key: original images, value: fixed images
 	for _, image := range builtImages.List() {
@@ -316,7 +316,7 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVers
 		}
 	}
 
-	// run all image re-tragging concurrently until one fails or all succeed
+	// run all image re-tagging concurrently until one fails or all succeed
 	if err := errors.UntilErrorConcurrent(tagFns); err != nil {
 		c.logger.Errorf("Image build Failed! Failed to re-tag images %v", err)
 		return nil, err
@@ -327,19 +327,18 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVers
 
 func (c *buildContext) createBuildContainer() (id string, err error) {
 	// attempt to explicitly pull the image if it doesn't exist locally
-	// we don't care if this returns error, we'll still try to run which also pulls
+	// errors here are non-critical; we'll proceed with execution, which includes a pull operation
 	_ = docker.Pull(c.logger, c.baseImage, dockerBuildOsAndArch(c.arch), 4)
 	// this should be good enough: a specific prefix, the current unix time,
 	// and a little random bits in case we have multiple builds simultaneously
 	random := rand.New(rand.NewSource(time.Now().UnixNano())).Int31()
 	id = fmt.Sprintf("kind-build-%d-%d", time.Now().UTC().Unix(), random)
 	runArgs := []string{
-		"-d", // make the client exit while the container continues to run
-		// the container should hang forever, so we can exec in it
-		"--entrypoint=sleep",
+		"-d",                 // make the client exit while the container continues to run
+		"--entrypoint=sleep", // the container should hang forever, so we can exec in it
 		"--name=" + id,
 		"--platform=" + dockerBuildOsAndArch(c.arch),
-		"--security-opt", "seccomp=unconfined", // ignore seccomp
+		"--security-opt", "seccomp=unconfined",
 	}
 	// pass proxy settings from environment variables to the building container
 	// to make them work during the building process
@@ -356,7 +355,7 @@ func (c *buildContext) createBuildContainer() (id string, err error) {
 		c.baseImage,
 		runArgs,
 		[]string{
-			"infinity", // sleep infinitely to keep the container around
+			"infinity", // sleep infinitely to keep container running indefinitely
 		},
 	)
 	if err != nil {
