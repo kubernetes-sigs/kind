@@ -47,6 +47,15 @@ rules:
       - ""
     resources:
       - nodes
+      - pods
+      - namespaces
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+     - "networking.k8s.io"
+    resources:
+      - networkpolicies
     verbs:
       - list
       - watch
