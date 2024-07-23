@@ -23,7 +23,7 @@ by the ingress controller `nodeSelector`.
 2. Deploy an Ingress controller, we document [Ingress NGINX](#ingress-nginx) here but other ingresses may work including [Contour](https://projectcontour.io/docs/main/guides/kind/) and Kong, you should follow their docs if you choose to use them.
 
 > **NOTE**: You may also want to consider using [Gateway API](https://gateway-api.sigs.k8s.io/) instead of Ingress.
-> Gateway API has an [Ingress migration guide](ttps://gateway-api.sigs.k8s.io/guides/migrating-from-ingress/).
+> Gateway API has an [Ingress migration guide](https://gateway-api.sigs.k8s.io/guides/migrating-from-ingress/).
 >
 > You can use blixit to test Gateway API with kind https://github.com/kubernetes-sigs/blixt#usage
 
