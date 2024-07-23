@@ -22,17 +22,21 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/signal"
 	"strings"
 	"syscall"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/sets"
+	"golang.org/x/sys/unix"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/kube-network-policies/pkg/networkpolicy"
 )
 
 const (
@@ -75,6 +79,9 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
+	// use protobuf to improve performance
+	config.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
+	config.ContentType = "application/vnd.kubernetes.protobuf"
 
 	// override the internal apiserver endpoint to avoid
 	// waiting for kube-proxy to install the services rules.
@@ -100,6 +107,31 @@ func main() {
 		panic(err.Error())
 	}
 	klog.Infof("connected to apiserver: %s", config.Host)
+
+	// trap Ctrl+C and call cancel on the context
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+
+	// Enable signal handler
+	signalCh := make(chan os.Signal, 2)
+	defer func() {
+		close(signalCh)
+		cancel()
+	}()
+	signal.Notify(signalCh, os.Interrupt, unix.SIGINT)
+
+	go func() {
+		select {
+		case <-signalCh:
+			klog.Infof("Exiting: received signal")
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+
+	informersFactory := informers.NewSharedInformerFactory(clientset, 0)
+	nodeInformer := informersFactory.Core().V1().Nodes()
+	nodeLister := nodeInformer.Lister()
 
 	// obtain the host and pod ip addresses
 	// if both ips are different we are not using the host network
@@ -153,7 +185,7 @@ func main() {
 			panic(err.Error())
 		}
 		go func() {
-			if err := masqAgentIPv4.SyncRulesForever(time.Second * 60); err != nil {
+			if err := masqAgentIPv4.SyncRulesForever(ctx, time.Second*60); err != nil {
 				panic(err)
 			}
 		}()
@@ -168,7 +200,7 @@ func main() {
 		}
 
 		go func() {
-			if err := masqAgentIPv6.SyncRulesForever(time.Second * 60); err != nil {
+			if err := masqAgentIPv6.SyncRulesForever(ctx, time.Second*60); err != nil {
 				panic(err)
 			}
 		}()
@@ -177,14 +209,48 @@ func main() {
 	// setup nodes reconcile function, closes over arguments
 	reconcileNodes := makeNodesReconciler(cniConfigWriter, hostIP, ipFamily)
 
+	// network policies
+
+	// on kind nodes the hostname matches the node name
+	nodeName, err := os.Hostname()
+	if err != nil {
+		klog.Fatalf("couldn't determine hostname: %v", err)
+	}
+
+	cfg := networkpolicy.Config{
+		FailOpen: true,
+		QueueID:  100,
+		NodeName: nodeName,
+	}
+
+	networkPolicyController, err := networkpolicy.NewController(
+		clientset,
+		informersFactory.Networking().V1().NetworkPolicies(),
+		informersFactory.Core().V1().Namespaces(),
+		informersFactory.Core().V1().Pods(),
+		nodeInformer,
+		nil,
+		nil,
+		nil,
+		cfg)
+	if err != nil {
+		klog.Infof("Error creating network policy controller: %v, skipping network policies", err)
+	} else {
+		go func() {
+			_ = networkPolicyController.Run(ctx)
+		}()
+	}
+
 	// main control loop
+	informersFactory.Start(ctx.Done())
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
 	for {
-		// Gets the Nodes information from the API
-		// TODO: use a proper controller instead
-		var nodes *corev1.NodeList
+		var nodes []*corev1.Node
 		var err error
 		for i := 0; i < 5; i++ {
-			nodes, err = clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
+			nodes, err = nodeLister.List(labels.Everything())
 			if err == nil {
 				break
 			}
@@ -209,14 +275,20 @@ func main() {
 		}
 
 		// rate limit
-		time.Sleep(10 * time.Second)
+		select {
+		case <-ctx.Done():
+			// grace period to cleanup resources
+			time.Sleep(1 * time.Second)
+			return
+		case <-ticker.C:
+		}
 	}
 }
 
 // nodeNodesReconciler returns a reconciliation func for nodes
-func makeNodesReconciler(cniConfig *CNIConfigWriter, hostIP string, ipFamily IPFamily) func(*corev1.NodeList) error {
+func makeNodesReconciler(cniConfig *CNIConfigWriter, hostIP string, ipFamily IPFamily) func([]*corev1.Node) error {
 	// reconciles a node
-	reconcileNode := func(node corev1.Node) error {
+	reconcileNode := func(node *corev1.Node) error {
 		// first get this node's IPs
 		// we don't support more than one IP address per IP family for simplification
 		nodeIPs := internalIPs(node)
@@ -252,7 +324,7 @@ func makeNodesReconciler(cniConfig *CNIConfigWriter, hostIP string, ipFamily IPF
 
 		// obtain the PodCIDR gateway
 		var nodeIPv4, nodeIPv6 string
-		for _, ip := range sets.List(nodeIPs) {
+		for _, ip := range nodeIPs.UnsortedList() {
 			if isIPv6String(ip) {
 				nodeIPv6 = ip
 			} else {
@@ -274,8 +346,8 @@ func makeNodesReconciler(cniConfig *CNIConfigWriter, hostIP string, ipFamily IPF
 	}
 
 	// return a reconciler for all the nodes
-	return func(nodes *corev1.NodeList) error {
-		for _, node := range nodes.Items {
+	return func(nodes []*corev1.Node) error {
+		for _, node := range nodes {
 			if err := reconcileNode(node); err != nil {
 				return err
 			}
@@ -285,7 +357,7 @@ func makeNodesReconciler(cniConfig *CNIConfigWriter, hostIP string, ipFamily IPF
 }
 
 // internalIPs returns the internal IP addresses for node
-func internalIPs(node corev1.Node) sets.Set[string] {
+func internalIPs(node *corev1.Node) sets.Set[string] {
 	ips := sets.New[string]()
 	// check the node.Status.Addresses
 	for _, address := range node.Status.Addresses {
