@@ -391,7 +391,7 @@ nodeRegistration:
     node-labels: "{{ .NodeLabels }}"
 {{ if .InitSkipPhases -}}
 skipPhases:
-  {{ range $phase := .InitSkipPhases -}}
+  {{- range $phase := .InitSkipPhases }}
   - "{{ $phase }}"
   {{- end }}
 {{- end }}
