@@ -6,11 +6,11 @@ require (
 	github.com/coreos/go-iptables v0.7.0
 	github.com/vishvananda/netlink v1.1.0
 	golang.org/x/sys v0.22.0
-	k8s.io/api v0.30.2
-	k8s.io/apimachinery v0.30.2
-	k8s.io/client-go v0.30.2
+	k8s.io/api v0.30.3
+	k8s.io/apimachinery v0.30.3
+	k8s.io/client-go v0.30.3
 	k8s.io/klog/v2 v2.130.1
-	sigs.k8s.io/kube-network-policies v0.5.0
+	sigs.k8s.io/kube-network-policies v0.5.1
 )
 
 require (
