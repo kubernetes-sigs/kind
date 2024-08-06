@@ -145,6 +145,12 @@ configure_containerd() {
       systemctl enable containerd-fuse-overlayfs
     fi
   fi
+
+  if [[ -e "/etc/containerd/certs.d" ]]; then
+    cat >> /etc/containerd/config.toml <<EOF
+[plugins."io.containerd.grpc.v1.cri".registry]
+  config_path = "/etc/containerd/certs.d"
+EOF
 }
 
 configure_proxy() {
