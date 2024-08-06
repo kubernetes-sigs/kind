@@ -11,9 +11,10 @@ description: |-
   All the tools needed to build or run kind work in WSL2, but some extra steps are needed to switch to WSL2. This page covers these steps in brief but also links to the official documentation if you would like more details.
 ---
 
-## Getting Windows 10
+## Getting Windows 10 or 11
 
-Download the latest ISO at https://www.microsoft.com/en-us/software-download/windows10ISO. Choose "Windows 10 May 2020 Update". If there's a later update, that will work too.
+Download the latest ISO at https://www.microsoft.com/en-us/software-download/.
+Choose the latest Windows 10 or Windows 11 release.
 
 ### Installing on a virtual machine
 
@@ -63,12 +64,10 @@ wsl --set-default-version 2
 
 Install Docker with WSL2 backend here: https://docs.docker.com/docker-for-windows/wsl/
 
-
 ## Setting up Docker in WSL2 without Docker Desktop
 
 Alternatively, docker can be installed in WSL2 without using Docker Desktop.
 See for example: https://dev.to/bowmanjd/install-docker-on-windows-wsl-without-docker-desktop-34m9
-
 
 Now, move on to the [Quick Start](/docs/user/quick-start) to set up your cluster with kind.
 
@@ -141,3 +140,4 @@ kernel=c:\\path\\to\\your\\kernel\\bzImage
 - You can check the status of all installed distros with `wsl --list --verbose`.
 - If you had a distro installed with WSL1, you can convert it to WSL2 with `wsl --set-version <distro> 2`
 - Alternative of [Accessing a Kubernetes Service running in WSL2](#accessing-a-kubernetes-service-running-in-wsl2) or [Setting Up An Ingress Controller](/docs/user/ingress/#setting-up-an-ingress-controller) for accessing workloads is using `kubectl port-forward --address=0.0.0.0`.
+- See the [Known Issues](/docs/user/known-issues/) page for additional Windows-related issues and concerns.
