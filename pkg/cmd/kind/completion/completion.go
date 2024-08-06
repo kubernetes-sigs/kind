@@ -25,6 +25,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/cmd/kind/completion/bash"
 	"sigs.k8s.io/kind/pkg/cmd/kind/completion/fish"
+	"sigs.k8s.io/kind/pkg/cmd/kind/completion/powershell"
 	"sigs.k8s.io/kind/pkg/cmd/kind/completion/zsh"
 	"sigs.k8s.io/kind/pkg/log"
 )
@@ -47,11 +48,12 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd.AddCommand(zsh.NewCommand(logger, streams))
 	cmd.AddCommand(bash.NewCommand(logger, streams))
 	cmd.AddCommand(fish.NewCommand(logger, streams))
+	cmd.AddCommand(powershell.NewCommand(logger, streams))
 	return cmd
 }
 
 const longDescription = `
-Outputs kind shell completion for the given shell (bash or zsh)
+Outputs kind shell completion for the given shell (bash, fish, powershell, or zsh)
 This depends on the bash-completion binary.  Example installation instructions:
 # for bash users
 	$ kind completion bash > ~/.kind-completion
@@ -68,6 +70,9 @@ This depends on the bash-completion binary.  Example installation instructions:
 
 # for fish users
 	% kind completion fish > ~/.config/fish/completions/kind.fish
+
+# for powershell users
+	PS> kind completion powershell | Out-String | Invoke-Expression
 
 Additionally, you may want to output the completion to a file and source in your .bashrc
 Note for zsh users: [1] zsh completions are only supported in versions of zsh >= 5.2
