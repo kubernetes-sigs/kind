@@ -130,8 +130,40 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 	}
 
 	// pick only the nodes that don't have the image
-	selectedNodes := map[string]nodes.Node{}
+	selectedNodes := getNodesWithoutImage(logger, imageNames, imageIDs, candidateNodes)
+
+	// return early if no node needs the image
+	if len(selectedNodes) == 0 {
+		return nil
+	}
+
+	// Setup the tar path where the images will be saved
+	dir, err := fs.TempDir("", "images-tar")
+	if err != nil {
+		return errors.Wrap(err, "failed to create tempdir")
+	}
+	defer os.RemoveAll(dir)
+	imagesTarPath := filepath.Join(dir, "images.tar")
+	// Save the images into a tar
+	err = save(imageNames, imagesTarPath)
+	if err != nil {
+		return err
+	}
+
+	// Load the images on the selected nodes
 	fns := []func() error{}
+	for _, selectedNode := range selectedNodes {
+		selectedNode := selectedNode // capture loop variable
+		fns = append(fns, func() error {
+			return loadImage(imagesTarPath, selectedNode)
+		})
+	}
+	return errors.UntilErrorConcurrent(fns)
+}
+
+// getNodesWithoutImage
+func getNodesWithoutImage(logger log.Logger, imageNames []string, imageIDs []string, candidateNodes []nodes.Node) map[string]nodes.Node {
+	selectedNodes := map[string]nodes.Node{}
 	for i, imageName := range imageNames {
 		imageID := imageIDs[i]
 		processed := false
@@ -164,33 +196,7 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 			logger.V(0).Infof("Image: %q with ID %q found to be already present on all nodes.", imageName, imageID)
 		}
 	}
-
-	// return early if no node needs the image
-	if len(selectedNodes) == 0 {
-		return nil
-	}
-
-	// Setup the tar path where the images will be saved
-	dir, err := fs.TempDir("", "images-tar")
-	if err != nil {
-		return errors.Wrap(err, "failed to create tempdir")
-	}
-	defer os.RemoveAll(dir)
-	imagesTarPath := filepath.Join(dir, "images.tar")
-	// Save the images into a tar
-	err = save(imageNames, imagesTarPath)
-	if err != nil {
-		return err
-	}
-
-	// Load the images on the selected nodes
-	for _, selectedNode := range selectedNodes {
-		selectedNode := selectedNode // capture loop variable
-		fns = append(fns, func() error {
-			return loadImage(imagesTarPath, selectedNode)
-		})
-	}
-	return errors.UntilErrorConcurrent(fns)
+	return selectedNodes
 }
 
 // TODO: we should consider having a cluster method to load images
