@@ -22,6 +22,7 @@ import (
 	"regexp"
 	"strings"
 
+	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/internal/sets"
 )
@@ -112,6 +113,13 @@ func (n *Node) Validate() error {
 		WorkerRole:
 	default:
 		errs = append(errs, errors.Errorf("%q is not a valid node role", n.Role))
+	}
+
+	// valieate container labels
+	for k, _ := range n.ContainerLabels {
+		if k == constants.ClusterLabelKey || k == constants.NodeRoleLabelKey {
+			errs = append(errs, errors.Errorf("invalid container label key %q", k))
+		}
 	}
 
 	// image should be defined

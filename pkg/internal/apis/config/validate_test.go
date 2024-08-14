@@ -18,10 +18,10 @@ package config
 
 import (
 	"fmt"
-	"sigs.k8s.io/kind/pkg/internal/assert"
 	"testing"
 
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/internal/assert"
 )
 
 func TestClusterValidate(t *testing.T) {
@@ -400,6 +400,18 @@ func TestNodeValidate(t *testing.T) {
 				return cfg
 			}(),
 			ExpectErrors: 0,
+		},
+		{
+			TestName: "Invalid ContainerLebelKey",
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg.ContainerLabels = map[string]string{
+					"io.x-k8s.kind.cluster": "kind",
+					"io.x-k8s.kind.role":    "job",
+				}
+				return cfg
+			}(),
+			ExpectErrors: 2,
 		},
 	}
 

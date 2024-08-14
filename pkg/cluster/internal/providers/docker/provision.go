@@ -136,7 +136,7 @@ func commonArgs(cluster string, cfg *config.Cluster, networkName string, nodeNam
 		"--detach", // run the container detached
 		"--tty",    // allocate a tty for entrypoint logs
 		// label the node with the cluster ID
-		"--label", fmt.Sprintf("%s=%s", clusterLabelKey, cluster),
+		"--label", fmt.Sprintf("%s=%s", constants.ClusterLabelKey, cluster),
 		// user a user defined docker network so we get embedded DNS
 		"--net", networkName,
 		// Docker supports the following restart modes:
@@ -216,7 +216,7 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 	args = append([]string{
 		"--hostname", name, // make hostname match container name
 		// label the node with the role ID
-		"--label", fmt.Sprintf("%s=%s", nodeRoleLabelKey, node.Role),
+		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleLabelKey, node.Role),
 		// running containers in a container requires privileged
 		// NOTE: we could try to replicate this with --cap-add, and use less
 		// privileges, but this flag also changes some mounts that are necessary
@@ -242,6 +242,11 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		args...,
 	)
 
+	// add extra container labels
+	for k, v := range node.ContainerLabels {
+		args = append(args, "--label", fmt.Sprintf("%s=%s", k, v))
+	}
+
 	// convert mounts and port mappings to container run args
 	args = append(args, generateMountBindings(node.ExtraMounts...)...)
 	mappingArgs, err := generatePortMappings(clusterIPFamily, node.ExtraPortMappings...)
@@ -263,7 +268,7 @@ func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) ([]
 	args = append([]string{
 		"--hostname", name, // make hostname match container name
 		// label the node with the role ID
-		"--label", fmt.Sprintf("%s=%s", nodeRoleLabelKey, constants.ExternalLoadBalancerNodeRoleValue),
+		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleLabelKey, constants.ExternalLoadBalancerNodeRoleValue),
 	},
 		args...,
 	)

@@ -109,6 +109,11 @@ type Node struct {
 
 	/* Advanced fields */
 
+	// ContainerLabels are the labels to be applied to the node container
+	// io.x-k8s.kind.cluster and io.x-k8s.kind.role are reserved labels, that will be
+	// automatically added to the node container
+	ContainerLabels map[string]string `yaml:"containerLabels,omitempty" json:"containerLabels,omitempty"`
+
 	// TODO: cri-like types should be inline instead
 	// ExtraMounts describes additional mount points for the node container
 	// These may be used to bind a hostPath

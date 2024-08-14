@@ -133,7 +133,7 @@ func commonArgs(cfg *config.Cluster, networkName string, nodeNames []string) ([]
 		"--tty",              // allocate a tty for entrypoint logs
 		"--net", networkName, // attach to its own network
 		// label the node with the cluster ID
-		"--label", fmt.Sprintf("%s=%s", clusterLabelKey, cfg.Name),
+		"--label", fmt.Sprintf("%s=%s", constants.ClusterLabelKey, cfg.Name),
 		// specify container implementation to systemd
 		"-e", "container=podman",
 		// this is the default in cgroupsv2 but not in v1
@@ -184,7 +184,7 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 	args = append([]string{
 		"--hostname", name, // make hostname match container name
 		// label the node with the role ID
-		"--label", fmt.Sprintf("%s=%s", nodeRoleLabelKey, node.Role),
+		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleLabelKey, node.Role),
 		// running containers in a container requires privileged
 		// NOTE: we could try to replicate this with --cap-add, and use less
 		// privileges, but this flag also changes some mounts that are necessary
@@ -212,6 +212,11 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		args...,
 	)
 
+	// add extra container labels
+	for k, v := range node.ContainerLabels {
+		args = append(args, "--label", fmt.Sprintf("%s=%s", k, v))
+	}
+
 	// convert mounts and port mappings to container run args
 	args = append(args, generateMountBindings(node.ExtraMounts...)...)
 	mappingArgs, err := generatePortMappings(clusterIPFamily, node.ExtraPortMappings...)
@@ -234,7 +239,7 @@ func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) ([]
 	args = append([]string{
 		"--hostname", name, // make hostname match container name
 		// label the node with the role ID
-		"--label", fmt.Sprintf("%s=%s", nodeRoleLabelKey, constants.ExternalLoadBalancerNodeRoleValue),
+		"--label", fmt.Sprintf("%s=%s", constants.NodeRoleLabelKey, constants.ExternalLoadBalancerNodeRoleValue),
 	},
 		args...,
 	)

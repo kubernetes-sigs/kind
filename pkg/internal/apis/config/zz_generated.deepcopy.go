@@ -130,6 +130,13 @@ func (in *Node) DeepCopyInto(out *Node) {
 			(*out)[key] = val
 		}
 	}
+	if in.ContainerLabels != nil {
+		in, out := &in.ContainerLabels, &out.ContainerLabels
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	if in.ExtraMounts != nil {
 		in, out := &in.ExtraMounts, &out.ExtraMounts
 		*out = make([]Mount, len(*in))

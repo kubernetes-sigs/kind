@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
@@ -100,9 +101,9 @@ func (p *provider) ListClusters() ([]string, error) {
 		"ps",
 		"-a", // show stopped nodes
 		// filter for nodes with the cluster label
-		"--filter", "label="+clusterLabelKey,
+		"--filter", "label="+constants.ClusterLabelKey,
 		// format to include the cluster name
-		"--format", fmt.Sprintf(`{{.Label "%s"}}`, clusterLabelKey),
+		"--format", fmt.Sprintf(`{{.Label "%s"}}`, constants.ClusterLabelKey),
 	)
 	lines, err := exec.OutputLines(cmd)
 	if err != nil {
@@ -117,7 +118,7 @@ func (p *provider) ListNodes(cluster string) ([]nodes.Node, error) {
 		"ps",
 		"-a", // show stopped nodes
 		// filter for nodes with the cluster label
-		"--filter", fmt.Sprintf("label=%s=%s", clusterLabelKey, cluster),
+		"--filter", fmt.Sprintf("label=%s=%s", constants.ClusterLabelKey, cluster),
 		// format to include the cluster name
 		"--format", `{{.Names}}`,
 	)

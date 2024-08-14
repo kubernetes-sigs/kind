@@ -47,3 +47,13 @@ const (
 	// kubernetes nodes
 	ExternalEtcdNodeRoleValue string = "external-etcd"
 )
+
+/* node label key constants */
+const (
+	// ClusterLabelKey is applied to each "node" container for identification
+	ClusterLabelKey = "io.x-k8s.kind.cluster"
+
+	// NodeRoleLabelKey is applied to each "node" container for categorization
+	// of nodes by role
+	NodeRoleLabelKey = "io.x-k8s.kind.role"
+)
