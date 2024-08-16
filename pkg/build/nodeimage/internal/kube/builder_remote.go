@@ -77,7 +77,7 @@ func (b *remoteBuilder) Build() (Bits, error) {
 	}
 
 	binDir := filepath.Join(tmpDir, "kubernetes/server/bin")
-	contents, err := os.ReadFile(filepath.Join(binDir, "kube-apiserver.docker_tag"))
+	contents, err := os.ReadFile(filepath.Join(tmpDir, "kubernetes/version"))
 	if err != nil {
 		return nil, err
 	}
