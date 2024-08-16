@@ -130,7 +130,8 @@ Flags:
       --type string         build type, default is docker (default "docker")
 
 Global Flags:
-      --loglevel string   logrus log level [panic, fatal, error, warning, info, debug] (default "warning")
+  -q, --quiet             silence all stderr output
+  -v, --verbosity int32   info log verbosity, higher value produces more output
 
 error building node image: failed to build kubernetes: failed to build images: exit status 2
 ```
