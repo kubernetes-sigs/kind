@@ -20,8 +20,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sigs.k8s.io/kind/pkg/log"
 	"strings"
+
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // TODO(bentheelder): plumb through arch
@@ -57,7 +58,7 @@ func (b *directoryBuilder) Build() (Bits, error) {
 	}
 
 	binDir := filepath.Join(tmpDir, "kubernetes/server/bin")
-	contents, err := os.ReadFile(filepath.Join(binDir, "kube-apiserver.docker_tag"))
+	contents, err := os.ReadFile(filepath.Join(tmpDir, "kubernetes/version"))
 	if err != nil {
 		return nil, err
 	}
