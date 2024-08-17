@@ -46,6 +46,10 @@ https://golangexample.com/connect-directly-to-docker-for-mac-containers-via-ip-a
 
 https://docs.gitlab.com/charts/development/kind/
 
+### Using CRI-O with KIND
+
+https://github.com/cri-o/cri-o/blob/release-1.31/tutorials/crio-in-kind.md#cri-o-in-kind
+
 ## KubeCon Talks
 
 The authors have given the following talks relating to KIND:
