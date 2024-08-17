@@ -48,6 +48,10 @@ https://docs.gitlab.com/charts/development/kind/
 
 ### Using CRI-O with KIND
 
+> **NOTE**: Depending on implementation details of the node image is not supported, only that the node images contain what kind needs to run Kubernetes at a given version.
+>
+> Installing CRI-O is possible but not supported.
+
 https://github.com/cri-o/cri-o/blob/release-1.31/tutorials/crio-in-kind.md#cri-o-in-kind
 
 ## KubeCon Talks
