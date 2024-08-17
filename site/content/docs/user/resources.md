@@ -24,6 +24,8 @@ Here are a useful external guides / tutorials covering things not yet covered in
 
 ### How to use KIND with MetallLB
 
+> **NOTE**: We now have a kind integrated loadbalancer solution, see [the loadbalancer page](/docs/user/loadbalancer/).
+
 https://mauilion.dev/posts/kind-metallb/
 
 ### How to Test a Kubernetes PR with KIND
