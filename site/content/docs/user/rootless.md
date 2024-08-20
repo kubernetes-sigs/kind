@@ -89,6 +89,14 @@ On some distributions, you might need to use systemd-run to start kind into its 
 $ systemd-run --scope --user kind create cluster
 ```
 
+or
+
+```console
+$ systemd-run --scope --user -p "Delegate=yes" kind create cluster
+```
+
+If you still get the error `running kind with rootless provider requires setting systemd property "Delegate=yes"` even with [host requirements](#host-requirements) configured.
+
 ## Creating a kind cluster with Rootless nerdctl
 
 **Note: containerd v1.7+ is required**
