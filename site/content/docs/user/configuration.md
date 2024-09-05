@@ -308,6 +308,9 @@ With the installation of the Docker Desktop Application, whether it is on macOs,
 
 You may also want to see the [Ingress Guide].
 
+> **NOTE**: If you're running Kind on a remote host and need to send traffic to Kind node
+> IPs from a different host than where kind is running, you need to configure port-mapping.
+
 {{< codeFromFile file="static/examples/config-with-port-mapping.yaml" lang="yaml" >}}
 
 An example http pod mapping host ports to a container port.
