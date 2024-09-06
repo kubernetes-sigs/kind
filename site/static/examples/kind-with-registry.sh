@@ -6,6 +6,7 @@ set -o errexit
 # 1. Create registry container unless it already exists
 reg_name='kind-registry'
 reg_port='5001'
+# the user is allow to chose a custom name for the kinc cluster. default is "kind"
 cluster_name="${1:-kind}"
 if [ "$(docker inspect -f '{{.State.Running}}' "${reg_name}" 2>/dev/null || true)" != 'true' ]; then
   # create a directory for certificates use to expose the registry
@@ -18,7 +19,7 @@ if [ "$(docker inspect -f '{{.State.Running}}' "${reg_name}" 2>/dev/null || true
   -subj "/C=EU/ST=State/L=Locality/O=Organization/CN=${reg_name}" \
   -x509 -days 365 -out certs/domain.crt
   
-  # allow access to cert from the container
+  # allow access to cert from the container. 
   chmod 755 -R ./certs
 
   # run the registry
