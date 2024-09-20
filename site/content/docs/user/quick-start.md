@@ -314,12 +314,13 @@ dedicated to the virtual machine (VM) running the Docker engine. 8GB is recommen
 
 To change the resource limits for the Docker on Mac, you'll need to open the
 **Preferences** menu.
+
 <img src="/docs/user/images/docker-pref-1.png"/>
 
 Now, go to the **Advanced** settings page, and change the
 settings there, see [changing Docker's resource limits][Docker resource lims].
-<img src="/docs/user/images/docker-pref-2.png" alt="Setting 8Gb of memory in Docker for Mac" />
 
+<img src="/docs/user/images/docker-pref-build.png" alt="Setting 8Gb of memory in Docker for Mac" />
 
 To change the resource limits for the Docker on Windows, you'll need to right-click the Moby
 icon on the taskbar, and choose "Settings". If you see "Switch to Linux Containers", then you'll need
