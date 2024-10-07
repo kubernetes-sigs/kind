@@ -5,8 +5,8 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "fedora/40-cloud-base"
   # assume some ram is needed for the host environment but very little CPU
-  memory = 10240
-  cpus = 3
+  memory = 4096
+  cpus = 2
   config.vm.provider :virtualbox do |v|
     v.memory = memory
     v.cpus = cpus
