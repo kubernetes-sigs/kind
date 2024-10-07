@@ -218,9 +218,10 @@ func main() {
 	}
 
 	cfg := networkpolicy.Config{
-		FailOpen: true,
-		QueueID:  100,
-		NodeName: nodeName,
+		FailOpen:            true,
+		QueueID:             100,
+		NodeName:            nodeName,
+		NetfilterBug1766Fix: true,
 	}
 
 	networkPolicyController, err := networkpolicy.NewController(
