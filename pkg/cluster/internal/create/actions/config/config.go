@@ -73,6 +73,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		ControlPlaneEndpoint: controlPlaneEndpoint,
 		APIBindPort:          common.APIServerInternalPort,
 		APIServerAddress:     ctx.Config.Networking.APIServerAddress,
+		APIServerExtraSANs:   ctx.Config.Networking.APIServerExtraSANs,
 		Token:                kubeadm.Token,
 		PodSubnet:            ctx.Config.Networking.PodSubnet,
 		KubeProxyMode:        string(ctx.Config.Networking.KubeProxyMode),

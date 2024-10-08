@@ -81,6 +81,7 @@ func convertv1alpha4Networking(in *v1alpha4.Networking, out *Networking) {
 	out.IPFamily = ClusterIPFamily(in.IPFamily)
 	out.APIServerPort = in.APIServerPort
 	out.APIServerAddress = in.APIServerAddress
+	out.APIServerExtraSANs = in.APIServerExtraSANs
 	out.PodSubnet = in.PodSubnet
 	out.KubeProxyMode = ProxyMode(in.KubeProxyMode)
 	out.ServiceSubnet = in.ServiceSubnet

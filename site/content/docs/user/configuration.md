@@ -170,6 +170,19 @@ kind does not ship with state of the art security or any update strategy (other 
 disposing your cluster and creating a new one)! We strongly discourage exposing kind
 to anything other than loopback.{{</ securitygoose >}}
 
+##### API Server Cert SANs
+
+The API Server certificate SANscan be customized with `apiServerExtraSANs`:
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  # WARNING: It is _strongly_ recommended that you keep this the default
+  # ([]) for security reasons. However it is possible to change this.
+  apiServerExtraSANs: ["1.1.1.1"]
+{{< /codeFromInline  >}}
+
+
 #### Pod Subnet
 
 You can configure the subnet used for pod IPs by setting
