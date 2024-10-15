@@ -270,7 +270,7 @@ func isIPv6UnavailableError(err error) bool {
 	// TODO: this is fragile, and only necessary due to docker enabling ipv6 by default
 	// even on hosts that lack ip6tables setup.
 	// Preferably users would either have ip6tables setup properly or else disable ipv6 in docker
-	const dockerIPV6TablesError = "Error response from daemon: Failed to Setup IP tables: Unable to enable NAT rule: (iptables failed: ip6tables"
+	const dockerIPV6TablesError = "Error response from daemon: Failed to Setup IP tables: Unable to enable NAT rule:  (iptables failed: ip6tables"
 	return strings.HasPrefix(errorMessage, dockerIPV6DisabledError) || strings.HasPrefix(errorMessage, dockerIPV6TablesError)
 }
 
