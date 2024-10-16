@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
 package common
 
 import (
@@ -25,6 +24,7 @@ import (
 
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 var nodeReachedCgroupsReadyRegexp *regexp.Regexp
@@ -50,7 +50,11 @@ func NodeReachedCgroupsReadyRegexp() *regexp.Regexp {
 // It will use logCtx to determine if the logCmd deadline was exceeded for producing
 // the most useful error message in failure cases, logCtx should be the context
 // supplied to create logCmd with CommandContext
-func WaitUntilLogRegexpMatches(logCtx context.Context, logCmd exec.Cmd, re *regexp.Regexp) error {
+func WaitUntilLogRegexpMatches(logCtx context.Context, logCmd exec.Cmd, re *regexp.Regexp, logger log.Logger) error {
+	if logger == nil {
+		return errors.New("missing logger for the container logs")
+	}
+
 	pr, pw, err := os.Pipe()
 	if err != nil {
 		return err
@@ -68,6 +72,10 @@ func WaitUntilLogRegexpMatches(logCtx context.Context, logCmd exec.Cmd, re *rege
 	sc := bufio.NewScanner(pr)
 	for sc.Scan() {
 		line := sc.Text()
+
+		// Print the init logs for debug purpose.
+		logger.V(5).Info(line)
+
 		if re.MatchString(line) {
 			return nil
 		}
