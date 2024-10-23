@@ -219,9 +219,10 @@ func main() {
 
 	cfg := networkpolicy.Config{
 		FailOpen:            true,
-		QueueID:             100,
+		QueueID:             101,
 		NodeName:            nodeName,
 		NetfilterBug1766Fix: true,
+		NFTableName:         "kindnet-network-policies",
 	}
 
 	networkPolicyController, err := networkpolicy.NewController(
