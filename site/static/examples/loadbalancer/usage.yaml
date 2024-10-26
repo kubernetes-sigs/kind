@@ -6,10 +6,13 @@ metadata:
     app: http-echo
 spec:
   containers:
-  - name: foo-app
-    image: hashicorp/http-echo:0.2.3
-    args:
-    - "-text=foo"
+  - command:
+    - /agnhost
+    - serve-hostname
+    - --http=true
+    - --port=8080
+    image: registry.k8s.io/e2e-test-images/agnhost:2.39
+    name: foo-app
 ---
 kind: Pod
 apiVersion: v1
@@ -19,10 +22,13 @@ metadata:
     app: http-echo
 spec:
   containers:
-  - name: bar-app
-    image: hashicorp/http-echo:0.2.3
-    args:
-    - "-text=bar"
+  - command:
+    - /agnhost
+    - serve-hostname
+    - --http=true
+    - --port=8080
+    image: registry.k8s.io/e2e-test-images/agnhost:2.39
+    name: bar-app
 ---
 kind: Service
 apiVersion: v1
@@ -33,5 +39,5 @@ spec:
   selector:
     app: http-echo
   ports:
-  # Default port used by the image
   - port: 5678
+    targetPort: 8080
