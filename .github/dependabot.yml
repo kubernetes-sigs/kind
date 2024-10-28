@@ -13,5 +13,4 @@ updates:
     groups:
       actions:
         update-types:
-          - "minor"
-          - "patch"
+          - "major"
