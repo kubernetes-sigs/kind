@@ -12,7 +12,7 @@ description: |-
 
 Ingress exposes HTTP and HTTPS routes from outside the cluster to services within the cluster.
 
-1. [Create a cluster](#create-cluster): There are two primary methods to direct external traffic to Services inside the cluster"
+1. [Create a cluster](#create-cluster): There are two primary methods to direct external traffic to Services inside the cluster:
     1. using a [LoadBalancer](./loadbalancer.md).
     2. leverage KIND's `extraPortMapping` config option when creating a cluster to forward ports from the host.
 
