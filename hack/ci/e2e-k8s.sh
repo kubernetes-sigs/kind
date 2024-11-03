@@ -117,7 +117,7 @@ create_cluster() {
   fi
   kubelet_extra_args="      \"v\": \"${KIND_CLUSTER_LOG_LEVEL}\"
       \"container-log-max-files\": \"10\"
-      \"container-log-max-size\": \"5Mi\""
+      \"container-log-max-size\": \"100Mi\""
   KUBELET_LOG_FORMAT=${KUBELET_LOG_FORMAT:-$CLUSTER_LOG_FORMAT}
   if [ -n "$KUBELET_LOG_FORMAT" ]; then
       check_structured_log_support "KUBECTL_LOG_FORMAT"
