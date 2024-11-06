@@ -13,7 +13,7 @@ description: |-
 Ingress exposes HTTP and HTTPS routes from outside the cluster to services within the cluster.
 
 1. [Create a cluster](#create-cluster): There are two primary methods to direct external traffic to Services inside the cluster:
-    1. using a [LoadBalancer](./loadbalancer.md).
+    1. using a [LoadBalancer].
     2. leverage KIND's `extraPortMapping` config option when creating a cluster to forward ports from the host.
 
 2. Deploy an Ingress controller, we document [Ingress NGINX](#ingress-nginx) here but other ingresses may work including [Contour](https://projectcontour.io/docs/main/guides/kind/) and Kong, you should follow their docs if you choose to use them.
@@ -27,7 +27,7 @@ Ingress exposes HTTP and HTTPS routes from outside the cluster to services withi
 
 #### Option 1: LoadBalancer
 
-Create a kind cluster and run [Cloud Provider KIND](./loadbalancer.md)
+Create a kind cluster and run [Cloud Provider KIND]
 to enable the loadbalancer controller which ingress-nginx will use through the loadbalancer API.
 
 {{< codeFromInline lang="bash" >}}
@@ -140,3 +140,6 @@ curl localhost/foo
 
 curl localhost/bar
 {{< /codeFromInline >}}
+
+[LoadBalancer]: /docs/user/loadbalancer/
+[Cloud Provider KIND]: /docs/user/loadbalancer/
