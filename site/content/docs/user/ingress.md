@@ -64,7 +64,7 @@ nodeSelector:
 ### Ingress NGINX
 
 {{< codeFromInline lang="bash" >}}
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+kubectl apply -f {{< absURL "examples/ingress/deploy-ingress-nginx.yaml" >}}
 {{< /codeFromInline >}}
 
 Now the Ingress is all setup. Wait until is ready to process requests running:
@@ -82,8 +82,6 @@ Refer [Using Ingress](#using-ingress) for a basic example usage.
 
 The following example creates simple http-echo services
 and an Ingress object to route to these services.
-
-Note, this example uses an nginx-specific Ingress annotation which may not be supported by all Ingress implementations.
 
 ```yaml
 {{% readFile "static/examples/ingress/usage.yaml" %}}
