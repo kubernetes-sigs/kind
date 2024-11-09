@@ -109,7 +109,7 @@ You can clone Kubernetes source code.
 ### Building image
 
 ```sh
-➜  ~ kind build node-image --image kindest/node:main --kube-root $GOPATH/src/k8s.io/kubernetes 
+➜  ~ kind build node-image --image kindest/node:main $GOPATH/src/k8s.io/kubernetes 
 Starting to build Kubernetes
 ...
 Image build completed.
