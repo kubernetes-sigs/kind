@@ -18,6 +18,7 @@ package loadbalancer
 
 import (
 	"bytes"
+	"fmt"
 	"text/template"
 
 	"sigs.k8s.io/kind/pkg/errors"
@@ -68,16 +69,22 @@ backend kube-apiservers
   {{- end}}
 `
 
+var configTpl *template.Template
+
+func init() {
+	t, err := template.New("loadbalancer-config").Parse(DefaultConfigTemplate)
+	if err != nil {
+		panic(fmt.Sprintf("BUG: invalid default loadbalancer config template, check the template: %v", err))
+	}
+	configTpl = t
+}
+
 // Config returns a kubeadm config generated from config data, in particular
 // the kubernetes version
 func Config(data *ConfigData) (config string, err error) {
-	t, err := template.New("loadbalancer-config").Parse(DefaultConfigTemplate)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to parse config template")
-	}
 	// execute the template
 	var buff bytes.Buffer
-	err = t.Execute(&buff, data)
+	err = configTpl.Execute(&buff, data)
 	if err != nil {
 		return "", errors.Wrap(err, "error executing config template")
 	}
