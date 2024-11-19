@@ -44,6 +44,8 @@ func Cluster(logger log.Logger, p providers.Provider, name, explicitKubeconfigPa
 			return err
 		}
 		logger.V(0).Infof("Deleted nodes: %q", n)
+	} else {
+		logger.V(0).Infof("Whooops, no nodes found for cluster %q", name)
 	}
 
 	if kerr != nil {
