@@ -24,11 +24,14 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
 	"sigs.k8s.io/kind/pkg/log"
 )
+
+var versionRE = regexp.MustCompile(`^v\d+\.\d+\.\d+`)
 
 type remoteBuilder struct {
 	version string
@@ -40,8 +43,22 @@ var _ Builder = &remoteBuilder{}
 
 // NewURLBuilder used to specify a complete url to a gzipped tarball
 func NewURLBuilder(logger log.Logger, url string) (Builder, error) {
+	// Try to parse the version from the URL as one possible way to capture what
+	// we are building.
+	// If building a typical community published tarball, the URL will be in the
+	// format of https://dl.k8s.io/v1.30.0/kubernetes-server-linux-amd64.tar.gz
+	version := ""
+
+	parts := strings.Split(url, "/")
+	for _, part := range parts {
+		if versionRE.Match([]byte(part)) {
+			version = part
+			break
+		}
+	}
+
 	return &remoteBuilder{
-		version: "",
+		version: version,
 		logger:  logger,
 		url:     url,
 	}, nil
@@ -77,11 +94,18 @@ func (b *remoteBuilder) Build() (Bits, error) {
 	}
 
 	binDir := filepath.Join(tmpDir, "kubernetes/server/bin")
+
+	// See if we can get an exact version, but default to the version specified
+	sourceVersionRaw := b.version
 	contents, err := os.ReadFile(filepath.Join(tmpDir, "kubernetes/version"))
-	if err != nil {
+	if err == nil {
+		sourceVersionRaw = strings.TrimSpace(string(contents))
+	}
+
+	if err != nil && sourceVersionRaw == "" {
 		return nil, err
 	}
-	sourceVersionRaw := strings.TrimSpace(string(contents))
+
 	return &bits{
 		binaryPaths: []string{
 			filepath.Join(binDir, "kubeadm"),
