@@ -18,6 +18,7 @@ package nodeimage
 
 import (
 	"io"
+	"runtime"
 
 	"sigs.k8s.io/kind/pkg/exec"
 )
@@ -53,9 +54,16 @@ func (c *containerdImporter) Pull(image, platform string) error {
 }
 
 func (c *containerdImporter) LoadCommand() exec.Cmd {
-	return c.containerCmder.Command(
+	var opt string
+	// TODO: Hack to workaround #3795.
+	if runtime.GOARCH == "amd64" {
+		opt = "--local=false"
+	} else {
 		// TODO: ideally we do not need this in the future. we have fixed at least one image
-		"ctr", "--namespace=k8s.io", "images", "import", "--label=io.cri-containerd.pinned=pinned", "--all-platforms", "--no-unpack", "--digests", "-",
+		opt = "--all-platforms"
+	}
+	return c.containerCmder.Command(
+		"ctr", "--namespace=k8s.io", "images", "import", "--label=io.cri-containerd.pinned=pinned", opt, "--no-unpack", "--digests", "-",
 	)
 }
 
