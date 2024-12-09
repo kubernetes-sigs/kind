@@ -261,6 +261,9 @@ nodes:
 - role: worker
 {{< /codeFromInline >}}
 
+Multiple `control-plane` nodes may be specified in order to test a "high availability"
+control plane.
+
 ## Per-Node Options
 
 The following options are available for setting on each entry in `nodes`.
