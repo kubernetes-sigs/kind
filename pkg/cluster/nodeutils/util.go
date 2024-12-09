@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"io"
 	"path"
+	"runtime"
 	"strings"
 
 	"github.com/pelletier/go-toml"
@@ -82,7 +83,15 @@ func LoadImageArchive(n nodes.Node, image io.Reader) error {
 	if err != nil {
 		return err
 	}
-	cmd := n.Command("ctr", "--namespace=k8s.io", "images", "import", "--all-platforms", "--digests", "--snapshotter="+snapshotter, "-").SetStdin(image)
+	var opt string
+	if runtime.GOARCH == "amd64" {
+		// TODO: Hack to workaround #3795.
+		opt = "--local=false"
+	} else {
+		// Needed on e.g. ARM machines to also pull amd64 images (#2957).
+		opt = "--all-platforms"
+	}
+	cmd := n.Command("ctr", "--namespace=k8s.io", "images", "import", opt, "--digests", "--snapshotter="+snapshotter, "-").SetStdin(image)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrap(err, "failed to load image")
 	}
