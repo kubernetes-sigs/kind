@@ -27,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
@@ -78,8 +79,15 @@ func (b *remoteBuilder) Build() (Bits, error) {
 
 	binDir := filepath.Join(tmpDir, "kubernetes/server/bin")
 	contents, err := os.ReadFile(filepath.Join(tmpDir, "kubernetes/version"))
+	// fallback for Kubernetes < v1.31 which doesn't have the version file
+	// this approach only works for release tags as the format happens to match
+	// for pre-release builds the docker tag is mangled and not valid semver
+	if err != nil && os.IsNotExist(err) {
+		b.logger.Warn("WARNING: Using fallback version detection due to missing version file (This command works best with Kubernetes v1.31+)")
+		contents, err = os.ReadFile(filepath.Join(binDir, "kube-apiserver.docker_tag"))
+	}
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get version")
 	}
 	sourceVersionRaw := strings.TrimSpace(string(contents))
 	return &bits{
