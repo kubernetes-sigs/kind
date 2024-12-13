@@ -23,10 +23,11 @@ NOTE: we have customized it in the following ways:
 - our own image and helper image
 - schedule to linux nodes only
 - install as the default storage class
+- tolerate control plane scheduling taints
 */
 
-const storageProvisionerImage = "docker.io/kindest/local-path-provisioner:v20241108-5c6d2daf"
-const storageHelperImage = "docker.io/kindest/local-path-helper:v20230510-486859a6"
+const storageProvisionerImage = "docker.io/kindest/local-path-provisioner:v20241212-8ac705d0"
+const storageHelperImage = "docker.io/kindest/local-path-helper:v20241212-8ac705d0"
 
 // image we need to preload
 var defaultStorageImages = []string{storageProvisionerImage, storageHelperImage}
@@ -46,22 +47,48 @@ metadata:
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: local-path-provisioner-role
+  namespace: local-path-storage
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch", "create", "patch", "update", "delete"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: local-path-provisioner-role
 rules:
-  - apiGroups: [ "" ]
-    resources: [ "nodes", "persistentvolumeclaims", "configmaps" ]
-    verbs: [ "get", "list", "watch" ]
-  - apiGroups: [ "" ]
-    resources: [ "endpoints", "persistentvolumes", "pods" ]
-    verbs: [ "*" ]
-  - apiGroups: [ "" ]
-    resources: [ "events" ]
-    verbs: [ "create", "patch" ]
-  - apiGroups: [ "storage.k8s.io" ]
-    resources: [ "storageclasses" ]
-    verbs: [ "get", "list", "watch" ]
+  - apiGroups: [""]
+    resources: ["nodes", "persistentvolumeclaims", "configmaps", "pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "create", "patch", "update", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: local-path-provisioner-bind
+  namespace: local-path-storage
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: local-path-provisioner-role
+subjects:
+  - kind: ServiceAccount
+    name: local-path-provisioner-service-account
+    namespace: local-path-storage
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -126,6 +153,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: CONFIG_MOUNT_PATH
+              value: /etc/config/
       volumes:
         - name: config-volume
           configMap:
@@ -173,6 +202,11 @@ data:
     metadata:
       name: helper-pod
     spec:
+      priorityClassName: system-node-critical
+      tolerations:
+        - key: node.kubernetes.io/disk-pressure
+          operator: Exists
+          effect: NoSchedule
       containers:
       - name: helper-pod
         image: ` + storageHelperImage + `
