@@ -101,7 +101,7 @@ func (p *provider) Provision(status *cli.Status, cfg *config.Cluster) (err error
 	defer func() { status.End(err == nil) }()
 
 	// plan creating the containers
-	createContainerFuncs, err := planCreation(cfg, fixedNetworkName, p.Binary())
+	createContainerFuncs, err := planCreation(cfg, fixedNetworkName, p.Binary(), p.logger)
 	if err != nil {
 		return err
 	}
