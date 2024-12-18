@@ -15,6 +15,7 @@
 
 set -o errexit -o nounset -o pipefail
 
+# TODO: newer buildx releases ship their own qemu copies and don't need any of this
 # We can skip setup if the current builder already has multi-arch
 # AND if it isn't the docker driver, which doesn't work
 current_builder="$(docker buildx inspect)"
