@@ -150,15 +150,7 @@ func TestParseSnapshotter(t *testing.T) {
 		  key_model = "node"
 	
 		[plugins."io.containerd.grpc.v1.cri".registry]
-		  config_path = ""
-	
-		  [plugins."io.containerd.grpc.v1.cri".registry.auths]
-	
-		  [plugins."io.containerd.grpc.v1.cri".registry.configs]
-	
-		  [plugins."io.containerd.grpc.v1.cri".registry.headers]
-	
-		  [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
+		  config_path = "/etc/containerd/certs.d"
 	
 		[plugins."io.containerd.grpc.v1.cri".x509_key_pair_streaming]
 		  tls_cert_file = ""
