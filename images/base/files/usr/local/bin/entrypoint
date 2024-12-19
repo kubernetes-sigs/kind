@@ -172,13 +172,24 @@ fix_mount() {
     sync
   fi
 
+  # Mount sysfs and proc as read-write, on a known, but kind specific location.
+  # This allows bind mounting, below and is also required to run some workloads
+  # which need to mount proc and sysfs themselves (this avoids the proc and
+  # sysfs mounts being "masked", as far as the kernel is concerned).
+  # XXX, better ref for fs_fully_visible than kernel code?
+  # https://github.com/torvalds/linux/commit/1b852bceb0d1
+  log_info 'mounting /kind/private filesystems'
+  mount -t sysfs -o rw sysfs /kind/private/sys
+  mount -t proc -o rw proc /kind/private/proc
+
   log_info 'remounting /sys read-only'
   # systemd-in-a-container should have read only /sys
   # https://systemd.io/CONTAINER_INTERFACE/
   # however, we need other things from `docker run --privileged` ...
   # and this flag also happens to make /sys rw, amongst other things
   #
-  # This step is ignored when running inside UserNS, because it fails with EACCES.
+  # This step is ignored when running inside UserNS, because it can fail with
+  # EACCES.
   if ! mount -o remount,ro /sys; then
     if [[ -n "$userns" ]]; then
       log_info 'UserNS: ignoring mount fail'
@@ -186,6 +197,23 @@ fix_mount() {
       exit 1
     fi
   fi
+
+  log_info 'making /proc/sys read-only, with known sysctls read-write'
+  mount --rbind -o ro /proc/sys /proc/sys
+  # These are the sysctls known to be namespaced in the kernel, list taken from Kubernetes:
+  # https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/component-helpers/node/util/sysctl/namespace.go
+  # In addition the kubelet attempts to set some sysctl to particular settings, we allow those:
+  # https://github.com/search?q=repo%3Akubernetes/kubernetes%20setupKernelTunables&type=code
+  for mount_point in \
+      kernel/shmall kernel/shmmax kernel/shmmni kernel/shm_rmid_forced kernel/msgmax kernel/msgmnb kernel/msgmni \
+      fs/mqueue \
+      net \
+      vm/overcommit_memory vm/panic_on_oom kernel/panic kernel/panic_on_oops \
+      kernel/keys/root_maxkeys kernel/keys/root_maxbytes; do
+    if [[ -f /kind/private/proc/sys/"${mount_point}" ]]; then
+      mount --bind -o rw /kind/private/proc/sys/"${mount_point}" /proc/sys/"${mount_point}"
+    fi
+  done
 
   log_info 'making mounts shared'
   # for mount propagation
