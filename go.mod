@@ -11,8 +11,8 @@ module sigs.k8s.io/kind
 go 1.17
 
 require (
+	al.essio.dev/pkg/shellescape v1.5.1
 	github.com/BurntSushi/toml v1.4.0
-	github.com/alessio/shellescape v1.4.2
 	github.com/evanphx/json-patch/v5 v5.6.0
 	github.com/google/safetext v0.0.0-20220905092116-b49f7bc46da2
 	github.com/mattn/go-isatty v0.0.20
