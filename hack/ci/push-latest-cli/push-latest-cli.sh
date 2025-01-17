@@ -14,7 +14,14 @@
 # limitations under the License.
 
 set -o errexit -o nounset -o pipefail
-set -x;
+set -x
+
+# Function: Upload file to GCS bucket
+upload_file() {
+    local file="$1"
+    local version="$2"
+    gsutil -m cp -P "${file}" "gs://${BUCKET}/${version}/$(basename "${file}")"
+}
 
 # cd to the repo root
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." &> /dev/null && pwd -P)"
@@ -22,10 +29,10 @@ cd "${REPO_ROOT}"
 
 # pass through git details from prow / image builder
 if [ -n "${PULL_BASE_SHA:-}" ]; then
-  export COMMIT="${PULL_BASE_SHA:?}"
+    export COMMIT="${PULL_BASE_SHA:?}"
 else
-  COMMIT="$(git rev-parse HEAD 2>/dev/null)"
-  export COMMIT
+    COMMIT="$(git rev-parse HEAD 2>/dev/null)"
+    export COMMIT
 fi
 # short commit is currently 8 characters
 SHORT_COMMIT="${COMMIT:0:8}"
@@ -34,36 +41,42 @@ SHORT_COMMIT="${COMMIT:0:8}"
 BUCKET="${BUCKET:-k8s-staging-kind}"
 # under each of these
 VERSIONS=(
-  latest
-  "${SHORT_COMMIT}"
+    "latest"
+    "${SHORT_COMMIT}"
 )
 
-# build for all platforms
+# Create temporary directory and ensure cleanup
+TEMP_DIR=$(mktemp -d)
+trap 'rm -rf "${TEMP_DIR}"' EXIT
+
+echo "Building for all platforms"
 hack/release/build/cross.sh
 
-# upload to the bucket
+echo "Uploading to bucket: ${BUCKET}"
 for f in bin/kind-*; do
-  # make a tarball with this
-  # TODO: eliminate e2e-k8s.sh
-  base="$(basename "$f")"
-  platform="${base#kind-}"
-  tar \
-    -czvf "bin/${platform}.tgz" \
-    --transform 's#.*kind.*#kind#' \
-    --transform 's#.*e2e-k8s.sh#e2e-k8s.sh#' \
-    --transform='s#^/#./#' \
-    --mode='755' \
-    "${f}" \
-    "hack/ci/e2e-k8s.sh"
-  
-  # copy everything up to each version
-  for version in "${VERSIONS[@]}"; do
-    gsutil cp -P "bin/${platform}.tgz" "gs://${BUCKET}/${version}/${platform}.tgz"
-    gsutil cp -P "$f" "gs://${BUCKET}/${version}/${base}"
-  done
+    base="$(basename "${f}")"
+    platform="${base#kind-}"
+    
+    echo "Processing ${platform}"
+    tar \
+        -czvf "${TEMP_DIR}/${platform}.tgz" \
+        --transform 's#.*kind.*#kind#' \
+        --transform 's#.*e2e-k8s.sh#e2e-k8s.sh#' \
+        --transform='s#^/#./#' \
+        --mode='755' \
+        "${f}" \
+        "hack/ci/e2e-k8s.sh"
+    
+    # copy everything up to each version
+    for version in "${VERSIONS[@]}"; do
+        upload_file "${TEMP_DIR}/${platform}.tgz" "${version}"
+        upload_file "${f}" "${version}"
+    done
 done
 
-# upload the e2e script so kubernetes CI can consume it
+echo "Uploading e2e script"
 for version in "${VERSIONS[@]}"; do
-  gsutil cp -P hack/ci/e2e-k8s.sh "gs://${BUCKET}/${version}/e2e-k8s.sh"
+    upload_file "hack/ci/e2e-k8s.sh" "${version}"
 done
+
+echo "Upload process completed successfully"
