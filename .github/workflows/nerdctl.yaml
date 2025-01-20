@@ -91,7 +91,7 @@ jobs:
       - name: Export logs
         if: always()
         run: |
-          sudo cat /etc/cni/net.d/* 
+          sudo find /etc/cni/net.d/ -type f -exec sh -c 'echo "{}" && cat "{}"' \;
           sudo mkdir -p /tmp/kind/logs
           sudo /usr/local/bin/kind export logs /tmp/kind/logs
           sudo chown -R $USER:$USER /tmp/kind/logs
