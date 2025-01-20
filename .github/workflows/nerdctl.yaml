@@ -26,7 +26,7 @@ jobs:
     env:
       JOB_NAME: "nerdctl-${{ matrix.deployment }}-${{ matrix.ipFamily }}"
       IP_FAMILY: ${{ matrix.ipFamily }}
-      NERDCTL_VERSION: "1.7.4"
+      NERDCTL_VERSION: "2.0.2"
       KIND_EXPERIMENTAL_PROVIDER: "nerdctl"
     steps:
       - name: Check out code into the Go module directory
@@ -91,7 +91,7 @@ jobs:
       - name: Export logs
         if: always()
         run: |
-          sudo cat /etc/cni/net.d/* 
+          sudo find /etc/cni/net.d/ -type f -exec sh -c 'echo "{}" && cat "{}"' \;
           sudo mkdir -p /tmp/kind/logs
           sudo /usr/local/bin/kind export logs /tmp/kind/logs
           sudo chown -R $USER:$USER /tmp/kind/logs
