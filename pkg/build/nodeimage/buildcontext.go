@@ -284,6 +284,11 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVers
 			})
 		}
 	}
+	// Wait for containerd socket to be ready, which may take 1s when running under emulation
+	if err := importer.WaitForReady(); err != nil {
+		c.logger.Errorf("Image build failed, containerd did not become ready %v", err)
+		return nil, err
+	}
 	if err := errors.AggregateConcurrent(fns); err != nil {
 		return nil, err
 	}
