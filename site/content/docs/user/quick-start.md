@@ -233,7 +233,7 @@ This allows a workflow like:
 ```
 docker build -t my-custom-image:unique-tag ./my-image-dir
 kind load docker-image my-custom-image:unique-tag
-kubectl apply -f my-manifest-using-my-image:unique-tag
+kubectl apply -f my-manifest-using-my-image.yaml
 ```
 
 > **NOTE**: You can get a list of images present on a cluster node by
