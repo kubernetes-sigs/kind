@@ -267,18 +267,27 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVers
 	}()
 
 	fns := []func() error{}
+	osArch := dockerBuildOsAndArch(c.arch)
 	for _, image := range requiredImages {
 		image := image // https://golang.org/doc/faq#closures_and_goroutines
-		fns = append(fns, func() error {
-			if !builtImages.Has(image) {
-				if err = importer.Pull(image, dockerBuildOsAndArch(c.arch)); err != nil {
+		if !builtImages.Has(image) {
+			fns = append(fns, func() error {
+				if err = importer.Pull(image, osArch); err != nil {
 					c.logger.Warnf("Failed to pull %s with error: %v", image, err)
 					runE := exec.RunErrorForError(err)
 					c.logger.Warn(string(runE.Output))
+					c.logger.Warnf("Retrying %s pull after 1s ...", image)
+					time.Sleep(time.Second)
+					return importer.Pull(image, osArch)
 				}
-			}
-			return nil
-		})
+				return nil
+			})
+		}
+	}
+	// Wait for containerd socket to be ready, which may take 1s when running under emulation
+	if err := importer.WaitForReady(); err != nil {
+		c.logger.Errorf("Image build failed, containerd did not become ready %v", err)
+		return nil, err
 	}
 	if err := errors.AggregateConcurrent(fns); err != nil {
 		return nil, err
