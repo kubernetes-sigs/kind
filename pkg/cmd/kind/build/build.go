@@ -30,7 +30,6 @@ import (
 // NewCommand returns a new cobra.Command for building
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
-		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
 		Use:   "build",
 		Short: "Build one of [node-image]",

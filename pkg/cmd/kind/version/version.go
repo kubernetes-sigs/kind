@@ -71,7 +71,6 @@ var gitCommit = ""
 // NewCommand returns a new cobra.Command for version
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
-		Args:  cobra.NoArgs,
 		Use:   "version",
 		Short: "Prints the kind CLI version",
 		Long:  "Prints the kind CLI version",

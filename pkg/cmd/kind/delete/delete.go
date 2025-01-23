@@ -31,7 +31,6 @@ import (
 // NewCommand returns a new cobra.Command for cluster deletion
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
-		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
 		Use:   "delete",
 		Short: "Deletes one of [cluster]",
