@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package nodeimage
+package build
 
 import (
 	"io"
@@ -22,17 +22,17 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 )
 
-type containerdImporter struct {
+type ContainerdImporter struct {
 	containerCmder exec.Cmder
 }
 
-func newContainerdImporter(containerCmder exec.Cmder) *containerdImporter {
-	return &containerdImporter{
+func NewContainerdImporter(containerCmder exec.Cmder) *ContainerdImporter {
+	return &ContainerdImporter{
 		containerCmder: containerCmder,
 	}
 }
 
-func (c *containerdImporter) Prepare() error {
+func (c *ContainerdImporter) Prepare() error {
 	if err := c.containerCmder.Command(
 		"bash", "-c", "nohup containerd > /dev/null 2>&1 &",
 	).Run(); err != nil {
@@ -42,29 +42,29 @@ func (c *containerdImporter) Prepare() error {
 	return nil
 }
 
-func (c *containerdImporter) End() error {
+func (c *ContainerdImporter) End() error {
 	return c.containerCmder.Command("pkill", "containerd").Run()
 }
 
-func (c *containerdImporter) Pull(image, platform string) error {
+func (c *ContainerdImporter) Pull(image, platform string) error {
 	return c.containerCmder.Command(
 		"ctr", "--namespace=k8s.io", "content", "fetch", "--platform="+platform, image,
 	).SetStdout(io.Discard).SetStderr(io.Discard).Run()
 }
 
-func (c *containerdImporter) LoadCommand() exec.Cmd {
+func (c *ContainerdImporter) LoadCommand() exec.Cmd {
 	return c.containerCmder.Command(
 		// TODO: ideally we do not need this in the future. we have fixed at least one image
 		"ctr", "--namespace=k8s.io", "images", "import", "--label=io.cri-containerd.pinned=pinned", "--all-platforms", "--no-unpack", "--digests", "-",
 	)
 }
 
-func (c *containerdImporter) Tag(src, target string) error {
+func (c *ContainerdImporter) Tag(src, target string) error {
 	return c.containerCmder.Command(
 		"ctr", "--namespace=k8s.io", "images", "tag", "--force", src, target,
 	).Run()
 }
 
-func (c *containerdImporter) ListImported() ([]string, error) {
+func (c *ContainerdImporter) ListImported() ([]string, error) {
 	return exec.OutputLines(c.containerCmder.Command("ctr", "--namespace=k8s.io", "images", "list", "-q"))
 }
