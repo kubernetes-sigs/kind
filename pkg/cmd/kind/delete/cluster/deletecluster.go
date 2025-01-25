@@ -38,11 +38,17 @@ type flagpole struct {
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
-		Args: cobra.NoArgs,
-		// TODO(bentheelder): more detailed usage
+		Args:  cobra.NoArgs,
 		Use:   "cluster",
 		Short: "Deletes a cluster",
-		Long:  "Deletes a resource",
+		Long: `Deletes a Kind cluster from the system.
+
+This is an idempotent operation, meaning it may be called multiple times without
+failing (like "rm -f"). If the cluster resources exist they will be deleted, and
+if the cluster is already gone it will just return success.
+
+Errors will only occur if the cluster resources exist and are not able to be deleted.
+`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cli.OverrideDefaultName(cmd.Flags())
 			return deleteCluster(logger, flags)
