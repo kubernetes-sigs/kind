@@ -176,7 +176,7 @@ RUN git clone --filter=tree:0 "${CNI_PLUGINS_CLONE_URL}" /cni-plugins \
     && eval "$(gimme "${GO_VERSION}")" \
     && export GOTOOLCHAIN="go${GO_VERSION}" \
     && mkdir ./bin \
-    && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
+    && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=0 \
     && go build -o ./bin/host-local -mod=vendor ./plugins/ipam/host-local \
     && go build -o ./bin/loopback -mod=vendor ./plugins/main/loopback \
     && go build -o ./bin/ptp -mod=vendor ./plugins/main/ptp \
