@@ -25,13 +25,20 @@ IMAGE_NAME="${IMAGE_NAME:-node}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." &> /dev/null && pwd -P)"
 cd "${REPO_ROOT}"
 
-VERSION="$1"
+VERSION="${1:-}"
+if [[ -z "${VERSION}" ]]; then
+    echo >&2 "version argument not supplied, looking up current stable ..."
+    VERSION="$(curl -sL https://dl.k8s.io/release/stable.txt)"
+fi
+echo >&2 "will build node image for Kubernetes ${VERSION} ..."
 
 # ensure we have up to date kind
+echo >&2 "building kind ..."
 make build
 
 # ensure we have qemu setup so we can run cross-arch images
 # TODO: dedupe specifying this image?
+echo >&2 "ensuring binfmt_misc ..."
 docker run --rm --privileged tonistiigi/binfmt:qemu-v7.0.0-28@sha256:66e11bea77a5ea9d6f0fe79b57cd2b189b5d15b93a2bdb925be22949232e4e55 --install all
 
 # NOTE: adding platforms is costly in terms of build time
@@ -48,6 +55,7 @@ IMAGE="${REGISTRY}/${IMAGE_NAME}:${VERSION}"
 images=()
 for arch in "${__arches__[@]}"; do
     image="${REGISTRY}/${IMAGE_NAME}-${arch}:${VERSION}"
+    echo >&2 "building ${image} ..."
     "${REPO_ROOT}/bin/kind" build node-image --image="${image}" --arch="${arch}" "${VERSION}"
     images+=("${image}")
 done
