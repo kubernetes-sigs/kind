@@ -102,7 +102,7 @@ Multiple details of the cluster's networking can be customized under the
 
 #### IP Family
 
-KIND has support for IPv4, IPv6 and dual-stack clusters, you can switch from the default of IPv4 by setting:
+KIND has support for IPv4, IPv6 and dual-stack clusters, it is possible to switch away from the default.
 
 ##### IPv6 clusters
 You can run IPv6 single-stack clusters using `kind`, if the host that runs the docker containers support IPv6.
