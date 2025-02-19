@@ -442,6 +442,26 @@ nodes:
           enable-admission-plugins: NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook
 {{< /codeFromInline >}}
 
+> **NOTE**: When using `KubeletConfiguration`, kubeadm only applies the kubelet configuration to the **first** node.
+> This is a current [limitation](https://github.com/kubernetes-sigs/kind/issues/3849).
+
+As a result, if you want to change the kubelet's configuration for any additional node, such as applying a taint, you must use `JoinConfiguration`:
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: test
+nodes:
+- role: control-plane
+- role: worker
+  kubeadmConfigPatches:
+    - |
+      kind: JoinConfiguration
+      nodeRegistration:
+      kubeletExtraArgs:
+      register-with-taints: "mri-agent=presence:NoSchedule"
+{{< /codeFromInline >}}
+
 On every additional node configured in the KIND cluster, 
 worker or control-plane (in HA mode),
 KIND runs `kubeadm join` which can be configured using the 
