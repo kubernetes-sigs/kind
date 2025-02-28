@@ -19,9 +19,12 @@ package kubeconfig
 import (
 	"os"
 	"path/filepath"
+	"time"
 )
 
-// these are from
+const lockFileRetryAttemps = 5
+
+// these are based on
 // https://github.com/kubernetes/client-go/blob/611184f7c43ae2d520727f01d49620c7ed33412d/tools/clientcmd/loader.go#L439-L440
 
 func lockFile(filename string) error {
@@ -32,12 +35,21 @@ func lockFile(filename string) error {
 			return err
 		}
 	}
-	f, err := os.OpenFile(lockName(filename), os.O_CREATE|os.O_EXCL, 0)
-	if err != nil {
-		return err
+
+	// Retry obtaining the file lock a few times to accommodate concurrent operations.
+	var lastErr error
+	for i := 0; i < lockFileRetryAttemps; i++ {
+		f, err := os.OpenFile(lockName(filename), os.O_CREATE|os.O_EXCL, 0)
+		if err == nil {
+			f.Close()
+			return nil
+		}
+
+		lastErr = err
+		time.Sleep(100 * time.Millisecond)
 	}
-	f.Close()
-	return nil
+
+	return lastErr
 }
 
 func unlockFile(filename string) error {
