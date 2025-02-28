@@ -442,7 +442,7 @@ nodes:
           enable-admission-plugins: NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook
 {{< /codeFromInline >}}
 
-> **NOTE**: When using `KubeletConfiguration`, kubeadm only applies the kubelet configuration to the **first** node.
+> **NOTE**: When using `KubeletConfiguration`, kubeadm only reads the kubelet configuration from the **first** node, which will apply to all nodes.
 > This is a current [limitation](https://github.com/kubernetes-sigs/kind/issues/3849).
 
 As a result, if you want to change the kubelet's configuration for any additional node, such as applying a taint, you must use `JoinConfiguration`:
