@@ -458,8 +458,8 @@ nodes:
     - |
       kind: JoinConfiguration
       nodeRegistration:
-      kubeletExtraArgs:
-      register-with-taints: "mri-agent=presence:NoSchedule"
+        kubeletExtraArgs:
+          register-with-taints: "my-taint=presence:NoSchedule"
 {{< /codeFromInline >}}
 
 On every additional node configured in the KIND cluster, 
