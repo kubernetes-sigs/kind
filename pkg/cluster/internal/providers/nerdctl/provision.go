@@ -179,6 +179,21 @@ func commonArgs(cluster string, cfg *config.Cluster, networkName string, nodeNam
 		args = append(args, "-e", "KIND_DNS_SEARCH="+strings.Join(*cfg.Networking.DNSSearch, " "))
 	}
 
+	// The global kernel parameter net.ipv4.conf.all.arp_ignore governs the
+	// conditions under which ARP requests will be accepted or ignored. Some
+	// host systems might set this global parameter to a more restrictive
+	// setting of 2 (or greater). Specifically, in mode 2, the system ignores
+	// ARP requests directed to /32 addresses (this is what kindnet assigns to
+	// its veth interfaces) because the request originates from a different
+	// subnet. This behavior breaks routing for kindnet, so we opinionatedly set
+	// this to 1 when kindnet is in use to ensure proper networking.
+	//
+	// For more information see:
+	// https://www.kernel.org/doc/html/latest/networking/ip-sysctl.html#arp_ignore
+	if !cfg.Networking.DisableDefaultCNI {
+		args = append(args, "--sysctl=net.ipv4.conf.all.arp_ignore=1")
+	}
+
 	return args, nil
 }
 
