@@ -165,26 +165,16 @@ RUN git clone --filter=tree:0 "${CRI_TOOLS_CLONE_URL}" /cri-tools \
     && make BUILD_BIN_PATH=./build crictl \
     && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES ./cmd/crictl
 
-# stage for building cni-plugins
+# stage for building cni-plugin
 FROM go-build AS build-cni
 ARG TARGETARCH GO_VERSION
-ARG CNI_PLUGINS_VERSION="v1.6.1"
-ARG CNI_PLUGINS_CLONE_URL="https://github.com/containernetworking/plugins"
-RUN git clone --filter=tree:0 "${CNI_PLUGINS_CLONE_URL}" /cni-plugins \
-    && cd /cni-plugins \
-    && git checkout "${CNI_PLUGINS_VERSION}" \
+COPY cni-plugin/* /src/
+RUN cd /src \
     && eval "$(gimme "${GO_VERSION}")" \
     && export GOTOOLCHAIN="go${GO_VERSION}" \
     && mkdir ./bin \
-    && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=0 \
-    && go build -o ./bin/host-local -mod=vendor ./plugins/ipam/host-local \
-    && go build -o ./bin/loopback -mod=vendor ./plugins/main/loopback \
-    && go build -o ./bin/ptp -mod=vendor ./plugins/main/ptp \
-    && go build -o ./bin/portmap -mod=vendor ./plugins/meta/portmap \
-    && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES \
-        ./plugins/ipam/host-local \
-        ./plugins/main/loopback ./plugins/main/ptp \
-        ./plugins/meta/portmap
+    && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
+    && go build -ldflags="-extldflags=-static" -tags sqlite_omit_load_extension,osusergo,netgo -o ./bin/cni-kindnet .
 
 # stage for building containerd-fuse-overlayfs
 FROM go-build AS build-fuse-overlayfs
@@ -220,13 +210,10 @@ COPY --from=build-runc /_LICENSES/* /LICENSES/
 # copy over crictl build and install
 COPY --from=build-crictl /cri-tools/build/crictl /usr/local/bin/
 COPY --from=build-crictl /_LICENSES/* /LICENSES/
-# copy over CNI plugins build and install
+# copy over CNI plugin build and install
 RUN  mkdir -p /opt/cni/bin
-COPY --from=build-cni /cni-plugins/bin/host-local /opt/cni/bin/
-COPY --from=build-cni /cni-plugins/bin/loopback /opt/cni/bin/
-COPY --from=build-cni /cni-plugins/bin/ptp /opt/cni/bin/
-COPY --from=build-cni /cni-plugins/bin/portmap /opt/cni/bin/
-COPY --from=build-cni /_LICENSES/* /LICENSES/
+COPY --from=build-cni /src/bin/cni-kindnet /opt/cni/bin/
+
 # copy over containerd-fuse-overlayfs and install
 COPY --from=build-fuse-overlayfs /fuse-overlayfs-snapshotter/bin/containerd-fuse-overlayfs-grpc /usr/local/bin/
 COPY --from=build-fuse-overlayfs /_LICENSES/* /LICENSES/

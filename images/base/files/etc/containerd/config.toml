@@ -40,3 +40,8 @@ version = 2
   tolerate_missing_hugepages_controller = true
   # restrict_oom_score_adj needs to be true when running inside UserNS (rootless)
   restrict_oom_score_adj = false
+
+[plugins."io.containerd.grpc.v1.cri".cni]
+  # use_internal_loopback use an internal mechanism to set lo to up on containers
+  # instead of the CNI loopback plugin
+  use_internal_loopback = true

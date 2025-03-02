@@ -17,10 +17,8 @@ limitations under the License.
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
-	stdnet "net"
 	"os"
 	"reflect"
 	"text/template"
@@ -32,91 +30,34 @@ import (
 
 // CNIConfigInputs is supplied to the CNI config template
 type CNIConfigInputs struct {
-	PodCIDRs      []string
-	DefaultRoutes []string
-	Mtu           int
+	PodCIDRs []string
 }
 
 // ComputeCNIConfigInputs computes the template inputs for CNIConfigWriter
 func ComputeCNIConfigInputs(node *corev1.Node) CNIConfigInputs {
-
-	defaultRoutes := []string{"0.0.0.0/0", "::/0"}
-	// check if is a dualstack cluster
-	if len(node.Spec.PodCIDRs) > 1 {
-		return CNIConfigInputs{
-			PodCIDRs:      node.Spec.PodCIDRs,
-			DefaultRoutes: defaultRoutes,
-		}
-	}
-	// the cluster is single stack
-	// we use the legacy node.Spec.PodCIDR for backwards compatibility
-	podCIDRs := []string{node.Spec.PodCIDR}
-	// This is a single stack cluster
-	defaultRoute := defaultRoutes[:1]
-	if isIPv6CIDRString(podCIDRs[0]) {
-		defaultRoute = defaultRoutes[1:]
-	}
 	return CNIConfigInputs{
-		PodCIDRs:      podCIDRs,
-		DefaultRoutes: defaultRoute,
+		PodCIDRs: node.Spec.PodCIDRs,
 	}
-}
-
-// computeBridgeMTU finds the mtu for the eth0 interface
-// otherwise it defaults to ptp default behavior of being set by kernel
-func computeBridgeMTU() (int, error) {
-	interfaces, err := stdnet.Interfaces()
-	if err != nil {
-		return 0, err
-	}
-	for _, inter := range interfaces {
-		if inter.Name == "eth0" {
-			return inter.MTU, nil
-		}
-	}
-	return 0, errors.New("Found no eth0 device")
 }
 
 // cniConfigPath is where kindnetd will write the computed CNI config
 const cniConfigPath = "/etc/cni/net.d/10-kindnet.conflist"
 
-const cniConfigTemplate = `
-{
-	"cniVersion": "0.3.1",
-	"name": "kindnet",
-	"plugins": [
-	{
-		"type": "ptp",
-		"ipMasq": false,
-		"ipam": {
-			"type": "host-local",
-			"dataDir": "/run/cni-ipam-state",
-			"routes": [
-				{{$first := true}}
-				{{- range $route := .DefaultRoutes}}
-				{{if $first}}{{$first = false}}{{else}},{{end}}
-				{ "dst": "{{ $route }}" }
-				{{- end}}
-			],
-			"ranges": [
-				{{$first := true}}
-				{{- range $cidr := .PodCIDRs}}
-				{{if $first}}{{$first = false}}{{else}},{{end}}
-				[ { "subnet": "{{ $cidr }}" } ]
-				{{- end}}
-			]
-		}
-		{{if .Mtu}},
-		"mtu": {{ .Mtu }}
-		{{end}}
-	},
-	{
-		"type": "portmap",
-		"capabilities": {
-			"portMappings": true
-		}
-	}
-	]
+const cniConfigTemplate = `{
+  "cniVersion": "0.4.0",
+  "name": "kindnet",
+  "plugins": [
+    {
+      "type": "cni-kindnet",
+      "ranges": [
+	    {{- range $i, $cidr := .PodCIDRs}}
+	    {{- if gt $i 0 }},{{end}}
+        "{{ $cidr }}"
+      {{- end}}
+      ],
+      "capabilities": {"portMappings": true}
+    }
+  ]
 }
 `
 
@@ -125,12 +66,10 @@ const cniConfigTemplate = `
 type CNIConfigWriter struct {
 	path       string
 	lastInputs CNIConfigInputs
-	mtu        int
 }
 
 // Write will write the config based on
 func (c *CNIConfigWriter) Write(inputs CNIConfigInputs) error {
-	inputs.Mtu = c.mtu
 	if reflect.DeepEqual(inputs, c.lastInputs) {
 		return nil
 	}
