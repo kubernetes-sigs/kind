@@ -87,9 +87,11 @@ jobs:
           sudo kubectl get nodes -o wide
           sudo kubectl get pods -A
 
-        # TODO: implement this
+      # TODO: https://github.com/kubernetes-sigs/kind/issues/2038
       - name: Load docker image
-        run: sudo KIND_EXPERIMENTAL_PROVIDER=podman kind load docker-image busybox:2
+        run: |
+          sudo podman pull busybox
+          sudo KIND_EXPERIMENTAL_PROVIDER=podman kind load docker-image busybox
         continue-on-error: true
 
       - name: Export logs
