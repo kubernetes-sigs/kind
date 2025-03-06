@@ -15,7 +15,7 @@ jobs:
   vm:
     # Fedora is different from Ubuntu in LSM (SELinux), filesystem (btrfs), kernel version, etc.
     name: "CGroupv2 (Fedora)"
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -23,7 +23,6 @@ jobs:
         provider: [docker, podman]
         rootless: ["rootful", "rootless"]
     env:
-      LIMA_VERSION: "0.23.2" # Fedora 40
       KIND_EXPERIMENTAL_PROVIDER: "${{ matrix.provider }}"
       ROOTLESS: "${{ matrix.rootless }}"
       HELPER: "./hack/ci/lima-helper.sh"
@@ -44,44 +43,32 @@ jobs:
           go-version: ${{ steps.golangversion.outputs.go_version }}
           check-latest: true
 
-      - name: "Install QEMU"
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ovmf qemu-system-x86 qemu-utils
-          sudo modprobe kvm
-          # `sudo usermod -aG kvm $(whoami)` does not take an effect on GHA
-          sudo chown $(whoami) /dev/kvm
-
       - name: "Install Lima"
-        run: curl -fsSL https://github.com/lima-vm/lima/releases/download/v${LIMA_VERSION}/lima-${LIMA_VERSION}-Linux-x86_64.tar.gz | sudo tar Cxzvf /usr/local -
+        uses: lima-vm/lima-actions/setup@v1
+        id: lima-actions-setup
 
       - name: "Cache ~/.cache/lima"
         uses: actions/cache@v4
         with:
           path: ~/.cache/lima
-          key: lima-${{ env.LIMA_VERSION }}
+          key: lima-${{ steps.lima-actions-setup.outputs.version }}
 
       - name: "Start Fedora"
         # --plain is set to disable file sharing, port forwarding, built-in containerd, etc.
         run: limactl start --name=default --plain template://fedora
 
       - name: "Initialize Fedora"
-        # plain old rsync and ssh are used for the initialization of the guest,
-        # so that people who are not familiar with Lima can understand the initialization steps.
         run: |
           set -eux -o pipefail
-          # Initialize SSH
-          mkdir -p -m 0700 ~/.ssh
-          cat ~/.lima/default/ssh.config >> ~/.ssh/config
           # Sync the current directory to /tmp/kind in the guest
-          rsync -a -e ssh . lima-default:/tmp/kind
+          limactl cp -r . default:/tmp/kind
           # Install packages
-          ssh lima-default sudo /tmp/kind/hack/ci/init-fedora.sh
+          lima sudo /tmp/kind/hack/ci/init-fedora.sh
           # Enable systemd lingering for rootless
-          ssh lima-default sudo loginctl enable-linger "$USER"
+          lima sudo loginctl enable-linger "$USER"
           # Install kind
-          ssh lima-default sudo git config --global --add safe.directory /tmp/kind
-          ssh lima-default sudo make -C /tmp/kind install INSTALL_DIR=/usr/local/bin
+          lima sudo git config --global --add safe.directory /tmp/kind
+          lima sudo make -C /tmp/kind install INSTALL_DIR=/usr/local/bin
 
       - name: Set up Rootless Docker
         if: ${{ matrix.provider == 'docker' && matrix.rootless == 'rootless' }}
