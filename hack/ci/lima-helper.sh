@@ -15,10 +15,8 @@
 
 set -o errexit -o nounset -o pipefail
 
-: "${LIMA_INSTANCE:=default}"
 : "${KIND_EXPERIMENTAL_PROVIDER:=docker}"
 
-if [ "$ROOTLESS" = "rootless" ]; then
-  exec ssh "lima-${LIMA_INSTANCE}" KIND_EXPERIMENTAL_PROVIDER="$KIND_EXPERIMENTAL_PROVIDER" "${@}"
-fi
-exec ssh "lima-${LIMA_INSTANCE}" sudo KIND_EXPERIMENTAL_PROVIDER="$KIND_EXPERIMENTAL_PROVIDER" "${@}"
+sudo=sudo
+[ "$ROOTLESS" = "rootless" ] && sudo=
+exec lima $sudo KIND_EXPERIMENTAL_PROVIDER="$KIND_EXPERIMENTAL_PROVIDER" "${@}"
