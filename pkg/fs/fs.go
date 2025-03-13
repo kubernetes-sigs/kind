@@ -22,6 +22,7 @@ package fs
 import (
 	"io"
 	"os"
+	"os/user"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -48,6 +49,32 @@ func TempDir(dir, prefix string) (name string, err error) {
 // This fixes the case of Posix paths on Windows
 func IsAbs(hostPath string) bool {
 	return path.IsAbs(hostPath) || filepath.IsAbs(hostPath)
+}
+
+// Abs override filepath.Abs to resolve ~ user home dir
+func Abs(path string) (string, error) {
+	if strings.HasPrefix(path, "~") {
+		userHomeDir, err := getUserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		if path == "~" {
+			path = userHomeDir
+		} else if strings.HasPrefix(path, "~/") {
+			path = filepath.Join(userHomeDir, path[2:])
+		}
+	}
+
+	return filepath.Abs(path)
+}
+
+// getUserHomeDir returns the current shell user home dir
+func getUserHomeDir() (string, error) {
+	usr, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+	return usr.HomeDir, nil
 }
 
 // Copy recursively directories, symlinks, files copies from src to dst
