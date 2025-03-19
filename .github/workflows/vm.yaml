@@ -44,11 +44,11 @@ jobs:
           check-latest: true
 
       - name: "Install Lima"
-        uses: lima-vm/lima-actions/setup@v1
+        uses: lima-vm/lima-actions/setup@be564a1408f84557d067b099a475652288074b2e # v1
         id: lima-actions-setup
 
       - name: "Cache ~/.cache/lima"
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: ~/.cache/lima
           key: lima-${{ steps.lima-actions-setup.outputs.version }}
