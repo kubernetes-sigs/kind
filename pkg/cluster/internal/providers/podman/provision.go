@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/fs"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/common"
@@ -86,7 +87,7 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 		// fixup relative paths, podman can only handle absolute paths
 		for i := range node.ExtraMounts {
 			hostPath := node.ExtraMounts[i].HostPath
-			absHostPath, err := filepath.Abs(hostPath)
+			absHostPath, err := fs.Abs(hostPath)
 			if err != nil {
 				return nil, errors.Wrapf(err, "unable to resolve absolute path for hostPath: %q", hostPath)
 			}
