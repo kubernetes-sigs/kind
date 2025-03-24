@@ -71,6 +71,10 @@ Now the Ingress is all setup. Wait until is ready to process requests running:
 
 {{< codeFromInline lang="bash" >}}
 kubectl wait --namespace ingress-nginx \
+  --for=condition=complete job/ingress-nginx-admission-patch \
+  --timeout=30s \
+&& \
+kubectl wait --namespace ingress-nginx \
   --for=condition=ready pod \
   --selector=app.kubernetes.io/component=controller \
   --timeout=90s
