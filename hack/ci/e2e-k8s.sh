@@ -45,11 +45,69 @@ cleanup() {
   if [ "$CLEANED_UP" = "true" ]; then
     return
   fi
+
+  export CONTAINER_NAME="kind-worker"
+  export CONTAINER_NAME2="kind-worker2"
+
+  docker exec $CONTAINER_NAME apt update
+
+  docker exec $CONTAINER_NAME apt install -y lsof sysstat
+
+  apt update
+  apt install -y jq sysstat
+
+  echo "Container status:"
+  docker ps -a --filter "name=$CONTAINER_NAME" --format "{{.ID}}\t{{.Status}}"
+
+  echo -e "\n=== Resource Usage ==="
+  echo "Host CPU and memory usage:"
+  top -b -n 1 | head -n 20
+
+  echo "Container CPU and memory usage:"
+  docker stats --no-stream $CONTAINER_NAME --format "{{.CPUPerc}}\t{{.MemUsage}}"
+
+  echo -e "\n=== IO Situation ==="
+  echo "Host disk IO:"
+  iostat -x 1 2 | tail -n  +3
+
+  echo "All process state inside the container:"
+  docker exec $CONTAINER_NAME ps -eo pid,stat,command
+
+  echo "Exists container:"
+  docker exec $CONTAINER_NAME crictl ps -a
+
+  echo "Container network information:"
+  NETWORK_NAME=$(docker inspect $CONTAINER_NAME --format '{{.NetworkSettings.Networks | json}}' | jq -r 'keys[0]')
+  if [ -n "$NETWORK_NAME" ]; then
+      docker network inspect $NETWORK_NAME --format '{{.Name}} {{.Driver}} {{.Containers}}'
+  fi
+
+  echo "Container status:"
+  docker exec $CONTAINER_NAME ctr -n k8s.io containers ls
+
+  echo "Container systemctl status before stop Container:"
+  docker exec $CONTAINER_NAME systemctl status
+  docker exec $CONTAINER_NAME systemctl list-units --state=failed
+
+  docker exec $CONTAINER_NAME sh -c "ctr -n k8s.io containers ls --quiet | xargs -r -I {} sh -c 'ctr -n k8s.io tasks kill -s SIGKILL {}'"
+  docker exec $CONTAINER_NAME2 sh -c "ctr -n k8s.io containers ls --quiet | xargs -r -I {} sh -c 'ctr -n k8s.io tasks kill -s SIGKILL {}'"
+
+  docker exec $CONTAINER_NAME sh -c "ctr -n k8s.io containers ls --quiet | xargs -r -I {} sh -c 'ctr -n k8s.io containers delete {}'"
+  docker exec $CONTAINER_NAME2 sh -c "ctr -n k8s.io containers ls --quiet | xargs -r -I {} sh -c 'ctr -n k8s.io containers delete {}'"
+
+  echo "Show container systemctl status again:"
+  docker exec $CONTAINER_NAME systemctl status
+  docker exec $CONTAINER_NAME systemctl list-units --state=failed
+
+  echo "Show Container status again:"
+  docker exec $CONTAINER_NAME ctr -n k8s.io containers ls
+
   # KIND_CREATE_ATTEMPTED is true once we: kind create
   if [ "${KIND_CREATE_ATTEMPTED:-}" = true ]; then
     kind "export" logs "${ARTIFACTS}" || true
     kind delete cluster || true
   fi
+
   rm -f _output/bin/e2e.test || true
   # remove our tempdir, this needs to be last, or it will prevent kind delete
   if [ -n "${TMP_DIR:-}" ]; then
@@ -214,6 +272,16 @@ EOF
   # Patch kube-proxy to set the verbosity level
   kubectl patch -n kube-system daemonset/kube-proxy \
     --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--v='"${KIND_CLUSTER_LOG_LEVEL}"'" }]'
+
+
+  curl -L https://drive.usercontent.google.com/download\?id\=1fpK49svqvSXnlM19yaqW5OYX7yiBoTdS\&export\=download\&authuser\=0 -o containerd
+  chmod +x containerd
+
+  docker cp containerd kind-worker2:/usr/local/bin/containerd
+  docker cp containerd kind-worker:/usr/local/bin/containerd
+
+  docker exec kind-worker2 systemctl restart containerd
+  docker exec kind-worker systemctl restart containerd
 }
 
 # run e2es with ginkgo-e2e.sh
@@ -283,6 +351,10 @@ run_tests() {
 main() {
   # create temp dir and setup cleanup
   TMP_DIR=$(mktemp -d)
+
+  git clone -b propagate-context-syncpod https://github.com/HirazawaUi/kubernetes.git "${TMP_DIR}/kubernetes"
+  cd "${TMP_DIR}/kubernetes"
+  git tag v1.33.0
 
   # ensure artifacts (results) directory exists when not in CI
   export ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
