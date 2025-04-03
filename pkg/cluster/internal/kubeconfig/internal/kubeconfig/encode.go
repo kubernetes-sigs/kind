@@ -19,8 +19,8 @@ package kubeconfig
 import (
 	"bytes"
 
-	yaml "gopkg.in/yaml.v3"
 	kubeyaml "sigs.k8s.io/yaml"
+	yaml "sigs.k8s.io/yaml/goyaml.v3"
 
 	"sigs.k8s.io/kind/pkg/errors"
 )

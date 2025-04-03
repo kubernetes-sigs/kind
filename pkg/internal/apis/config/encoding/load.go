@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"os"
 
-	yaml "gopkg.in/yaml.v3"
+	yaml "sigs.k8s.io/yaml/goyaml.v3"
 
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	"sigs.k8s.io/kind/pkg/errors"
