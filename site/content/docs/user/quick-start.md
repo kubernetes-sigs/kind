@@ -279,7 +279,7 @@ The steps you must perform to create and run a Kind cluster:
 <img src="../user/images/kind-clusters-running-in-podman-desktop.png"/>
 
 After creating a kind cluster, perform any of the following tasks to manage your cluster:
-kind-clusters-running-in-podman-desktop.png
+
 - [Restart your Kind cluster](https://podman-desktop.io/docs/kind/restarting-your-kind-cluster).
 - [Set your Kubernetes context to the Kind cluster](https://podman-desktop.io/docs/kubernetes/viewing-and-selecting-current-kubernetes-context).
 - [Delete your Kind cluster](https://podman-desktop.io/docs/kind/deleting-your-kind-cluster).
