@@ -259,6 +259,44 @@ the image tag is `:latest` or omitted (and implicitly `:latest`) in which case t
 
 See also: [Using kind with Private Registries][Private Registries].
 
+## Using Kind with Podman Desktop
+
+Podman Desktop offers a complete integration with Kind by enabling you to create a Kind cluster, install the Kind CLI, and manage your Kind cluster resources. It runs the Kind cluster on a Podman engine. 
+
+As a developer, you can [Create a Kind cluster](https://podman-desktop.io/docs/kind/creating-a-kind-cluster):
+- With a customized configuration by providing a path to the configuration file. The Kind cluster is created based on the values specified in the configuration file. 
+- With the default configuration, and you can edit the default configuration when needed.
+
+You can create multiple local Kind-powered Kubernetes clusters on three different operating systems: Windows, macOS, and Linux. However, to use Kind on Windows, you must have a Podman machine running in rootful mode.
+
+The steps you must perform to create and run a Kind cluster:
+
+1. [Install the Kind extension](https://podman-desktop.io/docs/kind/installing-extension) from the Podman Desktop catalog
+1. [Install the Kind CLI](https://podman-desktop.io/docs/kind/installing)
+1. Applicable only on Windows: [Configure Podman on WSL](https://podman-desktop.io/docs/kind/configuring-podman-for-kind-on-windows). Skip this step on macOS and Linux.
+1. [Create a Kind cluster](https://podman-desktop.io/docs/kind/creating-a-kind-cluster)
+
+<img src="../user/images/kind-clusters-running-in-podman-desktop.png"/>
+
+After creating a kind cluster, perform any of the following tasks to manage your cluster:
+kind-clusters-running-in-podman-desktop.png
+- [Restart your Kind cluster](https://podman-desktop.io/docs/kind/restarting-your-kind-cluster).
+- [Set your Kubernetes context to the Kind cluster](https://podman-desktop.io/docs/kubernetes/viewing-and-selecting-current-kubernetes-context).
+- [Delete your Kind cluster](https://podman-desktop.io/docs/kind/deleting-your-kind-cluster).
+- [Build an image and test it in Kind](https://podman-desktop.io/docs/kind/building-an-image-and-testing-it-in-kind).
+- [Push an image to your Kind cluster](https://podman-desktop.io/docs/kind/pushing-an-image-to-kind).
+- [Deploy a container or pod to your Kind cluster](https://podman-desktop.io/docs/kubernetes/deploying-a-pod-to-kubernetes).
+- Interact with the application running in your Kind cluster from your local machine using the [port forwarding](https://podman-desktop.io/docs/kubernetes/port-forwarding) feature.
+- [Apply changes to your Kind cluster](https://podman-desktop.io/docs/kubernetes/configuring-editing-kube-object#procedure-updating-an-existing-object) directly from the UI.
+
+<img src="../user/images/apply-changes-to-kind-cluster.png"/>
+
+Moreover, you can easily transition from containers to Kubernetes and deploy a local Kind cluster with necessary objects, such as Nodes, Deployments, Services, and others by [applying a YAML manifest](https://podman-desktop.io/docs/kubernetes/applying-a-yaml-manifest).   
+
+This integration of Podman Desktop and Kind provides a completely new way to easily manage a Kind Kubernetes cluster. 
+
+See also: [Running Kubernetes on your workstation with Kind and Podman][https://podman-desktop.io/docs/kind].
+
 ## Building Images
 
 > **NOTE**: If you're using Docker Desktop, be sure to read [Settings for Docker Desktop](#settings-for-docker-desktop) first.
