@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package nodeimage implements the nodeimage CLI subcommand.
 package nodeimage
 
 import (

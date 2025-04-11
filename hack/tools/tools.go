@@ -9,7 +9,7 @@ package tools
 
 import (
 	// linter(s)
-	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
+	_ "github.com/golangci/golangci-lint/v2/cmd/golangci-lint"
 
 	// kubernetes code generators
 	_ "k8s.io/code-generator/cmd/deepcopy-gen"

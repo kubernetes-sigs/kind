@@ -62,7 +62,8 @@ func GetArchiveTags(path string) ([]string, error) {
 	}
 	res := []string{}
 	// parse
-	if hdr.Name == "repositories" {
+	switch hdr.Name {
+	case "repositories":
 		repoTags, err := parseRepositories(b)
 		if err != nil {
 			return nil, err
@@ -73,7 +74,7 @@ func GetArchiveTags(path string) ([]string, error) {
 				res = append(res, fmt.Sprintf("%s:%s", repo, tag))
 			}
 		}
-	} else if hdr.Name == "manifest.json" {
+	case "manifest.json":
 		manifest, err := parseDockerV1Manifest(b)
 		if err != nil {
 			return nil, err
