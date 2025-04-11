@@ -109,6 +109,7 @@ type DerivedConfigData struct {
 	InitSkipPhases []string
 }
 
+// FeatureGate contains the enablement setting for a feature gate.
 type FeatureGate struct {
 	Name  string
 	Value bool
@@ -124,7 +125,7 @@ func (c *ConfigData) Derive() {
 	c.AdvertiseAddress = strings.Split(c.NodeAddress, ",")[0]
 
 	if c.DockerStableTag == "" {
-		c.DockerStableTag = strings.Replace(c.KubernetesVersion, "+", "_", -1)
+		c.DockerStableTag = strings.ReplaceAll(c.KubernetesVersion, "+", "_")
 	}
 
 	// get the IP addresses family for defaulting components
