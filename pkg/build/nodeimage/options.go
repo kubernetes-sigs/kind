@@ -73,7 +73,7 @@ func WithArch(arch string) Option {
 	})
 }
 
-// WithArch sets the architecture to build for
+// WithBuildType sets the build type to perform
 func WithBuildType(buildType string) Option {
 	return optionAdapter(func(b *buildContext) error {
 		if buildType != "" {

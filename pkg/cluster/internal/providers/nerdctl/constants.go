@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package nerdctl implements the nerdctl kind provider.
 package nerdctl
 
 // clusterLabelKey is applied to each "node" container for identification
