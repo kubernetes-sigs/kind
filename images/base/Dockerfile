@@ -122,7 +122,7 @@ RUN eval "$(gimme "${GO_VERSION}")" \
 # stage for building containerd
 FROM go-build AS build-containerd
 ARG TARGETARCH GO_VERSION
-ARG CONTAINERD_VERSION="v2.0.3"
+ARG CONTAINERD_VERSION="v2.0.5"
 ARG CONTAINERD_CLONE_URL="https://github.com/containerd/containerd"
 # we don't build with optional snapshotters, we never select any of these
 # they're not ideal inside kind anyhow, and we save some disk space
@@ -140,7 +140,7 @@ RUN git clone --filter=tree:0 "${CONTAINERD_CLONE_URL}" /containerd \
 # stage for building runc
 FROM go-build AS build-runc
 ARG TARGETARCH GO_VERSION
-ARG RUNC_VERSION="v1.2.5"
+ARG RUNC_VERSION="v1.2.6"
 ARG RUNC_CLONE_URL="https://github.com/opencontainers/runc"
 RUN git clone --filter=tree:0 "${RUNC_CLONE_URL}" /runc \
     && cd /runc \
