@@ -104,9 +104,10 @@ nodes:
     extraMounts:
       - containerPath: /etc/docker/certs.d/registry.dev.example.com
         hostPath: /etc/docker/certs.d/registry.dev.example.com
+# NOTE: the following patch is not necessary with images from kind v0.27.0+
+# It may enable some older images to work similarly
 containerdConfigPatches:
-  - |-
-    [plugins."io.containerd.grpc.v1.cri".registry.configs."registry.dev.example.com".tls]
-      cert_file = "/etc/docker/certs.d/registry.dev.example.com/ba_client.cert"
-      key_file  = "/etc/docker/certs.d/registry.dev.example.com/ba_client.key"
+- |-
+  [plugins."io.containerd.grpc.v1.cri".registry]
+    config_path = "/etc/containerd/certs.d"
 {{< /codeFromInline >}}

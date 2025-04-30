@@ -8,9 +8,9 @@ spec:
   containers:
   - command:
     - /agnhost
-    - netexec
-    - --http-port
-    - "8080"
+    - serve-hostname
+    - --http=true
+    - --port=8080
     image: registry.k8s.io/e2e-test-images/agnhost:2.39
     name: foo-app
 ---
@@ -35,9 +35,9 @@ spec:
   containers:
   - command:
     - /agnhost
-    - netexec
-    - --http-port
-    - "8080"
+    - serve-hostname
+    - --http=true
+    - --port=8080
     image: registry.k8s.io/e2e-test-images/agnhost:2.39
     name: bar-app
 ---
@@ -56,21 +56,19 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: example-ingress
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   rules:
   - http:
       paths:
       - pathType: Prefix
-        path: /foo(/|$)(.*)
+        path: /foo
         backend:
           service:
             name: foo-service
             port:
               number: 8080
       - pathType: Prefix
-        path: /bar(/|$)(.*)
+        path: /bar
         backend:
           service:
             name: bar-service

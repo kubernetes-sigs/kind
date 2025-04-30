@@ -13,47 +13,47 @@ disableKinds = ["taxonomy", "taxonomyTerm"]
 
 # syntax highlighting options
 [markup]
-  [markup.highlight]
-    codeFences = true
-    hl_Lines = ""
-    lineNoStart = 1
-    lineNos = false
-    lineNumbersInTable = true
-    noClasses = true
-    style = "vs"
-    tabWidth = 4
+[markup.highlight]
+codeFences = true
+hl_Lines = ""
+lineNoStart = 1
+lineNos = false
+lineNumbersInTable = true
+noClasses = true
+style = "vs"
+tabWidth = 4
 
 # allow html in markdown
 [markup.goldmark.renderer]
-  unsafe=true
+unsafe = true
 
 # enable hugo's menu system for the site, name the primary menu
 sectionPagesMenu = "main"
 # menu entries
 [menu]
-  [[menu.main]]
-    identifier = "ome"
-    name = "Home"
-    title = "Home"
-    url = "/"
-    weight = 1
-  [[menu.main]]
-    identifier = "user"
-    name = "User Guide"
-    title = "User Guide"
-    weight = 2
-  [[menu.main]]
-    identifier = "design"
-    name = "Design"
-    title = "Design"
-    url = "/docs/design/"
-    weight = 5
-  [[menu.main]]
-    identifier = "contributing"
-    name = "Contributing"
-    title = "contributing"
-    url = "/docs/contributing/"
-    weight = 6
+[[menu.main]]
+identifier = "ome"
+name = "Home"
+title = "Home"
+url = "/"
+weight = 1
+[[menu.main]]
+identifier = "user"
+name = "User Guide"
+title = "User Guide"
+weight = 2
+[[menu.main]]
+identifier = "design"
+name = "Design"
+title = "Design"
+url = "/docs/design/"
+weight = 5
+[[menu.main]]
+identifier = "contributing"
+name = "Contributing"
+title = "contributing"
+url = "/docs/contributing/"
+weight = 6
 
 # enable auto-generated _redirects file
 [mediaTypes."text/netlify"]
@@ -67,10 +67,10 @@ baseName = "_redirects"
 home = ["HTML", "REDIRECTS"]
 
 [params]
-stable = "v0.20.0"
+stable = "v0.27.0"
 
 # privacy settings
 [privacy]
-  [privacy.youtube]
-    # enable the cookie-less youtube in built-in hugo shortcode
-    privacyEnhanced = true
+[privacy.youtube]
+# enable the cookie-less youtube in built-in hugo shortcode
+privacyEnhanced = true

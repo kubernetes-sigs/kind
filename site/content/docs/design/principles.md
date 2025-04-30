@@ -16,7 +16,7 @@ Partially degraded states can still be useful and still be debugged.
 
 As a concrete example: We "pre-load" images that the cluster depends on by
 packing them into the "[node image][node image]". If these images fail to
-load or are not present in the node image kind will fall back to letting the
+load or are not present in the node image, kind will fall back to letting the
 "node"s container runtime attempt to pull them.
 
 Similarly we must at least support all officially supported Kubernetes releases,
@@ -24,10 +24,11 @@ which may mean gracefully degrading functionality for older releases.
 
 ## Target CRI Functionality
 
-Currently kind only supports [docker] and uses it directly to create "node" containers.
+Currently kind only supports [containerd], with experimental support for [podman].
+It uses these container runtimes directly to create "node" containers.
 
-In order to aid [supporting multiple container runtimes] going forward and
-avoid unnecessary coupling, we should target functionality covered by the 
+With the long term goal of [supporting multiple container runtimes] and
+avoid unnecessary coupling, we try to target functionality covered by the
 Kubernetes [CRI][CRI] (Container Runtime Interface).
 
 ## Leverage Existing Tooling
@@ -74,7 +75,8 @@ values in flags as these cannot be versioned.
 
 Avoid making any unnecessary assumptions. Currently we assume:
 
-- Docker is installed on the host and the current user has permission to talk to dockerd
+- [docker] is installed on the host and the current user has permission to talk to dockerd
+  - Unless using experimental support for [podman] or [nerdctl].
   - In the future we may instead only assume that a CRI is available. See [above](#target-cri-functionality).
 - "node" images follow our format
   - However whenever we make changes we do not assume the updated contents definitely exist
@@ -102,11 +104,14 @@ interactions to be consistent.
 ## Consider Automation
 
 While kind strives to present a pleasant UX to users on their local machines,
-automation for end to end testing is the original & primary use case.
+**automation for end to end testing is the original & primary use case**.
 Automated usage should be considered for all features.
 
 
+[containerd]: https://containerd.io/
 [docker]: https://www.docker.com/
+[podman]: https://www.podman.io/
+[nerdctl]: https://github.com/containerd/nerdctl
 [node image]: /docs/design/node-image
 [supporting multiple container runtimes]: https://github.com/kubernetes-sigs/kind/issues/154
 [CRI]: https://github.com/kubernetes/community/blob/master/contributors/devel/sig-node/container-runtime-interface.md

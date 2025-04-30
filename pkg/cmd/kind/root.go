@@ -35,7 +35,6 @@ import (
 )
 
 type flagpole struct {
-	LogLevel  string
 	Verbosity int32
 	Quiet     bool
 }
@@ -44,12 +43,11 @@ type flagpole struct {
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
-		Args:  cobra.NoArgs,
 		Use:   "kind",
 		Short: "kind is a tool for managing local Kubernetes clusters",
 		Long:  "kind creates and manages local Kubernetes clusters using Docker container 'nodes'",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return runE(logger, flags, cmd)
+			return runE(logger, flags)
 		},
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -57,12 +55,6 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	}
 	cmd.SetOut(streams.Out)
 	cmd.SetErr(streams.ErrOut)
-	cmd.PersistentFlags().StringVar(
-		&flags.LogLevel,
-		"loglevel",
-		"",
-		"DEPRECATED: see -v instead",
-	)
 	cmd.PersistentFlags().Int32VarP(
 		&flags.Verbosity,
 		"verbosity",
@@ -89,18 +81,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func runE(logger log.Logger, flags *flagpole, command *cobra.Command) error {
-	// handle limited migration for --loglevel
-	setLogLevel := command.Flag("loglevel").Changed
-	setVerbosity := command.Flag("verbosity").Changed
-	if setLogLevel && !setVerbosity {
-		switch flags.LogLevel {
-		case "debug":
-			flags.Verbosity = 3
-		case "trace":
-			flags.Verbosity = 2147483647
-		}
-	}
+func runE(logger log.Logger, flags *flagpole) error {
 	// normal logger setup
 	if flags.Quiet {
 		// NOTE: if we are coming from app.Run handling this flag is
@@ -108,14 +89,6 @@ func runE(logger log.Logger, flags *flagpole, command *cobra.Command) error {
 		maybeSetWriter(logger, io.Discard)
 	}
 	maybeSetVerbosity(logger, log.Level(flags.Verbosity))
-	// warn about deprecated flag if used
-	if setLogLevel {
-		if cmd.ColorEnabled(logger) {
-			logger.Warn("\x1b[93mWARNING\x1b[0m: --loglevel is deprecated, please switch to -v and -q!")
-		} else {
-			logger.Warn("WARNING: --loglevel is deprecated, please switch to -v and -q!")
-		}
-	}
 	return nil
 }
 

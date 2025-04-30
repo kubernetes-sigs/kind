@@ -63,54 +63,68 @@ func TestTruncate(t *testing.T) {
 
 func TestVersion(t *testing.T) {
 	tests := []struct {
-		name           string
-		gitCommit      string
-		gitCommitCount string
-		want           string
+		name              string
+		version           string
+		versionPreRelease string
+		gitCommit         string
+		gitCommitCount    string
+		want              string
 	}{
 		{
-			name:           "With git commit count and with commit hash",
-			gitCommit:      "mocked-hash",
-			gitCommitCount: "mocked-count",
-			want:           versionCore + "-" + versionPreRelease + "." + "mocked-count" + "+" + "mocked-hash",
+			name:              "With git commit count and with commit hash",
+			version:           "v0.27.0",
+			versionPreRelease: "alpha",
+			gitCommit:         "mocked-hash",
+			gitCommitCount:    "mocked-count",
+			want:              "v0.27.0-alpha.mocked-count+mocked-hash",
 		},
 		{
-			name:           "Without git commit count and and with hash",
-			gitCommit:      "mocked-hash",
-			gitCommitCount: "",
-			want:           versionCore + "-" + versionPreRelease + "+" + "mocked-hash",
+			name:              "Without git commit count and and with hash",
+			version:           "v0.27.0",
+			versionPreRelease: "beta",
+			gitCommit:         "mocked-hash",
+			gitCommitCount:    "",
+			want:              "v0.27.0-beta+mocked-hash",
 		},
 		{
-			name:           "Without git commit hash and with commit count",
-			gitCommit:      "",
-			gitCommitCount: "mocked-count",
-			want:           versionCore + "-" + versionPreRelease + "." + "mocked-count",
+			name:              "Without git commit hash and with commit count",
+			version:           "v0.30.0",
+			versionPreRelease: "alpha",
+			gitCommit:         "",
+			gitCommitCount:    "mocked-count",
+			want:              "v0.30.0-alpha.mocked-count",
 		},
 		{
-			name:           "Without git commit hash and without commit count",
-			gitCommit:      "",
-			gitCommitCount: "",
-			want:           versionCore + "-" + versionPreRelease,
+			name:              "Without git commit hash and without commit count",
+			version:           "v0.27.0",
+			versionPreRelease: "alpha",
+			gitCommit:         "",
+			gitCommitCount:    "",
+			want:              "v0.27.0-alpha",
+		},
+		{
+			name:              "Without pre release version",
+			version:           "v0.27.0",
+			versionPreRelease: "",
+			gitCommit:         "",
+			gitCommitCount:    "",
+			want:              "v0.27.0",
+		},
+		{
+			name:              "Without pre release version and with git commit hash and count",
+			version:           "v0.27.0",
+			versionPreRelease: "",
+			gitCommit:         "mocked-commit",
+			gitCommitCount:    "mocked-count",
+			want:              "v0.27.0",
 		},
 	}
 	for _, tt := range tests {
+		// TODO: this won't be necessary when we require go 1.22+
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.gitCommit != "" {
-				gitCommitBackup := gitCommit
-				gitCommit = tt.gitCommit
-				defer func() {
-					gitCommit = gitCommitBackup
-				}()
-			}
-
-			if tt.gitCommitCount != "" {
-				gitCommitCountBackup := gitCommitCount
-				gitCommitCount = tt.gitCommitCount
-				defer func() {
-					gitCommitCount = gitCommitCountBackup
-				}()
-			}
-			if got := Version(); got != tt.want {
+			t.Parallel()
+			if got := version(tt.version, tt.versionPreRelease, tt.gitCommit, tt.gitCommitCount); got != tt.want {
 				t.Errorf("Version() = %v, want %v", got, tt.want)
 			}
 		})

@@ -11,9 +11,10 @@ description: |-
   All the tools needed to build or run kind work in WSL2, but some extra steps are needed to switch to WSL2. This page covers these steps in brief but also links to the official documentation if you would like more details.
 ---
 
-## Getting Windows 10
+## Getting Windows 10 or 11
 
-Download the latest ISO at https://www.microsoft.com/en-us/software-download/windows10ISO. Choose "Windows 10 May 2020 Update". If there's a later update, that will work too.
+Download the latest ISO at https://www.microsoft.com/en-us/software-download/.
+Choose the latest Windows 10 or Windows 11 release.
 
 ### Installing on a virtual machine
 
@@ -63,12 +64,10 @@ wsl --set-default-version 2
 
 Install Docker with WSL2 backend here: https://docs.docker.com/docker-for-windows/wsl/
 
-
 ## Setting up Docker in WSL2 without Docker Desktop
 
 Alternatively, docker can be installed in WSL2 without using Docker Desktop.
 See for example: https://dev.to/bowmanjd/install-docker-on-windows-wsl-without-docker-desktop-34m9
-
 
 Now, move on to the [Quick Start](/docs/user/quick-start) to set up your cluster with kind.
 
@@ -103,11 +102,11 @@ WSL2 kernel is missing `xt_recent` kernel module, which is used by Kube Proxy to
     {{< codeFromInline lang="bash" >}}
 docker run --name wsl-kernel-builder --rm -it ubuntu:latest bash
 
-WSL_COMMIT_REF=linux-msft-5.4.72 # change this line to the version you want to build
+WSL_COMMIT_REF=linux-msft-wsl-5.15.146.1 # change this line to the version you want to build
 
 # Install dependencies
 apt update
-apt install -y git build-essential flex bison libssl-dev libelf-dev bc
+apt install -y git build-essential flex bison libssl-dev libelf-dev bc dwarves python3
 
 # Checkout WSL2 Kernel repo
 mkdir src
@@ -115,8 +114,8 @@ cd src
 git init
 git remote add origin https://github.com/microsoft/WSL2-Linux-Kernel.git
 git config --local gc.auto 0
-git -c protocol.version=2 fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin +${WSL_COMMIT_REF}:refs/remotes/origin/build/linux-msft-wsl-5.4.y
-git checkout --progress --force -B build/linux-msft-wsl-5.4.y refs/remotes/origin/build/linux-msft-wsl-5.4.y
+git -c protocol.version=2 fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin +${WSL_COMMIT_REF}:refs/remotes/origin/build/linux-msft-wsl-5.15.y
+git checkout --progress --force -B build/linux-msft-wsl-5.15.y refs/remotes/origin/build/linux-msft-wsl-5.15.y
 
 # Enable xt_recent kernel module
 sed -i 's/# CONFIG_NETFILTER_XT_MATCH_RECENT is not set/CONFIG_NETFILTER_XT_MATCH_RECENT=y/' Microsoft/config-wsl
@@ -141,3 +140,4 @@ kernel=c:\\path\\to\\your\\kernel\\bzImage
 - You can check the status of all installed distros with `wsl --list --verbose`.
 - If you had a distro installed with WSL1, you can convert it to WSL2 with `wsl --set-version <distro> 2`
 - Alternative of [Accessing a Kubernetes Service running in WSL2](#accessing-a-kubernetes-service-running-in-wsl2) or [Setting Up An Ingress Controller](/docs/user/ingress/#setting-up-an-ingress-controller) for accessing workloads is using `kubectl port-forward --address=0.0.0.0`.
+- See the [Known Issues](/docs/user/known-issues/) page for additional Windows-related issues and concerns.

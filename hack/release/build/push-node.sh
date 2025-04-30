@@ -28,8 +28,9 @@ make build
 # path to kubernetes sources
 KUBEROOT="${KUBEROOT:-"$(go env GOPATH)"/src/k8s.io/kubernetes}"
 
-# ensure we have qemu setup (de-duped logic with setting up buildx for multi-arch)
-"${REPO_ROOT}/hack/build/init-buildx.sh"
+# ensure we have qemu setup so we can run cross-arch images
+# TODO: dedupe specifying this image?
+docker run --rm --privileged tonistiigi/binfmt:qemu-v7.0.0-28@sha256:66e11bea77a5ea9d6f0fe79b57cd2b189b5d15b93a2bdb925be22949232e4e55 --install all
 
 # NOTE: adding platforms is costly in terms of build time
 # we will consider expanding this in the future, for now the aim is to prove
@@ -71,7 +72,6 @@ for arch in "${__arches__[@]}"; do
 done
 
 # combine to manifest list tagged with kubernetes version
-export DOCKER_CLI_EXPERIMENTAL=enabled
 # images must be pushed to be referenced by docker manifest
 # we push only after all builds have succeeded
 for image in "${images[@]}"; do

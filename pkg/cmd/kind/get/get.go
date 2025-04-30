@@ -32,7 +32,6 @@ import (
 // NewCommand returns a new cobra.Command for get
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
-		Args: cobra.NoArgs,
 		// TODO(bentheelder): more detailed usage
 		Use:   "get",
 		Short: "Gets one of [clusters, nodes, kubeconfig]",

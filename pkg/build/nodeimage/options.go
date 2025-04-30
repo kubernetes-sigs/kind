@@ -47,10 +47,10 @@ func WithBaseImage(image string) Option {
 	})
 }
 
-// WithKuberoot sets the path to the Kubernetes source directory (if empty, the path will be autodetected)
-func WithKuberoot(root string) Option {
+// WithKubeParam sets the path to the Kubernetes source directory (if empty, the path will be autodetected)
+func WithKubeParam(root string) Option {
 	return optionAdapter(func(b *buildContext) error {
-		b.kubeRoot = root
+		b.kubeParam = root
 		return nil
 	})
 }
@@ -68,6 +68,16 @@ func WithArch(arch string) Option {
 	return optionAdapter(func(b *buildContext) error {
 		if arch != "" {
 			b.arch = arch
+		}
+		return nil
+	})
+}
+
+// WithArch sets the architecture to build for
+func WithBuildType(buildType string) Option {
+	return optionAdapter(func(b *buildContext) error {
+		if buildType != "" {
+			b.buildType = buildType
 		}
 		return nil
 	})

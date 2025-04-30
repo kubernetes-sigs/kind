@@ -27,27 +27,6 @@ Stable tagged releases (currently {{< stableVersion >}}) are generally strongly 
 
 You may need to install the latest code from source at HEAD if you are developing Kubernetes itself at HEAD / the latest sources.
 
-### Installing With A Package Manager
-
-The kind community has enabled installation via the following package managers.
-
-On macOS via Homebrew:
-
-{{< codeFromInline lang="bash" >}}
-brew install kind
-{{< /codeFromInline >}}
-
-On macOS via MacPorts:
-
-{{< codeFromInline lang="bash" >}}
-sudo port selfupdate && sudo port install kind
-{{< /codeFromInline >}}
-
-On Windows via Chocolatey (https://chocolatey.org/packages/kind)
-{{< codeFromInline lang="powershell" >}}
-choco install kind
-{{< /codeFromInline >}}
-
 ### Installing From Release Binaries
 
 Pre-built binaries are available on our [releases page](https://github.com/kubernetes-sigs/kind/releases).
@@ -117,6 +96,40 @@ for more on this.
 You may need to add that directory to your `$PATH` if you encounter the error
 `kind: command not found` after installation, you can find a guide for adding a directory to your `PATH` at https://gist.github.com/nex3/c395b2f8fd4b02068be37c961301caa7#file-path-md.
 
+### Installing With A Package Manager
+
+The kind community has enabled installation via the following package managers.
+
+> **NOTE**: The following are community supported efforts. The `kind` maintainers are not involved in the creation
+> of these packages, and the upstream community makes no claims on the validity, safety, or content of them.
+
+On macOS via Homebrew:
+
+{{< codeFromInline lang="bash" >}}
+brew install kind
+{{< /codeFromInline >}}
+
+On macOS via MacPorts:
+
+{{< codeFromInline lang="bash" >}}
+sudo port selfupdate && sudo port install kind
+{{< /codeFromInline >}}
+
+On Windows via Chocolatey (https://chocolatey.org/packages/kind)
+{{< codeFromInline lang="powershell" >}}
+choco install kind
+{{< /codeFromInline >}}
+
+On Windows via Scoop (https://scoop.sh/#/apps?q=kind&id=faec311bb7c6b4a174169c8c02358c74a78a10c2)
+{{< codeFromInline lang="powershell" >}}
+scoop bucket add main
+scoop install main/kind
+{{< /codeFromInline >}}
+
+On Windows via Winget (https://github.com/microsoft/winget-pkgs/tree/master/manifests/k/Kubernetes/kind)
+{{< codeFromInline lang="powershell" >}}
+winget install Kubernetes.kind
+{{< /codeFromInline >}}
 
 ## Creating a Cluster
 
@@ -143,6 +156,9 @@ To use `--wait` you must specify the units of the time to wait. For example, to
 wait for 30 seconds, do `--wait 30s`, for 5 minutes do `--wait 5m`, etc.
 
 More usage can be discovered with `kind create cluster --help`.
+
+The kind can auto-detect the [docker], [podman], or [nerdctl] installed and choose the available one. If you want to turn off the auto-detect, use the environment variable `KIND_EXPERIMENTAL_PROVIDER=docker`, `KIND_EXPERIMENTAL_PROVIDER=podman` or `KIND_EXPERIMENTAL_PROVIDER=nerdctl` to
+select the runtime.
 
 ## Interacting With Your Cluster
 
@@ -217,7 +233,7 @@ This allows a workflow like:
 ```
 docker build -t my-custom-image:unique-tag ./my-image-dir
 kind load docker-image my-custom-image:unique-tag
-kubectl apply -f my-manifest-using-my-image:unique-tag
+kubectl apply -f my-manifest-using-my-image.yaml
 ```
 
 > **NOTE**: You can get a list of images present on a cluster node by
@@ -256,7 +272,7 @@ container.
 
 Currently, kind supports one default way to build a `node-image`
 if you have the [Kubernetes][kubernetes] source in your host machine
-(`$GOPATH/src/k8s.io/kubernetes`), by using `docker`.
+(`$GOPATH/src/k8s.io/kubernetes`), by using `source`.
 
 You can also specify a different path to kubernetes source using 
 ```
@@ -267,6 +283,30 @@ kind build node-image /path/to/kubernetes/source
 > Kubernetes requires, we wrap the upstream build. This includes Docker with buildx.
 > See: https://git.k8s.io/community/contributors/devel/development.md#building-kubernetes-with-docker
 
+One shortcut to use a kubernetes release is to specify the version
+directly to pick up the official tar-gzipped files:
+```
+kind build node-image v1.30.0
+```
+
+If you prefer to use existing tar-gzipped files like the ones from the kubernetes
+release, you can specify those as well from a URL or local directory, for example:
+```
+kind build node-image https://dl.k8s.io/v1.30.0/kubernetes-server-linux-arm64.tar.gz
+kind build node-image $HOME/Downloads/kubernetes-server-linux-amd64.tar.gz
+```
+
+To clear any confusion, you can specify the type of build explicitly
+using `--type` parameter, please see the following examples:
+```
+kind build node-image --type url https://dl.k8s.io/v1.30.0/kubernetes-server-linux-arm64.tar.gz
+kind build node-image --type file $HOME/Downloads/kubernetes-server-linux-amd64.tar.gz
+kind build node-image --type release v1.30.0
+kind build node-image --type source $HOME/go/src/k8s.io/kubernetes/
+```
+> **NOTE**: modes other than source directory namely `url`, `file` and `release` are only
+> available in kind v0.24 and above.
+
 ### Settings for Docker Desktop
 
 If you are building Kubernetes (for example - `kind build node-image`) on MacOS or Windows then you need a minimum of 6GB of RAM
@@ -274,12 +314,13 @@ dedicated to the virtual machine (VM) running the Docker engine. 8GB is recommen
 
 To change the resource limits for the Docker on Mac, you'll need to open the
 **Preferences** menu.
+
 <img src="/docs/user/images/docker-pref-1.png"/>
 
 Now, go to the **Advanced** settings page, and change the
 settings there, see [changing Docker's resource limits][Docker resource lims].
-<img src="/docs/user/images/docker-pref-2.png" alt="Setting 8Gb of memory in Docker for Mac" />
 
+<img src="/docs/user/images/docker-pref-build.png" alt="Setting 8Gb of memory in Docker for Mac" />
 
 To change the resource limits for the Docker on Windows, you'll need to right-click the Moby
 icon on the taskbar, and choose "Settings". If you see "Switch to Linux Containers", then you'll need
@@ -433,6 +474,9 @@ kind, the Kubernetes cluster itself, etc.
 
 [modules]: https://github.com/golang/go/wiki/Modules
 [go-supported]: https://golang.org/doc/devel/release.html#policy
+[docker]: https://www.docker.com/
+[podman]: https://podman.io/
+[nerdctl]: https://github.com/containerd/nerdctl
 [known issues]: /docs/user/known-issues
 [releases]: https://github.com/kubernetes-sigs/kind/releases
 [node image]: /docs/design/node-image

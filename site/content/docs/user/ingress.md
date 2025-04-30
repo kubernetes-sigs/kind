@@ -10,27 +10,33 @@ description: |-
 ---
 ## Setting Up An Ingress Controller
 
-We can leverage KIND's `extraPortMapping` config option when
-creating a cluster to forward ports from the host
-to an ingress controller running on a node.
+Ingress exposes HTTP and HTTPS routes from outside the cluster to services within the cluster.
 
-We can also setup a custom node label by using `node-labels`
-in the kubeadm `InitConfiguration`, to be used
-by the ingress controller `nodeSelector`.
+1. [Create a cluster](#create-cluster): There are two primary methods to direct external traffic to Services inside the cluster:
+    1. using a [LoadBalancer].
+    2. leverage KIND's `extraPortMapping` config option when creating a cluster to forward ports from the host.
 
+2. Deploy an Ingress controller, we document [Ingress NGINX](#ingress-nginx) here but other ingresses may work including [Contour](https://projectcontour.io/docs/main/guides/kind/) and Kong, you should follow their docs if you choose to use them.
 
-1. [Create a cluster](#create-cluster)
-2. Deploy an Ingress controller, the following ingress controllers are known to work:
-    - [Contour](#contour)
-    - [Ingress Kong](#ingress-kong)
-    - [Ingress NGINX](#ingress-nginx)
+> **NOTE**: You may also want to consider using [Gateway API](https://gateway-api.sigs.k8s.io/) instead of Ingress.
+> Gateway API has an [Ingress migration guide](https://gateway-api.sigs.k8s.io/guides/migrating-from-ingress/).
+>
+> You can use blixt to test Gateway API with kind https://github.com/kubernetes-sigs/blixt#usage
 
 ### Create Cluster
 
-Create a kind cluster with `extraPortMappings` and `node-labels`.
+#### Option 1: LoadBalancer
 
-- **extraPortMappings** allow the local host to make requests to the Ingress controller over ports 80/443
-- **node-labels** only allow the ingress controller to run on a specific node(s) matching the label selector
+Create a kind cluster and run [Cloud Provider KIND]
+to enable the loadbalancer controller which ingress-nginx will use through the loadbalancer API.
+
+{{< codeFromInline lang="bash" >}}
+kind create cluster
+{{< /codeFromInline >}}
+
+#### Option 2: extraPortMapping
+
+Create a single node kind cluster with `extraPortMappings` to allow the local host to make requests to the Ingress controller over ports 80/443.
 
 {{< codeFromInline lang="bash" >}}
 cat <<EOF | kind create cluster --config=-
@@ -38,12 +44,6 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
-  kubeadmConfigPatches:
-  - |
-    kind: InitConfiguration
-    nodeRegistration:
-      kubeletExtraArgs:
-        node-labels: "ingress-ready=true"
   extraPortMappings:
   - containerPort: 80
     hostPort: 80
@@ -54,87 +54,18 @@ nodes:
 EOF
 {{< /codeFromInline >}}
 
-### Contour
+If you want to run with multiple nodes you must ensure that your ingress-controller is deployed on the same node where you have configured the PortMapping, in this example you can use a [nodeSelector](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/) to specify the control-plane node name.
 
-Deploy [Contour components](https://projectcontour.io/quickstart/contour.yaml).
-
-{{< codeFromInline lang="bash" >}}
-kubectl apply -f https://projectcontour.io/quickstart/contour.yaml
+{{< codeFromInline lang="yaml" >}}
+nodeSelector:
+  kubernetes.io/hostname: "kind-control-plane"
 {{< /codeFromInline >}}
-
-Apply kind specific patches to forward the hostPorts to the
-ingress controller, set taint tolerations and
-schedule it to the custom labelled node.
-
-```json
-{{% readFile "static/examples/ingress/contour/patch.json" %}}
-```
-
-Apply it by running:
-
-{{< codeFromInline lang="bash" >}}
-kubectl patch daemonsets -n projectcontour envoy -p '{{< minify file="static/examples/ingress/contour/patch.json" >}}'
-{{< /codeFromInline >}}
-
-Now the Contour is all setup to be used.
-Refer to [Using Ingress](#using-ingress) for a basic example usage.
-
-Additional information about Contour can be found at: [projectcontour.io](https://projectcontour.io)
-
-### Ingress Kong
-
-Deploy [Kong Ingress Controller (KIC)](https://docs.konghq.com/kubernetes-ingress-controller/2.1.x/concepts/design/).
-
-{{< codeFromInline lang="bash" >}}
-kubectl apply -f https://raw.githubusercontent.com/Kong/kubernetes-ingress-controller/master/deploy/single/all-in-one-dbless.yaml
-{{< /codeFromInline >}}
-
-Apply kind specific patches to forward the `hostPorts` to the ingress controller, set taint tolerations, and schedule it to the custom labeled node.
-
-```json
-{{% readFile "static/examples/ingress/kong/deployment.patch.json" %}}
-```
-
-Apply it by running:
-
-{{< codeFromInline lang="bash" >}}
-kubectl patch deployment -n kong proxy-kong -p '{{< minify file="static/examples/ingress/kong/deployment.patch.json" >}}'
-{{< /codeFromInline >}}
-
-Apply kind specific patch to change service type to `NodePort`:
-
-```json
-{{% readFile "static/examples/ingress/kong/service.patch.json" %}}
-```
-
-Apply it by running:
-
-{{< codeFromInline lang="bash" >}}
-kubectl patch service -n kong kong-proxy -p '{{< minify file="static/examples/ingress/kong/service.patch.json" >}}'
-{{< /codeFromInline >}}
-
-KIC can be used to configure ingress now.
-
-You can try the example in [Using Ingress](#using-ingress) at this moment,
-but KIC will not automatically handle `Ingress` object defined there.
-`Ingress` resources must include `ingressClassName: kong` under `spec` of `Ingress`  for being controlled by Kong Ingress Controller (it will be ignored otherwise).
-So once the example has been loaded, you can add this annotation with:
-
-{{< codeFromInline lang="bash" >}}
-kubectl patch ingress example-ingress -p '{"spec":{"ingressClassName":"kong"}}'
-{{< /codeFromInline >}}
-
-Refer [Using Ingress](#using-ingress) for primary example usage.
-
 
 ### Ingress NGINX
 
 {{< codeFromInline lang="bash" >}}
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+kubectl apply -f {{< absURL "examples/ingress/deploy-ingress-nginx.yaml" >}}
 {{< /codeFromInline >}}
-
-The manifests contains kind specific patches to forward the hostPorts to the
-ingress controller, set taint tolerations and schedule it to the custom labelled node.
 
 Now the Ingress is all setup. Wait until is ready to process requests running:
 
@@ -164,9 +95,49 @@ kubectl apply -f {{< absURL "examples/ingress/usage.yaml" >}}
 
 Now verify that the ingress works
 
+#### Option 1: LoadBalancer
+
+Check the External IP assigned to the Ingress controller by the LoadBalancer
+
 {{< codeFromInline lang="bash" >}}
-# should output "foo-app"
-curl localhost/foo/hostname
-# should output "bar-app"
-curl localhost/bar/hostname
+kubectl -n ingress-nginx get services
+NAME                                 TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)                      AGE
+ingress-nginx-controller             LoadBalancer   10.96.33.233   192.168.8.5   80:31753/TCP,443:30288/TCP   27d
+ingress-nginx-controller-admission   ClusterIP      10.96.80.178   <none>        443/TCP                      27d
 {{< /codeFromInline >}}
+
+{{< codeFromInline lang="bash" >}}
+
+# get the loadalancer IP
+
+LOADBALANCER_IP=$(kubectl get services \
+   --namespace ingress-nginx \
+   ingress-nginx-controller \
+   --output jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+# should output "foo-app"
+
+curl ${LOADBALANCER_IP}/foo
+
+# should output "bar-app"
+
+curl ${LOADBALANCER_IP}/bar
+{{< /codeFromInline >}}
+
+#### Option 2: extraPortMapping
+
+The Ingress controller ports will be exposed in your `localhost` address
+
+{{< codeFromInline lang="bash" >}}
+
+# should output "foo-app"
+
+curl localhost/foo
+
+# should output "bar-app"
+
+curl localhost/bar
+{{< /codeFromInline >}}
+
+[LoadBalancer]: /docs/user/loadbalancer/
+[Cloud Provider KIND]: /docs/user/loadbalancer/

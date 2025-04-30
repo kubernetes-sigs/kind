@@ -98,6 +98,16 @@ func TestClusterValidate(t *testing.T) {
 			ExpectErrors: 1,
 		},
 		{
+			Name: "bogus ipFamily",
+			Cluster: func() Cluster {
+				c := Cluster{}
+				SetDefaultsCluster(&c)
+				c.Networking.IPFamily = "ds"
+				return c
+			}(),
+			ExpectErrors: 1,
+		},
+		{
 			Name: "bogus serviceSubnet",
 			Cluster: func() Cluster {
 				c := Cluster{}
@@ -356,6 +366,40 @@ func TestNodeValidate(t *testing.T) {
 				return cfg
 			}(),
 			ExpectErrors: 1,
+		},
+		{
+			TestName: "Multiple random HostPort",
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg.ExtraPortMappings = []PortMapping{
+					{
+						ContainerPort: 80,
+					},
+					{
+						ContainerPort: 443,
+					},
+				}
+				return cfg
+			}(),
+			ExpectErrors: 0,
+		},
+		{
+			TestName: "Multiple random -1 HostPort",
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg.ExtraPortMappings = []PortMapping{
+					{
+						ContainerPort: 80,
+						HostPort:      -1,
+					},
+					{
+						ContainerPort: 443,
+						HostPort:      -1,
+					},
+				}
+				return cfg
+			}(),
+			ExpectErrors: 0,
 		},
 	}
 

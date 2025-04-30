@@ -18,12 +18,14 @@ COPY --chmod=0755 scripts/third_party/gimme/gimme /usr/local/bin/
 RUN git clone --filter=tree:0 https://github.com/rancher/local-path-provisioner
 ARG VERSION
 # set by makefile to .go-version
+# TODO: scripts/build builds for multiple platforms, so we waste a little time here
 ARG TARGETARCH GO_VERSION
 RUN eval "$(gimme "${GO_VERSION}")" \
+    && export GOTOOLCHAIN="go${GO_VERSION}" \
     && cd local-path-provisioner \
     && git fetch && git checkout "${VERSION}" \
     && GOARCH=$TARGETARCH scripts/build \
-    && mv bin/local-path-provisioner /usr/local/bin/local-path-provisioner \
+    && mv bin/local-path-provisioner-$TARGETARCH /usr/local/bin/local-path-provisioner \
     && GOBIN=/usr/local/bin go install github.com/google/go-licenses@latest \
     && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES .
 

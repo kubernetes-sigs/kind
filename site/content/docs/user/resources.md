@@ -24,6 +24,8 @@ Here are a useful external guides / tutorials covering things not yet covered in
 
 ### How to use KIND with MetallLB
 
+> **NOTE**: We now have a kind integrated loadbalancer solution, see [the loadbalancer page](/docs/user/loadbalancer/).
+
 https://mauilion.dev/posts/kind-metallb/
 
 ### How to Test a Kubernetes PR with KIND
@@ -46,9 +48,23 @@ https://golangexample.com/connect-directly-to-docker-for-mac-containers-via-ip-a
 
 https://docs.gitlab.com/charts/development/kind/
 
+### Using CRI-O with KIND
+
+> **NOTE**: Depending on implementation details of the node image is not supported, only that the node images contain what kind needs to run Kubernetes at a given version.
+>
+> Installing CRI-O is possible but not supported.
+
+https://github.com/cri-o/cri-o/blob/release-1.31/tutorials/crio-in-kind.md#cri-o-in-kind
+
 ## KubeCon Talks
 
 The authors have given the following talks relating to KIND:
+
+### Keep Calm and Load Balance on KIND - Benjamin Elder & Antonio Ojea
+
+At KubeCon EU 2024 we spoke about [Cloud Provider KIND and how to use Load Balancers Services with KIND](https://sched.co/1YhhY)
+
+{{< youtube id="U6_-y24rJnI" class="video-wrapper" >}}
 
 ### Deep Dive: KIND - Benjamin Elder & Antonio Ojea
 

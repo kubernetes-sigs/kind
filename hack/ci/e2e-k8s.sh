@@ -22,6 +22,12 @@ set -o errexit -o nounset -o xtrace
 # Settings:
 # SKIP: ginkgo skip regex
 # FOCUS: ginkgo focus regex
+# LABEL_FILTER: ginkgo label query for selecting tests (see "Spec Labels" in https://onsi.github.io/ginkgo/#filtering-specs)
+#
+# The default is to focus on conformance tests. Serial tests get skipped when
+# parallel testing is enabled. Using LABEL_FILTER instead of combining SKIP and
+# FOCUS is recommended (more expressive, easier to read than regexp).
+#
 # GA_ONLY: true  - limit to GA APIs/features as much as possible
 #          false - (default) APIs and features left at defaults
 # FEATURE_GATES:
@@ -109,7 +115,9 @@ create_cluster() {
       apiServer_extra_args="${apiServer_extra_args}
       \"logging-format\": \"${CLUSTER_LOG_FORMAT}\""
   fi
-  kubelet_extra_args="      \"v\": \"${KIND_CLUSTER_LOG_LEVEL}\""
+  kubelet_extra_args="      \"v\": \"${KIND_CLUSTER_LOG_LEVEL}\"
+      \"container-log-max-files\": \"10\"
+      \"container-log-max-size\": \"100Mi\""
   KUBELET_LOG_FORMAT=${KUBELET_LOG_FORMAT:-$CLUSTER_LOG_FORMAT}
   if [ -n "$KUBELET_LOG_FORMAT" ]; then
       check_structured_log_support "KUBECTL_LOG_FORMAT"
@@ -237,9 +245,13 @@ run_tests() {
     printf '%s' "${fixed_coredns}" | kubectl apply -f -
   fi
 
-  # ginkgo regexes
+  # ginkgo regexes and label filter
   SKIP="${SKIP:-}"
-  FOCUS="${FOCUS:-"\\[Conformance\\]"}"
+  FOCUS="${FOCUS:-}"
+  LABEL_FILTER="${LABEL_FILTER:-}"
+  if [ -z "${FOCUS}" ] && [ -z "${LABEL_FILTER}" ]; then
+    FOCUS="\\[Conformance\\]"
+  fi
   # if we set PARALLEL=true, skip serial tests set --ginkgo-parallel
   if [ "${PARALLEL:-false}" = "true" ]; then
     export GINKGO_PARALLEL=y
@@ -262,7 +274,7 @@ run_tests() {
   # interrupt
   ./hack/ginkgo-e2e.sh \
     '--provider=skeleton' "--num-nodes=${NUM_NODES}" \
-    "--ginkgo.focus=${FOCUS}" "--ginkgo.skip=${SKIP}" \
+    "--ginkgo.focus=${FOCUS}" "--ginkgo.skip=${SKIP}" "--ginkgo.label-filter=${LABEL_FILTER}" \
     "--report-dir=${ARTIFACTS}" '--disable-log-dump=true' &
   GINKGO_PID=$!
   wait "$GINKGO_PID"
