@@ -41,7 +41,7 @@ description: |-
 * [Docker Desktop for macOS and Windows](#docker-desktop-for-macos-and-windows)
 * [Older Linux Distributions](#older-linux-distributions)
 * [Failure to Create Cluster on WSL2](#failure-to-create-cluster-on-wsl2)
-*  [VPN CIDR clashes](#vpn-cidr-clashes)
+* [VPN CIDR clashes](#vpn-cidr-clashes)
 
 ## Troubleshooting Kind
 
