@@ -419,22 +419,23 @@ have been necessary to resolve this issue.
 
 ## VPN CIDR Clashes
 
-KIND creates a separate docker network named `kind` that will be configured with default IPAM settings. If your host's VPN configuration overlaps with this default range (172.17.x.x) you
-will be unable to access your KIND clusters from outside of the container. The network that is created persists even after the last KIND cluster is deleted, so you can resolve this
-by configuring the network manually before use. For example:
+KIND creates a separate docker network named `kind` that will be configured with default IPAM settings. If you are using the default IPAM configuration in your `daemon.json` you
+may have conflicts with existing VPNs that route the 172.17.x.x networks. To resolve this you can reconfigure the daemon-wide IPAM so that all networks will be created in subnets
+that do not have these conflicts.
 
-```sh
-# stop your KIND cluster
-kind delete cluster
+An example configuration that you can add to your `daemon.json` is below. This would configure `10.253.0.0/16` as the defauld CIDR with each individual network receiving a /24
+subnet to use for allocation.
 
-# delete the docker network
-docker network rm kind
-
-# create a new network with a non-conflicting CIDR
-docker network create --subnet=10.253.0.0/22 kind
+```json
+"default-address-pools": [
+  {
+    "base": "10.253.0.0/16",
+    "size": 24
+  }
+]
 ```
 
-NOTE: You will need to configure/create the network again should you execute a `docker prune` or other operation that may lead to the network being deleted.
+For more information on the Docker Engine config file check out [these docs](https://docs.docker.com/engine/daemon/).
 
 [kind#156]: https://github.com/kubernetes-sigs/kind/issues/156
 [kind#229]: https://github.com/kubernetes-sigs/kind/issues/229
