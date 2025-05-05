@@ -41,6 +41,7 @@ description: |-
 * [Docker Desktop for macOS and Windows](#docker-desktop-for-macos-and-windows)
 * [Older Linux Distributions](#older-linux-distributions)
 * [Failure to Create Cluster on WSL2](#failure-to-create-cluster-on-wsl2)
+* [Local Subnet Clashes](#local-subnet-clashes)
 
 ## Troubleshooting Kind
 
@@ -415,6 +416,26 @@ The KIND development team is not able to provide support with Windows and WSL, s
 the project relies on community support and feedback. It has been noted that the
 steps detailed in [https://github.com/spurin/wsl-cgroupsv2](https://github.com/spurin/wsl-cgroupsv2)
 have been necessary to resolve this issue.
+
+## Local Subnet Clashes
+
+KIND creates a separate docker network named `kind` that will be configured with default IPAM settings. If you are using the default IPAM configuration in your `daemon.json` you
+may have conflicts with existing networks (like VPNs, labs, etc) that route the 172.17.x.x networks. To resolve this you can reconfigure the daemon-wide IPAM so that all 
+networks will be created in subnets that do not have these conflicts.
+
+An example configuration that you can add to your `daemon.json` is below. This would configure `10.253.0.0/16` as the defauld CIDR with each individual network receiving a /24
+subnet to use for allocation.
+
+```json
+"default-address-pools": [
+  {
+    "base": "10.253.0.0/16",
+    "size": 24
+  }
+]
+```
+
+For more information on the Docker Engine config file check out [these docs](https://docs.docker.com/engine/daemon/).
 
 [kind#156]: https://github.com/kubernetes-sigs/kind/issues/156
 [kind#229]: https://github.com/kubernetes-sigs/kind/issues/229
