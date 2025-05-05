@@ -41,6 +41,7 @@ description: |-
 * [Docker Desktop for macOS and Windows](#docker-desktop-for-macos-and-windows)
 * [Older Linux Distributions](#older-linux-distributions)
 * [Failure to Create Cluster on WSL2](#failure-to-create-cluster-on-wsl2)
+*  [VPN CIDR clashes](#vpn-cidr-clashes)
 
 ## Troubleshooting Kind
 
@@ -415,6 +416,25 @@ The KIND development team is not able to provide support with Windows and WSL, s
 the project relies on community support and feedback. It has been noted that the
 steps detailed in [https://github.com/spurin/wsl-cgroupsv2](https://github.com/spurin/wsl-cgroupsv2)
 have been necessary to resolve this issue.
+
+## VPN CIDR Clashes
+
+KIND creates a separate docker network named `kind` that will be configured with default IPAM settings. If your host's VPN configuration overlaps with this default range (172.17.x.x) you
+will be unable to access your KIND clusters from outside of the container. The network that is created persists even after the last KIND cluster is deleted, so you can resolve this
+by configuring the network manually before use. For example:
+
+```sh
+# stop your KIND cluster
+kind delete cluster
+
+# delete the docker network
+docker network rm kind
+
+# create a new network with a non-conflicting CIDR
+docker network create --subnet=10.253.0.0/22 kind
+```
+
+NOTE: You will need to configure/create the network again should you execute a `docker prune` or other operation that may lead to the network being deleted.
 
 [kind#156]: https://github.com/kubernetes-sigs/kind/issues/156
 [kind#229]: https://github.com/kubernetes-sigs/kind/issues/229
