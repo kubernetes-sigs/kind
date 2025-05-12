@@ -128,6 +128,8 @@ spec:
         - name: lib-modules
           mountPath: /lib/modules
           readOnly: true
+        - name: nri-plugin
+          mountPath: /var/run/nri
         resources:
           requests:
             cpu: "100m"
@@ -150,5 +152,8 @@ spec:
       - name: lib-modules
         hostPath:
           path: /lib/modules
+      - name: nri-plugin
+        hostPath:
+          path: /var/run/nri
 ---
 `
