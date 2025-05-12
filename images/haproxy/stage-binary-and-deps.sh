@@ -30,7 +30,7 @@ file_to_package() {
     # `dpkg-query --search $file-pattern` outputs lines with the format: "$package: $file-path"
     # where $file-path belongs to $package
     # https://manpages.debian.org/jessie/dpkg/dpkg-query.1.en.html
-    dpkg-query --search "$(realpath "${1}")" | cut -d':' -f1
+    (dpkg-query --search "$(realpath "${1}")" || true) | cut -d':' -f1
 }
 
 # package_to_copyright gives the path to the copyright file for the package $1
@@ -41,19 +41,30 @@ package_to_copyright() {
 # stage_file stages the filepath $1 to $2, following symlinks
 # and staging copyrights
 stage_file() {
-    cp -a --parents "${1}" "${2}"
+    # /lib is a symlink to /usr/lib in debian 12, means we just stick to
+    # /usr/lib for all libraries to avoid separating symlinks with the actual binaries
+    from="${1}"
+    if [[ $from = /lib/*  ]]; then
+        from="/usr$from"
+    fi
+    cp -a --parents "${from}" "${2}"
+
     # recursively follow symlinks
-    if [[ -L "${1}" ]]; then
-        stage_file "$(cd "$(dirname "${1}")"; realpath -s "$(readlink "${1}")")" "${2}"
+    if [[ -L "${from}" ]]; then
+        stage_file "$(cd "$(dirname "${from}")"; realpath -s "$(readlink "${from}")")" "${2}"
     fi
     # get the package so we can stage package metadata as well
-    package="$(file_to_package "${1}")"
-    # stage the copyright for the file
-    cp -a --parents "$(package_to_copyright "${package}")" "${2}"
-    # stage the package status mimicking bazel
-    # https://github.com/bazelbuild/rules_docker/commit/f5432b813e0a11491cf2bf83ff1a923706b36420
-    # instead of parsing the control file, we can just get the actual package status with dpkg
-    dpkg -s "${package}" > "${2}/var/lib/dpkg/status.d/${package}"
+    package="$(file_to_package "${from}")"
+
+    # files like /usr/lib/x86_64-linux-gnu/libc.so.6 will return no package
+    if [[ "$package" != "" ]]; then
+        # stage the copyright for the file
+        cp -a --parents "$(package_to_copyright "${package}")" "${2}"
+        # stage the package status mimicking bazel
+        # https://github.com/bazelbuild/rules_docker/commit/f5432b813e0a11491cf2bf83ff1a923706b36420
+        # instead of parsing the control file, we can just get the actual package status with dpkg
+        dpkg -s "${package}" > "${2}/var/lib/dpkg/status.d/${package}"
+    fi
 }
 
 # binary_to_libraries identifies the library files needed by the binary $1 with ldd
