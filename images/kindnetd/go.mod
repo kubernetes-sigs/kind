@@ -2,8 +2,6 @@ module sigs.k8s.io/kind/images/kindnetd
 
 go 1.24.0
 
-toolchain go1.24.2
-
 require (
 	github.com/coreos/go-iptables v0.8.0
 	github.com/vishvananda/netlink v1.3.1
