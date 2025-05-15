@@ -20,7 +20,7 @@ package nodeimage
 The default CNI manifest and images are our own tiny kindnet
 */
 
-const kindnetdImage = "docker.io/kindest/kindnetd:v20250214-acbabc1a"
+const kindnetdImage = "docker.io/kindest/kindnetd:v20250512-df8de77b"
 
 var defaultCNIImages = []string{kindnetdImage}
 
@@ -128,6 +128,8 @@ spec:
         - name: lib-modules
           mountPath: /lib/modules
           readOnly: true
+        - name: nri-plugin
+          mountPath: /var/run/nri
         resources:
           requests:
             cpu: "100m"
@@ -150,5 +152,8 @@ spec:
       - name: lib-modules
         hostPath:
           path: /lib/modules
+      - name: nri-plugin
+        hostPath:
+          path: /var/run/nri
 ---
 `
