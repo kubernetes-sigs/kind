@@ -15,7 +15,7 @@
 
 set -o errexit -o nounset -o pipefail
 
-REGISTRY="${REGISTRY:-kindest}"
+REGISTRY="${REGISTRY:-gcr.io/k8s-staging-kind}"
 IMAGE_NAME="${IMAGE_NAME:-node}"
 
 # cd to the repo root
