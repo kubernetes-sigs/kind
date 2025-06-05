@@ -2,7 +2,7 @@
 options:
   substitution_option: ALLOW_LOOSE
 steps:
-- name: gcr.io/k8s-testimages/krte:latest-master
+- name: gcr.io/k8s-staging-test-infra/krte:latest-master
   env:
   - PULL_BASE_SHA=$_PULL_BASE_SHA
   entrypoint: hack/ci/push-latest-cli/push-latest-cli.sh
