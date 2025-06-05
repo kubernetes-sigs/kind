@@ -51,20 +51,6 @@ func NewDockerBuilder(logger log.Logger, kubeRoot, arch string) (Builder, error)
 
 // Build implements Bits.Build
 func (b *dockerBuilder) Build() (Bits, error) {
-	// cd to k8s source
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-	// make sure we cd back when done
-	defer func() {
-		// TODO(bentheelder): set return error?
-		_ = os.Chdir(cwd)
-	}()
-	if err := os.Chdir(b.kubeRoot); err != nil {
-		return nil, err
-	}
-
 	// capture version info
 	sourceVersionRaw, err := sourceVersion(b.kubeRoot)
 	if err != nil {
@@ -102,6 +88,8 @@ func (b *dockerBuilder) Build() (Bits, error) {
 	cmd := exec.Command("make",
 		append(
 			[]string{
+				"-C",
+				b.kubeRoot,
 				"quick-release-images",
 				"KUBE_EXTRA_WHAT=" + strings.Join(what, " "),
 			},
