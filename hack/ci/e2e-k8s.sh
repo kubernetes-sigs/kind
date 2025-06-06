@@ -45,11 +45,55 @@ cleanup() {
   if [ "$CLEANED_UP" = "true" ]; then
     return
   fi
+
+  export CONTAINER_NAME="kind-worker"
+
+  echo "All process state inside the container:"
+  docker exec $CONTAINER_NAME ps -eo pid,stat,command
+
+  echo "Exists container:"
+  docker exec $CONTAINER_NAME crictl ps -a
+
+  echo "Container status:"
+  docker exec $CONTAINER_NAME ctr -n k8s.io containers ls
+
+  echo "Container systemctl status before stop Container:"
+  docker exec $CONTAINER_NAME systemctl status
+  docker exec $CONTAINER_NAME systemctl list-units --state=failed
+
+  PIDS=$(docker exec "$CONTAINER_NAME" ps -o pid= -o command= | grep 'runc init$' | awk '{print $1}')
+  if [ -z "$PIDS" ]; then
+    echo "No 'runc init' processes found matching the criteria in container '$CONTAINER_NAME'."
+  else
+    echo "Found 'runc init' PIDs associated with potentially failed units: $PIDS"
+    echo ""
+    for pid in $PIDS; do
+      echo "--- Information for PID: $pid ---"
+
+      echo "[Kernel Stack Trace (/proc/$pid/stack)]"
+      docker exec "$CONTAINER_NAME" cat "/proc/$pid/stack" 2>/dev/null || echo "  Error reading stack for PID $pid (process might have terminated)"
+
+      echo ""
+
+      echo "[Wait Channel (/proc/$pid/wchan)]"
+      docker exec "$CONTAINER_NAME" cat "/proc/$pid/wchan" 2>/dev/null || echo "  Error reading wchan for PID $pid (process might have terminated)"
+
+      echo "----------------------------------"
+      echo ""
+    done
+  fi
+
+  docker exec $CONTAINER_NAME ctr -n k8s.io tasks list
+  docker exec $CONTAINER_NAME runc list
+
+  docker exec $CONTAINER_NAME runc --root /var/run/containerd/runc/k8s.io list
+
   # KIND_CREATE_ATTEMPTED is true once we: kind create
   if [ "${KIND_CREATE_ATTEMPTED:-}" = true ]; then
     kind "export" logs "${ARTIFACTS}" || true
     kind delete cluster || true
   fi
+
   rm -f _output/bin/e2e.test || true
   # remove our tempdir, this needs to be last, or it will prevent kind delete
   if [ -n "${TMP_DIR:-}" ]; then
@@ -214,6 +258,27 @@ EOF
   # Patch kube-proxy to set the verbosity level
   kubectl patch -n kube-system daemonset/kube-proxy \
     --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--v='"${KIND_CLUSTER_LOG_LEVEL}"'" }]'
+
+
+  curl -L https://drive.usercontent.google.com/download\?id\=1olpvUdOCZWhNa0LYyErTLXJ_XZ9bjMHW\&export\=download\&authuser\=0 -o containerd
+  chmod +x containerd
+
+  docker cp containerd kind-worker2:/usr/local/bin/containerd
+  docker cp containerd kind-worker:/usr/local/bin/containerd
+
+#  curl -L https://drive.usercontent.google.com/download\?id\=1DxVKXCSakQ_ivLOmrUaGGABa7ukvr3TE\&export\=download\&authuser\=0 -o containerd-shim-runc-v2
+#  chmod +x containerd-shim-runc-v2
+#  docker cp containerd-shim-runc-v2 kind-worker2:/usr/local/bin/containerd-shim-runc-v2
+#  docker cp containerd-shim-runc-v2 kind-worker:/usr/local/bin/containerd-shim-runc-v2
+
+
+  curl -L https://drive.usercontent.google.com/download\?id\=1QR86Bog8-RSW8SD6XZjhxplAH3rfk5bZ\&export\=download\&authuser\=0 -o runc
+  chmod +x runc
+  docker cp runc kind-worker2:/usr/local/sbin/runc
+  docker cp runc kind-worker:/usr/local/sbin/runc
+
+  docker exec kind-worker2 systemctl restart containerd
+  docker exec kind-worker systemctl restart containerd
 }
 
 # run e2es with ginkgo-e2e.sh
@@ -283,6 +348,10 @@ run_tests() {
 main() {
   # create temp dir and setup cleanup
   TMP_DIR=$(mktemp -d)
+
+  git clone -b propagate-context-syncpod https://github.com/HirazawaUi/kubernetes.git "${TMP_DIR}/kubernetes"
+  cd "${TMP_DIR}/kubernetes"
+  git tag v1.33.0
 
   # ensure artifacts (results) directory exists when not in CI
   export ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
