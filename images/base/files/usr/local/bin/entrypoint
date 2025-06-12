@@ -493,6 +493,7 @@ enable_network_magic(){
     /etc/kubernetes/manifests/kube-scheduler.yaml
     /etc/kubernetes/controller-manager.conf
     /etc/kubernetes/scheduler.conf
+    /etc/kubernetes/kubelet.conf
     /kind/kubeadm.conf
     /var/lib/kubelet/kubeadm-flags.env
   )
