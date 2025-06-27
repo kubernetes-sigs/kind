@@ -41,6 +41,7 @@ global
 
 resolvers docker
   nameserver dns 127.0.0.11:53
+  parse-resolv-conf
 
 defaults
   log global
