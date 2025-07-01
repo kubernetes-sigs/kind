@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package docker is the implementation for the docker kind provider.
 package docker
 
 // clusterLabelKey is applied to each "node" docker container for identification
