@@ -42,6 +42,7 @@ jobs:
         with:
           go-version: ${{ steps.golangversion.outputs.go_version }}
           check-latest: true
+          cache: true
 
       - name: "Install Lima"
         uses: lima-vm/lima-actions/setup@03b96d61959e83b2c737e44162c3088e81de0886 # v1
