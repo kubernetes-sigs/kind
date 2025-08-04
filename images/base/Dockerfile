@@ -122,7 +122,7 @@ RUN eval "$(gimme "${GO_VERSION}")" \
 # stage for building containerd
 FROM go-build AS build-containerd
 ARG TARGETARCH GO_VERSION
-ARG CONTAINERD_VERSION="v2.1.3"
+ARG CONTAINERD_VERSION="v2.1.4"
 ARG CONTAINERD_CLONE_URL="https://github.com/containerd/containerd"
 # we don't build with optional snapshotters, we never select any of these
 # they're not ideal inside kind anyhow, and we save some disk space
@@ -189,7 +189,7 @@ RUN git clone --filter=tree:0 "${CNI_PLUGINS_CLONE_URL}" /cni-plugins \
 # stage for building containerd-fuse-overlayfs
 FROM go-build AS build-fuse-overlayfs
 ARG TARGETARCH GO_VERSION
-ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="v2.1.0"
+ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="v2.1.6"
 ARG CONTAINERD_FUSE_OVERLAYFS_CLONE_URL="https://github.com/containerd/fuse-overlayfs-snapshotter"
 RUN git clone --filter=tree:0 "${CONTAINERD_FUSE_OVERLAYFS_CLONE_URL}" /fuse-overlayfs-snapshotter \
     && cd /fuse-overlayfs-snapshotter \
