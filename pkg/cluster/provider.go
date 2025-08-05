@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/log"
 
 	internalcreate "sigs.k8s.io/kind/pkg/cluster/internal/create"
@@ -264,19 +265,8 @@ func (p *Provider) CollectLogs(name, dir string) error {
 		node := n // https://golang.org/doc/faq#closures_and_goroutines
 		name := node.String()
 		path := filepath.Join(dir, name)
-		fns = append(fns, func() error {
-			return internallogs.DumpDir(p.logger, node, "/var/log", path)
-		})
 		fns = append(fns,
-			func() error { return common.CollectLogs(node, path) },
-			func() error {
-				f, err := common.FileOnHost(filepath.Join(path, "serial.log"))
-				if err != nil {
-					return err
-				}
-				defer f.Close()
-				return node.SerialLogs(f)
-			},
+			func() error { return collectNodeLogs(p.logger, node, path) },
 		)
 	}
 	errs = append(errs, errors.AggregateConcurrent(fns))
@@ -286,4 +276,52 @@ func (p *Provider) CollectLogs(name, dir string) error {
 
 	// flatten
 	return errors.NewAggregate(errs)
+}
+
+func collectNodeLogs(logger log.Logger, n nodes.Node, dir string) error {
+	execToPathFn := func(cmd exec.Cmd, path string) func() error {
+		return func() error {
+			f, err := common.FileOnHost(filepath.Join(dir, path))
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			return cmd.SetStdout(f).SetStderr(f).Run()
+		}
+	}
+
+	return errors.AggregateConcurrent([]func() error{
+		func() error {
+			f, err := common.FileOnHost(filepath.Join(dir, "serial.log"))
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			return n.SerialLogs(f)
+		},
+		func() error {
+			return internallogs.DumpDir(logger, n, "/var/log", dir)
+		},
+		// record info about the node container
+		execToPathFn(
+			n.Command("cat", "/kind/version"),
+			"kubernetes-version.txt",
+		),
+		execToPathFn(
+			n.Command("journalctl", "--no-pager"),
+			"journal.log",
+		),
+		execToPathFn(
+			n.Command("journalctl", "--no-pager", "-u", "kubelet.service"),
+			"kubelet.log",
+		),
+		execToPathFn(
+			n.Command("journalctl", "--no-pager", "-u", "containerd.service"),
+			"containerd.log",
+		),
+		execToPathFn(
+			n.Command("crictl", "images"),
+			"images.log",
+		),
+	})
 }
