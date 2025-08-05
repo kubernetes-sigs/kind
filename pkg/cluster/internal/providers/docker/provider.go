@@ -254,34 +254,20 @@ func (p *provider) CollectLogs(dir string, nodes []nodes.Node) error {
 			filepath.Join(dir, "docker-info.txt"),
 		),
 	}
-
-	// collect /var/log for each node and plan collecting more logs
-	var errs []error
+	// inspect each node
 	for _, n := range nodes {
 		node := n // https://golang.org/doc/faq#closures_and_goroutines
 		name := node.String()
 		path := filepath.Join(dir, name)
-		if err := internallogs.DumpDir(p.logger, node, "/var/log", path); err != nil {
-			errs = append(errs, err)
-		}
-
+		fns = append(fns, func() error {
+			return internallogs.DumpDir(p.logger, node, "/var/log", path)
+		})
 		fns = append(fns,
-			func() error { return common.CollectLogs(node, path) },
 			execToPathFn(exec.Command("docker", "inspect", name), filepath.Join(path, "inspect.json")),
-			func() error {
-				f, err := common.FileOnHost(filepath.Join(path, "serial.log"))
-				if err != nil {
-					return err
-				}
-				defer f.Close()
-				return node.SerialLogs(f)
-			},
 		)
 	}
-
 	// run and collect up all errors
-	errs = append(errs, errors.AggregateConcurrent(fns))
-	return errors.NewAggregate(errs)
+	return errors.AggregateConcurrent(fns)
 }
 
 // Info returns the provider info.
