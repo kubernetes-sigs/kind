@@ -259,6 +259,18 @@ func (p *Provider) CollectLogs(name, dir string) error {
 	}
 
 	// common portable log collection for the nodes
+	// find a control plane node
+	controlPlaneNodes, err := nodeutils.ControlPlaneNodes(internalNodes)
+	if err != nil {
+		return nil
+	}
+	// TODO: we could consider attempting via secondary control plane nodes
+	// if the first is non-functional for some reason.
+	// For now: YAGNI
+	if len(controlPlaneNodes) == 0 {
+		return nil
+	}
+	controlPlaneNode := controlPlaneNodes[0]
 	fns := []func() error{}
 	var errs []error
 	for _, n := range internalNodes {
@@ -266,7 +278,7 @@ func (p *Provider) CollectLogs(name, dir string) error {
 		name := node.String()
 		path := filepath.Join(dir, name)
 		fns = append(fns,
-			func() error { return collectNodeLogs(p.logger, node, path) },
+			func() error { return collectNodeLogs(p.logger, controlPlaneNode, node, path) },
 		)
 	}
 	errs = append(errs, errors.AggregateConcurrent(fns))
@@ -278,7 +290,7 @@ func (p *Provider) CollectLogs(name, dir string) error {
 	return errors.NewAggregate(errs)
 }
 
-func collectNodeLogs(logger log.Logger, n nodes.Node, dir string) error {
+func collectNodeLogs(logger log.Logger, controlPlaneNode nodes.Node, n nodes.Node, dir string) error {
 	execToPathFn := func(cmd exec.Cmd, path string) func() error {
 		return func() error {
 			f, err := common.FileOnHost(filepath.Join(dir, path))
@@ -322,6 +334,16 @@ func collectNodeLogs(logger log.Logger, n nodes.Node, dir string) error {
 		execToPathFn(
 			n.Command("crictl", "images"),
 			"images.log",
+		),
+		execToPathFn(
+			controlPlaneNode.Command(
+				"kubectl",
+				"--kubeconfig=/etc/kubernetes/admin.conf",
+				"get",
+				"--raw",
+				"/api/v1/nodes/"+n.String()+"/proxy/metrics",
+			),
+			"metrics.txt",
 		),
 	})
 }
