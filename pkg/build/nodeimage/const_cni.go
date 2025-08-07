@@ -104,6 +104,7 @@ spec:
         kubernetes.io/os: linux
       tolerations:
       - operator: Exists
+      priorityClassName: system-node-critical
       serviceAccountName: kindnet
       containers:
       - name: kindnet-cni
