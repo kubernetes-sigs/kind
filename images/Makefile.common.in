@@ -21,7 +21,7 @@ REGISTRY?=gcr.io/k8s-staging-kind
 # for appending build-meta like "_containerd-v1.7.1"
 TAG_SUFFIX?=
 # tag based on date-sha
-TAG?=$(shell echo "$$(date +v%Y%m%d)-$$(git describe --always --dirty)")
+TAG?=$(shell echo "$$(date +v%Y%m%d)-$$(git log --pretty=format:'%h' -n 1)")
 # the full image tag
 IMAGE?=$(REGISTRY)/$(IMAGE_NAME):$(TAG)$(TAG_SUFFIX)
 # Go version to use, respected by images that build go binaries
