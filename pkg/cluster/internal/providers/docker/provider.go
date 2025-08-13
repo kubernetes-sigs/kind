@@ -30,7 +30,6 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/log"
 
-	internallogs "sigs.k8s.io/kind/pkg/cluster/internal/logs"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/common"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
@@ -259,9 +258,6 @@ func (p *provider) CollectLogs(dir string, nodes []nodes.Node) error {
 		node := n // https://golang.org/doc/faq#closures_and_goroutines
 		name := node.String()
 		path := filepath.Join(dir, name)
-		fns = append(fns, func() error {
-			return internallogs.DumpDir(p.logger, node, "/var/log", path)
-		})
 		fns = append(fns,
 			execToPathFn(exec.Command("docker", "inspect", name), filepath.Join(path, "inspect.json")),
 		)
