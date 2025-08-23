@@ -494,3 +494,10 @@ kind, the Kubernetes cluster itself, etc.
 [customize control plane with kubeadm]: https://kubernetes.io/docs/setup/independent/control-plane-flags/
 [access multiple clusters]: https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/
 [release notes]: https://github.com/kubernetes-sigs/kind/releases
+
+### Loading multiple images into your cluster
+
+You can load more than one image at once by passing multiple image names:
+
+```bash
+kind load docker-image my-app:latest my-db:latest my-cache:latest --name test-cluster
