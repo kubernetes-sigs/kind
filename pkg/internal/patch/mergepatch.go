@@ -44,7 +44,7 @@ func parseMergePatches(rawPatches []string) ([]mergePatch, error) {
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
-		json, err := yaml.YAMLToJSON([]byte(raw))
+		json, err := yaml.YAMLToJSONStrict([]byte(raw))
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}

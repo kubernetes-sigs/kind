@@ -61,6 +61,12 @@ func TestKubeYAML(t *testing.T) {
 			ExpectError:     false,
 			ExpectOutput:    normalKubeadmConfigTrivialPatchedAnd6902Patched,
 		},
+		{
+			Name:        "kubeadm config one merge-patch with malformed yaml (duplicate key)",
+			ToPatch:     normalKubeadmConfig,
+			Patches:     []string{malformedPatchWithDuplicateKey},
+			ExpectError: true,
+		},
 	}
 	for _, tc := range cases {
 		tc := tc // capture test case
@@ -401,4 +407,19 @@ apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
 metadata:
   name: config
+`
+const malformedPatchWithDuplicateKey = `
+kind: ClusterConfiguration
+apiVersion: kubeadm.k8s.io/v1beta2
+
+scheduler:
+  extraArgs:
+   some-extra-arg: the-arg
+   some-extra-arg: the-arg
+----
+kind: InitConfiguration
+nodeRegistration:
+  kubeletExtraArgs:
+    "v": "4"
+    "logging-format": "json"
 `
