@@ -30,7 +30,8 @@ file_to_package() {
     # `dpkg-query --search $file-pattern` outputs lines with the format: "$package: $file-path"
     # where $file-path belongs to $package
     # https://manpages.debian.org/jessie/dpkg/dpkg-query.1.en.html
-    dpkg-query --search "$(realpath "${1}")" | cut -d':' -f1
+    # Match bash path in dpkg regardless of /usr merge
+    dpkg-query --search "$(realpath "${1}" | sed 's|/usr|*|')" | cut -d':' -f1
 }
 
 # package_to_copyright gives the path to the copyright file for the package $1
