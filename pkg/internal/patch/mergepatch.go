@@ -17,6 +17,8 @@ limitations under the License.
 package patch
 
 import (
+	"fmt"
+	"os"
 	"sigs.k8s.io/yaml"
 
 	"sigs.k8s.io/kind/pkg/errors"
@@ -46,7 +48,17 @@ func parseMergePatches(rawPatches []string) ([]mergePatch, error) {
 		}
 		json, err := yaml.YAMLToJSONStrict([]byte(raw))
 		if err != nil {
-			return nil, errors.WithStack(err)
+			fmt.Fprintf(
+				os.Stderr,
+				"\033[33m\nWARN: Error converting patch of kind %s to json: \"%v\". "+
+					"Trying more permissive conversion.\033[0m\n",
+				matchInfo.Kind,
+				err,
+			)
+			json, err = yaml.YAMLToJSON([]byte(raw))
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
 		}
 		patches = append(patches, mergePatch{
 			raw:       raw,
