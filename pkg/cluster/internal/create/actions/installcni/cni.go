@@ -110,7 +110,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			Patch:   patchValue,
 		}
 
-		patchedConfig, err := patch.KubeYAML(manifest, nil, []config.PatchJSON6902{controlPlanePatch6902})
+		patchedConfig, err := patch.KubeYAML(manifest, nil, []config.PatchJSON6902{controlPlanePatch6902}, ctx.Logger)
 		if err != nil {
 			return err
 		}

@@ -17,11 +17,9 @@ limitations under the License.
 package patch
 
 import (
-	"fmt"
-	"os"
-	"sigs.k8s.io/yaml"
-
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/log"
+	"sigs.k8s.io/yaml"
 )
 
 type mergePatch struct {
@@ -30,7 +28,7 @@ type mergePatch struct {
 	matchInfo matchInfo // for matching resources
 }
 
-func parseMergePatches(rawPatches []string) ([]mergePatch, error) {
+func parseMergePatches(rawPatches []string, logger log.Logger) ([]mergePatch, error) {
 	patches := []mergePatch{}
 	// split document streams before trying to parse them
 	splitRawPatches := make([]string, 0, len(rawPatches))
@@ -48,10 +46,8 @@ func parseMergePatches(rawPatches []string) ([]mergePatch, error) {
 		}
 		json, err := yaml.YAMLToJSONStrict([]byte(raw))
 		if err != nil {
-			fmt.Fprintf(
-				os.Stderr,
-				"\033[33m\nWARN: Error converting patch of kind %s to json: \"%v\". "+
-					"Trying more permissive conversion.\033[0m\n",
+			logger.Warnf("Failed to strictly convert patch of kind %s to json: \"%v\". "+
+				"Trying more permissive conversion.",
 				matchInfo.Kind,
 				err,
 			)
