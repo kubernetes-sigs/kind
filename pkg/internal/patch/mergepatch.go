@@ -17,9 +17,10 @@ limitations under the License.
 package patch
 
 import (
+	"sigs.k8s.io/yaml"
+
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/log"
-	"sigs.k8s.io/yaml"
 )
 
 type mergePatch struct {

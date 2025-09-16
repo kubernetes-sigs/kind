@@ -17,12 +17,11 @@ limitations under the License.
 package patch
 
 import (
-	"sigs.k8s.io/kind/pkg/log"
 	"strings"
 
 	"sigs.k8s.io/kind/pkg/errors"
-
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // KubeYAML takes a Kubernetes object YAML document stream to patch,
