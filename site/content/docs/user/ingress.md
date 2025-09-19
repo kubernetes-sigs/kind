@@ -20,8 +20,6 @@ Ingress exposes HTTP and HTTPS routes from outside the cluster to services withi
 
 > **NOTE**: You may also want to consider using [Gateway API](https://gateway-api.sigs.k8s.io/) instead of Ingress.
 > Gateway API has an [Ingress migration guide](https://gateway-api.sigs.k8s.io/guides/migrating-from-ingress/).
->
-> You can use blixt to test Gateway API with kind https://github.com/kubernetes-sigs/blixt#usage
 
 ### Create Cluster
 
