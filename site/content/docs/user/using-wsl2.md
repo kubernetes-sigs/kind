@@ -102,11 +102,11 @@ WSL2 kernel is missing `xt_recent` kernel module, which is used by Kube Proxy to
     {{< codeFromInline lang="bash" >}}
 docker run --name wsl-kernel-builder --rm -it ubuntu:latest bash
 
-WSL_COMMIT_REF=linux-msft-wsl-5.15.146.1 # change this line to the version you want to build
+WSL_COMMIT_REF=linux-msft-wsl-6.6.87.2-1 # change this line to the version you want to build
 
 # Install dependencies
 apt update
-apt install -y git build-essential flex bison libssl-dev libelf-dev bc dwarves python3
+apt install -y git build-essential flex bison libssl-dev libelf-dev bc dwarves python3 cpio
 
 # Checkout WSL2 Kernel repo
 mkdir src
