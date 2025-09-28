@@ -38,6 +38,9 @@ set -o errexit -o nounset -o xtrace
 #          JSON or YAML encoding of a string/string (!) map: {"apia.example.com/v1alpha1": "true", "apib.example.com/v1beta1": "false"}
 #          Enables API groups in the apiserver via --runtime-config.
 #          Cannot be used when GA_ONLY=true.
+# CONTROLLERS:
+#          Value for kube-controller-manager's "--controllers" argument.
+#          e.g. "-endpoints-controller,-endpointslice-mirroring-controller,*"
 
 # cleanup logic for cleanup on exit
 CLEANED_UP=false
@@ -129,6 +132,8 @@ create_cluster() {
   feature_gates="${FEATURE_GATES:-{\}}"
   # --runtime-config argument value passed to the API server, again as a map
   runtime_config="${RUNTIME_CONFIG:-{\}}"
+  # kube-controller-manager --controllers
+  controllers="${CONTROLLERS:-*}"
 
   case "${GA_ONLY:-false}" in
   false)
@@ -181,6 +186,7 @@ kubeadmConfigPatches:
 ${apiServer_extra_args}
   controllerManager:
     extraArgs:
+      controllers: "${controllers}"
 ${controllerManager_extra_args}
   scheduler:
     extraArgs:
