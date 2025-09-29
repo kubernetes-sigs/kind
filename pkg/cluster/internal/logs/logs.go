@@ -58,6 +58,11 @@ func DumpDir(logger log.Logger, node nodes.Node, nodeDir, hostDir string) (err e
 // untar reads the tar file from r and writes it into dir.
 func untar(logger log.Logger, r io.Reader, dir string) (err error) {
 	tr := tar.NewReader(r)
+	// Ensure target dir is absolute and cleaned
+	dirAbs, err := filepath.Abs(dir)
+	if err != nil {
+		return errors.Wrapf(err, "could not get absolute path for extraction dir: %v", err)
+	}
 	for {
 		f, err := tr.Next()
 
@@ -74,11 +79,26 @@ func untar(logger log.Logger, r io.Reader, dir string) (err error) {
 		}
 
 		rel := filepath.FromSlash(f.Name)
-		abs := filepath.Join(dir, rel)
+		// Compute absolute extraction path
+		abs := filepath.Join(dirAbs, rel)
+		absClean, err := filepath.Abs(abs)
+		if err != nil {
+			return errors.Wrapf(err, "could not get absolute path for extraction file: %v", err)
+		}
+		// Path traversal check: absClean must be within dirAbs
+		// Ensure dirAbs ends with a separator to prevent prefix matching issues
+		dirAbsWithSep := dirAbs
+		if !filepath.HasSuffix(dirAbs, string(os.PathSeparator)) {
+			dirAbsWithSep = dirAbs + string(os.PathSeparator)
+		}
+		if absClean != dirAbs && !strings.HasPrefix(absClean, dirAbsWithSep) {
+			logger.Warnf("tar entry %q contains path traversal, skipping", f.Name)
+			continue
+		}
 
 		switch f.Typeflag {
 		case tar.TypeReg:
-			wf, err := os.OpenFile(abs, os.O_CREATE|os.O_RDWR, os.FileMode(f.Mode))
+			wf, err := os.OpenFile(absClean, os.O_CREATE|os.O_RDWR, os.FileMode(f.Mode))
 			if err != nil {
 				return err
 			}
@@ -87,14 +107,14 @@ func untar(logger log.Logger, r io.Reader, dir string) (err error) {
 				err = closeErr
 			}
 			if err != nil {
-				return errors.Errorf("error writing to %s: %v", abs, err)
+				return errors.Errorf("error writing to %s: %v", absClean, err)
 			}
 			if n != f.Size {
-				return errors.Errorf("only wrote %d bytes to %s; expected %d", n, abs, f.Size)
+				return errors.Errorf("only wrote %d bytes to %s; expected %d", n, absClean, f.Size)
 			}
 		case tar.TypeDir:
-			if _, err := os.Stat(abs); err != nil {
-				if err := os.MkdirAll(abs, 0755); err != nil {
+			if _, err := os.Stat(absClean); err != nil {
+				if err := os.MkdirAll(absClean, 0755); err != nil {
 					return err
 				}
 			}
