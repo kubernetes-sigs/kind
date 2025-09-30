@@ -23,6 +23,10 @@ For third-party ingress solutions (e.g., Ingress NGINX, Contour), please follow 
 
 ## Create Cluster
 
+> **WARNING**: If you are using a [rootless container runtime], ensure your host is
+> properly configured before creating the KIND cluster. Most Ingress and Gateway controllers will
+> not work if these steps are skipped.
+
 Create a kind cluster and run [Cloud Provider KIND] that automatically enables LoadBalancer support for Ingress. Create a cluster as follows.
 
 {{< codeFromInline lang="bash" >}}
@@ -68,3 +72,4 @@ curl ${INGRESS_IP}/bar
 
 [LoadBalancer]: /docs/user/loadbalancer/
 [Cloud Provider KIND]: /docs/user/loadbalancer/
+[rootless container runtime]: /docs/user/rootless/
