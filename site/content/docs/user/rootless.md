@@ -9,41 +9,58 @@ menu:
 Starting with kind 0.11.0, [Rootless Docker](https://docs.docker.com/go/rootless/), [Rootless Podman](https://github.com/containers/podman/blob/master/docs/tutorials/rootless_tutorial.md) and [Rootless nerdctl](https://github.com/containerd/nerdctl/blob/main/docs/rootless.md) can be used as the node provider of kind.
 
 ## Provider requirements
+
 - Docker: 20.10 or later
 - Podman: 3.0 or later
 - nerdctl: 1.7 or later
 
 ## Host requirements
+
+### cgroups v2
+
 The host needs to be running with cgroup v2.
 Make sure that the result of the `docker info` command contains `Cgroup Version: 2`.
 If it prints `Cgroup Version: 1`, try adding `GRUB_CMDLINE_LINUX="systemd.unified_cgroup_hierarchy=1"` to `/etc/default/grub` and
 running `sudo update-grub` to enable cgroup v2.
 
-Also, depending on the host configuration, the following steps might be needed:
+Your host may also need to enable [cgroup delegation](https://systemd.io/CGROUP_DELEGATION/) for daemon-based controller runtimes.
+This is not required for daemonless runtimes, such as podman. Note that this procedure may
+[negatively impact performance](https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/ZMKLS7SHMRJLJ57NZCYPBAQ3UOYULV65/).
 
-- Create `/etc/systemd/system/user@.service.d/delegate.conf` with the following content, and then run `sudo systemctl daemon-reload`:
+To enable cgroup delegation, perform the folowing actions:
 
-  ```ini
-  [Service]
-  Delegate=yes
-  ```
+1. As root, create the directory `/etc/systemd/system/user@.service.d/` if it does not already exist
 
-  (This is not enabled by default because ["the runtime impact of
-  [delegating the "cpu" controller] is still too
-  high"](https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/ZMKLS7SHMRJLJ57NZCYPBAQ3UOYULV65/).
-  Beware that changing this configuration may affect system
-  performance.)
+   ```sh
+   sudo mdkir -p /etc/systemd/system/user@.service.d/
+   ```
+2. As root, create the file `/etc/systemd/system/user@.service.d/delegate.conf` with the following content:
 
-  Please note that:
+   ```ini
+   [Service]
+   Delegate=yes
+   ```
 
-  - `/etc/systemd/system/user@.service.d/` directory needs to be created if not already present on your host
-  - If using Docker and it was already running when this step was done, a restart is needed for the changes to take
-    effect
-      {{< codeFromInline lang="bash" >}}
-      systemctl --user restart docker
-      {{< /codeFromInline >}}
+3. Reload the systemd daemon:
 
-- Create `/etc/modules-load.d/iptables.conf` with the following content:
+   ```sh
+   sudo systemctl daemon-reload
+   ```
+
+4. If using docker, reload the user docker daemon:
+
+   ```sh
+   systemctl --user restart docker
+   ```
+
+### Networking
+
+Containers running in rootless mode are not typically loaded with host-level iptable modules.
+This breaks the behavior of most Ingress and Gateway controllers.
+
+To load the iptable modules into the KinD containers, do the following:
+
+1. As root, create the file `/etc/modules-load.d/iptables.conf` with the following content:
 
   ```
   ip6_tables
@@ -52,13 +69,61 @@ Also, depending on the host configuration, the following steps might be needed:
   iptable_nat
   ```
 
-- If using podman, be aware that by default there is a [limit](https://docs.podman.io/en/v4.3/markdown/options/pids-limit.html#pids-limit-limit) to the number of pids that can be created. This can cause problems like nginx workers inside a container not spawning correctly.
-    - If you want to disable this limit, edit your `containers.conf` file (generally located in `/etc/containers/containers.conf`). Note that this could cause things like pid exhaustion to happen on the host machine. Alternatively, change `0` to your desired new limit:
+2. Restart your system to ensure these changes take effect.
+
+### Increase PID Limits
+
+KinD nodes are represented as individual containers on their hosts. Runtimes such as podman set default
+[process id limits](https://docs.podman.io/en/v4.3/markdown/options/pids-limit.html#pids-limit-limit)
+that may be too low for the node or for a pod running on the node. The NGINX ingress controller is
+[particularly susceptible](https://github.com/kubernetes-sigs/kind/issues/3451) to this issue.
+
+To increase the PID limit, do the following:
+
+1. If using podman, edit your `containers.conf` file (generally located in
+   `/etc/containers/containers.conf` or `~/.config/containers/containers.conf`) to increase the PIDs
+   limit to a desired value (default 4096 on most systems).
 
     ```ini
     [containers]
-    pids_limit = 0
+    pids_limit = 65536
     ```
+
+
+### Increase inotify Limits
+
+As documented in [known issues](/docs/user/known-issues/#pod-errors-due-to-too-many-open-files), pods may
+fail by reaching inotify watch and instance limits. Ingress controllers such as NGINX and Contour
+are particularly susceptible to this issue.
+
+To increase the inotify limits, do the following:
+
+1. As root, create a `.conf` file in `/etc/systctl.d` that increases the `fs.inotify` max user settings:
+
+   ```
+   fs.inotify.max_user_watches = 524288
+   fs.inotify.max_user_instances = 512
+   ```
+
+2. Restart your system for these changes to take effect.
+
+
+### Allow Unprivileged Binding to HTTP(S) Ports
+
+If you use the `extraPortMappings` method to provide ingress to your KinD cluster, you can allow
+the KinD container to bind to ports 80 and 443 on the host. User containers cannot bind to these
+ports by default as they are considered privileged.
+
+To allow a KinD node to bind to ports 80 and/or 443 on the host, do the following:
+
+1. As root, create a `.conf` file in `/etc/systctl.d` that lowers the privileged port start number:
+
+   ```
+   net.ipv4.ip_unprivileged_port_start=80
+   ```
+
+2. Restart your system for these changes to take effect.
+
 
 ## Restrictions
 
