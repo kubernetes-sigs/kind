@@ -80,15 +80,6 @@ jobs:
           # Modify the client config to use the rootless daemon by default
           "$HELPER" docker context use rootless
 
-      - name: Set up Rootless Podman
-        if: ${{ matrix.provider == 'podman' && matrix.rootless == 'rootless' }}
-        run: |
-          # Restart the user session to ensure the cgroup delegation
-          # ref: https://github.com/kubernetes-sigs/kind/pull/2754#issuecomment-1124027063
-          "$HELPER" sudo loginctl terminate-user vagrant || true
-          # We have modprobe ip6_tables in Vagrantfile, but it seems we have to modprobe it once again
-          "$HELPER" sudo modprobe ip6_tables
-
       - name: Show provider info
         run: |
           "$HELPER" "$KIND_EXPERIMENTAL_PROVIDER" info
