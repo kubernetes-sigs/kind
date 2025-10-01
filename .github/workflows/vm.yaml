@@ -13,20 +13,36 @@ permissions:
 
 jobs:
   vm:
-    # Fedora is different from Ubuntu in LSM (SELinux), filesystem (btrfs), kernel version, etc.
-    name: "CGroupv2 (Fedora)"
+    name: "VM"
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        provider: [docker, podman]
-        rootless: ["rootful", "rootless"]
+        include:
+          # Fedora is different from Ubuntu in LSM (SELinux), filesystem (btrfs), kernel version, etc.
+          - template: fedora
+            provider: docker
+            rootless: rootful
+          - template: fedora
+            provider: docker
+            rootless: rootless
+          - template: fedora
+            provider: podman
+            rootless: rootful
+          - template: fedora
+            provider: podman
+            rootless: rootless
+          # AlmaLinux 8 is used for testing kind with cgroup v1.
+          # Do not upgrade this to AlmaLinux 9 until dropping cgroup v1 support.
+          - template: almalinux-8
+            provider: docker
+            rootless: rootful
     env:
       KIND_EXPERIMENTAL_PROVIDER: "${{ matrix.provider }}"
       ROOTLESS: "${{ matrix.rootless }}"
       HELPER: "./hack/ci/lima-helper.sh"
-      JOB_NAME: "cgroup2-${{ matrix.provider }}-${{ matrix.rootless }}"
+      JOB_NAME: "vm-${{ matrix.template }}-${{ matrix.provider }}-${{ matrix.rootless }}"
     steps:
       - name: Check out code
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -51,24 +67,24 @@ jobs:
         uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
         with:
           path: ~/.cache/lima
-          key: lima-${{ steps.lima-actions-setup.outputs.version }}
+          key: lima-${{ steps.lima-actions-setup.outputs.version }}-${{ matrix.template }}
 
-      - name: "Start Fedora"
+      - name: "Start VM"
         # --plain is set to disable file sharing, port forwarding, built-in containerd, etc.
-        run: limactl start --name=default --plain template://fedora
+        run: limactl start --name=default --plain template://${{ matrix.template }}
 
-      - name: "Initialize Fedora"
+      - name: "Initialize VM"
         run: |
           set -eux -o pipefail
           # Sync the current directory to /tmp/kind in the guest
           limactl cp -r . default:/tmp/kind
           # Install packages
-          lima sudo /tmp/kind/hack/ci/init-fedora.sh
+          lima sudo /tmp/kind/hack/ci/init-vm.sh
           # Enable systemd lingering for rootless
           lima sudo loginctl enable-linger "$USER"
           # Install kind
           lima sudo git config --global --add safe.directory /tmp/kind
-          lima sudo make -C /tmp/kind install INSTALL_DIR=/usr/local/bin
+          lima sudo make -C /tmp/kind install INSTALL_DIR=/usr/bin
 
       - name: Set up Rootless Docker
         if: ${{ matrix.provider == 'docker' && matrix.rootless == 'rootless' }}
