@@ -22,7 +22,7 @@ Ingress exposes HTTP and HTTPS routes from outside the cluster to services withi
 > Gateway API has an [Ingress migration guide](https://gateway-api.sigs.k8s.io/guides/migrating-from-ingress/).
 
 > **WARNING**: If you are using a [rootless container runtime], ensure your host is
-> properly configured before creating the KinD cluster. Most Ingress and Gateway controllers will
+> properly configured before creating the KIND cluster. Most Ingress and Gateway controllers will
 > not work if these steps are skipped.
 
 ### Create Cluster
