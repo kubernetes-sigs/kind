@@ -15,7 +15,7 @@
 # This image is a haproxy image + minimal config so the container will not exit
 # while we rewrite the config at runtime and signal haproxy to reload.
 
-ARG BASE="registry.k8s.io/build-image/debian-base:bullseye-v1.4.3"
+ARG BASE="registry.k8s.io/build-image/debian-base:bookworm-v1.0.5"
 FROM ${BASE} AS build
 
 # NOTE: copyrights.tar.gz is a quirk of Kubernetes's debian-base image
@@ -27,8 +27,19 @@ RUN [ ! -f /usr/share/copyrights.tar.gz ] || tar -C / -xzvf /usr/share/copyright
 # - haproxy (see: https://haproxy.debian.net/)
 # - bash (ldd is a bash script and debian-base removes bash)
 # - procps (for `kill` which kind needs)
+# install curl and ca-certificates to enable dedcate repositories
 RUN apt update && \
-    apt install -y --no-install-recommends haproxy=2.2.\* \
+    apt install -y --no-install-recommends curl
+RUN apt update && apt install -y ca-certificates
+# enable dedicated repositories to install latest haproxy (see: https://haproxy.debian.net/#distribution=Debian&release=bookworm&version=3.2) 
+RUN curl https://haproxy.debian.net/haproxy-archive-keyring.gpg \
+    --create-dirs --output /etc/apt/keyrings/haproxy-archive-keyring.gpg
+RUN echo deb "[signed-by=/etc/apt/keyrings/haproxy-archive-keyring.gpg]" \
+      https://haproxy.debian.net bookworm-backports-3.2 main \
+      > /etc/apt/sources.list.d/haproxy.list
+# install the latest stable haproxy version compatible with bookworm
+RUN apt update && \
+    apt install -y --no-install-recommends haproxy=3.2.\* \
       procps bash
 
 # copy in script for staging distro provided binary to distroless
@@ -50,7 +61,7 @@ RUN mkdir -p "${STAGE_DIR}" && \
 
 # See: https://github.com/GoogleContainerTools/distroless/tree/main/base
 # This has /etc/passwd, tzdata, cacerts
-FROM "gcr.io/distroless/static-debian11"
+FROM "gcr.io/distroless/static-debian12"
 
 ARG STAGE_DIR="/opt/stage"
 
