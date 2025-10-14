@@ -315,6 +315,16 @@ func (p *provider) node(name string) nodes.Node {
 	}
 }
 
+// AddNode is part of the providers.Provider interface
+func (p *provider) AddNode(cluster string, nodeName string, nodeConfig *config.Node, retain bool) (nodes.Node, error) {
+	return nil, errors.New("AddNode is not yet implemented for podman provider")
+}
+
+// RemoveNode is part of the providers.Provider interface
+func (p *provider) RemoveNode(cluster, nodeName string) error {
+	return errors.New("RemoveNode is not yet implemented for podman provider")
+}
+
 // CollectLogs will populate dir with cluster logs and other debug files
 func (p *provider) CollectLogs(dir string, nodes []nodes.Node) error {
 	execToPathFn := func(cmd exec.Cmd, path string) func() error {

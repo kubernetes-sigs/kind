@@ -18,18 +18,14 @@ limitations under the License.
 package kubeadmjoin
 
 import (
-	"strings"
-
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
-	"sigs.k8s.io/kind/pkg/exec"
-	"sigs.k8s.io/kind/pkg/internal/version"
-	"sigs.k8s.io/kind/pkg/log"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
+	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
 )
 
 // Action implements action for creating the kubeadm join
@@ -84,7 +80,7 @@ func joinSecondaryControlPlanes(
 	// (this is not safe currently)
 	for _, node := range secondaryControlPlanes {
 		node := node // capture loop variable
-		if err := runKubeadmJoin(ctx.Logger, node); err != nil {
+		if err := kubeadm.RunKubeadmJoin(ctx.Logger, node); err != nil {
 			return err
 		}
 	}
@@ -105,7 +101,7 @@ func joinWorkers(
 	for _, node := range workers {
 		node := node // capture loop variable
 		fns = append(fns, func() error {
-			return runKubeadmJoin(ctx.Logger, node)
+			return kubeadm.RunKubeadmJoin(ctx.Logger, node)
 		})
 	}
 	if err := errors.UntilErrorConcurrent(fns); err != nil {
@@ -113,41 +109,5 @@ func joinWorkers(
 	}
 
 	ctx.Status.End(true)
-	return nil
-}
-
-// runKubeadmJoin executes kubeadm join command
-func runKubeadmJoin(logger log.Logger, node nodes.Node) error {
-	kubeVersionStr, err := nodeutils.KubeVersion(node)
-	if err != nil {
-		return errors.Wrap(err, "failed to get kubernetes version from node")
-	}
-	kubeVersion, err := version.ParseGeneric(kubeVersionStr)
-	if err != nil {
-		return errors.Wrapf(err, "failed to parse kubernetes version %q", kubeVersionStr)
-	}
-
-	args := []string{
-		"join",
-		// the join command uses the config file generated in a well known location
-		"--config", "/kind/kubeadm.conf",
-		// increase verbosity for debugging
-		"--v=6",
-	}
-	// Newer versions set this in the config file.
-	if kubeVersion.LessThan(version.MustParseSemantic("v1.23.0")) {
-		// Skip preflight to avoid pulling images.
-		// Kind pre-pulls images and preflight may conflict with that.
-		args = append(args, "--skip-phases=preflight")
-	}
-
-	// run kubeadm join
-	cmd := node.Command("kubeadm", args...)
-	lines, err := exec.CombinedOutputLines(cmd)
-	logger.V(3).Info(strings.Join(lines, "\n"))
-	if err != nil {
-		return errors.Wrap(err, "failed to join node with kubeadm")
-	}
-
 	return nil
 }

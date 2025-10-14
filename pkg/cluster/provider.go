@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/docker"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/nerdctl"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/podman"
+	"sigs.k8s.io/kind/pkg/internal/apis/config"
 )
 
 // DefaultName is the default cluster name
@@ -233,6 +234,16 @@ func (p *Provider) ListInternalNodes(name string) ([]nodes.Node, error) {
 		return nil, err
 	}
 	return nodeutils.InternalNodes(n)
+}
+
+// AddNode creates and starts a new node for the given cluster
+func (p *Provider) AddNode(name string, nodeName string, nodeConfig *config.Node, retain bool) (nodes.Node, error) {
+	return p.provider.AddNode(defaultName(name), nodeName, nodeConfig, retain)
+}
+
+// RemoveNode removes a single node from the cluster
+func (p *Provider) RemoveNode(name, nodeName string) error {
+	return p.provider.RemoveNode(defaultName(name), nodeName)
 }
 
 // CollectLogs will populate dir with cluster logs and other debug files

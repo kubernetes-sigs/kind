@@ -30,6 +30,8 @@ import (
 	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/log"
 
+	"sigs.k8s.io/kind/pkg/cluster/constants"
+	nodeops "sigs.k8s.io/kind/pkg/cluster/internal/node"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/common"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
@@ -150,6 +152,150 @@ func (p *provider) DeleteNodes(n []nodes.Node) error {
 	if err := exec.Command(command, args...).Run(); err != nil {
 		return errors.Wrap(err, "failed to delete nodes")
 	}
+	return nil
+}
+
+// AddNode is part of the providers.Provider interface
+func (p *provider) AddNode(cluster string, nodeName string, nodeConfig *config.Node, retain bool) (nodes.Node, error) {
+	// Get the network name
+	networkName := getNetworkName()
+	if networkName != fixedNetworkName {
+		p.logger.Warn("WARNING: Overriding docker network due to KIND_EXPERIMENTAL_DOCKER_NETWORK")
+		p.logger.Warn("WARNING: Here be dragons! This is not supported currently.")
+	}
+
+	// Ensure the network exists
+	if err := ensureNetwork(networkName); err != nil {
+		return nil, errors.Wrap(err, "failed to ensure docker network")
+	}
+
+	// Get existing nodes to understand cluster structure
+	existingNodes, err := p.ListNodes(cluster)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list existing nodes")
+	}
+	if len(existingNodes) == 0 {
+		return nil, errors.New("cluster has no existing nodes")
+	}
+
+	// Validate that the node name doesn't already exist
+	for _, n := range existingNodes {
+		if n.String() == nodeName {
+			return nil, errors.Errorf("node %q already exists in cluster %q", nodeName, cluster)
+		}
+	}
+
+	// Get all node names for NO_PROXY
+	allNodeNames := []string{nodeName}
+	for _, n := range existingNodes {
+		allNodeNames = append(allNodeNames, n.String())
+	}
+
+	// Prepare node configuration
+	node, err := prepareNodeConfig(nodeConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare node config")
+	}
+
+	// Set up container creation options
+	opts := ContainerCreationOptions{
+		ClusterName:      cluster,
+		NetworkName:      networkName,
+		AllNodeNames:     allNodeNames,
+		APIServerPort:    0,
+		APIServerAddress: "127.0.0.1",
+		IPFamily:         config.IPv4Family,
+		ClusterConfig:    nil,
+	}
+
+	// Generate container run args
+	runArgs, err := generateRunArgsForNodeCreation(opts, node, nodeName)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to generate run args for node")
+	}
+
+	// Create the container
+	if err := createContainerWithWaitUntilSystemdReachesMultiUserSystem(nodeName, runArgs); err != nil {
+		return nil, errors.Wrap(err, "failed to create node container")
+	}
+
+	p.logger.V(0).Infof("Created node container: %s", nodeName)
+
+	// Join the node to the cluster
+	newNode := p.node(nodeName)
+	if err := nodeops.JoinNodeToCluster(p.logger, p, cluster, newNode, node.Role); err != nil {
+		// Cleanup the container if join fails, unless retain flag is set
+		if !retain {
+			_ = p.DeleteNodes([]nodes.Node{newNode})
+		} else {
+			p.logger.V(0).Infof("Retaining node container %s for debugging (join failed)", nodeName)
+		}
+		return nil, errors.Wrap(err, "failed to join node to cluster")
+	}
+
+	return newNode, nil
+}
+
+// RemoveNode is part of the providers.Provider interface
+func (p *provider) RemoveNode(cluster, nodeName string) error {
+	// Check if node exists
+	allNodes, err := p.ListNodes(cluster)
+	if err != nil {
+		return errors.Wrap(err, "failed to list nodes")
+	}
+
+	var nodeToRemove nodes.Node
+	found := false
+	for _, n := range allNodes {
+		if n.String() == nodeName {
+			nodeToRemove = n
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return errors.Errorf("node %q not found in cluster %q", nodeName, cluster)
+	}
+
+	// Check if this is not the last node
+	if len(allNodes) <= 1 {
+		return errors.New("cannot remove the last node from the cluster")
+	}
+
+	// Determine if this is a control plane node
+	nodeRole, err := nodeToRemove.Role()
+	if err != nil {
+		p.logger.Warnf("Failed to determine node role for %s: %v", nodeName, err)
+		// Continue with removal even if role detection fails
+	}
+
+	// If this is a control plane node, remove it from etcd cluster first
+	if nodeRole == constants.ControlPlaneNodeRoleValue {
+		if err := nodeops.RemoveEtcdMember(p.logger, allNodes, nodeName); err != nil {
+			p.logger.Warnf("Failed to remove etcd member %s: %v", nodeName, err)
+			// Continue with node removal even if etcd removal fails
+		}
+	}
+
+	// Drain and remove the node from Kubernetes
+	if err := nodeops.DrainAndRemoveNode(p.logger, p, cluster, nodeName); err != nil {
+		p.logger.Warnf("Failed to cleanly remove node from cluster: %v", err)
+		// Continue with container removal even if drain fails
+	}
+
+	// Reset kubeadm on the node
+	if err := nodeops.ResetNode(p.logger, nodeToRemove); err != nil {
+		p.logger.Warnf("Failed to reset node: %v", err)
+		// Continue with container removal even if reset fails
+	}
+
+	// Remove the container
+	if err := p.DeleteNodes([]nodes.Node{nodeToRemove}); err != nil {
+		return errors.Wrap(err, "failed to delete node container")
+	}
+
+	p.logger.V(0).Infof("Removed node: %s", nodeName)
 	return nil
 }
 

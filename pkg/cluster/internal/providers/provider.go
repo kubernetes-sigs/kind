@@ -39,6 +39,12 @@ type Provider interface {
 	// These should be from results previously returned by this provider
 	// E.G. by ListNodes()
 	DeleteNodes([]nodes.Node) error
+	// AddNode creates and starts a new node for the given cluster with the specified name
+	// Returns the created node
+	AddNode(cluster string, nodeName string, nodeConfig *config.Node, retain bool) (nodes.Node, error)
+	// RemoveNode removes a single node from the cluster
+	// This includes draining the node and cleaning up resources
+	RemoveNode(cluster string, nodeName string) error
 	// GetAPIServerEndpoint returns the host endpoint for the cluster's API server
 	GetAPIServerEndpoint(cluster string) (string, error)
 	// GetAPIServerInternalEndpoint returns the internal network endpoint for the cluster's API server

@@ -20,14 +20,12 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
-	"sigs.k8s.io/kind/pkg/fs"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/loadbalancer"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/common"
@@ -85,46 +83,34 @@ func planCreation(cfg *config.Cluster, networkName string) (createContainerFuncs
 		node := node.DeepCopy() // copy so we can modify
 		name := names[i]
 
-		// fixup relative paths, docker can only handle absolute paths
-		for m := range node.ExtraMounts {
-			hostPath := node.ExtraMounts[m].HostPath
-			if !fs.IsAbs(hostPath) {
-				absHostPath, err := filepath.Abs(hostPath)
-				if err != nil {
-					return nil, errors.Wrapf(err, "unable to resolve absolute path for hostPath: %q", hostPath)
-				}
-				node.ExtraMounts[m].HostPath = absHostPath
-			}
+		// Prepare node configuration (handles relative paths, etc.)
+		node, err = prepareNodeConfig(node)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to prepare node config for %s", name)
 		}
 
 		// plan actual creation based on role
-		switch node.Role {
-		case config.ControlPlaneRole:
-			createContainerFuncs = append(createContainerFuncs, func() error {
-				node.ExtraPortMappings = append(node.ExtraPortMappings,
-					config.PortMapping{
-						ListenAddress: apiServerAddress,
-						HostPort:      apiServerPort,
-						ContainerPort: common.APIServerInternalPort,
-					},
-				)
-				args, err := runArgsForNode(node, cfg.Networking.IPFamily, name, genericArgs)
-				if err != nil {
-					return err
-				}
-				return createContainerWithWaitUntilSystemdReachesMultiUserSystem(name, args)
-			})
-		case config.WorkerRole:
-			createContainerFuncs = append(createContainerFuncs, func() error {
-				args, err := runArgsForNode(node, cfg.Networking.IPFamily, name, genericArgs)
-				if err != nil {
-					return err
-				}
-				return createContainerWithWaitUntilSystemdReachesMultiUserSystem(name, args)
-			})
-		default:
-			return nil, errors.Errorf("unknown node role: %q", node.Role)
-		}
+		createContainerFuncs = append(createContainerFuncs, func() error {
+			// Set up container creation options
+			opts := ContainerCreationOptions{
+				ClusterName:      cfg.Name,
+				NetworkName:      networkName,
+				AllNodeNames:     names,
+				APIServerPort:    apiServerPort,
+				APIServerAddress: apiServerAddress,
+				IPFamily:         cfg.Networking.IPFamily,
+				ClusterConfig:    cfg,
+			}
+
+			// Generate container run args
+			runArgs, err := generateRunArgsForNodeCreation(opts, node, name)
+			if err != nil {
+				return err
+			}
+
+			// Create the container
+			return createContainerWithWaitUntilSystemdReachesMultiUserSystem(name, runArgs)
+		})
 	}
 	return createContainerFuncs, nil
 }

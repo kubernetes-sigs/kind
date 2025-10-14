@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2025 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package delete implements the `delete` command
-package delete
+// Package add implements the `add` command
+package add
 
 import (
 	"errors"
@@ -23,19 +23,16 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cmd"
-	deletecluster "sigs.k8s.io/kind/pkg/cmd/kind/delete/cluster"
-	deleteclusters "sigs.k8s.io/kind/pkg/cmd/kind/delete/clusters"
-	deletenode "sigs.k8s.io/kind/pkg/cmd/kind/delete/node"
+	addnode "sigs.k8s.io/kind/pkg/cmd/kind/add/node"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
-// NewCommand returns a new cobra.Command for cluster deletion
+// NewCommand returns a new cobra.Command for adding resources
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
-		// TODO(bentheelder): more detailed usage
-		Use:   "delete",
-		Short: "Deletes one of [cluster, node]",
-		Long:  "Deletes one of [cluster, node]",
+		Use:   "add",
+		Short: "Adds one of [node]",
+		Long:  "Adds one of [node]",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := cmd.Help()
 			if err != nil {
@@ -44,8 +41,6 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 			return errors.New("Subcommand is required")
 		},
 	}
-	cmd.AddCommand(deletecluster.NewCommand(logger, streams))
-	cmd.AddCommand(deleteclusters.NewCommand(logger, streams))
-	cmd.AddCommand(deletenode.NewCommand(logger, streams))
+	cmd.AddCommand(addnode.NewCommand(logger, streams))
 	return cmd
 }

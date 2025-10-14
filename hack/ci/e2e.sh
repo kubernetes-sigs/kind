@@ -42,6 +42,9 @@ main() {
   # install kind
   install_kind
 
+  # run node operations e2e tests first
+  "${REPO_ROOT}/hack/ci/e2e-node-ops.sh"
+
   # build kubernetes / e2e test
   "${REPO_ROOT}/hack/ci/e2e-k8s.sh"
 }
