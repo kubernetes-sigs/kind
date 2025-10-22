@@ -29,12 +29,18 @@ export GIMME_ENV_PREFIX=./bin/.gimme/
 export GIMME_SILENT_ENV=y
 
 # only setup go if we haven't set FORCE_HOST_GO, or `go version` doesn't match
-# go version output looks like:
-# go version go1.14.5 darwin/amd64
-if ! ([ -n "${FORCE_HOST_GO:-}" ] || \
-      (command -v go >/dev/null && [ "$(go version | cut -d' ' -f3)" = "go${GO_VERSION}" ])); then
+if [ -n "${FORCE_HOST_GO:-}" ]; then
+  GOTOOLCHAIN="${GOTOOLCHAIN:-local}"
+  export GOTOOLCHAIN
+else
+  GOTOOLCHAIN="go${GO_VERSION}"
+  export GOTOOLCHAIN
+  # go version output looks like:
+  # go version go1.14.5 darwin/amd64
+  if ! (command -v go >/dev/null && [ "$(go version | cut -d' ' -f3)" = "go${GO_VERSION}" ]); then
     # eval because the output of this is shell to set PATH etc.
     eval "$(hack/third_party/gimme/gimme "${GO_VERSION}")"
+  fi
 fi
 
 # force go modules
