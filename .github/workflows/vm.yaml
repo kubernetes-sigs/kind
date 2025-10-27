@@ -60,7 +60,7 @@ jobs:
           check-latest: true
 
       - name: "Install Lima"
-        uses: lima-vm/lima-actions/setup@03b96d61959e83b2c737e44162c3088e81de0886 # v1
+        uses: lima-vm/lima-actions/setup@55627e31b78637bf254a8b2a14da8ea7d12564e5 # v1
         id: lima-actions-setup
 
       - name: "Cache ~/.cache/lima"
