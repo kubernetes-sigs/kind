@@ -22,7 +22,7 @@ import (
 	"sigs.k8s.io/kind/pkg/internal/assert"
 )
 
-func TestTOML(t *testing.T) {
+func TestContainerdTOML(t *testing.T) {
 	t.Parallel()
 	type testCase struct {
 		Name            string
@@ -40,14 +40,47 @@ func TestTOML(t *testing.T) {
 			ExpectOutput: "",
 		},
 		{
+			Name:         "invalid containerd versioning",
+			ToPatch:      `version = "five"`,
+			ExpectError:  true,
+			ExpectOutput: "",
+		},
+		{
 			Name: "no patches",
-			ToPatch: `disabled_plugins = ["restart"]
+			ToPatch: `version = 2
+disabled_plugins = ["restart"]
 [plugins.linux]
   shim_debug = true
 [plugins.cri.containerd.runtimes.runsc]
   runtime_type = "io.containerd.runsc.v1"`,
 			ExpectError: false,
 			ExpectOutput: `disabled_plugins = ["restart"]
+version = 2
+
+[plugins]
+  [plugins.cri]
+    [plugins.cri.containerd]
+      [plugins.cri.containerd.runtimes]
+        [plugins.cri.containerd.runtimes.runsc]
+          runtime_type = "io.containerd.runsc.v1"
+  [plugins.linux]
+    shim_debug = true
+`,
+		},
+		{
+			Name: "Only matching patches",
+			ToPatch: `version = 2
+
+disabled_plugins = ["restart"]
+
+[plugins.linux]
+  shim_debug = true
+[plugins.cri.containerd.runtimes.runsc]
+  runtime_type = "io.containerd.runsc.v1"`,
+			Patches:     []string{"version = 3\ndisabled_plugins=[\"bar\"]", "version = 2\n disabled_plugins=[\"baz\"]"},
+			ExpectError: false,
+			ExpectOutput: `disabled_plugins = ["baz"]
+version = 2
 
 [plugins]
   [plugins.cri]
@@ -61,7 +94,8 @@ func TestTOML(t *testing.T) {
 		},
 		{
 			Name: "invalid patch TOML",
-			ToPatch: `disabled_plugins = ["restart"]
+			ToPatch: `version = 2
+disabled_plugins = ["restart"]
 [plugins.linux]
   shim_debug = true
 [plugins.cri.containerd.runtimes.runsc]
@@ -81,7 +115,8 @@ func TestTOML(t *testing.T) {
 		},
 		{
 			Name: "trivial patch",
-			ToPatch: `disabled_plugins = ["restart"]
+			ToPatch: `version = 2
+disabled_plugins = ["restart"]
 [plugins.linux]
   shim_debug = true
 [plugins.cri.containerd.runtimes.runsc]
@@ -89,6 +124,7 @@ func TestTOML(t *testing.T) {
 			Patches:     []string{`disabled_plugins=[]`},
 			ExpectError: false,
 			ExpectOutput: `disabled_plugins = []
+version = 2
 
 [plugins]
   [plugins.cri]
@@ -102,14 +138,17 @@ func TestTOML(t *testing.T) {
 		},
 		{
 			Name: "trivial 6902 patch",
-			ToPatch: `disabled_plugins = ["restart"]
+			ToPatch: `version = 2
+disabled_plugins = ["restart"]
 [plugins.linux]
   shim_debug = true
 [plugins.cri.containerd.runtimes.runsc]
   runtime_type = "io.containerd.runsc.v1"`,
 			PatchesJSON6902: []string{`[{"op": "remove", "path": "/disabled_plugins"}]`},
 			ExpectError:     false,
-			ExpectOutput: `[plugins]
+			ExpectOutput: `version = 2
+
+[plugins]
   [plugins.cri]
     [plugins.cri.containerd]
       [plugins.cri.containerd.runtimes]
@@ -121,7 +160,8 @@ func TestTOML(t *testing.T) {
 		},
 		{
 			Name: "trivial patch and trivial 6902 patch",
-			ToPatch: `disabled_plugins = ["restart"]
+			ToPatch: `version = 2
+disabled_plugins = ["restart"]
 [plugins.linux]
   shim_debug = true
 [plugins.cri.containerd.runtimes.runsc]
@@ -129,7 +169,9 @@ func TestTOML(t *testing.T) {
 			Patches:         []string{`disabled_plugins=["foo"]`},
 			PatchesJSON6902: []string{`[{"op": "remove", "path": "/disabled_plugins"}]`},
 			ExpectError:     false,
-			ExpectOutput: `[plugins]
+			ExpectOutput: `version = 2
+
+[plugins]
   [plugins.cri]
     [plugins.cri.containerd]
       [plugins.cri.containerd.runtimes]
@@ -160,7 +202,8 @@ func TestTOML(t *testing.T) {
 		},
 		{
 			Name: "patch registry",
-			ToPatch: `disabled_plugins = ["restart"]
+			ToPatch: `version = 2
+disabled_plugins = ["restart"]
 [plugins.linux]
   shim_debug = true
 [plugins.cri.containerd.runtimes.runsc]
@@ -170,6 +213,7 @@ func TestTOML(t *testing.T) {
     endpoint = ["http://registry:5000"]`},
 			ExpectError: false,
 			ExpectOutput: `disabled_plugins = ["restart"]
+version = 2
 
 [plugins]
   [plugins.cri]
@@ -190,7 +234,7 @@ func TestTOML(t *testing.T) {
 		tc := tc // capture test case
 		t.Run(tc.Name, func(t *testing.T) {
 			t.Parallel()
-			out, err := TOML(tc.ToPatch, tc.Patches, tc.PatchesJSON6902)
+			out, err := ContainerdTOML(tc.ToPatch, tc.Patches, tc.PatchesJSON6902)
 			assert.ExpectError(t, tc.ExpectError, err)
 			if err == nil {
 				assert.StringEqual(t, tc.ExpectOutput, out)
