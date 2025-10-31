@@ -670,8 +670,10 @@ func Config(data ConfigData) (config string, err error) {
 	}
 
 	// assume the latest API version, then fallback if the k8s version is too low
-	templateSource := ConfigTemplateBetaV3
-	if ver.LessThan(version.MustParseSemantic("v1.23.0")) {
+	templateSource := ConfigTemplateBetaV4
+	if ver.LessThan(version.MustParseSemantic("v1.35.0")) {
+		templateSource = ConfigTemplateBetaV3
+	} else if ver.LessThan(version.MustParseSemantic("v1.23.0")) {
 		templateSource = ConfigTemplateBetaV2
 	}
 
