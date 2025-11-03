@@ -82,46 +82,10 @@ build() {
   export PATH="${PWD}/_output/bin:$PATH"
 }
 
-check_structured_log_support() {
-	case "${KUBE_VERSION}" in
-		v1.1[0-8].*)
-			echo "$1 is only supported on versions >= v1.19, got ${KUBE_VERSION}"
-			exit 1
-			;;
-	esac
-}
-
 # up a cluster with kind
 create_cluster() {
-  # Grab the version of the cluster we're about to start
-  KUBE_VERSION="$(docker run --rm --entrypoint=cat "kindest/node:latest" /kind/version)"
-
   # Default Log level for all components in test clusters
   KIND_CLUSTER_LOG_LEVEL=${KIND_CLUSTER_LOG_LEVEL:-4}
-
-  # potentially enable --logging-format
-  CLUSTER_LOG_FORMAT=${CLUSTER_LOG_FORMAT:-}
-  scheduler_extra_args="      \"v\": \"${KIND_CLUSTER_LOG_LEVEL}\""
-  controllerManager_extra_args="      \"v\": \"${KIND_CLUSTER_LOG_LEVEL}\""
-  apiServer_extra_args="      \"v\": \"${KIND_CLUSTER_LOG_LEVEL}\""
-  if [ -n "$CLUSTER_LOG_FORMAT" ]; then
-      check_structured_log_support "CLUSTER_LOG_FORMAT"
-      scheduler_extra_args="${scheduler_extra_args}
-      \"logging-format\": \"${CLUSTER_LOG_FORMAT}\""
-      controllerManager_extra_args="${controllerManager_extra_args}
-      \"logging-format\": \"${CLUSTER_LOG_FORMAT}\""
-      apiServer_extra_args="${apiServer_extra_args}
-      \"logging-format\": \"${CLUSTER_LOG_FORMAT}\""
-  fi
-  kubelet_extra_args="      \"v\": \"${KIND_CLUSTER_LOG_LEVEL}\"
-      \"container-log-max-files\": \"10\"
-      \"container-log-max-size\": \"100Mi\""
-  KUBELET_LOG_FORMAT=${KUBELET_LOG_FORMAT:-$CLUSTER_LOG_FORMAT}
-  if [ -n "$KUBELET_LOG_FORMAT" ]; then
-      check_structured_log_support "KUBECTL_LOG_FORMAT"
-      kubelet_extra_args="${kubelet_extra_args}
-      \"logging-format\": \"${KUBELET_LOG_FORMAT}\""
-  fi
 
   # JSON or YAML map injected into featureGates config
   feature_gates="${FEATURE_GATES:-{\}}"
@@ -146,29 +110,79 @@ nodes:
 featureGates: ${feature_gates}
 runtimeConfig: ${runtime_config}
 kubeadmConfigPatches:
+# v1beta4 for the future (v1.35.0+ ?)
+# https://github.com/kubernetes-sigs/kind/issues/3847
+# TODO: drop v1beta3 when we no longer need versions that use it
 - |
   kind: ClusterConfiguration
+  apiVersion: kubeadm.k8s.io/v1beta4
   metadata:
     name: config
   apiServer:
     extraArgs:
-${apiServer_extra_args}
+      - name: "v"
+        value: "${KIND_CLUSTER_LOG_LEVEL}"
   controllerManager:
     extraArgs:
-${controllerManager_extra_args}
+      - name: "v"
+        value: "${KIND_CLUSTER_LOG_LEVEL}"
   scheduler:
     extraArgs:
-${scheduler_extra_args}
+      - name: "v"
+        value: "${KIND_CLUSTER_LOG_LEVEL}"
   ---
   kind: InitConfiguration
+  apiVersion: kubeadm.k8s.io/v1beta4
   nodeRegistration:
     kubeletExtraArgs:
-${kubelet_extra_args}
+      - name: "v"
+        value: "${KIND_CLUSTER_LOG_LEVEL}"
+      - name: "container-log-max-files"
+        value: "10"
+      - name: "container-log-max-size"
+        value: "100Mi"
   ---
   kind: JoinConfiguration
+  apiVersion: kubeadm.k8s.io/v1beta4
   nodeRegistration:
     kubeletExtraArgs:
-${kubelet_extra_args}
+      - name: "v"
+        value: "${KIND_CLUSTER_LOG_LEVEL}"
+      - name: "container-log-max-files"
+        value: "10"
+      - name: "container-log-max-size"
+        value: "100Mi"
+# v1beta3 for v1.23.0 ... ?
+- |
+  kind: ClusterConfiguration
+  apiVersion: kubeadm.k8s.io/v1beta3
+  metadata:
+    name: config
+  apiServer:
+    extraArgs:
+      "v": "${KIND_CLUSTER_LOG_LEVEL}"
+  controllerManager:
+    extraArgs:
+      "v": "${KIND_CLUSTER_LOG_LEVEL}"
+  scheduler:
+    extraArgs:
+      "v": "${KIND_CLUSTER_LOG_LEVEL}"
+  ---
+  kind: InitConfiguration
+  apiVersion: kubeadm.k8s.io/v1beta3
+  nodeRegistration:
+    kubeletExtraArgs:
+      "v": "${KIND_CLUSTER_LOG_LEVEL}"
+      "container-log-max-files": "10"
+      "container-log-max-size": "100Mi"
+  ---
+  kind: JoinConfiguration
+  apiVersion: kubeadm.k8s.io/v1beta3
+  nodeRegistration:
+    kubeletExtraArgs:
+      "v": "${KIND_CLUSTER_LOG_LEVEL}"
+      "container-log-max-files": "10"
+      "container-log-max-size": "100Mi"
 EOF
   # NOTE: must match the number of workers above
   NUM_NODES=2
