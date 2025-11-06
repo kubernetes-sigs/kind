@@ -116,8 +116,6 @@ kubeadmConfigPatches:
 - |
   kind: ClusterConfiguration
   apiVersion: kubeadm.k8s.io/v1beta4
-  metadata:
-    name: config
   apiServer:
     extraArgs:
       - name: "v"
@@ -148,6 +146,10 @@ kubeadmConfigPatches:
     kubeletExtraArgs:
       - name: "v"
         value: "${KIND_CLUSTER_LOG_LEVEL}"
+      # Warning: these flags appear to be load bearing / impact performance
+      # See: https://github.com/kubernetes-sigs/kind/pull/4046
+      # Be careful when updating these.
+      # Most CI jobs should not need them, but some CI jobs might.
       - name: "container-log-max-files"
         value: "10"
       - name: "container-log-max-size"
@@ -156,8 +158,6 @@ kubeadmConfigPatches:
 - |
   kind: ClusterConfiguration
   apiVersion: kubeadm.k8s.io/v1beta3
-  metadata:
-    name: config
   apiServer:
     extraArgs:
       "v": "${KIND_CLUSTER_LOG_LEVEL}"
@@ -181,6 +181,10 @@ kubeadmConfigPatches:
   nodeRegistration:
     kubeletExtraArgs:
       "v": "${KIND_CLUSTER_LOG_LEVEL}"
+      # Warning: these flags appear to be load bearing / impact performance
+      # See: https://github.com/kubernetes-sigs/kind/pull/4046
+      # Be careful when updating these.
+      # Most CI jobs should not need them, but some CI jobs might.
       "container-log-max-files": "10"
       "container-log-max-size": "100Mi"
 EOF
