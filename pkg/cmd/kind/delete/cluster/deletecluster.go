@@ -75,6 +75,34 @@ func deleteCluster(logger log.Logger, flags *flagpole) error {
 		cluster.ProviderWithLogger(logger),
 		runtime.GetDefault(logger),
 	)
+	
+	// Check if cluster exists before attempting deletion
+	clusters, err := provider.List()
+	if err != nil {
+		return errors.Wrap(err, "failed to list clusters")
+	}
+
+	// Check if the target cluster exists
+	clusterExists := false
+	for _, clusterName := range clusters {
+		if clusterName == flags.Name {
+			clusterExists = true
+			break
+		}
+	}
+
+	// If using default name and no clusters exist, show helpful message
+	if flags.Name == cluster.DefaultName && len(clusters) == 0 {
+		logger.V(0).Infof("No kind clusters found.")
+		return nil
+	}
+
+	// If cluster doesn't exist, show warning but don't fail (idempotent behavior)
+	if !clusterExists {
+		logger.V(0).Infof("Cluster %q not found. Available clusters: %v", flags.Name, clusters)
+		return nil
+	}
+
 	// Delete individual cluster
 	logger.V(0).Infof("Deleting cluster %q ...", flags.Name)
 	if err := provider.Delete(flags.Name, flags.Kubeconfig); err != nil {
