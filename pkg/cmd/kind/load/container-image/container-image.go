@@ -30,7 +30,6 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/errors"
-	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/fs"
 	"sigs.k8s.io/kind/pkg/log"
 
@@ -92,7 +91,7 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 	imageNames := removeDuplicates(args)
 	var imageIDs []string
 	for _, imageName := range imageNames {
-		imageID, err := imageID(imageName)
+		imageID, err := provider.ContainerImageID(imageName)
 		if err != nil {
 			return fmt.Errorf("image: %q not present locally", imageName)
 		}
@@ -179,7 +178,7 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 	defer os.RemoveAll(dir)
 	imagesTarPath := filepath.Join(dir, "images.tar")
 	// Save the images into a tar
-	err = save(imageNames, imagesTarPath)
+	err = provider.ContainerSave(imageNames, imagesTarPath)
 	if err != nil {
 		return err
 	}
@@ -204,28 +203,6 @@ func loadImage(imageTarName string, node nodes.Node) error {
 	}
 	defer f.Close()
 	return nodeutils.LoadImageArchive(node, f)
-}
-
-// save saves images to dest, as in `docker save`
-func save(images []string, dest string) error {
-	commandArgs := append([]string{"save", "-o", dest}, images...)
-	return exec.Command("docker", commandArgs...).Run()
-}
-
-// imageID return the Id of the container image
-func imageID(containerNameOrID string) (string, error) {
-	cmd := exec.Command("docker", "image", "inspect",
-		"-f", "{{ .Id }}",
-		containerNameOrID, // ... against the container
-	)
-	lines, err := exec.OutputLines(cmd)
-	if err != nil {
-		return "", err
-	}
-	if len(lines) != 1 {
-		return "", errors.Errorf("Container image ID should only be one line, got %d lines", len(lines))
-	}
-	return lines[0], nil
 }
 
 // removeDuplicates removes duplicates from a string slice
