@@ -21,6 +21,10 @@ Ingress exposes HTTP and HTTPS routes from outside the cluster to services withi
 > **NOTE**: You may also want to consider using [Gateway API](https://gateway-api.sigs.k8s.io/) instead of Ingress.
 > Gateway API has an [Ingress migration guide](https://gateway-api.sigs.k8s.io/guides/migrating-from-ingress/).
 
+> **WARNING**: If you are using a [rootless container runtime], ensure your host is
+> properly configured before creating the KIND cluster. Most Ingress and Gateway controllers will
+> not work if these steps are skipped.
+
 ### Create Cluster
 
 #### Option 1: LoadBalancer
@@ -139,3 +143,4 @@ curl localhost/bar
 
 [LoadBalancer]: /docs/user/loadbalancer/
 [Cloud Provider KIND]: /docs/user/loadbalancer/
+[rootless container runtime]: /docs/user/rootless/
