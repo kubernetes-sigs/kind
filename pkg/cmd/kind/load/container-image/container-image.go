@@ -57,9 +57,10 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 			}
 			return nil
 		},
-		Use:   "container-image <IMAGE> [IMAGE...]",
-		Short: "Loads container images from host into nodes",
-		Long:  "Loads container images from host into all or specified nodes by name",
+		Use:     "container-image <IMAGE> [IMAGE...]",
+		Aliases: []string{"image"},
+		Short:   "Loads container images from host into nodes",
+		Long:    "Loads container images from host into all or specified nodes by name",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cli.OverrideDefaultName(cmd.Flags())
 			return runE(logger, flags, args)
