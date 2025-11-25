@@ -229,6 +229,10 @@ Docker images can be loaded into your cluster nodes with:
 Additionally, image archives can be loaded with:
 `kind load image-archive /my-image-archive.tar`
 
+For additional usage details and available flags, you can run:
+
+  kind load image-archive --help
+
 This allows a workflow like:
 ```
 docker build -t my-custom-image:unique-tag ./my-image-dir
