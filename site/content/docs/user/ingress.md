@@ -23,7 +23,7 @@ For third-party ingress solutions (e.g., Ingress NGINX, Contour), please follow 
 
 ## Create Cluster
 
-The built-in cloud provider automatically enables LoadBalancer support for Ingress. Create a cluster as follows.
+Create a kind cluster and run [Cloud Provider KIND] that automatically enables LoadBalancer support for Ingress. Create a cluster as follows.
 
 {{< codeFromInline lang="bash" >}}
 kind create cluster
