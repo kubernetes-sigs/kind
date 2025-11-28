@@ -45,7 +45,15 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "kind",
 		Short: "kind is a tool for managing local Kubernetes clusters",
-		Long:  "kind creates and manages local Kubernetes clusters using Docker container 'nodes'",
+		Long: `kind creates and manages local Kubernetes clusters using Docker container 'nodes'
+
+Environment variables:
+  KIND_EXPERIMENTAL_PROVIDER            override runtime detection (docker, podman, nerdctl)
+  KIND_CLUSTER_NAME                     default cluster name when --name is not set
+  KUBECONFIG                            kubeconfig path list used for reads/writes
+  KIND_EXPERIMENTAL_DOCKER_NETWORK      override chosen docker network (advanced)
+  KIND_EXPERIMENTAL_PODMAN_NETWORK      override chosen podman network (advanced)
+  KIND_EXPERIMENTAL_CONTAINERD_SNAPSHOTTER set containerd snapshotter inside nodes (advanced)`,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return runE(logger, flags)
 		},
