@@ -231,7 +231,8 @@ Additionally, image archives can be loaded with:
 
 For additional usage details and available flags, you can run:
 
-  kind load image-archive --help
+```sh
+kind load image-archive --help
 
 This allows a workflow like:
 ```
