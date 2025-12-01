@@ -233,6 +233,7 @@ For additional usage details and available flags, you can run:
 
 ```sh
 kind load image-archive --help
+```
 
 This allows a workflow like:
 ```
