@@ -160,6 +160,9 @@ More usage can be discovered with `kind create cluster --help`.
 kind can auto-detect the [docker], [podman], or [nerdctl] installed and choose the available one. If you want to turn off the auto-detect, use the environment variable `KIND_EXPERIMENTAL_PROVIDER=docker`, `KIND_EXPERIMENTAL_PROVIDER=podman` or `KIND_EXPERIMENTAL_PROVIDER=nerdctl` to
 select the runtime.
 
+> **NOTE**: podman and nerdctl operate in [rootless mode](/docs/user/rootless) by default. Extra
+> setup is needed for KIND clusters to be fully functional.
+
 ## Interacting With Your Cluster
 
 After [creating a cluster](#creating-a-cluster), you can use [kubectl][kubectl]
