@@ -22,6 +22,7 @@ import (
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
@@ -90,9 +91,9 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrap(err, "failed to copy loadbalancer config to node")
 	}
 
-	// reload the config. haproxy will reload on SIGHUP
-	if err := loadBalancerNode.Command("kill", "-s", "HUP", "1").Run(); err != nil {
-		return errors.Wrap(err, "failed to reload loadbalancer")
+	// restart loadbalancer to apply static configuration changes
+	if err := exec.Command("docker", "restart", "kind-external-load-balancer").Run(); err != nil {
+		return errors.Wrap(err, "failed to restart loadbalancer container")
 	}
 
 	ctx.Status.End(true)
