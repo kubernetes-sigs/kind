@@ -3,6 +3,6 @@ options:
   substitution_option: ALLOW_LOOSE
   machineType: E2_HIGHCPU_32
 steps:
-- name: gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:latest-master
+- name: gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:latest
   entrypoint: make
   args: ['-C', 'images/base', 'push']
