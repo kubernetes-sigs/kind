@@ -237,10 +237,26 @@ Note: If using a named cluster you will need to specify the name of the cluster:
 kind load docker-image my-app:latest --name test-cluster
 ```
 
+
 Additionally, image archives can be loaded with:
 `kind load image-archive /my-image-archive.tar`
 
+
+## Discovering Additional Command Options
+
+kind provides built-in help for all commands and subcommands.  
+You can explore available flags and usage details by running:
+
+```
+kind help
+kind <command> --help
+kind <command> <subcommand> --help
+```
+
+This applies to commands such as `kind load image-archive` and others.
+
 This allows a workflow like:
+
 ```
 docker build -t my-custom-image:unique-tag ./my-image-dir
 kind load docker-image my-custom-image:unique-tag
