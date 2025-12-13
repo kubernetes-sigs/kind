@@ -70,7 +70,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		"name",
 		"n",
 		cluster.DefaultName,
-		"the cluster context name",
+		cli.NameFlagHelp,
 	)
 	cmd.Flags().StringSliceVar(
 		&flags.Nodes,
