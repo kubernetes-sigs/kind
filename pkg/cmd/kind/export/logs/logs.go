@@ -19,6 +19,7 @@ package logs
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -45,16 +46,19 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "Exports logs to a tempdir or [output-dir] if specified",
 		Long:  "Exports logs to a tempdir or [output-dir] if specified",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cli.OverrideDefaultName(cmd.Flags())
 			return runE(logger, streams, flags, args)
 		},
+	}
+	defaultName := cluster.DefaultName
+	if name := os.Getenv("KIND_CLUSTER_NAME"); name != "" {
+		defaultName = name
 	}
 	cmd.Flags().StringVarP(
 		&flags.Name,
 		"name",
 		"n",
-		cluster.DefaultName,
-		"the cluster context name",
+		defaultName,
+		cli.NameFlagHelp,
 	)
 	return cmd
 }

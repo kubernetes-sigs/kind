@@ -19,6 +19,7 @@ package nodes
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -45,16 +46,19 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "Lists existing kind nodes by their name",
 		Long:  "Lists existing kind nodes by their name",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cli.OverrideDefaultName(cmd.Flags())
 			return runE(logger, streams, flags)
 		},
+	}
+	defaultName := cluster.DefaultName
+	if name := os.Getenv("KIND_CLUSTER_NAME"); name != "" {
+		defaultName = name
 	}
 	cmd.Flags().StringVarP(
 		&flags.Name,
 		"name",
 		"n",
-		cluster.DefaultName,
-		"the cluster context name",
+		defaultName,
+		cli.NameFlagHelp,
 	)
 	cmd.Flags().BoolVarP(
 		&flags.AllClusters,
