@@ -15,7 +15,11 @@
 
 # hack script for running a kind e2e
 # must be run with a kubernetes checkout in $PWD (IE from the checkout)
-# Usage: SKIP="ginkgo skip regex" FOCUS="ginkgo focus regex" kind-e2e.sh
+# Usage: SKIP="ginkgo skip regex" FOCUS="ginkgo focus regex" kind-e2e.sh [args]
+#
+# <args> are additional command line arguments for e2e.test. They get
+# passed through to k/k/hack/ginkgo-e2e.sh, which in turn passes
+# them on to e2e.test.
 
 set -o errexit -o nounset -o xtrace
 
@@ -267,7 +271,8 @@ run_tests() {
   ./hack/ginkgo-e2e.sh \
     '--provider=skeleton' "--num-nodes=${NUM_NODES}" \
     "--ginkgo.focus=${FOCUS}" "--ginkgo.skip=${SKIP}" "--ginkgo.label-filter=${LABEL_FILTER}" \
-    "--report-dir=${ARTIFACTS}" '--disable-log-dump=true' &
+    "--report-dir=${ARTIFACTS}" '--disable-log-dump=true' \
+    "${@}" &
   GINKGO_PID=$!
   wait "$GINKGO_PID"
 }
@@ -299,9 +304,9 @@ main() {
   # create the cluster and run tests
   res=0
   create_cluster || res=$?
-  run_tests || res=$?
+  run_tests "${@}" || res=$?
   cleanup || res=$?
   exit $res
 }
 
-main
+main "${@}"
