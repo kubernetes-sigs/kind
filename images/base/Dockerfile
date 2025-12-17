@@ -140,7 +140,9 @@ RUN git clone --filter=tree:0 "${CONTAINERD_CLONE_URL}" /containerd \
 # stage for building runc
 FROM go-build AS build-runc
 ARG TARGETARCH GO_VERSION
-ARG RUNC_VERSION="v1.3.3"
+# TODO: upgrade to 1.3.x to match containerd after resolving:
+# https://github.com/kubernetes/kubernetes/issues/135214
+ARG RUNC_VERSION="v1.2.9"
 ARG RUNC_CLONE_URL="https://github.com/opencontainers/runc"
 RUN git clone --filter=tree:0 "${RUNC_CLONE_URL}" /runc \
     && cd /runc \
