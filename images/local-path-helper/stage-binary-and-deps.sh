@@ -30,7 +30,8 @@ file_to_package() {
     # `dpkg-query --search $file-pattern` outputs lines with the format: "$package: $file-path"
     # where $file-path belongs to $package
     # https://manpages.debian.org/jessie/dpkg/dpkg-query.1.en.html
-    # Match bash path in dpkg regardless of /usr merge
+    # Handle Debian merged-/usr layout
+    # https://wiki.debian.org/UsrMerge
     dpkg-query --search "$(realpath "${1}" | sed 's|/usr|*|')" | cut -d':' -f1
 }
 
