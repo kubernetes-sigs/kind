@@ -36,7 +36,7 @@ const containerdConfigPatchSystemdCgroupFalse = `
 `
 
 func configureContainerdSystemdCgroupFalse(containerCmdr exec.Cmder, config string) error {
-	patched, err := patch.TOML(config, []string{containerdConfigPatchSystemdCgroupFalse}, []string{})
+	patched, err := patch.ContainerdTOML(config, []string{containerdConfigPatchSystemdCgroupFalse}, []string{})
 	if err != nil {
 		return errors.Wrap(err, "failed to configure containerd SystemdCgroup=false")
 	}
