@@ -33,11 +33,6 @@ jobs:
           - template: fedora
             provider: podman
             rootless: rootless
-          # AlmaLinux 8 is used for testing kind with cgroup v1.
-          # Do not upgrade this to AlmaLinux 9 until dropping cgroup v1 support.
-          - template: almalinux-8
-            provider: docker
-            rootless: rootful
     env:
       KIND_EXPERIMENTAL_PROVIDER: "${{ matrix.provider }}"
       ROOTLESS: "${{ matrix.rootless }}"
