@@ -288,6 +288,11 @@ main() {
   # debug kind version
   kind version
 
+  # DO NOT MERGE
+  # Hack to easily test https://github.com/kubernetes/kubernetes/pull/135789
+  git fetch https://github.com/kubernetes/kubernetes pull/135789/head:hakman-133
+  git switch hakman-133
+
   # build kubernetes
   build
   # in CI attempt to release some memory after building
