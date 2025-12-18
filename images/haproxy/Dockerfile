@@ -28,7 +28,7 @@ RUN [ ! -f /usr/share/copyrights.tar.gz ] || tar -C / -xzvf /usr/share/copyright
 # - bash (ldd is a bash script and debian-base removes bash)
 # - procps (for `kill` which kind needs)
 RUN apt update && \
-    apt install -y --no-install-recommends haproxy=2.2.\* \
+    apt install -y --no-install-recommends haproxy=2.6.\* \
       procps bash
 
 # copy in script for staging distro provided binary to distroless
