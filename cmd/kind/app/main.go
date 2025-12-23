@@ -93,7 +93,7 @@ func logError(logger log.Logger, err error) {
 			logger.Errorf("\nCommand Output: %s", err.Output)
 		}
 	}
-	// TODO: stacktrace should probably be guarded by a higher level ...?
+	// Stack traces are shown only at higher verbosity to avoid noisy default output.
 	if logger.V(1).Enabled() {
 		// Then display stack trace if any (there should be one...)
 		if trace := errors.StackTrace(err); trace != nil {
