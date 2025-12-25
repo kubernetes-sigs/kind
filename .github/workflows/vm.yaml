@@ -33,11 +33,6 @@ jobs:
           - template: fedora
             provider: podman
             rootless: rootless
-          # AlmaLinux 8 is used for testing kind with cgroup v1.
-          # Do not upgrade this to AlmaLinux 9 until dropping cgroup v1 support.
-          - template: almalinux-8
-            provider: docker
-            rootless: rootful
     env:
       KIND_EXPERIMENTAL_PROVIDER: "${{ matrix.provider }}"
       ROOTLESS: "${{ matrix.rootless }}"
@@ -64,7 +59,7 @@ jobs:
         id: lima-actions-setup
 
       - name: "Cache ~/.cache/lima"
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         with:
           path: ~/.cache/lima
           key: lima-${{ steps.lima-actions-setup.outputs.version }}-${{ matrix.template }}
@@ -121,7 +116,7 @@ jobs:
 
       - name: Upload logs
         if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: kind-logs-${{ env.JOB_NAME }}-${{ github.run_id }}
           path: /tmp/kind/logs

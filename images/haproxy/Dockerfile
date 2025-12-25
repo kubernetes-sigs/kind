@@ -15,7 +15,7 @@
 # This image is a haproxy image + minimal config so the container will not exit
 # while we rewrite the config at runtime and signal haproxy to reload.
 
-ARG BASE="registry.k8s.io/build-image/debian-base:bullseye-v1.4.3"
+ARG BASE="debian:bookworm-slim"
 FROM ${BASE} AS build
 
 # NOTE: copyrights.tar.gz is a quirk of Kubernetes's debian-base image
@@ -28,7 +28,7 @@ RUN [ ! -f /usr/share/copyrights.tar.gz ] || tar -C / -xzvf /usr/share/copyright
 # - bash (ldd is a bash script and debian-base removes bash)
 # - procps (for `kill` which kind needs)
 RUN apt update && \
-    apt install -y --no-install-recommends haproxy=2.2.\* \
+    apt install -y --no-install-recommends haproxy=2.6.\* \
       procps bash
 
 # copy in script for staging distro provided binary to distroless
@@ -50,7 +50,7 @@ RUN mkdir -p "${STAGE_DIR}" && \
 
 # See: https://github.com/GoogleContainerTools/distroless/tree/main/base
 # This has /etc/passwd, tzdata, cacerts
-FROM "gcr.io/distroless/static-debian11"
+FROM "gcr.io/distroless/static-debian12"
 
 ARG STAGE_DIR="/opt/stage"
 
