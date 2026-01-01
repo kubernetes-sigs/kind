@@ -19,7 +19,7 @@ Since cloud-provider-kind v0.9.0, it natively supports Ingress. No third-party i
 
 For third-party ingress solutions (e.g., Ingress NGINX, Contour), please follow their official documentation.
 
-> **NOTE**: Gateway API is also natively supported (along with Ingress). See the official [Ingress migration guide](https://gateway-api.sigs.k8s.io/guides/migrating-from-ingress/) for details.
+> **NOTE**: Gateway API is also natively supported (along with Ingress). See the official [Ingress migration guide](https://gateway-api.sigs.k8s.io/guides/getting-started/migrating-from-ingress/) for details.
 
 ## Create Cluster
 
