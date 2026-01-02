@@ -58,8 +58,8 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		&flags.Name,
 		"name",
 		"n",
-		"",
-		"cluster name, overrides KIND_CLUSTER_NAME, config (default kind)",
+		cluster.DefaultName,
+		cli.NameFlagHelp,
 	)
 	cmd.Flags().StringVar(
 		&flags.Config,
