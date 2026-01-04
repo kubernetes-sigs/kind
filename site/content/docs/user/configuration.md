@@ -96,6 +96,20 @@ runtimeConfig:
   "apps/v1beta2": "true"
 {{< /codeFromInline >}}
 
+### Disable Default Storage Class
+
+KIND ships with a default storage class based on the rancher local-path provisioner.
+
+You may disable the default to install a different storage class. This is a power user
+feature with limited support.
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+# the default storage class will not be installed
+disableDefaultStorageClass: true
+{{< /codeFromInline >}}
+
 ### Networking
 
 Multiple details of the cluster's networking can be customized under the
@@ -214,7 +228,6 @@ networking:
   # the default CNI will not be installed
   disableDefaultCNI: true
 {{< /codeFromInline >}}
-
 
 #### kube-proxy mode
 

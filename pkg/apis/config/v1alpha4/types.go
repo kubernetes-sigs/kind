@@ -81,6 +81,10 @@ type Cluster struct {
 	// in the order listed.
 	// These should be YAML or JSON formatting RFC 6902 JSON patches
 	ContainerdConfigPatchesJSON6902 []string `yaml:"containerdConfigPatchesJSON6902,omitempty" json:"containerdConfigPatchesJSON6902,omitempty"`
+
+	// If DisableDefaultStorageClass is true, kind will not install the default storage class setup.
+	// Instead the user should install their own storage class after creating the cluster.
+	DisableDefaultStorageClass bool `yaml:"disableDefaultStorageClass,omitempty" json:"disableDefaultStorageClass,omitempty"`
 }
 
 // TypeMeta partially copies apimachinery/pkg/apis/meta/v1.TypeMeta
