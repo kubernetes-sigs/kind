@@ -32,6 +32,7 @@ func Convertv1alpha4(in *v1alpha4.Cluster) *Cluster {
 		KubeadmConfigPatchesJSON6902:    make([]PatchJSON6902, len(in.KubeadmConfigPatchesJSON6902)),
 		ContainerdConfigPatches:         in.ContainerdConfigPatches,
 		ContainerdConfigPatchesJSON6902: in.ContainerdConfigPatchesJSON6902,
+		DisableDefaultStorageClass:      in.DisableDefaultStorageClass,
 	}
 
 	for i := range in.Nodes {
