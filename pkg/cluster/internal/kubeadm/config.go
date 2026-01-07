@@ -513,7 +513,7 @@ controllerManager:
     - name: "enable-hostpath-provisioner"
       value: "true"
 # configure ipv6 default addresses for IPv6 clusters
-{{ if .IPv6 -}}
+{{ if .IPv6 }}
     - name: "bind-address"
       value: "::"
 {{- end }}
@@ -524,7 +524,7 @@ scheduler:
       value: "{{ .FeatureGatesString }}"
 {{- end }}
 # configure ipv6 default addresses for IPv6 clusters
-{{ if .IPv6 -}}
+{{ if .IPv6 }}
     - name: "bind-address"
       value: "::"
 {{- end }}
