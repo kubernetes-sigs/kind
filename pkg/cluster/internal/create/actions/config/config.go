@@ -244,13 +244,12 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.N
 // trims out the metadata.name we put in the config for kustomize matching,
 // kubeadm will complain about this otherwise
 func removeMetadata(kustomized string) string {
-	return strings.Replace(
+	return strings.ReplaceAll(
 		kustomized,
 		`metadata:
   name: config
 `,
 		"",
-		-1,
 	)
 }
 
