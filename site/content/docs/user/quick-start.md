@@ -323,7 +323,7 @@ kind build node-image --type source $HOME/go/src/k8s.io/kubernetes/
 If you are building Kubernetes (for example - `kind build node-image`) on MacOS or Windows then you need a minimum of 6GB of RAM
 dedicated to the virtual machine (VM) running the Docker engine. 8GB is recommended.
 
-> Note: Resource requirements vary depending on usage.
+> **Note**: Resource requirements vary depending on usage.
 > The values listed here are minimums for basic clusters.
 > Workloads such as building node images, multi-node clusters,
 > or running additional components may require more CPU and memory.
