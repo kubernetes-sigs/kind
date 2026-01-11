@@ -21,10 +21,11 @@ set -o errexit -o nounset -o xtrace
 
 # Settings:
 # SKIP: ginkgo skip regex
-# FOCUS: ginkgo focus regex
+# FOCUS: ginkgo focus regex (defaults to [Conformance] if unset; set to "" to run all tests)
 # LABEL_FILTER: ginkgo label query for selecting tests (see "Spec Labels" in https://onsi.github.io/ginkgo/#filtering-specs)
 #
-# The default is to focus on conformance tests. Serial tests get skipped when
+# The default is to focus on conformance tests when FOCUS is unset. To run all
+# tests (no focus filter), explicitly set FOCUS="". Serial tests get skipped when
 # parallel testing is enabled. Using LABEL_FILTER instead of combining SKIP and
 # FOCUS is recommended (more expressive, easier to read than regexp).
 #
@@ -239,10 +240,15 @@ run_tests() {
 
   # ginkgo regexes and label filter
   SKIP="${SKIP:-}"
-  FOCUS="${FOCUS:-}"
   LABEL_FILTER="${LABEL_FILTER:-}"
-  if [ -z "${FOCUS}" ] && [ -z "${LABEL_FILTER}" ]; then
-    FOCUS="\\[Conformance\\]"
+  # Only default to Conformance if FOCUS was not explicitly set.
+  # This allows FOCUS="" to run all tests (no focus filter).
+  if [ "${FOCUS+set}" != "set" ]; then
+    if [ -z "${LABEL_FILTER}" ]; then
+      FOCUS="\\[Conformance\\]"
+    else
+      FOCUS=""
+    fi
   fi
   # if we set PARALLEL=true, skip serial tests set --ginkgo-parallel
   if [ "${PARALLEL:-false}" = "true" ]; then
