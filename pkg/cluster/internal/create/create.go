@@ -121,9 +121,14 @@ func Cluster(logger log.Logger, p providers.Provider, opts *ClusterOptions) erro
 				installcni.NewAction(), // install CNI
 			)
 		}
+		// install storage if not disabled
+		if !opts.Config.DisableDefaultStorageClass {
+			actionsToRun = append(actionsToRun,
+				installstorage.NewAction(), // install StorageClass
+			)
+		}
 		// add remaining steps
 		actionsToRun = append(actionsToRun,
-			installstorage.NewAction(),                // install StorageClass
 			kubeadmjoin.NewAction(),                   // run kubeadm join
 			waitforready.NewAction(opts.WaitForReady), // wait for cluster readiness
 		)
