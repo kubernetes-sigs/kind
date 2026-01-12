@@ -239,6 +239,15 @@ run_tests() {
   fi
 
   # ginkgo regexes and label filter
+  #
+  # Defaults for FOCUS and SKIP only get set when the job hasn't been converted
+  # to use LABEL_FILTER. This emulates the historic behavior while making
+  # updated jobs easier to read ("what you see is what you get").
+  #
+  # It also enables jobs where all tests (serial and parallel) run with
+  # parallel execution of the parallel tests, followed by sequential execution
+  # of the serial ones. This has been supported since Ginkgo v2 but not by
+  # this script because of the mandatory SKIP="\\[Serial\\]".
   SKIP="${SKIP:-}"
   LABEL_FILTER="${LABEL_FILTER:-}"
   # Only default to Conformance if FOCUS was not explicitly set.
@@ -250,13 +259,16 @@ run_tests() {
       FOCUS=""
     fi
   fi
-  # if we set PARALLEL=true, skip serial tests set --ginkgo-parallel
+  # If we have PARALLEL=true, set --ginkgo-parallel.
+  # Skip serial tests only if the job has not been converted to use LABEL_FILTER.
   if [ "${PARALLEL:-false}" = "true" ]; then
     export GINKGO_PARALLEL=y
-    if [ -z "${SKIP}" ]; then
-      SKIP="\\[Serial\\]"
-    else
-      SKIP="\\[Serial\\]|${SKIP}"
+    if [ -z "${LABEL_FILTER}" ]; then
+      if [ -z "${SKIP}" ]; then
+        SKIP="\\[Serial\\]"
+      else
+        SKIP="\\[Serial\\]|${SKIP}"
+      fi
     fi
   fi
 
