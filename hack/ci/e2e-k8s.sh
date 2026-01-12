@@ -25,9 +25,14 @@ set -o errexit -o nounset -o xtrace
 # LABEL_FILTER: ginkgo label query for selecting tests (see "Spec Labels" in https://onsi.github.io/ginkgo/#filtering-specs)
 #
 # The default is to focus on conformance tests when FOCUS is unset. To run all
-# tests (no focus filter), explicitly set FOCUS="". Serial tests get skipped when
-# parallel testing is enabled. Using LABEL_FILTER instead of combining SKIP and
-# FOCUS is recommended (more expressive, easier to read than regexp).
+# tests (no focus filter), explicitly set FOCUS="". Using LABEL_FILTER instead
+# of combining SKIP and FOCUS is recommended (more expressive, easier to read
+# than regexp).
+#
+# Note: Serial tests are handled automatically by Ginkgo v2. When running in
+# parallel mode, Ginkgo runs parallel specs first across all processes, then
+# runs Serial specs on process #1 after all other processes have exited.
+# See: https://onsi.github.io/ginkgo/#serial-specs
 #
 # FEATURE_GATES:
 #          JSON or YAML encoding of a string/bool map: {"FeatureGateA": true, "FeatureGateB": false}
@@ -250,14 +255,11 @@ run_tests() {
       FOCUS=""
     fi
   fi
-  # if we set PARALLEL=true, skip serial tests set --ginkgo-parallel
+  # if we set PARALLEL=true, enable ginkgo parallel mode
+  # Note: Ginkgo v2 automatically handles Serial specs - they run on process #1
+  # after all parallel specs complete. No need to skip them explicitly.
   if [ "${PARALLEL:-false}" = "true" ]; then
     export GINKGO_PARALLEL=y
-    if [ -z "${SKIP}" ]; then
-      SKIP="\\[Serial\\]"
-    else
-      SKIP="\\[Serial\\]|${SKIP}"
-    fi
   fi
 
   # setting this env prevents ginkgo e2e from trying to run provider setup
