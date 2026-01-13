@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package assert implements helper functions for test assertions.
 package assert
 
 import "reflect"

@@ -1,33 +1,62 @@
+version: "2"
+
 run:
   timeout: 3m
 
 linters:
-  disable-all: true
+  default: none
+
   enable:
     - errcheck
-    - gosimple
     - govet
     - ineffassign
     - staticcheck
-    - typecheck
     - gochecknoinits
-    - gofmt
     - revive # replaces golint for now
     - misspell
-    - exportloopref
     - unparam
 
-linters-settings:
-  staticcheck:
-    checks:
-    - all
+  settings:
+    staticcheck:
+      checks:
+        - all
+    revive:
+      rules:
+        - name: var-naming
+          arguments:
+            - []
+            - []
+            - - skip-package-name-checks: true
 
-issues:
-  exclude-rules:
-    # this requires renaming all unused parameters, we'd rather leave a preferred
-    # placeholder name in place when implementing an interface etc.
-    # we can revisit this later, right now it's generating a lot of new warnings
-    # after upgrading golangci-lint
-    - text: "^unused-parameter: .*"
-      linters:
-        - revive
+  exclusions:
+    presets:
+      - std-error-handling
+      - common-false-positives
+    rules:
+      # this requires renaming all unused parameters, we'd rather leave a preferred
+      # placeholder name in place when implementing an interface etc.
+      # we can revisit this later, right now it's generating a lot of new warnings
+      # after upgrading golangci-lint
+      - linters:
+          - revive
+        text: "^unused-parameter: .*"
+      # Not all package docstrings add value, so we do not want to enforce it
+      - linters:
+          - revive
+        text: "package-comments: should have a package comment"
+      - linters:
+          - staticcheck
+        text: "ST1000: at least one file in a package should have a package comment"
+      - linters:
+          - staticcheck
+        path: pkg/cmd
+        text: "ST1005: error strings should not be capitalized"
+      - linters:
+          - staticcheck
+        path: images/kindnetd/cmd
+        text: "ST1005: error strings should not be capitalized"
+
+formatters:
+  enable:
+    - gofmt
+
