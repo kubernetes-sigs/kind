@@ -278,6 +278,14 @@ func (p *Provider) CollectLogs(name, dir string) error {
 	return errors.NewAggregate(errs)
 }
 
+func (p *Provider) ContainerSave(imageNames []string, imagesTarPath string) error {
+	return p.provider.ContainerSave(imageNames, imagesTarPath)
+}
+
+func (p *Provider) ContainerImageID(containerNameOrID string) (string, error) {
+	return p.provider.ContainerImageID(containerNameOrID)
+}
+
 func collectNodeLogs(logger log.Logger, n nodes.Node, dir string) error {
 	execToPathFn := func(cmd exec.Cmd, path string) func() error {
 		return func() error {

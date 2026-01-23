@@ -47,6 +47,10 @@ type Provider interface {
 	CollectLogs(dir string, nodes []nodes.Node) error
 	// Info returns the provider info
 	Info() (*ProviderInfo, error)
+	// ContainerSave saves images to dest, as in `docker save`
+	ContainerSave(images []string, dest string) error
+	// ContainerImageId return the Id of the container image
+	ContainerImageID(containerNameOrID string) (string, error)
 }
 
 // ProviderInfo is the info of the provider
