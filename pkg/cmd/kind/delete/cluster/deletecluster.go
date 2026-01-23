@@ -59,7 +59,7 @@ Errors will only occur if the cluster resources exist and are not able to be del
 		"name",
 		"n",
 		cluster.DefaultName,
-		"the cluster name",
+		cli.NameFlagHelp,
 	)
 	cmd.Flags().StringVar(
 		&flags.Kubeconfig,
