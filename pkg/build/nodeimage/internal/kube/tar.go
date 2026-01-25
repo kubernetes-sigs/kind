@@ -7,7 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-
+	"strings"
 	"sigs.k8s.io/kind/pkg/log"
 )
 
@@ -40,13 +40,22 @@ func extractTarball(tarPath, destDirectory string, logger log.Logger) (err error
 			continue
 		}
 
+		// Sanitize and validate archive entry path to prevent Zip Slip (directory traversal)
+		cleanDestDirectory := filepath.Clean(destDirectory)
+		targetPath := filepath.Join(cleanDestDirectory, hdr.Name)
+		cleanTargetPath := filepath.Clean(targetPath)
+		// Ensure that the resulting path is within destDirectory
+		if !strings.HasPrefix(cleanTargetPath, cleanDestDirectory+string(os.PathSeparator)) && cleanTargetPath != cleanDestDirectory {
+			return fmt.Errorf("illegal file path in archive: %s", hdr.Name)
+		}
+
 		if err := os.MkdirAll(
-			filepath.Join(destDirectory, filepath.Dir(hdr.Name)), os.FileMode(0o755),
+			filepath.Dir(cleanTargetPath), os.FileMode(0o755),
 		); err != nil {
 			return fmt.Errorf("creating image directory structure: %w", err)
 		}
 
-		f, err := os.Create(filepath.Join(destDirectory, hdr.Name))
+		f, err := os.Create(cleanTargetPath)
 		if err != nil {
 			return fmt.Errorf("creating image layer file: %w", err)
 		}
