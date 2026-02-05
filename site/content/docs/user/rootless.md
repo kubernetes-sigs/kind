@@ -148,6 +148,46 @@ To increase the PID limit, do the following:
    kind delete cluster && kind create cluster
    ```
 
+### Increase Session Key Limits
+
+Rootless containers may fail with the following error:
+
+```
+could not create session key: disk quota exceeded
+```
+
+This occurs because the Linux kernel limits the number of session keys per user. In rootless mode,
+container runtimes like podman and runc create session keyrings for each container. The default
+limits (200 keys and 20000 bytes on most distributions) can be reached quickly when running many
+containers.
+
+To increase the session key limits, do the following:
+
+1. As root, create a `.conf` file in `/etc/sysctl.d` that increases the kernel key limits:
+
+   ```sh
+   sudo tee /etc/sysctl.d/99-kind-session-keys.conf > /dev/null <<'EOF'
+   # Increase kernel session key limits for rootless containers
+   # See https://github.com/moby/moby/issues/22865
+   kernel.keys.maxkeys = 20000
+   kernel.keys.maxbytes = 500000
+   EOF
+   ```
+
+2. Reload `sysctl` for these changes to take effect:
+
+   ```sh
+   sudo sysctl --system
+   ```
+
+Alternatively, restart your system for these changes to take effect.
+
+You can verify the current session key usage by checking `/proc/keys`:
+
+```sh
+cat /proc/keys | wc -l
+```
+
 ### Increase inotify Limits
 
 As documented in [known issues](/docs/user/known-issues/#pod-errors-due-to-too-many-open-files), pods may
