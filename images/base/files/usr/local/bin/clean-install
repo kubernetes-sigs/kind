@@ -34,8 +34,4 @@ rm -rf \
    /var/lib/apt/lists/* \
    /var/log/* \
    /tmp/* \
-   /var/tmp/* \
-   /usr/share/doc/* \
-   /usr/share/doc-base/* \
-   /usr/share/man/* \
-   /usr/share/local/*
+   /var/tmp/*
