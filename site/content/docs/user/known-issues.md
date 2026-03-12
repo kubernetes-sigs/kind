@@ -28,6 +28,7 @@ description: |-
 * [Failure to Build Node Image](#failure-to-build-node-image) (usually need to increase resources)
 * [Failing to Properly Start Cluster](#failing-to-properly-start-cluster) (various causes)
 * [Pod Errors Due to "too many open files"](#pod-errors-due-to-too-many-open-files) (likely [inotify] limits which are not namespaced)
+* [Could Not Create Session Key](#could-not-create-session-key) (kernel key quota exceeded with rootless podman)
 * [Docker Permission Denied](#docker-permission-denied) (ensure you have permission to use docker)
 * [Windows Containers](#windows-containers) (unsupported / infeasible)
 * [Unsupported Architectures](#unsupported-architectures) (images not pre-built yet)
@@ -224,6 +225,43 @@ To make the changes persistent, edit the file `/etc/sysctl.conf` and add these l
 fs.inotify.max_user_watches = 524288
 fs.inotify.max_user_instances = 512
 {{< /codeFromInline >}}
+
+## Could Not Create Session Key
+
+When using kind with rootless podman, you may encounter an error like:
+
+```txt
+could not create session key: disk quota exceeded
+```
+
+This occurs because the default kernel keyring limits are insufficient for kind's usage pattern. Podman creates one keyring per container, and kind uses runc which creates at least one keyring per container (see [opencontainers/runc#582](https://github.com/opencontainers/runc/pull/582)). The default limits (200 keys and 20000 bytes) are quickly exhausted, particularly on Debian and Red Hat family distributions.
+
+You can list existing keys to verify the issue with:
+
+{{< codeFromInline lang="bash" >}}
+cat /proc/keys
+{{< /codeFromInline >}}
+
+To fix this temporarily, increase the kernel keyring limits:
+
+{{< codeFromInline lang="bash" >}}
+sudo sysctl -w kernel.keys.maxkeys=20000
+sudo sysctl -w kernel.keys.maxbytes=500000
+{{< /codeFromInline >}}
+
+To make the changes persistent, create a sysctl configuration file:
+
+{{< codeFromInline lang="bash" >}}
+cat <<EOF | sudo tee /etc/sysctl.d/01-keys.conf
+# See https://github.com/moby/moby/issues/22865
+# Default maxkeys: 200
+kernel.keys.maxkeys = 20000
+# Default maxbytes: 20000
+kernel.keys.maxbytes = 500000
+EOF
+{{< /codeFromInline >}}
+
+For more details, see [moby/moby#22865](https://github.com/moby/moby/issues/22865).
 
 ## Docker permission denied
 
