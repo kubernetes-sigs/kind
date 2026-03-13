@@ -1,19 +1,15 @@
 /*
 Copyright 2018 The Kubernetes Authors.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
 package logs
 
 import (
@@ -23,9 +19,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"al.essio.dev/pkg/shellescape"
-
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/exec"
@@ -46,7 +42,6 @@ func DumpDir(logger log.Logger, node nodes.Node, nodeDir, hostDir string) (err e
 			shellescape.Quote(path.Clean(nodeDir)+"/"),
 		),
 	)
-
 	return exec.RunWithStdoutReader(cmd, func(outReader io.Reader) error {
 		if err := untar(logger, outReader, hostDir); err != nil {
 			return errors.Wrapf(err, "Untarring %q: %v", nodeDir, err)
@@ -57,10 +52,23 @@ func DumpDir(logger log.Logger, node nodes.Node, nodeDir, hostDir string) (err e
 
 // untar reads the tar file from r and writes it into dir.
 func untar(logger log.Logger, r io.Reader, dir string) (err error) {
+	// Compute absolute extraction path once, outside the loop,
+	// since dir is not loop-dependent.
+	dirAbs, err := filepath.Abs(dir)
+	if err != nil {
+		return errors.Wrapf(err, "could not get absolute path for extraction dir: %v", err)
+	}
+
+	// Ensure dirAbs ends with a separator to prevent prefix matching issues
+	// (e.g. "/foo/bar" falsely matching "/foo/barbaz").
+	dirAbsWithSep := dirAbs
+	if !filepath.HasSuffix(dirAbs, string(os.PathSeparator)) {
+		dirAbsWithSep = dirAbs + string(os.PathSeparator)
+	}
+
 	tr := tar.NewReader(r)
 	for {
 		f, err := tr.Next()
-
 		switch {
 		case err == io.EOF:
 			// drain the reader, which may have trailing null bytes
@@ -74,7 +82,20 @@ func untar(logger log.Logger, r io.Reader, dir string) (err error) {
 		}
 
 		rel := filepath.FromSlash(f.Name)
-		abs := filepath.Join(dir, rel)
+		abs := filepath.Join(dirAbs, rel)
+
+		// Compute the cleaned absolute path of the target file and verify
+		// it is within dirAbs to prevent path traversal attacks.
+		absClean, err := filepath.Abs(abs)
+		if err != nil {
+			return errors.Wrapf(err, "could not get absolute path for extraction file: %v", err)
+		}
+
+		// absClean must be within dirAbsWithSep (or equal to dirAbs itself for the root).
+		if absClean != dirAbs && !strings.HasPrefix(absClean, dirAbsWithSep) {
+			logger.Warnf("tar entry %q contains path traversal, skipping", f.Name)
+			continue
+		}
 
 		switch f.Typeflag {
 		case tar.TypeReg:
