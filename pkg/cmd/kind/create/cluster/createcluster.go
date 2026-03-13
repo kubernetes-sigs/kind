@@ -19,6 +19,7 @@ package cluster
 
 import (
 	"io"
+	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -50,16 +51,19 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "Creates a local Kubernetes cluster",
 		Long:  "Creates a local Kubernetes cluster using Docker container 'nodes'",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cli.OverrideDefaultName(cmd.Flags())
 			return runE(logger, streams, flags)
 		},
+	}
+	defaultName := cluster.DefaultName
+	if name := os.Getenv("KIND_CLUSTER_NAME"); name != "" {
+		defaultName = name
 	}
 	cmd.Flags().StringVarP(
 		&flags.Name,
 		"name",
 		"n",
-		"",
-		"cluster name, overrides KIND_CLUSTER_NAME, config (default kind)",
+		defaultName,
+		cli.NameFlagHelp,
 	)
 	cmd.Flags().StringVar(
 		&flags.Config,

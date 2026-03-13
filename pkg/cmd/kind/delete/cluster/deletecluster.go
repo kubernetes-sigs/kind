@@ -18,6 +18,8 @@ limitations under the License.
 package cluster
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
@@ -50,16 +52,19 @@ if the cluster is already gone it will just return success.
 Errors will only occur if the cluster resources exist and are not able to be deleted.
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cli.OverrideDefaultName(cmd.Flags())
 			return deleteCluster(logger, flags)
 		},
+	}
+	defaultName := cluster.DefaultName
+	if name := os.Getenv("KIND_CLUSTER_NAME"); name != "" {
+		defaultName = name
 	}
 	cmd.Flags().StringVarP(
 		&flags.Name,
 		"name",
 		"n",
-		cluster.DefaultName,
-		"the cluster name",
+		defaultName,
+		cli.NameFlagHelp,
 	)
 	cmd.Flags().StringVar(
 		&flags.Kubeconfig,
