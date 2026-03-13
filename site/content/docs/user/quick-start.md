@@ -131,6 +131,17 @@ On Windows via Winget (https://github.com/microsoft/winget-pkgs/tree/master/mani
 winget install Kubernetes.kind
 {{< /codeFromInline >}}
 
+## Discovering Additional Command Options
+
+kind provides built-in help for all commands and subcommands.  
+You can explore available flags and usage details by running:
+
+kind help
+kind <command> --help
+kind <command> <subcommand> --help
+
+This applies to commands such as `kind load image-archive`
+
 ## Creating a Cluster
 
 Creating a Kubernetes cluster is as simple as `kind create cluster`.
@@ -241,6 +252,7 @@ Additionally, image archives can be loaded with:
 `kind load image-archive /my-image-archive.tar`
 
 This allows a workflow like:
+
 ```
 docker build -t my-custom-image:unique-tag ./my-image-dir
 kind load docker-image my-custom-image:unique-tag
