@@ -42,6 +42,12 @@ main() {
   # install kind
   install_kind
 
+  # assume CI checkout path and checkout debug PR
+  cd "$(go env GOPATH)/src/k8s.io/kubernetes"
+  PR_NUMBER=137918
+  git fetch https://github.com/kubernetes/kubernetes "pull/${PR_NUMBER}/head:pr${PR_NUMBER}"
+  git checkout "pr${PR_NUMBER}"
+
   # build kubernetes / e2e test
   "${REPO_ROOT}/hack/ci/e2e-k8s.sh"
 }
