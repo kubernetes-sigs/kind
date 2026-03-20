@@ -106,8 +106,8 @@ networking:
   dnsSearch: []
 containerdConfigPatches:
 - |
-[debug]
-level = "trace"
+  [debug]
+  level = "trace"
 nodes:
 - role: control-plane
 - role: worker
