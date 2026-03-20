@@ -86,7 +86,7 @@ build() {
 # up a cluster with kind
 create_cluster() {
   # Default Log level for all components in test clusters
-  KIND_CLUSTER_LOG_LEVEL=${KIND_CLUSTER_LOG_LEVEL:-4}
+  KIND_CLUSTER_LOG_LEVEL=${KIND_CLUSTER_LOG_LEVEL:-6}
 
   # JSON or YAML map injected into featureGates config
   feature_gates="${FEATURE_GATES:-{\}}"
@@ -104,6 +104,10 @@ networking:
   # don't pass through host search paths
   # TODO: possibly a reasonable default in the future for kind ...
   dnsSearch: []
+containerdConfigPatches:
+- |
+[debug]
+level = "debug"
 nodes:
 - role: control-plane
 - role: worker
