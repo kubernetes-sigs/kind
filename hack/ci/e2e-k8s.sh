@@ -107,7 +107,7 @@ networking:
 containerdConfigPatches:
 - |
 [debug]
-level = "debug"
+level = "trace"
 nodes:
 - role: control-plane
 - role: worker
