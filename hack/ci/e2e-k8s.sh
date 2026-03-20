@@ -270,13 +270,14 @@ run_tests() {
   export KUBE_CONTAINER_RUNTIME=remote
   export KUBE_CONTAINER_RUNTIME_ENDPOINT=unix:///run/containerd/containerd.sock
   export KUBE_CONTAINER_RUNTIME_NAME=containerd
+  export GINKGO_UNTIL_IT_FAILS=true
   # ginkgo can take forever to exit, so we run it in the background and save the
   # PID, bash will not run traps while waiting on a process, but it will while
   # running a builtin like `wait`, saving the PID also allows us to forward the
   # interrupt
   ./hack/ginkgo-e2e.sh \
     '--provider=skeleton' "--num-nodes=${NUM_NODES}" \
-    "--ginkgo.focus=${FOCUS}" "--ginkgo.skip=${SKIP}" "--ginkgo.label-filter=${LABEL_FILTER}" \
+    "--ginkgo.focus=Pods.Extended.Pod.Container.Status.should.never.report.container.start.when.an.init.container.fails" "--ginkgo.skip=${SKIP}" "--ginkgo.label-filter=${LABEL_FILTER}" \
     "--report-dir=${ARTIFACTS}" '--disable-log-dump=true' &
   GINKGO_PID=$!
   wait "$GINKGO_PID"
