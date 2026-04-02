@@ -30,6 +30,33 @@ import (
 	"sigs.k8s.io/kind/pkg/internal/version"
 )
 
+// GenerateBootstrapCommand returns the kubeadm init command args for bootstrapping
+// the first control plane node based on the kubernetes version and whether kube-proxy is skipped.
+func GenerateBootstrapCommand(kubeVersion *version.Version, skipKubeProxy bool) []string {
+	args := []string{
+		// init because this is the control plane node
+		"init",
+		// specify our generated config file
+		"--config=/kind/kubeadm.conf",
+		"--skip-token-print",
+		// increase verbosity for debugging
+		"--v=6",
+	}
+
+	// Newer versions set this in the config file.
+	if kubeVersion.LessThan(version.MustParseSemantic("v1.23.0")) {
+		// Skip preflight to avoid pulling images.
+		// Kind pre-pulls images and preflight may conflict with that.
+		skipPhases := "preflight"
+		if skipKubeProxy {
+			skipPhases += ",addon/kube-proxy"
+		}
+		args = append(args, "--skip-phases="+skipPhases)
+	}
+
+	return args
+}
+
 // kubeadmInitAction implements action for executing the kubeadm init
 // and a set of default post init operations like e.g. install the
 // CNI network plugin.
@@ -69,26 +96,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		return errors.Wrapf(err, "failed to parse kubernetes version %q", kubeVersionStr)
 	}
 
-	args := []string{
-		// init because this is the control plane node
-		"init",
-		// specify our generated config file
-		"--config=/kind/kubeadm.conf",
-		"--skip-token-print",
-		// increase verbosity for debugging
-		"--v=6",
-	}
-
-	// Newer versions set this in the config file.
-	if kubeVersion.LessThan(version.MustParseSemantic("v1.23.0")) {
-		// Skip preflight to avoid pulling images.
-		// Kind pre-pulls images and preflight may conflict with that.
-		skipPhases := "preflight"
-		if a.skipKubeProxy {
-			skipPhases += ",addon/kube-proxy"
-		}
-		args = append(args, "--skip-phases="+skipPhases)
-	}
+	args := GenerateBootstrapCommand(kubeVersion, a.skipKubeProxy)
 
 	// run kubeadm
 	cmd := node.Command("kubeadm", args...)
