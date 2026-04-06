@@ -22,17 +22,31 @@ If the PR requires changes in the documentation or tests, the developer should o
 
 ### Releasing and PRs classification
 
-The following labels should be use to ease the releasing process:
+The following labels should be used to ease the releasing process:
 
-<release>: A label for each release is created in order to manage which PR is included. (e.g. "0.4.1").
-documentation: Indicates that the PR requires the documentation team to review it.
-cherry-pick: When the functionality must be present in existing branches, this label must be use in those PRs (they must have the same name as the original PR).
-bugfix: For PRs that closes bugs.
-feature: For when the PR implements a new functionality.
+- `<release>`: A label for each release is created in order to manage which PR is included (e.g. `0.8.1`).
+- `documentation`: Indicates that the PR requires the documentation team to review it.
+- `cherry-pick`: When the functionality must be present in existing branches, this label must be used in those PRs (they must have the same name as the original PR).
+- `need-cherry-pick-<branch>`: Applied to flag that a PR needs to be cherry-picked to a specific branch (e.g. `need-cherry-pick-master`, `need-cherry-pick-branch-0.17.0-0.6`). These labels are branch-specific and new ones are created per release.
+- `bugfix`: For PRs that fix bugs.
+- `feature`: For PRs that implement new functionality.
+- `improvement`: For PRs that enhance existing functionality without adding new features.
+- `blocked`: Marks a PR that is blocked waiting on an external dependency or decision.
 
 ### CICD flow
 
-Jenkins has its own labels to control whether or not to execute Unit tests ("skip doUT") or security scans ("skip doGrypeScan").
+Jenkins has its own labels to control which pipeline stages are executed:
+
+**Build and security:**
+- `skip doUT`: Skip unit tests.
+- `skip doGrypeScan`: Skip the Grype security vulnerability scan.
+
+**Documentation checks** (applied when the `DOC` stage is not relevant for the PR):
+- `skip doStratioDocsChecks`: Skip all Stratio documentation checks.
+- `skip deadExternalLinks`: Skip the dead external links check.
+- `skip doEmptyLines`: Skip the empty lines check.
+- `skip doLanguageCheck`: Skip the language/spelling check.
+- `skip doOrphanAssets`: Skip the orphan assets check.
 
 ### Testing
 

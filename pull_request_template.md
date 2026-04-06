@@ -1,19 +1,33 @@
+<!--
+Thank you for your contribution! Please make sure to provide all the information requested below.
+-->
 
-## Description
+## [PLT-XXXX] Title of the Pull Request
 
-_Please add the PR description here._
+### Description
+<!-- Describe the changes made in this pull request. -->
 
-## Related Pull Requests
+### Type of Change
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Documentation update
 
+### Related Pull Requests
 - _PR number_: _brief description (e.g. "documentation")_
-- _PR number_: _brief description (e.g. "tests enhancements")_
 
-## Pull Request Checklist:
+### How Has This Been Tested?
+<!-- Describe tests run and how to reproduce. -->
 
-- [ ] [PR title] Include a title referencing a ticket in Jira (e.g. "[CLOUDS-99] Implement a new funcionality").
-- [ ] [PR desc] Add a summary of the changes made in simple terms.
-- [ ] [PR desc] List any pull-request related to this change (docs, tests, feature, etc.).
-- [ ] [PR labels] Add the corresponding labels (release, skips, cherry-pick, AT-eks-smoke, etc).
-- [ ] [Docs] Are changes to the documentation required? (if so, please add references to those PRs).
-- [ ] [QA] Are new unit tests required according with the changes? (if so, please add references to those PRs).
+### Checklist:
+- [ ] [PR title] Title references a Jira ticket (e.g. `[PLT-99] ...`).
+- [ ] [PR desc] Summary of changes included.
+- [ ] [PR desc] Related PRs listed (docs, tests, etc.).
+- [ ] [PR labels] Correct labels applied (release, skips, cherry-pick, AT-smoke, etc.).
+- [ ] [Docs] Documentation PRs referenced if required.
+- [ ] [QA] Unit test PRs referenced if required.
+- [ ] Code follows project style guidelines.
+- [ ] Self-review performed.
 
+### Additional Notes
+<!-- Any other relevant information. -->

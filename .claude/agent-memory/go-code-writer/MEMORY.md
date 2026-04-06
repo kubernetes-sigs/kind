@@ -1,9 +1,8 @@
 # Go Code Writer — Agent Memory
 
 ## Build Environment Note
-`make build` fails on this machine (Go 1.22.6 vs go.mod requires 1.25, GOTOOLCHAIN=local).
-Use `GOTOOLCHAIN=auto go build ./pkg/...` to compile specific packages for verification.
-Tests still run fine: `go test ./pkg/commons/... -v -run TestName`.
+Makefile uses `GOTOOLCHAIN=auto`. If host Go matches `.go-version`, use `FORCE_HOST_GO=1 make build` to skip gimme.
+Tests run fine with host Go: `go test ./pkg/commons/... -v -run TestName`.
 
 ## Key Patterns
 

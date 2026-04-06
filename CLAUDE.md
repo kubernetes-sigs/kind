@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+<!-- For Claude Code setup guidance: https://code.claude.com/docs -->
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
@@ -8,20 +10,35 @@ This is **cloud-provisioner**, a fork of the [kind](https://kind.sigs.k8s.io/) t
 
 ## Build & Development Commands
 
+### Prerequisites
+
+The required Go version is defined in two files (keep them in sync when upgrading):
+
+| File | Used by |
+|------|---------|
+| `.go-version` | Makefile via `hack/build/setup-go.sh` (gimme) |
+| `.tool-versions` | asdf (`golang` entry) |
+
+Check current required version:
 ```bash
-make build          # Build binary to bin/cloud-provisioner
-make install        # Install to Go bin dir (INSTALL_DIR=/path to override)
-make clean          # Remove binaries and cache
+cat .go-version       # e.g. 1.25.0
+cat .tool-versions    # e.g. golang 1.25.8
+```
 
-make test           # Run all tests with coverage and JUnit output
-make unit           # Run unit tests only (-short + nointegration tag)
-make integration    # Run integration tests only
+### Standard Build
 
-make lint           # Run golangci-lint
-make verify         # Run all checks (lint + generated code + shellcheck)
-make gofmt          # Format all Go code
-make generate       # Regenerate deepcopy code for API types
-make update         # Run all code generation and formatting
+```bash
+make clean build
+make install INSTALL_DIR=$HOME/.local/bin   # or any directory in your PATH
+```
+
+The Makefile automatically resolves the Go toolchain via `hack/build/setup-go.sh` using
+[gimme](hack/third_party/gimme/gimme) and `GOTOOLCHAIN=auto`. No manual `go` setup is needed.
+
+**Verify the installed binary:**
+```bash
+which cloud-provisioner
+cloud-provisioner version
 ```
 
 **Run a single test:**
@@ -29,14 +46,23 @@ make update         # Run all code generation and formatting
 go test -v ./pkg/path/to/package/... -run TestName
 ```
 
-**Key build env vars:** `GO111MODULE=on`, `CGO_ENABLED=0` (static binaries), `GOTOOLCHAIN=local`
+**Key build env vars:** `GO111MODULE=on`, `CGO_ENABLED=0` (static binaries), `GOTOOLCHAIN=auto`
+
+**Non-obvious make targets:**
+```bash
+make generate   # Regenerate DeepCopy code after API type changes (pkg/apis/config/v1alpha4/)
+make update     # Run all code generation + gofmt
+make verify     # Run all checks: lint + generated code + shellcheck
+```
+
+> Build troubleshooting (gimme errors, GOTOOLCHAIN issues) → `.claude/rules/build.md`
 
 ## Architecture
 
 The codebase has several distinct layers:
 
 ### CLI Layer (`pkg/cmd/kind/`)
-Cobra-based command structure. Root command is `cloud-provisioner` with sub-commands: `build`, `create`, `delete`, `export`, `get`, `load`, `completion`.
+Cobra-based command structure. Root command is `cloud-provisioner` with sub-commands: `build`, `create`, `delete`, `export`, `get`, `load`, `completion`, `version`.
 
 ### API Configuration (`pkg/apis/config/v1alpha4/`)
 Kubernetes-style YAML cluster definitions with generated DeepCopy code. Changes to types here require `make generate`.
@@ -45,7 +71,7 @@ Kubernetes-style YAML cluster definitions with generated DeepCopy code. Changes 
 Core cluster lifecycle (create, delete, get nodes). `provider.go` is the main entry point with a provider abstraction for Docker/Podman backends.
 
 ### Creation Actions (`pkg/cluster/internal/create/actions/`)
-Each subdirectory is a discrete step in cluster creation: kubeadm init, CNI, storage, HAProxy, worker nodes, KEOS cluster. The `createworker/` package is the most complex, handling cloud-provider-specific worker node bootstrapping.
+Each subdirectory is a discrete step in cluster creation: `kubeadminit`, `kubeadmjoin`, `installcni`, `installstorage`, `loadbalancer`, `createworker`, `waitforready`. The `createworker/` package is the most complex, handling cloud-provider-specific worker node bootstrapping.
 
 ### Common Utilities (`pkg/commons/`)
 Shared types across the codebase: `ClusterConfig`, `KeosCluster`, CAPX versions, chart definitions, credential handling. `cluster.go` defines the core data structures.
@@ -61,15 +87,13 @@ Docker and Podman provider implementations. Cloud-provider integrations (AWS, Az
 | `pkg/cluster/provider.go` | Main provider interface for cluster lifecycle |
 | `pkg/cluster/internal/create/actions/createworker/createworker.go` | Worker node creation orchestration |
 | `pkg/cluster/internal/create/actions/createworker/provider.go` | Cloud-provider-specific worker logic |
-| `pkg/cluster/internal/create/actions/createworker/keosinstaller.go` | KEOS installation logic |
+| `pkg/cluster/internal/create/actions/createworker/keosinstaller.go` | Generates and rotates `keos.yaml` descriptor; writes `aws_central_ecr_override.yml` when ECR central is enabled |
 | `pkg/apis/config/v1alpha4/types.go` | Cluster configuration API types |
 
 ## PR and Branch Conventions
 
-From `CONTRIBUTING.md`, PRs use Jira-based labels:
-- `wip` → `dont merge` → `ok-to-review` → `ok-to-test` → `ok-to-merge`
+See `CONTRIBUTING.md` for the full PR workflow and label reference.
 - Branch naming follows Jira ticket IDs (e.g., `PLT-3091`)
-- CI labels: `ok-to-test` triggers Jenkins cloud smoke tests per provider
 
 ## Cloud Provider Structure
 
