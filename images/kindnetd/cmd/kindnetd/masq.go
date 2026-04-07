@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"strings"
 	"time"
 
 	"github.com/coreos/go-iptables/iptables"
@@ -27,6 +29,11 @@ import (
 
 // NewIPMasqAgent returns a new IPMasqAgent
 func NewIPMasqAgent(ipv6 bool, noMasqueradeCIDRs []string) (*IPMasqAgent, error) {
+	validatedCIDRs, err := validateNoMasqueradeCIDRs(ipv6, noMasqueradeCIDRs)
+	if err != nil {
+		return nil, err
+	}
+
 	protocol := iptables.ProtocolIPv4
 	if ipv6 {
 		protocol = iptables.ProtocolIPv6
@@ -36,12 +43,31 @@ func NewIPMasqAgent(ipv6 bool, noMasqueradeCIDRs []string) (*IPMasqAgent, error)
 		return nil, err
 	}
 
-	// TODO: validate cidrs
 	return &IPMasqAgent{
 		iptables:          ipt,
 		masqChain:         masqChainName,
-		noMasqueradeCIDRs: noMasqueradeCIDRs,
+		noMasqueradeCIDRs: validatedCIDRs,
 	}, nil
+}
+
+func validateNoMasqueradeCIDRs(ipv6 bool, noMasqueradeCIDRs []string) ([]string, error) {
+	validatedCIDRs := make([]string, 0, len(noMasqueradeCIDRs))
+	for _, cidr := range noMasqueradeCIDRs {
+		cidr = strings.TrimSpace(cidr)
+		ip, _, err := net.ParseCIDR(cidr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid noMasqueradeCIDR %q: %w", cidr, err)
+		}
+		if ipv6 {
+			if ip.To4() != nil {
+				return nil, fmt.Errorf("invalid noMasqueradeCIDR %q: expected IPv6 CIDR", cidr)
+			}
+		} else if ip.To4() == nil {
+			return nil, fmt.Errorf("invalid noMasqueradeCIDR %q: expected IPv4 CIDR", cidr)
+		}
+		validatedCIDRs = append(validatedCIDRs, cidr)
+	}
+	return validatedCIDRs, nil
 }
 
 // IPMasqAgent is based on https://github.com/kubernetes-incubator/ip-masq-agent
