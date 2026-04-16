@@ -35,7 +35,7 @@ Now, start up the VM. Watch carefully for the "Press any key to continue install
 
 If you're using a physical machine, you can mount the ISO, copy the files to a FAT32 formatted USB disk, and boot from that instead. Be sure the machine is configured to boot using UEFI (not legacy BIOS), and has Intel VT or AMD-V enabled for the hypervisor.
 
-### Tips during setup
+### Tips during installation
 
 - You can skip the product key page
 - On the "Sign in with Microsoft" screen, look for the "offline account" button.
