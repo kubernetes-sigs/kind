@@ -44,7 +44,7 @@ If you're using a physical machine, you can mount the ISO, copy the files to a F
 
 If you want the full details, see the [Installation Instructions for WSL2](https://docs.microsoft.com/en-us/windows/wsl/wsl2-install). This is the TL;DR version.
 
-Once your Windows machine is ready, you need to do a few more steps to set up WSL2
+Once your Windows machine is ready, you need to do a few more steps to set up WSL2.
 
 1. Open a PowerShell window as an admin, then run
 
