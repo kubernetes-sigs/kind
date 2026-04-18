@@ -19,6 +19,8 @@ package nodeimage
 import (
 	"fmt"
 	"math/rand"
+	"net/netip"
+	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -358,6 +360,11 @@ func (c *buildContext) createBuildContainer() (id string, err error) {
 		}
 		if val != "" {
 			runArgs = append(runArgs, "--env", name+"="+val)
+
+			// https://github.com/kubernetes-sigs/kind/issues/4140
+			if (name == httpProxy || name == httpsProxy) && proxyUsesLoopbackHost(val) {
+				c.logger.Warnf("WARNING: %s=%q points to host loopback; kind forwards this proxy into the build container, where loopback refers to the container rather than the host, so image pulls may fail", name, val)
+			}
 		}
 	}
 	err = docker.Run(
@@ -371,4 +378,24 @@ func (c *buildContext) createBuildContainer() (id string, err error) {
 		return id, errors.Wrap(err, "failed to create build container")
 	}
 	return id, nil
+}
+
+func proxyUsesLoopbackHost(val string) bool {
+	normalized := val
+	if !strings.Contains(normalized, "://") {
+		normalized = "http://" + normalized
+	}
+	u, err := url.Parse(normalized)
+	if err != nil {
+		return false
+	}
+	host := u.Hostname()
+	if host == "" {
+		return false
+	}
+	if host == "localhost" {
+		return true
+	}
+	ip, err := netip.ParseAddr(host)
+	return err == nil && ip.IsLoopback()
 }
