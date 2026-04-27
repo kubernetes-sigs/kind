@@ -47,6 +47,7 @@ import (
 const fixedNetworkName = "kind"
 
 // ensureNetwork checks if docker network by name exists, if not it creates it
+// this is the entry
 func ensureNetwork(name string) error {
 	// check if network exists already and remove any duplicate networks
 	exists, err := removeDuplicateNetworks(name)
@@ -146,6 +147,7 @@ func removeDuplicateNetworks(name string) (bool, error) {
 	return len(networks) > 0, nil
 }
 
+//very important !!!!!
 func createNetwork(name, ipv6Subnet string, mtu int) error {
 	args := []string{"network", "create", "-d=bridge",
 		"-o", "com.docker.network.bridge.enable_ip_masquerade=true",
