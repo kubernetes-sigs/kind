@@ -37,7 +37,6 @@ import (
 type flagpole struct {
 	Verbosity int32
 	Quiet     bool
-	Multihost bool
 }
 
 // NewCommand returns a new cobra.Command implementing the root command for kind
@@ -70,12 +69,6 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		false,
 		"silence all stderr output",
 	)
-	cmd.PersistentFlags().BoolVar(
-		&flags.Multihost,
-		"multihost",
-		false,
-		"enable experimental multi-host support (distribute nodes across multiple Docker daemons)",
-	)
 	// add all top level subcommands
 	cmd.AddCommand(build.NewCommand(logger, streams))
 	cmd.AddCommand(completion.NewCommand(logger, streams))
@@ -96,16 +89,7 @@ func runE(logger log.Logger, flags *flagpole) error {
 		maybeSetWriter(logger, io.Discard)
 	}
 	maybeSetVerbosity(logger, log.Level(flags.Verbosity))
-	if flags.Multihost {
-		handleMultihost(logger)
-	}
 	return nil
-}
-
-// handleMultihost is the entry point for multi-host support.
-// TODO: implement node distribution across multiple Docker daemons.
-func handleMultihost(logger log.Logger) {
-	logger.Warn("[multihost] flag is set — multi-host support is not implemented yet")
 }
 
 // maybeSetWriter will call logger.SetWriter(w) if logger has a SetWriter method
