@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 
 	"reducedkind/cluster"
 	"reducedkind/config"
@@ -143,7 +144,26 @@ func runContainer(name, clusterName string, n config.Node) error {
 	if err != nil {
 		return fmt.Errorf("docker run %s (image=%s): %w\n%s", name, image, err, out)
 	}
-	return nil
+	// kindest/node enables systemd + containerd at boot, but they take a few
+	// seconds to come up.  kubeadm/kubectl will fail noisily if we proceed
+	// before /run/containerd/containerd.sock exists.  Wait for it.
+	return waitForContainerd(name, 60*time.Second)
+}
+
+// waitForContainerd polls until /run/containerd/containerd.sock exists inside
+// the named container, or timeout elapses.  Mirrors kind's
+// WaitUntilLogRegexpMatches but uses a direct socket check, which is simpler
+// and matches what kubeadm actually needs.
+func waitForContainerd(name string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		if exec.Command("docker", "exec", name,
+			"test", "-S", "/run/containerd/containerd.sock").Run() == nil {
+			return nil
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	return fmt.Errorf("containerd socket did not appear in %s within %s", name, timeout)
 }
 
 // nodeName mirrors common.MakeNodeNamer in kind:  the first node of a role

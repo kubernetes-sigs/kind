@@ -1,6 +1,8 @@
 package cluster
 
 import (
+	"fmt"
+
 	"reducedkind/config"
 )
 
@@ -21,6 +23,16 @@ type Action func(nodes []Node, cfg *config.Cluster, p Provider) error
 // (single-host or multi-host) can reuse the orchestration unchanged.
 func Create(p Provider, cfg *config.Cluster, pipeline []Action) error {
 	config.SetDefaultsCluster(cfg)
+
+	// Refuse to clobber an existing cluster.  Caller must `delete` first.
+	existing, err := p.ListNodes(cfg.Name)
+	if err != nil {
+		return err
+	}
+	if len(existing) > 0 {
+		return fmt.Errorf("cluster %q already exists (%d nodes); run `delete %s` first",
+			cfg.Name, len(existing), cfg.Name)
+	}
 
 	if err := p.Provision(cfg); err != nil {
 		return err
