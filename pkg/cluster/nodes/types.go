@@ -37,4 +37,6 @@ type Node interface {
 	IP() (ipv4 string, ipv6 string, err error)
 	// SerialLogs collects the "node" container logs
 	SerialLogs(writer io.Writer) error
+
+	//Host string `json:"host,omitempty"`
 }
