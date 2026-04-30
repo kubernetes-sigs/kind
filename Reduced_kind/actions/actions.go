@@ -143,14 +143,14 @@ func WaitForReady(nodes []cluster.Node, _ *config.Cluster, _ cluster.Provider) e
 func renderKubeadmConfig(cfg *config.Cluster, nodeName, cpIP string, isCP bool) string {
 	endpoint := fmt.Sprintf("%s:6443", cpIP)
 	if isCP {
-		return fmt.Sprintf(`apiVersion: kubeadm.k8s.io/v1beta3
+		return fmt.Sprintf(`apiVersion: kubeadm.k8s.io/v1beta4
 kind: ClusterConfiguration
 controlPlaneEndpoint: %s
 networking:
   podSubnet: %s
   serviceSubnet: %s
 ---
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4
 kind: InitConfiguration
 nodeRegistration:
   name: %s
@@ -162,7 +162,7 @@ bootstrapTokens:
 - token: abcdef.0123456789abcdef
 `, endpoint, cfg.Networking.PodSubnet, cfg.Networking.ServiceSubnet, nodeName, cpIP)
 	}
-	return fmt.Sprintf(`apiVersion: kubeadm.k8s.io/v1beta3
+	return fmt.Sprintf(`apiVersion: kubeadm.k8s.io/v1beta4
 kind: JoinConfiguration
 nodeRegistration:
   name: %s
