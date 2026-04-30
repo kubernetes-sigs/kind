@@ -125,6 +125,11 @@ func runContainer(name, clusterName string, n config.Node) error {
 		"--name", name,
 		"--hostname", name,
 		"--privileged",
+		// kind requires these to let systemd + kubelet do their thing.
+		// Without them kubelet fails to start on most distros.
+		"--security-opt", "seccomp=unconfined",
+		"--security-opt", "apparmor=unconfined",
+		"--init=false", // entrypoint must be PID 1 (systemd), not docker-init/tini
 		"--restart=on-failure:1",
 		"--network", networkName,
 		"--label", fmt.Sprintf("%s=%s", clusterLabel, clusterName),
