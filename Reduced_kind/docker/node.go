@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -43,6 +44,17 @@ func (n *Node) IP() (string, error) {
 func (n *Node) Exec(cmd string, args ...string) ([]byte, error) {
 	full := append([]string{"exec", "--privileged", n.name, cmd}, args...)
 	return exec.Command("docker", full...).CombinedOutput()
+}
+
+// ExecStream runs a command inside the container with stdout/stderr
+// piped to the caller's terminal in real time.  Use this for long-running
+// operations like `kubeadm init` so the user sees progress.
+func (n *Node) ExecStream(cmd string, args ...string) error {
+	full := append([]string{"exec", "--privileged", n.name, cmd}, args...)
+	c := exec.Command("docker", full...)
+	c.Stdout = os.Stderr
+	c.Stderr = os.Stderr
+	return c.Run()
 }
 
 // WriteFile pipes content into `cp /dev/stdin <path>` inside the container.

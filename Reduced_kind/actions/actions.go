@@ -53,17 +53,31 @@ func WriteKubeadmConfig(nodes []cluster.Node, cfg *config.Cluster, p cluster.Pro
 }
 
 // KubeadmInit bootstraps the control plane on the first CP node.
+//
+// kubeadm init normally takes 60–120s and is silent until done.  We use the
+// streaming Exec variant (when available) plus --v=6 so the user sees
+// progress instead of an apparent hang.
 func KubeadmInit(nodes []cluster.Node, _ *config.Cluster, _ cluster.Provider) error {
 	cp := cluster.FindByRole(nodes, string(config.ControlPlaneRole))
 	if cp == nil {
 		return fmt.Errorf("no control-plane node")
 	}
-	out, err := cp.Exec("kubeadm", "init",
-		"--config=/kind/kubeadm.conf",
-		"--skip-token-print",
-	)
-	if err != nil {
-		return fmt.Errorf("kubeadm init failed: %v\n%s", err, out)
+
+	args := []string{"init", "--config=/kind/kubeadm.conf", "--skip-token-print", "--v=6"}
+
+	// Prefer streaming output if the concrete Node supports it.
+	type streamer interface {
+		ExecStream(cmd string, args ...string) error
+	}
+	if s, ok := cp.(streamer); ok {
+		if err := s.ExecStream("kubeadm", args...); err != nil {
+			return fmt.Errorf("kubeadm init failed: %w", err)
+		}
+	} else {
+		out, err := cp.Exec("kubeadm", args...)
+		if err != nil {
+			return fmt.Errorf("kubeadm init failed: %v\n%s", err, out)
+		}
 	}
 
 	// Single-node clusters: remove the control-plane taint so user pods
