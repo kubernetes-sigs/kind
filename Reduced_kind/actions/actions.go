@@ -13,8 +13,10 @@
 package actions
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
+	"text/template"
 	"time"
 
 	"reducedkind/cluster"
@@ -93,14 +95,41 @@ func KubeadmInit(nodes []cluster.Node, _ *config.Cluster, _ cluster.Provider) er
 }
 
 // InstallCNI applies the kindnetd manifest that the node image ships with.
-func InstallCNI(nodes []cluster.Node, _ *config.Cluster, _ cluster.Provider) error {
+//
+// The manifest in /kind/manifests/default-cni.yaml contains Go template
+// placeholders (notably {{ .PodSubnet }}); kind renders these before
+// apply.  We do the same.
+func InstallCNI(nodes []cluster.Node, cfg *config.Cluster, _ cluster.Provider) error {
 	cp := cluster.FindByRole(nodes, string(config.ControlPlaneRole))
 	if cp == nil {
 		return fmt.Errorf("no control-plane node")
 	}
+
+	// Read the raw template from the node.
+	raw, err := cp.Exec("cat", "/kind/manifests/default-cni.yaml")
+	if err != nil {
+		return fmt.Errorf("read CNI manifest: %v\n%s", err, raw)
+	}
+
+	// Render Go template -> final YAML.
+	t, err := template.New("cni").Parse(string(raw))
+	if err != nil {
+		return fmt.Errorf("parse CNI manifest: %w", err)
+	}
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, struct{ PodSubnet string }{
+		PodSubnet: cfg.Networking.PodSubnet,
+	}); err != nil {
+		return fmt.Errorf("render CNI manifest: %w", err)
+	}
+
+	// Drop the rendered version next to the original and apply that.
+	if err := cp.WriteFile("/kind/manifests/default-cni.rendered.yaml", buf.String()); err != nil {
+		return fmt.Errorf("write rendered CNI manifest: %w", err)
+	}
 	out, err := cp.Exec("kubectl",
 		"--kubeconfig=/etc/kubernetes/admin.conf",
-		"apply", "-f", "/kind/manifests/default-cni.yaml",
+		"apply", "-f", "/kind/manifests/default-cni.rendered.yaml",
 	)
 	if err != nil {
 		return fmt.Errorf("install CNI failed: %v\n%s", err, out)
