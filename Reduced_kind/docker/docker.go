@@ -76,7 +76,11 @@ func (p *Provider) DeleteNodes(nodes []cluster.Node) error {
 	for _, n := range nodes {
 		args = append(args, n.Name())
 	}
-	return exec.Command("docker", args...).Run()
+	out, err := exec.Command("docker", args...).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("docker rm: %w\n%s", err, out)
+	}
+	return nil
 }
 
 func (p *Provider) GetAPIServerEndpoint(clusterName string) (string, error) {
@@ -103,10 +107,18 @@ func ensureNetwork() error {
 	if exec.Command("docker", "network", "inspect", networkName).Run() == nil {
 		return nil
 	}
-	return exec.Command("docker", "network", "create", networkName).Run()
+	out, err := exec.Command("docker", "network", "create", networkName).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("docker network create %s: %w\n%s", networkName, err, out)
+	}
+	return nil
 }
 
 func runContainer(name, clusterName string, n config.Node) error {
+	image := n.Image
+	if image == "" {
+		image = config.DefaultNodeImage
+	}
 	args := []string{
 		"run", "-d",
 		"--name", name,
@@ -126,8 +138,12 @@ func runContainer(name, clusterName string, n config.Node) error {
 	if n.Role == config.ControlPlaneRole {
 		args = append(args, "-p", "127.0.0.1:0:6443")
 	}
-	args = append(args, n.Image)
-	return exec.Command("docker", args...).Run()
+	args = append(args, image)
+	out, err := exec.Command("docker", args...).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("docker run %s (image=%s): %w\n%s", name, image, err, out)
+	}
+	return nil
 }
 
 // nodeName mirrors common.MakeNodeNamer in kind:  the first node of a role
