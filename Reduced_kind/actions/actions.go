@@ -98,11 +98,14 @@ func InstallCNI(nodes []cluster.Node, _ *config.Cluster, _ cluster.Provider) err
 	if cp == nil {
 		return fmt.Errorf("no control-plane node")
 	}
-	_, err := cp.Exec("kubectl",
+	out, err := cp.Exec("kubectl",
 		"--kubeconfig=/etc/kubernetes/admin.conf",
 		"apply", "-f", "/kind/manifests/default-cni.yaml",
 	)
-	return err
+	if err != nil {
+		return fmt.Errorf("install CNI failed: %v\n%s", err, out)
+	}
+	return nil
 }
 
 // KubeadmJoin runs kubeadm join on every worker node.
