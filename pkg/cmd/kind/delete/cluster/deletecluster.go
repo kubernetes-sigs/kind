@@ -18,8 +18,6 @@ limitations under the License.
 package cluster
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
@@ -55,15 +53,11 @@ Errors will only occur if the cluster resources exist and are not able to be del
 			return deleteCluster(logger, flags)
 		},
 	}
-	defaultName := cluster.DefaultName
-	if name := os.Getenv("KIND_CLUSTER_NAME"); name != "" {
-		defaultName = name
-	}
 	cmd.Flags().StringVarP(
 		&flags.Name,
 		"name",
 		"n",
-		defaultName,
+		cli.DefaultName(),
 		cli.NameFlagHelp,
 	)
 	cmd.Flags().StringVar(

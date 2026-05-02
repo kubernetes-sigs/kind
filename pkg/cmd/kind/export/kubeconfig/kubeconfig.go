@@ -18,8 +18,6 @@ limitations under the License.
 package kubeconfig
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
@@ -48,15 +46,11 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 			return runE(logger, flags)
 		},
 	}
-	defaultName := cluster.DefaultName
-	if name := os.Getenv("KIND_CLUSTER_NAME"); name != "" {
-		defaultName = name
-	}
 	cmd.Flags().StringVarP(
 		&flags.Name,
 		"name",
 		"n",
-		defaultName,
+		cli.DefaultName(),
 		cli.NameFlagHelp,
 	)
 	cmd.Flags().StringVar(

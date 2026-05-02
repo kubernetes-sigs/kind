@@ -19,7 +19,6 @@ package kubeconfig
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -48,15 +47,11 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 			return runE(logger, streams, flags)
 		},
 	}
-	defaultName := cluster.DefaultName
-	if name := os.Getenv("KIND_CLUSTER_NAME"); name != "" {
-		defaultName = name
-	}
 	cmd.Flags().StringVarP(
 		&flags.Name,
 		"name",
 		"n",
-		defaultName,
+		cli.DefaultName(),
 		cli.NameFlagHelp,
 	)
 	cmd.Flags().BoolVar(

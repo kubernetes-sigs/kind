@@ -61,15 +61,11 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 			return runE(logger, flags, args)
 		},
 	}
-	defaultName := cluster.DefaultName
-	if name := os.Getenv("KIND_CLUSTER_NAME"); name != "" {
-		defaultName = name
-	}
 	cmd.Flags().StringVarP(
 		&flags.Name,
 		"name",
 		"n",
-		defaultName,
+		cli.DefaultName(),
 		cli.NameFlagHelp,
 	)
 	cmd.Flags().StringSliceVar(

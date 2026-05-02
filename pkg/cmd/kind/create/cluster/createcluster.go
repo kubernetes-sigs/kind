@@ -19,7 +19,6 @@ package cluster
 
 import (
 	"io"
-	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -54,16 +53,12 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 			return runE(logger, streams, flags)
 		},
 	}
-	defaultName := cluster.DefaultName
-	if name := os.Getenv("KIND_CLUSTER_NAME"); name != "" {
-		defaultName = name
-	}
 	cmd.Flags().StringVarP(
 		&flags.Name,
 		"name",
 		"n",
-		defaultName,
-		cli.NameFlagHelp,
+		cli.NameFromEnv(),
+		"cluster name, overrides KIND_CLUSTER_NAME and config name; defaults to KIND_CLUSTER_NAME if set, then config name, then kind",
 	)
 	cmd.Flags().StringVar(
 		&flags.Config,
