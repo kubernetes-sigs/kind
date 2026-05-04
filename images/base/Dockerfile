@@ -163,7 +163,7 @@ RUN git clone --filter=tree:0 "${CRI_TOOLS_CLONE_URL}" /cri-tools \
     && git checkout "${CRICTL_VERSION}" \
     && eval "$(gimme "${GO_VERSION}")" \
     && export GOTOOLCHAIN="go${GO_VERSION}" \
-    && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
+    && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=0 \
     && make BUILD_BIN_PATH=./build crictl \
     && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES ./cmd/crictl
 
