@@ -156,7 +156,7 @@ are particularly susceptible to this issue.
 
 To increase the inotify limits, do the following:
 
-1. As root, create a `.conf` file in `/etc/systctl.d` that increases the `fs.inotify` max user settings:
+1. As root, create a `.conf` file in `/etc/sysctl.d` that increases the `fs.inotify` max user settings:
 
    ```
    fs.inotify.max_user_watches = 524288
@@ -199,7 +199,7 @@ appropriate port number. In the example above, HTTP requests must use `localhost
 
 To allow a KIND node to bind to ports 80 and/or 443 on the host, do the following:
 
-1. As root, create a `.conf` file in `/etc/systctl.d` that lowers the privileged port start number:
+1. As root, create a `.conf` file in `/etc/sysctl.d` that lowers the privileged port start number:
 
    ```
    # Allow unprivileged binding to HTTP port 80
