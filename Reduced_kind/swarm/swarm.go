@@ -1,135 +1,161 @@
-// Package swarm is the *stub* multi-host provider for Reduced_kind.
+// Package swarm is the multi-host Reduced_kind provider built on top of a
+// pre-existing Docker Swarm.
 //
-// It will eventually satisfy cluster.Provider by sharding `docker run/exec`
-// across several hosts that have been pre-joined into a Docker Swarm with a
-// shared overlay network ("kind").
+// Assumptions about the user's environment
+// ─────────────────────────────────────────
+//   - Each host already runs a Docker daemon.
+//   - One host is a Swarm manager, others are workers.  This package can
+//     bootstrap that for you (EnsureSwarm + RunJoinOnWorker), but most
+//     production users will have done it manually.
+//   - The user has created `docker context` entries pointing at every
+//     host that should run a node container.  Example:
+//         docker context create ecotype-35 --docker host=ssh://root@ecotype-35.nantes.grid5000.fr
+//     Then we issue `docker --context=ecotype-35 ...` to operate on that
+//     host.  The "default" context is the local daemon.
 //
-// Today it only contains skeleton signatures + log lines so we can wire the
-// --multihost CLI flag end-to-end before committing to an implementation.
+// Architecture
+// ────────────
+//   Provider  → talks to N hosts via docker contexts
+//   Node      → identifies one container by name + the host it lives on
 //
-// Architecture sketch (to be implemented):
-//
-//	┌──────────────────────────────────────────────────────────────────┐
-//	│   Reduced_kind --multihost create                                │
-//	│   ─────────────────────────────                                  │
-//	│   1. EnsureSwarm   on the manager host                           │
-//	│      → docker swarm init --advertise-addr <managerIP>            │
-//	│      → returns BuildJoinInstruction(...)                         │
-//	│   2. RunJoinOnWorker  on each worker host                        │
-//	│      → docker swarm join --token <T> <managerIP>:2377            │
-//	│   3. EnsureOverlay  on the manager host                          │
-//	│      → docker network create -d overlay --attachable kind        │
-//	│   4. provider.Provision(cfg)                                     │
-//	│      → for each cfg.Nodes[i]:                                    │
-//	│          docker --context=<Node.Host> run --network=kind ...     │
-//	└──────────────────────────────────────────────────────────────────┘
+// Cross-host networking comes from a single overlay network ("kind") that
+// every node container attaches to.  Containers find each other through
+// Swarm's embedded DNS, exactly like single-host bridge mode.
 package swarm
 
 import (
 	"fmt"
-
-	"reducedkind/cluster"
-	"reducedkind/config"
+	"os/exec"
+	"strings"
 )
 
 // JoinSpec is everything a worker host needs to join the swarm.
 type JoinSpec struct {
 	ManagerAddr string // "172.16.193.6:2377"
-	Token       string // SWMTKN-1-... (issued by `docker swarm init`)
+	Token       string // SWMTKN-1-...
 	Network     string // overlay network name, default "kind"
 }
 
-// New returns the stub multi-host provider.
-//
-// TODO: real implementation.  Should accept a list of hosts (docker
-// contexts), validate that they're already joined into the same Swarm,
-// and remember the mapping so Provision can place each node on the right
-// host.
-func New() cluster.Provider {
-	fmt.Println("[multihost] swarm.New() — stub provider, no real Docker calls yet")
-	return &Provider{}
+// Host identifies one machine in the swarm: a docker context name to
+// operate on its daemon, plus an externally-reachable address to write
+// into kubeconfig.
+type Host struct {
+	Context string // docker context name (use "default" for local)
+	Addr    string // hostname or IP reachable from outside the swarm
 }
 
-// EnsureSwarm initialises a Swarm on the manager host and returns the JoinSpec
-// that workers need.
-//
-// TODO: real implementation will run, on the manager:
-//
-//	docker swarm init --advertise-addr <managerIP>
-//
-// then parse the join command from the output and fill JoinSpec.
-func EnsureSwarm(managerIP string) (JoinSpec, error) {
-	fmt.Printf("[multihost] EnsureSwarm(managerIP=%q) — stub\n", managerIP)
+// dockerArgs prefixes a docker command with --context=<name>.  Using it
+// consistently means the same code path works for the manager (default
+// context = local daemon) and for workers (SSH/TCP-based contexts).
+func dockerArgs(ctxName string, args ...string) []string {
+	return append([]string{"--context", ctxName}, args...)
+}
+
+// EnsureSwarm initialises a Swarm on the manager host (idempotent) and
+// returns the JoinSpec that workers need.  If the host is already part
+// of a swarm, the existing token is returned.
+func EnsureSwarm(manager Host, network string) (JoinSpec, error) {
+	if network == "" {
+		network = "kind"
+	}
+
+	// 1. Check current state.
+	out, err := exec.Command("docker",
+		dockerArgs(manager.Context, "info", "--format", "{{.Swarm.LocalNodeState}}")...,
+	).Output()
+	if err != nil {
+		return JoinSpec{}, fmt.Errorf("docker info on %s: %w", manager.Context, err)
+	}
+	state := strings.TrimSpace(string(out))
+
+	// 2. If not active, init.
+	if state != "active" {
+		fmt.Printf("[swarm] docker swarm init on %s (advertise=%s)\n", manager.Context, manager.Addr)
+		out, err := exec.Command("docker",
+			dockerArgs(manager.Context, "swarm", "init", "--advertise-addr", manager.Addr)...,
+		).CombinedOutput()
+		if err != nil {
+			return JoinSpec{}, fmt.Errorf("swarm init: %v\n%s", err, out)
+		}
+	}
+
+	// 3. Pull the worker join token.
+	tokenOut, err := exec.Command("docker",
+		dockerArgs(manager.Context, "swarm", "join-token", "worker", "-q")...,
+	).Output()
+	if err != nil {
+		return JoinSpec{}, fmt.Errorf("swarm join-token: %w", err)
+	}
+	token := strings.TrimSpace(string(tokenOut))
+
 	return JoinSpec{
-		ManagerAddr: fmt.Sprintf("%s:2377", managerIP),
-		Token:       "SWMTKN-STUB-TOKEN",
-		Network:     "kind",
+		ManagerAddr: fmt.Sprintf("%s:2377", manager.Addr),
+		Token:       token,
+		Network:     network,
 	}, nil
 }
 
-// BuildJoinInstruction returns the shell command another host should run to
-// join the swarm as a worker.  Useful both for displaying to the user
-// ("paste this on host B") and for programmatic execution over SSH.
-//
-// TODO: real implementation will simply format the JoinSpec.
+// BuildJoinInstruction returns the shell command another host should run
+// to join the swarm as a worker.  Useful for displaying or scripting.
 func BuildJoinInstruction(spec JoinSpec) string {
-	cmd := fmt.Sprintf("docker swarm join --token %s %s",
-		spec.Token, spec.ManagerAddr)
-	fmt.Printf("[multihost] BuildJoinInstruction → %s\n", cmd)
-	return cmd
+	return fmt.Sprintf("docker swarm join --token %s %s", spec.Token, spec.ManagerAddr)
 }
 
-// RunJoinOnWorker SSH-es into the worker host and runs the join command.
-//
-// TODO: real implementation will use ssh / docker context to execute the
-// join.  Right now it just prints what it *would* do.
-func RunJoinOnWorker(workerHost string, spec JoinSpec) error {
-	fmt.Printf("[multihost] RunJoinOnWorker(host=%q) would run: %s\n",
-		workerHost, BuildJoinInstruction(spec))
-	return nil
-}
-
-// EnsureOverlay creates the cross-host overlay network that node containers
-// will attach to.  All nodes (regardless of host) share this one network.
-//
-// TODO: real implementation will run, on the manager:
-//
-//	docker network create -d overlay --attachable kind
-func EnsureOverlay(name string) error {
-	fmt.Printf("[multihost] EnsureOverlay(name=%q) — stub (would: docker network create -d overlay --attachable %s)\n", name, name)
-	return nil
-}
-
-// Provider is the stub cluster.Provider for Swarm.  All methods log the call
-// and return "not implemented".  Replacing them one by one is the next
-// implementation milestone.
-type Provider struct{}
-
-func (p *Provider) Provision(cfg *config.Cluster) error {
-	fmt.Printf("[multihost] Provider.Provision(cluster=%q, nodes=%d) — stub\n",
-		cfg.Name, len(cfg.Nodes))
-	for i, n := range cfg.Nodes {
-		host := n.Host
-		if host == "" {
-			host = "(default host)"
-		}
-		fmt.Printf("[multihost]   node %d: role=%s host=%s image=%s\n",
-			i, n.Role, host, n.Image)
+// RunJoinOnWorker executes the join command on a remote worker host.
+// Idempotent: if the host is already part of the swarm, returns nil.
+func RunJoinOnWorker(worker Host, spec JoinSpec) error {
+	out, err := exec.Command("docker",
+		dockerArgs(worker.Context,
+			"swarm", "join", "--token", spec.Token, spec.ManagerAddr)...,
+	).CombinedOutput()
+	if err == nil {
+		fmt.Printf("[swarm] %s joined the swarm\n", worker.Context)
+		return nil
 	}
-	return fmt.Errorf("multihost provider not implemented yet")
+	if strings.Contains(string(out), "already part of a swarm") {
+		fmt.Printf("[swarm] %s already in swarm, ok\n", worker.Context)
+		return nil
+	}
+	return fmt.Errorf("join %s: %v\n%s", worker.Context, err, out)
 }
 
-func (p *Provider) ListNodes(clusterName string) ([]cluster.Node, error) {
-	fmt.Printf("[multihost] Provider.ListNodes(%q) — stub\n", clusterName)
-	return nil, nil // empty list lets `delete` no-op cleanly
-}
-
-func (p *Provider) DeleteNodes(nodes []cluster.Node) error {
-	fmt.Printf("[multihost] Provider.DeleteNodes(%d nodes) — stub\n", len(nodes))
+// EnsureOverlay creates the cross-host overlay network that node
+// containers attach to.  Idempotent.
+func EnsureOverlay(manager Host, name string) error {
+	if name == "" {
+		name = "kind"
+	}
+	if exec.Command("docker",
+		dockerArgs(manager.Context, "network", "inspect", name)...,
+	).Run() == nil {
+		return nil
+	}
+	out, err := exec.Command("docker",
+		dockerArgs(manager.Context,
+			"network", "create", "-d", "overlay", "--attachable", name)...,
+	).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("create overlay %s: %v\n%s", name, err, out)
+	}
+	fmt.Printf("[swarm] overlay network %q created on %s\n", name, manager.Context)
 	return nil
 }
 
-func (p *Provider) GetAPIServerEndpoint(clusterName string) (string, error) {
-	fmt.Printf("[multihost] Provider.GetAPIServerEndpoint(%q) — stub\n", clusterName)
-	return "", fmt.Errorf("not implemented")
+// Bootstrap is a convenience wrapper that does EnsureSwarm +
+// RunJoinOnWorker(for each worker) + EnsureOverlay.  Most callers will
+// invoke this once at the start of a multi-host session.
+func Bootstrap(manager Host, workers []Host, network string) (JoinSpec, error) {
+	spec, err := EnsureSwarm(manager, network)
+	if err != nil {
+		return spec, err
+	}
+	for _, w := range workers {
+		if err := RunJoinOnWorker(w, spec); err != nil {
+			return spec, err
+		}
+	}
+	if err := EnsureOverlay(manager, spec.Network); err != nil {
+		return spec, err
+	}
+	return spec, nil
 }
