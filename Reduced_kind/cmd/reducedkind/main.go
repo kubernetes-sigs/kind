@@ -6,11 +6,17 @@
 //	    single-host: spawns one control-plane container on the local
 //	    Docker daemon.
 //
+//	reducedkind --nodes N create [name]
+//	    single-host, multi-node: 1 control-plane + (N-1) workers, all
+//	    on the local Docker daemon (kind's classic "config with N nodes"
+//	    layout).
+//
 //	reducedkind --multihost --hosts <ctx>=<addr>[,...] create [name]
-//	    multi-host: spawns one control-plane container on the first
-//	    host in the --hosts list and one worker container on each
-//	    additional host, all attached to a Swarm overlay network "kind".
-//	    The first host is the swarm manager.
+//	    multi-host, one node per host: 1 control-plane on the first
+//	    host, 1 worker on each remaining host, on a Swarm overlay.
+//
+//	reducedkind --multihost --hosts ... --nodes N create [name]
+//	    multi-host, N total nodes round-robined across hosts.
 package main
 
 import (
@@ -34,6 +40,9 @@ func main() {
 			"Example: --hosts default=172.16.193.6,ecotype-48=172.16.193.48")
 	bootstrap := flag.Bool("bootstrap-swarm", false,
 		"multihost: run 'docker swarm init' on the manager and 'swarm join' on each worker before creating the cluster")
+	nodes := flag.Int("nodes", 0,
+		"total number of K8s nodes (1 control-plane + (N-1) workers). "+
+			"Default 0 means: single-host=1 node, multi-host=one per --hosts entry")
 	flag.Usage = usage
 	flag.Parse()
 
@@ -68,7 +77,7 @@ func main() {
 
 	switch verb {
 	case "create":
-		cfg := buildCluster(name, hosts)
+		cfg := buildCluster(name, hosts, *nodes)
 		if err := cluster.Create(provider, cfg, actions.All()); err != nil {
 			fmt.Fprintln(os.Stderr, "create failed:", err)
 			os.Exit(1)
@@ -89,25 +98,59 @@ func main() {
 	}
 }
 
-// buildCluster turns the parsed --hosts list into a cluster topology:
+// buildCluster decides the cluster topology from the parsed flags.
 //
-//   - 0 or 1 host  → 1 control-plane node (default kind topology).
-//   - N (>1) hosts → 1 control-plane on hosts[0], one worker pinned to
-//     each remaining host via Node.Host.
+// The first node is always the control-plane; the rest are workers.
+// Naming inside the providers takes care of unique container names
+// (foo-control-plane, foo-worker, foo-worker2, ...).
 //
-// This is the "obvious" multi-host distribution; users who want a
-// different layout can hand-edit the cfg or, in the future, supply a
-// YAML config file.
-func buildCluster(name string, hosts []swarm.Host) *config.Cluster {
+// Decision table:
+//
+//	hosts=[]   nodes<=0  → 1 CP, local docker (kind default)
+//	hosts=[]   nodes=N   → 1 CP + (N-1) workers, all on local docker
+//	hosts=[H]  nodes<=0  → 1 CP on H
+//	hosts=[H]  nodes=N   → 1 CP + (N-1) workers, all on H
+//	hosts=H..  nodes<=0  → 1 CP on H[0] + 1 worker per remaining host
+//	hosts=H..  nodes=N   → N nodes round-robined over hosts
+//	                       (host[0] gets the CP, others cycle)
+func buildCluster(name string, hosts []swarm.Host, nodes int) *config.Cluster {
 	cfg := &config.Cluster{Name: name}
-	if len(hosts) <= 1 {
-		return cfg // empty Nodes → SetDefaults adds a single control-plane
+
+	// Single-host (no --multihost).
+	if len(hosts) == 0 {
+		if nodes <= 1 {
+			return cfg // SetDefaults will add a single control-plane
+		}
+		cfg.Nodes = make([]config.Node, 0, nodes)
+		cfg.Nodes = append(cfg.Nodes, config.Node{Role: config.ControlPlaneRole})
+		for i := 1; i < nodes; i++ {
+			cfg.Nodes = append(cfg.Nodes, config.Node{Role: config.WorkerRole})
+		}
+		return cfg
 	}
-	cfg.Nodes = []config.Node{{Role: config.ControlPlaneRole}}
-	for _, h := range hosts[1:] {
+
+	// Multi-host with --nodes unspecified: legacy "1 per host" layout.
+	if nodes <= 0 {
+		cfg.Nodes = []config.Node{{Role: config.ControlPlaneRole}}
+		for _, h := range hosts[1:] {
+			cfg.Nodes = append(cfg.Nodes, config.Node{
+				Role: config.WorkerRole,
+				Host: h.Context,
+			})
+		}
+		return cfg
+	}
+
+	// Multi-host with --nodes N: round-robin across hosts.
+	cfg.Nodes = make([]config.Node, 0, nodes)
+	for i := 0; i < nodes; i++ {
+		role := config.WorkerRole
+		if i == 0 {
+			role = config.ControlPlaneRole
+		}
 		cfg.Nodes = append(cfg.Nodes, config.Node{
-			Role: config.WorkerRole,
-			Host: h.Context,
+			Role: role,
+			Host: hosts[i%len(hosts)].Context,
 		})
 	}
 	return cfg
