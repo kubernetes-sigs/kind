@@ -173,9 +173,12 @@ func WaitForReady(nodes []cluster.Node, _ *config.Cluster, _ cluster.Provider) e
 // renderKubeadmConfig is a deliberately tiny kubeadm config template.
 // The real kind one is ~120 lines and includes patches, dual-stack, etc.
 //
-// The KubeletConfiguration block is required on environments where swap
-// is enabled (notably WSL2): without failSwapOn=false kubelet refuses to
-// start with "running with swap on is not supported".
+// Two extra blocks are emitted for environment compatibility:
+//   - KubeletConfiguration with failSwapOn=false so kubelet starts on
+//     hosts that have swap (notably WSL2).
+//   - KubeProxyConfiguration with conntrack.maxPerCore=0 / min=0 so
+//     kube-proxy doesn't try to write /proc/sys/net/netfilter/
+//     nf_conntrack_max (read-only on Docker Desktop / WSL2).
 func renderKubeadmConfig(cfg *config.Cluster, nodeName, cpIP string, isCP bool) string {
 	endpoint := fmt.Sprintf("%s:6443", cpIP)
 	kubeletCfg := `---
@@ -183,6 +186,12 @@ apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 failSwapOn: false
 cgroupDriver: systemd
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+conntrack:
+  maxPerCore: 0
+  min: 0
 `
 	if isCP {
 		return fmt.Sprintf(`apiVersion: kubeadm.k8s.io/v1beta4
