@@ -3,12 +3,14 @@
 // Modes:
 //
 //	reducedkind create [name]
-//	    single-host: spawns node containers on the local Docker daemon
+//	    single-host: spawns one control-plane container on the local
+//	    Docker daemon.
 //
 //	reducedkind --multihost --hosts <ctx>=<addr>[,...] create [name]
-//	    multi-host: spawns nodes across the listed Docker contexts,
-//	    attached to a shared Swarm overlay network "kind".  The first
-//	    host is treated as the swarm manager.
+//	    multi-host: spawns one control-plane container on the first
+//	    host in the --hosts list and one worker container on each
+//	    additional host, all attached to a Swarm overlay network "kind".
+//	    The first host is the swarm manager.
 package main
 
 import (
@@ -29,7 +31,7 @@ func main() {
 		"create the cluster across multiple hosts via Docker Swarm")
 	hostsFlag := flag.String("hosts", "",
 		"multihost: comma-separated <docker-context>=<external-addr> pairs (first = manager). "+
-			"Example: --hosts default=172.16.193.6,ecotype-35=172.16.193.35")
+			"Example: --hosts default=172.16.193.6,ecotype-48=172.16.193.48")
 	bootstrap := flag.Bool("bootstrap-swarm", false,
 		"multihost: run 'docker swarm init' on the manager and 'swarm join' on each worker before creating the cluster")
 	flag.Usage = usage
@@ -46,7 +48,19 @@ func main() {
 		name = args[1]
 	}
 
-	provider, err := pickProvider(*multihost, *hostsFlag, *bootstrap)
+	// Parse the hosts list once, up front; both pickProvider and
+	// buildCluster need it.
+	var hosts []swarm.Host
+	if *multihost {
+		var err error
+		hosts, err = parseHosts(*hostsFlag)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "error:", err)
+			os.Exit(2)
+		}
+	}
+
+	provider, err := pickProvider(*multihost, hosts, *bootstrap)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(2)
@@ -54,7 +68,7 @@ func main() {
 
 	switch verb {
 	case "create":
-		cfg := &config.Cluster{Name: name}
+		cfg := buildCluster(name, hosts)
 		if err := cluster.Create(provider, cfg, actions.All()); err != nil {
 			fmt.Fprintln(os.Stderr, "create failed:", err)
 			os.Exit(1)
@@ -75,20 +89,39 @@ func main() {
 	}
 }
 
+// buildCluster turns the parsed --hosts list into a cluster topology:
+//
+//   - 0 or 1 host  → 1 control-plane node (default kind topology).
+//   - N (>1) hosts → 1 control-plane on hosts[0], one worker pinned to
+//     each remaining host via Node.Host.
+//
+// This is the "obvious" multi-host distribution; users who want a
+// different layout can hand-edit the cfg or, in the future, supply a
+// YAML config file.
+func buildCluster(name string, hosts []swarm.Host) *config.Cluster {
+	cfg := &config.Cluster{Name: name}
+	if len(hosts) <= 1 {
+		return cfg // empty Nodes → SetDefaults adds a single control-plane
+	}
+	cfg.Nodes = []config.Node{{Role: config.ControlPlaneRole}}
+	for _, h := range hosts[1:] {
+		cfg.Nodes = append(cfg.Nodes, config.Node{
+			Role: config.WorkerRole,
+			Host: h.Context,
+		})
+	}
+	return cfg
+}
+
 // pickProvider chooses between single-host and multi-host providers.
-// In multi-host mode, parses --hosts and optionally bootstraps the
-// swarm before returning the provider.
-func pickProvider(multihost bool, hostsFlag string, bootstrap bool) (cluster.Provider, error) {
+// In multi-host mode it optionally bootstraps the swarm.
+func pickProvider(multihost bool, hosts []swarm.Host, bootstrap bool) (cluster.Provider, error) {
 	if !multihost {
 		fmt.Println("==> mode: SINGLE-HOST (local Docker daemon)")
 		return docker.New(), nil
 	}
 
 	fmt.Println("==> mode: MULTI-HOST (Docker Swarm overlay)")
-	hosts, err := parseHosts(hostsFlag)
-	if err != nil {
-		return nil, err
-	}
 	fmt.Printf("    manager: %s (%s)\n", hosts[0].Context, hosts[0].Addr)
 	for _, w := range hosts[1:] {
 		fmt.Printf("    worker:  %s (%s)\n", w.Context, w.Addr)
