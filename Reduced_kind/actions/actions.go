@@ -65,7 +65,16 @@ func KubeadmInit(nodes []cluster.Node, _ *config.Cluster, _ cluster.Provider) er
 		return fmt.Errorf("no control-plane node")
 	}
 
-	args := []string{"init", "--config=/kind/kubeadm.conf", "--skip-token-print", "--v=6"}
+	args := []string{
+		"init",
+		"--config=/kind/kubeadm.conf",
+		"--skip-token-print",
+		// SystemVerification fails on hosts whose kernel doesn't expose
+		// /proc/config.gz via the "configs" module (notably Grid'5000
+		// Debian).  All other preflight checks still run.
+		"--ignore-preflight-errors=SystemVerification",
+		"--v=6",
+	}
 
 	// Prefer streaming output if the concrete Node supports it.
 	type streamer interface {
@@ -140,7 +149,12 @@ func InstallCNI(nodes []cluster.Node, cfg *config.Cluster, _ cluster.Provider) e
 // KubeadmJoin runs kubeadm join on every worker node.
 func KubeadmJoin(nodes []cluster.Node, _ *config.Cluster, _ cluster.Provider) error {
 	for _, n := range cluster.FilterByRole(nodes, string(config.WorkerRole)) {
-		out, err := n.Exec("kubeadm", "join", "--config=/kind/kubeadm.conf")
+		out, err := n.Exec("kubeadm", "join",
+			"--config=/kind/kubeadm.conf",
+			// Same preflight skip as init (Grid'5000 kernel has no
+			// configs module).
+			"--ignore-preflight-errors=SystemVerification",
+		)
 		if err != nil {
 			return fmt.Errorf("kubeadm join %s failed: %v\n%s", n.Name(), err, out)
 		}
