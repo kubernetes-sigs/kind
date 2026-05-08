@@ -252,6 +252,35 @@ $ systemd-run --scope --user -p "Delegate=yes" kind create cluster
 
 If you still get the error `running kind with rootless provider requires setting systemd property "Delegate=yes"` even with [host requirements](#host-requirements) configured.
 
+### Podman Log Driver
+
+When using rootless Podman, kind may fail with the following error even though the cluster appears
+to have started successfully:
+
+```
+ERROR: failed to create cluster: could not find a log line that matches "Reached target .*Multi-User System.*|detected cgroup v1"
+```
+
+This failure can have many different root causes, but if it looks like the node container has initialized,
+it may be caused by an architectural issue with rootless Podman's log handling. kind monitors cluster
+startup by tailing `podman logs`, but in rootless mode, by default Podman uses a userspace log relay
+that may not connect until after systemd has already emitted the expected boot message. As a result,
+kind's log watcher never sees the line and times out.
+
+A workaround to this is to configure Podman to use a different log driver so kind can reliably
+tail the logs.
+One option is to use the `k8s-file` log driver:
+
+```sh
+mkdir -p ~/.config/containers
+cat >> ~/.config/containers/containers.conf <<EOF
+[containers]
+log_driver = "k8s-file"
+EOF
+```
+
+Then attempt to recreate your kind cluster.
+
 ## Creating a kind cluster with Rootless nerdctl
 
 **Note: containerd v1.7+ is required**
