@@ -36,10 +36,7 @@ echo >&2 "will build node image for Kubernetes ${VERSION} ..."
 echo >&2 "building kind ..."
 make build
 
-# ensure we have qemu setup so we can run cross-arch images
-# TODO: dedupe specifying this image?
-echo >&2 "ensuring binfmt_misc ..."
-docker run --rm --privileged tonistiigi/binfmt:qemu-v7.0.0-28@sha256:66e11bea77a5ea9d6f0fe79b57cd2b189b5d15b93a2bdb925be22949232e4e55 --install all
+hack/build/init-buildx.sh
 
 # NOTE: adding platforms is costly in terms of build time
 # we will consider expanding this in the future, for now the aim is to prove
