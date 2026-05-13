@@ -18,11 +18,14 @@ limitations under the License.
 package version
 
 import (
+	"encoding/json"
 	"fmt"
 	"runtime"
 
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/yaml"
 
+	"sigs.k8s.io/kind/pkg/apis/config/defaults"
 	"sigs.k8s.io/kind/pkg/cmd"
 	"sigs.k8s.io/kind/pkg/log"
 )
@@ -72,23 +75,63 @@ var gitCommitCount = ""
 // It is injected at build time.
 var gitCommit = ""
 
+// VersionInfo contains structured version information
+type VersionInfo struct {
+	Version      string `json:"version"      yaml:"version"`
+	GitCommit    string `json:"gitCommit"    yaml:"gitCommit"`
+	Platform     string `json:"platform"     yaml:"platform"`
+	GoVersion    string `json:"goVersion"    yaml:"goVersion"`
+	DefaultImage string `json:"defaultImage" yaml:"defaultImage"`
+}
+
+func newVersionInfo() VersionInfo {
+	return VersionInfo{
+		Version:      Version(),
+		GitCommit:    gitCommit,
+		Platform:     runtime.GOOS + "/" + runtime.GOARCH,
+		GoVersion:    runtime.Version(),
+		DefaultImage: defaults.Image,
+	}
+}
+
 // NewCommand returns a new cobra.Command for version
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
+	var output string
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Prints the kind CLI version",
 		Long:  "Prints the kind CLI version",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if logger.V(0).Enabled() {
-				// if not -q / --quiet, show lots of info
-				fmt.Fprintln(streams.Out, DisplayVersion())
-			} else {
-				// otherwise only show semver
-				fmt.Fprintln(streams.Out, Version())
+			switch output {
+			case "json":
+				info := newVersionInfo()
+				out, err := json.MarshalIndent(info, "", " ")
+				if err != nil {
+					return err
+				}
+				fmt.Fprintln(streams.Out, string(out))
+			case "yaml":
+				info := newVersionInfo()
+				out, err := yaml.Marshal(info)
+				if err != nil {
+					return err
+				}
+				fmt.Fprint(streams.Out, string(out))
+			case "":
+				if logger.V(0).Enabled() {
+					// if not -q / --quiet, show lots of info
+					fmt.Fprintln(streams.Out, DisplayVersion())
+				} else {
+					// otherwise only show semver
+					fmt.Fprintln(streams.Out, Version())
+				}
+			default:
+				return fmt.Errorf("unsupported output format: %s", output)
 			}
 			return nil
 		},
 	}
+	cmd.Flags().StringVarP(&output, "output", "o", "", "output format (json or yaml)")
 	return cmd
 }
 
