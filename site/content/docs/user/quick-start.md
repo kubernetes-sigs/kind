@@ -239,6 +239,7 @@ kind load docker-image my-app:latest --name test-cluster
 
 Additionally, image archives can be loaded with:
 `kind load image-archive /my-image-archive.tar`
+> **TIP**: Run any kind subcommand with `--help` to see all available options.
 
 This allows a workflow like:
 ```
