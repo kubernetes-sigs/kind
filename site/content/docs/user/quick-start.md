@@ -330,6 +330,45 @@ kind build node-image --type source $HOME/go/src/k8s.io/kubernetes/
 > **NOTE**: modes other than source directory namely `url`, `file` and `release` are only
 > available in kind v0.24 and above.
 
+## Resource Requirements
+
+kind clusters run as Docker containers on the host, so the host's CPU and
+memory limits apply directly to the cluster.
+
+For typical single-node clusters with light workloads, Docker's default
+resource allocation (around 2 CPUs and 2 GB of memory on Docker Desktop) is
+usually enough to bring a cluster up. For more reliable operation with many
+pods or multi-node clusters, we recommend allocating at least **4 GB of memory
+and 2 CPUs** to Docker, and scaling up further for heavier workloads.
+
+Building Kubernetes node images with `kind build node-image` has a higher
+floor: see [Settings for Docker Desktop](#settings-for-docker-desktop) below.
+
+Exact numbers depend on the Kubernetes version, the CNI in use, and the
+workloads running on the cluster, so we recommend measuring against your own
+scenario rather than relying on fixed figures.
+
+### Measuring Resource Usage
+
+To check the resource footprint of a running cluster in a repeatable way,
+combine the cluster label that kind sets on node containers with
+[`docker stats`][docker stats].
+
+List the node containers for a cluster (the cluster named `kind` by default):
+
+```
+docker ps --filter label=io.x-k8s.kind.cluster=kind --format '{{.Names}}'
+```
+
+Then watch their live CPU and memory usage:
+
+```
+docker stats $(docker ps --filter label=io.x-k8s.kind.cluster=kind --format '{{.Names}}')
+```
+
+For per-pod measurements, install [metrics-server][metrics-server] (not
+bundled by default) and use `kubectl top nodes` / `kubectl top pods -A`.
+
 ### Settings for Docker Desktop
 
 If you are building Kubernetes (for example - `kind build node-image`) on MacOS or Windows then you need a minimum of 6GB of RAM
@@ -517,3 +556,5 @@ kind, the Kubernetes cluster itself, etc.
 [customize control plane with kubeadm]: https://kubernetes.io/docs/setup/independent/control-plane-flags/
 [access multiple clusters]: https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/
 [release notes]: https://github.com/kubernetes-sigs/kind/releases
+[docker stats]: https://docs.docker.com/reference/cli/docker/container/stats/
+[metrics-server]: https://github.com/kubernetes-sigs/metrics-server
