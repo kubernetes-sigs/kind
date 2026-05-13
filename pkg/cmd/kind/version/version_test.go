@@ -17,7 +17,15 @@ limitations under the License.
 package version
 
 import (
+	"bytes"
+	"encoding/json"
+	"strings"
 	"testing"
+
+	"sigs.k8s.io/yaml"
+
+	"sigs.k8s.io/kind/pkg/cmd"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 func TestTruncate(t *testing.T) {
@@ -58,6 +66,107 @@ func TestTruncate(t *testing.T) {
 				t.Errorf("But got: %q", result)
 			}
 		})
+	}
+}
+
+// noopLogger implements log.Logger with no output, used in command tests
+type noopLogger struct{}
+
+func (n noopLogger) Warn(message string)                       {}
+func (n noopLogger) Warnf(format string, args ...interface{})  {}
+func (n noopLogger) Error(message string)                      {}
+func (n noopLogger) Errorf(format string, args ...interface{}) {}
+func (n noopLogger) V(level log.Level) log.InfoLogger          { return noopInfoLogger{} }
+
+type noopInfoLogger struct{}
+
+func (n noopInfoLogger) Info(message string)                      {}
+func (n noopInfoLogger) Infof(format string, args ...interface{}) {}
+func (n noopInfoLogger) Enabled() bool                            { return true }
+
+func newTestStreams() (cmd.IOStreams, *bytes.Buffer) {
+	var buf bytes.Buffer
+	streams := cmd.IOStreams{Out: &buf}
+	return streams, &buf
+}
+
+func TestVersionCommandOutputJSON(t *testing.T) {
+	t.Parallel()
+	streams, buf := newTestStreams()
+	c := NewCommand(noopLogger{}, streams)
+	c.SetArgs([]string{"-o", "json"})
+	if err := c.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	var info VersionInfo
+	if err := json.Unmarshal(buf.Bytes(), &info); err != nil {
+		t.Fatalf("failed to unmarshal JSON output: %v\noutput: %s", err, buf.String())
+	}
+	if info.Version == "" {
+		t.Error("expected non-empty Version field")
+	}
+	if info.Platform == "" {
+		t.Error("expected non-empty Platform field")
+	}
+	if info.GoVersion == "" {
+		t.Error("expected non-empty GoVersion field")
+	}
+	if info.DefaultImage == "" {
+		t.Error("expected non-empty DefaultImage field")
+	}
+}
+
+func TestVersionCommandOutputYAML(t *testing.T) {
+	t.Parallel()
+	streams, buf := newTestStreams()
+	c := NewCommand(noopLogger{}, streams)
+	c.SetArgs([]string{"-o", "yaml"})
+	if err := c.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	var info VersionInfo
+	if err := yaml.Unmarshal(buf.Bytes(), &info); err != nil {
+		t.Fatalf("failed to unmarshal YAML output: %v\noutput: %s", err, buf.String())
+	}
+	if info.Version == "" {
+		t.Error("expected non-empty Version field")
+	}
+	if info.Platform == "" {
+		t.Error("expected non-empty Platform field")
+	}
+	if info.GoVersion == "" {
+		t.Error("expected non-empty GoVersion field")
+	}
+	if info.DefaultImage == "" {
+		t.Error("expected non-empty DefaultImage field")
+	}
+}
+
+func TestVersionCommandOutputInvalid(t *testing.T) {
+	t.Parallel()
+	streams, _ := newTestStreams()
+	c := NewCommand(noopLogger{}, streams)
+	c.SetArgs([]string{"-o", "xml"})
+	err := c.Execute()
+	if err == nil {
+		t.Fatal("expected error for unsupported output format, got nil")
+	}
+	if !strings.Contains(err.Error(), "unsupported output format") {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
+func TestVersionCommandDefaultOutput(t *testing.T) {
+	t.Parallel()
+	streams, buf := newTestStreams()
+	c := NewCommand(noopLogger{}, streams)
+	c.SetArgs([]string{})
+	if err := c.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	out := buf.String()
+	if !strings.HasPrefix(out, "kind v") {
+		t.Errorf("default output should start with 'kind v', got: %q", out)
 	}
 }
 
