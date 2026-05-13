@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package version implements the `version` command
+// Package version implements the `version` command.
 package version
 
 import (
