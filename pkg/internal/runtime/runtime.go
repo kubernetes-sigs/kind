@@ -38,6 +38,20 @@ func GetDefault(logger log.Logger) cluster.ProviderOption {
 	case "nerdctl", "finch", "nerdctl.lima":
 		logger.Warnf("using %s due to KIND_EXPERIMENTAL_PROVIDER", p)
 		return cluster.ProviderWithNerdctl(p)
+	case "swarm":
+		hostsRaw := os.Getenv("KIND_HOSTS")
+		if hostsRaw == "" {
+			logger.Warn("KIND_EXPERIMENTAL_PROVIDER=swarm requires KIND_HOSTS=<ctx>=<addr>[,...]; ignoring")
+			return nil
+		}
+		hosts, err := cluster.ParseSwarmHosts(hostsRaw)
+		if err != nil {
+			logger.Warnf("invalid KIND_HOSTS %q: %v", hostsRaw, err)
+			return nil
+		}
+		bootstrap := os.Getenv("KIND_BOOTSTRAP_SWARM") != ""
+		logger.Warnf("using swarm provider across %d host(s) due to KIND_EXPERIMENTAL_PROVIDER", len(hosts))
+		return cluster.ProviderWithSwarm(hosts, bootstrap)
 	default:
 		logger.Warnf("ignoring unknown value %q for KIND_EXPERIMENTAL_PROVIDER", p)
 		return nil
