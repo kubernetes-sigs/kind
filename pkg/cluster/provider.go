@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/docker"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/nerdctl"
 	"sigs.k8s.io/kind/pkg/cluster/internal/providers/podman"
+	"sigs.k8s.io/kind/pkg/cluster/internal/providers/swarm"
 )
 
 // DefaultName is the default cluster name
@@ -180,6 +181,28 @@ func ProviderWithNerdctl(binaryName string) ProviderOption {
 		p.provider = nerdctl.NewProvider(p.logger, binaryName)
 	})
 }
+
+// ProviderWithSwarm configures the provider to spread node containers
+// across the supplied Docker Swarm hosts (hosts[0] is the manager).  If
+// bootstrap is true, the provider will run `docker swarm init` / `join`
+// before creating node containers.
+func ProviderWithSwarm(hosts []swarm.Host, bootstrap bool) ProviderOption {
+	return providerRuntimeOption(func(p *Provider) {
+		opts := []swarm.Option{}
+		if bootstrap {
+			opts = append(opts, swarm.WithBootstrap())
+		}
+		p.provider = swarm.NewProvider(p.logger, hosts, opts...)
+	})
+}
+
+// ParseSwarmHosts re-exports swarm.ParseHosts so callers don't need to
+// import the internal package.
+func ParseSwarmHosts(s string) ([]swarm.Host, error) { return swarm.ParseHosts(s) }
+
+// SwarmHost re-exports the swarm.Host type for callers that build the
+// host list programmatically (e.g. from CLI flags).
+type SwarmHost = swarm.Host
 
 // Create provisions and starts a kubernetes-in-docker cluster
 func (p *Provider) Create(name string, options ...CreateOption) error {

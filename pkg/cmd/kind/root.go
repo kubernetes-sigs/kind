@@ -18,7 +18,9 @@ limitations under the License.
 package kind
 
 import (
+	"errors"
 	"io"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -35,9 +37,11 @@ import (
 )
 
 type flagpole struct {
-	Verbosity int32
-	Quiet     bool
-	Multihost bool
+	Verbosity      int32
+	Quiet          bool
+	Multihost      bool
+	Hosts          string
+	BootstrapSwarm bool
 }
 
 // NewCommand returns a new cobra.Command implementing the root command for kind
@@ -74,7 +78,19 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		&flags.Multihost,
 		"multihost",
 		false,
-		"enable experimental multi-host support (distribute nodes across multiple Docker daemons)",
+		"enable experimental multi-host support (distribute nodes across multiple Docker daemons via Swarm)",
+	)
+	cmd.PersistentFlags().StringVar(
+		&flags.Hosts,
+		"hosts",
+		"",
+		"multihost: comma-separated <docker-context>=<external-addr> pairs (first = manager)",
+	)
+	cmd.PersistentFlags().BoolVar(
+		&flags.BootstrapSwarm,
+		"bootstrap-swarm",
+		false,
+		"multihost: run 'docker swarm init' on the manager and 'swarm join' on each worker before creating the cluster",
 	)
 	// add all top level subcommands
 	cmd.AddCommand(build.NewCommand(logger, streams))
@@ -97,15 +113,29 @@ func runE(logger log.Logger, flags *flagpole) error {
 	}
 	maybeSetVerbosity(logger, log.Level(flags.Verbosity))
 	if flags.Multihost {
-		handleMultihost(logger)
+		if err := handleMultihost(flags); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-// handleMultihost is the entry point for multi-host support.
-// TODO: implement node distribution across multiple Docker daemons.
-func handleMultihost(logger log.Logger) {
-	logger.Warn("[multihost] flag is set — multi-host support is not implemented yet")
+// handleMultihost wires the --multihost/--hosts/--bootstrap-swarm flags into
+// the runtime by setting the equivalent KIND_EXPERIMENTAL_PROVIDER / KIND_HOSTS
+// environment variables that pkg/internal/runtime picks up later.  Done this
+// way so we don't need to thread the flag through every subcommand.
+func handleMultihost(flags *flagpole) error {
+	if flags.Hosts == "" && os.Getenv("KIND_HOSTS") == "" {
+		return errors.New("--multihost requires --hosts <ctx>=<addr>[,...] or the KIND_HOSTS env var")
+	}
+	if flags.Hosts != "" {
+		os.Setenv("KIND_HOSTS", flags.Hosts)
+	}
+	os.Setenv("KIND_EXPERIMENTAL_PROVIDER", "swarm")
+	if flags.BootstrapSwarm {
+		os.Setenv("KIND_BOOTSTRAP_SWARM", "1")
+	}
+	return nil
 }
 
 // maybeSetWriter will call logger.SetWriter(w) if logger has a SetWriter method
