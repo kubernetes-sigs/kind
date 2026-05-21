@@ -94,6 +94,14 @@ func Test_sanitizeImage(t *testing.T) {
 			image:          "other-registry/baz",
 			sanitizedImage: "docker.io/other-registry/baz:latest",
 		},
+		{
+			image:          "localhost:5000/baz",
+			sanitizedImage: "localhost:5000/baz:latest",
+		},
+		{
+			image:          "localhost:5000/baz:quux",
+			sanitizedImage: "localhost:5000/baz:quux",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -275,10 +275,15 @@ func sanitizeImage(image string) (sanitizedName string) {
 		sanitizedName = defaultDomain + sanitizedName
 	}
 
-	i = strings.IndexRune(sanitizedName, ':')
-	if i == -1 {
+	if !hasTag(sanitizedName) && !strings.ContainsRune(sanitizedName, '@') {
 		sanitizedName += ":latest"
 	}
 
 	return
+}
+
+func hasTag(image string) bool {
+	lastSlash := strings.LastIndex(image, "/")
+	lastColon := strings.LastIndex(image, ":")
+	return lastColon > lastSlash
 }
