@@ -40,6 +40,10 @@ GOARCH="$(uname -m | sed -e 's/aarch64/arm64/' -e 's/x86_64/amd64/')"
 curl -L -o /usr/bin/kubectl "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/${GOARCH}/kubectl"
 chmod +x /usr/bin/kubectl
 
+# Disable SELinux enforcement in CI -- we're not testing SELinux policy and
+# enforcing mode causes permission denied errors with rootlesskit's detach-netns.
+setenforce 0 || true
+
 # Configuration for rootless: https://kind.sigs.k8s.io/docs/user/rootless/
 mkdir -p "/etc/systemd/system/user@.service.d"
 cat <<EOF >"/etc/systemd/system/user@.service.d/delegate.conf"

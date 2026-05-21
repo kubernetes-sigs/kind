@@ -75,8 +75,10 @@ jobs:
           limactl cp -r . default:/tmp/kind
           # Install packages
           lima sudo /tmp/kind/hack/ci/init-vm.sh
-          # Enable systemd lingering for rootless
-          lima sudo loginctl enable-linger "$USER"
+          # Enable systemd lingering for rootless. $USER on the host may differ
+          # from the Lima guest user (e.g. runner vs runner.guest), so derive
+          # the username inside the VM.
+          lima bash -c 'sudo loginctl enable-linger "$(id -un)"'
           # Install kind
           lima sudo git config --global --add safe.directory /tmp/kind
           lima sudo make -C /tmp/kind install INSTALL_DIR=/usr/bin
@@ -109,7 +111,9 @@ jobs:
       - name: Export logs
         if: always()
         run: |
-          "$HELPER" kind export logs /tmp/kind/logs
+          "$HELPER" mkdir -p /tmp/kind/logs
+          "$HELPER" kind export logs /tmp/kind/logs || true
+          "$HELPER" sh -c 'journalctl --no-pager --user --unit docker.service -n 50 > /tmp/kind/logs/docker-user-service.log 2>&1 || true'
           mkdir -p /tmp/kind/logs/lima
           cp -a ~/.lima/default/*.log /tmp/kind/logs/lima || true
           "$HELPER" tar cC /tmp/kind/logs . | tar xC /tmp/kind/logs
