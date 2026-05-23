@@ -361,6 +361,28 @@ func (p *provider) Info() (*providers.ProviderInfo, error) {
 	return p.info, nil
 }
 
+// ContainerSave saves images to dest, as in `podman save`
+func (p *provider) ContainerSave(images []string, dest string) error {
+	commandArgs := append([]string{"save", "-o", dest}, images...)
+	return exec.Command("podman", commandArgs...).Run()
+}
+
+// ContainerImageID return the Id of the container image
+func (p *provider) ContainerImageID(containerNameOrID string) (string, error) {
+	cmd := exec.Command("podman", "image", "inspect",
+		"-f", "{{ .Id }}",
+		containerNameOrID, // ... against the container
+	)
+	lines, err := exec.OutputLines(cmd)
+	if err != nil {
+		return "", err
+	}
+	if len(lines) != 1 {
+		return "", errors.Errorf("Container image ID should only be one line, got %d lines", len(lines))
+	}
+	return lines[0], nil
+}
+
 // podmanInfo corresponds to `podman info --format 'json`.
 // The structure is different from `docker info --format '{{json .}}'`,
 // and lacks information about the availability of the cgroup controllers.

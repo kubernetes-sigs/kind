@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package load implements the `load` command
 package load
 
 import (
@@ -55,10 +56,10 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 			}
 			return nil
 		},
-		Use:        "docker-image <IMAGE> [IMAGE...]",
-		Short:      "Loads docker images from host into nodes",
-		Long:       "Loads docker images from host into all or specified nodes by name",
-		Deprecated: "Please use 'kind load container-image' instead of 'kind load docker-image', 'docker-image' will be removed in future releases and is restricted to load images from docker.",
+		Use:     "container-image <IMAGE> [IMAGE...]",
+		Aliases: []string{"image"},
+		Short:   "Loads container images from host into nodes",
+		Long:    "Loads container images from host into all or specified nodes by name",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cli.OverrideDefaultName(cmd.Flags())
 			return runE(logger, flags, args)
@@ -86,16 +87,11 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 		runtime.GetDefault(logger),
 	)
 
-	saveProvider := cluster.NewProvider(
-		cluster.ProviderWithDocker(),
-		runtime.GetDefault(logger),
-	)
-
 	// Check that the image exists locally and gets its ID, if not return error
 	imageNames := removeDuplicates(args)
 	var imageIDs []string
 	for _, imageName := range imageNames {
-		imageID, err := saveProvider.ContainerImageID(imageName)
+		imageID, err := provider.ContainerImageID(imageName)
 		if err != nil {
 			return fmt.Errorf("image: %q not present locally", imageName)
 		}
@@ -182,7 +178,7 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 	defer os.RemoveAll(dir)
 	imagesTarPath := filepath.Join(dir, "images.tar")
 	// Save the images into a tar
-	err = saveProvider.ContainerSave(imageNames, imagesTarPath)
+	err = provider.ContainerSave(imageNames, imagesTarPath)
 	if err != nil {
 		return err
 	}
