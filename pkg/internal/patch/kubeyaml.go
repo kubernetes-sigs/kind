@@ -20,8 +20,8 @@ import (
 	"strings"
 
 	"sigs.k8s.io/kind/pkg/errors"
-
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // KubeYAML takes a Kubernetes object YAML document stream to patch,
@@ -34,13 +34,13 @@ import (
 //
 // Patches match if their kind and apiVersion match a document, with the exception
 // that if the patch does not set apiVersion it will be ignored.
-func KubeYAML(toPatch string, patches []string, patches6902 []config.PatchJSON6902) (string, error) {
+func KubeYAML(toPatch string, patches []string, patches6902 []config.PatchJSON6902, logger log.Logger) (string, error) {
 	// pre-process, including splitting up documents etc.
 	resources, err := parseResources(toPatch)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse yaml to patch")
 	}
-	mergePatches, err := parseMergePatches(patches)
+	mergePatches, err := parseMergePatches(patches, logger)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse patches")
 	}

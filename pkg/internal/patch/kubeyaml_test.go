@@ -21,6 +21,7 @@ import (
 
 	"sigs.k8s.io/kind/pkg/internal/apis/config"
 	"sigs.k8s.io/kind/pkg/internal/assert"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 func TestKubeYAML(t *testing.T) {
@@ -61,12 +62,19 @@ func TestKubeYAML(t *testing.T) {
 			ExpectError:     false,
 			ExpectOutput:    normalKubeadmConfigTrivialPatchedAnd6902Patched,
 		},
+		{
+			Name:         "kubeadm config one merge-patch with malformed yaml (duplicate key)",
+			ToPatch:      normalKubeadmConfig,
+			Patches:      []string{malformedPatchWithDuplicateKey},
+			ExpectOutput: malformedPatchWithDuplicateKeyKustomized,
+			ExpectError:  false,
+		},
 	}
 	for _, tc := range cases {
 		tc := tc // capture test case
 		t.Run(tc.Name, func(t *testing.T) {
 			t.Parallel()
-			out, err := KubeYAML(tc.ToPatch, tc.Patches, tc.PatchesJSON6902)
+			out, err := KubeYAML(tc.ToPatch, tc.Patches, tc.PatchesJSON6902, log.NoopLogger{})
 			assert.ExpectError(t, tc.ExpectError, err)
 			if err == nil {
 				assert.StringEqual(t, tc.ExpectOutput, out)
@@ -367,6 +375,86 @@ nodeRegistration:
     logging-format: json
     node-ip: 192.168.9.6
     v: "4"
+---
+apiVersion: kubeadm.k8s.io/v1beta2
+controlPlane:
+  localAPIEndpoint:
+    advertiseAddress: 192.168.9.6
+    bindPort: 6443
+discovery:
+  bootstrapToken:
+    apiServerEndpoint: 192.168.9.3:6443
+    token: abcdef.0123456789abcdef
+    unsafeSkipCAVerification: true
+kind: JoinConfiguration
+metadata:
+  name: config
+nodeRegistration:
+  criSocket: /run/containerd/containerd.sock
+  kubeletExtraArgs:
+    fail-swap-on: "false"
+    node-ip: 192.168.9.6
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+evictionHard:
+  imagefs.available: 0%
+  nodefs.available: 0%
+  nodefs.inodesFree: 0%
+imageGCHighThresholdPercent: 100
+kind: KubeletConfiguration
+metadata:
+  name: config
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+metadata:
+  name: config
+`
+const malformedPatchWithDuplicateKey = `
+kind: ClusterConfiguration
+apiVersion: kubeadm.k8s.io/v1beta2
+
+scheduler:
+  extraArgs:
+   some-duplicate-key: value1
+   some-duplicate-key: value2
+`
+
+const malformedPatchWithDuplicateKeyKustomized = `apiServer:
+  certSANs:
+  - localhost
+  - 127.0.0.1
+apiVersion: kubeadm.k8s.io/v1beta2
+clusterName: kind
+controlPlaneEndpoint: 192.168.9.3:6443
+controllerManager:
+  extraArgs:
+    enable-hostpath-provisioner: "true"
+kind: ClusterConfiguration
+kubernetesVersion: v1.15.3
+metadata:
+  name: config
+networking:
+  podSubnet: 10.244.0.0/16
+  serviceSubnet: 10.96.0.0/12
+scheduler:
+  extraArgs:
+    some-duplicate-key: value2
+---
+apiVersion: kubeadm.k8s.io/v1beta2
+bootstrapTokens:
+- token: abcdef.0123456789abcdef
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: 192.168.9.6
+  bindPort: 6443
+metadata:
+  name: config
+nodeRegistration:
+  criSocket: /run/containerd/containerd.sock
+  kubeletExtraArgs:
+    fail-swap-on: "false"
+    node-ip: 192.168.9.6
 ---
 apiVersion: kubeadm.k8s.io/v1beta2
 controlPlane:
