@@ -363,7 +363,7 @@ func (c *buildContext) createBuildContainer() (id string, err error) {
 
 			// https://github.com/kubernetes-sigs/kind/issues/4140
 			if (name == httpProxy || name == httpsProxy) && proxyUsesLoopbackHost(val) {
-				c.logger.Warnf("WARNING: %s=%q points to host loopback; kind forwards this proxy into the build container, where loopback refers to the container rather than the host, so image pulls may fail", name, val)
+				c.logger.Warnf("WARNING: %s=%q points to host loopback within the build container, image pulls may fail", name, val)
 			}
 		}
 	}
