@@ -45,11 +45,30 @@ func planCreation(cfg *config.Cluster, networkName string, hosts []Host) (create
 	// the swarm provider does not support the in-cluster HA loadbalancer
 	// (multiple control planes); single control plane is enforced upstream.
 
-	// assign each node to a host: control plane on hosts[0]; workers
-	// round-robin starting from hosts[1] (or hosts[0] if only one host).
+	// build a context -> Host index for explicit pinning via node.Host
+	byCtx := make(map[string]Host, len(hosts))
+	for _, h := range hosts {
+		byCtx[h.Context] = h
+	}
+
+	// assign each node to a host:
+	//   - if node.Host is set and matches a configured context, honor it
+	//   - else control plane lands on hosts[0]
+	//   - else workers round-robin starting from hosts[1]
 	nodeHosts := make([]Host, len(cfg.Nodes))
 	workerIdx := 0
 	for i, n := range cfg.Nodes {
+		if n.Host != "" {
+			h, ok := byCtx[n.Host]
+			if !ok {
+				return nil, errors.Errorf("node %d: host %q is not in --hosts", i, n.Host)
+			}
+			nodeHosts[i] = h
+			if n.Role != config.ControlPlaneRole {
+				workerIdx++
+			}
+			continue
+		}
 		if n.Role == config.ControlPlaneRole {
 			nodeHosts[i] = hosts[0]
 			continue

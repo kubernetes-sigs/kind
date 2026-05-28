@@ -107,6 +107,11 @@ type Node struct {
 	// If unset a default image will be used, see defaults.Image
 	Image string `yaml:"image,omitempty" json:"image,omitempty"`
 
+	// Host pins this node to a specific Swarm host (docker context name).
+	// Only honored by the swarm provider; ignored by docker/podman/nerdctl.
+	// If unset, the swarm provider falls back to round-robin assignment.
+	Host string `yaml:"host,omitempty" json:"host,omitempty"`
+
 	// Labels are the labels with which the respective node will be labeled
 	Labels map[string]string `yaml:"labels,omitempty" json:"labels,omitempty"`
 
