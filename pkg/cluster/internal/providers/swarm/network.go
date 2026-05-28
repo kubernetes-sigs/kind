@@ -29,23 +29,46 @@ import (
 // instead of a local bridge, so VXLAN-tunnelled traffic spans hosts.
 const swarmOverlayName = "kind"
 
-// ensureSwarmOverlay creates the overlay network on the swarm manager
-// if it doesn't exist.  Idempotent: a pre-existing network is fine.
-func ensureSwarmOverlay(manager Host, name string) error {
+// ensureNetwork creates the cluster network on the swarm manager if it
+// doesn't exist.  When useOverlay is true it uses the swarm overlay driver
+// (cross-host VXLAN); otherwise a plain bridge network is used, matching
+// the local docker provider's behaviour for single-host clusters.
+// If a pre-existing network of the wrong driver is found (e.g. a leftover
+// bridge from a previous single-host run), it is removed and recreated.
+func ensureNetwork(manager Host, name string, useOverlay bool) error {
 	if name == "" {
 		name = swarmOverlayName
 	}
-	if err := exec.Command("docker",
-		dockerArgs(manager.Context, "network", "inspect", name)...,
-	).Run(); err == nil {
-		return nil
+	wantDriver := "bridge"
+	if useOverlay {
+		wantDriver = "overlay"
 	}
-	lines, err := exec.CombinedOutputLines(exec.Command("docker",
-		dockerArgs(manager.Context,
-			"network", "create", "-d", "overlay", "--attachable", name)...,
-	))
+	// inspect current driver, if the network already exists
+	if lines, err := exec.OutputLines(exec.Command("docker",
+		dockerArgs(manager.Context, "network", "inspect",
+			"--format", "{{.Driver}}", name)...,
+	)); err == nil && len(lines) == 1 {
+		if strings.TrimSpace(lines[0]) == wantDriver {
+			return nil // right driver, nothing to do
+		}
+		// wrong driver (typically a leftover bridge from a single-host run)
+		if out, err := exec.CombinedOutputLines(exec.Command("docker",
+			dockerArgs(manager.Context, "network", "rm", name)...,
+		)); err != nil {
+			return errors.Wrapf(err, "remove stale %s network on %s: %s",
+				name, manager.Context, strings.Join(out, "\n"))
+		}
+	}
+	args := dockerArgs(manager.Context, "network", "create")
+	if useOverlay {
+		args = append(args, "-d", "overlay", "--attachable")
+	} else {
+		args = append(args, "-d", "bridge")
+	}
+	args = append(args, name)
+	lines, err := exec.CombinedOutputLines(exec.Command("docker", args...))
 	if err != nil {
-		return errors.Wrapf(err, "create overlay %s on %s: %s",
+		return errors.Wrapf(err, "create network %s on %s: %s",
 			name, manager.Context, strings.Join(lines, "\n"))
 	}
 	return nil

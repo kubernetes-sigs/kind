@@ -80,24 +80,50 @@ func (p *provider) overlayName() string {
 	return swarmOverlayName
 }
 
-func (p *provider) manager() Host { return p.hosts[0] }
+// manager returns the swarm manager host (hosts[0]).  When the provider was
+// constructed with no hosts (e.g. --multihost passed but no --hosts and the
+// YAML config hasn't been read yet), returns a synthetic "default" host so
+// callers like Info() that fire before Provision() still work.
+func (p *provider) manager() Host {
+	if len(p.hosts) == 0 {
+		return Host{Context: "default"}
+	}
+	return p.hosts[0]
+}
 
 // Provision is part of the providers.Provider interface
 func (p *provider) Provision(status *cli.Status, cfg *config.Cluster) (err error) {
+	// If --hosts wasn't supplied, derive the host list from the YAML
+	// `hosts:` block.  Entries from --hosts (if any) win on context name
+	// collisions so the CLI can override an addr declared in YAML.
+	if len(cfg.Hosts) > 0 {
+		p.hosts = mergeHosts(cfg.Hosts, p.hosts)
+	}
+	// Fallback: no host info anywhere → single-host on the local daemon.
+	// The provider then behaves like the docker provider (bridge network,
+	// no swarm bootstrap, no overlay), so users who happen to pass
+	// --multihost without specifying any host still get a working cluster.
 	if len(p.hosts) == 0 {
-		return errors.New("swarm provider: no hosts configured")
+		p.hosts = []Host{{Context: "default"}}
+		p.bootstrap = false
 	}
 
-	// optionally initialise the swarm
+	// Single-host mode = 1 host AND no explicit bootstrap requested.
+	// In that case we skip swarm init and use a regular bridge network
+	// named after the overlay so existing code paths keep working.
+	singleHost := len(p.hosts) == 1 && !p.bootstrap
+
+	// optionally initialise the swarm (multi-host only)
 	if p.bootstrap {
 		if err := initSwarmIfNeeded(p.manager(), p.hosts[1:]); err != nil {
 			return errors.Wrap(err, "swarm bootstrap")
 		}
 	}
 
-	// ensure the overlay exists on the manager
-	if err := ensureSwarmOverlay(p.manager(), p.overlayName()); err != nil {
-		return errors.Wrap(err, "failed to ensure swarm overlay")
+	// ensure the network exists on the manager: overlay if multi-host,
+	// bridge if single-host.
+	if err := ensureNetwork(p.manager(), p.overlayName(), !singleHost); err != nil {
+		return errors.Wrap(err, "failed to ensure network")
 	}
 
 	// ensure node images on every host

@@ -1,0 +1,20 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+hosts:
+  - context: default
+    addr: 172.16.193.5
+    nodes:
+      - role: control-plane
+      - role: worker
+  - context: ecotype-6
+    addr: 172.16.193.6
+    nodes:
+      - role: worker
+      - role: worker
+      - role : worker
+      - role : worker
+  - context: ecotype-47
+    addr: 172.16.193.47
+    nodes:
+      - role: worker
+      - role: worker

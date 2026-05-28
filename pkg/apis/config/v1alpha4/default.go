@@ -22,8 +22,9 @@ import (
 
 // SetDefaultsCluster sets uninitialized fields to their default value.
 func SetDefaultsCluster(obj *Cluster) {
-	// default to a one node cluster
-	if len(obj.Nodes) == 0 {
+	// default to a one node cluster (only when *neither* the flat Nodes
+	// list nor the hierarchical Hosts block provides any node)
+	if len(obj.Nodes) == 0 && !hasHostScopedNodes(obj) {
 		obj.Nodes = []Node{
 			{
 				Image: defaults.Image,
@@ -35,6 +36,12 @@ func SetDefaultsCluster(obj *Cluster) {
 	for i := range obj.Nodes {
 		a := &obj.Nodes[i]
 		SetDefaultsNode(a)
+	}
+	// default the host-scoped nodes too
+	for i := range obj.Hosts {
+		for j := range obj.Hosts[i].Nodes {
+			SetDefaultsNode(&obj.Hosts[i].Nodes[j])
+		}
 	}
 	if obj.Networking.IPFamily == "" {
 		obj.Networking.IPFamily = IPv4Family
@@ -87,4 +94,13 @@ func SetDefaultsNode(obj *Node) {
 	if obj.Role == "" {
 		obj.Role = ControlPlaneRole
 	}
+}
+
+func hasHostScopedNodes(obj *Cluster) bool {
+	for i := range obj.Hosts {
+		if len(obj.Hosts[i].Nodes) > 0 {
+			return true
+		}
+	}
+	return false
 }

@@ -18,7 +18,6 @@ limitations under the License.
 package kind
 
 import (
-	"errors"
 	"io"
 	"os"
 
@@ -125,9 +124,6 @@ func runE(logger log.Logger, flags *flagpole) error {
 // environment variables that pkg/internal/runtime picks up later.  Done this
 // way so we don't need to thread the flag through every subcommand.
 func handleMultihost(flags *flagpole) error {
-	if flags.Hosts == "" && os.Getenv("KIND_HOSTS") == "" {
-		return errors.New("--multihost requires --hosts <ctx>=<addr>[,...] or the KIND_HOSTS env var")
-	}
 	if flags.Hosts != "" {
 		os.Setenv("KIND_HOSTS", flags.Hosts)
 	}

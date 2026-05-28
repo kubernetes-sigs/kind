@@ -124,7 +124,7 @@ RUN eval "$(gimme "${GO_VERSION}")" \
 # stage for building containerd
 FROM go-build AS build-containerd
 ARG TARGETARCH GO_VERSION
-ARG CONTAINERD_VERSION="v2.2.1"
+ARG CONTAINERD_VERSION="v2.3.1"
 ARG CONTAINERD_CLONE_URL="https://github.com/containerd/containerd"
 # we don't build with optional snapshotters, we never select any of these
 # they're not ideal inside kind anyhow, and we save some disk space
@@ -142,7 +142,7 @@ RUN git clone --filter=tree:0 "${CONTAINERD_CLONE_URL}" /containerd \
 # stage for building runc
 FROM go-build AS build-runc
 ARG TARGETARCH GO_VERSION
-ARG RUNC_VERSION="v1.3.4"
+ARG RUNC_VERSION="v1.4.2"
 ARG RUNC_CLONE_URL="https://github.com/opencontainers/runc"
 RUN git clone --filter=tree:0 "${RUNC_CLONE_URL}" /runc \
     && cd /runc \
@@ -157,20 +157,20 @@ RUN git clone --filter=tree:0 "${RUNC_CLONE_URL}" /runc \
 FROM go-build AS build-crictl
 ARG TARGETARCH GO_VERSION
 ARG CRI_TOOLS_CLONE_URL="https://github.com/kubernetes-sigs/cri-tools"
-ARG CRICTL_VERSION="v1.33.0"
+ARG CRICTL_VERSION="v1.36.0"
 RUN git clone --filter=tree:0 "${CRI_TOOLS_CLONE_URL}" /cri-tools \
     && cd /cri-tools \
     && git checkout "${CRICTL_VERSION}" \
     && eval "$(gimme "${GO_VERSION}")" \
     && export GOTOOLCHAIN="go${GO_VERSION}" \
-    && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
+    && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=0 \
     && make BUILD_BIN_PATH=./build crictl \
     && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES ./cmd/crictl
 
 # stage for building cni-plugins
 FROM go-build AS build-cni
 ARG TARGETARCH GO_VERSION
-ARG CNI_PLUGINS_VERSION="v1.8.0"
+ARG CNI_PLUGINS_VERSION="v1.9.1"
 ARG CNI_PLUGINS_CLONE_URL="https://github.com/containernetworking/plugins"
 RUN git clone --filter=tree:0 "${CNI_PLUGINS_CLONE_URL}" /cni-plugins \
     && cd /cni-plugins \

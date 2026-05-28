@@ -44,6 +44,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"sigs.k8s.io/kind/pkg/internal/apis/config"
 )
 
 // Host identifies one machine in the swarm: a docker context name
@@ -97,4 +99,33 @@ func ParseHosts(s string) ([]Host, error) {
 // difference from the local docker provider one flag wide.
 func dockerArgs(ctxName string, args ...string) []string {
 	return append([]string{"--context", ctxName}, args...)
+}
+
+// mergeHosts builds a combined host list from a YAML-derived list and the
+// CLI-derived list (--hosts), preserving the YAML order.  When the same
+// context appears in both, the CLI entry's Addr wins (it's usually the
+// reachable IP set by the operator), but the YAML entry's position drives
+// the manager (hosts[0]) choice.
+func mergeHosts(fromYAML []config.Host, fromCLI []Host) []Host {
+	out := make([]Host, 0, len(fromYAML))
+	seen := make(map[string]int, len(fromYAML))
+	cliByCtx := make(map[string]Host, len(fromCLI))
+	for _, h := range fromCLI {
+		cliByCtx[h.Context] = h
+	}
+	for _, y := range fromYAML {
+		h := Host{Context: y.Context, Addr: y.Addr}
+		if c, ok := cliByCtx[y.Context]; ok && c.Addr != "" {
+			h.Addr = c.Addr
+		}
+		seen[h.Context] = len(out)
+		out = append(out, h)
+	}
+	for _, c := range fromCLI {
+		if _, ok := seen[c.Context]; ok {
+			continue
+		}
+		out = append(out, c)
+	}
+	return out
 }
