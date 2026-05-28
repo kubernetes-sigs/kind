@@ -30,6 +30,11 @@ import (
 
 	"golang.org/x/sys/unix"
 
+	"sigs.k8s.io/kube-network-policies/pkg/api"
+	"sigs.k8s.io/kube-network-policies/pkg/dataplane"
+	"sigs.k8s.io/kube-network-policies/pkg/networkpolicy"
+	"sigs.k8s.io/kube-network-policies/pkg/podinfo"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -37,7 +42,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
-	"sigs.k8s.io/kube-network-policies/pkg/networkpolicy"
 )
 
 const (
@@ -218,30 +222,48 @@ func main() {
 		klog.Fatalf("couldn't determine hostname: %v", err)
 	}
 
-	cfg := networkpolicy.Config{
+	cfg := dataplane.Config{
 		FailOpen:            true,
 		QueueID:             101,
-		NodeName:            nodeName,
 		NetfilterBug1766Fix: true,
 		NFTableName:         "kindnet-network-policies",
 	}
 
-	networkPolicyController, err := networkpolicy.NewController(
-		clientset,
-		informersFactory.Networking().V1().NetworkPolicies(),
-		informersFactory.Core().V1().Namespaces(),
-		informersFactory.Core().V1().Pods(),
-		nodeInformer,
-		nil,
-		nil,
-		nil,
-		cfg)
+	podInformer := informersFactory.Core().V1().Pods()
+	informerResolver, err := podinfo.NewInformerResolver(podInformer.Informer())
 	if err != nil {
-		klog.Infof("Error creating network policy controller: %v, skipping network policies", err)
+		klog.Infof("Error creating informer resolver: %v, skipping network policies", err)
 	} else {
-		go func() {
-			_ = networkPolicyController.Run(ctx)
-		}()
+		podInfoProvider := podinfo.NewInformerProvider(
+			podInformer,
+			informersFactory.Core().V1().Namespaces(),
+			nodeInformer,
+			[]podinfo.IPResolver{informerResolver},
+		)
+
+		stdNetPolEvaluator := networkpolicy.NewStandardNetworkPolicy(
+			nodeName,
+			informersFactory.Core().V1().Namespaces(),
+			podInformer,
+			informersFactory.Networking().V1().NetworkPolicies(),
+		)
+
+		policyEngine := networkpolicy.NewPolicyEngine(
+			podInfoProvider,
+			[]api.PolicyEvaluator{stdNetPolEvaluator},
+		)
+
+		networkPolicyController, err := dataplane.NewController(
+			policyEngine,
+			cfg,
+		)
+		if err != nil {
+			klog.Infof("Error creating network policy controller: %v, skipping network policies", err)
+		} else {
+			go func() {
+				_ = networkPolicyController.Run(ctx)
+			}()
+		}
 	}
 
 	// main control loop
