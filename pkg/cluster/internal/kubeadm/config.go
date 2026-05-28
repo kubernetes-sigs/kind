@@ -671,9 +671,11 @@ func Config(data ConfigData) (config string, err error) {
 	}
 
 	// assume the latest API version, then fallback if the k8s version is too low
-	templateSource := ConfigTemplateBetaV3
+	templateSource := ConfigTemplateBetaV4
 	if ver.LessThan(version.MustParseSemantic("v1.23.0")) {
 		templateSource = ConfigTemplateBetaV2
+	} else if ver.LessThan(version.MustParseSemantic("v1.36.0")) {
+		templateSource = ConfigTemplateBetaV3
 	}
 
 	t, err := template.New("kubeadm-config").Parse(templateSource)
