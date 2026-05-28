@@ -491,7 +491,7 @@ clusterName: "{{.ClusterName}}"
 {{ if .KubeadmFeatureGates}}featureGates:
 {{ range $key, $value := .KubeadmFeatureGates }}
   "{{ $key }}": {{ $value }}
-{{end}}{{end}}
+{{end}}{{- end}}
 controlPlaneEndpoint: "{{ .ControlPlaneEndpoint }}"
 # on docker for mac we have to expose the api server via port forward,
 # so we need to ensure the cert is valid for localhost so we can talk
@@ -504,13 +504,13 @@ apiServer:
 {{ if .FeatureGates }}
     - name: "feature-gates"
       value: "{{ .FeatureGatesString }}"
-{{ end}}
+{{- end}}
 controllerManager:
   extraArgs:
 {{ if .FeatureGates }}
     - name: "feature-gates"
       value: "{{ .FeatureGatesString }}"
-{{ end }}
+{{- end }}
     - name: "enable-hostpath-provisioner"
       value: "true"
 # configure ipv6 default addresses for IPv6 clusters
@@ -523,7 +523,7 @@ scheduler:
 {{ if .FeatureGates }}
     - name: "feature-gates"
       value: "{{ .FeatureGatesString }}"
-{{ end }}
+{{- end }}
 # configure ipv6 default addresses for IPv6 clusters
 {{ if .IPv6 -}}
     - name: "bind-address"
@@ -616,7 +616,7 @@ evictionHard:
 {{if .FeatureGates}}featureGates:
 {{ range $index, $gate := .SortedFeatureGates }}
   "{{ $gate.Name }}": {{ $gate.Value }}
-{{end}}{{end}}
+{{end}}{{- end}}
 {{if ne .KubeProxyMode "none"}}
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
@@ -627,7 +627,7 @@ mode: "{{ .KubeProxyMode }}"
 {{if .FeatureGates}}featureGates:
 {{ range $index, $gate := .SortedFeatureGates }}
   "{{ $gate.Name }}": {{ $gate.Value }}
-{{end}}{{end}}
+{{end}}{{- end}}
 iptables:
   minSyncPeriod: 1s
 conntrack:
