@@ -84,8 +84,14 @@ func (p *provider) manager() Host { return p.hosts[0] }
 
 // Provision is part of the providers.Provider interface
 func (p *provider) Provision(status *cli.Status, cfg *config.Cluster) (err error) {
+	// If --hosts wasn't supplied, derive the host list from the YAML
+	// `hosts:` block.  Entries from --hosts (if any) win on context name
+	// collisions so the CLI can override an addr declared in YAML.
+	if len(cfg.Hosts) > 0 {
+		p.hosts = mergeHosts(cfg.Hosts, p.hosts)
+	}
 	if len(p.hosts) == 0 {
-		return errors.New("swarm provider: no hosts configured")
+		return errors.New("swarm provider: no hosts configured (use --hosts or a `hosts:` block in the config)")
 	}
 
 	// optionally initialise the swarm

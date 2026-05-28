@@ -38,6 +38,22 @@ func Convertv1alpha4(in *v1alpha4.Cluster) *Cluster {
 		convertv1alpha4Node(&in.Nodes[i], &out.Nodes[i])
 	}
 
+	// Flatten the optional v1alpha4 `hosts:` block: each host's nested nodes
+	// are appended to Cluster.Nodes with their Host field set, and the
+	// (context, addr) pair is preserved in Cluster.Hosts so the swarm
+	// provider can build its host list from the YAML alone.
+	for i := range in.Hosts {
+		h := &in.Hosts[i]
+		outHost := Host{Context: h.Context, Addr: h.Addr}
+		outHost.Nodes = make([]Node, len(h.Nodes))
+		for j := range h.Nodes {
+			convertv1alpha4Node(&h.Nodes[j], &outHost.Nodes[j])
+			outHost.Nodes[j].Host = h.Context
+			out.Nodes = append(out.Nodes, outHost.Nodes[j])
+		}
+		out.Hosts = append(out.Hosts, outHost)
+	}
+
 	convertv1alpha4Networking(&in.Networking, &out.Networking)
 
 	for i := range in.KubeadmConfigPatchesJSON6902 {

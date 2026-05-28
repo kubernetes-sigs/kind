@@ -40,17 +40,21 @@ func GetDefault(logger log.Logger) cluster.ProviderOption {
 		return cluster.ProviderWithNerdctl(p)
 	case "swarm":
 		hostsRaw := os.Getenv("KIND_HOSTS")
-		if hostsRaw == "" {
-			logger.Warn("KIND_EXPERIMENTAL_PROVIDER=swarm requires KIND_HOSTS=<ctx>=<addr>[,...]; ignoring")
-			return nil
-		}
-		hosts, err := cluster.ParseSwarmHosts(hostsRaw)
-		if err != nil {
-			logger.Warnf("invalid KIND_HOSTS %q: %v", hostsRaw, err)
-			return nil
+		var hosts []cluster.SwarmHost
+		if hostsRaw != "" {
+			h, err := cluster.ParseSwarmHosts(hostsRaw)
+			if err != nil {
+				logger.Warnf("invalid KIND_HOSTS %q: %v", hostsRaw, err)
+				return nil
+			}
+			hosts = h
 		}
 		bootstrap := os.Getenv("KIND_BOOTSTRAP_SWARM") != ""
-		logger.Warnf("using swarm provider across %d host(s) due to KIND_EXPERIMENTAL_PROVIDER", len(hosts))
+		if len(hosts) == 0 {
+			logger.Warn("using swarm provider (host list will come from the `hosts:` block of --config)")
+		} else {
+			logger.Warnf("using swarm provider across %d host(s) due to KIND_EXPERIMENTAL_PROVIDER", len(hosts))
+		}
 		return cluster.ProviderWithSwarm(hosts, bootstrap)
 	default:
 		logger.Warnf("ignoring unknown value %q for KIND_EXPERIMENTAL_PROVIDER", p)

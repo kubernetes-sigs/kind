@@ -30,6 +30,13 @@ type Cluster struct {
 	// control plane load balancer will be provisioned implicitly
 	Nodes []Node `yaml:"nodes,omitempty" json:"nodes,omitempty"`
 
+	// Hosts groups nodes by Swarm host for the multi-host swarm provider.
+	// When set, each host's nested Nodes are flattened into Cluster.Nodes
+	// with Node.Host set to the parent host's Context, and the context+addr
+	// pairs become the host list used by the provider (no need for --hosts).
+	// Ignored by docker/podman/nerdctl providers.
+	Hosts []Host `yaml:"hosts,omitempty" json:"hosts,omitempty"`
+
 	/* Advanced fields */
 
 	// Networking contains cluster wide network settings
@@ -325,3 +332,20 @@ const (
 	// PortMappingProtocolSCTP specifies SCTP protocol
 	PortMappingProtocolSCTP PortMappingProtocol = "SCTP"
 )
+
+// Host groups Kubernetes nodes that should live on the same Swarm host
+// (a docker context).  Only consumed by the swarm provider.
+type Host struct {
+	// Context is the docker context name targeting the host's daemon.
+	// "default" means the local daemon.
+	Context string `yaml:"context" json:"context"`
+
+	// Addr is the host's externally-reachable IP or hostname, used for the
+	// kubeconfig server URL and for Swarm join.  Optional: when empty the
+	// swarm provider falls back to the value provided via --hosts.
+	Addr string `yaml:"addr,omitempty" json:"addr,omitempty"`
+
+	// Nodes are the Kubernetes nodes to schedule on this host.  Each node's
+	// per-node Host field is set to this host's Context after parsing.
+	Nodes []Node `yaml:"nodes,omitempty" json:"nodes,omitempty"`
+}
