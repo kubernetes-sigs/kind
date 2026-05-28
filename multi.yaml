@@ -11,6 +11,8 @@ hosts:
     nodes:
       - role: worker
       - role: worker
+      - role : worker
+      - role : worker
   - context: ecotype-35
     addr: 172.16.193.35
     nodes:
