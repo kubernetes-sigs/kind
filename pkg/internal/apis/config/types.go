@@ -34,6 +34,11 @@ type Cluster struct {
 	// control plane load balancer will be provisioned implicitly
 	Nodes []Node
 
+	// Hosts is the multi-host (Swarm) topology.  Populated by the converter
+	// from the v1alpha4 `hosts:` block.  The swarm provider uses this to
+	// derive the context->addr mapping when --hosts is not provided.
+	Hosts []Host
+
 	/* Advanced fields */
 
 	// Networking contains cluster wide network settings
@@ -84,6 +89,10 @@ type Node struct {
 	// Image is the node image to use when creating this node
 	// If unset a default image will be used, see defaults.Image
 	Image string
+
+	// Host pins this node to a specific Swarm host (docker context name).
+	// Only honored by the swarm provider.
+	Host string
 
 	// Labels are the labels with which the respective node will be labeled
 	Labels map[string]string
@@ -275,3 +284,13 @@ const (
 	// PortMappingProtocolSCTP specifies SCTP protocol
 	PortMappingProtocolSCTP PortMappingProtocol = "SCTP"
 )
+
+// Host pairs a docker context (and optional external address) with the set
+// of Kubernetes nodes that should run on it.  Used by the swarm provider
+// for multi-host clusters.  Nested Nodes are flattened into Cluster.Nodes
+// during conversion; this struct retains the context/addr mapping.
+type Host struct {
+	Context string
+	Addr    string
+	Nodes   []Node
+}
