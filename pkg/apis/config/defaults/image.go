@@ -18,4 +18,4 @@ limitations under the License.
 package defaults
 
 // Image is the default for the Config.Image field, aka the default node image.
-const Image = "gcr.io/k8s-staging-kind/node:v1.36.0@sha256:24df3cde0df12e7eea846171e508fbcefc82277c2b64f32b70e89742390d7997"
+const Image = "gcr.io/k8s-staging-kind/node:v1.36.1@sha256:b1cf5720ac43be3466bc616eae0851e058ee8fac3f1584df6d41cf75ae68d1bf"
