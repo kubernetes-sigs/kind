@@ -80,7 +80,16 @@ func (p *provider) overlayName() string {
 	return swarmOverlayName
 }
 
-func (p *provider) manager() Host { return p.hosts[0] }
+// manager returns the swarm manager host (hosts[0]).  When the provider was
+// constructed with no hosts (e.g. --multihost passed but no --hosts and the
+// YAML config hasn't been read yet), returns a synthetic "default" host so
+// callers like Info() that fire before Provision() still work.
+func (p *provider) manager() Host {
+	if len(p.hosts) == 0 {
+		return Host{Context: "default"}
+	}
+	return p.hosts[0]
+}
 
 // Provision is part of the providers.Provider interface
 func (p *provider) Provision(status *cli.Status, cfg *config.Cluster) (err error) {
