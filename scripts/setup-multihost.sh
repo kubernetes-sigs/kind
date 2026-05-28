@@ -37,6 +37,8 @@ step "2. propagation de la clé sur ${#WORKERS[@]} worker(s)"
 mkdir -p ~/.ssh && chmod 700 ~/.ssh
 touch ~/.ssh/known_hosts && chmod 600 ~/.ssh/known_hosts
 
+NEEDS_MANUAL=()
+
 for w in "${WORKERS[@]}"; do
     echo
     echo "── $w ──"
@@ -55,17 +57,38 @@ for w in "${WORKERS[@]}"; do
         continue
     fi
 
-    # fallback manuel: instruction explicite à coller sur le worker
+    echo "$w : install auto impossible (SSH par mdp désactivé sur le worker)"
+    NEEDS_MANUAL+=("$w")
+done
+
+# Si certains workers réclament une install manuelle, on imprime UNE FOIS
+# en fin de section un bloc prêt à coller pour chaque worker concerné, puis
+# on s'arrête.
+if [ "${#NEEDS_MANUAL[@]}" -gt 0 ]; then
     cat >&2 <<EOF
-$w : impossible d'installer la clé automatiquement (SSH par mdp désactivé ?)
-À faire MANUELLEMENT sur $w :
+
+════════ ACTION MANUELLE REQUISE ════════
+
+Connecte-toi à chacun des workers ci-dessous (depuis ton frontend
+Grid'5000, pas depuis ce manager) et lance EXACTEMENT ce bloc :
+
     mkdir -p ~/.ssh && chmod 700 ~/.ssh
     echo '$PUB' >> ~/.ssh/authorized_keys
     chmod 600 ~/.ssh/authorized_keys
-Puis relance ce script.
+
+Workers concernés :
+EOF
+    for w in "${NEEDS_MANUAL[@]}"; do
+        echo "    ssh root@$w" >&2
+    done
+    cat >&2 <<EOF
+
+Puis relance :
+    $0 ${WORKERS[*]}
+
 EOF
     exit 1
-done
+fi
 
 # ─── 3. vérifier passwordless ────────────────────────────────────────
 step "3. vérif passwordless"
