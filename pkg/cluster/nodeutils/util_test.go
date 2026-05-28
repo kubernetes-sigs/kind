@@ -261,4 +261,30 @@ func TestParseSnapshotter(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error parsing invalid config")
 	}
+
+	// test version 3 config
+	configV3 := `version = 3
+[plugins]
+  [plugins."io.containerd.cri.v1.images"]
+    snapshotter = "overlayfs"`
+	snapshotter, err = parseSnapshotter(configV3)
+	if err != nil {
+		t.Fatalf("unexpected error parsing config v3: %v", err)
+	}
+	if snapshotter != "overlayfs" {
+		t.Fatalf(`unexpected parsed snapshotter for v3: %q, expected "overlayfs"`, snapshotter)
+	}
+
+	// test version 4 config
+	configV4 := `version = 4
+[plugins]
+  [plugins."io.containerd.cri.v1.images"]
+    snapshotter = "btrfs"`
+	snapshotter, err = parseSnapshotter(configV4)
+	if err != nil {
+		t.Fatalf("unexpected error parsing config v4: %v", err)
+	}
+	if snapshotter != "btrfs" {
+		t.Fatalf(`unexpected parsed snapshotter for v4: %q, expected "btrfs"`, snapshotter)
+	}
 }
