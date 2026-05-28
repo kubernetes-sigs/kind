@@ -18,9 +18,13 @@ package nodeimage
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"runtime"
+	"strings"
+	"time"
 
 	"sigs.k8s.io/kind/pkg/build/nodeimage/internal/kube"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -94,6 +98,31 @@ func Build(options ...Option) error {
 		}
 	}
 
+	if ctx.buildType == "ci" {
+		ctx.logger.V(0).Infof("Building using CI %q artifacts", ctx.kubeParam)
+		marker := ctx.kubeParam
+		if marker == "" {
+			marker = "latest"
+		}
+		if !strings.HasPrefix(marker, "ci/") {
+			marker = "ci/" + marker
+		}
+		if !strings.HasSuffix(marker, ".txt") {
+			marker = marker + ".txt"
+		}
+		markerURL := "https://dl.k8s.io/" + marker
+		resolvedVersion, err := fetchURL(ctx.logger, markerURL)
+		if err != nil {
+			return errors.Wrapf(err, "error resolving CI version from %s", markerURL)
+		}
+		ctx.logger.V(0).Infof("Resolved CI version: %s", resolvedVersion)
+		builder, err := kube.NewCIBuilder(ctx.logger, resolvedVersion, ctx.arch)
+		if err != nil {
+			return err
+		}
+		ctx.builder = builder
+	}
+
 	if ctx.builder == nil {
 		// locate sources if no kubernetes source was specified
 		if ctx.kubeParam == "" {
@@ -121,6 +150,7 @@ func Build(options ...Option) error {
 // url: if the param is a valid http or https url
 // file: if the param refers to an existing regular file
 // source: if the param refers to an existing directory
+// ci: if the param starts with "ci/" (indicates a CI build version marker)
 // release: if the param is a semantic version expression (does this require the v preprended?
 func detectBuildType(param string) string {
 	u, err := url.ParseRequestURI(param)
@@ -136,6 +166,9 @@ func detectBuildType(param string) string {
 		if info.Mode().IsDir() {
 			return "source"
 		}
+	}
+	if strings.HasPrefix(param, "ci/") {
+		return "ci"
 	}
 	_, err = version.ParseSemantic(param)
 	if err == nil {
@@ -153,4 +186,27 @@ func supportedArch(arch string) bool {
 	case "arm64":
 	}
 	return true
+}
+
+func fetchURL(logger log.Logger, url string) (string, error) {
+	logger.V(0).Infof("Fetching %q", url)
+	httpClient := &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+		},
+	}
+	resp, err := httpClient.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("error status: %s", resp.Status)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(body)), nil
 }

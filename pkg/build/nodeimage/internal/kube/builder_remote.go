@@ -58,6 +58,16 @@ func NewReleaseBuilder(logger log.Logger, version, arch string) (Builder, error)
 	}, nil
 }
 
+// NewCIBuilder used to specify a CI semver and constructs a url to CI artifacts
+func NewCIBuilder(logger log.Logger, version, arch string) (Builder, error) {
+	url := "https://dl.k8s.io/ci/" + version + "/kubernetes-server-linux-" + arch + ".tar.gz"
+	return &remoteBuilder{
+		version: version,
+		logger:  logger,
+		url:     url,
+	}, nil
+}
+
 // Build implements Bits.Build
 func (b *remoteBuilder) Build() (Bits, error) {
 
