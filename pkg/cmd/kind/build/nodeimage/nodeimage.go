@@ -38,11 +38,18 @@ type flagpole struct {
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	flags := &flagpole{}
 	cmd := &cobra.Command{
-		Args: cobra.MaximumNArgs(1),
-		// TODO(bentheelder): more detailed usage
+		Args:  cobra.MaximumNArgs(1),
 		Use:   "node-image [kubernetes-source]",
 		Short: "Build the node image",
-		Long:  "Build the node image which contains Kubernetes build artifacts and other kind requirements",
+		Long: `Build the node image which contains Kubernetes build artifacts and other kind requirements.
+By default, this will build from a local Kubernetes source directory (auto-detected if omitted).
+
+You can also build from:
+- A local Kubernetes source directory path (e.g., /path/to/kubernetes/source)
+- A local Kubernetes release tarball path (e.g., /path/to/kubernetes-server-linux-amd64.tar.gz)
+- A URL to a Kubernetes release tarball (e.g., https://dl.k8s.io/v1.30.0/kubernetes-server-linux-amd64.tar.gz)
+- A release version (e.g., v1.36.1)
+- A Kubernetes CI build version marker prefixed with 'ci/' (e.g., ci/latest, ci/latest-1.36)`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(logger, flags, args)
 		},
@@ -51,7 +58,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		&flags.BuildType,
 		"type",
 		"",
-		"optionally specify one of 'url', 'file', 'release' or 'source' as the type of build",
+		"optionally specify one of 'url', 'file', 'release', 'ci' or 'source' as the type of build",
 	)
 	cmd.Flags().StringVar(
 		&flags.Image,
