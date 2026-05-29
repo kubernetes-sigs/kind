@@ -15,10 +15,8 @@ description: |-
 ## 1. Familiarize Yourself With Contributing to Kubernetes Projects
 ### Read the Kubernetes Community Guidelines
 
-Make sure to read you read the [Kubernetes community guidelines][community].
+Make sure you read the [Kubernetes community guidelines][community].
 In specific, read through the [Kubernetes contributor guidelines][contributor].
-
-Additionally, note that 
 
 ### Setup GitHub Account
 
@@ -80,6 +78,10 @@ into your editor etc. You can find the version of go we're currently using to de
 
 Install or upgrade [Go using the instructions for your operating system][golang].
 You can check if Go is in your system with the following command:
+
+```
+go version
+```
 
 ## 3. Read The Docs 
 
