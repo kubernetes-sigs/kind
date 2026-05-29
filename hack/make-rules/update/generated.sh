@@ -32,8 +32,8 @@ cd "${REPO_ROOT}"
 # we also need to populate vendor
 
 # run the generators
-bin/deepcopy-gen --output-file zz_generated.deepcopy.go --go-header-file hack/tools/boilerplate.go.txt ./pkg/internal/apis/config/
-bin/deepcopy-gen --output-file zz_generated.deepcopy.go --go-header-file hack/tools/boilerplate.go.txt ./pkg/apis/config/v1alpha4
+bin/deepcopy-gen --output-file zz_generated.deepcopy.go --go-header-file hack/boilerplate/boilerplate.go.txt ./pkg/internal/apis/config/
+bin/deepcopy-gen --output-file zz_generated.deepcopy.go --go-header-file hack/boilerplate/boilerplate.go.txt ./pkg/apis/config/v1alpha4
 
 
 # set module mode back, return to repo root and gofmt to ensure we format generated code
