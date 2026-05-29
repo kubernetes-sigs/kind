@@ -73,6 +73,11 @@ func Test_sanitizeImage(t *testing.T) {
 			pullImageName:     "foo.bar/baz@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6",
 		},
 		{
+			image:             "localhost:5000/kindest/node:v1.21.1@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6",
+			friendlyImageName: "localhost:5000/kindest/node:v1.21.1",
+			pullImageName:     "localhost:5000/kindest/node@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6",
+		},
+		{
 			image:             "baz:quux@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6",
 			friendlyImageName: "baz:quux",
 			pullImageName:     "docker.io/library/baz@sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6",
