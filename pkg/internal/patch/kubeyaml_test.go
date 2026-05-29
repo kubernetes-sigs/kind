@@ -61,6 +61,27 @@ func TestKubeYAML(t *testing.T) {
 			ExpectError:     false,
 			ExpectOutput:    normalKubeadmConfigTrivialPatchedAnd6902Patched,
 		},
+		{
+			Name:         "kubeadm v1beta4 target with unversioned old-style patch",
+			ToPatch:      v1beta4KubeadmConfig,
+			Patches:      []string{unversionedOldStylePatch},
+			ExpectError:  false,
+			ExpectOutput: v1beta4KubeadmConfigPatched,
+		},
+		{
+			Name:         "kubeadm v1beta4 target with versioned v1beta4 patch",
+			ToPatch:      v1beta4KubeadmConfig,
+			Patches:      []string{versionedV1beta4Patch},
+			ExpectError:  false,
+			ExpectOutput: v1beta4KubeadmConfigPatchedVersioned,
+		},
+		{
+			Name:         "kubeadm v1beta3 target with versioned v1beta3 patch",
+			ToPatch:      v1beta3KubeadmConfig,
+			Patches:      []string{versionedV1beta3Patch},
+			ExpectError:  false,
+			ExpectOutput: v1beta3KubeadmConfigPatched,
+		},
 	}
 	for _, tc := range cases {
 		tc := tc // capture test case
@@ -399,6 +420,134 @@ metadata:
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
+metadata:
+  name: config
+`
+
+const v1beta4KubeadmConfig = `apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+metadata:
+  name: config
+apiServer:
+  certSANs: [localhost, "127.0.0.1"]
+  extraArgs:
+  - name: "v"
+    value: "4"
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+metadata:
+  name: config
+nodeRegistration:
+  kubeletExtraArgs:
+  - name: "fail-swap-on"
+    value: "false"
+`
+
+const unversionedOldStylePatch = `kind: ClusterConfiguration
+apiServer:
+  extraArgs:
+    "v": "5"
+    "enable-hostpath-provisioner": "true"
+  certSANs:
+    - "my-host"
+---
+kind: InitConfiguration
+nodeRegistration:
+  kubeletExtraArgs:
+    "fail-swap-on": null
+    "node-ip": "192.168.9.6"
+`
+
+const v1beta4KubeadmConfigPatched = `apiServer:
+  certSANs:
+  - localhost
+  - 127.0.0.1
+  - my-host
+  extraArgs:
+  - name: v
+    value: "5"
+  - name: enable-hostpath-provisioner
+    value: "true"
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+metadata:
+  name: config
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+metadata:
+  name: config
+nodeRegistration:
+  kubeletExtraArgs:
+  - name: node-ip
+    value: 192.168.9.6
+`
+
+const versionedV1beta4Patch = `apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+apiServer:
+  extraArgs:
+  - name: "enable-hostpath-provisioner"
+    value: "true"
+  certSANs:
+  - "my-host"
+`
+
+const v1beta4KubeadmConfigPatchedVersioned = `apiServer:
+  certSANs:
+  - localhost
+  - 127.0.0.1
+  - my-host
+  extraArgs:
+  - name: v
+    value: "4"
+  - name: enable-hostpath-provisioner
+    value: "true"
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+metadata:
+  name: config
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+metadata:
+  name: config
+nodeRegistration:
+  kubeletExtraArgs:
+  - name: fail-swap-on
+    value: "false"
+`
+
+const v1beta3KubeadmConfig = `apiVersion: kubeadm.k8s.io/v1beta3
+kind: ClusterConfiguration
+metadata:
+  name: config
+apiServer:
+  certSANs: [localhost, "127.0.0.1"]
+  extraArgs:
+    "v": "4"
+`
+
+const versionedV1beta3Patch = `apiVersion: kubeadm.k8s.io/v1beta3
+kind: ClusterConfiguration
+apiServer:
+  extraArgs:
+    "enable-hostpath-provisioner": "true"
+  certSANs:
+    - "my-host"
+`
+
+const v1beta3KubeadmConfigPatched = `apiServer:
+  certSANs:
+  - localhost
+  - 127.0.0.1
+  - my-host
+  extraArgs:
+    enable-hostpath-provisioner: "true"
+    v: "4"
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: ClusterConfiguration
 metadata:
   name: config
 `
