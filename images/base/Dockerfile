@@ -70,7 +70,7 @@ COPY --chmod=0644 files/etc/systemd/system/kubelet.service.d/* /etc/systemd/syst
 # Finally we adjust tempfiles cleanup to be 1 minute after "boot" instead of 15m
 # This is plenty after we've done initial setup for a node, but before we are
 # likely to try to export logs etc.
-RUN chmod 755 /kind/bin && \
+RUN chmod 755 /kind /kind/bin && \
     echo "Installing Packages ..." \
     && DEBIAN_FRONTEND=noninteractive clean-install \
       systemd \
