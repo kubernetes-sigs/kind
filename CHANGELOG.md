@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 * [PLT-3963] - Adaptar cloud-provisioner a Semantic Versioning
 * [PLT-3091] - Adaptar cloud-provisioner para soportar ECR central: soportar prefijos
 * [PLT-4161] - Add ecr_pull_through.py migration script and ECR pull-through support in upgrade-provisioner
+* [PLT-4154] - Fix vulnerabilities: CAPI v1.10.10, CAPA v2.9.3, CAPZ v1.21.3, Calico v3.31.5, cert-manager v1.20.2, FluxCD 2.17.2
 
 ## 0.17.0-0.8.4 (2026-03-25)
 

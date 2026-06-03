@@ -37,21 +37,21 @@ CLOUD_PROVISIONER_LAST_PREVIOUS_RELEASE = "0.17.0-0.7"
 
 AWS_LOAD_BALANCER_CONTROLLER_CHART = "1.11.0"
 
-CLUSTERCTL = "v1.10.8"
+CLUSTERCTL = "v1.10.10"
 
-CAPI = "v1.10.8"
-CAPI_KUBEADM_BOOTSTRAP = "v1.10.8"
-CAPI_KUBEADM_CONTROL_PLANE = "v1.10.8"
-CAPA = "v2.9.2"
+CAPI = "v1.10.10"
+CAPI_KUBEADM_BOOTSTRAP = "v1.10.10"
+CAPI_KUBEADM_CONTROL_PLANE = "v1.10.10"
+CAPA = "v2.9.3"
 CAPG = "1.6.1-0.4.0"
-CAPZ = "v1.21.1"
+CAPZ = "v1.21.3"
 
-TIGERA_OPERATOR_CALICOCTL_VERSION = "3.30.2"
-TIGERA_OPERATOR_CONTROLLER_VERSION = "v1.38.5"
+TIGERA_OPERATOR_CALICOCTL_VERSION = "3.31.5"
+TIGERA_OPERATOR_CONTROLLER_VERSION = "v1.40.8"
 
 common_charts = {
     "cert-manager": {
-        "version": "v1.19.1",
+        "version": "v1.20.2",
         "namespace": "cert-manager",
         "repo": "https://charts.jetstack.io"
     },
@@ -72,7 +72,7 @@ common_charts = {
         "release_name": "flux"
     },
     "tigera-operator": {
-        "version": "v3.30.2",
+        "version": "v3.31.5",
         "namespace": "tigera-operator",
         "repo": "https://docs.projectcalico.org/charts"
     }

@@ -1,39 +1,39 @@
 core:
   binaries:
-    clusterctl: v1.10.8
+    clusterctl: v1.10.10
     helm: v3.13.1
   images:
     calico:
-      cni: v3.30.2
-      csi: v3.30.2
-      ctl: v3.30.2
-      kube-controllers: v3.30.2
-      node-driver-registrar: v3.30.2
-      node: v3.30.2
-      pod2daemon-flexvol: v3.30.2
-      tigera-operator: v1.38.5
-      typha: v3.30.2
-      whisker: v3.30.2
-      whisker-backend: v3.30.2
-      goldmane: v3.30.2
+      cni: v3.31.5
+      csi: v3.31.5
+      ctl: v3.31.5
+      kube-controllers: v3.31.5
+      node-driver-registrar: v3.31.5
+      node: v3.31.5
+      pod2daemon-flexvol: v3.31.5
+      tigera-operator: v1.40.8
+      typha: v3.31.5
+      whisker: v3.31.5
+      whisker-backend: v3.31.5
+      goldmane: v3.31.5
     capi:
-      kubeadm-bootstrap-controller: v1.10.8
-      kubeadm-control-plane-controller: v1.10.8
-      cluster-api-controller: v1.10.8
+      kubeadm-bootstrap-controller: v1.10.10
+      kubeadm-control-plane-controller: v1.10.10
+      cluster-api-controller: v1.10.10
     cert-manager:
-      cert-manager-acmesolver: v1.19.1
-      cert-manager-cainjector: v1.19.1
-      cert-manager-controller: v1.19.1
-      cert-manager-startupapicheck: v1.19.1
-      cert-manager-webhook: v1.19.1
+      cert-manager-acmesolver: v1.20.2
+      cert-manager-cainjector: v1.20.2
+      cert-manager-controller: v1.20.2
+      cert-manager-startupapicheck: v1.20.2
+      cert-manager-webhook: v1.20.2
     cluster-autoscaler: v1.34.1
     cluster-operator:
       cluster-operator: 0.7.0-m.1
     flux:
       flux-cli: v2.7.5
-      helm-controller: v1.4.5
-      kustomize-controller: v1.7.3
-      source-controller: v1.7.4
+      helm-controller: v1.5.4
+      kustomize-controller: v1.8.5
+      source-controller: v1.8.4
     kind:
       cloud-provisioner: 0.17.0-0.8.0
       coredns: v1.12.1
@@ -44,20 +44,20 @@ core:
       kube-proxy: v1.34.0
       kube-scheduler: v1.34.0
   charts:
-    cert-manager: v1.19.1
+    cert-manager: v1.20.2
     cluster-autoscaler: 9.52.1
     cluster-operator: 0.5.2
     flux: 2.17.2
-    tigera-operator: v3.30.2
+    tigera-operator: v3.31.5
 aws:
   capa:
     binaries:
-      clusterawsadm: v2.9.2
+      clusterawsadm: v2.9.3
     images:
-      cluster-api-aws-controller: v2.9.2
+      cluster-api-aws-controller: v2.9.3
     manifests:
-      metadata.yaml: v2.9.2
-      infrastructure-components.yaml: v2.9.2
+      metadata.yaml: v2.9.3
+      infrastructure-components.yaml: v2.9.3
   managed:
     addons:
       aws-ebs-csi-driver: v1.47.0-eksbuild.1
@@ -72,10 +72,10 @@ azure:
   capz:
     images:
       azureserviceoperator: v2.11.0
-      cluster-api-azure-controller: v1.21.1
+      cluster-api-azure-controller: v1.21.3
     manifests:
-      metadata.yaml: v1.21.1
-      infrastructure-components.yaml: v1.21.1
+      metadata.yaml: v1.21.3
+      infrastructure-components.yaml: v1.21.3
   unmanaged:
     charts:
       azuredisk-csi-driver: 1.33.5

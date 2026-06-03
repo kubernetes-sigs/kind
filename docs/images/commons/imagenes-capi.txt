@@ -1,3 +1,3 @@
-registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.10.8
-registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.10.8
-registry.k8s.io/cluster-api/cluster-api-controller:v1.10.8
+registry.k8s.io/cluster-api/kubeadm-bootstrap-controller:v1.10.10
+registry.k8s.io/cluster-api/kubeadm-control-plane-controller:v1.10.10
+registry.k8s.io/cluster-api/cluster-api-controller:v1.10.10

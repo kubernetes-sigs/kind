@@ -1,1 +1,1 @@
-registry.k8s.io/cluster-api-aws/cluster-api-aws-controller:v2.9.2
+registry.k8s.io/cluster-api-aws/cluster-api-aws-controller:v2.9.3

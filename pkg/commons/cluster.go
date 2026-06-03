@@ -30,10 +30,10 @@ import (
 )
 
 var (
-	capi_version = "v1.10.8"
-	capa_version = "v2.9.2"
+	capi_version = "v1.10.10"
+	capa_version = "v2.9.3"
+	capz_version = "v1.21.3"
 	capg_version = "1.6.1-0.4.0"
-	capz_version = "v1.21.1"
 )
 
 const (

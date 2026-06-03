@@ -22,13 +22,13 @@ ENV CLUSTER_TOPOLOGY=true \
     DEBIAN_FRONTEND=noninteractive
 
 # Tool versions
-ARG CLUSTERCTL=v1.10.8
+ARG CLUSTERCTL=v1.10.10
 ARG YQ_VERSION=v4.45.1
 ARG KUBECTL_VERSION=1.32.12
 ARG HELM_VERSION=3.15.2
-ARG CAPA=v2.9.2
+ARG CAPA=v2.9.3
 ARG CAPG=1.6.1-0.4.0
-ARG CAPZ=v1.21.1
+ARG CAPZ=v1.21.3
 
 # =========================
 # Base system dependencies

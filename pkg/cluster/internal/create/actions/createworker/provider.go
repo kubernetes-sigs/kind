@@ -217,11 +217,11 @@ var commonsCharts = ChartsDictionary{
 	Charts: map[string]map[string]map[string]commons.ChartEntry{
 		"32": {
 			"managed": {
-				"cert-manager": {Repository: "https://charts.jetstack.io", Version: "v1.19.1", Namespace: "cert-manager", Pull: true, Reconcile: true},
+				"cert-manager": {Repository: "https://charts.jetstack.io", Version: "v1.20.2", Namespace: "cert-manager", Pull: true, Reconcile: true},
 				"flux2":        {Repository: "https://fluxcd-community.github.io/helm-charts", Version: "2.17.2", Namespace: "kube-system", Pull: true, Reconcile: true},
 			},
 			"unmanaged": {
-				"cert-manager": {Repository: "https://charts.jetstack.io", Version: "v1.19.1", Namespace: "cert-manager", Pull: true, Reconcile: true},
+				"cert-manager": {Repository: "https://charts.jetstack.io", Version: "v1.20.2", Namespace: "cert-manager", Pull: true, Reconcile: true},
 				"flux2":        {Repository: "https://fluxcd-community.github.io/helm-charts", Version: "2.17.2", Namespace: "kube-system", Pull: true, Reconcile: true},
 			},
 		},

@@ -1,2 +1,2 @@
 mcr.microsoft.com/k8s/azureserviceoperator:v2.11.0
-registry.k8s.io/cluster-api-azure/cluster-api-azure-controller:v1.21.1
+registry.k8s.io/cluster-api-azure/cluster-api-azure-controller:v1.21.3

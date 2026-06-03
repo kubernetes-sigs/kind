@@ -16,19 +16,19 @@ To ensure reproducible execution, the Docker image `cloud-provisioner-upgrade:0.
 
 * *Common components* across all platforms:
 ** _cluster-operator_: `0.7.0-m.1`
-** _cert-manager_: `v1.19.1`
-** _flux2_: `2.17.2`
-** _tigera-operator_: `v3.30.2`
+** _cert-manager_: `v1.20.2`
+** _flux2_: `2.18.3`
+** _tigera-operator_: `v3.32.0`
 ** _cluster-autoscaler_: `9.52.1`
 
 * *Cluster API Core*
-** _cluster-api (CAPI)_: `v1.10.8`
-** _bootstrap-kubeadm_: `v1.10.8`
-** _control-plane-kubeadm_: `v1.10.8`
+** _cluster-api (CAPI)_: `v1.10.10`
+** _bootstrap-kubeadm_: `v1.10.10`
+** _control-plane-kubeadm_: `v1.10.10`
 
 * *Platform-specific infrastructure providers*:
-** CAPA (AWS): `v2.9.2`
-** CAPZ (Azure): `v1.21.1`
+** CAPA (AWS): `v2.9.3`
+** CAPZ (Azure): `v1.21.3`
 ** CAPG (GCP): `1.6.1-0.4.0`
 
 * *Platform-specific charts*:
@@ -301,7 +301,7 @@ The script executes the following workflow:
 [source,bash]
 ----
 clusterctl upgrade apply \
-  --core cluster-api:v1.10.8 \
+  --core cluster-api:v1.10.10 \
   --infrastructure <proveedor>:<versión> \
   --wait-providers
 ----
@@ -357,10 +357,10 @@ kubectl get pods -A -o json \
 +
 *Expected versions:*
 +
-** CAPI → `v1.10.8`
-** CAPA → `v2.9.2`
+** CAPI → `v1.10.10`
+** CAPA → `v2.9.3`
 ** CAPG → `1.6.1-0.4.0`
-** CAPZ → `v1.21.1`
+** CAPZ → `v1.21.3`
 
 * Verify chart versions.
 +

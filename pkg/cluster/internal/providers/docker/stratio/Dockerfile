@@ -5,13 +5,13 @@ ENV CLUSTER_TOPOLOGY=true
 ENV CLUSTERCTL_DISABLE_VERSIONCHECK=true
 
 # Core tool/version args
-ARG CLUSTERCTL=v1.10.8
-ENV CLUSTERAWSADM=v2.9.2
+ARG CLUSTERCTL=v1.10.10
+ENV CLUSTERAWSADM=v2.9.3
 ENV HELM=v3.19.0
 ENV AWSCLI_VERSION=2.30.6
-ARG CAPA=v2.9.2
+ARG CAPA=v2.9.3
 ARG CAPG=1.6.1-0.4.0
-ARG CAPZ=v1.21.1
+ARG CAPZ=v1.21.3
 ENV CAPI_REPO=/root/.cluster-api/local-repository
 
 ## System packages (minimal, drop previous Python pip stack)

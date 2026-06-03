@@ -18,112 +18,112 @@ Associated with the charts that _Stratio Cloud Provisioner_ installs in all clus
 |
 |
 | ghcr.io/fluxcd/helm-controller
-| v1.4.5
+| v1.5.4
 
 |
 |
 | ghcr.io/fluxcd/kustomize-controller
-| v1.7.3
+| v1.8.5
 
 |
 |
 | ghcr.io/fluxcd/source-controller
-| v1.7.4
+| v1.8.4
 
 | *tigera-operator*
-| *3.29.1*
+| *v3.31.5*
 |
 |
 
 |
 |
 | quay.io/calico/kube-controllers
-| 3.29.1
+| v3.31.5
 
 |
 |
 | quay.io/calico/typha
-| 3.29.1
+| v3.31.5
 
 |
 |
 | quay.io/calico/node
-| 3.29.1
+| v3.31.5
 
 |
 |
 | quay.io/calico/csi
-| 3.29.1
+| v3.31.5
 
 |
 |
 | quay.io/calico/node-driver-registrar
-| 3.29.1
+| v3.31.5
 
 |
 |
 | quay.io/calico/ctl
-| 3.29.1
+| v3.31.5
 
 |
 |
 | quay.io/calico/cni
-| 3.29.1
+| v3.31.5
 
 |
 |
 | quay.io/calico/pod2daemon-flexvol
-| 3.29.1
+| v3.31.5
 
 |
 |
-| quay.io/calico/whisker:v3.30.2
-| 3.30.2
+| quay.io/calico/whisker
+| v3.31.5
 
 |
 |
-| quay.io/calico/whisker-backend:v3.30.2
-| 3.30.2
+| quay.io/calico/whisker-backend
+| v3.31.5
 
 |
 |
-| quay.io/calico/goldmane:v3.30.2
-| 3.30.2
+| quay.io/calico/goldmane
+| v3.31.5
 
 |
 |
 | quay.io/tigera/operator
-| v1.38.5
+| v1.40.8
 
 | *cert-manager*
-| *v1.19.1*
+| *v1.20.2*
 |
 |
 
 |
 |
 | quay.io/jetstack/cert-manager-controller
-| v1.19.1
+| v1.20.2
 
 |
 |
 | quay.io/jetstack/cert-manager-cainjector
-| v1.19.1
+| v1.20.2
 
 |
 |
 | quay.io/jetstack/cert-manager-webhook
-| v1.19.1
+| v1.20.2
 
 |
 |
 | quay.io/jetstack/cert-manager-acmesolver
-| v1.19.1
+| v1.20.2
 
 |
 |
 | quay.io/jetstack/cert-manager-startupapicheck
-| v1.19.1
+| v1.20.2
 
 | *cluster-autoscaler*
 | *9.52.1*
@@ -146,24 +146,24 @@ Associated with the charts that _Stratio Cloud Provisioner_ installs in all clus
 | 0.5.2
 
 | *Installed by Cluster API - CAPI Component*
-| *v1.10.8*
+| *v1.10.10*
 |
 |
 
 |
 |
 | registry.k8s.io/cluster-api/kubeadm-bootstrap-controller
-| v1.10.8
+| v1.10.10
 
 |
 |
 | registry.k8s.io/cluster-api/kubeadm-control-plane-controller
-| v1.10.8
+| v1.10.10
 
 |
 |
 | registry.k8s.io/cluster-api/cluster-api-controller
-| v1.10.8
+| v1.10.10
 |===
 
 == Other images
@@ -172,13 +172,13 @@ Associated with the charts that _Stratio Cloud Provisioner_ installs in all clus
 | Image | Version
 
 | stratio-releases.repo.stratio.com/stratio/cloud-provisioner
-| 0.17.0-0.8.0
+| 0.17.0-0.8.5
 
 | docker.io/kindest/kindnetd
 | v20250512-df8de77b
 
 | registry.k8s.io/coredns/coredns
-| v1.10.1
+| v1.12.1
 
 | registry.k8s.io/etcd
 | 3.6.4-0
