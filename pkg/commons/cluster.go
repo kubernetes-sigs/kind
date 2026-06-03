@@ -412,7 +412,7 @@ type DockerRegistry struct {
 	Type                 string `yaml:"type" validate:"required,oneof='acr' 'ecr' 'gar' 'gcr' 'generic'"`
 	URL                  string `yaml:"url" validate:"required"`
 	KeosRegistry         bool   `yaml:"keos_registry" validate:"boolean"`
-	AWSCentralECREnabled bool   `yaml:"aws_central_ecr_enabled" validate:"boolean"`
+	ECRPullThroughCacheEnabled bool   `yaml:"ecr_pull_through_cache_enabled" validate:"boolean"`
 }
 
 type HelmRepositoryCredentials struct {
@@ -608,8 +608,8 @@ func (s KeosSpec) Init() KeosSpec {
 }
 
 // GetPrefixedRegistryURL returns the registry URL with prefix if appropriate
-func GetPrefixedRegistryURL(originalRegistry string, baseRegistryURL string, awsCentralECREnabled bool) string {
-	if !awsCentralECREnabled || baseRegistryURL == "" {
+func GetPrefixedRegistryURL(originalRegistry string, baseRegistryURL string, ecrPullThroughCacheEnabled bool) string {
+	if !ecrPullThroughCacheEnabled || baseRegistryURL == "" {
 		return baseRegistryURL
 	}
 

@@ -244,7 +244,14 @@ spec:
     enableCSIPolicy: true
   nodes:
     extraPolicyAttachments:
-    - arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy`
+    - arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
+    extraStatements:
+    - Action:
+        - "ecr:BatchImportUpstreamImage"
+        - "ecr:CreateRepository"
+      Effect: Allow
+      Resource:
+        - "*"`
 
 	// Create the eks.config file in the container
 	eksConfigPath := "/kind/eks.config"

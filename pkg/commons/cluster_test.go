@@ -27,7 +27,7 @@ func TestGetPrefixedRegistryURL(t *testing.T) {
 		name                 string
 		originalRegistry     string
 		baseRegistryURL      string
-		awsCentralECREnabled bool
+		ecrPullThroughCacheEnabled bool
 		expected             string
 	}{
 		// CentralECR enabled — all 5 known registry mappings
@@ -35,35 +35,35 @@ func TestGetPrefixedRegistryURL(t *testing.T) {
 			name:                 "docker.io maps to /dockerhub suffix",
 			originalRegistry:     "docker.io",
 			baseRegistryURL:      baseURL,
-			awsCentralECREnabled: true,
+			ecrPullThroughCacheEnabled: true,
 			expected:             baseURL + DefaultDockerhubPrefix,
 		},
 		{
 			name:                 "public.ecr.aws maps to /ecrpublic suffix",
 			originalRegistry:     "public.ecr.aws",
 			baseRegistryURL:      baseURL,
-			awsCentralECREnabled: true,
+			ecrPullThroughCacheEnabled: true,
 			expected:             baseURL + DefaultEcrpublicPrefix,
 		},
 		{
 			name:                 "ghcr.io maps to /ghcr suffix",
 			originalRegistry:     "ghcr.io",
 			baseRegistryURL:      baseURL,
-			awsCentralECREnabled: true,
+			ecrPullThroughCacheEnabled: true,
 			expected:             baseURL + DefaultGhcrPrefix,
 		},
 		{
 			name:                 "quay.io maps to /quay suffix",
 			originalRegistry:     "quay.io",
 			baseRegistryURL:      baseURL,
-			awsCentralECREnabled: true,
+			ecrPullThroughCacheEnabled: true,
 			expected:             baseURL + DefaultQuayPrefix,
 		},
 		{
 			name:                 "k8s.io maps to /k8s suffix",
 			originalRegistry:     "k8s.io",
 			baseRegistryURL:      baseURL,
-			awsCentralECREnabled: true,
+			ecrPullThroughCacheEnabled: true,
 			expected:             baseURL + DefaultK8sPrefix,
 		},
 		// registry.k8s.io also matches the k8s.io case via strings.Contains
@@ -71,7 +71,7 @@ func TestGetPrefixedRegistryURL(t *testing.T) {
 			name:                 "registry.k8s.io maps to /k8s suffix via strings.Contains",
 			originalRegistry:     "registry.k8s.io",
 			baseRegistryURL:      baseURL,
-			awsCentralECREnabled: true,
+			ecrPullThroughCacheEnabled: true,
 			expected:             baseURL + DefaultK8sPrefix,
 		},
 		// Unknown registry returns base URL unchanged
@@ -79,7 +79,7 @@ func TestGetPrefixedRegistryURL(t *testing.T) {
 			name:                 "unknown registry returns base URL unchanged",
 			originalRegistry:     "mcr.microsoft.com",
 			baseRegistryURL:      baseURL,
-			awsCentralECREnabled: true,
+			ecrPullThroughCacheEnabled: true,
 			expected:             baseURL,
 		},
 		// CentralECR disabled — always returns base URL unchanged
@@ -87,21 +87,21 @@ func TestGetPrefixedRegistryURL(t *testing.T) {
 			name:                 "CentralECR disabled returns base URL for docker.io",
 			originalRegistry:     "docker.io",
 			baseRegistryURL:      baseURL,
-			awsCentralECREnabled: false,
+			ecrPullThroughCacheEnabled: false,
 			expected:             baseURL,
 		},
 		{
 			name:                 "CentralECR disabled returns base URL for quay.io",
 			originalRegistry:     "quay.io",
 			baseRegistryURL:      baseURL,
-			awsCentralECREnabled: false,
+			ecrPullThroughCacheEnabled: false,
 			expected:             baseURL,
 		},
 		{
 			name:                 "CentralECR disabled returns base URL for registry.k8s.io",
 			originalRegistry:     "registry.k8s.io",
 			baseRegistryURL:      baseURL,
-			awsCentralECREnabled: false,
+			ecrPullThroughCacheEnabled: false,
 			expected:             baseURL,
 		},
 		// Empty base URL returns empty string
@@ -109,24 +109,24 @@ func TestGetPrefixedRegistryURL(t *testing.T) {
 			name:                 "empty base URL returns empty string when CentralECR enabled",
 			originalRegistry:     "docker.io",
 			baseRegistryURL:      "",
-			awsCentralECREnabled: true,
+			ecrPullThroughCacheEnabled: true,
 			expected:             "",
 		},
 		{
 			name:                 "empty base URL returns empty string when CentralECR disabled",
 			originalRegistry:     "docker.io",
 			baseRegistryURL:      "",
-			awsCentralECREnabled: false,
+			ecrPullThroughCacheEnabled: false,
 			expected:             "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := GetPrefixedRegistryURL(tt.originalRegistry, tt.baseRegistryURL, tt.awsCentralECREnabled)
+			got := GetPrefixedRegistryURL(tt.originalRegistry, tt.baseRegistryURL, tt.ecrPullThroughCacheEnabled)
 			if got != tt.expected {
 				t.Errorf("GetPrefixedRegistryURL(%q, %q, %v) = %q, want %q",
-					tt.originalRegistry, tt.baseRegistryURL, tt.awsCentralECREnabled, got, tt.expected)
+					tt.originalRegistry, tt.baseRegistryURL, tt.ecrPullThroughCacheEnabled, got, tt.expected)
 			}
 		})
 	}

@@ -50,7 +50,7 @@ type KeosRegistry struct {
 	user                 string
 	pass                 string
 	registryType         string
-	awsCentralECREnabled bool
+	ecrPullThroughCacheEnabled bool
 }
 
 type HelmRegistry struct {
@@ -148,10 +148,10 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		if registry.KeosRegistry {
 			keosRegistry.url = registry.URL
 			keosRegistry.registryType = registry.Type
-			// check if aws_central_ecr is set and enabled (default is false)
+			// check if ecr_pull_through_cache is set and enabled (default is false)
 			// and type is ecr
-			if registry.AWSCentralECREnabled && registry.Type == "ecr" {
-				keosRegistry.awsCentralECREnabled = true
+			if registry.ECRPullThroughCacheEnabled && registry.Type == "ecr" {
+				keosRegistry.ecrPullThroughCacheEnabled = true
 			}
 			continue
 		}
@@ -177,7 +177,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			KeosCluster: a.keosCluster,
 			KeosRegUrl:  keosRegistry.url,
 			Private:     a.clusterConfig.Spec.Private,
-			CentralECR:  keosRegistry.awsCentralECREnabled,
+			CentralECR:  keosRegistry.ecrPullThroughCacheEnabled,
 			HelmPrivate: a.clusterConfig.Spec.PrivateHelmRepo,
 		}
 	} else {
@@ -185,7 +185,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			KeosCluster: a.keosCluster,
 			KeosRegUrl:  keosRegistry.url,
 			Private:     false,
-			CentralECR:  keosRegistry.awsCentralECREnabled,
+			CentralECR:  keosRegistry.ecrPullThroughCacheEnabled,
 		}
 	}
 
@@ -198,7 +198,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 		if err != nil {
 			return err
 		}
-		c = `sed -i 's|docker.io|` + commons.GetPrefixedRegistryURL("docker.io", keosRegistry.url, keosRegistry.awsCentralECREnabled) + `|g' /kind/manifests/default-cni.yaml`
+		c = `sed -i 's|docker.io|` + commons.GetPrefixedRegistryURL("docker.io", keosRegistry.url, keosRegistry.ecrPullThroughCacheEnabled) + `|g' /kind/manifests/default-cni.yaml`
 
 		_, err = commons.ExecuteCommand(n, c, 5, 3)
 		if err != nil {
@@ -316,7 +316,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 
 	if privateParams.Private {
 
-		k8sRegUrl := commons.GetPrefixedRegistryURL("registry.k8s.io", keosRegistry.url, keosRegistry.awsCentralECREnabled)
+		k8sRegUrl := commons.GetPrefixedRegistryURL("registry.k8s.io", keosRegistry.url, keosRegistry.ecrPullThroughCacheEnabled)
 		c = "echo \"images:\" >> /root/.cluster-api/clusterctl.yaml && " +
 			"echo \"  cluster-api:\" >> /root/.cluster-api/clusterctl.yaml && " +
 			"echo \"    repository: " + k8sRegUrl + "/cluster-api\" >> /root/.cluster-api/clusterctl.yaml && " +
@@ -343,7 +343,7 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 			"echo \"  infrastructure-azure/nmi:\" >> /root/.cluster-api/clusterctl.yaml && " +
 			"echo \"    repository: " + keosRegistry.url + "/oss/azure/aad-pod-identity\" >> /root/.cluster-api/clusterctl.yaml && " +
 			"echo \"  cert-manager:\" >> /root/.cluster-api/clusterctl.yaml && " +
-			"echo \"    repository: " + commons.GetPrefixedRegistryURL("quay.io", keosRegistry.url, keosRegistry.awsCentralECREnabled) + "/jetstack\" >> /root/.cluster-api/clusterctl.yaml "
+			"echo \"    repository: " + commons.GetPrefixedRegistryURL("quay.io", keosRegistry.url, keosRegistry.ecrPullThroughCacheEnabled) + "/jetstack\" >> /root/.cluster-api/clusterctl.yaml "
 		_, err = commons.ExecuteCommand(n, c, 5, 3)
 		if err != nil {
 			return errors.Wrap(err, "failed to add private image registry clusterctl config")

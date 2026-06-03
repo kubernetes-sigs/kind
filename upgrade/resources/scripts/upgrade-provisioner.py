@@ -157,6 +157,7 @@ def parse_args():
     parser.add_argument("--disable-prepare-capsule", action="store_true", help="Disable preparing capsule for the upgrade process (enabled by default)")
     parser.add_argument("--dry-run", action="store_true", help="Do not upgrade components. This invalidates all other options")
     parser.add_argument("--private", action="store_true", help="Treats the Docker registry and the Helm repository as private")
+    parser.add_argument("--ecr-pull-through", action="store_true", help="Force ECR pull-through cache mode regardless of KeosCluster spec")
     args = parser.parse_args()
     return vars(args)
 
@@ -622,6 +623,16 @@ def get_keos_registry_url(keos_cluster):
             return registry["url"]
     return ""
 
+def is_ecr_pull_through_enabled(keos_cluster):
+    '''Return True if ECR pull-through cache is enabled in the cluster or forced via --ecr-pull-through flag'''
+
+    if config.get("ecr_pull_through", False):
+        return True
+    for registry in keos_cluster["spec"].get("docker_registries", []):
+        if registry.get("ecr_pull_through_cache_enabled", False):
+            return True
+    return False
+
 def get_pods_cidr(keos_cluster):
     '''Get the pods CIDR'''
 
@@ -669,6 +680,17 @@ def create_default_values(chart_name, namespace, values_file, provider):
             values = render_values_template( f"values/{provider}/{chart_name}_default_values.tmpl", keos_cluster, cluster_config)
         else:
             values, err = run_command(f"{helm} get values {chart_name} -n {namespace} --output yaml")
+        if is_ecr_pull_through_enabled(keos_cluster):
+            registry_url = get_keos_registry_url(keos_cluster)
+            pull_through_substitutions = [
+                (f"{registry_url}/tigera",    f"{registry_url}/quay/tigera"),
+                (f"{registry_url}/jetstack",  f"{registry_url}/quay/jetstack"),
+                (f"{registry_url}/fluxcd",    f"{registry_url}/ghcr/fluxcd"),
+                (f"{registry_url}/autoscaling", f"{registry_url}/k8s/autoscaling"),
+                (f"{registry_url}/eks/",      f"{registry_url}/ecrpublic/eks/"),
+            ]
+            for old, new in pull_through_substitutions:
+                values = values.replace(old, new)
         run_command(f"echo '{values}' > {values_file}")
     except Exception as e:
         raise
@@ -697,6 +719,24 @@ def update_tigera_operator_image_tag_value(values_file):
 
         values['calicoctl']['tag'] = TIGERA_OPERATOR_CALICOCTL_VERSION
         values['tigeraOperator']['version'] = TIGERA_OPERATOR_CONTROLLER_VERSION
+
+        # Apply ECR pull-through prefixes to registry fields.
+        # The registry URL is stored separately from the image path in tigera values,
+        # so string substitution in create_default_values() never matches — must be done here.
+        if is_ecr_pull_through_enabled(keos_cluster):
+            registry_url = get_keos_registry_url(keos_cluster)
+            quay_registry = f"{registry_url}/quay"
+            dockerhub_registry = f"{registry_url}/dockerhub"
+            if values.get('tigeraOperator', {}).get('registry', '').startswith(registry_url) and \
+               not values['tigeraOperator']['registry'].startswith(quay_registry):
+                values['tigeraOperator']['registry'] = quay_registry
+            if 'installation' in values:
+                values['installation']['registry'] = quay_registry
+                values['installation']['imagePath'] = 'calico'
+            calico_image = values.get('calicoctl', {}).get('image', '')
+            if calico_image.startswith(registry_url) and not calico_image.startswith(dockerhub_registry):
+                values['calicoctl']['image'] = calico_image.replace(
+                    f"{registry_url}/calico", f"{dockerhub_registry}/calico", 1)
 
         with open(values_file, 'w') as file:
             yaml.safe_dump(values, file, default_flow_style=False)
@@ -739,6 +779,46 @@ def filter_installed_charts(charts):
         print("FAILED")
         print(f"[ERROR] Error getting charts installed {e}.")
         raise e
+
+def apply_chart_crds(chart_name, chart_version, repo_url, repo_schema):
+    '''Pull chart and apply CRDs — Helm upgrade never updates CRDs, must be done explicitly'''
+
+    import tempfile
+    import glob
+
+    print(f"[INFO] Applying CRDs for {chart_name} {chart_version}:", end=" ", flush=True)
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            if repo_schema == "oci":
+                registry = repo_url.replace("oci://", "").split("/")[0]
+                if ".dkr.ecr." in registry:
+                    region = registry.split(".")[3]
+                    run_command(f"aws ecr get-login-password --region {region} | {helm} registry login {registry} --username AWS --password-stdin")
+                pull_cmd = f"{helm} pull {repo_url}/{chart_name} --version {chart_version} -d {tmpdir}"
+            else:
+                pull_cmd = f"{helm} pull {chart_name} --repo {repo_url} --version {chart_version} -d {tmpdir}"
+            run_command(pull_cmd)
+
+            tarballs = glob.glob(f"{tmpdir}/*.tgz")
+            if not tarballs:
+                print("SKIP (no tarball found)")
+                return
+
+            tarball = tarballs[0]
+            run_command(f"tar xzf {tarball} -C {tmpdir} {chart_name}/crds/ 2>/dev/null || true")
+
+            crd_files = glob.glob(f"{tmpdir}/{chart_name}/crds/*.yaml")
+            if not crd_files:
+                print("SKIP (no CRDs in chart)")
+                return
+
+            for crd_file in crd_files:
+                run_command(f"{kubectl} apply -f {crd_file}")
+
+        print("OK")
+    except Exception as e:
+        print(f"WARN ({e}) — continuing without CRD update")
+
 
 def upgrade_chart(chart_name, chart_data):
     '''Update chart HelmRelease'''
@@ -818,6 +898,9 @@ def upgrade_chart(chart_name, chart_data):
             'HelmReleaseRetries': 3
         }
 
+        if chart_name == "cluster-operator":
+            apply_chart_crds(chart_name, chart_version, repo_url, repo_schema)
+
         helmrepository_yaml = helmrepository_template.render(helm_repo_data)
         helmrelease_yaml = helmrelease_template.render(helm_release_data)
 
@@ -830,9 +913,8 @@ def upgrade_chart(chart_name, chart_data):
         with open(release_file, 'w') as f:
             f.write(helmrelease_yaml)
 
-        run_command(f"{kubectl} apply -f {repository_file}")
-
         # We need to use --server-side and --force-conflicts flags to avoid metadata.resourceVersion conflicts
+        run_command(f"{kubectl} apply -f {repository_file} --server-side --force-conflicts")
         run_command(f"{kubectl} apply -f {release_file} -n {chart_namespace} --server-side --force-conflicts")
 
         print("OK")
@@ -973,7 +1055,7 @@ def update_clusterconfig(cluster_config, charts, provider, cluster_operator_vers
         print(f"[ERROR] Error updating the clusterconfig: {e}")
         raise e
 
-def create_clusterctl_config_for_private_registry(registry_url, provider):
+def create_clusterctl_config_for_private_registry(registry_url, provider, pull_through=False):
     """Create or update clusterctl config file to use private registry"""
     print("[INFO] Configuring clusterctl for private registry:", end=" ", flush=True)
 
@@ -1000,26 +1082,29 @@ def create_clusterctl_config_for_private_registry(registry_url, provider):
     if 'images' not in config_data:
         config_data['images'] = {}
 
+    k8s_prefix  = "k8s/"  if pull_through else ""
+    quay_prefix = "quay/" if pull_through else ""
+
     # Align the image overrides with the original installation logic.
     config_data['images']['cluster-api'] = {
-        'repository': f"{registry_url}/cluster-api",
+        'repository': f"{registry_url}/{k8s_prefix}cluster-api",
         'tag': CAPI,
     }
     config_data['images']['bootstrap-kubeadm'] = {
-        'repository': f"{registry_url}/cluster-api",
+        'repository': f"{registry_url}/{k8s_prefix}cluster-api",
         'tag': CAPI,
     }
     config_data['images']['control-plane-kubeadm'] = {
-        'repository': f"{registry_url}/cluster-api",
+        'repository': f"{registry_url}/{k8s_prefix}cluster-api",
         'tag': CAPI,
     }
     config_data['images']['cert-manager'] = {
-        'repository': f"{registry_url}/jetstack"
+        'repository': f"{registry_url}/{quay_prefix}jetstack"
     }
 
     if provider == "aws":
         config_data['images']['infrastructure-aws'] = {
-            'repository': f"{registry_url}/cluster-api-aws",
+            'repository': f"{registry_url}/{k8s_prefix}cluster-api-aws",
             'tag': CAPA,
         }
     elif provider == "gcp":
@@ -1802,7 +1887,7 @@ if __name__ == '__main__':
         charts_to_upgrade.update(aws_eks_charts_installed)
     elif provider == "azure":
         charts_to_upgrade.update(azure_vm_charts)
-    charts_to_upgrade["cluster-operator"]["chart_version"] = cluster_operator_version
+    charts_to_upgrade["cluster-operator"]["version"] = cluster_operator_version
 
     # Filter out charts that are not installed to avoid errors
     charts_to_upgrade = filter_installed_charts(charts_to_upgrade)
@@ -1842,7 +1927,7 @@ if __name__ == '__main__':
     if private_registry:
         registry_url = get_keos_registry_url(keos_cluster)
         print(f"[DEBUG] Using private registry: {registry_url}")
-        create_clusterctl_config_for_private_registry(registry_url, provider)
+        create_clusterctl_config_for_private_registry(registry_url, provider, pull_through=is_ecr_pull_through_enabled(keos_cluster))
         if provider == "gcp":
             # Also patch GCP CRDs to remove conversion webhooks (caBundle issue)
             config_dir = os.path.expanduser("~/.cluster-api")
