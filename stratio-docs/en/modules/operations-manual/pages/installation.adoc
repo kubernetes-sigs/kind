@@ -393,6 +393,51 @@ You must specify which Docker registries will be used during installation. This 
 | No (at least one must be marked _true_).
 |===
 
+NOTE: The `ecr_pull_through_cache_enabled` parameter is a day-0 setting: it must be configured during cluster creation. Enabling it on an existing cluster does not affect workloads already deployed.
+
+==== Prerequisites for `ecr_pull_through_cache_enabled`
+
+Before creating a cluster with `ecr_pull_through_cache_enabled: true`, verify that the AWS account meets the following requirements:
+
+* Pull-through cache rules configured in Amazon ECR for the five upstreams used by _Stratio KEOS_: `registry.k8s.io`, `docker.io`, `ghcr.io`, `quay.io`, and `public.ecr.aws`.
+* IAM permissions on the node role: `ecr:BatchImportUpstreamImage` and `ecr:CreateRepository`.
+
+If you have `spec.security.aws.create_iam: true` in the descriptor, _Stratio Cloud Provisioner_ adds these permissions automatically when creating the cluster. If you manage IAM resources manually (`create_iam: false`) or need to enable them on an existing account, update the AWS CloudFormation stack with `clusterawsadm`:
+
+NOTE: The AWS user that you run `clusterawsadm` with must have the permissions listed in the xref:attachment$stratio-aws-temp-policy.json[stratio-aws-temp-policy.json] file.
+
+[source,bash]
+----
+cat > /tmp/eks.config << 'EOF'
+apiVersion: bootstrap.aws.infrastructure.cluster.x-k8s.io/v1beta1
+kind: AWSIAMConfiguration
+spec:
+  bootstrapUser:
+    enable: false
+  eks:
+    enable: true
+    iamRoleCreation: false
+    defaultControlPlaneRole:
+        disable: false
+  controlPlane:
+    enableCSIPolicy: true
+  nodes:
+    extraPolicyAttachments:
+    - arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
+    extraStatements:
+    - Action:
+        - "ecr:BatchImportUpstreamImage"
+        - "ecr:CreateRepository"
+      Effect: Allow
+      Resource:
+        - "*"
+EOF
+
+clusterawsadm bootstrap iam create-cloudformation-stack \
+  --config /tmp/eks.config \
+  --region <region>
+----
+
 === Using `role_arn` in the credentials descriptor
 
 You can also define `role_arn` directly in the credentials descriptor to automatically use the _assume role_:

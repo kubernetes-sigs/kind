@@ -393,6 +393,51 @@ Es necesario indicar los repositorios Docker que se utilizarán durante la insta
 | No. Al menos un repositorio debe estar marcado como _keos++_++registry_.
 |===
 
+NOTE: El parámetro `ecr_pull_through_cache_enabled` es una configuración _day-0_: debes configurarlo durante la creación del _cluster_. Activarlo en un _cluster_ existente no afecta a los _workloads_ ya desplegados.
+
+==== Prerrequisitos para `ecr_pull_through_cache_enabled`
+
+Antes de crear un _cluster_ con `ecr_pull_through_cache_enabled: true`, verifica que la cuenta AWS cumple los siguientes requisitos:
+
+* Reglas de _pull-through cache_ configuradas en Amazon ECR para los cinco _upstreams_ utilizados por _Stratio KEOS_: `registry.k8s.io`, `docker.io`, `ghcr.io`, `quay.io` y `public.ecr.aws`.
+* Permisos de IAM en el _node role_: `ecr:BatchImportUpstreamImage` y `ecr:CreateRepository`.
+
+Si tienes `spec.security.aws.create_iam: true` en el descriptor, _Stratio Cloud Provisioner_ añade estos permisos automáticamente al crear el _cluster_. Si gestionas los recursos IAM de forma manual (`create_iam: false`) o necesitas habilitarlos en una cuenta existente, actualiza el _stack_ de AWS CloudFormation con `clusterawsadm`:
+
+NOTE: El usuario de AWS con el que ejecutas `clusterawsadm` debe tener los permisos recogidos en el fichero xref:attachment$stratio-aws-temp-policy.json[stratio-aws-temp-policy.json].
+
+[source,bash]
+----
+cat > /tmp/eks.config << 'EOF'
+apiVersion: bootstrap.aws.infrastructure.cluster.x-k8s.io/v1beta1
+kind: AWSIAMConfiguration
+spec:
+  bootstrapUser:
+    enable: false
+  eks:
+    enable: true
+    iamRoleCreation: false
+    defaultControlPlaneRole:
+        disable: false
+  controlPlane:
+    enableCSIPolicy: true
+  nodes:
+    extraPolicyAttachments:
+    - arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
+    extraStatements:
+    - Action:
+        - "ecr:BatchImportUpstreamImage"
+        - "ecr:CreateRepository"
+      Effect: Allow
+      Resource:
+        - "*"
+EOF
+
+clusterawsadm bootstrap iam create-cloudformation-stack \
+  --config /tmp/eks.config \
+  --region <region>
+----
+
 === Uso de `role_arn` en el descriptor de credenciales
 
 También puedes definir el `role_arn` directamente en el descriptor de credenciales para usar automáticamente _assume role_:

@@ -255,7 +255,7 @@ spec:
 
 	// Create the eks.config file in the container
 	eksConfigPath := "/kind/eks.config"
-	c = "echo \"" + eksConfigData + "\" > " + eksConfigPath
+	c = "echo '" + eksConfigData + "' > " + eksConfigPath
 
 	_, err = commons.ExecuteCommand(n, c, 5, 3)
 	if err != nil {

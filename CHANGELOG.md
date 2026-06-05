@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 * [PLT-3091] - Adaptar cloud-provisioner para soportar ECR central: soportar prefijos
 * [PLT-4161] - Add ecr_pull_through.py migration script and ECR pull-through support in upgrade-provisioner
 * [PLT-4154] - Fix vulnerabilities: CAPI v1.10.10, CAPA v2.9.3, CAPZ v1.21.3, Calico v3.31.5, cert-manager v1.20.2, FluxCD 2.17.2
-=======
+* [Fix] Fix clusterawsadm YAML corruption when writing eks.config and add missing IAM permissions (PutRolePolicy, DeleteRolePolicy, GetRolePolicy, ListRolePolicies) to stratio-aws-temp-policy
 * [PLT-4154] Downgrade Calico v3.31.5→v3.30.2 and FluxCD flux-cli v2.8.7→v2.7.5 for compatibility
 * [PLT-4154] Fix vulnerabilities: CAPI v1.10.10, CAPA v2.9.3, CAPZ v1.21.3, Calico v3.31.5, cert-manager v1.20.2, FluxCD 2.17.2 (flux-cli v2.7.5), cluster-operator 0.6.2
 * [PLT-4161] Backport ecr_pull_through_cache_enabled to 0.17.0-0.8.5
