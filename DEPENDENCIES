@@ -4,18 +4,18 @@ core:
     helm: v3.13.1
   images:
     calico:
-      cni: v3.31.5
-      csi: v3.31.5
-      ctl: v3.31.5
-      kube-controllers: v3.31.5
-      node-driver-registrar: v3.31.5
-      node: v3.31.5
-      pod2daemon-flexvol: v3.31.5
-      tigera-operator: v1.40.8
-      typha: v3.31.5
-      whisker: v3.31.5
-      whisker-backend: v3.31.5
-      goldmane: v3.31.5
+      cni: v3.30.2
+      csi: v3.30.2
+      ctl: v3.30.2
+      kube-controllers: v3.30.2
+      node-driver-registrar: v3.30.2
+      node: v3.30.2
+      pod2daemon-flexvol: v3.30.2
+      tigera-operator: v1.38.5
+      typha: v3.30.2
+      whisker: v3.30.2
+      whisker-backend: v3.30.2
+      goldmane: v3.30.2
     capi:
       kubeadm-bootstrap-controller: v1.10.10
       kubeadm-control-plane-controller: v1.10.10
@@ -31,9 +31,9 @@ core:
       cluster-operator: 0.7.0-m.1
     flux:
       flux-cli: v2.7.5
-      helm-controller: v1.5.4
-      kustomize-controller: v1.8.5
-      source-controller: v1.8.4
+      helm-controller: v1.4.5
+      kustomize-controller: v1.7.3
+      source-controller: v1.7.4
     kind:
       cloud-provisioner: 0.17.0-0.8.0
       coredns: v1.12.1
@@ -48,7 +48,7 @@ core:
     cluster-autoscaler: 9.52.1
     cluster-operator: 0.5.2
     flux: 2.17.2
-    tigera-operator: v3.31.5
+    tigera-operator: v3.30.2
 aws:
   capa:
     binaries:

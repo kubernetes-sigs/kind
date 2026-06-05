@@ -18,82 +18,82 @@ Asociadas a los _charts_ que instala _Stratio Cloud Provisioner_ para todos los 
 |
 |
 | ghcr.io/fluxcd/helm-controller
-| v1.5.4
+| v1.4.5
 
 |
 |
 | ghcr.io/fluxcd/kustomize-controller
-| v1.8.5
+| v1.7.3
 
 |
 |
 | ghcr.io/fluxcd/source-controller
-| v1.8.4
+| v1.7.4
 
 | *tigera-operator*
-| *v3.31.5*
+| *v3.30.2*
 |
 |
 
 |
 |
 | quay.io/calico/kube-controllers
-| v3.31.5
+| v3.30.2
 
 |
 |
 | quay.io/calico/typha
-| v3.31.5
+| v3.30.2
 
 |
 |
 | quay.io/calico/node
-| v3.31.5
+| v3.30.2
 
 |
 |
 | quay.io/calico/csi
-| v3.31.5
+| v3.30.2
 
 |
 |
 | quay.io/calico/node-driver-registrar
-| v3.31.5
+| v3.30.2
 
 |
 |
 | quay.io/calico/ctl
-| v3.31.5
+| v3.30.2
 
 |
 |
 | quay.io/calico/cni
-| v3.31.5
+| v3.30.2
 
 |
 |
 | quay.io/calico/pod2daemon-flexvol
-| v3.31.5
+| v3.30.2
 
 |
 |
 | quay.io/calico/whisker
-| v3.31.5
+| v3.30.2
 
 |
 |
 | quay.io/calico/whisker-backend
-| v3.31.5
+| v3.30.2
 
 |
 |
 | quay.io/calico/goldmane
-| v3.31.5
+| v3.30.2
 
 |
 |
 | quay.io/tigera/operator
-| v1.40.8
+| v1.38.5
 
 | *cert-manager*
 | *v1.20.2*

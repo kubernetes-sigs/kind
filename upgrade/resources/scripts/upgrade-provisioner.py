@@ -46,8 +46,8 @@ CAPA = "v2.9.3"
 CAPG = "1.6.1-0.4.0"
 CAPZ = "v1.21.3"
 
-TIGERA_OPERATOR_CALICOCTL_VERSION = "3.31.5"
-TIGERA_OPERATOR_CONTROLLER_VERSION = "v1.40.8"
+TIGERA_OPERATOR_CALICOCTL_VERSION = "3.30.2"
+TIGERA_OPERATOR_CONTROLLER_VERSION = "v1.38.5"
 
 common_charts = {
     "cert-manager": {
@@ -72,7 +72,7 @@ common_charts = {
         "release_name": "flux"
     },
     "tigera-operator": {
-        "version": "v3.31.5",
+        "version": "v3.30.2",
         "namespace": "tigera-operator",
         "repo": "https://docs.projectcalico.org/charts"
     }

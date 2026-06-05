@@ -1,4 +1,4 @@
-ghcr.io/fluxcd/flux-cli:v2.8.7
-ghcr.io/fluxcd/helm-controller:v1.5.4
-ghcr.io/fluxcd/kustomize-controller:v1.8.5
-ghcr.io/fluxcd/source-controller:v1.8.4
+ghcr.io/fluxcd/flux-cli:v2.7.5
+ghcr.io/fluxcd/helm-controller:v1.4.5
+ghcr.io/fluxcd/kustomize-controller:v1.7.3
+ghcr.io/fluxcd/source-controller:v1.7.4
