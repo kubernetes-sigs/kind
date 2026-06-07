@@ -84,7 +84,7 @@ use it as `kind` from the command line.
 
 #### Installing with `go install`
 
-When installing with [Go](https://golang.org/) please use the latest stable Go release. At least go1.16 or greater is required.
+When installing with [Go](https://golang.org/) please use the latest stable Go release.
 
 To install use: `go install sigs.k8s.io/kind@{{< stableVersion >}}`.
 
