@@ -95,3 +95,7 @@ tolerations:
 kubernetesServiceEndpoint:
   host: ""
   port: "6443"
+whisker:
+  enabled: {{ $.Spec.Calico.ObservabilityEnabled }}
+goldmane:
+  enabled: {{ $.Spec.Calico.ObservabilityEnabled }}

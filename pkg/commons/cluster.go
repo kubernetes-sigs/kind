@@ -157,6 +157,12 @@ type KeosSpec struct {
 	WorkerNodes WorkerNodes `yaml:"worker_nodes" validate:"required,dive"`
 
 	ClusterConfigRef ClusterConfigRef `yaml:"cluster_config_ref,omitempty" validate:"dive"`
+
+	Calico Calico `yaml:"calico,omitempty"`
+}
+
+type Calico struct {
+	ObservabilityEnabled bool `yaml:"observability_enabled,omitempty" validate:"boolean"`
 }
 
 type ControlPlane struct {
