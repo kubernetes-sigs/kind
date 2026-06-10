@@ -50,9 +50,16 @@ Now verify that the loadbalancer works by sending traffic to it's external IP an
 LB_IP=$(kubectl get svc/foo-service -o=jsonpath='{.status.loadBalancer.ingress[0].ip}')
 {{< /codeFromInline >}}
 
+> **NOTE**: If you are using Docker Desktop on macOS and cannot reach the
+> assigned LoadBalancer IP directly, the Docker network may not be routed from
+> the host. Community tools such as [Docker-Mac-Net-Connect] can make Docker
+> container networks reachable from macOS.
+
 ```bash
 # should output foo and bar on separate lines 
 for _ in {1..10}; do
   curl ${LB_IP}:5678
 done
 ```
+
+[Docker-Mac-Net-Connect]: https://github.com/chipmk/docker-mac-net-connect
