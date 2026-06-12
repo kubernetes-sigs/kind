@@ -168,8 +168,20 @@ func (a *action) Execute(ctx *actions.ActionContext) error {
 	}
 
 	awsEKSEnabled := a.keosCluster.Spec.InfraProvider == "aws" && a.keosCluster.Spec.ControlPlane.Managed
-	isMachinePool := a.keosCluster.Spec.InfraProvider != "aws" && a.keosCluster.Spec.ControlPlane.Managed
 	gcpGKEEnabled := a.keosCluster.Spec.InfraProvider == "gcp" && a.keosCluster.Spec.ControlPlane.Managed
+
+	hasMachinePool := a.keosCluster.Spec.InfraProvider != "aws" && a.keosCluster.Spec.ControlPlane.Managed
+	hasMachineDeployment := false
+	if awsEKSEnabled {
+		for _, wn := range a.keosCluster.Spec.WorkerNodes {
+			if wn.NodeImage != "" {
+				hasMachineDeployment = true
+			} else {
+				hasMachinePool = true
+			}
+		}
+	}
+	isMachinePool := hasMachinePool && !hasMachineDeployment
 
 	var privateParams PrivateParams
 	if a.clusterConfig != nil {
@@ -691,7 +703,7 @@ spec:
 			}
 		}
 
-		if isMachinePool {
+		if hasMachinePool {
 			// Wait for all the machine pools to be ready
 			c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=Ready --timeout=15m --all mp"
 			_, err = commons.ExecuteCommand(n, c, 5, 3)
@@ -704,7 +716,8 @@ spec:
 			if err != nil {
 				return errors.Wrap(err, "failed to wait for container metrics to be available")
 			}
-		} else {
+		}
+		if hasMachineDeployment {
 			// Wait for all the machine deployments to be ready
 			c = "kubectl -n " + capiClustersNamespace + " wait --for=condition=Ready --timeout=15m --all md"
 
@@ -1020,7 +1033,7 @@ spec:
 		ctx.Status.End(true) // End Installing StorageClass in workload cluster
 
 		if !a.clusterConfig.Spec.GitOpsEnabled {
-			if a.keosCluster.Spec.DeployAutoscaler && !isMachinePool {
+			if a.keosCluster.Spec.DeployAutoscaler && (!isMachinePool || awsEKSEnabled) {
 				ctx.Status.Start("Installing cluster-autoscaler in workload cluster 💻")
 				defer ctx.Status.End(false)
 

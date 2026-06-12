@@ -3,6 +3,8 @@ FROM kindest/node:v1.34.0
 # Init feature gates
 ENV CLUSTER_TOPOLOGY=true
 ENV CLUSTERCTL_DISABLE_VERSIONCHECK=true
+ENV EXP_MACHINE_POOL=true
+ENV CAPA_EKS_ADD_ROLES=true
 
 # Core tool/version args
 ARG CLUSTERCTL=v1.10.10

@@ -1,0 +1,15 @@
+autoDiscovery:
+  clusterName: {{ $.KeosCluster.Metadata.Name }}
+  labels:
+  - namespace: cluster-{{ $.KeosCluster.Metadata.Name }}
+  roles:
+  - worker
+  tags:
+  - k8s.io/cluster-autoscaler/enabled
+  - k8s.io/cluster-autoscaler/{{ $.KeosCluster.Metadata.Name }}
+cloudProvider: clusterapi
+
+image:
+  repository: {{ if $.Private }}{{ $.KeosRegUrl }}{{ else }}registry.k8s.io{{ end }}/autoscaling/cluster-autoscaler
+  #tag: v1.34.1
+replicaCount: 2

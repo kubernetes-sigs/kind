@@ -177,6 +177,12 @@ func validateAWS(spec commons.KeosSpec, providerSecrets map[string]string) error
 				return errors.New("spec.worker_nodes." + wn.Name + ": \"node_image\": must have the format " + AWSNodeImageFormat)
 			}
 		}
+		if wn.AmiType != "" && wn.NodeImage != "" {
+			return errors.New("spec.worker_nodes." + wn.Name + ": ami_type and node_image are mutually exclusive")
+		}
+		if wn.AmiType != "" && !spec.ControlPlane.Managed {
+			return errors.New("spec.worker_nodes." + wn.Name + ": ami_type is only valid for EKS managed clusters")
+		}
 		if wn.AZ != "" {
 			if len(azs) > 0 {
 				if !commons.Contains(azs, wn.AZ) {

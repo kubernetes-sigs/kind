@@ -114,12 +114,45 @@
               "iam:TagOpenIDConnectProvider",
               "iam:ListAttachedRolePolicies",
               "iam:CreateRole",
-              "iam:TagRole"
+              "iam:TagRole",
+              "iam:UntagRole"
           ],
           "Resource": [
               "arn:aws:iam::${AWS_ACCOUNT_ID}:role/*",
               "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/*"
           ]
+      },
+      {
+          "Sid": "CAPALaunchTemplates",
+          "Effect": "Allow",
+          "Action": [
+              "ec2:CreateLaunchTemplate",
+              "ec2:CreateLaunchTemplateVersion",
+              "ec2:DescribeLaunchTemplates",
+              "ec2:DescribeLaunchTemplateVersions",
+              "ec2:DeleteLaunchTemplate",
+              "ec2:DeleteLaunchTemplateVersions",
+              "ec2:DescribeKeyPairs",
+              "eks:TagResource",
+              "eks:UntagResource",
+              "eks:UpdateNodegroupConfig",
+              "iam:TagRole",
+              "iam:UntagRole"
+          ],
+          "Resource": "*"
+      },
+      {
+          "Sid": "CAPAAutoScalingGroups",
+          "Effect": "Allow",
+          "Action": [
+              "autoscaling:CreateAutoScalingGroup",
+              "autoscaling:UpdateAutoScalingGroup",
+              "autoscaling:CreateOrUpdateTags",
+              "autoscaling:StartInstanceRefresh",
+              "autoscaling:DeleteAutoScalingGroup",
+              "autoscaling:DeleteTags"
+          ],
+          "Resource": "arn:aws:autoscaling:*:${AWS_ACCOUNT_ID}:autoScalingGroup:*:autoScalingGroupName/*"
       }
   ]
 }

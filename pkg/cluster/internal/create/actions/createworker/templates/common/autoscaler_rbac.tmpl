@@ -9,7 +9,12 @@ rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     resources:
+    {{- if and (eq $.Spec.InfraProvider "aws") $.Spec.ControlPlane.Managed }}
+    - awsmanagedmachinepools
+    - awsmachinetemplates
+    {{- else }}
     - {{ $.Spec.InfraProvider }}machinetemplates
+    {{- end }}
     verbs:
     - get
     - list

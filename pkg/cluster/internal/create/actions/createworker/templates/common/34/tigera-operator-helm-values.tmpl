@@ -1,0 +1,97 @@
+---
+apiServer:
+  enabled: false
+defaultFelixConfiguration:
+  enabled: false
+calicoctl:
+{{- if $.Private }}
+  image: {{ $.KeosRegUrl }}/calico/ctl
+{{- else }}
+  image: docker.io/calico/ctl
+{{- end }}
+  #tag: 3.30.2
+certs:
+  node:
+    cert:
+    commonName:
+    key:
+  typha:
+    caBundle:
+    cert:
+    commonName:
+    key:
+imagePullSecrets: {}
+installation:
+  calicoNetwork:
+    bgp: {{- if or ($.Spec.ControlPlane.Managed) (eq $.Spec.InfraProvider "azure") }} Disabled {{- else }} Enabled {{- end }}
+  {{- if not $.Spec.ControlPlane.Managed }}
+    {{- if eq $.Spec.InfraProvider "azure" }}
+    mtu: 1350
+    {{- end }}
+    {{- if not $.IsNetPolEngine }}
+    ipPools:
+      - cidr: {{- if $.Spec.Networks.PodsCidrBlock }} {{ $.Spec.Networks.PodsCidrBlock }} {{- else }} 192.168.0.0/16 {{- end }}
+        encapsulation: {{- if eq $.Spec.InfraProvider "azure" }} VXLAN {{- else }} IPIP {{- end }}
+    {{- end }}
+  {{- end }}
+  cni:
+  {{- if and $.Spec.ControlPlane.Managed (eq $.Spec.InfraProvider "aws") }}
+    ipam:
+      type: AmazonVPC
+    type: AmazonVPC
+  {{- else if and $.Spec.ControlPlane.Managed (eq $.Spec.InfraProvider "gcp") $.IsNetPolEngine }}
+    ipam:
+      type: HostLocal
+    type: GKE
+  {{- else }}
+    ipam:
+      type: Calico
+    type: Calico
+  {{- end }}
+  {{- if not $.IsNetPolEngine }}
+  enabled: true
+  {{- end }}
+  kubernetesProvider: {{- if and $.Spec.ControlPlane.Managed (eq $.Spec.InfraProvider "aws") }} EKS {{- else if and $.Spec.ControlPlane.Managed (eq $.Spec.InfraProvider "gcp") }} GKE {{- else }} "" {{- end }}
+  nodeMetricsPort: 9191
+  {{- if $.Private }}
+  registry: {{ $.KeosRegUrl }}
+  {{- else }}
+  registry: docker.io
+  {{- end }}
+  typhaMetricsPort: 9093
+# NodeSelector for the tigera/operator pod.
+nodeSelector:
+  kubernetes.io/os: linux
+# Affinity for the tigera/operator pod.
+affinity: {}
+# PriorityClassName for the tigera/operator pod.
+priorityClassName: ""
+# Custom annotations for the tigera/operator pod.
+podAnnotations:
+{{- range $key, $value := $.Annotations }}
+  {{ $key }}: {{ $value }}
+{{- end }}
+# Custom labels for the tigera/operator pod.
+podLabels: {}
+# Resource requests and limits for the tigera/operator pod.
+resources: {}
+# Image and registry configuration for the tigera/operator pod.
+tigeraOperator:
+{{- if $.Private }}
+  registry: {{ $.QuayRegUrl }}
+{{- else }}
+  registry: quay.io
+{{- end }}
+  image: tigera/operator
+  # We need to set this version since tigera-operator chart point to an older one
+  version: v1.38.5
+# Tolerations for the tigera/operator pod.
+tolerations:
+  - effect: NoExecute
+    operator: Exists
+  - effect: NoSchedule
+    operator: Exists
+# Optionally configure the host and port used to access the Kubernetes API server.
+kubernetesServiceEndpoint:
+  host: ""
+  port: "6443"

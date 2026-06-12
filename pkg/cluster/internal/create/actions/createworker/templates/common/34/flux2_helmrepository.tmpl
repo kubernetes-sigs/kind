@@ -1,0 +1,24 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: {{ $.ChartName }}
+  namespace: kube-system
+spec:
+  url: {{ $.ChartRepoUrl }}
+  type: {{ $.ChartRepoScheme }}
+  interval: {{ $.RepositoryInterval }}
+  provider: {{ $.Spec.InfraProvider }}
+  {{- if and ($.Spec.HelmRepository.AuthRequired) (eq $.ChartName "keos") }}
+  secretRef:
+    name: {{ $.ChartName }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $.ChartName }}
+  namespace: kube-system
+stringData:
+  username: {{ $.HelmRepoCreds.User }}
+  password: {{ $.HelmRepoCreds.Pass }}
+  {{- end }}

@@ -124,6 +124,22 @@ var awsCharts = ChartsDictionary{
 			},
 			"unmanaged": {},
 		},
+		"33": {
+			"managed": {
+				"aws-load-balancer-controller": {Repository: "https://aws.github.io/eks-charts", Version: "1.14.1", Namespace: "kube-system", Pull: false, Reconcile: false},
+				"cluster-autoscaler":           {Repository: "https://kubernetes.github.io/autoscaler", Version: "9.52.1", Namespace: "kube-system", Pull: false, Reconcile: false},
+				"tigera-operator":              {Repository: "https://docs.projectcalico.org/charts", Version: "v3.30.2", Namespace: "tigera-operator", Pull: true, Reconcile: true},
+			},
+			"unmanaged": {},
+		},
+		"34": {
+			"managed": {
+				"aws-load-balancer-controller": {Repository: "https://aws.github.io/eks-charts", Version: "1.14.1", Namespace: "kube-system", Pull: false, Reconcile: false},
+				"cluster-autoscaler":           {Repository: "https://kubernetes.github.io/autoscaler", Version: "9.52.1", Namespace: "kube-system", Pull: false, Reconcile: false},
+				"tigera-operator":              {Repository: "https://docs.projectcalico.org/charts", Version: "v3.30.2", Namespace: "tigera-operator", Pull: true, Reconcile: true},
+			},
+			"unmanaged": {},
+		},
 	},
 }
 
@@ -240,6 +256,10 @@ spec:
     iamRoleCreation: false
     defaultControlPlaneRole:
         disable: false
+    managedMachinePool:
+        disable: false
+        extraPolicyAttachments:
+        - arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
   controlPlane:
     enableCSIPolicy: true
   nodes:

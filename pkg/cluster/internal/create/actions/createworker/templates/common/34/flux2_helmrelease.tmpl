@@ -1,0 +1,35 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: {{ $.HelmReleaseName }}
+  namespace: {{ $.ChartNamespace }}
+spec:
+  releaseName: {{ $.HelmReleaseName }}
+  chart:
+    spec:
+      chart: {{ $.ChartName }}
+      version: "{{ $.ChartVersion }}"
+      sourceRef:
+        kind: HelmRepository
+        name: {{ $.ChartRepoRef }}
+        namespace: kube-system
+      interval: {{ $.HelmReleaseSourceInterval }}
+  interval: {{ $.HelmReleaseInterval }}
+  install:
+    crds: CreateReplace
+    remediation:
+      retries: {{ $.HelmReleaseRetries }}
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: {{ $.HelmReleaseRetries }}
+      remediateLastFailure: true
+    force: false
+  valuesFrom:
+    - kind: ConfigMap
+      name: 00-{{ $.HelmReleaseName }}-helm-chart-default-values
+      valuesKey: values.yaml
+    - kind: ConfigMap
+      name: 02-{{ $.HelmReleaseName }}-helm-chart-override-values
+      valuesKey: values.yaml
