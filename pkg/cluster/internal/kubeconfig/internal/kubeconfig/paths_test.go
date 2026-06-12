@@ -124,6 +124,29 @@ func TestPathForMerge(t *testing.T) {
 		expected := "/bogus/path/two"
 		assert.StringEqual(t, expected, result)
 	})
+	t.Run("KUBECONFIG skips inaccessible entry", func(t *testing.T) {
+		inaccessibleDir := filepath.Join(dir, "inaccessible")
+		if err := os.Mkdir(inaccessibleDir, 0o700); err != nil {
+			t.Fatalf("failed to create inaccessible dir: %v", err)
+		}
+		defer func() {
+			if err := os.Chmod(inaccessibleDir, 0o700); err != nil {
+				t.Fatalf("failed to restore dir permissions: %v", err)
+			}
+		}()
+		if err := os.Chmod(inaccessibleDir, 0); err != nil {
+			t.Fatalf("failed to chmod inaccessible dir: %v", err)
+		}
+
+		inaccessibleFile := filepath.Join(inaccessibleDir, "config")
+		kubeconfigEnvValue := strings.Join([]string{inaccessibleFile, fakeKubeconfigs[1]}, string(filepath.ListSeparator))
+		result := pathForMerge("", func(s string) string {
+			return map[string]string{
+				"KUBECONFIG": kubeconfigEnvValue,
+			}[s]
+		})
+		assert.StringEqual(t, fakeKubeconfigs[1], result)
+	})
 }
 
 func TestHomeDir(t *testing.T) {
