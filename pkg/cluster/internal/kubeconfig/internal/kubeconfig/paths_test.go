@@ -129,7 +129,11 @@ func TestPathForMerge(t *testing.T) {
 		if err := os.Mkdir(inaccessibleDir, 0o700); err != nil {
 			t.Fatalf("failed to create inaccessible dir: %v", err)
 		}
-		defer os.Chmod(inaccessibleDir, 0o700)
+		defer func() {
+			if err := os.Chmod(inaccessibleDir, 0o700); err != nil {
+				t.Fatalf("failed to restore dir permissions: %v", err)
+			}
+		}()
 		if err := os.Chmod(inaccessibleDir, 0); err != nil {
 			t.Fatalf("failed to chmod inaccessible dir: %v", err)
 		}
