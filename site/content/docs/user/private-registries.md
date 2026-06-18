@@ -53,6 +53,81 @@ nodes:
     hostPath: /path/to/my/secret.json
 {{< /codeFromInline >}}
 
+**Important**: The mounted file must contain the actual base64-encoded
+credentials in the `auths` field. It cannot reference an external credential
+store or helper.
+
+Many systems store docker credentials outside of `config.json` using a
+credential helper (e.g. `"credsStore": "desktop"` on Docker Desktop,
+`"credsStore": "osxkeychain"` on macOS, or `"credsStore": "secretservice"` on
+Linux). If your `~/.docker/config.json` contains a `credsStore` or `credHelpers`
+key, the credentials themselves are **not** in the file and mounting it into a
+kind node will not work because the credential helper binary is not present
+inside the node.
+
+To check whether your config contains plain credentials or a credential store
+reference:
+
+```sh
+cat ~/.docker/config.json
+```
+
+A config with plain credentials looks like:
+
+```json
+{
+  "auths": {
+    "myregistry.example.com": {
+      "auth": "dXNlcjpwYXNzd29yZA=="
+    }
+  }
+}
+```
+
+A config that uses an external credential store (which will **not** work when
+mounted) looks like:
+
+```json
+{
+  "auths": {},
+  "credsStore": "desktop"
+}
+```
+
+To generate a config file with plain credentials, create a temporary config that
+bypasses the credential store and log in with it:
+
+```sh
+# Create a temp dir to hold the plain-credential config
+DOCKER_CONFIG=$(mktemp -d)
+export DOCKER_CONFIG
+
+# Seed an empty auths entry to disable the credential store
+cat <<EOF >"${DOCKER_CONFIG}/config.json"
+{
+  "auths": { "myregistry.example.com": {} }
+}
+EOF
+
+# Log in — credentials will be written as plain base64 auth in the file
+docker login myregistry.example.com
+
+# Use ${DOCKER_CONFIG}/config.json as your hostPath
+```
+
+For registries that use short-lived or token-based authentication (such as Azure
+Container Registry with OAuth tokens), the static mount approach may not be
+reliable once the token expires. For ACR, prefer logging in with a
+[service principal][acrServicePrincipal] whose credentials are long-lived:
+
+```sh
+docker login myregistry.azurecr.io \
+  --username <service-principal-id> \
+  --password <service-principal-password>
+```
+
+[acrServicePrincipal]: https://learn.microsoft.com/en-us/azure/container-registry/container-registry-auth-service-principal
+
 #### Use an Access Token
 
 A credential can be programmatically added to the nodes at runtime.
