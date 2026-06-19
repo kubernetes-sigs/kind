@@ -172,7 +172,7 @@ kind can auto-detect the [docker], [podman], or [nerdctl] installed and choose t
 select the runtime.
 
 > **NOTE**: podman and nerdctl operate in [rootless mode](/docs/user/rootless) by default. Extra
-> setup is needed for KIND clusters to be fully functional.
+> configuration steps are needed for KIND clusters to be fully functional.
 
 ## Interacting With Your Cluster
 
