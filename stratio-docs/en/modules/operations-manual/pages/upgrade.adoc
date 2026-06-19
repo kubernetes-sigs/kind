@@ -17,8 +17,8 @@ To ensure reproducible execution, the Docker image `cloud-provisioner-upgrade:0.
 * *Common components* across all platforms:
 ** _cluster-operator_: `0.7.0-m.1`
 ** _cert-manager_: `v1.20.2`
-** _flux2_: `2.17.2`
-** _tigera-operator_: `v3.30.2`
+** _flux2_: `2.18.4`
+** _tigera-operator_: `v3.31.5`
 ** _cluster-autoscaler_: `9.52.1`
 
 * *Cluster API Core*

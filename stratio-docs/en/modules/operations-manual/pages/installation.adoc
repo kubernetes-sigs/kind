@@ -6,18 +6,18 @@
 
 * Roles and policies
 +
-For automated provisioning in EKS, actions must be performed across multiple services such as EC2, ECR, EKS, Elastic Load Balancing (ELB), etc. Although the use of these actions may vary depending on the installation type, the provider checks that the specified user has the required permissions to ensure correct operation.
+For automated provisioning in EKS, actions must be performed across multiple services, including EC2, ECR, EKS, and Elastic Load Balancing (ELB). Although the use of these actions may vary by installation type, the provider verifies that the specified user has the required permissions to ensure proper operation.
 +
 ** xref:attachment$stratio-eks-policy.json[Download permanent permissions for EKS].
 ** xref:attachment$stratio-aws-temp-policy.json[Download temporary permissions for EKS].
 +
-To deploy EKS, you must manually create the "AWSServiceRoleForAmazonEKS" role and attach the "AmazonEKSServiceRolePolicy" (created by default in AWS).
+To deploy EKS, you must manually create the "AWSServiceRoleForAmazonEKS" role and attach the "AmazonEKSServiceRolePolicy" (which is created by default in AWS).
 
 * Certified operating systems
 +
 To ensure compatibility between the _worker_ nodes and the EKS-managed _control-plane_, properly configured OS images must be used. It is recommended to generate these images using the https://github.com/kubernetes-sigs/image-builder[Kubernetes Image Builder], the official tool from the Kubernetes project for building cloud-optimized images. You can refer to the https://image-builder.sigs.k8s.io/[official documentation] for more details on creating custom images.
 
-NOTE: Alternatively, AWS public images with the format `amazon-eks-node-<k8s-version>-v<date>` are also valid, and meet the requirements to deploy _Stratio KEOS_ on EKS.
+NOTE: Alternatively, AWS public images in the format `amazon-eks-node-<k8s-version>-v<date>` are also valid and meet the requirements for deploying _Stratio KEOS_ on EKS.
 
 The currently recommended operating system for this provider is Ubuntu 22.04.
 
@@ -27,27 +27,41 @@ WARNING: If you haven’t created the CloudFormation stack or manually created t
 
 === GKE
 
-* Permissions
+* Permissions.
 +
-In GKE, the service account used to provision the clusters must have the following sets of permissions.
+In GKE, the service account used to provision clusters must have the following sets of permissions.
 +
-** xref:attachment$stratio-gcp-permissions.list[Download GCP permissions].
-** xref:attachment$stratio-gke-permissions.list[Download GKE permissions].
+** xref:attachment$stratio-gcp-permissions.list[Download permissions for GCP].
+** xref:attachment$stratio-gke-permissions.list[Download permissions for GKE].
 
-* Certified operating systems
+* Certified operating systems.
 +
-For GKE, the default OS is Container-Optimized OS (COS), and no specific image needs to be specified.
+In GKE, the default operating system is Container-Optimized OS (COS), and no specific image needs to be specified.
 
-* Enable the "Google Kubernetes Engine API" for GKE.
+* Enable the Google Kubernetes Engine API for GKE.
+
 * Bastion.
 +
-Deployment of _Stratio KEOS_ in GKE must be performed through a bastion that enables communication with the cluster. A bastion must be created in the same network as the cluster.
+To deploy _Stratio KEOS_ on GKE, you need a bastion to facilitate communication with the cluster. Create it on the same network as the cluster.
++
+Starting from Kubernetes 1.35, the bastion VM must have "cgroup v2" enabled. The kubelet preflight check (`system-validators v1.12.1`) throws an error, not a warning, if it detects "cgroup v1" on the host. This happens when running kubelet v1.35 or later. To enable "cgroup v2" on the bastion:
++
+[source,bash]
+----
+sudo sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all"/' /etc/default/grub
+sudo update-grub
+sudo reboot
+----
++
+After the reboot, verify the change with `stat -fc %T /sys/fs/cgroup/`; it should return "cgroup2fs".
++
+Reference: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.35.md[Kubernetes v1.35 CHANGELOG].
 
 === Unmanaged Azure
 
 * Permissions
 +
-To provision in unmanaged Azure, you need an account with all the required permissions, just like in other supported providers. You must also define:
+To provision in unmanaged Azure, you need an account with the required permissions, as with other supported providers. You must also define:
 +
 ** A role for the cluster _workers_ in `spec.security.nodes_identity`.
 ** A role for the _control-plane_ in `spec.security.control_plane_identity`.
@@ -167,7 +181,7 @@ The _spec_ field of the _KeosCluster_ resource includes these parameters:
 
 |_helm++_++repository_
 |Object
-|Helm repository to install Stratio charts.
+|Helm repository for installing Stratio charts.
 |See <<descriptor_example, example descriptor>>
 |No
 |-
@@ -262,7 +276,7 @@ The following credentials fields are considered provisioning secrets:
 |Yes
 
 |_docker++_++registries_
-|Docker registries accessible by the nodes. Authentication is not needed on EKS, as it uses user credentials automatically.
+|Docker registries accessible by the nodes. Authentication is not required on EKS because it automatically uses user credentials.
 |See <<descriptor_example, example descriptor>>
 |Yes, for unauthenticated registries.
 
@@ -350,7 +364,7 @@ In GKE, this is the default node service account.
 |AWS
 
 |_gcp.scopes_
-|List of scopes available to the node service account, controlling access to GCP services.
+|List of scopes available to the node service account that control access to GCP services.
 a|
 
 [source,yaml]
@@ -455,7 +469,7 @@ NOTE: The prerequisites are the same as those listed in the xref:operations-manu
 
 === Helm repository
 
-As a prerequisite, you must indicate the Helm repository from which the _Cluster Operator_ chart can be retrieved. This section allows specifying the repository URL, type, and whether it's authenticated.
+As a prerequisite, you must indicate the Helm repository from which the _Cluster Operator_ chart can be retrieved. This section allows you to specify the repository URL, type, and whether it's authenticated.
 
 [cols="1,4,2,1"]
 |===
@@ -482,7 +496,7 @@ NOTE: OCI registries (providers such as ECR, GAR, or ACR) are never authenticate
 
 === Networks
 
-As previously mentioned, the installer supports using pre‑created cloud provider network elements (e.g., by a network security team), enabling optimal architecture choices.
+As previously mentioned, the installer supports the use of pre‑created cloud provider network elements (e.g., those created by a network security team), enabling optimal architectural choices.
 
 Both the VPC and subnets must already exist. Subnets may be public or private, but public subnets must include a NAT gateway and an Internet Gateway in the same VPC. If both types are indicated, worker nodes are deployed into private subnets.
 
@@ -619,7 +633,7 @@ labels:
 |Yes
 
 |_additional++_++labels_
-|Optional set of additional labels that will be applied to the node pools, in addition to the labels configured by default. +
+|Optional set of additional labels to apply to the node pools, in addition to the labels configured by default. +
 This field is only available for deployments on GKE.
 a|
 
@@ -634,7 +648,7 @@ additional_labels:
 |Yes
 
 |_root++_++volume_
-|Volume specifics like size, type, and encryption.
+|Volume specifics such as size, type, and encryption.
 a|
 
 [source,yaml]
@@ -653,7 +667,7 @@ root_volume:
 |Yes
 |===
 
-NOTE: Setting _min++_++size_ to zero is supported, allowing autoscaler to scale down to zero nodes, which can save costs, particularly for groups with zero deployed instances when not needed.
+NOTE: Setting _min++_++size_ to zero is supported, allowing the autoscaler to scale down to zero nodes, which can save costs, particularly for groups with zero deployed instances when not needed.
 
 === _Stratio KEOS_
 
@@ -785,8 +799,8 @@ This example includes:
 * Kubernetes 1.28.x.
 * Use of Docker registry of type GAR.
 * Use of Helm repository of type GAR.
-* _nodes++_++identity_ (default node service account configurable only at create time).
-* scopes (list of access scopes for service account).
+* _nodes++_++identity_ (default node service account configurable only at creation time).
+* Scopes (list of access scopes for service account).
 * No DNS zone control (enabled by default).
 * Default _StorageClass_ definition (optional).
 * _Control-plane_ settings configurable only at creation time:
@@ -1014,7 +1028,7 @@ The binary currently supports the following options:
 
 - `--avoid-creation`: only creates the _local_ cluster, not the _worker_ cluster.
 - `--build-stratio-image`: builds the _Stratio Cloud Provisioner_ image locally instead of downloading it. Intended for development.
-- `--delete-previous`: removes local cluster container if it already exists.
+- `--delete-previous`: removes the local cluster container if it already exists.
 - `-d, --descriptor <string>`: specifies the descriptor file name (default: _cluster.yaml_).
 - `-h, --help`: shows command help.
 - `--keep-mgmt`: retains management cluster in kind (only for *non‑production environments*).
@@ -1070,7 +1084,7 @@ NOTE: Since the descriptor file (_keos.yaml_) is regenerated on each run, the pr
 
 === Load balancer
 
-Due to a bug in certain controllers (fixed in master branches but not yet released), the load balancer created for GCP and Azure clusters with unmanaged _control-planes_ is created with a TCP-based health check.
+Due to a bug in certain controllers (fixed in master branches but not yet released), the load balancer for GCP and Azure clusters with unmanaged _control-planes_ uses a TCP-based health check.
 
 This may lead to request issues if a _control-plane_ node fails—since the load balancer may route traffic to a node that responds on port but cannot process requests.
 
@@ -1086,13 +1100,13 @@ NOTE: Depending on the case, it may be necessary to manually add the `goog-gke-n
 
 WARNING: These automatic labels may create a reconciliation loop in the `cluster-api-provider-gcp` (CAPG) controller on node pools. Refer to the xref:operations-manual:operations-manual.adoc#_reconciliation_loop_in_gke_due_to_automatic_ labels[Troubleshooting] section of the operations manual for more details.
 
-These automatic labels must not be edited or removed, since GKE will reconcile them automatically by recreating the nodes associated with the affected node pools.
+These automatic labels must not be edited or removed, as GKE will automatically reconcile them by recreating the nodes associated with the affected node pools.
 
-TIP: Refer to the Google official documentation for more information on the https://docs.cloud.google.com/kubernetes-engine/docs/how-to/creating-managing-labels[automatic labels applied by GKE].
+TIP: Refer to the official Google documentation for more information on the https://docs.cloud.google.com/kubernetes-engine/docs/how-to/creating-managing-labels[automatic labels applied by GKE].
 
 == Deployment of _aws-load-balancer-controller_ (EKS only)
 
-In EKS clusters, you can deploy the _aws-load-balancer-controller_, which manages Elastic Load Balancer creation for objects like _Ingress_ and _Service_ of type _LoadBalancer_.
+In EKS clusters, you can deploy the _aws-load-balancer-controller_, which manages the creation of Elastic Load Balancers for objects such as _Ingress_ and _Service_ of type _LoadBalancer_.
 
 Since this is not enabled by default, you must set `spec.eks_lb_controller` to "true" in the _ClusterConfig_ resource of the cluster descriptor.
 

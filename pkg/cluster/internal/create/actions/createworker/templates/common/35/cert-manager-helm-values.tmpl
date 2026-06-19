@@ -1,0 +1,21 @@
+crds:
+  enabled: true
+image:
+  repository: {{ if $.Private }}{{ $.KeosRegUrl }}{{ else }}quay.io{{ end }}/jetstack/cert-manager-controller
+  #tag: v1.20.2
+acmesolver:
+  image:
+    repository: {{ if $.Private }}{{ $.KeosRegUrl }}{{ else }}quay.io{{ end }}/jetstack/cert-manager-acmesolver
+    #tag: v1.20.2
+cainjector:
+  image:
+    repository: {{ if $.Private }}{{ $.KeosRegUrl }}{{ else }}quay.io{{ end }}/jetstack/cert-manager-cainjector
+    #tag: v1.20.2
+startupapicheck:
+  image:
+    repository: {{ if $.Private }}{{ $.KeosRegUrl }}{{ else }}quay.io{{ end }}/jetstack/cert-manager-startupapicheck
+    #tag: v1.20.2
+webhook:
+  image:
+    repository: {{ if $.Private }}{{ $.KeosRegUrl }}{{ else }}quay.io{{ end }}/jetstack/cert-manager-webhook
+    #tag: v1.20.2

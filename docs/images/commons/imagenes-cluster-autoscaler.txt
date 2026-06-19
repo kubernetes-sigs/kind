@@ -1,1 +1,1 @@
-registry.k8s.io/autoscaling/cluster-autoscaler:v1.34.1
+registry.k8s.io/autoscaling/cluster-autoscaler:v1.35.0

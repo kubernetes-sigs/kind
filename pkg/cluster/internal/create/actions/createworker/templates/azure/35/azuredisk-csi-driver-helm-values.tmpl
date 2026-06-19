@@ -1,0 +1,35 @@
+controller:
+  podAnnotations:
+    cluster-autoscaler.kubernetes.io/safe-to-evict-local-volumes: socket-dir,azure-cred
+  tolerations: {}
+  vmType: standard
+
+image:
+  baseRepo: {{ if $.Private }}{{ $.KeosRegUrl }}{{ else }}mcr.microsoft.com{{ end }}
+  azuredisk:
+    repository: /oss/v2/kubernetes-csi/azuredisk-csi
+    #tag: v1.33.5
+  csiProvisioner:
+    repository: /oss/v2/kubernetes-csi/csi-provisioner
+    #tag: v5.3.0
+  csiAttacher:
+    repository: /oss/v2/kubernetes-csi/csi-attacher
+    #tag: v4.10.0
+  csiResizer:
+    repository: /oss/v2/kubernetes-csi/csi-resizer
+    #tag: v1.14.0
+  livenessProbe:
+    repository: /oss/v2/kubernetes-csi/livenessprobe
+    #tag: v2.17.0
+  nodeDriverRegistrar:
+    repository: /oss/v2/kubernetes-csi/csi-node-driver-registrar
+    #tag: v2.15.0
+
+snapshot:
+  image:
+    csiSnapshotter:
+      repository: /oss/v2/kubernetes-csi/csi-snapshotter
+      #tag: v8.3.0
+    csiSnapshotController:
+      repository: /oss/v2/kubernetes-csi/snapshot-controller
+      #tag: v8.3.0

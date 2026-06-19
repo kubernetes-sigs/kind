@@ -6,94 +6,94 @@ Associated with the charts that _Stratio Cloud Provisioner_ installs in all clus
 | Chart | Version | Public image | Version
 
 | *flux*
-| *2.17.2*
+| *2.18.4*
 |
 |
 
 |
 |
 | ghcr.io/fluxcd/flux-cli
-| v2.7.5
+| v2.8.8
 
 |
 |
 | ghcr.io/fluxcd/helm-controller
-| v1.4.5
+| v1.5.5
 
 |
 |
 | ghcr.io/fluxcd/kustomize-controller
-| v1.7.3
+| v1.8.5
 
 |
 |
 | ghcr.io/fluxcd/source-controller
-| v1.7.4
+| v1.8.5
 
 | *tigera-operator*
-| *v3.30.2*
+| *v3.31.5*
 |
 |
 
 |
 |
 | quay.io/calico/kube-controllers
-| v3.30.2
+| v3.31.5
 
 |
 |
 | quay.io/calico/typha
-| v3.30.2
+| v3.31.5
 
 |
 |
 | quay.io/calico/node
-| v3.30.2
+| v3.31.5
 
 |
 |
 | quay.io/calico/csi
-| v3.30.2
+| v3.31.5
 
 |
 |
 | quay.io/calico/node-driver-registrar
-| v3.30.2
+| v3.31.5
 
 |
 |
 | quay.io/calico/ctl
-| v3.30.2
+| v3.31.5
 
 |
 |
 | quay.io/calico/cni
-| v3.30.2
+| v3.31.5
 
 |
 |
 | quay.io/calico/pod2daemon-flexvol
-| v3.30.2
+| v3.31.5
 
 |
 |
 | quay.io/calico/whisker
-| v3.30.2
+| v3.31.5
 
 |
 |
 | quay.io/calico/whisker-backend
-| v3.30.2
+| v3.31.5
 
 |
 |
 | quay.io/calico/goldmane
-| v3.30.2
+| v3.31.5
 
 |
 |
 | quay.io/tigera/operator
-| v1.38.5
+| v1.40.11
 
 | *cert-manager*
 | *v1.20.2*
@@ -126,14 +126,14 @@ Associated with the charts that _Stratio Cloud Provisioner_ installs in all clus
 | v1.20.2
 
 | *cluster-autoscaler*
-| *9.52.1*
+| *9.57.0*
 |
 |
 
 |
 |
 | registry.k8s.io/autoscaling/cluster-autoscaler
-| v1.34.1
+| v1.35.0
 
 | *cluster-operator*
 | *0.5.2*

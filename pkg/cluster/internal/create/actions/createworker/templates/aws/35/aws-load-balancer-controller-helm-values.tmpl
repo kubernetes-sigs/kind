@@ -1,0 +1,11 @@
+replicaCount: 1
+
+image:
+  repository: {{ if $.Private }}{{ $.KeosRegUrl }}{{ else }}public.ecr.aws{{ end }}/eks/aws-load-balancer-controller
+  #tag: v2.14.1
+
+serviceAccount:
+  create: true
+  name: aws-load-balancer-controller
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::{{ $.AccountID }}:role/{{ $.ClusterName }}-lb-controller-manager

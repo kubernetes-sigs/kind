@@ -6,16 +6,16 @@
 
 * Roles y políticas
 +
-Para el aprovisionamiento automatizado en EKS, es necesario ejecutar acciones en varios servicios como EC2, ECR, EKS, Elastic Load Balancing (ELB), etc. Aunque el uso de estas acciones puede variar según el tipo de instalación, el proveedor verifica que el usuario indicado tenga los permisos requeridos para garantizar el correcto funcionamiento.
+Para el aprovisionamiento automatizado en EKS, es necesario ejecutar acciones en varios servicios como EC2, ECR, EKS, Elastic Load Balancing (ELB), etc. Aunque el uso de estas acciones puede variar según el tipo de instalación, el proveedor verifica que el usuario indicado cuente con los permisos requeridos para garantizar el correcto funcionamiento.
 +
 ** xref:attachment$stratio-eks-policy.json[Descargar permisos permanentes para EKS]
 ** xref:attachment$stratio-aws-temp-policy.json[Descargar permisos temporales para EKS]
 +
-Para el despliegue de EKS, se deberá crear de forma manual el rol "AWSServiceRoleForAmazonEKS" y asociarle la política "AmazonEKSServiceRolePolicy" (creada por defecto en AWS).
+Para el despliegue de EKS, se deberá crear manualmente el rol "AWSServiceRoleForAmazonEKS" y asociarle la política "AmazonEKSServiceRolePolicy" (creada por defecto en AWS).
 
 * Sistemas operativos certificados
 +
-Para garantizar la compatibilidad entre los nodos _worker_ y el _control-plane_ gestionado de EKS, es necesario usar imágenes de sistema operativo correctamente configuradas. Se recomienda generar estas imágenes con el https://github.com/kubernetes-sigs/image-builder[_Image Builder_ de Kubernetes], la herramienta oficial del proyecto Kubernetes para crear imágenes optimizadas para proveedores de nube. Puedes consultar la https://image-builder.sigs.k8s.io/[documentación oficial] para más detalles sobre cómo construir imágenes personalizadas.
+Para garantizar la compatibilidad entre los nodos _worker_ y el _control-plane_ gestionado de EKS, es necesario usar imágenes de sistema operativo correctamente configuradas. Se recomienda generar estas imágenes con https://github.com/kubernetes-sigs/image-builder[_Image Builder_ de Kubernetes], la herramienta oficial del proyecto Kubernetes para crear imágenes optimizadas para los proveedores de nube. Puedes consultar la https://image-builder.sigs.k8s.io/[documentación oficial] para más detalles sobre cómo construir imágenes personalizadas.
 
 NOTE: Como alternativa, también son válidas las imágenes públicas proporcionadas por AWS con el formato `amazon-eks-node-<k8s-version>-v<fecha>`, que cumplen los requisitos para desplegar _Stratio KEOS_ en EKS.
 
@@ -27,43 +27,56 @@ WARNING: Si no has creado el _stack_ de AWS CloudFormation o no has creado manua
 
 === GKE
 
-* Permisos
+* Permisos.
 +
 En GKE, la cuenta de servicio con la que se aprovisionan los _clusters_ debe contar con los siguientes conjuntos de permisos.
 +
-** xref:attachment$stratio-gcp-permissions.list[Descargar permisos para GCP]
-** xref:attachment$stratio-gke-permissions.list[Descargar permisos para GKE]
+** xref:attachment$stratio-gcp-permissions.list[Descargar permisos para GCP].
+** xref:attachment$stratio-gke-permissions.list[Descargar permisos para GKE].
 
-* Sistemas operativos certificados
+* Sistemas operativos certificados.
 +
-Para GKE, el sistema operativo predeterminado es Container-Optimized OS (COS) y no es necesario indicar ninguna imagen específica.
+En GKE, el sistema operativo predeterminado es Container-Optimized OS (COS) y no es necesario especificar ninguna imagen en particular.
 
-* Habilitar "Google Kubernetes Engine API" para GKE.
-* Bastion.
+* Habilita la API de Google Kubernetes Engine para GKE.
+* _Bastion_.
 +
-El despliegue de _Stratio KEOS_ en GKE debe realizarse mediante un _bastion_ que facilite la comunicación con el _cluster_. Para ello, es necesario crear un _bastion_ en la misma red que el _cluster_.
+Para desplegar _Stratio KEOS_ en GKE necesitas un _bastion_ que facilite la comunicación con el _cluster_. Créalo en la misma red que el _cluster_.
++
+A partir de Kubernetes 1.35, la VM del _bastion_ debe tener habilitado "cgroup v2". El _preflight check_ del kubelet (`system-validators v1.12.1`) lanza un error, no una advertencia, si detecta "cgroup v1" en el _host_. Esto ocurre al ejecutar kubelet v1.35 o posterior. Para habilitar "cgroup v2" en el _bastion_:
++
+[source,bash]
+----
+sudo sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="systemd.unified_cgroup_hierarchy=1 cgroup_no_v1=all"/' /etc/default/grub
+sudo update-grub
+sudo reboot
+----
++
+Tras el reinicio, comprueba el cambio con `stat -fc %T /sys/fs/cgroup/`; debe devolver "cgroup2fs".
++
+Referencia: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.35.md[Kubernetes v1.35 CHANGELOG].
 
 === Azure no gestionado
 
 * Permisos
 +
-Para aprovisionar en Azure no gestionado necesitas una cuenta con todos los permisos requeridos, como en otros proveedores soportados. Además, debes definir:
+Para aprovisionar en Azure no gestionado, necesitas una cuenta con todos los permisos requeridos, al igual que en otros proveedores soportados. Además, debes definir:
 +
 ** Un rol para los _workers_ del _cluster_ en `spec.security.nodes_identity`.
 ** Un rol para el _control-plane_ en `spec.security.control_plane_identity`.
 +
 Para el caso de permisos a nivel de suscripción, se recomienda:
 +
-** xref:attachment$stratio-azure-role.json[Descargar permisos para usuario de despliegue de Azure].
+** xref:attachment$stratio-azure-role.json[Descargar permisos para el usuario de despliegue de Azure].
 ** xref:attachment$stratio-azure-nodes-role.json[Descargar permisos para _workers_ de Azure].
-** xref:attachment$stratio-azure-cp-role.json[Descargar permisos para _control-plane_ de Azure].
+** xref:attachment$stratio-azure-cp-role.json[Descargar permisos para el _control-plane_ de Azure].
 +
 Para el caso de permisos a nivel de grupo de recursos, se recomienda:
 +
-** xref:attachment$stratio-azure-role-rg.json[Descargar permisos para usuario de despliegue de Azure].
+** xref:attachment$stratio-azure-role-rg.json[Descargar permisos para el usuario de despliegue de Azure].
 ** xref:attachment$stratio-azure-nodes-role-rg.json[Descargar permisos para _workers_ de Azure].
-** xref:attachment$stratio-azure-cp-role-rg.json[Descargar permisos para _control-plane_ de Azure].
-** xref:attachment$stratio-azure-acr.json[Descargar permisos para usuario de despliegue, _workers_ y _control-plane_ de Azure].
+** xref:attachment$stratio-azure-cp-role-rg.json[Descargar permisos para el _control-plane_ de Azure].
+** xref:attachment$stratio-azure-acr.json[Descargar permisos para el usuario de despliegue, _workers_ y _control-plane_ de Azure].
 ** Además, se deben asignar estos permisos a nivel de grupo de recursos:
 *** Usuario de despliegue: `Acrpull` en `/subscriptions/<subscription_id>/resourceGroups/<resource_group>/providers/Microsoft.ContainerRegistry/registries/<acr_name>`
 *** _Control-plane_: `Acrpull` en `/subscriptions/<subscription_id>/resourceGroups/<resource_group>/providers/Microsoft.ContainerRegistry/registries/<acr_name>`
@@ -71,23 +84,23 @@ Para el caso de permisos a nivel de grupo de recursos, se recomienda:
 
 * Sistemas operativos certificados
 +
-Para garantizar la compatibilidad entre el _control-plane_ y los nodos _worker_ en entornos no gestionados de Azure, es necesario usar imágenes correctamente configuradas. Se recomienda generarlas con el https://github.com/kubernetes-sigs/image-builder[_Image Builder_ de Kubernetes], una herramienta oficial del proyecto Kubernetes que permite crear imágenes adaptadas a distintos proveedores de nube. Consulta la https://image-builder.sigs.k8s.io/[documentación oficial de _Image Builder_] para aprender a construir imágenes personalizadas.
+Para garantizar la compatibilidad entre el _control-plane_ y los nodos _worker_ en entornos no gestionados de Azure, es necesario utilizar imágenes correctamente configuradas. Se recomienda generarlas con el https://github.com/kubernetes-sigs/image-builder[_Image Builder_ de Kubernetes], una herramienta oficial del proyecto Kubernetes que permite crear imágenes adaptadas a distintos proveedores de nube. Consulta la https://image-builder.sigs.k8s.io/[documentación oficial de _Image Builder_] para aprender a construir imágenes personalizadas.
 
 El sistema operativo recomendado es Ubuntu 22.04, que es el que se configura por defecto en el _controller_ de Azure.
 
 === Consideraciones para imágenes
 
-Refiriéndose al _control-plane_, en EKS y GKE no se podrá indicar una imagen, pero Azure no gestionado sí.
+Refiriéndose al _control-plane_, en EKS y GKE no se podrá indicar una imagen, pero en Azure no gestionado sí.
 
-Para los nodos _worker_, en Azure no gestionado es opcional indicar la imagen (al no indicarla, el _controller_ asigna una disponibilizada por el proveedor _cloud_).
+Para los nodos _worker_, en Azure no gestionado, es opcional indicar la imagen (al no indicarla, el _controller_ asigna una disponible proporcionada por el proveedor _cloud_).
 
-Al momento de crear la imagen para el _cluster_ se deberán tener en cuenta las necesidades del sistema operativo para las aplicaciones que lo requieran (_systemd units, DaemonSets_, etc.) y la versión de Kubernetes a utilizar.
+Al crear la imagen para el _cluster_, se deberán tener en cuenta las necesidades del sistema operativo para las aplicaciones que lo requieran (_systemd units, DaemonSets_, etc.) y la versión de Kubernetes a utilizar.
 
 ==== Elasticsearch
 
 Para soportar los despliegues de Elasticsearch, el sistema operativo deberá contar con el parámetro `max_map_count = 262144` del _sysctl_, como indica su https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html[documentación oficial].
 
-Las imágenes de Amazon Linux 2 *utilizadas por EKS* ya cuentan con este parámetro/valor.
+Las imágenes de Amazon Linux 2 *utilizadas por EKS* ya incluyen este parámetro y su valor.
 
 == Descriptor del _cluster_
 

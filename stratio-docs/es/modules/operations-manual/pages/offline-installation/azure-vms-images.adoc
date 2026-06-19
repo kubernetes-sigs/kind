@@ -51,7 +51,7 @@
 | v3.5.X
 
 | *azuredisk-csi-driver*
-| *v1.33.5*
+| *v1.34.4*
 |
 |
 
@@ -93,13 +93,14 @@
 |
 |
 | mcr.microsoft.com/oss/v2/kubernetes-csi/azuredisk-csi
-| v1.33.5
+| v1.34.4
 
 | *azurefile-csi-driver*
-| *v1.34.1*
+| *v1.35.3*
 |
 |
 
+|
 |
 | mcr.microsoft.com/oss/v2/kubernetes-csi/csi-provisioner
 | v5.3.0
@@ -132,20 +133,20 @@
 |
 |
 | mcr.microsoft.com/oss/v2/kubernetes-csi/azurefile-csi
-| v1.34.1
+| v1.35.3
 
 | *cloud-provider-azure*
-| *1.34.2*
+| *1.35.3*
 |
 |
 
 |
 |
 | mcr.microsoft.com/oss/v2/kubernetes/azure-cloud-controller-manager
-| v1.34.2
+| v1.35.5
 
 |
 |
 | mcr.microsoft.com/oss/v2/kubernetes/azure-cloud-node-manager
-| v1.34.2
+| v1.35.5
 |===

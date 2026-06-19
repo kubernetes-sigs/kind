@@ -36,3 +36,7 @@ deploy-recorder.lst
 # Test outputs
 /bin/all-junit.xml
 /bin/gotestsum.claude/
+
+# Claude
+CLAUDE.md
+.claude/

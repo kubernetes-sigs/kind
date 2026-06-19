@@ -1,3 +1,5 @@
 = Novedades
 
-TODO
+Las actualizaciones principales de esta versión de _Stratio Cloud Provisioner_ son:
+
+* Actualización de Calico (v3.31.5) y Tigera Operator (v3.31.5).

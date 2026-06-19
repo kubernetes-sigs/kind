@@ -1,0 +1,39 @@
+{
+    "cloud": "AzurePublicCloud",
+    "tenantId": "{{ $.TenantID }}",
+    "subscriptionId": "{{ $.SubscriptionID }}",
+    "resourceGroup": "{{ $.KeosClusterName }}",
+    "securityGroupName": "{{ $.KeosClusterName }}-node-nsg",
+    "securityGroupResourceGroup": "{{ $.KeosClusterName }}",
+    "location": "{{ $.Region }}",
+    "vmType": "standard",
+    {{- if ne $.Networks.ResourceGroup "" }}
+    "vnetResourceGroup": "{{ $.Networks.ResourceGroup }}",
+    {{- else }}
+    "vnetResourceGroup": "{{ $.KeosClusterName }}",
+    {{- end}}
+    {{- if $.Networks }}
+    "vnetName": {{- if ne $.Networks.VPCID "" }} "{{ $.Networks.VPCID }}", {{- else }} "{{ $.KeosClusterName }}-vnet", {{- end }}
+    {{- if $.Networks.Subnets }}
+    {{- $found := false }}
+    {{- range $.Networks.Subnets }}
+    {{- if and (not $found) (eq .Role "node") }}
+    "subnetName": "{{ .SubnetId }}",
+    {{- $found = true }}
+    {{- end }}
+    {{- end }}
+    {{- else }}
+    "subnetName": "node-subnet",
+    {{- end }}
+    {{- else }}
+    "vnetName": "{{ $.KeosClusterName }}-vnet",
+    "subnetName": "node-subnet",
+    {{- end }}
+    "routeTableName": "{{ $.KeosClusterName }}-node-routetable",
+    "loadBalancerSku": "Standard",
+    "loadBalancerName": "",
+    "maximumLoadBalancerRuleCount": 250,
+    "useManagedIdentityExtension": true,
+    "useInstanceMetadata": true,
+    "userAssignedIdentityID": "{{ $.UserAssignedIdentityID }}"
+}

@@ -2,4 +2,4 @@
 
 The key updates in this version of _Stratio Cloud Provisioner_ are:
 
-* Updated Calico (v3.30.2) and Tigera Operator (v3.30.2).
+* Updated Calico (v3.31.5) and Tigera Operator (v3.31.5).
