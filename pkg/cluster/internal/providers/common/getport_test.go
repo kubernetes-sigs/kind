@@ -79,7 +79,7 @@ func TestGetFreePort(t *testing.T) {
 		},
 		{
 			name:       "listen on IPv6 non existent address",
-			listenAddr: "2112:beaf:beaf:2:3",
+			listenAddr: "fd00::1",
 			wantErr:    true,
 		},
 	}
