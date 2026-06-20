@@ -191,6 +191,9 @@ func runArgsForNode(node *config.Node, clusterIPFamily config.ClusterIPFamily, n
 		// including some ones podman would otherwise do by default.
 		// for now this is what we want. in the future we may revisit this.
 		"--privileged",
+		// For using podman when VirtualBox is also installed
+		// See https://github.com/containers/podman/issues/14284
+		"--group-add", "keep-groups",
 		// runtime temporary storage
 		"--tmpfs", "/tmp", // various things depend on working /tmp
 		"--tmpfs", "/run", // systemd wants a writable /run
