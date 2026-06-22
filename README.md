@@ -108,6 +108,101 @@ kind create cluster --image kindest/node:latest
 Multi-node clusters and other advanced features may be configured with a config
 file, for more usage see [the docs][user guide] or run `kind [command] --help`
 
+## Multi-host support (this fork)
+
+This fork extends upstream kind with a **multi-host** mode that spreads node
+containers across several Docker daemons connected by a Docker Swarm overlay
+network. Each Kubernetes node is still a single `kindest/node` container, and
+kubeadm / kindnet / CoreDNS see a regular L2 segment thanks to the overlay —
+so no Kubernetes internals had to change.
+
+### When to use it
+
+- Bench / experiment with realistic cross-host latency.
+- Pin specific roles (e.g. control plane / edge / IoT tiers) to specific
+  physical machines.
+- Run more nodes than a single host can comfortably hold.
+
+### Prerequisites
+
+- One Docker daemon per host (any recent version).
+- Passwordless SSH from the manager to every worker as `root`.
+- A `docker context` on the manager for each worker. The
+  [`scripts/setup-multihost.sh`](./scripts/setup-multihost.sh) helper takes
+  care of the SSH key and contexts in one shot.
+
+### Config file
+
+The new `hosts:` block at the top of the cluster config groups Kubernetes
+nodes by host:
+
+```yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+hosts:
+  - context: default          # docker context name; "default" = local daemon
+    addr: 172.16.193.6        # externally-reachable address (kubeconfig + swarm join)
+    nodes:
+      - role: control-plane
+      - role: worker
+  - context: ecotype-7
+    addr: 172.16.193.7
+    nodes:
+      - role: worker
+      - role: worker
+  - context: ecotype-8
+    addr: 172.16.193.8
+    nodes:
+      - role: worker
+      - role: worker
+```
+
+The first host is the swarm manager and the control-plane node lives on it.
+
+### Create / delete
+
+```console
+# one-shot SSH + docker context bootstrap
+./scripts/setup-multihost.sh ecotype-7 ecotype-8
+
+# create (the YAML carries the host list, no --hosts needed)
+kind --multihost --bootstrap-swarm create cluster --name demo --config multi.yaml
+
+# delete (no --config here, so --hosts is required so kind knows where to look)
+kind --multihost \
+     --hosts "default=172.16.193.6,ecotype-7=172.16.193.7,ecotype-8=172.16.193.8" \
+     delete cluster --name demo
+```
+
+### Flags
+
+| Flag | Required for | Effect |
+|---|---|---|
+| `--multihost` | every subcommand in multi-host mode | switches the active provider to `swarm` |
+| `--hosts <ctx>=<addr>[,...]` | `delete` / `get` / any command without `--config` | host list when no YAML is provided |
+| `--bootstrap-swarm` | `create` only | runs `docker swarm init` on the manager and `docker swarm join` on each worker |
+| `--config <file>` | `create` only | cluster topology (incl. the new `hosts:` block) |
+
+### Fallback behaviour
+
+If `--multihost` is passed but no host info is found anywhere (no `--hosts`
+and no `hosts:` block), the swarm provider transparently degrades to a
+single-host configuration on the local daemon — bridge network, no swarm
+init. The same `kind` binary therefore works for both single-host and
+multi-host clusters without surprises.
+
+### Limitations
+
+- Single control-plane only. Multi-CP HA would require an external
+  load-balancer; the provider rejects topologies with several control planes
+  with an explicit error.
+- Docker Swarm ports must be reachable between hosts: TCP 2377 (control),
+  TCP/UDP 7946 (gossip), UDP 4789 (VXLAN data plane).
+
+See [`pkg/cluster/internal/providers/swarm/`](./pkg/cluster/internal/providers/swarm/)
+for the implementation, and [`Reduced_kind/DESIGN.md`](./Reduced_kind/DESIGN.md)
+for the original design notes.
+
 ## Community
 
 Please reach out for bugs, feature requests, and other issues!
