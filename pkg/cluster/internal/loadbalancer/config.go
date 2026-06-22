@@ -171,11 +171,6 @@ func GenerateBootstrapCommand(clusterName, containerName string) []string {
 		ProxyConfigPathLDS,
 	)
 
-	// Create dynamic Envoy config files and start Envoy with retry,
-	// since it has an initialization phase before forwarding traffic.
-	// cmd := []string{"bash", "-c",
-	// 	fmt.Sprintf(`mkdir -p %s && echo -en '%s' > %s && touch %s && touch %s && while true; do envoy -c %s && break; sleep 1; done`, constants.ProxyConfigDir,
-	// 		envoyConfig, constants.ProxyConfigPath, constants.ProxyConfigPathCDS, constants.ProxyConfigPathLDS, constants.ProxyConfigPath)}
 	// Create dynamic Envoy config files with valid empty resources
 	emptyConfig := "resources: []"
 	return []string{"bash", "-c",
