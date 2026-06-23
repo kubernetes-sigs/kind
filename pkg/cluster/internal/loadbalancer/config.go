@@ -174,10 +174,10 @@ func GenerateBootstrapCommand(clusterName, containerName string) []string {
 	// Create dynamic Envoy config files with valid empty resources
 	emptyConfig := "resources: []"
 	return []string{"bash", "-c",
-		fmt.Sprintf(`mkdir -p %s && echo -en '%s' > %s && echo -en '%s' > %s && echo -en '%s' > %s && while true; do envoy -c %s && break; sleep 1; done`,
+		fmt.Sprintf(`mkdir -p %s && echo -en '%s' > %s && { [ ! -f %s ] && echo -en '%s' > %s || true; } && { [ ! -f %s ] && echo -en '%s' > %s || true; } && while true; do envoy -c %s && break; sleep 1; done`,
 			ProxyConfigDir,
 			envoyConfig, ProxyConfigPath,
-			emptyConfig, ProxyConfigPathCDS, // Initialize CDS
-			emptyConfig, ProxyConfigPathLDS, // Initialize LDS
+			ProxyConfigPathCDS, emptyConfig, ProxyConfigPathCDS, // Initialize CDS only if not exists
+			ProxyConfigPathLDS, emptyConfig, ProxyConfigPathLDS, // Initialize LDS only if not exists
 			ProxyConfigPath)}
 }
