@@ -61,7 +61,7 @@ aws:
   managed:
     addons:
       aws-ebs-csi-driver: v1.61.1-eksbuild.1
-      coredns: v1.14.3-eksbuild.2
+      coredns: v1.13.1-eksbuild.1
       kube-proxy: v1.35.3-eksbuild.11
       vpc-cni: v1.20.1-eksbuild.1
     charts:
@@ -102,4 +102,4 @@ gcp:
       infrastructure-components.yaml: 1.6.1-0.4.0
   managed:
     images:
-      coredns: v1.13.2
+      coredns: v1.13.1

@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## 0.9.0 (upcoming)
 
+* [PLT-coredns-downgrade] Downgrade CoreDNS: EKS addon v1.13.1-eksbuild.1 (k8s 1.35), GKE image v1.13.1 (k8s 1.35)
 * [PLT-4247] Add Kubernetes 1.34 and 1.35 support: EKS (addons, coredns, kube-proxy), Azure VMs (cloud-provider-azure 1.35.3, azuredisk 1.34.4, azurefile 1.35.3, cluster-autoscaler 9.57.0), GKE (coredns v1.13.2); bootstrap cluster updated to kindest/node:v1.35.5
 * [PLT-4266] Bump Calico v3.30.2→v3.31.5, tigera-operator controller v1.38.5→v1.40.11, FluxCD chart 2.17.2→2.18.4 (all providers, all supported minors)
 * [PLT-4238] Make Calico Whisker and Goldmane observability components optional via `calico.observability_enabled` descriptor field (default: disabled)
