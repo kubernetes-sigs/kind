@@ -57,6 +57,13 @@ func getPodmanVersion() (*version.Version, error) {
 
 const (
 	minSupportedVersion = "1.8.0"
+
+	// labelFormatVersion is the first podman version that supports the `.Label`
+	// format specifier for `podman ps --format`. From podman 6.0.0 onward the
+	// `.Labels` field is a slice rather than a map, which breaks the previous
+	// `index .Labels` form, so `.Label` must be used on newer podman.
+	// See https://github.com/kubernetes-sigs/kind/issues/4201
+	labelFormatVersion = "5.0.0"
 )
 
 func ensureMinVersion() error {
