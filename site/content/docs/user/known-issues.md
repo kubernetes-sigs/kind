@@ -41,6 +41,7 @@ description: |-
 * [Docker Desktop for macOS and Windows](#docker-desktop-for-macos-and-windows)
 * [Older Linux Distributions](#older-linux-distributions)
 * [Failure to Create Cluster on WSL2](#failure-to-create-cluster-on-wsl2)
+* [LXC and Containerized Environments](#lxc-and-containerized-environments) (cgroup controllers may be unavailable)
 * [Local Subnet Clashes](#local-subnet-clashes)
 
 ## Troubleshooting Kind
@@ -417,6 +418,33 @@ the project relies on community support and feedback. It has been noted that the
 steps detailed in [https://github.com/spurin/wsl-cgroupsv2](https://github.com/spurin/wsl-cgroupsv2)
 have been necessary to resolve this issue.
 
+## LXC and Containerized Environments
+
+When running KIND inside an LXC container or other nested container environment,
+you may see an error like:
+
+```txt
+running kind with rootless provider requires cgroup controllers [memory, pids, cpu], but they are not available.
+```
+
+This can occur even when `Delegate=yes` is correctly configured in systemd. The
+underlying cause is that the outer host may not be making cgroup v2 controllers
+available inside the nested container. You can verify this by checking:
+
+{{< codeFromInline lang="bash" >}}
+cat /sys/fs/cgroup/cgroup.controllers
+{{< /codeFromInline >}}
+
+If the output is empty or missing expected controllers (memory, pids, cpu), the
+problem is at the host level and cannot be resolved from inside the container.
+
+This is a known limitation when the LXC host kernel uses cgroup v1 or does not
+delegate cgroup v2 controllers into the guest. Consult your host platform's
+documentation for enabling cgroup v2 controller delegation into nested
+containers.
+
+See Previous Discussion: [kind#3868]
+
 ## Local Subnet Clashes
 
 KIND creates a separate docker network named `kind` that will be configured with default IPAM settings. If you are using the default IPAM configuration in your `daemon.json` you
@@ -443,6 +471,7 @@ For more information on the Docker Engine config file check out [these docs](htt
 [kind#1326]: https://github.com/kubernetes-sigs/kind/issues/1326
 [kind#2296]: https://github.com/kubernetes-sigs/kind/issues/2296
 [kind#2411]: https://github.com/kubernetes-sigs/kind/issues/2411
+[kind#3868]: https://github.com/kubernetes-sigs/kind/issues/3868
 [moby#17666]: https://github.com/moby/moby/issues/17666
 [Docker resource lims]: https://docs.docker.com/docker-for-mac/#advanced
 [snap]: https://snapcraft.io/
