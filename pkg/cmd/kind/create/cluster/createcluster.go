@@ -83,7 +83,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		&flags.Wait,
 		"wait",
 		time.Duration(0),
-		"wait for control plane node to be ready (default 0s)",
+		"The length of time to wait for control plane node to be ready (default 0s). Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h).",
 	)
 	cmd.Flags().StringVar(
 		&flags.Kubeconfig,
