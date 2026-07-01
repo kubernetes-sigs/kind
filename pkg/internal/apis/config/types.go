@@ -69,6 +69,10 @@ type Cluster struct {
 	// in the order listed.
 	// These should be YAML or JSON formatting RFC 6902 JSON patches
 	ContainerdConfigPatchesJSON6902 []string
+
+	// If DisableDefaultStorageClass is true, kind will not install the default storage class setup.
+	// Instead the user should install their own storage class after creating the cluster.
+	DisableDefaultStorageClass bool
 }
 
 // Node contains settings for a node in the `kind` Cluster.
