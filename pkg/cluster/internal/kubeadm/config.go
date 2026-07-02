@@ -697,6 +697,19 @@ func Config(data ConfigData) (config string, err error) {
 		data.KubeadmFeatureGates["IPv6DualStack"] = true
 	}
 
+	// Have control plane kubelets talk to their local apiserver instead of
+	// the load balancer, so upgrades don't violate the kubelet/apiserver
+	// version skew policy. The kubeadm gate is alpha and off by default in
+	// 1.31/1.32, on by default since 1.33, and removed in 1.36.
+	// TODO: remove this when we no longer support Kubernetes 1.32.
+	if ver.AtLeast(version.MustParseSemantic("v1.31.0")) &&
+		ver.LessThan(version.MustParseSemantic("v1.33.0")) {
+		if data.KubeadmFeatureGates == nil {
+			data.KubeadmFeatureGates = make(map[string]bool)
+		}
+		data.KubeadmFeatureGates["ControlPlaneKubeletLocalMode"] = true
+	}
+
 	// before 1.24 kind uses cgroupfs
 	// after 1.24 kind uses systemd starting in kind v0.13.0
 	// before kind v0.13.0 kubernetes 1.24 wasn't released yet
