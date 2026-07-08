@@ -1,0 +1,1 @@
+This directory contains tools used to update dependencies, generated files, etc.

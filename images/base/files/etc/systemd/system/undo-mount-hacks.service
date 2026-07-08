@@ -1,0 +1,11 @@
+[Unit]
+Description=Undo KIND mount hacks
+After=slices.target
+Before=containerd.service kubelet.service
+
+[Service]
+Type=oneshot
+ExecStart=/kind/bin/undo-mount-hacks.sh
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,112 @@
+name: Podman
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - 'site/**'
+
+permissions:
+  contents: read
+
+jobs:
+  podman:
+    name: Podman
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        ipFamily: [ipv4, ipv6]
+        deployment: [singleNode, multiNode]
+        exclude:
+          - ipFamily: ipv6
+    env:
+      JOB_NAME: "podman-${{ matrix.deployment }}-${{ matrix.ipFamily }}"
+      KIND_EXPERIMENTAL_PROVIDER: "podman"
+      IP_FAMILY: ${{ matrix.ipFamily }}
+      PODMAN_VERSION: "stable"
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: ./.github/actions/setup-env
+
+      - name: Setup podman
+        run: |
+          podman version
+          # podman requires dnsmasq for custom networks
+          # https://github.com/actions/virtual-environments/issues/2708
+          sudo apt-get update
+          sudo apt-get -y install dnsmasq
+          # crun >= 1.9.1 is required on Ubuntu 20.04.6
+          # https://github.com/kubernetes-sigs/kind/issues/3526
+          curl -Lo ./crun https://github.com/containers/crun/releases/download/1.14.3/crun-1.14.3-linux-amd64
+          chmod +x ./crun
+          sudo mv ./crun /usr/bin/crun
+
+      - name: Create single node cluster
+        if: ${{ matrix.deployment == 'singleNode' }}
+        run: |
+          cat <<EOF | sudo KIND_EXPERIMENTAL_PROVIDER=podman kind create cluster -v7 --wait 1m --retain --config=-
+          kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          networking:
+            ipFamily: ${IP_FAMILY}
+          nodes:
+          - role: control-plane
+            extraPortMappings:
+            - containerPort: 80
+              hostPort: 80
+              listenAddress: 0.0.0.0
+            - containerPort: 443
+              hostPort: 443
+              listenAddress: 0.0.0.0
+          EOF
+
+      - name: Create multi node cluster
+        if: ${{ matrix.deployment == 'multiNode' }}
+        run: |
+          cat <<EOF | sudo KIND_EXPERIMENTAL_PROVIDER=podman kind create cluster -v7 --wait 1m --retain --config=-
+          kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          networking:
+            ipFamily: ${IP_FAMILY}
+          nodes:
+          - role: control-plane
+          - role: worker
+          - role: worker
+          EOF
+
+      - name: Get Cluster status
+        run: |
+          # wait network is ready
+          sudo kubectl wait --for=condition=ready pods --namespace=kube-system -l k8s-app=kube-dns
+          sudo kubectl get nodes -o wide
+          sudo kubectl get pods -A
+
+      # TODO: https://github.com/kubernetes-sigs/kind/issues/2038
+      - name: Load docker image
+        run: |
+          sudo podman pull busybox
+          sudo KIND_EXPERIMENTAL_PROVIDER=podman kind load docker-image busybox
+        continue-on-error: true
+
+      - name: Export logs
+        if: always()
+        run: |
+          mkdir -p /tmp/kind/logs
+          sudo KIND_EXPERIMENTAL_PROVIDER=podman kind export logs /tmp/kind/logs
+          sudo chown -R $USER:$USER /tmp/kind/logs
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kind-logs-${{ env.JOB_NAME }}-${{ github.run_id }}
+          path: /tmp/kind/logs
+
+      - name: Delete cluster
+        run: sudo KIND_EXPERIMENTAL_PROVIDER=podman kind delete cluster

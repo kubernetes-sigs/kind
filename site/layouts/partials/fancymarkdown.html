@@ -1,0 +1,15 @@
+{{ if not (eq .Site.Title .Params.title) }}
+<h1>{{ .Params.title }}</h1>
+
+{{ end }}
+{{ if .Params.description }}
+<blockquote class="page-description">{{ .Params.description | markdownify }}</blockquote>
+{{end}}
+{{ if .Params.toc }}
+<h2 id="contents">Contents<a href="#contents" class="hanchor" arialabel="Anchor"> 🔗︎</a></h2>
+<aside>
+{{.TableOfContents}}
+</aside>
+
+{{ end }}
+{{ .Content | replaceRE "(<h[1-9] id=\"([^\"]+)\".+)(</h[1-9]+>)" `${1}<a href="#${2}" class="hanchor" ariaLabel="Anchor"> 🔗&#xFE0E;</a> ${3}` | safeHTML }}

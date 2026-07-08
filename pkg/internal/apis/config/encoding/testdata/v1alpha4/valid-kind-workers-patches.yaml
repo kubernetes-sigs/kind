@@ -1,0 +1,31 @@
+# this config file contains all config fields with comments
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+
+# 1 control plane node and 3 workers
+nodes:
+# the control plane node config
+- role: control-plane
+# the three workers
+- role: worker
+  kubeadmConfigPatches:
+  - |
+    apiVersion: kubeadm.k8s.io/v1beta2
+    kind: JoinConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "aqua=gateway"
+        authorization-mode: "AlwaysAllow"
+- role: worker
+  kubeadmConfigPatchesJSON6902:
+  - group: kubelet.config.k8s.io
+    version: v1beta1
+    kind: KubeletConfiguration
+    patch: |
+      - op: add
+        path: /authentication
+        value: {"anonymous": {"enabled": true}}
+      - op: add
+        path: /tlsCipherSuites
+        value: ["TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256","TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"]
+- role: worker

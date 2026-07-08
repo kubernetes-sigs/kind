@@ -1,0 +1,21 @@
+{{ $code := trim .Inner  "\n"  }}
+{{ $lang := "" }}
+{{ with .Get "lang" }}{{ $lang = . }}{{ end }}
+{{ $hash := md5 $code }}
+<table class="includecode" id="inline-code-{{ $hash }}">
+  <thead>
+  <tr>
+    <th>
+      <button onclick='copyText("inline-code-{{ $hash }}-hidden-copy-text");' title="Copy to clipboard">
+        <img src="{{ "copycode.svg" | relURL }}" alt="Copy">
+      </button>
+    </th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr>
+    <td>{{ highlight $code $lang "" }}</td>
+  </tr>
+  </tbody>
+  <textarea class="hidden-copy-text" id="inline-code-{{ $hash }}-hidden-copy-text">{{ $code }}</textarea>
+</table>

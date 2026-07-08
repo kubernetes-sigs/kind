@@ -1,0 +1,4 @@
+{{ $file := .Get "file" }}
+{{- $contents := readFile $file -}}
+{{ $res := $contents | resources.FromString $file }}
+{{- safeHTML (($res | resources.Minify).Content) -}}

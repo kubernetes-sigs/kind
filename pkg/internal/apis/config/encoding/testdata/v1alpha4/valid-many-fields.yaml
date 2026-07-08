@@ -1,0 +1,20 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: not-default
+featureGates:
+  AllBeta: false
+networking:
+  ipFamily: ipv6
+nodes:
+- role: control-plane
+- role: worker
+  extraMounts:
+  - containerPath: /foo
+    hostPath: /bar
+    readOnly: true
+    selinuxRelabel: false
+    propagation: Bidirectional
+  extraPortMappings:
+  - containerPort: 8080
+    hostPort: 8080
+    protocol: UDP

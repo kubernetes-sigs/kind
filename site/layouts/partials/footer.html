@@ -1,0 +1,6 @@
+<div id="footer" class="footer">
+  <div class="footer-content">
+    <p class="copyright">© {{now.Year}} The Kubernetes Authors | Documentation Distributed under <a class="nowrap" href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a> | <a href="https://github.com/kubernetes-sigs/kind/tree/main/site/static/examples">Examples</a> Distributed under <a class="nowrap" href="https://www.apache.org/licenses/LICENSE-2.0">Apache-2.0</a></p>
+    {{if .GitInfo}}<p>Last Updated on {{.GitInfo.AuthorDate.Format "2006-01-02 15:04:05 -0700" }} in <span id="commit"><a href="https://github.com/kubernetes-sigs/kind/commit/{{.GitInfo.Hash}}">{{.GitInfo.AbbreviatedHash}}</a></span></p>{{end}}
+  </div>
+</div>

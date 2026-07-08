@@ -1,0 +1,6 @@
+{{- $apiVersions := site.Data.apiVersions -}}
+{{- range $apiVersions }}
+/{{ . }}     https://godoc.org/sigs.k8s.io/kind/pkg/apis/config/{{ . }}
+{{- end }}
+/dl/v* https://github.com/kubernetes-sigs/kind/releases/download/v:splat
+/dl/* https://storage.googleapis.com/k8s-staging-kind/:splat
