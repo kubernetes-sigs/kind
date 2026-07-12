@@ -268,6 +268,17 @@ func main() {
 
 	// main control loop
 	informersFactory.Start(ctx.Done())
+    // Wait for the node cache to populate before entering the reconcile
+    // loop. Without this, the very first iteration lists an empty cache
+    // (the informer's initial LIST hasn't landed yet), does nothing, and
+    // then blocks on the 10 s ticker before trying again — so the first
+    // meaningful reconcile that flips NodeReady lags a full tick after
+    // startup. On a fresh kind cluster this delayed the node-Ready
+    // transition by ~10 s vs. what the informer's own sync speed would
+    // support.
+    if !cache.WaitForCacheSync(ctx.Done(), nodeInformer.Informer().HasSynced) {
+		panic("failed to wait for node informer to sync")
+   	}	
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
