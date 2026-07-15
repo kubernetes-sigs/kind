@@ -277,7 +277,7 @@ func main() {
 	defer syncCancel()
 	if !cache.WaitForCacheSync(syncCtx.Done(), nodeInformer.Informer().HasSynced) {
 		klog.Fatalf("failed to sync node informer cache")
-	}	
+	}
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
