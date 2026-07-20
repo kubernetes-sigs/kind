@@ -170,6 +170,22 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 		return nil
 	}
 
+	// Ensure every image has a fully qualified tag before saving it. An
+	// image referenced by ID or a bare/partial name (or one whose tag a
+	// container runtime fails to preserve through save) has no RepoTag
+	// to save. Without one, containerd falls back to generating a name
+	// like "import-<date>" when importing the archive, which changes
+	// daily and leaves the image unreachable under any stable name.
+	saveNames := make([]string, 0, len(imageNames))
+	for i, imageName := range imageNames {
+		sanitizedName := sanitizeImage(imageName)
+		if err := tagImage(imageIDs[i], sanitizedName); err != nil {
+			return fmt.Errorf("failed to tag image %q as %q: %w", imageName, sanitizedName, err)
+		}
+		saveNames = append(saveNames, sanitizedName)
+	}
+	saveNames = removeDuplicates(saveNames)
+
 	// Setup the tar path where the images will be saved
 	dir, err := fs.TempDir("", "images-tar")
 	if err != nil {
@@ -178,7 +194,7 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 	defer os.RemoveAll(dir)
 	imagesTarPath := filepath.Join(dir, "images.tar")
 	// Save the images into a tar
-	err = save(imageNames, imagesTarPath)
+	err = save(saveNames, imagesTarPath)
 	if err != nil {
 		return err
 	}
@@ -209,6 +225,11 @@ func loadImage(imageTarName string, node nodes.Node) error {
 func save(images []string, dest string) error {
 	commandArgs := append([]string{"save", "-o", dest}, images...)
 	return exec.Command("docker", commandArgs...).Run()
+}
+
+// tagImage tags a local image with a new name, as in `docker tag`
+func tagImage(source, target string) error {
+	return exec.Command("docker", "tag", source, target).Run()
 }
 
 // imageID return the Id of the container image
