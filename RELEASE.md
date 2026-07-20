@@ -111,7 +111,7 @@ The script will:
 3. Build cross-platform release binaries into `bin/`:
    - `kind-linux-amd64`, `kind-linux-arm64`
    - `kind-darwin-amd64`, `kind-darwin-arm64`
-   - `kind-windows-amd64`
+   - `kind-windows-amd64`, `kind-windows-arm64`
    - `.sha256sum` file for each binary
 4. Set `versionCore = "0.32.0"` and `versionPreRelease = "alpha"`
 5. Commit with message `version v0.32.0-alpha` and tag `v0.32.0-alpha`
@@ -162,6 +162,7 @@ Go to https://github.com/kubernetes-sigs/kind/releases/new and:
    - `kind-darwin-amd64` + `kind-darwin-amd64.sha256sum`
    - `kind-darwin-arm64` + `kind-darwin-arm64.sha256sum`
    - `kind-windows-amd64` + `kind-windows-amd64.sha256sum`
+   - `kind-windows-arm64` + `kind-windows-arm64.sha256sum`
 5. Publish the release.
 
 ---
