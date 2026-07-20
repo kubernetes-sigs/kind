@@ -170,42 +170,66 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 		return nil
 	}
 
-	// Ensure every image has a fully qualified tag before saving it. An
-	// image referenced by ID or a bare/partial name (or one whose tag a
-	// container runtime fails to preserve through save) has no RepoTag
-	// to save. Without one, containerd falls back to generating a name
-	// like "import-<date>" when importing the archive, which changes
-	// daily and leaves the image unreachable under any stable name.
-	saveNames := make([]string, 0, len(imageNames))
-	for i, imageName := range imageNames {
-		sanitizedName := sanitizeImage(imageName)
-		if err := tagImage(imageIDs[i], sanitizedName); err != nil {
-			return fmt.Errorf("failed to tag image %q as %q: %w", imageName, sanitizedName, err)
-		}
-		saveNames = append(saveNames, sanitizedName)
-	}
-	saveNames = removeDuplicates(saveNames)
-
 	// Setup the tar path where the images will be saved
 	dir, err := fs.TempDir("", "images-tar")
 	if err != nil {
 		return errors.Wrap(err, "failed to create tempdir")
 	}
 	defer os.RemoveAll(dir)
-	imagesTarPath := filepath.Join(dir, "images.tar")
-	// Save the images into a tar
-	err = save(saveNames, imagesTarPath)
-	if err != nil {
-		return err
+
+	// An image referenced by a bare ID or digest saves with no RepoTag,
+	// even if the same content is also tagged under some other name.
+	// Without one, containerd falls back to generating a name like
+	// "import-<date>" when importing the archive, which changes daily
+	// and leaves the image unreachable under any stable name. Those need
+	// to be saved and imported individually, with an explicit,
+	// content-derived base name supplied at import time so containerd is
+	// never left to invent one - nothing is written back to the local
+	// image store to get there. Images referenced by a proper name are
+	// unaffected by this and are still batched into a single save/import
+	// as before.
+	var namedImages []string
+	type unnamedImage struct {
+		name string
+		id   string
+	}
+	var unnamedImages []unnamedImage
+	for i, imageName := range imageNames {
+		if isIDOrDigestReference(imageName) {
+			unnamedImages = append(unnamedImages, unnamedImage{name: imageName, id: imageIDs[i]})
+		} else {
+			namedImages = append(namedImages, imageName)
+		}
 	}
 
-	// Load the images on the selected nodes
-	for _, selectedNode := range selectedNodes {
-		selectedNode := selectedNode // capture loop variable
-		fns = append(fns, func() error {
-			return loadImage(imagesTarPath, selectedNode)
-		})
+	if len(namedImages) > 0 {
+		imagesTarPath := filepath.Join(dir, "images.tar")
+		if err := save(namedImages, imagesTarPath); err != nil {
+			return err
+		}
+		for _, selectedNode := range selectedNodes {
+			selectedNode := selectedNode // capture loop variable
+			fns = append(fns, func() error {
+				return loadImage(imagesTarPath, selectedNode)
+			})
+		}
 	}
+
+	for i, img := range unnamedImages {
+		img := img // capture loop variable
+		imageTarPath := filepath.Join(dir, fmt.Sprintf("unnamed-%d.tar", i))
+		if err := save([]string{img.name}, imageTarPath); err != nil {
+			return err
+		}
+		baseName := unnamedImageBaseName(img.id)
+		for _, selectedNode := range selectedNodes {
+			selectedNode := selectedNode // capture loop variable
+			fns = append(fns, func() error {
+				return loadImageWithBaseName(imageTarPath, selectedNode, baseName)
+			})
+		}
+	}
+
 	return errors.UntilErrorConcurrent(fns)
 }
 
@@ -221,15 +245,50 @@ func loadImage(imageTarName string, node nodes.Node) error {
 	return nodeutils.LoadImageArchive(node, f)
 }
 
+// loads an image tarball containing a single unnamed image onto a node,
+// giving it baseName since the archive has no name of its own to preserve
+func loadImageWithBaseName(imageTarName string, node nodes.Node, baseName string) error {
+	f, err := os.Open(imageTarName)
+	if err != nil {
+		return errors.Wrap(err, "failed to open image")
+	}
+	defer f.Close()
+	return nodeutils.LoadImageArchiveWithBaseName(node, f, baseName)
+}
+
 // save saves images to dest, as in `docker save`
 func save(images []string, dest string) error {
 	commandArgs := append([]string{"save", "-o", dest}, images...)
 	return exec.Command("docker", commandArgs...).Run()
 }
 
-// tagImage tags a local image with a new name, as in `docker tag`
-func tagImage(source, target string) error {
-	return exec.Command("docker", "tag", source, target).Run()
+// isIDOrDigestReference reports whether image is a bare image ID or a
+// digest reference (e.g. "d34db33f...", "sha256:d34db33f...",
+// "name@sha256:d34db33f...") rather than a name[:tag] reference. Saving an
+// image by ID or digest embeds no RepoTag in the resulting archive, even
+// if that same content is also tagged under some other name.
+func isIDOrDigestReference(image string) bool {
+	if strings.Contains(image, "@sha256:") {
+		return true
+	}
+	hex := strings.TrimPrefix(image, "sha256:")
+	if len(hex) < 12 || len(hex) > 64 {
+		return false
+	}
+	for _, r := range hex {
+		if (r < '0' || r > '9') && (r < 'a' || r > 'f') {
+			return false
+		}
+	}
+	return true
+}
+
+// unnamedImageBaseName returns a stable, unique base name to give an
+// image that has no repo tag to preserve, derived from the image's
+// content ID rather than the (possibly ID- or digest-shaped) string the
+// user passed in, so it's well-formed regardless of that input's shape.
+func unnamedImageBaseName(imageID string) string {
+	return "docker.io/library/" + strings.TrimPrefix(imageID, "sha256:")
 }
 
 // imageID return the Id of the container image
