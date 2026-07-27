@@ -389,6 +389,32 @@ type podmanInfo struct {
 			Rootless bool `json:"rootless,omitempty"`
 		} `json:"security"`
 	} `json:"host"`
+	Store struct {
+		GraphDriverName string `json:"graphDriverName,omitempty"`
+		GraphStatus     struct {
+			BackingFilesystem string `json:"Backing Filesystem,omitempty"`
+		} `json:"graphStatus"`
+	} `json:"store"`
+}
+
+// zfsACLWarning returns a non-empty warning message if rootless is true and
+// the storage driver or backing filesystem is ZFS, since ZFS does not enable
+// POSIX ACLs by default and rootless podman's fuse-overlayfs snapshotter
+// requires them, which can cause node containers to fail with
+// "stat /pause: operation not supported".
+// See https://github.com/kubernetes-sigs/kind/issues/4025
+func zfsACLWarning(rootless bool, graphDriverName, backingFilesystem string) string {
+	if !rootless {
+		return ""
+	}
+	if graphDriverName != "zfs" && backingFilesystem != "zfs" {
+		return ""
+	}
+	return "Podman storage is backed by ZFS, which does not enable POSIX ACLs by default. " +
+		"With rootless Podman this can cause node containers to fail with " +
+		"\"stat /pause: operation not supported\". If cluster creation fails, try enabling ACLs " +
+		"on the backing ZFS dataset (zfs set acltype=posix <dataset>) and re-pulling the node image. " +
+		"See https://github.com/kubernetes-sigs/kind/issues/4025"
 }
 
 // info detects ProviderInfo by executing `podman info --format json`.
@@ -445,6 +471,11 @@ func info(logger log.Logger) (*providers.ProviderInfo, error) {
 		if logger != nil {
 			logger.Warn("Cgroup controller detection is not implemented for Podman. " +
 				"If you see cgroup-related errors, you might need to set systemd property \"Delegate=yes\", see https://kind.sigs.k8s.io/docs/user/rootless/")
+		}
+	}
+	if logger != nil {
+		if msg := zfsACLWarning(info.Rootless, pInfo.Store.GraphDriverName, pInfo.Store.GraphStatus.BackingFilesystem); msg != "" {
+			logger.Warn(msg)
 		}
 	}
 	return info, nil
