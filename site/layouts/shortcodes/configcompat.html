@@ -1,0 +1,31 @@
+<table>
+  <thead>
+    <tr><th colspan="2" style="text-align: left;">Compatibility</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Config field</strong></td>
+      <td><code>{{ .Get "field" }}</code></td>
+    </tr>
+    <tr>
+      <td><strong>apiVersion</strong></td>
+      <td><code>{{ .Get "apiversion" | default "kind.x-k8s.io/v1alpha4" }}</code></td>
+    </tr>
+    <tr>
+      <td><strong>Minimum kind</strong></td>
+      <td><code>{{ .Get "kind" }}</code></td>
+    </tr>
+    {{- with .Get "kubernetes" }}
+    <tr>
+      <td><strong>Minimum Kubernetes</strong></td>
+      <td><code>{{ . }}</code></td>
+    </tr>
+    {{- end }}
+    {{- with .Inner }}
+    <tr>
+      <td><strong>Notes</strong></td>
+      <td>{{ . | markdownify }}</td>
+    </tr>
+    {{- end }}
+  </tbody>
+</table>
