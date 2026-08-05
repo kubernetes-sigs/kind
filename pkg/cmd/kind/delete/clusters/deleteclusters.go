@@ -33,6 +33,11 @@ type flagpole struct {
 	All        bool
 }
 
+type clusterProvider interface {
+	List() ([]string, error)
+	Delete(name, explicitKubeconfigPath string) error
+}
+
 // NewCommand returns a new cobra.Command for cluster deletion
 func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 	flags := &flagpole{}
@@ -77,6 +82,10 @@ func deleteClusters(logger log.Logger, flags *flagpole, clusters []string) error
 		cluster.ProviderWithLogger(logger),
 		runtime.GetDefault(logger),
 	)
+	return deleteClustersWithProvider(logger, provider, flags, clusters)
+}
+
+func deleteClustersWithProvider(logger log.Logger, provider clusterProvider, flags *flagpole, clusters []string) error {
 	var err error
 	if flags.All {
 		//Delete all clusters
@@ -85,13 +94,14 @@ func deleteClusters(logger log.Logger, flags *flagpole, clusters []string) error
 		}
 	}
 	var success []string
+	var errs []error
 	for _, cluster := range clusters {
 		if err = provider.Delete(cluster, flags.Kubeconfig); err != nil {
-			logger.V(0).Infof("%s\n", errors.Wrapf(err, "failed to delete cluster %q", cluster))
+			errs = append(errs, errors.Wrapf(err, "failed to delete cluster %q", cluster))
 			continue
 		}
 		success = append(success, cluster)
 	}
 	logger.V(0).Infof("Deleted clusters: %q", success)
-	return nil
+	return errors.NewAggregate(errs)
 }
