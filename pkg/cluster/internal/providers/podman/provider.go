@@ -389,18 +389,16 @@ type podmanInfo struct {
 			Rootless bool `json:"rootless,omitempty"`
 		} `json:"security"`
 	} `json:"host"`
-	Store struct {
-		GraphDriverName string `json:"graphDriverName,omitempty"`
-		GraphStatus     struct {
-			BackingFilesystem string `json:"Backing Filesystem,omitempty"`
-		} `json:"graphStatus"`
-	} `json:"store"`
+	podmanStorageInfo
 }
 
 // zfsACLWarning returns a non-empty warning message if rootless is true and
-// the storage driver or backing filesystem is ZFS, since ZFS does not enable
-// POSIX ACLs by default and rootless podman's fuse-overlayfs snapshotter
-// requires them, which can cause node containers to fail with
+// the storage driver or backing filesystem is ZFS. `podman info` does not
+// report the ZFS dataset's acltype, so this fires even when the dataset
+// already has POSIX ACLs enabled (acltype=posix); the warning notes that it
+// can be ignored in that case. With acltype=off (ZFS's default), rootless
+// podman's fuse-overlayfs snapshotter can't expose POSIX ACLs on top of the
+// filesystem, which can cause node containers to fail with
 // "stat /pause: operation not supported".
 // See https://github.com/kubernetes-sigs/kind/issues/4025
 func zfsACLWarning(rootless bool, graphDriverName, backingFilesystem string) string {
@@ -410,10 +408,11 @@ func zfsACLWarning(rootless bool, graphDriverName, backingFilesystem string) str
 	if graphDriverName != "zfs" && backingFilesystem != "zfs" {
 		return ""
 	}
-	return "Podman storage is backed by ZFS, which does not enable POSIX ACLs by default. " +
-		"With rootless Podman this can cause node containers to fail with " +
-		"\"stat /pause: operation not supported\". If cluster creation fails, try enabling ACLs " +
-		"on the backing ZFS dataset (zfs set acltype=posix <dataset>) and re-pulling the node image. " +
+	return "Podman storage is backed by ZFS. With rootless Podman and a ZFS dataset that has " +
+		"acltype=off (ZFS's default), POSIX ACLs are unavailable and node containers can fail " +
+		"with \"stat /pause: operation not supported\". If the dataset already has " +
+		"acltype=posix set, this warning can be ignored. Otherwise, try " +
+		"\"zfs set acltype=posix <dataset>\" and re-creating the cluster. " +
 		"See https://github.com/kubernetes-sigs/kind/issues/4025"
 }
 
