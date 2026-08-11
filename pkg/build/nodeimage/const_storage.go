@@ -204,9 +204,10 @@ data:
     spec:
       priorityClassName: system-node-critical
       tolerations:
-        - key: node.kubernetes.io/disk-pressure
-          operator: Exists
+        - operator: Exists
           effect: NoSchedule
+        - operator: Exists
+          effect: NoExecute
       containers:
       - name: helper-pod
         image: ` + storageHelperImage + `
