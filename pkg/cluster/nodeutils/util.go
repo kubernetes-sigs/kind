@@ -24,7 +24,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/pelletier/go-toml"
+	"github.com/pelletier/go-toml/v2"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -99,30 +99,52 @@ func getSnapshotter(n nodes.Node) (string, error) {
 }
 
 func parseSnapshotter(config string) (string, error) {
-	parsed, err := toml.Load(config)
-	if err != nil {
+	// Minimal implementation of containerd's config struct;
+	//
+	// https://github.com/containerd/containerd/blob/v2.3.2/cmd/containerd/server/config/config.go#L58-L108
+	var parsed struct {
+		Version int                    `toml:"version"`
+		Plugins map[string]interface{} `toml:"plugins"`
+	}
+
+	if err := toml.Unmarshal([]byte(config), &parsed); err != nil {
 		return "", errors.Wrap(err, "failed to detect containerd snapshotter")
 	}
-	configVersion, ok := parsed.Get("version").(int64)
-	if !ok {
+	switch parsed.Version {
+	case 0:
 		return "", errors.New("failed to detect containerd config version")
-	}
-	var snapshotter string
-	switch configVersion {
 	case 2: // Introduced in containerd v1.3. Still supported in containerd v2.
-		snapshotter, ok = parsed.GetPath([]string{"plugins", "io.containerd.grpc.v1.cri", "containerd", "snapshotter"}).(string)
+		snapshotter, ok := lookup(parsed.Plugins, "io.containerd.grpc.v1.cri", "containerd", "snapshotter")
 		if !ok {
 			return "", errors.New("failed to detect containerd snapshotter (config version 2)")
 		}
+		return snapshotter, nil
 	case 3, 4: // Introduced in containerd v2.0 / v2.1.
-		snapshotter, ok = parsed.GetPath([]string{"plugins", "io.containerd.cri.v1.images", "snapshotter"}).(string)
+		snapshotter, ok := lookup(parsed.Plugins, "io.containerd.cri.v1.images", "snapshotter")
 		if !ok {
-			return "", fmt.Errorf("failed to detect containerd snapshotter (config version %d)", configVersion)
+			return "", fmt.Errorf("failed to detect containerd snapshotter (config version %d)", parsed.Version)
 		}
+		return snapshotter, nil
 	default:
-		return "", fmt.Errorf("unknown containerd config version: %d (supported versions: 2, 3 and 4)", configVersion)
+		return "", fmt.Errorf("unknown containerd config version: %d (supported versions: 2, 3 and 4)", parsed.Version)
 	}
-	return snapshotter, nil
+}
+
+func lookup(m map[string]interface{}, path ...string) (string, bool) {
+	var cur interface{} = m
+	for _, p := range path {
+		next, ok := cur.(map[string]interface{})
+		if !ok {
+			return "", false
+		}
+		cur, ok = next[p]
+		if !ok {
+			return "", false
+		}
+	}
+
+	s, ok := cur.(string)
+	return s, ok
 }
 
 // ImageID returns ID of image on the node with the given image name if present
