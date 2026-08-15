@@ -401,6 +401,26 @@ func TestNodeValidate(t *testing.T) {
 			}(),
 			ExpectErrors: 0,
 		},
+		{
+			TestName: "Duplicate host port with empty and explicit TCP protocol",
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg.ExtraPortMappings = []PortMapping{
+					{
+						ContainerPort: 80,
+						HostPort:      8080,
+					},
+					{
+						ContainerPort: 81,
+						HostPort:      8080,
+						Protocol:      PortMappingProtocolTCP,
+					},
+				}
+				SetDefaultsNode(&cfg)
+				return cfg
+			}(),
+			ExpectErrors: 1,
+		},
 	}
 
 	for _, tc := range cases {
