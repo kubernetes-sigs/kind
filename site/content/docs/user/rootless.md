@@ -171,6 +171,55 @@ To increase the inotify limits, do the following:
 
 Alternatively, restart your system for these changes to take effect.
 
+### Increase Keyring Limits
+
+When using kind with rootless Podman, you may hit the following error while
+creating a cluster:
+
+```
+could not create session key: disk quota exceeded
+```
+
+This happens because the default kernel keyring limits are too low for kind's
+usage pattern. Podman creates one keyring per container, and kind nodes run via
+runc which also creates at least one keyring per container
+(see [opencontainers/runc#582](https://github.com/opencontainers/runc/pull/582)).
+The default limits (200 keys and 20000 bytes) are exhausted quickly, especially
+on Debian and Red Hat family distributions.
+
+You can list the existing keys to verify the issue with:
+
+```sh
+cat /proc/keys
+```
+
+To increase the keyring limits temporarily, run:
+
+```sh
+sudo sysctl -w kernel.keys.maxkeys=20000
+sudo sysctl -w kernel.keys.maxbytes=500000
+```
+
+To make the change persistent, create a sysctl configuration file:
+
+```sh
+cat <<EOF | sudo tee /etc/sysctl.d/01-keys.conf
+# See https://github.com/moby/moby/issues/22865
+# Default maxkeys: 200
+kernel.keys.maxkeys = 20000
+# Default maxbytes: 20000
+kernel.keys.maxbytes = 500000
+EOF
+```
+
+Then reload `sysctl` for the changes to take effect:
+
+```sh
+sudo sysctl --system
+```
+
+Alternatively, restart your system to ensure these changes take effect.
+
 ### Allow Binding to Privileged Ports
 
 If you use the `extraPortMappings` method to provide ingress to your KIND cluster, you can allow
