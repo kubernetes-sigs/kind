@@ -389,6 +389,31 @@ type podmanInfo struct {
 			Rootless bool `json:"rootless,omitempty"`
 		} `json:"security"`
 	} `json:"host"`
+	podmanStorageInfo
+}
+
+// zfsACLWarning returns a non-empty warning message if rootless is true and
+// the storage driver or backing filesystem is ZFS. `podman info` does not
+// report the ZFS dataset's acltype, so this fires even when the dataset
+// already has POSIX ACLs enabled (acltype=posix); the warning notes that it
+// can be ignored in that case. With acltype=off (ZFS's default), rootless
+// podman's fuse-overlayfs snapshotter can't expose POSIX ACLs on top of the
+// filesystem, which can cause node containers to fail with
+// "stat /pause: operation not supported".
+// See https://github.com/kubernetes-sigs/kind/issues/4025
+func zfsACLWarning(rootless bool, graphDriverName, backingFilesystem string) string {
+	if !rootless {
+		return ""
+	}
+	if graphDriverName != "zfs" && backingFilesystem != "zfs" {
+		return ""
+	}
+	return "Podman storage is backed by ZFS. With rootless Podman and a ZFS dataset that has " +
+		"acltype=off (ZFS's default), POSIX ACLs are unavailable and node containers can fail " +
+		"with \"stat /pause: operation not supported\". If the dataset already has " +
+		"acltype=posix set, this warning can be ignored. Otherwise, try " +
+		"\"zfs set acltype=posix <dataset>\" and re-creating the cluster. " +
+		"See https://github.com/kubernetes-sigs/kind/issues/4025"
 }
 
 // info detects ProviderInfo by executing `podman info --format json`.
@@ -445,6 +470,11 @@ func info(logger log.Logger) (*providers.ProviderInfo, error) {
 		if logger != nil {
 			logger.Warn("Cgroup controller detection is not implemented for Podman. " +
 				"If you see cgroup-related errors, you might need to set systemd property \"Delegate=yes\", see https://kind.sigs.k8s.io/docs/user/rootless/")
+		}
+	}
+	if logger != nil {
+		if msg := zfsACLWarning(info.Rootless, pInfo.Store.GraphDriverName, pInfo.Store.GraphStatus.BackingFilesystem); msg != "" {
+			logger.Warn(msg)
 		}
 	}
 	return info, nil
