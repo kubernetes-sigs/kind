@@ -43,7 +43,6 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "Exports cluster kubeconfig",
 		Long:  "Exports cluster kubeconfig",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cli.OverrideDefaultName(cmd.Flags())
 			return runE(logger, flags)
 		},
 	}
@@ -51,8 +50,8 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		&flags.Name,
 		"name",
 		"n",
-		cluster.DefaultName,
-		"the cluster context name",
+		cli.DefaultName(),
+		cli.NameFlagHelp,
 	)
 	cmd.Flags().StringVar(
 		&flags.Kubeconfig,

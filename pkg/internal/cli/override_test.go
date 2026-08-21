@@ -1,5 +1,5 @@
 /*
-Copyright The Kubernetes Authors.
+Copyright 2026 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,27 +17,27 @@ limitations under the License.
 package cli
 
 import (
-	"os"
+	"testing"
 
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 )
 
-// ClusterNameEnv is the environment variable used to override the default
-// cluster name.
-const ClusterNameEnv = "KIND_CLUSTER_NAME"
+func TestNameFromEnv(t *testing.T) {
+	t.Setenv(ClusterNameEnv, "env-cluster")
 
-// NameFlagHelp is the shared help text for the --name flag.
-const NameFlagHelp = "cluster name (or via KIND_CLUSTER_NAME)"
-
-// NameFromEnv returns the cluster name from KIND_CLUSTER_NAME.
-func NameFromEnv() string {
-	return os.Getenv(ClusterNameEnv)
+	if got := NameFromEnv(); got != "env-cluster" {
+		t.Fatalf("NameFromEnv() = %q, want %q", got, "env-cluster")
+	}
 }
 
-// DefaultName returns the effective default cluster name.
-func DefaultName() string {
-	if name := NameFromEnv(); name != "" {
-		return name
+func TestDefaultName(t *testing.T) {
+	t.Setenv(ClusterNameEnv, "")
+	if got := DefaultName(); got != constants.DefaultClusterName {
+		t.Fatalf("DefaultName() = %q, want %q", got, constants.DefaultClusterName)
 	}
-	return constants.DefaultClusterName
+
+	t.Setenv(ClusterNameEnv, "env-cluster")
+	if got := DefaultName(); got != "env-cluster" {
+		t.Fatalf("DefaultName() = %q, want %q", got, "env-cluster")
+	}
 }

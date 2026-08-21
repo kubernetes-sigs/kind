@@ -44,7 +44,6 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "Prints cluster kubeconfig",
 		Long:  "Prints cluster kubeconfig",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cli.OverrideDefaultName(cmd.Flags())
 			return runE(logger, streams, flags)
 		},
 	}
@@ -52,8 +51,8 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		&flags.Name,
 		"name",
 		"n",
-		cluster.DefaultName,
-		"the cluster context name",
+		cli.DefaultName(),
+		cli.NameFlagHelp,
 	)
 	cmd.Flags().BoolVar(
 		&flags.Internal,

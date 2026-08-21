@@ -45,7 +45,6 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "Exports logs to a tempdir or [output-dir] if specified",
 		Long:  "Exports logs to a tempdir or [output-dir] if specified",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cli.OverrideDefaultName(cmd.Flags())
 			return runE(logger, streams, flags, args)
 		},
 	}
@@ -53,8 +52,8 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		&flags.Name,
 		"name",
 		"n",
-		cluster.DefaultName,
-		"the cluster context name",
+		cli.DefaultName(),
+		cli.NameFlagHelp,
 	)
 	return cmd
 }
