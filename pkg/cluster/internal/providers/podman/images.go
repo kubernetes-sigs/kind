@@ -37,7 +37,7 @@ func ensureNodeImages(logger log.Logger, status *cli.Status, cfg *config.Cluster
 	for _, image := range common.RequiredNodeImages(cfg).List() {
 		// prints user friendly message
 		friendlyImageName, image := sanitizeImage(image)
-		status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼", friendlyImageName))
+		status.Start(fmt.Sprintf("Ensuring node image (%s) 🖼️", friendlyImageName))
 		if _, err := pullIfNotPresent(logger, image, 4); err != nil {
 			status.End(false)
 			return err
