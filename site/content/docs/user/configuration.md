@@ -39,6 +39,15 @@ You can also include a full file path like `kind create cluster --config=/foo/ba
 The structure of the `Cluster` type is defined by a Go struct, which is described
 [here](https://pkg.go.dev/sigs.k8s.io/kind/pkg/apis/config/v1alpha4#Cluster).
 
+### Version Compatibility
+
+This page documents the current config apiVersion, `kind.x-k8s.io/v1alpha4`
+(the only supported apiVersion in current kind releases).
+
+Where it helps, newer options include a short compatibility table with the
+minimum kind version (and Kubernetes version when one applies). Older baseline
+`v1alpha4` fields are left unannotated so this page stays easy to scan.
+
 ### A Note On CLI Parameters and Configuration Files
 
 Unless otherwise noted, parameters passed to the CLI take precedence over their
@@ -141,6 +150,7 @@ networking:
 {{< /codeFromInline >}}
 
 ##### Dual Stack clusters
+
 You can run dual stack clusters using `kind` 0.11+, on kubernetes versions 1.20+.
 
 {{< codeFromInline lang="yaml" >}}
@@ -215,11 +225,12 @@ networking:
   disableDefaultCNI: true
 {{< /codeFromInline >}}
 
-
 #### kube-proxy mode
 
-You can configure the kube-proxy mode that will be used, between iptables, nftables (Kubernetes v1.31+), and ipvs.
-By default iptables is used
+You can configure the kube-proxy mode that will be used, between iptables, nftables, and ipvs.
+By default iptables is used.
+
+{{< configcompat field="networking.kubeProxyMode (nftables)" kind="v0.23.0" kubernetes="v1.31" >}}{{< /configcompat >}}
 
 {{< codeFromInline lang="yaml" >}}
 kind: Cluster
@@ -230,7 +241,33 @@ networking:
 
 To disable kube-proxy, set the mode to `"none"`.
 
+#### DNS Search
+
+{{< configcompat field="networking.dnsSearch" kind="v0.18.0" >}}{{< /configcompat >}}
+
+You can override the DNS search list used by cluster nodes with `dnsSearch`.
+If unset, the search list is inherited from the host.
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  dnsSearch:
+  - example.local
+  - svc.cluster.local
+{{< /codeFromInline >}}
+
+To clear the search list instead of inheriting from the host, set an empty list:
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  dnsSearch: []
+{{< /codeFromInline >}}
+
 ### Nodes
+
 The `kind: Cluster` object has a `nodes` field containing a list of `node`
 objects. If unset this defaults to:
 
@@ -295,7 +332,6 @@ Extra mounts can be used to pass through storage on the host to a kind node
 for persisting data, mounting through code etc.
 
 {{< codeFromFile file="static/examples/config-with-mounts.yaml" lang="yaml" >}}
-
 
 **NOTE**: If you are using Docker for Mac or Windows check that the hostPath is
 included in the Preferences -> Resources -> File Sharing.

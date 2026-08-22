@@ -131,11 +131,6 @@ On Windows via Winget (https://github.com/microsoft/winget-pkgs/tree/master/mani
 winget install Kubernetes.kind
 {{< /codeFromInline >}}
 
-On Arch Linux via pacman (https://archlinux.org/packages/extra/x86_64/kind/)
-{{< codeFromInline lang="bash" >}}
-sudo pacman -Syu kind
-{{< /codeFromInline >}}
-
 ## Discovering Additional Command Options
 
 kind provides built-in help for all commands and subcommands.  
