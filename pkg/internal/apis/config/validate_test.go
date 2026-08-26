@@ -40,6 +40,30 @@ func TestClusterValidate(t *testing.T) {
 			}(),
 		},
 		{
+			Name: "DisableDefaultStorageClass default is false",
+			Cluster: func() Cluster {
+				c := Cluster{}
+				SetDefaultsCluster(&c)
+				if c.DisableDefaultStorageClass != false {
+					panic("DisableDefaultStorageClass should default to false")
+				}
+				return c
+			}(),
+		},
+		{
+			Name: "DisableDefaultStorageClass can be set to true",
+			Cluster: func() Cluster {
+				c := Cluster{
+					DisableDefaultStorageClass: true,
+				}
+				SetDefaultsCluster(&c)
+				if c.DisableDefaultStorageClass != true {
+					panic("DisableDefaultStorageClass should remain true")
+				}
+				return c
+			}(),
+		},
+		{
 			Name: "multiple valid nodes",
 			Cluster: func() Cluster {
 				c := Cluster{}
