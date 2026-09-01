@@ -86,7 +86,7 @@ type typeMeta struct {
 	APIVersion string `yaml:"apiVersion,omitempty"`
 }
 
-func yamlUnmarshalStrict(raw []byte, v interface{}) error {
+func yamlUnmarshalStrict(raw []byte, v any) error {
 	d := yaml.NewDecoder(bytes.NewReader(raw))
 	d.KnownFields(true)
 	return d.Decode(v)

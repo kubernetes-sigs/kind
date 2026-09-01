@@ -136,7 +136,7 @@ func (cmd *LocalCmd) Run() error {
 // Note that the recover will only happen if a is not comparable to b,
 // in which case we'll return false
 // We've lightly modified this to pass errcheck (explicitly ignoring recover)
-func interfaceEqual(a, b interface{}) bool {
+func interfaceEqual(a, b any) bool {
 	defer func() {
 		_ = recover()
 	}()

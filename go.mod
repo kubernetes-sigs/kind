@@ -8,29 +8,26 @@ module sigs.k8s.io/kind
 // See ./.go-version for the go compiler version used when building binaries
 //
 // https://go.dev/doc/modules/gomod-ref#go
-go 1.17
+go 1.21
 
 require (
-	al.essio.dev/pkg/shellescape v1.5.1
-	github.com/BurntSushi/toml v1.4.0
-	github.com/evanphx/json-patch/v5 v5.6.0
-	github.com/mattn/go-isatty v0.0.20
+	al.essio.dev/pkg/shellescape v1.6.0
+	github.com/BurntSushi/toml v1.6.0
+	github.com/evanphx/json-patch/v5 v5.9.11
+	github.com/mattn/go-isatty v0.0.24
 	github.com/pelletier/go-toml v1.9.5
 	github.com/pkg/errors v0.9.1
-	github.com/spf13/cobra v1.8.0
-	github.com/spf13/pflag v1.0.5
-	go.yaml.in/yaml/v3 v3.0.4
+	github.com/spf13/cobra v1.10.2
+	github.com/spf13/pflag v1.0.10
+	go.yaml.in/yaml/v3 v3.0.5
 	sigs.k8s.io/yaml v1.4.0
 )
 
 // test-only transitive deps, these are used by sigs.k8s.io/yaml's tests
-require (
-	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
-	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect
-)
+require gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 
 require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	golang.org/x/sys v0.6.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
 )
