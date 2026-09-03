@@ -42,6 +42,7 @@ description: |-
 * [Older Linux Distributions](#older-linux-distributions)
 * [Failure to Create Cluster on WSL2](#failure-to-create-cluster-on-wsl2)
 * [Local Subnet Clashes](#local-subnet-clashes)
+* [Unable to `kind load` Docker images](#unable-to-kind-load-docker-images) (`content digest ... not found`)
 
 ## Troubleshooting Kind
 
@@ -437,12 +438,54 @@ subnet to use for allocation.
 
 For more information on the Docker Engine config file check out [these docs](https://docs.docker.com/engine/daemon/).
 
+## Unable to `kind load` Docker Images
+
+When Docker is using the containerd image store, `kind load docker-image` may fail with an error similar to:
+
+```text
+ERROR: failed to load image: command "docker exec --privileged -i kind-control-plane ctr --namespace=k8s.io images import --all-platforms --digests --snapshotter=overlayfs -" failed with error: exit status 1
+
+Command Output: ctr: content digest sha256:...: not found
+```
+
+See [kind#3795] for additional details.
+
+A targeted workaround is to export only the platform required by the kind nodes and load the resulting image archive:
+```sh
+docker image save \
+  --platform linux/amd64 \
+  --output /tmp/image.tar \
+  my-image:tag
+
+kind load image-archive /tmp/image.tar --name my-cluster
+```
+
+Alternatively, disabling Docker's containerd image store may avoid this issue.
+
+> **NOTE**: Disabling the containerd image store changes Docker's host-wide image storage behavior.
+> The single-platform image archive workaround is more targeted when only loading images into kind is affected.
+
+You can disable Docker's containerd image store adding the following to `/etc/docker/daemon.json`:
+
+```json
+{
+  "features": {
+    "containerd-snapshotter": false
+  }
+}
+```
+
+Restart Docker after changing this configuration.
+
+Docker Desktop also exposes a setting for enabling or disabling the containerd image store. See [kind#3795] for discussion of this workaround for different Docker environments.
+
 [kind#156]: https://github.com/kubernetes-sigs/kind/issues/156
 [kind#229]: https://github.com/kubernetes-sigs/kind/issues/229
 [kind#1179]: https://github.com/kubernetes-sigs/kind/issues/1179
 [kind#1326]: https://github.com/kubernetes-sigs/kind/issues/1326
 [kind#2296]: https://github.com/kubernetes-sigs/kind/issues/2296
 [kind#2411]: https://github.com/kubernetes-sigs/kind/issues/2411
+[kind#3795]: https://github.com/kubernetes-sigs/kind/issues/3795
 [moby#17666]: https://github.com/moby/moby/issues/17666
 [Docker resource lims]: https://docs.docker.com/docker-for-mac/#advanced
 [snap]: https://snapcraft.io/
