@@ -99,9 +99,20 @@ func TestIsSmartTerminal(t *testing.T) {
 			Writer:  &testFakeTTY{},
 		},
 		{
+			// https://no-color.org/ only disables color when NO_COLOR is
+			// set to a non-empty value.
 			Name: "tty, NO_COLOR=",
 			FakeEnv: map[string]string{
 				"NO_COLOR": "",
+			},
+			GOOS:    "linux",
+			IsSmart: true,
+			Writer:  &testFakeTTY{},
+		},
+		{
+			Name: "tty, NO_COLOR=1",
+			FakeEnv: map[string]string{
+				"NO_COLOR": "1",
 			},
 			GOOS:    "linux",
 			IsSmart: false,
