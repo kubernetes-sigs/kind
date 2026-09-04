@@ -401,6 +401,36 @@ func TestNodeValidate(t *testing.T) {
 			}(),
 			ExpectErrors: 0,
 		},
+		{
+			TestName: "Invalid protocol field",
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg.ExtraPortMappings = []PortMapping{
+					{
+						ContainerPort: 8080,
+						HostPort:      8080,
+						Protocol:      "ICMP",
+					},
+				}
+				return cfg
+			}(),
+			ExpectErrors: 1,
+		},
+		{
+			TestName: "Invalid listenAddress field",
+			Node: func() Node {
+				cfg := newDefaultedNode(ControlPlaneRole)
+				cfg.ExtraPortMappings = []PortMapping{
+					{
+						ContainerPort: 8080,
+						HostPort:      8080,
+						ListenAddress: "not-an-ip",
+					},
+				}
+				return cfg
+			}(),
+			ExpectErrors: 1,
+		},
 	}
 
 	for _, tc := range cases {
@@ -427,6 +457,23 @@ func TestNodeValidate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSetDefaultsNode(t *testing.T) {
+	t.Parallel()
+
+	node := Node{
+		ExtraPortMappings: []PortMapping{
+			{
+				ContainerPort: 8080,
+				HostPort:      8080,
+			},
+		},
+	}
+
+	SetDefaultsNode(&node)
+
+	assert.StringEqual(t, string(PortMappingProtocolTCP), string(node.ExtraPortMappings[0].Protocol))
 }
 
 func TestPortValidate(t *testing.T) {
