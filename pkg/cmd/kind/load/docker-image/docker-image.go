@@ -39,7 +39,9 @@ import (
 )
 
 type (
-	imageTagFetcher func(nodes.Node, string) (map[string]bool, error)
+	imageTagFetcher    func(nodes.Node, string) (map[string]bool, error)
+	imageIDFetcher     func(nodes.Node, string) (string, error)
+	imageDigestFetcher func(nodes.Node, string) (string, error)
 )
 
 type flagpole struct {
@@ -153,8 +155,7 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 				}
 				continue
 			}
-			id, err := nodeutils.ImageID(node, imageName)
-			if err != nil || id != imageID {
+			if !imagePresentOnNode(node, imageName, imageID, nodeutils.ImageID, nodeutils.ImageDigest) {
 				selectedNodes[node.String()] = node
 				logger.V(0).Infof("Image: %q with ID %q not yet present on node %q, loading...", imageName, imageID, node.String())
 			}
@@ -238,6 +239,25 @@ func removeDuplicates(slice []string) []string {
 		}
 	}
 	return result
+}
+
+// imagePresentOnNode reports whether the node already holds the image content
+// identified by imageID under imageName.
+//
+// imageID comes from `docker image inspect`, which does not always report the
+// same kind of digest: the classic image store reports the image config
+// digest, while the containerd image store reports the digest of the target
+// descriptor (image manifest or image index). CRI only ever reports the config
+// digest, so comparing against it alone means images loaded from a
+// containerd-backed Docker are never recognized and get re-loaded on every
+// invocation. Containerd on the node records the target digest, so checking
+// both covers either image store.
+func imagePresentOnNode(node nodes.Node, imageName, imageID string, idFetcher imageIDFetcher, digestFetcher imageDigestFetcher) bool {
+	if id, err := idFetcher(node, imageName); err == nil && id == imageID {
+		return true
+	}
+	digest, err := digestFetcher(node, sanitizeImage(imageName))
+	return err == nil && digest == imageID
 }
 
 // checkIfImageExists makes sure we only perform the reverse lookup of the ImageID to tag map

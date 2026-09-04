@@ -143,6 +143,33 @@ func ImageID(n nodes.Node, image string) (string, error) {
 	return crictlOut.Status.ID, nil
 }
 
+// ImageDigest returns the digest of the target descriptor (image manifest or
+// image index) recorded by containerd on the node for the given image
+// reference, if present.
+//
+// This is distinct from ImageID: CRI identifies an image by its config digest,
+// while containerd identifies it by the digest of the target descriptor.
+// Docker reports the former as the image ID with the classic image store and
+// the latter with the containerd image store, so both are needed to reliably
+// recognize an image that is already present on the node.
+func ImageDigest(n nodes.Node, image string) (string, error) {
+	lines, err := exec.OutputLines(n.Command(
+		"ctr", "--namespace=k8s.io", "images", "ls", "name=="+image,
+	))
+	if err != nil {
+		return "", err
+	}
+	// output is a table with a header row, and at most one row for an exact
+	// name match: REF TYPE DIGEST SIZE PLATFORMS LABELS
+	for _, line := range lines[1:] {
+		fields := strings.Fields(line)
+		if len(fields) >= 3 && fields[0] == image {
+			return fields[2], nil
+		}
+	}
+	return "", errors.Errorf("image %q not present on node %q", image, n.String())
+}
+
 // ImageTags is used to perform a reverse lookup of the ImageID to list set of available
 // RepoTags corresponding to the ImageID in question
 func ImageTags(n nodes.Node, imageID string) (map[string]bool, error) {
