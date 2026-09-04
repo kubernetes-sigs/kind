@@ -20,7 +20,13 @@ RestartSec=1
 # in the kernel. We recommend using cgroups to do container-local accounting.
 LimitNPROC=infinity
 LimitCORE=infinity
-LimitNOFILE=infinity
+# LimitNOFILE is intentionally left unset (upstream removed LimitNOFILE=infinity
+# in containerd/containerd@3ca39ef01608). Resolving to "infinity" can inherit an
+# unexpectedly large fs.nr_open value from the host/OS on newer systemd releases,
+# which containerd's child processes (i.e. containers) then also inherit unless
+# they set their own limits, causing slow startup for apps that iterate over the
+# open file descriptor range.
+# https://github.com/kubernetes-sigs/kind/issues/4244
 TasksMax=infinity
 OOMScoreAdjust=-999
 
