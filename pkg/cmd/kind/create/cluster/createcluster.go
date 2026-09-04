@@ -50,7 +50,6 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "Creates a local Kubernetes cluster",
 		Long:  "Creates a local Kubernetes cluster using Docker container 'nodes'",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cli.OverrideDefaultName(cmd.Flags())
 			return runE(logger, streams, flags)
 		},
 	}
@@ -58,8 +57,8 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		&flags.Name,
 		"name",
 		"n",
-		"",
-		"cluster name, overrides KIND_CLUSTER_NAME, config (default kind)",
+		cli.NameFromEnv(),
+		"cluster name, overrides KIND_CLUSTER_NAME and config name; defaults to KIND_CLUSTER_NAME if set, then config name, then kind",
 	)
 	cmd.Flags().StringVar(
 		&flags.Config,
