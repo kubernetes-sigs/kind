@@ -231,6 +231,7 @@ run_tests() {
         -e '/^.*upstream$/d' \
         -e '/^.*fallthrough.*$/d' \
         -e '/^.*forward . \/etc\/resolv.conf$/d' \
+        -e '/^.*forward . \/etc\/resolv.conf {$/,/^.*}$/d' \
         -e '/^.*loop$/d' \
     )
     echo "Patched CoreDNS config:"
