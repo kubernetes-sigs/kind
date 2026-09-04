@@ -12,8 +12,39 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    name: Detect build changes
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      build: ${{ steps.filter.outputs.build }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+        id: filter
+        with:
+          filters: |
+            build:
+              - 'pkg/build/**'
+              - 'images/**'
+
+  build-node-image:
+    name: Build node image
+    needs: changes
+    if: needs.changes.outputs.build == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: ./.github/actions/setup-env
+      - uses: ./.github/actions/build-node-image
+
   nerdctl:
     name: Nerdctl
+    needs: [changes, build-node-image]
+    if: ${{ always() && needs.build-node-image.result != 'failure' && needs.build-node-image.result != 'cancelled' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
@@ -49,10 +80,16 @@ jobs:
           sudo ctr version
           sudo nerdctl version
 
+      - uses: ./.github/actions/load-node-image
+        if: needs.changes.outputs.build == 'true'
+        with:
+          provider: nerdctl
+          sudo: "true"
+
       - name: Create single node cluster
         if: ${{ matrix.deployment == 'singleNode' }}
         run: |
-          cat <<EOF | sudo /usr/local/bin/kind create cluster -v7 --wait 1m --retain --config=-
+          cat <<EOF | sudo /usr/local/bin/kind create cluster -v7 --wait 1m --retain ${IMAGE_FLAG} --config=-
           kind: Cluster
           apiVersion: kind.x-k8s.io/v1alpha4
           networking:
@@ -62,7 +99,7 @@ jobs:
       - name: Create multi node cluster
         if: ${{ matrix.deployment == 'multiNode' }}
         run: |
-          cat <<EOF | sudo /usr/local/bin/kind create cluster -v7 --wait 1m --retain --config=-
+          cat <<EOF | sudo /usr/local/bin/kind create cluster -v7 --wait 1m --retain ${IMAGE_FLAG} --config=-
           kind: Cluster
           apiVersion: kind.x-k8s.io/v1alpha4
           networking:
