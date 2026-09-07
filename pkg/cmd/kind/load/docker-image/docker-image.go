@@ -207,16 +207,20 @@ func loadImage(imageTarName string, node nodes.Node) error {
 
 // save saves images to dest, as in `docker save`
 func save(images []string, dest string) error {
-	// Tag untagged images to avoid containerd creating import-* names
-	var taggedImages []string
+	// Tag untagged images to avoid containerd creating import-* names when loading the tar
+	// Images are guaranteed to exist locally (verified by caller), so we can safely tag them
 	for _, img := range images {
-		taggedImages = append(taggedImages, sanitizeImage(img))
+		if !hasTag(img) && !strings.ContainsRune(img, '@') {
+			// Add :latest tag to untagged images before saving
+			taggedImage := img + ":latest"
+			if err := exec.Command("docker", "tag", img, taggedImage).Run(); err != nil {
+				return fmt.Errorf("failed to tag image %q: %w", img, err)
+			}
+		}
 	}
-	commandArgs := append([]string{"save", "-o", dest}, taggedImages...)
+	commandArgs := append([]string{"save", "-o", dest}, images...)
 	return exec.Command("docker", commandArgs...).Run()
 }
-
-
 
 // imageID return the Id of the container image
 func imageID(containerNameOrID string) (string, error) {
