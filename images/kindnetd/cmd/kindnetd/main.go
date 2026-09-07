@@ -41,6 +41,7 @@ import (
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 )
 
@@ -268,6 +269,11 @@ func main() {
 
 	// main control loop
 	informersFactory.Start(ctx.Done())
+	// the node lister is served from the cache, so an unsynced cache returns an
+	// empty node list and delays the first reconcile (and the CNI config) a full tick
+	if !cache.WaitForCacheSync(ctx.Done(), nodeInformer.Informer().HasSynced) {
+		return
+	}
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
