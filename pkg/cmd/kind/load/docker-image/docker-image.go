@@ -207,9 +207,16 @@ func loadImage(imageTarName string, node nodes.Node) error {
 
 // save saves images to dest, as in `docker save`
 func save(images []string, dest string) error {
-	commandArgs := append([]string{"save", "-o", dest}, images...)
+	// Tag untagged images to avoid containerd creating import-* names
+	var taggedImages []string
+	for _, img := range images {
+		taggedImages = append(taggedImages, sanitizeImage(img))
+	}
+	commandArgs := append([]string{"save", "-o", dest}, taggedImages...)
 	return exec.Command("docker", commandArgs...).Run()
 }
+
+
 
 // imageID return the Id of the container image
 func imageID(containerNameOrID string) (string, error) {

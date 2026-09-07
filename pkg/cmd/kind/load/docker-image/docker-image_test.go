@@ -206,3 +206,74 @@ func Test_checkIfImageReTagRequired(t *testing.T) {
 		})
 	}
 }
+
+// Test_saveUntaggedImages verifies that untagged images are properly tagged before save.
+// This prevents containerd from generating import-* names when loading the tar file.
+func Test_saveUntaggedImages(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		expected    string
+		description string
+	}{
+		{
+			name:        "untagged image without domain",
+			input:       "myimage",
+			expected:    "docker.io/library/myimage:latest",
+			description: "Should add docker.io/library prefix and :latest tag",
+		},
+		{
+			name:        "untagged image with domain but no tag",
+			input:       "docker.io/myimage",
+			expected:    "docker.io/myimage:latest",
+			description: "Should keep domain and add :latest tag",
+		},
+		{
+			name:        "untagged image with domain/username",
+			input:       "docker.io/myuser/myimage",
+			expected:    "docker.io/myuser/myimage:latest",
+			description: "Should keep the username and add :latest tag",
+		},
+		{
+			name:        "tagged image without domain",
+			input:       "myimage:latest",
+			expected:    "docker.io/library/myimage:latest",
+			description: "Should add docker.io/library prefix and keep :latest tag",
+		},
+		{
+			name:        "tagged image with domain and tag",
+			input:       "docker.io/myuser/myimage:v1.2.3",
+			expected:    "docker.io/myuser/myimage:v1.2.3",
+			description: "Should pass through tagged images with domain and tag as-is",
+		},
+		{
+			name:        "image with digest (not a tag)",
+			input:       "sha256:abc123def456",
+			expected:    "docker.io/library/sha256:abc123def456",
+			description: "Should add docker.io/library prefix to digest",
+		},
+		{
+			name:        "untagged image ID",
+			input:       "sha256:1234567890abcdef",
+			expected:    "docker.io/library/sha256:1234567890abcdef",
+			description: "Should add docker.io/library prefix to image ID",
+		},
+		{
+			name:        "empty string",
+			input:       "",
+			expected:    "docker.io/library/:latest",
+			description: "Should handle empty string gracefully",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := sanitizeImage(tt.input)
+			if got != tt.expected {
+				t.Errorf("sanitizeImage(%q) = %q, want %q (%s)",
+					tt.input, got, tt.expected, tt.description)
+			}
+		})
+	}
+}
+
