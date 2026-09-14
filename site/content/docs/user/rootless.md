@@ -62,10 +62,11 @@ To enable cgroup delegation for all the controllers, do the following:
    Delegate=yes
    ```
 
-4. Reload systemd for these changes to take effect:
+4. Reload systemd for these changes to take effect, and restart the user session:
 
    ```sh
    sudo systemctl daemon-reload
+   sudo systemctl restart user@$(id -u).service
    ```
 
 5. If using docker, reload the user docker daemon:
