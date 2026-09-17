@@ -41,6 +41,7 @@ description: |-
 * [Docker Desktop for macOS and Windows](#docker-desktop-for-macos-and-windows)
 * [Older Linux Distributions](#older-linux-distributions)
 * [Failure to Create Cluster on WSL2](#failure-to-create-cluster-on-wsl2)
+* [Missing cgroup Controllers inside LXC](#missing-cgroup-controllers-inside-lxc) (host does not delegate cgroup v2 controllers)
 * [Local Subnet Clashes](#local-subnet-clashes)
 * [Unable to `kind load` Docker images](#unable-to-kind-load-docker-images) (`content digest ... not found`)
 
@@ -418,6 +419,33 @@ the project relies on community support and feedback. It has been noted that the
 steps detailed in [https://github.com/spurin/wsl-cgroupsv2](https://github.com/spurin/wsl-cgroupsv2)
 have been necessary to resolve this issue.
 
+## Missing cgroup Controllers inside LXC
+
+When running KIND with a rootless provider inside an LXC container (for example
+the Linux development environment on Chrome OS) or another nested container
+environment, cluster creation may fail with an error about missing cgroup v2
+controllers even though the systemd property `Delegate=yes` is correctly
+configured as described in the [rootless docs].
+
+The underlying cause is that the outer host does not make the cgroup v2
+controllers available inside the nested container, so there is nothing systemd
+could delegate. You can verify this from inside the container by checking:
+
+{{< codeFromInline lang="bash" >}}
+cat /sys/fs/cgroup/cgroup.controllers
+{{< /codeFromInline >}}
+
+If the output is empty or missing the expected controllers (`cpu`, `memory`,
+`pids`), the problem is at the host level and cannot be resolved from inside
+the container. This typically happens when the host kernel still has the
+cgroup v1 hierarchy of these controllers mounted (a controller cannot be
+mounted in both hierarchies at once), or when the host does not delegate the
+cgroup v2 controllers into the guest. Consult your host platform's
+documentation for enabling cgroup v2 controller delegation into nested
+containers.
+
+See Previous Discussion: [kind#3868]
+
 ## Local Subnet Clashes
 
 KIND creates a separate docker network named `kind` that will be configured with default IPAM settings. If you are using the default IPAM configuration in your `daemon.json` you
@@ -485,6 +513,7 @@ Docker Desktop also exposes a setting for enabling or disabling the containerd i
 [kind#1326]: https://github.com/kubernetes-sigs/kind/issues/1326
 [kind#2296]: https://github.com/kubernetes-sigs/kind/issues/2296
 [kind#2411]: https://github.com/kubernetes-sigs/kind/issues/2411
+[kind#3868]: https://github.com/kubernetes-sigs/kind/issues/3868
 [kind#3795]: https://github.com/kubernetes-sigs/kind/issues/3795
 [moby#17666]: https://github.com/moby/moby/issues/17666
 [Docker resource lims]: https://docs.docker.com/docker-for-mac/#advanced
@@ -498,3 +527,4 @@ Docker Desktop also exposes a setting for enabling or disabling the containerd i
 [AppArmor]: https://en.wikipedia.org/wiki/AppArmor
 [firewalld]: https://firewalld.org/
 [inotify]: https://en.wikipedia.org/wiki/Inotify
+[rootless docs]: /docs/user/rootless/
