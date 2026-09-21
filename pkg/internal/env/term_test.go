@@ -104,6 +104,15 @@ func TestIsSmartTerminal(t *testing.T) {
 				"NO_COLOR": "",
 			},
 			GOOS:    "linux",
+			IsSmart: true,
+			Writer:  &testFakeTTY{},
+		},
+		{
+			Name: "tty, NO_COLOR=1",
+			FakeEnv: map[string]string{
+				"NO_COLOR": "1",
+			},
+			GOOS:    "linux",
 			IsSmart: false,
 			Writer:  &testFakeTTY{},
 		},
