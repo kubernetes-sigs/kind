@@ -35,7 +35,7 @@ Now, start up the VM. Watch carefully for the "Press any key to continue install
 
 If you're using a physical machine, you can mount the ISO, copy the files to a FAT32 formatted USB disk, and boot from that instead. Be sure the machine is configured to boot using UEFI (not legacy BIOS), and has Intel VT or AMD-V enabled for the hypervisor.
 
-### Tips during setup
+### Tips during installation
 
 - You can skip the product key page
 - On the "Sign in with Microsoft" screen, look for the "offline account" button.
@@ -44,7 +44,7 @@ If you're using a physical machine, you can mount the ISO, copy the files to a F
 
 If you want the full details, see the [Installation Instructions for WSL2](https://docs.microsoft.com/en-us/windows/wsl/wsl2-install). This is the TL;DR version.
 
-Once your Windows machine is ready, you need to do a few more steps to set up WSL2
+Once your Windows machine is ready, you need to do a few more steps to set up WSL2.
 
 1. Open a PowerShell window as an admin, then run
 
