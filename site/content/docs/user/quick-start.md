@@ -135,6 +135,11 @@ On Windows via Winget (https://github.com/microsoft/winget-pkgs/tree/master/mani
 winget install Kubernetes.kind
 {{< /codeFromInline >}}
 
+On Arch Linux via pacman (https://archlinux.org/packages/extra/x86_64/kind/)
+{{< codeFromInline lang="bash" >}}
+sudo pacman -Syu kind
+{{< /codeFromInline >}}
+
 ## Discovering Additional Command Options
 
 kind provides built-in help for all commands and subcommands.  
@@ -338,6 +343,11 @@ kind build node-image --type source $HOME/go/src/k8s.io/kubernetes/
 
 If you are building Kubernetes (for example - `kind build node-image`) on MacOS or Windows then you need a minimum of 6GB of RAM
 dedicated to the virtual machine (VM) running the Docker engine. 8GB is recommended.
+
+> **Note**: Resource requirements vary depending on usage.
+> The values listed here are minimums for basic clusters.
+> Workloads such as building node images, multi-node clusters,
+> or running additional components may require more CPU and memory.
 
 To change the resource limits for the Docker on Mac, you'll need to open the
 **Preferences** menu.

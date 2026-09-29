@@ -26,7 +26,7 @@ NOTE: we have customized it in the following ways:
 - tolerate control plane scheduling taints
 */
 
-const storageProvisionerImage = "docker.io/kindest/local-path-provisioner:v20260521-9fb22683"
+const storageProvisionerImage = "docker.io/kindest/local-path-provisioner:v20260820-69b56db7"
 const storageHelperImage = "docker.io/kindest/local-path-helper:v20260131-7181c60a"
 
 // image we need to preload
@@ -204,9 +204,10 @@ data:
     spec:
       priorityClassName: system-node-critical
       tolerations:
-        - key: node.kubernetes.io/disk-pressure
-          operator: Exists
+        - operator: Exists
           effect: NoSchedule
+        - operator: Exists
+          effect: NoExecute
       containers:
       - name: helper-pod
         image: ` + storageHelperImage + `

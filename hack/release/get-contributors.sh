@@ -13,34 +13,75 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# inputs are:
-# - LAST_VERSION_TAG -- This is the version to get commits since
-#    like: LAST_VERSION_TAG="v0.8.1"
-# - GITHUB_OATH_TOKEN -- used to avoid hitting API rate limits
-ORG="kubernetes-sigs"
-REPO="kind"
+# Requires git, gh, and jq. Run from the local repository being queried.
+# Authenticate with gh auth login, GH_TOKEN, or GITHUB_OAUTH_TOKEN.
+# Usage: get-contributors.sh [REVISION_RANGE]
+# For example: get-contributors.sh v0.30.0..upstream/main
+# Defaults to HEAD, including all history reachable from it.
+# Optional environment variables:
+# - ORG / REPO -- GitHub repository (defaults to kubernetes-sigs/kind)
+set -o errexit
+set -o nounset
+set -o pipefail
 
-# query git for contributors since the tag
-contributors=()
-while IFS='' read -r line; do contributors+=("$line"); done < <(git log --format="%aN <%aE>" "${LAST_VERSION_TAG:?}.." | sort | uniq)
+if [[ "$#" -gt 1 ]]; then
+    echo "Usage: $0 [REVISION_RANGE]" >&2
+    exit 1
+fi
+revision="${1:-HEAD}"
 
-# query github for usernames and output bulleted list
-contributor_logins=()
-for contributor in "${contributors[@]}"; do
-    # get a commit for this author
-    commit_for_contributor="$(git log --author="${contributor}" --pretty=format:"%H" -1)"
-    # lookup the  commit info to get the login
-    contributor_logins+=("$(curl \
-        -sG \
-        ${GITHUB_OAUTH_TOKEN:+-H "Authorization: Bearer ${GITHUB_OAUTH_TOKEN:?}"} \
-        --data-urlencode "q=${contributor}" \
-        "https://api.github.com/repos/${ORG}/${REPO}/commits/${commit_for_contributor}" \
-    | jq -r .author.login
-    )")
+ORG="${ORG:-kubernetes-sigs}"
+REPO="${REPO:-kind}"
+if [[ -n "${GITHUB_OAUTH_TOKEN:-}" ]]; then
+    export GH_TOKEN="${GITHUB_OAUTH_TOKEN}"
+fi
+
+commits="$(git log --format='%H%x09%aN <%aE>%n%(trailers:key=Co-authored-by,valueonly)' "${revision}" -- | awk '
+    index($0, "\t") {
+        commit = substr($0, 1, index($0, "\t") - 1)
+        $0 = substr($0, index($0, "\t") + 1)
+    }
+    NF && !authors[$0]++ && !commits[commit]++ { print commit }
+')"
+
+query="$(cat <<'GRAPHQL'
+query($owner: String!, $name: String!, $oid: GitObjectID!, $endCursor: String) {
+    repository(owner: $owner, name: $name) {
+        object(oid: $oid) {
+            ... on Commit {
+                authors(first: 100, after: $endCursor) {
+                    nodes { name email user { login } }
+                    pageInfo { hasNextPage endCursor }
+                }
+            }
+        }
+    }
+}
+GRAPHQL
+)"
+
+output_dir="$(mktemp -d)"
+trap 'rm -rf "${output_dir}"' EXIT
+touch "${output_dir}/logins"
+while IFS= read -r commit; do
+    [[ -n "${commit}" ]] || continue
+    response="$(gh api graphql --paginate \
+        -f query="${query}" -f owner="${ORG}" -f name="${REPO}" -f oid="${commit}")"
+    if ! jq -e -s 'length > 0 and all(.[];
+        (.errors | length) == 0 and
+        (.data.repository.object.authors.nodes | type) == "array")' \
+        <<< "${response}" > /dev/null; then
+        echo "Invalid GitHub author response for ${commit}" >&2
+        exit 1
+    fi
+    jq -r '.data.repository.object.authors.nodes[] |
+        select(.user.login == null or .user.login == "") |
+        "No GitHub account for \(.name) <\(.email)>"' <<< "${response}" >&2
+    jq -r '.data.repository.object.authors.nodes[] | .user.login // empty |
+        select(length > 0)' <<< "${response}" >> "${output_dir}/logins"
+done <<< "${commits}"
+
+echo "Contributors in ${revision}:"
+LC_ALL=C sort -f -u "${output_dir}/logins" | while IFS= read -r login; do
+    echo "- @${login}"
 done
-
-echo "Contributors since ${LAST_VERSION_TAG}:"
-# echo sorted formatted list
-while IFS='' read -r contributor_login; do
-     echo "- @${contributor_login}"
-done < <(for c in "${contributor_logins[@]}"; do echo "$c"; done | LC_COLLATE=C sort --ignore-case | uniq)

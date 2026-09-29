@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -291,6 +292,9 @@ func runArgsForLoadBalancer(cfg *config.Cluster, name string, args []string) ([]
 
 func getProxyEnv(cfg *config.Cluster, networkName string, nodeNames []string) (map[string]string, error) {
 	envs := common.GetProxyEnvs(cfg)
+	if !kindProxyEnvOverridesDockerConfig(os.Getenv) {
+		envs = mergeProxyEnvWithDockerConfig(cfg, envs, dockerConfigProxyEnvs(os.Getenv, os.ReadFile, inspectDockerContextHost))
+	}
 	// Specifically add the docker network subnets to NO_PROXY if we are using a proxy
 	if len(envs) > 0 {
 		subnets, err := getSubnets(networkName)
@@ -311,6 +315,28 @@ func getProxyEnv(cfg *config.Cluster, networkName string, nodeNames []string) (m
 		envs[strings.ToLower(common.NOProxy)] = noProxyJoined
 	}
 	return envs, nil
+}
+
+func mergeProxyEnvWithDockerConfig(cfg *config.Cluster, envs, dockerEnv map[string]string) map[string]string {
+	if len(envs) == 0 && len(dockerEnv) > 0 {
+		envs = dockerEnv
+		noProxy := envs[common.NOProxy]
+		if noProxy != "" {
+			noProxy += ","
+		}
+		noProxy += cfg.Networking.ServiceSubnet + "," + cfg.Networking.PodSubnet
+		envs[common.NOProxy] = noProxy
+		envs[strings.ToLower(common.NOProxy)] = noProxy
+		return envs
+	}
+
+	for _, name := range []string{common.HTTPProxy, common.HTTPSProxy, common.NOProxy} {
+		if envs[name] == "" && dockerEnv[name] != "" {
+			envs[name] = dockerEnv[name]
+			envs[strings.ToLower(name)] = dockerEnv[name]
+		}
+	}
+	return envs
 }
 
 func getSubnets(networkName string) ([]string, error) {
