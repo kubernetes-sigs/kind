@@ -417,7 +417,7 @@ select_iptables() {
   local mode num_legacy_lines num_nft_lines
   num_legacy_lines=$( (iptables-legacy-save || true; ip6tables-legacy-save || true) 2>/dev/null | grep -c '^-' || true)
   num_nft_lines=$( (timeout 5 sh -c "iptables-nft-save; ip6tables-nft-save" || true) 2>/dev/null | grep -c '^-' || true)
-  if [ "${num_legacy_lines}" -ge "${num_nft_lines}" ]; then
+  if [ "${num_legacy_lines}" -gt "${num_nft_lines}" ]; then
     mode=legacy
   else
     mode=nft
