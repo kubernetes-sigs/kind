@@ -21,7 +21,7 @@ import "testing"
 
 // *testing.T methods used by assert
 type testingDotT interface {
-	Skip(args ...interface{})
+	Skip(args ...any)
 }
 
 // MaybeSkip skips if integration tests should be skipped

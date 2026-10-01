@@ -24,7 +24,7 @@ import (
 // fakeT is a fake testing.T that tracks calls to Errorf
 type fakeT int
 
-func (t *fakeT) Errorf(format string, args ...interface{}) {
+func (t *fakeT) Errorf(format string, args ...any) {
 	*t++
 }
 

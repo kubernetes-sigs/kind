@@ -21,7 +21,7 @@ import "reflect"
 
 // *testing.T methods used by assert
 type testingDotT interface {
-	Errorf(format string, args ...interface{})
+	Errorf(format string, args ...any)
 }
 
 // ExpectError will call t.Errorf if expectError != (err == nil)
@@ -57,7 +57,7 @@ func StringEqual(t testingDotT, expected, result string) {
 
 // DeepEqual will call t.Errorf if !reflect.DeepEqual(expected, result)
 // t should be a *testing.T normally
-func DeepEqual(t testingDotT, expected, result interface{}) {
+func DeepEqual(t testingDotT, expected, result any) {
 	if !reflect.DeepEqual(expected, result) {
 		t.Errorf("Result did not DeepEqual Expected!")
 		t.Errorf("Expected: %+v", expected)

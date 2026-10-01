@@ -40,7 +40,7 @@ type Config struct {
 	CurrentContext string `yaml:"current-context,omitempty"`
 	// OtherFields contains fields kind does not inspect or modify, these are
 	// read purely for writing back
-	OtherFields map[string]interface{} `yaml:",inline,omitempty"`
+	OtherFields map[string]any `yaml:",inline,omitempty"`
 }
 
 // NamedCluster relates nicknames to cluster information
@@ -57,7 +57,7 @@ type Cluster struct {
 	Server string `yaml:"server,omitempty"`
 	// OtherFields contains fields kind does not inspect or modify, these are
 	// read purely for writing back
-	OtherFields map[string]interface{} `yaml:",inline,omitempty"`
+	OtherFields map[string]any `yaml:",inline,omitempty"`
 }
 
 // NamedUser relates nicknames to user information
@@ -66,7 +66,7 @@ type NamedUser struct {
 	Name string `yaml:"name"`
 	// User holds the user information
 	// We do not touch this and merely write it back
-	User map[string]interface{} `yaml:"user"`
+	User map[string]any `yaml:"user"`
 }
 
 // NamedContext relates nicknames to context information
@@ -85,5 +85,5 @@ type Context struct {
 	User string `yaml:"user"`
 	// OtherFields contains fields kind does not inspect or modify, these are
 	// read purely for writing back
-	OtherFields map[string]interface{} `yaml:",inline,omitempty"`
+	OtherFields map[string]any `yaml:",inline,omitempty"`
 }
