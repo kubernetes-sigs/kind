@@ -45,7 +45,6 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "Lists existing kind nodes by their name",
 		Long:  "Lists existing kind nodes by their name",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cli.OverrideDefaultName(cmd.Flags())
 			return runE(logger, streams, flags)
 		},
 	}
@@ -53,8 +52,8 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		&flags.Name,
 		"name",
 		"n",
-		cluster.DefaultName,
-		"the cluster context name",
+		cli.DefaultName(),
+		cli.NameFlagHelp,
 	)
 	cmd.Flags().BoolVarP(
 		&flags.AllClusters,
