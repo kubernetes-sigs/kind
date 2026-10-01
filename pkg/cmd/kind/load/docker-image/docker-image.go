@@ -26,6 +26,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
+	"sigs.k8s.io/kind/pkg/cluster/images"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/cmd"
@@ -43,8 +44,9 @@ type (
 )
 
 type flagpole struct {
-	Name  string
-	Nodes []string
+	Name       string
+	Nodes      []string
+	LayerAware bool
 }
 
 // NewCommand returns a new cobra.Command for loading an image into a cluster
@@ -77,6 +79,12 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		"nodes",
 		nil,
 		"comma separated list of nodes to load images into",
+	)
+	cmd.Flags().BoolVar(
+		&flags.LayerAware,
+		"layer-aware",
+		false,
+		"use layer-aware loading (experimental, skips existing layers)",
 	)
 	return cmd
 }
@@ -183,7 +191,41 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 		return err
 	}
 
-	// Load the images on the selected nodes
+	// Use layer-aware loading if requested
+	if flags.LayerAware {
+		// Convert selectedNodes map to slice
+		nodeSlice := make([]nodes.Node, 0, len(selectedNodes))
+		for _, node := range selectedNodes {
+			nodeSlice = append(nodeSlice, node)
+		}
+
+		// Call layer-aware API
+		results, loadErr := images.LoadImageLayerAware(
+			imagesTarPath,
+			nodeSlice,
+			logger,
+		)
+		if loadErr != nil {
+			return loadErr
+		}
+
+		// Check results
+		hasErrors := false
+		for _, result := range results {
+			if result.Error != nil {
+				logger.Errorf("Failed to load to %s: %v",
+					result.Node.String(), result.Error)
+				hasErrors = true
+			}
+		}
+
+		if hasErrors {
+			return errors.New("failed to load to some nodes")
+		}
+		return nil
+	}
+
+	// Load the images on the selected nodes (traditional path)
 	for _, selectedNode := range selectedNodes {
 		selectedNode := selectedNode // capture loop variable
 		fns = append(fns, func() error {
