@@ -1,0 +1,28 @@
+name: Markdown lint
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "**/*.md"
+      - "**/*.markdown"
+      - ".markdownlint-cli2.yaml"
+      - ".github/workflows/markdownlint.yml"
+      - "Makefile"
+
+permissions:
+  contents: read
+
+jobs:
+  markdownlint:
+    name: Markdown lint
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Verify Markdown formatting
+        run: make markdownlint BASE_REF="${{ github.event.pull_request.base.sha }}"
