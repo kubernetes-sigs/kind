@@ -20,6 +20,7 @@ package create
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"al.essio.dev/pkg/shellescape"
@@ -251,7 +252,24 @@ func validateProvider(logger log.Logger, p providers.Provider) error {
 			return errors.New("running kind with rootless provider requires cgroup v2, see https://kind.sigs.k8s.io/docs/user/rootless/")
 		}
 		if !info.SupportsMemoryLimit || !info.SupportsPidsLimit || !info.SupportsCPUShares {
-			return errors.New("running kind with rootless provider requires setting systemd property \"Delegate=yes\", see https://kind.sigs.k8s.io/docs/user/rootless/")
+			var missing []string
+			if !info.SupportsMemoryLimit {
+				missing = append(missing, "memory")
+			}
+			if !info.SupportsPidsLimit {
+				missing = append(missing, "pids")
+			}
+			if !info.SupportsCPUShares {
+				missing = append(missing, "cpu")
+			}
+			return errors.Errorf(
+				"running kind with rootless provider requires cgroup controllers [%s], "+
+					"but they are not available. Possible causes: the systemd property "+
+					"\"Delegate=yes\" is not set (see https://kind.sigs.k8s.io/docs/user/rootless/), "+
+					"or the host environment is restricting available controllers "+
+					"(e.g. container runtime, LXC, or resource limits)",
+				strings.Join(missing, ", "),
+			)
 		}
 	} else if !info.Cgroup2 {
 		logger.Warn("cgroup v1 is deprecated in Kubernetes and will not be supported in a future kind release, please upgrade to cgroup v2")
