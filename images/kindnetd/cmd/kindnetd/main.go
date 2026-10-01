@@ -41,6 +41,7 @@ import (
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 )
 
@@ -268,6 +269,15 @@ func main() {
 
 	// main control loop
 	informersFactory.Start(ctx.Done())
+	// Wait for the node cache to populate before entering the reconcile
+	// loop. Without this, the first iteration lists an empty cache and
+	// blocks on the 10s ticker before doing any real work — delaying
+	// NodeReady by a full tick. Errors if unsynced after 30 seconds
+	syncCtx, syncCancel := context.WithTimeout(ctx, 30*time.Second)
+	defer syncCancel()
+	if !cache.WaitForCacheSync(syncCtx.Done(), nodeInformer.Informer().HasSynced) {
+		klog.Fatalf("failed to sync node informer cache")
+	}
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
