@@ -59,8 +59,12 @@ mv ./kind /some-dir-in-your-PATH/kind
 On Windows in [PowerShell](https://en.wikipedia.org/wiki/PowerShell):
 
 {{< codeFromInline lang="powershell" >}}
+# For AMD64 / x86_64
 curl.exe -Lo kind-windows-amd64.exe https://kind.sigs.k8s.io/dl/{{< stableVersion >}}/kind-windows-amd64
 Move-Item .\kind-windows-amd64.exe c:\some-dir-in-your-PATH\kind.exe
+# For ARM64
+curl.exe -Lo kind-windows-arm64.exe https://kind.sigs.k8s.io/dl/{{< stableVersion >}}/kind-windows-arm64
+Move-Item .\kind-windows-arm64.exe c:\some-dir-in-your-PATH\kind.exe
 {{< /codeFromInline >}}
 
 ### Installing From Source
