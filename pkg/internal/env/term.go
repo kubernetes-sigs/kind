@@ -63,8 +63,8 @@ func isSmartTerminal(w io.Writer, GOOS string, lookupEnv func(string) (string, b
 	}
 
 	// Explicit request for no ANSI escape codes
-	// https://no-color.org/
-	if _, set := lookupEnv("NO_COLOR"); set {
+	// https://no-color.org/ — only non-empty values disable color
+	if getenv("NO_COLOR") != "" {
 		return false
 	}
 
