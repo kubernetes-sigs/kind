@@ -174,6 +174,11 @@ func commonArgs(cluster string, cfg *config.Cluster, networkName string, nodeNam
 		// https://github.com/docker/cli/pull/3699#issuecomment-1191675788
 		"--cgroupns=private",
 	}
+	if cfg.ContainerLabels != nil {
+		for label, value := range cfg.ContainerLabels {
+			args = append(args, "--label", fmt.Sprintf("%s=%s", label, value))
+		}
+	}
 
 	// enable IPv6 if necessary
 	if config.ClusterHasIPv6(cfg) {

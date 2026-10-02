@@ -50,6 +50,9 @@ type Cluster struct {
 	// Use this to enable alpha APIs.
 	RuntimeConfig map[string]string
 
+	// Additional Labels to apply to the container created other than the default `io.x-k8s.kind.*` ones
+	ContainerLabels map[string]string `yaml:"containerLabels,omitempty" json:"containerLabels,omitempty"`
+
 	// KubeadmConfigPatches are applied to the generated kubeadm config as
 	// strategic merge patches to `kustomize build` internally
 	// https://github.com/kubernetes/community/blob/a9cf5c8f3380bb52ebe57b1e2dbdec136d8dd484/contributors/devel/sig-api-machinery/strategic-merge-patch.md

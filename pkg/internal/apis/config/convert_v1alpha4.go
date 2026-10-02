@@ -28,6 +28,7 @@ func Convertv1alpha4(in *v1alpha4.Cluster) *Cluster {
 		Nodes:                           make([]Node, len(in.Nodes)),
 		FeatureGates:                    in.FeatureGates,
 		RuntimeConfig:                   in.RuntimeConfig,
+		ContainerLabels:                 in.ContainerLabels,
 		KubeadmConfigPatches:            in.KubeadmConfigPatches,
 		KubeadmConfigPatchesJSON6902:    make([]PatchJSON6902, len(in.KubeadmConfigPatchesJSON6902)),
 		ContainerdConfigPatches:         in.ContainerdConfigPatches,
