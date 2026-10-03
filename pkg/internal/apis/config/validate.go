@@ -128,6 +128,16 @@ func (n *Node) Validate() error {
 		if err := validatePort(mapping.ContainerPort); err != nil {
 			errs = append(errs, errors.Wrapf(err, "invalid containerPort"))
 		}
+
+		switch mapping.Protocol {
+		case "", PortMappingProtocolTCP, PortMappingProtocolUDP, PortMappingProtocolSCTP:
+		default:
+			errs = append(errs, errors.Errorf("invalid protocol %q", mapping.Protocol))
+		}
+
+		if mapping.ListenAddress != "" && net.ParseIP(mapping.ListenAddress) == nil {
+			errs = append(errs, errors.Errorf("invalid listenAddress %q", mapping.ListenAddress))
+		}
 	}
 
 	if err := validatePortMappings(n.ExtraPortMappings); err != nil {
