@@ -206,3 +206,80 @@ func Test_checkIfImageReTagRequired(t *testing.T) {
 		})
 	}
 }
+
+func Test_imagePresentOnNode(t *testing.T) {
+	const (
+		configDigest = "sha256:5a13d892fcdce272129e6e395d8fe5baa9532e61569c5a150e600589e81fd0a8"
+		targetDigest = "sha256:b8d31d6ecf8e6a63a9cfa29c13e45e3c00a0d7fef86f59457aa8d76a812a461f"
+	)
+	notPresent := errors.New("no such image")
+
+	tests := []struct {
+		name          string
+		imageID       string
+		nodeID        string
+		nodeIDErr     error
+		nodeDigest    string
+		nodeDigestErr error
+		want          bool
+	}{
+		{
+			// docker with the classic image store reports the config digest
+			name:       "config digest matches",
+			imageID:    configDigest,
+			nodeID:     configDigest,
+			nodeDigest: targetDigest,
+			want:       true,
+		},
+		{
+			// docker with the containerd image store reports the target digest
+			name:       "target digest matches",
+			imageID:    targetDigest,
+			nodeID:     configDigest,
+			nodeDigest: targetDigest,
+			want:       true,
+		},
+		{
+			// the tag exists on the node but points at different content
+			name:       "image on node is stale",
+			imageID:    "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+			nodeID:     configDigest,
+			nodeDigest: targetDigest,
+			want:       false,
+		},
+		{
+			name:          "image not present on node",
+			imageID:       targetDigest,
+			nodeIDErr:     notPresent,
+			nodeDigestErr: notPresent,
+			want:          false,
+		},
+		{
+			// CRI cannot resolve a target digest, the containerd lookup still can
+			name:       "cri lookup fails but target digest matches",
+			imageID:    targetDigest,
+			nodeIDErr:  notPresent,
+			nodeDigest: targetDigest,
+			want:       true,
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			// imagePresentOnNode only passes nodes.Node through to the fetchers,
+			// which are stubbed out here, so a nil node is fine
+			got := imagePresentOnNode(nil, "image1:tag1", tc.imageID,
+				func(nodes.Node, string) (string, error) {
+					return tc.nodeID, tc.nodeIDErr
+				},
+				func(nodes.Node, string) (string, error) {
+					return tc.nodeDigest, tc.nodeDigestErr
+				},
+			)
+			if got != tc.want {
+				t.Errorf("imagePresentOnNode() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
