@@ -62,6 +62,14 @@ func TestKubeYAML(t *testing.T) {
 			ExpectOutput:    normalKubeadmConfigTrivialPatchedAnd6902Patched,
 		},
 		{
+			Name:            "kubeadm config one merge-patch, one unversioned 6902 patch",
+			ToPatch:         normalKubeadmConfig,
+			Patches:         []string{trivialPatch},
+			PatchesJSON6902: []config.PatchJSON6902{unversionedPatch6902},
+			ExpectError:     false,
+			ExpectOutput:    normalKubeadmConfigTrivialPatchedAnd6902Patched,
+		},
+		{
 			Name:         "kubeadm v1beta4 target with unversioned old-style patch",
 			ToPatch:      v1beta4KubeadmConfig,
 			Patches:      []string{unversionedOldStylePatch},
@@ -344,6 +352,15 @@ var trivialPatch6902 = config.PatchJSON6902{
 	Group:   "kubeadm.k8s.io",
 	Version: "v1beta2",
 	Kind:    "ClusterConfiguration",
+	Patch: `
+- op: add
+  path: /apiServer/certSANs/-
+  value: my-hostname`,
+}
+
+var unversionedPatch6902 = config.PatchJSON6902{
+	Group: "kubeadm.k8s.io",
+	Kind:  "ClusterConfiguration",
 	Patch: `
 - op: add
   path: /apiServer/certSANs/-
