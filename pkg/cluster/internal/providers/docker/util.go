@@ -82,14 +82,23 @@ func mountDevMapper() bool {
 	if err := json.Unmarshal([]byte(lines[0]), &dat); err != nil {
 		return false
 	}
-	for _, item := range dat {
-		if item[0] == "Backing Filesystem" {
-			storage = strings.ToLower(item[1])
-			break
-		}
-	}
+	storage = backingFilesystem(dat)
 
 	return storage == "btrfs" || storage == "zfs" || storage == "xfs"
+}
+
+// backingFilesystem returns the lowercased "Backing Filesystem" value from
+// docker's `DriverStatus` pairs, e.g. [["Backing Filesystem","extfs"], ...].
+// DriverStatus entries are not guaranteed to have exactly 2 elements across
+// docker versions/storage drivers, so malformed entries are skipped instead
+// of indexed directly.
+func backingFilesystem(driverStatus [][]string) string {
+	for _, item := range driverStatus {
+		if len(item) == 2 && item[0] == "Backing Filesystem" {
+			return strings.ToLower(item[1])
+		}
+	}
+	return ""
 }
 
 // rootless: use fuse-overlayfs by default
