@@ -67,7 +67,16 @@ func (r resource) matches(o matchInfo) bool {
 	m := &r.matchInfo
 	// we require kind to match, but if the patch does not specify
 	// APIVersion we ignore it (eg to allow trivial patches across kubeadm versions)
-	return m.Kind == o.Kind && (o.APIVersion == "" || m.APIVersion == o.APIVersion)
+	if m.Kind != o.Kind {
+		return false
+	}
+	if o.APIVersion == "" {
+		return true
+	}
+	// if the patch specifies a group but no version, only the group must match
+	group, version := apiVersionToGroupVersion(m.APIVersion)
+	patchGroup, patchVersion := apiVersionToGroupVersion(o.APIVersion)
+	return group == patchGroup && (patchVersion == "" || version == patchVersion)
 }
 
 func (r *resource) encodeTo(w io.Writer) error {

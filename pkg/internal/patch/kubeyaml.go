@@ -33,7 +33,8 @@ import (
 // (kind and apiVersion), between the YAML documents and the patches.
 //
 // Patches match if their kind and apiVersion match a document, with the exception
-// that if the patch does not set apiVersion it will be ignored.
+// that if the patch does not set apiVersion it will be ignored, and if the patch
+// sets a group without a version only the group will be matched.
 func KubeYAML(toPatch string, patches []string, patches6902 []config.PatchJSON6902) (string, error) {
 	// pre-process, including splitting up documents etc.
 	resources, err := parseResources(toPatch)
