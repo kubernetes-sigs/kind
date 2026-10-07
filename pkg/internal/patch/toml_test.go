@@ -54,7 +54,7 @@ disabled_plugins = ["restart"]
 [plugins.cri.containerd.runtimes.runsc]
   runtime_type = "io.containerd.runsc.v1"`,
 			ExpectError: false,
-			ExpectOutput: `disabled_plugins = ["restart"]
+			ExpectOutput: `disabled_plugins = ['restart']
 version = 2
 
 [plugins]
@@ -62,7 +62,8 @@ version = 2
     [plugins.cri.containerd]
       [plugins.cri.containerd.runtimes]
         [plugins.cri.containerd.runtimes.runsc]
-          runtime_type = "io.containerd.runsc.v1"
+          runtime_type = 'io.containerd.runsc.v1'
+
   [plugins.linux]
     shim_debug = true
 `,
@@ -79,7 +80,7 @@ disabled_plugins = ["restart"]
   runtime_type = "io.containerd.runsc.v1"`,
 			Patches:     []string{"version = 3\ndisabled_plugins=[\"bar\"]", "version = 2\n disabled_plugins=[\"baz\"]"},
 			ExpectError: false,
-			ExpectOutput: `disabled_plugins = ["baz"]
+			ExpectOutput: `disabled_plugins = ['baz']
 version = 2
 
 [plugins]
@@ -87,7 +88,8 @@ version = 2
     [plugins.cri.containerd]
       [plugins.cri.containerd.runtimes]
         [plugins.cri.containerd.runtimes.runsc]
-          runtime_type = "io.containerd.runsc.v1"
+          runtime_type = 'io.containerd.runsc.v1'
+
   [plugins.linux]
     shim_debug = true
 `,
@@ -131,7 +133,8 @@ version = 2
     [plugins.cri.containerd]
       [plugins.cri.containerd.runtimes]
         [plugins.cri.containerd.runtimes.runsc]
-          runtime_type = "io.containerd.runsc.v1"
+          runtime_type = 'io.containerd.runsc.v1'
+
   [plugins.linux]
     shim_debug = true
 `,
@@ -153,7 +156,8 @@ disabled_plugins = ["restart"]
     [plugins.cri.containerd]
       [plugins.cri.containerd.runtimes]
         [plugins.cri.containerd.runtimes.runsc]
-          runtime_type = "io.containerd.runsc.v1"
+          runtime_type = 'io.containerd.runsc.v1'
+
   [plugins.linux]
     shim_debug = true
 `,
@@ -176,7 +180,8 @@ disabled_plugins = ["restart"]
     [plugins.cri.containerd]
       [plugins.cri.containerd.runtimes]
         [plugins.cri.containerd.runtimes.runsc]
-          runtime_type = "io.containerd.runsc.v1"
+          runtime_type = 'io.containerd.runsc.v1'
+
   [plugins.linux]
     shim_debug = true
 `,
@@ -195,7 +200,7 @@ disabled_plugins = ["restart"]
     [plugins.cri.containerd]
       [plugins.cri.containerd.runtimes]
         [plugins.cri.containerd.runtimes.runsc]
-          runtime_type = "io.containerd.runsc.v1"
+          runtime_type = 'io.containerd.runsc.v1'
   [plugins.linux]
     shim_debug = true
 `,
@@ -212,7 +217,7 @@ disabled_plugins = ["restart"]
   [plugins.cri.registry.mirrors."registry:5000"]
     endpoint = ["http://registry:5000"]`},
 			ExpectError: false,
-			ExpectOutput: `disabled_plugins = ["restart"]
+			ExpectOutput: `disabled_plugins = ['restart']
 version = 2
 
 [plugins]
@@ -220,11 +225,13 @@ version = 2
     [plugins.cri.containerd]
       [plugins.cri.containerd.runtimes]
         [plugins.cri.containerd.runtimes.runsc]
-          runtime_type = "io.containerd.runsc.v1"
+          runtime_type = 'io.containerd.runsc.v1'
+
     [plugins.cri.registry]
       [plugins.cri.registry.mirrors]
-        [plugins.cri.registry.mirrors."registry:5000"]
-          endpoint = ["http://registry:5000"]
+        [plugins.cri.registry.mirrors.'registry:5000']
+          endpoint = ['http://registry:5000']
+
   [plugins.linux]
     shim_debug = true
 `,
