@@ -1,0 +1,26 @@
+name: "Load node image"
+description: "Downloads the node image artifact and loads it into the given container runtime's image store, then exports IMAGE_FLAG for kind create cluster."
+inputs:
+  provider:
+    description: "Container runtime to load the image into (docker, podman, or nerdctl)."
+    default: "docker"
+  sudo:
+    description: "Run the load command with sudo (podman/nerdctl workflows run kind under sudo)."
+    default: "false"
+runs:
+  using: "composite"
+  steps:
+    - name: Download node image
+      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+      with:
+        name: node-image
+        path: ${{ runner.temp }}
+
+    - name: Load node image
+      shell: bash
+      run: |
+        sudo=""
+        [ "${{ inputs.sudo }}" = "true" ] && sudo="sudo"
+        $sudo ${{ inputs.provider }} load -i "${RUNNER_TEMP}/node.tar"
+        # kind create cluster reads --image from IMAGE_FLAG; empty when the build was skipped.
+        echo "IMAGE_FLAG=--image=kindest/node:pr" >> "$GITHUB_ENV"
