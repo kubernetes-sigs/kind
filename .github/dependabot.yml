@@ -15,3 +15,11 @@ updates:
         update-types:
           - "minor"
           - "patch"
+  - package-ecosystem: "gomod"
+    directory: "hack/tools/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "area/dependency"
+      - "release-note-none"
+      - "ok-to-test"
