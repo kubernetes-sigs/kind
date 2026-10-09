@@ -34,33 +34,50 @@ import (
 //
 //	alpine:latest@sha256:28ef97b8686a0b5399129e9b763d5b7e5ff03576aa5580d6f4182a49c5fe1913 -> (alpine, latest@sha256:28ef97b8686a0b5399129e9b763d5b7e5ff03576aa5580d6f4182a49c5fe1913)
 //
+//	localhost:5000/foo:bar -> (localhost:5000/foo, bar)
+//
 // NOTE: for our purposes we consider the sha to be part of the tag, and we
-// resolve the implicit :latest
+// resolve the implicit :latest. A colon before the last slash is a registry
+// port, not a tag.
 func SplitImage(image string) (registry, tag string, err error) {
-	// we are looking for ':' and '@'
-	firstColon := strings.IndexByte(image, 58)
-	firstAt := strings.IndexByte(image, 64)
-
-	// there should be a registry before the tag, and @/: should not be the last
-	// character, these cases are assumed not to exist by the rest of the code
-	if firstColon == 0 || firstAt == 0 || firstColon+1 == len(image) || firstAt+1 == len(image) {
+	// A leading or trailing separator is not a reference. An empty name is not
+	// either. The rest of the builder assumes these do not occur.
+	if image == "" ||
+		image[0] == ':' || image[0] == '@' ||
+		image[len(image)-1] == ':' || image[len(image)-1] == '@' {
 		return "", "", fmt.Errorf("unexpected image: %q", image)
 	}
 
-	// NOTE: The order of these cases matters
-	// case: alpine
-	if firstColon == -1 && firstAt == -1 {
-		return image, "latest", nil
+	// A digest colon (sha256:...) is not a tag. Split it off before looking
+	// for the tag so a registry port is not confused with either one.
+	name := image
+	digest := ""
+	if at := strings.IndexByte(image, '@'); at != -1 {
+		name = image[:at]
+		digest = image[at:]
+		if name == "" || len(digest) < 2 {
+			return "", "", fmt.Errorf("unexpected image: %q", image)
+		}
 	}
 
-	// case: alpine@sha256:28ef97b8686a0b5399129e9b763d5b7e5ff03576aa5580d6f4182a49c5fe1913
-	if firstAt != -1 && firstAt < firstColon {
-		return image[:firstAt], "latest" + image[firstAt:], nil
+	// A colon before the last slash is a registry port (localhost:5000/foo).
+	// The tag colon, when present, is the last colon after that slash.
+	lastSlash := strings.LastIndexByte(name, '/')
+	lastColon := strings.LastIndexByte(name, ':')
+	if lastColon > lastSlash {
+		registry = name[:lastColon]
+		tag = name[lastColon+1:]
+		if registry == "" || tag == "" {
+			return "", "", fmt.Errorf("unexpected image: %q", image)
+		}
+	} else {
+		registry = name
+		tag = "latest"
 	}
-
-	// case: alpine:latest
-	// case: alpine:latest@sha256:28ef97b8686a0b5399129e9b763d5b7e5ff03576aa5580d6f4182a49c5fe1913
-	return image[:firstColon], image[firstColon+1:], nil
+	if digest != "" {
+		tag += digest
+	}
+	return registry, tag, nil
 }
 
 // ImageInspect return low-level information on containers images
