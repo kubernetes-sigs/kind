@@ -250,7 +250,7 @@ or
 $ systemd-run --scope --user -p "Delegate=yes" kind create cluster
 ```
 
-If you still get the error `running kind with rootless provider requires setting systemd property "Delegate=yes"` even with [host requirements](#host-requirements) configured.
+If you still get an error about missing cgroup v2 controllers (for example, `running kind with rootless provider requires setting systemd property "Delegate=yes" to enable the missing cgroup v2 controllers ...`) even with [host requirements](#host-requirements) configured, and no controllers are available at all, the host itself may not provide cgroup v2 controllers. This happens for example inside LXC containers, see [Missing cgroup Controllers inside LXC](/docs/user/known-issues/#missing-cgroup-controllers-inside-lxc).
 
 ### Podman Log Driver
 
