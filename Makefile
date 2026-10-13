@@ -103,6 +103,7 @@ gofmt:
 ################################################################################
 # ================================== Linting ===================================
 # run linters, ensure generated code, etc.
+BASE_REF?=origin/main
 verify:
 	hack/make-rules/verify/all.sh
 # code linters
@@ -111,5 +112,14 @@ lint:
 # shell linter
 shellcheck:
 	hack/make-rules/verify/shellcheck.sh
+markdownlint:
+	@if git diff --quiet --diff-filter=ACMRT "$(BASE_REF)" -- '*.md' '*.markdown' && \
+	    [ -z "$$(git ls-files --others --exclude-standard -- '*.md' '*.markdown')" ]; then \
+	    echo "No Markdown files to lint"; \
+	else \
+	    { git diff --name-only --diff-filter=ACMRT -z "$(BASE_REF)" -- '*.md' '*.markdown'; \
+	      git ls-files --others --exclude-standard -z -- '*.md' '*.markdown'; } | \
+	        xargs -0 npx --yes markdownlint-cli2@0.23.2 --config .markdownlint-cli2.yaml; \
+	fi
 #################################################################################
-.PHONY: all kind build install unit clean update generate gofmt verify lint shellcheck
+.PHONY: all kind build install unit clean update generate gofmt verify lint shellcheck markdownlint
