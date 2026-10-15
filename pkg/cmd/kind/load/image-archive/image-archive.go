@@ -58,7 +58,6 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Short: "Loads docker image from archive into nodes",
 		Long:  "Loads docker image from archive into all or specified nodes by name",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cli.OverrideDefaultName(cmd.Flags())
 			return runE(logger, flags, args)
 		},
 	}
@@ -66,8 +65,8 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		&flags.Name,
 		"name",
 		"n",
-		cluster.DefaultName,
-		"the cluster context name",
+		cli.DefaultName(),
+		cli.NameFlagHelp,
 	)
 	cmd.Flags().StringSliceVar(
 		&flags.Nodes,
