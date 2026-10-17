@@ -406,6 +406,14 @@ nodes:
     tier: backend
 {{< /codeFromInline >}}
 
+Labels are applied by the kubelet when the node registers, so labels in the
+`kubernetes.io` and `k8s.io` namespaces are limited to those the kubelet is
+allowed to set on its own Node object, see
+[NodeRestriction](https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#noderestriction)
+and [managed node labels](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/#managed-node-labels).
+For example `node-role.kubernetes.io/worker` cannot be set this way and will be
+rejected, use a label in your own namespace instead (e.g. `example.com/role`).
+
 ### Kubeadm Config Patches
 
 KIND uses [`kubeadm`](/docs/design/principles/#leverage-existing-tooling) 

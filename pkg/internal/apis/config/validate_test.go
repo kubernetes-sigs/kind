@@ -401,6 +401,50 @@ func TestNodeValidate(t *testing.T) {
 			}(),
 			ExpectErrors: 0,
 		},
+		{
+			TestName: "Labels the kubelet is allowed to set",
+			Node: func() Node {
+				cfg := newDefaultedNode(WorkerRole)
+				cfg.Labels = map[string]string{
+					"foo":                              "bar",
+					"foo.dev/role":                     "worker",
+					"kubernetes.io.example.com/foo":    "bar",
+					"topology.kubernetes.io/zone":      "zone-a",
+					"node.kubernetes.io/instance-type": "large",
+					"node.kubernetes.io/foo":           "bar",
+					"foo.node.kubernetes.io/bar":       "baz",
+					"kubelet.kubernetes.io/foo":        "bar",
+				}
+				return cfg
+			}(),
+			ExpectErrors: 0,
+		},
+		{
+			TestName: "Label in the kubernetes.io namespace the kubelet may not set",
+			Node: func() Node {
+				cfg := newDefaultedNode(WorkerRole)
+				cfg.Labels = map[string]string{
+					"node-role.kubernetes.io/worker": "",
+				}
+				return cfg
+			}(),
+			ExpectErrors: 1,
+		},
+		{
+			TestName: "Labels in the kubernetes.io and k8s.io namespaces the kubelet may not set",
+			Node: func() Node {
+				cfg := newDefaultedNode(WorkerRole)
+				cfg.Labels = map[string]string{
+					"kubernetes.io/foo":                        "bar",
+					"node-restriction.kubernetes.io/foo":       "bar",
+					"k8s.io/foo":                               "bar",
+					"example.k8s.io/foo":                       "bar",
+					"node.kubernetes.io.example.com/is-custom": "true",
+				}
+				return cfg
+			}(),
+			ExpectErrors: 4,
+		},
 	}
 
 	for _, tc := range cases {

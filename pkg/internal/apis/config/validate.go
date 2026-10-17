@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 	"regexp"
+	"sort"
 	"strings"
 
 	"sigs.k8s.io/kind/pkg/errors"
@@ -134,6 +135,24 @@ func (n *Node) Validate() error {
 		errs = append(errs, errors.Wrapf(err, "invalid portMapping"))
 	}
 
+	// node labels are applied by the kubelet (--node-labels), which refuses
+	// to start with labels in the kubernetes.io / k8s.io namespaces that it
+	// is not allowed to set on its own Node object
+	labelKeys := make([]string, 0, len(n.Labels))
+	for key := range n.Labels {
+		labelKeys = append(labelKeys, key)
+	}
+	sort.Strings(labelKeys)
+	for _, key := range labelKeys {
+		if isKubernetesLabel(key) && !isKubeletLabel(key) {
+			errs = append(errs, errors.Errorf(
+				"invalid label %q: labels in the 'kubernetes.io' or 'k8s.io' namespaces must begin with an allowed prefix (%s) or be in the specifically allowed set (%s), "+
+					"see https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#noderestriction",
+				key, strings.Join(kubeletLabelNamespaces, ", "), strings.Join(kubeletLabels, ", "),
+			))
+		}
+	}
+
 	if len(errs) > 0 {
 		return errors.NewAggregate(errs)
 	}
@@ -206,6 +225,65 @@ func validatePortMappings(portMappings []PortMapping) error {
 		bindMap[portProtocol].Insert(addrString)
 	}
 	return nil
+}
+
+// kubeletLabels and kubeletLabelNamespaces mirror the labels the kubelet is
+// allowed to set on its own Node object, see:
+// https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/kubelet/pkg/apis/well_known_labels.go
+var kubeletLabels = []string{
+	"beta.kubernetes.io/arch",
+	"beta.kubernetes.io/instance-type",
+	"beta.kubernetes.io/os",
+	"failure-domain.beta.kubernetes.io/region",
+	"failure-domain.beta.kubernetes.io/zone",
+	"kubernetes.io/arch",
+	"kubernetes.io/hostname",
+	"kubernetes.io/os",
+	"node.kubernetes.io/instance-type",
+	"topology.kubernetes.io/region",
+	"topology.kubernetes.io/zone",
+}
+
+var kubeletLabelNamespaces = []string{
+	"kubelet.kubernetes.io",
+	"node.kubernetes.io",
+}
+
+// isKubeletLabel returns true if the label key is one that the kubelet is
+// allowed to set on its own Node object
+func isKubeletLabel(key string) bool {
+	for _, label := range kubeletLabels {
+		if key == label {
+			return true
+		}
+	}
+	namespace := getLabelNamespace(key)
+	for _, allowedNamespace := range kubeletLabelNamespaces {
+		if namespace == allowedNamespace || strings.HasSuffix(namespace, "."+allowedNamespace) {
+			return true
+		}
+	}
+	return false
+}
+
+// isKubernetesLabel returns true if the label key is in the kubernetes.io or
+// k8s.io namespaces, which are reserved by Kubernetes
+func isKubernetesLabel(key string) bool {
+	namespace := getLabelNamespace(key)
+	if namespace == "kubernetes.io" || strings.HasSuffix(namespace, ".kubernetes.io") {
+		return true
+	}
+	if namespace == "k8s.io" || strings.HasSuffix(namespace, ".k8s.io") {
+		return true
+	}
+	return false
+}
+
+func getLabelNamespace(key string) string {
+	if parts := strings.SplitN(key, "/", 2); len(parts) == 2 {
+		return parts[0]
+	}
+	return ""
 }
 
 func validatePort(port int32) error {
