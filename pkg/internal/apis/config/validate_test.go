@@ -401,6 +401,48 @@ func TestNodeValidate(t *testing.T) {
 			}(),
 			ExpectErrors: 0,
 		},
+		{
+			TestName: "Labels outside the reserved namespaces",
+			Node: func() Node {
+				cfg := newDefaultedNode(WorkerRole)
+				cfg.Labels = map[string]string{
+					"foo":                           "bar",
+					"foo.dev/role":                  "worker",
+					"kubernetes.io.example.com/foo": "bar",
+					"node.kubernetes.io.example.com/is-custom": "true",
+				}
+				return cfg
+			}(),
+			ExpectErrors: 0,
+		},
+		{
+			TestName: "Label in the reserved kubernetes.io namespace",
+			Node: func() Node {
+				cfg := newDefaultedNode(WorkerRole)
+				cfg.Labels = map[string]string{
+					"node-role.kubernetes.io/worker": "",
+				}
+				return cfg
+			}(),
+			ExpectErrors: 1,
+		},
+		{
+			TestName: "Labels in the reserved kubernetes.io and k8s.io namespaces",
+			Node: func() Node {
+				cfg := newDefaultedNode(WorkerRole)
+				cfg.Labels = map[string]string{
+					"kubernetes.io/foo":                  "bar",
+					"kubernetes.io/hostname":             "node-1",
+					"topology.kubernetes.io/zone":        "zone-a",
+					"node.kubernetes.io/instance-type":   "large",
+					"node-restriction.kubernetes.io/foo": "bar",
+					"k8s.io/foo":                         "bar",
+					"example.k8s.io/foo":                 "bar",
+				}
+				return cfg
+			}(),
+			ExpectErrors: 7,
+		},
 	}
 
 	for _, tc := range cases {
