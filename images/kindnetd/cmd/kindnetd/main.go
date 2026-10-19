@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -41,6 +42,7 @@ import (
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 )
 
@@ -229,23 +231,31 @@ func main() {
 		NFTableName:         "kindnet-network-policies",
 	}
 
-	podInformer := informersFactory.Core().V1().Pods()
+	netpolInformers := informers.NewSharedInformerFactory(clientset, 0)
+	netpolInformer := informersFactory.Networking().V1().NetworkPolicies()
+	hasNetPol := make(chan struct{})
+	var netpolOnce sync.Once
+	_, _ = netpolInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(any) { netpolOnce.Do(func() { close(hasNetPol) }) },
+	})
+
+	podInformer := netpolInformers.Core().V1().Pods()
 	informerResolver, err := podinfo.NewInformerResolver(podInformer.Informer())
 	if err != nil {
 		klog.Infof("Error creating informer resolver: %v, skipping network policies", err)
 	} else {
 		podInfoProvider := podinfo.NewInformerProvider(
 			podInformer,
-			informersFactory.Core().V1().Namespaces(),
+			netpolInformers.Core().V1().Namespaces(),
 			nodeInformer,
 			[]podinfo.IPResolver{informerResolver},
 		)
 
 		stdNetPolEvaluator := networkpolicy.NewStandardNetworkPolicy(
 			nodeName,
-			informersFactory.Core().V1().Namespaces(),
+			netpolInformers.Core().V1().Namespaces(),
 			podInformer,
-			informersFactory.Networking().V1().NetworkPolicies(),
+			netpolInformer,
 		)
 
 		policyEngine := networkpolicy.NewPolicyEngine(
@@ -261,6 +271,12 @@ func main() {
 			klog.Infof("Error creating network policy controller: %v, skipping network policies", err)
 		} else {
 			go func() {
+				select {
+				case <-hasNetPol:
+				case <-ctx.Done():
+					return
+				}
+				netpolInformers.Start(ctx.Done())
 				_ = networkPolicyController.Run(ctx)
 			}()
 		}
