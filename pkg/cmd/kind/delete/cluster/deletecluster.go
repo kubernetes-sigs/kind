@@ -54,6 +54,7 @@ Errors will only occur if the cluster resources exist and are not able to be del
 			return deleteCluster(logger, flags)
 		},
 	}
+
 	cmd.Flags().StringVarP(
 		&flags.Name,
 		"name",
@@ -67,6 +68,19 @@ Errors will only occur if the cluster resources exist and are not able to be del
 		"",
 		"sets kubeconfig path instead of $KUBECONFIG or $HOME/.kube/config",
 	)
+
+	cobra.CheckErr(cmd.RegisterFlagCompletionFunc("name", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		clusters, err := cluster.NewProvider(
+			cluster.ProviderWithLogger(logger),
+			runtime.GetDefault(logger),
+		).List()
+		if err != nil {
+			return nil, cobra.ShellCompDirectiveError
+		}
+
+		return clusters, cobra.ShellCompDirectiveNoFileComp
+	}))
+
 	return cmd
 }
 
