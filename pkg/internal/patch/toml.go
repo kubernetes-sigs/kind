@@ -20,11 +20,9 @@ import (
 	"bytes"
 	"encoding/json"
 
-	burntoml "github.com/BurntSushi/toml"
 	jsonpatch "github.com/evanphx/json-patch/v5"
-	toml "github.com/pelletier/go-toml"
-
-	yaml "go.yaml.in/yaml/v3"
+	"github.com/pelletier/go-toml/v2"
+	"go.yaml.in/yaml/v3"
 
 	"sigs.k8s.io/kind/pkg/errors"
 )
@@ -92,12 +90,11 @@ func containerdConfigVersion(configTOML string) (int, error) {
 
 // tomlToJSON converts arbitrary TOML to JSON
 func tomlToJSON(t []byte) ([]byte, error) {
-	// we use github.com.pelletier/go-toml here to unmarshal arbitrary TOML to JSON
-	tree, err := toml.LoadBytes(t)
-	if err != nil {
+	var unstruct interface{}
+	if err := toml.Unmarshal(t, &unstruct); err != nil {
 		return nil, errors.WithStack(err)
 	}
-	b, err := json.Marshal(tree.ToMap())
+	b, err := json.Marshal(unstruct)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -115,12 +112,11 @@ func jsonToTOMLString(j []byte) (string, error) {
 	if err := yaml.Unmarshal(j, &unstruct); err != nil {
 		return "", errors.WithStack(err)
 	}
-	// we use github.com/BurntSushi/toml here because github.com.pelletier/go-toml
-	// can only marshal structs AND BurntSushi/toml is what contained uses
-	// and has more canonically formatted output (we initially plan to use
-	// this package for patching containerd config)
 	var buff bytes.Buffer
-	if err := burntoml.NewEncoder(&buff).Encode(unstruct); err != nil {
+	enc := toml.NewEncoder(&buff)
+	enc.SetIndentTables(true)
+
+	if err := enc.Encode(unstruct); err != nil {
 		return "", errors.WithStack(err)
 	}
 	return buff.String(), nil
