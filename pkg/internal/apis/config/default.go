@@ -101,4 +101,10 @@ func SetDefaultsNode(obj *Node) {
 	if obj.Role == "" {
 		obj.Role = ControlPlaneRole
 	}
+
+	for i := range obj.ExtraPortMappings {
+		if obj.ExtraPortMappings[i].Protocol == "" {
+			obj.ExtraPortMappings[i].Protocol = PortMappingProtocolTCP
+		}
+	}
 }
