@@ -157,6 +157,25 @@ DefaultEnvironment="HTTP_PROXY=${HTTP_PROXY:-}" "HTTPS_PROXY=${HTTPS_PROXY:-}" "
 EOF
 }
 
+configure_libmount() {
+  # util-linux >= 2.39 mounts via the new fd-based mount API (fsopen, open_tree,
+  # mount_setattr, ...). In some nested user namespaces those syscalls fail with
+  # EACCES/EPERM where classic mount(2) succeeds, which breaks mounts in this
+  # script, in kubelet (projected volumes), and in mount-product-files.sh.
+  # Force classic mount(2) for this script and for everything systemd starts.
+  # This must run before configure_containerd, whose overlayfs probe mounts.
+  if [[ -z "${userns}" ]]; then
+    return
+  fi
+  log_info 'UserNS: forcing classic mount(2) for libmount (LIBMOUNT_FORCE_MOUNT2=always)'
+  export LIBMOUNT_FORCE_MOUNT2=always
+  mkdir -p /etc/systemd/system.conf.d/
+  cat <<EOF >/etc/systemd/system.conf.d/libmount-default-environment.conf
+[Manager]
+DefaultEnvironment=LIBMOUNT_FORCE_MOUNT2=always
+EOF
+}
+
 fix_mount() {
   log_info 'ensuring we can execute mount/umount even with userns-remap'
   # necessary only when userns-remap is enabled on the host, but harmless
@@ -559,6 +578,7 @@ validate_userns
 
 # run pre-init fixups
 # NOTE: it's important that we do configure* first in this order to avoid races
+configure_libmount
 configure_containerd
 configure_proxy
 fix_mount
