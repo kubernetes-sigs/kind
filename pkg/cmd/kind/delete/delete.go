@@ -23,7 +23,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cmd"
-	deletecluster "sigs.k8s.io/kind/pkg/cmd/kind/delete/cluster"
 	deleteclusters "sigs.k8s.io/kind/pkg/cmd/kind/delete/clusters"
 	"sigs.k8s.io/kind/pkg/log"
 )
@@ -43,7 +42,6 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 			return errors.New("Subcommand is required")
 		},
 	}
-	cmd.AddCommand(deletecluster.NewCommand(logger, streams))
 	cmd.AddCommand(deleteclusters.NewCommand(logger, streams))
 	return cmd
 }
