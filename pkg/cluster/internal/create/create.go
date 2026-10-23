@@ -20,6 +20,7 @@ package create
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"al.essio.dev/pkg/shellescape"
@@ -246,12 +247,37 @@ func validateProvider(logger log.Logger, p providers.Provider) error {
 	if err != nil {
 		return err
 	}
+	return validateProviderInfo(logger, info)
+}
+
+func validateProviderInfo(logger log.Logger, info *providers.ProviderInfo) error {
 	if info.Rootless {
 		if !info.Cgroup2 {
 			return errors.New("running kind with rootless provider requires cgroup v2, see https://kind.sigs.k8s.io/docs/user/rootless/")
 		}
+		if !info.SupportsMemoryLimit && !info.SupportsPidsLimit && !info.SupportsCPUShares {
+			// None of the required controllers are available.
+			// This may not be fixable by setting the systemd property "Delegate=yes":
+			// in containerized hosts such as LXC, the root cgroup.controllers itself
+			// can be empty, in which case there is nothing systemd could delegate.
+			return errors.New("running kind with rootless provider requires cgroup v2 controllers (cpu, memory, pids), but none are available. " +
+				"This is typically resolved by setting the systemd property \"Delegate=yes\", see https://kind.sigs.k8s.io/docs/user/rootless/. " +
+				"If \"Delegate=yes\" is already configured, the host may not provide any cgroup v2 controllers " +
+				"(e.g. when running inside an LXC container where /sys/fs/cgroup/cgroup.controllers is empty), " +
+				"see https://kind.sigs.k8s.io/docs/user/known-issues/#missing-cgroup-controllers-inside-lxc")
+		}
 		if !info.SupportsMemoryLimit || !info.SupportsPidsLimit || !info.SupportsCPUShares {
-			return errors.New("running kind with rootless provider requires setting systemd property \"Delegate=yes\", see https://kind.sigs.k8s.io/docs/user/rootless/")
+			var missing []string
+			if !info.SupportsCPUShares {
+				missing = append(missing, "cpu")
+			}
+			if !info.SupportsMemoryLimit {
+				missing = append(missing, "memory")
+			}
+			if !info.SupportsPidsLimit {
+				missing = append(missing, "pids")
+			}
+			return errors.Errorf("running kind with rootless provider requires setting systemd property \"Delegate=yes\" to enable the missing cgroup v2 controllers (%s), see https://kind.sigs.k8s.io/docs/user/rootless/", strings.Join(missing, ", "))
 		}
 	} else if !info.Cgroup2 {
 		logger.Warn("cgroup v1 is deprecated in Kubernetes and will not be supported in a future kind release, please upgrade to cgroup v2")
