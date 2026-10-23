@@ -28,7 +28,7 @@ Custom YAML (de)serialization for these types
 
 // UnmarshalYAML implements custom decoding YAML
 // https://godoc.org/sigs.k8s.io/yaml/goyaml.v3
-func (m *Mount) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (m *Mount) UnmarshalYAML(unmarshal func(any) error) error {
 	// first unmarshal in the alias type (to avoid a recursion loop on unmarshal)
 	type MountAlias Mount
 	var a MountAlias
@@ -51,7 +51,7 @@ func (m *Mount) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 // UnmarshalYAML implements custom decoding YAML
 // https://godoc.org/sigs.k8s.io/yaml/goyaml.v3
-func (p *PortMapping) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (p *PortMapping) UnmarshalYAML(unmarshal func(any) error) error {
 	// first unmarshal in the alias type (to avoid a recursion loop on unmarshal)
 	type PortMappingAlias PortMapping
 	var a PortMappingAlias

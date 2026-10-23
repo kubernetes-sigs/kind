@@ -26,13 +26,13 @@ type Logger interface {
 	// Warn should be used to write user facing warnings
 	Warn(message string)
 	// Warnf should be used to write Printf style user facing warnings
-	Warnf(format string, args ...interface{})
+	Warnf(format string, args ...any)
 	// Error may be used to write an error message when it occurs
 	// Prefer returning an error instead in most cases
 	Error(message string)
 	// Errorf may be used to write a Printf style error message when it occurs
 	// Prefer returning an error instead in most cases
-	Errorf(format string, args ...interface{})
+	Errorf(format string, args ...any)
 	// V() returns an InfoLogger for a given verbosity Level
 	//
 	// Normal verbosity levels:
@@ -57,7 +57,7 @@ type InfoLogger interface {
 	// See: Logger.V
 	Info(message string)
 	// Infof is used to write a Printf style user facing status message
-	Infof(format string, args ...interface{})
+	Infof(format string, args ...any)
 	// Enabled should return true if this verbosity level is enabled
 	// on the Logger
 	//
