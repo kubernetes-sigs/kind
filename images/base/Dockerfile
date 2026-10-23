@@ -144,18 +144,27 @@ FROM go-build AS build-runc
 ARG TARGETARCH GO_VERSION
 ARG RUNC_VERSION="v1.5.2"
 ARG RUNC_CLONE_URL="https://github.com/opencontainers/runc"
-# runc >= 1.5 builds with libpathrs (a rust library) by default, we do not have
-# this available for cross-compiling in debian trixie, so we opt-out for now
-# matching containerd's CI, this keeps the default seccomp and other tags
-ARG RUNC_BUILDTAGS="-libpathrs"
+# runc >= 1.5 builds with libpathrs (a rust library) by default for safer path
+# resolution, this is not packaged in debian trixie so we build it from source
+# with runc's own build script and link it statically into runc
+# NOTE: keep this in sync with LIBPATHRS_VERSION in runc's Dockerfile,
+# runc's build script verifies the checksum for versions it supports
+ARG LIBPATHRS_VERSION="0.2.6"
+RUN clean-install cargo lld xz-utils libstd-rust-dev:amd64 libstd-rust-dev:arm64
+COPY --chmod=0755 scripts/libpathrs-licenses /usr/local/bin/
 RUN git clone --filter=tree:0 "${RUNC_CLONE_URL}" /runc \
     && cd /runc \
     && git checkout "${RUNC_VERSION}" \
+    && ./script/build-libpathrs.sh "${LIBPATHRS_VERSION}" /opt/libpathrs "${TARGETARCH}" \
+    && rm -f /opt/libpathrs/${TARGETARCH}/lib/libpathrs.so* \
     && eval "$(gimme "${GO_VERSION}")" \
     && export GOTOOLCHAIN="go${GO_VERSION}" \
     && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
-    && make runc RUNC_BUILDTAGS="${RUNC_BUILDTAGS}" \
-    && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES .
+    && export PKG_CONFIG_PATH="/opt/libpathrs/${TARGETARCH}/lib/pkgconfig" \
+    && make runc \
+    && GOARCH=$TARGETARCH GOFLAGS=-tags=libpathrs go-licenses save --save_path=/_LICENSES . \
+    && libpathrs-licenses "${LIBPATHRS_VERSION}" \
+        "/opt/libpathrs/src/libpathrs-${LIBPATHRS_VERSION}.tar.xz" /_LICENSES
 
 # stage for building crictl
 FROM go-build AS build-crictl
@@ -221,7 +230,7 @@ RUN ctr oci spec \
 COPY --from=build-containerd /_LICENSES/* /LICENSES/
 # copy over runc build and install
 COPY --from=build-runc /runc/runc /usr/local/sbin/runc
-RUN runc --version
+RUN runc --version && runc --version | grep -q libpathrs
 COPY --from=build-runc /_LICENSES/* /LICENSES/
 # copy over crictl build and install
 COPY --from=build-crictl /cri-tools/build/crictl /usr/local/bin/
