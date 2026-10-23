@@ -302,7 +302,7 @@ Currently, kind supports one default way to build a `node-image`
 if you have the [Kubernetes][kubernetes] source in your host machine
 (`$GOPATH/src/k8s.io/kubernetes`), by using `source`.
 
-You can also specify a different path to kubernetes source using 
+You can also specify a different path to kubernetes source using
 ```
 kind build node-image /path/to/kubernetes/source
 ```
