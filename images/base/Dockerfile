@@ -142,6 +142,7 @@ RUN git clone --filter=tree:0 "${CONTAINERD_CLONE_URL}" /containerd \
 # stage for building libpathrs, runc >= 1.5 uses this rust library by default
 # for safer path resolution, it is not packaged in debian trixie so we build it
 # from source as a static library and link it into runc
+# NOTE: we use libpathrs under the MPL-2.0, see README.md#licensing
 FROM go-build AS build-libpathrs
 ARG TARGETARCH
 # NOTE: keep this in sync with LIBPATHRS_VERSION in runc's Dockerfile
