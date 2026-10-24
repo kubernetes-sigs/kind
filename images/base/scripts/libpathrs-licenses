@@ -16,50 +16,36 @@
 
 # this script saves license notices for libpathrs and the rust crates
 # statically linked into it, similar to go-licenses save for go code
+# it must be run from the libpathrs git checkout after building
 #
-# usage: libpathrs-licenses <version> <source tarball> <save path>
+# usage: libpathrs-licenses <save path>
 #
 # libpathrs is MPL-2.0 OR LGPL-3.0-or-later, we distribute it under the MPL-2.0
 # which requires informing recipients where to obtain the source code
 
 set -o errexit -o nounset -o pipefail
 
-version="$1"
-tarball="$2"
-save_path="$3"
-
-# map buildx TARGETARCH to rust target
-case $TARGETARCH in
-  arm64)
-    rust_target='aarch64-unknown-linux-gnu' ;;
-  amd64)
-    rust_target='x86_64-unknown-linux-gnu' ;;
-  *)
-    exit 1 ;;
-esac
-
-src_dir="$(mktemp -d)"
-tar -xf "${tarball}" -C "${src_dir}"
-cd "${src_dir}/libpathrs-${version}"
+save_path="$1"
 
 # libpathrs itself
 libpathrs_dir="${save_path}/github.com/cyphar/libpathrs"
 mkdir -p "${libpathrs_dir}"
 cp LICENSE.* "${libpathrs_dir}/"
+version="$(git describe --tags --exact-match)"
 cat >"${libpathrs_dir}/SOURCE" <<EOF
 runc in this image is statically linked against libpathrs ${version}, which is
 distributed under the terms of the Mozilla Public License, v. 2.0, see
 LICENSE.MPL-2.0 in this directory.
 
 The unmodified source code is available from:
-https://github.com/cyphar/libpathrs/releases/download/v${version}/libpathrs-${version}.tar.xz
-sha256: $(sha256sum "${tarball}" | cut -d' ' -f1)
+https://github.com/cyphar/libpathrs/tree/${version}
+commit: $(git rev-parse HEAD)
 EOF
 
 # rust crates linked into libpathrs for this target, these should already be
 # in the cargo registry from building libpathrs
 registry="${CARGO_HOME:-${HOME}/.cargo}/registry/src"
-cargo tree --locked --offline --features=capi --target="${rust_target}" \
+cargo tree --locked --offline --features=capi --target="$(target-rust)" \
     --edges=normal,no-proc-macro --prefix=none --format='{p}' \
   | awk '$1 != "pathrs" { sub(/^v/, "", $2); print $1, $2 }' | sort -u \
   | while read -r name crate_version; do
