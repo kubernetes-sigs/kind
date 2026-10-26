@@ -140,6 +140,19 @@ inner markdown content. Usage: `{{</* securitygoose */>}} Notice markdown conten
 
 1. `readFile` -- is used to inline file contents. Usage: `{{%/* readFile "static/examples/ingress/contour/patch.json" */%}}`
 
+### Style Guide
+
+KIND documentation is primarily maintained by code contributors and project maintainers, and as
+such does not strictly obey the [Kubernetes style guide]. However, we ask that
+documentation improvements adhere to [content best practices] and avoid [documentation anti-patterns].
+
+Only use the following when referring to the project or command line:
+
+- `kind` in all lowercase with backticks.
+- "KIND" in all uppercase.
+
+Using "kind" without backticks, "Kind" with only one uppercase, or "KinD" with leading and trailing
+uppercase is not permitted.
 
 ## CI
 
@@ -167,6 +180,9 @@ GitHub actions are configured in `.github/workflows` in the kind repo.
 [go-version]: https://sigs.k8s.io/kind/.go-version
 [quick start]: /docs/user/quick-start/
 [hugo]: https://gohugo.io
+[Kubernetes style guide]: https://kubernetes.io/docs/contribute/style/style-guide/
+[content best practices]: https://kubernetes.io/docs/contribute/style/style-guide/#content-best-practices
+[documentation anti-patterns]: https://kubernetes.io/docs/contribute/style/style-guide/#patterns-to-avoid
 [prow]: https://git.k8s.io/test-infra/
 [GitHub Actions]: https://github.com/features/actions
 [front matter]: https://gohugo.io/content-management/front-matter/
