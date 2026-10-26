@@ -85,6 +85,30 @@ kubectl cluster-info --context kind-kind
 Have a question, bug, or feature request? Let us know! https://kind.sigs.k8s.io/#community 🙂
 ```
 
+### Using a mirror registry
+
+In environments where the default registry (`registry-1.docker.io`) is slow or
+unreachable, you can pull the [node image][node image] from a mirror registry
+and re-tag it so kind can reuse the locally cached image:
+
+```
+# Replace registry.example.com with an organization-approved mirror.
+➜  ~ docker pull registry.example.com/kindest/node:v1.34.0
+...
+Status: Downloaded newer image for registry.example.com/kindest/node:v1.34.0
+➜  ~ docker image tag registry.example.com/kindest/node:v1.34.0 kindest/node:v1.34.0
+```
+
+When the exact image reference (tag and digest) already exists locally, kind
+uses the cached image and does not contact the registry again:
+
+```
+➜  ~ kind create cluster --image kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
+```
+
+As with [`docker load`][docker load], the mirrored image must be tagged as
+`kindest/node:<tag>` (optionally pinned by digest) so that kind finds it locally.
+
 ## Building the [node image][node image]
 
 In addition to using pre-built node image, 
