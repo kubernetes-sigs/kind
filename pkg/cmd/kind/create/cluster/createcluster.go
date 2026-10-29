@@ -19,6 +19,9 @@ package cluster
 
 import (
 	"io"
+	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -65,7 +68,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		&flags.Config,
 		"config",
 		"",
-		"path to a kind config file",
+		"path or URL to a kind config file",
 	)
 	cmd.Flags().StringVar(
 		&flags.ImageName,
@@ -124,8 +127,20 @@ func runE(logger log.Logger, streams cmd.IOStreams, flags *flagpole) error {
 }
 
 // configOption converts the raw --config flag value to a cluster creation
-// option matching it. it will read from stdin if the flag value is `-`
+// option matching it. it will read from stdin if the flag value is `-`,
+// and fetch the config if the flag value is an http(s) URL
 func configOption(rawConfigFlag string, stdin io.Reader) (cluster.CreateOption, error) {
+	// if an http(s) URL then fetch the config from it
+	if strings.HasPrefix(rawConfigFlag, "http://") || strings.HasPrefix(rawConfigFlag, "https://") {
+		if err := validateURL(rawConfigFlag); err != nil {
+			return nil, errors.Wrap(err, "invalid config URL")
+		}
+		raw, err := fetchURL(rawConfigFlag)
+		if err != nil {
+			return nil, errors.Wrapf(err, "error reading config from %q", rawConfigFlag)
+		}
+		return cluster.CreateWithRawConfig(raw), nil
+	}
 	// if not - then we are using a real file
 	if rawConfigFlag != "-" {
 		return cluster.CreateWithConfigFile(rawConfigFlag), nil
@@ -136,4 +151,30 @@ func configOption(rawConfigFlag string, stdin io.Reader) (cluster.CreateOption, 
 		return nil, errors.Wrap(err, "error reading config from stdin")
 	}
 	return cluster.CreateWithRawConfig(raw), nil
+}
+
+// validateURL returns an error if rawURL is not a well-formed URL with a host
+func validateURL(rawURL string) error {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return err
+	}
+	if u.Hostname() == "" {
+		return errors.Errorf("missing host in %q", rawURL)
+	}
+	return nil
+}
+
+// fetchURL returns the body of an HTTP GET of rawURL
+func fetchURL(rawURL string) ([]byte, error) {
+	httpClient := &http.Client{Timeout: 30 * time.Second}
+	resp, err := httpClient.Get(rawURL)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("unexpected HTTP status: %s", resp.Status)
+	}
+	return io.ReadAll(resp.Body)
 }
