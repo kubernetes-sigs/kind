@@ -97,6 +97,10 @@ Lints include:
 - [shellcheck] to lint our shell scripts (invoked via docker so you don't need to install it)
   - you can run just this one with `make shellcheck`
 
+Markdown files changed in a pull request are checked with markdownlint-cli2.
+Run `make markdownlint` locally before submitting Markdown changes. The target
+requires Node.js and npm.
+
 ## Documentation
 
 Our docs are built with [hugo] just like [kubernetes.io](https://kubernetes.io).

@@ -421,7 +421,7 @@ have been necessary to resolve this issue.
 ## Local Subnet Clashes
 
 KIND creates a separate docker network named `kind` that will be configured with default IPAM settings. If you are using the default IPAM configuration in your `daemon.json` you
-may have conflicts with existing networks (like VPNs, labs, etc) that route the 172.17.x.x networks. To resolve this you can reconfigure the daemon-wide IPAM so that all 
+may have conflicts with existing networks (like VPNs, labs, etc) that route the 172.17.x.x networks. To resolve this you can reconfigure the daemon-wide IPAM so that all
 networks will be created in subnets that do not have these conflicts.
 
 An example configuration that you can add to your `daemon.json` is below. This would configure `10.253.0.0/16` as the defauld CIDR with each individual network receiving a /24
