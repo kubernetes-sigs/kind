@@ -40,7 +40,7 @@ EOF
 
 ### Create a `kind-config.yaml` file.
 
-To enable audit logging, use kind's [configuration file] to pass additional setup instructions. Kind uses `kubeadm` to provision the cluster and the configuration file has the ability to pass `kubeadmConfigPatches` for further customization.
+To enable audit logging, use kind's [configuration file] to pass additional configuration instructions. Kind uses `kubeadm` to provision the cluster and the configuration file has the ability to pass `kubeadmConfigPatches` for further customization.
 
 {{< codeFromInline lang="bash" >}}
 cat <<EOF > kind-config.yaml
