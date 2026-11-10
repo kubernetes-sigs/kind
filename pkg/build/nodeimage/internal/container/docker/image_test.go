@@ -153,3 +153,13 @@ func TestSplitImage(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizeBuiltImageDropsArchSuffixAfterRegistryPort(t *testing.T) {
+	got, err := NormalizeBuiltImage("localhost:5000/foo-amd64:bar", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "localhost:5000/foo:bar" {
+		t.Fatalf("NormalizeBuiltImage() = %q, want localhost:5000/foo:bar", got)
+	}
+}

@@ -80,6 +80,21 @@ func SplitImage(image string) (registry, tag string, err error) {
 	return registry, tag, nil
 }
 
+// NormalizeBuiltImage drops an arch suffix from the repository and keeps a
+// registry port out of the tag. localhost:5000/foo-amd64:bar with arch amd64
+// becomes localhost:5000/foo:bar.
+func NormalizeBuiltImage(image, arch string) (string, error) {
+	registry, tag, err := SplitImage(image)
+	if err != nil {
+		return "", err
+	}
+	suffix := "-" + arch
+	if strings.HasSuffix(registry, suffix) {
+		registry = strings.TrimSuffix(registry, suffix)
+	}
+	return registry + ":" + tag, nil
+}
+
 // ImageInspect return low-level information on containers images
 func ImageInspect(containerNameOrID, format string) ([]string, error) {
 	cmd := exec.Command("docker", "image", "inspect",
