@@ -440,7 +440,15 @@ For more information on the Docker Engine config file check out [these docs](htt
 
 ## Unable to `kind load` Docker Images
 
-When Docker is using the containerd image store, `kind load docker-image` may fail with an error similar to:
+When Docker is using the containerd image store, `docker save` writes the whole multi-platform image index,
+but only the content of the platforms that were pulled.
+When the image archive is an uncompressed file, `kind load` then loads only the node platform and prints a warning:
+
+```text
+WARNING: Image archive does not include all platforms of a multi-platform image, loading only the node platform onto node "kind-control-plane"
+```
+
+Older kind versions, and node images using containerd 1.x, may fail instead with an error similar to:
 
 ```text
 ERROR: failed to load image: command "docker exec --privileged -i kind-control-plane ctr --namespace=k8s.io images import --all-platforms --digests --snapshotter=overlayfs -" failed with error: exit status 1
@@ -450,7 +458,7 @@ Command Output: ctr: content digest sha256:...: not found
 
 See [kind#3795] for additional details.
 
-A targeted workaround is to export only the platform required by the kind nodes and load the resulting image archive:
+A targeted workaround when loading still fails is to export only the platform required by the kind nodes and load the resulting image archive:
 ```sh
 docker image save \
   --platform linux/amd64 \

@@ -149,5 +149,9 @@ func loadImage(logger log.Logger, imageTarName string, node nodes.Node) error {
 	}
 	defer f.Close()
 	logger.V(2).Infof("Loading Docker Image from archive %s to node %s", imageTarName, node.String())
-	return nodeutils.LoadImageArchive(node, f)
+	skipped, err := nodeutils.LoadImageArchiveSkipMissing(node, f)
+	if skipped {
+		logger.Warnf("WARNING: Image archive does not include all platforms of a multi-platform image, loading only the node platform onto node %q", node.String())
+	}
+	return err
 }
