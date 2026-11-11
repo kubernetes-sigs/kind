@@ -79,11 +79,19 @@ func CopyNodeToNode(a, b nodes.Node, file string) error {
 
 // LoadImageArchive loads image onto the node, where image is a Reader over an image archive
 func LoadImageArchive(n nodes.Node, image io.Reader) error {
+	return loadImageArchive(n, image, true)
+}
+
+func loadImageArchive(n nodes.Node, image io.Reader, allPlatforms bool) error {
 	snapshotter, err := getSnapshotter(n)
 	if err != nil {
 		return err
 	}
-	cmd := n.Command("ctr", "--namespace=k8s.io", "images", "import", "--all-platforms", "--digests", "--snapshotter="+snapshotter, "-").SetStdin(image)
+	args := []string{"--namespace=k8s.io", "images", "import"}
+	if allPlatforms {
+		args = append(args, "--all-platforms")
+	}
+	cmd := n.Command("ctr", append(args, "--digests", "--snapshotter="+snapshotter, "-")...).SetStdin(image)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrap(err, "failed to load image")
 	}
