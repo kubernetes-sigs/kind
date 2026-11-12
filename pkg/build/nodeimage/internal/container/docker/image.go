@@ -88,10 +88,8 @@ func NormalizeBuiltImage(image, arch string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	suffix := "-" + arch
-	if strings.HasSuffix(registry, suffix) {
-		registry = strings.TrimSuffix(registry, suffix)
-	}
+	// TrimSuffix already leaves a name that does not end with the suffix unchanged.
+	registry = strings.TrimSuffix(registry, "-"+arch)
 	return registry + ":" + tag, nil
 }
 
