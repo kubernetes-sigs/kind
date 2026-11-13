@@ -43,7 +43,11 @@ else
 	# DNF 4
 	"$DNF" config-manager --add-repo="${DNF_REPO}"
 fi
-"$DNF" install -y git golang make docker-ce docker-ce-rootless-extras
+# Rootless Docker uses slirp4netns with the builtin port driver when slirp4netns
+# is installed. Without it, Docker falls back to pasta, whose "-t auto" skips
+# ephemeral ports since passt 2026_05_07, so the API server port kind picks is
+# never forwarded: https://bugs.passt.top/show_bug.cgi?id=219
+"$DNF" install -y git golang make docker-ce docker-ce-rootless-extras slirp4netns
 systemctl enable --now docker
 if [ -n "${INSTALL_PODMAN}" ]; then
 	"$DNF" install -y podman
