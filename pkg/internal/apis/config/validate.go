@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 	"regexp"
+	"sort"
 	"strings"
 
 	"sigs.k8s.io/kind/pkg/errors"
@@ -134,6 +135,24 @@ func (n *Node) Validate() error {
 		errs = append(errs, errors.Wrapf(err, "invalid portMapping"))
 	}
 
+	// node labels are applied by the kubelet (--node-labels), which refuses
+	// to start with labels in the reserved kubernetes.io / k8s.io namespaces
+	// that it is not allowed to set on its own Node object. Rather than track
+	// the kubelet's allowed set, reject the reserved namespaces entirely.
+	labelKeys := make([]string, 0, len(n.Labels))
+	for key := range n.Labels {
+		labelKeys = append(labelKeys, key)
+	}
+	sort.Strings(labelKeys)
+	for _, key := range labelKeys {
+		if isKubernetesLabel(key) {
+			errs = append(errs, errors.Errorf(
+				"invalid label %q: labels in the 'kubernetes.io' and 'k8s.io' namespaces are reserved and cannot be set on nodes, use a label in your own namespace instead",
+				key,
+			))
+		}
+	}
+
 	if len(errs) > 0 {
 		return errors.NewAggregate(errs)
 	}
@@ -206,6 +225,26 @@ func validatePortMappings(portMappings []PortMapping) error {
 		bindMap[portProtocol].Insert(addrString)
 	}
 	return nil
+}
+
+// isKubernetesLabel returns true if the label key is in the kubernetes.io or
+// k8s.io namespaces, which are reserved by Kubernetes
+func isKubernetesLabel(key string) bool {
+	namespace := getLabelNamespace(key)
+	if namespace == "kubernetes.io" || strings.HasSuffix(namespace, ".kubernetes.io") {
+		return true
+	}
+	if namespace == "k8s.io" || strings.HasSuffix(namespace, ".k8s.io") {
+		return true
+	}
+	return false
+}
+
+func getLabelNamespace(key string) string {
+	if parts := strings.SplitN(key, "/", 2); len(parts) == 2 {
+		return parts[0]
+	}
+	return ""
 }
 
 func validatePort(port int32) error {
