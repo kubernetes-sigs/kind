@@ -22,6 +22,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -405,15 +406,6 @@ func info(logger log.Logger) (*providers.ProviderInfo, error) {
 	if err := json.Unmarshal(out, &pInfo); err != nil {
 		return nil, err
 	}
-	stringSliceContains := func(s []string, str string) bool {
-		for _, v := range s {
-			if v == str {
-				return true
-			}
-		}
-		return false
-	}
-
 	// Since Podman version before v4.0.0 does not gives controller info.
 	// We assume all the cgroup controllers to be available.
 	// For rootless, this assumption is not always correct,
@@ -429,9 +421,9 @@ func info(logger log.Logger) (*providers.ProviderInfo, error) {
 	// Info for controllers must be available after v4.0.0
 	// via https://github.com/containers/podman/pull/10387
 	if v.AtLeast(version.MustParseSemantic("4.0.0")) {
-		cgroupSupportsMemoryLimit = stringSliceContains(pInfo.Host.CgroupControllers, "memory")
-		cgroupSupportsPidsLimit = stringSliceContains(pInfo.Host.CgroupControllers, "pids")
-		cgroupSupportsCPUShares = stringSliceContains(pInfo.Host.CgroupControllers, "cpu")
+		cgroupSupportsMemoryLimit = slices.Contains(pInfo.Host.CgroupControllers, "memory")
+		cgroupSupportsPidsLimit = slices.Contains(pInfo.Host.CgroupControllers, "pids")
+		cgroupSupportsCPUShares = slices.Contains(pInfo.Host.CgroupControllers, "cpu")
 	}
 
 	info := &providers.ProviderInfo{

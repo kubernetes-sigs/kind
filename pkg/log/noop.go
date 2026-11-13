@@ -23,13 +23,13 @@ type NoopLogger struct{}
 func (n NoopLogger) Warn(message string) {}
 
 // Warnf meets the Logger interface but does nothing
-func (n NoopLogger) Warnf(format string, args ...interface{}) {}
+func (n NoopLogger) Warnf(format string, args ...any) {}
 
 // Error meets the Logger interface but does nothing
 func (n NoopLogger) Error(message string) {}
 
 // Errorf meets the Logger interface but does nothing
-func (n NoopLogger) Errorf(format string, args ...interface{}) {}
+func (n NoopLogger) Errorf(format string, args ...any) {}
 
 // V meets the Logger interface but does nothing
 func (n NoopLogger) V(level Level) InfoLogger { return NoopInfoLogger{} }
@@ -44,4 +44,4 @@ func (n NoopInfoLogger) Enabled() bool { return false }
 func (n NoopInfoLogger) Info(message string) {}
 
 // Infof meets the InfoLogger interface but does nothing
-func (n NoopInfoLogger) Infof(format string, args ...interface{}) {}
+func (n NoopInfoLogger) Infof(format string, args ...any) {}

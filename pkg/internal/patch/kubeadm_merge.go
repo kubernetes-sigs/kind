@@ -27,12 +27,12 @@ import (
 // between targetJSON and patchJSON, taking targetVersion into account.
 // It strips those fields from the patch so that the standard merge patch doesn't overwrite them.
 func mergeAndStrip(targetJSON, patchJSON []byte, targetVersion, patchVersion string) ([]byte, []byte, error) {
-	var target map[string]interface{}
+	var target map[string]any
 	if err := json.Unmarshal(targetJSON, &target); err != nil {
 		return nil, nil, errors.WithStack(err)
 	}
 
-	var patch map[string]interface{}
+	var patch map[string]any
 	if err := json.Unmarshal(patchJSON, &patch); err != nil {
 		return nil, nil, errors.WithStack(err)
 	}
@@ -56,7 +56,7 @@ func mergeAndStrip(targetJSON, patchJSON []byte, targetVersion, patchVersion str
 
 // walkAndMerge recursively walks the patch map and applies custom merging for
 // extraArgs, kubeletExtraArgs, and certSANs, and deletes them from the patch map.
-func walkAndMerge(target, patch map[string]interface{}, targetVersion, patchVersion string) error {
+func walkAndMerge(target, patch map[string]any, targetVersion, patchVersion string) error {
 	for k, patchVal := range patch {
 		if k == "extraArgs" || k == "kubeletExtraArgs" {
 			if strings.HasSuffix(targetVersion, "v1beta4") {
@@ -76,14 +76,14 @@ func walkAndMerge(target, patch map[string]interface{}, targetVersion, patchVers
 		}
 
 		// Recurse if the value is a map
-		if patchMap, ok := patchVal.(map[string]interface{}); ok {
+		if patchMap, ok := patchVal.(map[string]any); ok {
 			targetVal, exists := target[k]
 			if !exists {
-				targetMap := make(map[string]interface{})
+				targetMap := make(map[string]any)
 				target[k] = targetMap
 				targetVal = targetMap
 			}
-			if targetMap, ok := targetVal.(map[string]interface{}); ok {
+			if targetMap, ok := targetVal.(map[string]any); ok {
 				if err := walkAndMerge(targetMap, patchMap, targetVersion, patchVersion); err != nil {
 					return err
 				}
@@ -93,29 +93,29 @@ func walkAndMerge(target, patch map[string]interface{}, targetVersion, patchVers
 	return nil
 }
 
-func mergeExtraArgs(target, patch map[string]interface{}, key string, patchVersion string) error {
+func mergeExtraArgs(target, patch map[string]any, key string, patchVersion string) error {
 	patchVal := patch[key]
-	var patchSlice []interface{}
-	if slice, ok := patchVal.([]interface{}); ok {
+	var patchSlice []any
+	if slice, ok := patchVal.([]any); ok {
 		patchSlice = slice
 	} else if patchVersion == "" {
-		if patchMap, ok := patchVal.(map[string]interface{}); ok {
+		if patchMap, ok := patchVal.(map[string]any); ok {
 			patchSlice = convertOldExtraArgsToNew(patchMap)
 		}
 	}
 
 	targetVal := target[key]
-	var targetSlice []interface{}
+	var targetSlice []any
 	if targetVal != nil {
-		if slice, ok := targetVal.([]interface{}); ok {
+		if slice, ok := targetVal.([]any); ok {
 			targetSlice = slice
-		} else if targetMap, ok := targetVal.(map[string]interface{}); ok {
+		} else if targetMap, ok := targetVal.(map[string]any); ok {
 			targetSlice = convertOldExtraArgsToNew(targetMap)
 		}
 	}
 
 	for _, pItemVal := range patchSlice {
-		pItem, ok := pItemVal.(map[string]interface{})
+		pItem, ok := pItemVal.(map[string]any)
 		if !ok {
 			continue
 		}
@@ -132,7 +132,7 @@ func mergeExtraArgs(target, patch map[string]interface{}, key string, patchVersi
 		// Find in target
 		foundIdx := -1
 		for idx, tItemVal := range targetSlice {
-			tItem, ok := tItemVal.(map[string]interface{})
+			tItem, ok := tItemVal.(map[string]any)
 			if !ok {
 				continue
 			}
@@ -156,14 +156,14 @@ func mergeExtraArgs(target, patch map[string]interface{}, key string, patchVersi
 				targetSlice = append(targetSlice[:foundIdx], targetSlice[foundIdx+1:]...)
 			} else {
 				// update
-				if tItem, ok := targetSlice[foundIdx].(map[string]interface{}); ok {
+				if tItem, ok := targetSlice[foundIdx].(map[string]any); ok {
 					tItem["value"] = value
 				}
 			}
 		} else {
 			if value != nil {
 				// append
-				targetSlice = append(targetSlice, map[string]interface{}{
+				targetSlice = append(targetSlice, map[string]any{
 					"name":  name,
 					"value": value,
 				})
@@ -174,10 +174,10 @@ func mergeExtraArgs(target, patch map[string]interface{}, key string, patchVersi
 	return nil
 }
 
-func convertOldExtraArgsToNew(old map[string]interface{}) []interface{} {
-	var res []interface{}
+func convertOldExtraArgsToNew(old map[string]any) []any {
+	var res []any
 	for k, v := range old {
-		res = append(res, map[string]interface{}{
+		res = append(res, map[string]any{
 			"name":  k,
 			"value": v,
 		})
@@ -185,19 +185,19 @@ func convertOldExtraArgsToNew(old map[string]interface{}) []interface{} {
 	return res
 }
 
-func mergeCertSANs(target, patch map[string]interface{}, key string) error {
+func mergeCertSANs(target, patch map[string]any, key string) error {
 	targetVal := target[key]
-	var targetSlice []interface{}
+	var targetSlice []any
 	if targetVal != nil {
-		if slice, ok := targetVal.([]interface{}); ok {
+		if slice, ok := targetVal.([]any); ok {
 			targetSlice = slice
 		}
 	}
 
 	patchVal := patch[key]
-	var patchSlice []interface{}
+	var patchSlice []any
 	if patchVal != nil {
-		if slice, ok := patchVal.([]interface{}); ok {
+		if slice, ok := patchVal.([]any); ok {
 			patchSlice = slice
 		}
 	}

@@ -44,7 +44,7 @@ func testWriteNoExistingFile(t *testing.T) {
 				Name: "kind-kind",
 				Cluster: Cluster{
 					Server: "https://127.0.0.1:6443",
-					OtherFields: map[string]interface{}{
+					OtherFields: map[string]any{
 						"certificate-authority-data": "definitelyacert",
 					},
 				},
@@ -62,17 +62,17 @@ func testWriteNoExistingFile(t *testing.T) {
 		Users: []NamedUser{
 			{
 				Name: "kind-kind",
-				User: map[string]interface{}{
+				User: map[string]any{
 					"client-certificate-data": "seemslegit",
 					"client-key-data":         "yep",
 				},
 			},
 		},
 		CurrentContext: "kind-kind",
-		OtherFields: map[string]interface{}{
+		OtherFields: map[string]any{
 			"apiVersion":  "v1",
 			"kind":        "Config",
-			"preferences": map[string]interface{}{},
+			"preferences": map[string]any{},
 		},
 	}
 
