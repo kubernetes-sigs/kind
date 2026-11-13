@@ -34,7 +34,8 @@ This mechanism is inspired by Kubernetes resources and component config.
 To use this config, place the contents in a file `config.yaml` and then run
 `kind create cluster --config=config.yaml` from the same directory.
 
-You can also include a full file path like `kind create cluster --config=/foo/bar/config.yaml`.
+You can also include a full file path like `kind create cluster --config=/foo/bar/config.yaml`,
+or an http(s) URL to fetch the config from like `kind create cluster --config=https://example.com/config.yaml`.
 
 The structure of the `Cluster` type is defined by a Go struct, which is described
 [here](https://pkg.go.dev/sigs.k8s.io/kind/pkg/apis/config/v1alpha4#Cluster).
