@@ -55,7 +55,8 @@ type IPMasqAgent struct {
 
 // SyncRulesForever syncs ip masquerade rules forever
 // these rules only needs to be installed once, but we run it periodically to check that are
-// not deleted by an external program. It fails if can't sync the rules during 3 iterations
+// not deleted by an external program. It fails after 4 consecutive failed sync attempts,
+// indicating sustained dataplane unavailability.
 func (ma *IPMasqAgent) SyncRulesForever(ctx context.Context, interval time.Duration) error {
 	var errs []error
 	ticker := time.NewTicker(interval)
@@ -65,7 +66,7 @@ func (ma *IPMasqAgent) SyncRulesForever(ctx context.Context, interval time.Durat
 		if err := ma.SyncRules(); err != nil {
 			errs = append(errs, fmt.Errorf("failed to synchronize rules at %s: %v", time.Now(), err))
 			if len(errs) > 3 {
-				return fmt.Errorf("Can't synchronize rules after 3 attempts: %w", err)
+				return fmt.Errorf("Can't synchronize rules after 4 consecutive failures: %w", err)
 			}
 		} else {
 			errs = errs[:0]
