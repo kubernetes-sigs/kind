@@ -26,6 +26,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
+	"sigs.k8s.io/kind/pkg/cluster/images"
+	"sigs.k8s.io/kind/pkg/cluster/images/layeraware"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/cluster/nodeutils"
 	"sigs.k8s.io/kind/pkg/cmd"
@@ -183,10 +185,27 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 		return err
 	}
 
-	// Load the images on the selected nodes
+	// Attempt layer-aware loading: inspect the archive once, and for each node
+	// skip layers already present in its content store. Fall back to a full
+	// load if the archive format is unsupported or any layer-aware step fails,
+	// so behavior matches the default path whenever the fast path can't apply.
+	metadata, inspectErr := layeraware.InspectArchive(imagesTarPath)
+	layerAware := inspectErr == nil
+	if inspectErr != nil {
+		logger.V(1).Infof("Not using layer-aware load (%v); loading full image archive", inspectErr)
+	}
+
+	// Load the images on the selected nodes, in parallel.
 	for _, selectedNode := range selectedNodes {
 		selectedNode := selectedNode // capture loop variable
 		fns = append(fns, func() error {
+			if layerAware {
+				if err := images.LoadImageLayerAware(imagesTarPath, metadata, selectedNode, logger); err != nil {
+					logger.V(0).Infof("Layer-aware load failed on node %s (%v); falling back to full load", selectedNode.String(), err)
+					return loadImage(imagesTarPath, selectedNode)
+				}
+				return nil
+			}
 			return loadImage(imagesTarPath, selectedNode)
 		})
 	}
