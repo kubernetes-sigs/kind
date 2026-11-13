@@ -84,6 +84,30 @@ func TestSplitImage(t *testing.T) {
 			ExpectError:      false,
 		},
 		{
+			Image:            "localhost:5000/foo",
+			ExpectedRegistry: "localhost:5000/foo",
+			ExpectedTag:      "latest",
+			ExpectError:      false,
+		},
+		{
+			Image:            "localhost:5000/foo:bar",
+			ExpectedRegistry: "localhost:5000/foo",
+			ExpectedTag:      "bar",
+			ExpectError:      false,
+		},
+		{
+			Image:            "localhost:5000/foo:bar@sha256:28ef97b8686a0b5399129e9b763d5b7e5ff03576aa5580d6f4182a49c5fe1913",
+			ExpectedRegistry: "localhost:5000/foo",
+			ExpectedTag:      "bar@sha256:28ef97b8686a0b5399129e9b763d5b7e5ff03576aa5580d6f4182a49c5fe1913",
+			ExpectError:      false,
+		},
+		{
+			Image:            "localhost:5000/foo@sha256:28ef97b8686a0b5399129e9b763d5b7e5ff03576aa5580d6f4182a49c5fe1913",
+			ExpectedRegistry: "localhost:5000/foo",
+			ExpectedTag:      "latest@sha256:28ef97b8686a0b5399129e9b763d5b7e5ff03576aa5580d6f4182a49c5fe1913",
+			ExpectError:      false,
+		},
+		{
 			Image:            ":",
 			ExpectedRegistry: "",
 			ExpectedTag:      "",
@@ -127,5 +151,15 @@ func TestSplitImage(t *testing.T) {
 				t.Fatalf("ExpectedTag %q != %q", tc.ExpectedTag, tag)
 			}
 		})
+	}
+}
+
+func TestNormalizeBuiltImageDropsArchSuffixAfterRegistryPort(t *testing.T) {
+	got, err := NormalizeBuiltImage("localhost:5000/foo-amd64:bar", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "localhost:5000/foo:bar" {
+		t.Fatalf("NormalizeBuiltImage() = %q, want localhost:5000/foo:bar", got)
 	}
 }
