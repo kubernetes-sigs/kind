@@ -43,7 +43,6 @@ On Linux:
 
 ```console
 # For AMD64 / x86_64
-[ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.33.0/kind-$(uname)-amd64
 # For ARM64
 [ $(uname -m) = aarch64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.33.0/kind-$(uname)-arm64
 chmod +x ./kind
