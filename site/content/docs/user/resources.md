@@ -34,11 +34,11 @@ https://mauilion.dev/posts/kind-k8s-testing/
 
 ### Using Contour Ingress with KIND
 
-https://projectcontour.io/kindly-running-contour/
+https://web.archive.org/web/20240412165423/https://projectcontour.io/kindly-running-contour/
 
 ### Local Ingress Domains for your Kind Cluster
 
-https://mjpitz.com/blog/2020/10/21/local-ingress-domains-kind/
+https://mya.sh/blog/2020/10/21/local-ingress-domains-kind/
 
 ### Connect directly to Docker-for-Mac containers via IP address
 

@@ -110,7 +110,7 @@ Automated usage should be considered for all features.
 
 [containerd]: https://containerd.io/
 [docker]: https://www.docker.com/
-[podman]: https://www.podman.io/
+[podman]: https://podman.io/
 [nerdctl]: https://github.com/containerd/nerdctl
 [node image]: /docs/design/node-image
 [supporting multiple container runtimes]: https://github.com/kubernetes-sigs/kind/issues/154
