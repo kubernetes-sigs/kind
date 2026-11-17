@@ -272,10 +272,12 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVers
 		image := image // https://golang.org/doc/faq#closures_and_goroutines
 		if !builtImages.Has(image) {
 			fns = append(fns, func() error {
-				if err = importer.Pull(image, osArch); err != nil {
+				// use a local err: these funcs run concurrently
+				if err := importer.Pull(image, osArch); err != nil {
 					c.logger.Warnf("Failed to pull %s with error: %v", image, err)
-					runE := exec.RunErrorForError(err)
-					c.logger.Warn(string(runE.Output))
+					if runE := exec.RunErrorForError(err); runE != nil {
+						c.logger.Warn(string(runE.Output))
+					}
 					c.logger.Warnf("Retrying %s pull after 1s ...", image)
 					time.Sleep(time.Second)
 					return importer.Pull(image, osArch)
