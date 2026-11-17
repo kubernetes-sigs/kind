@@ -78,6 +78,9 @@ On Windows:
 ```powershell
 curl.exe -Lo kind-windows-amd64.exe https://kind.sigs.k8s.io/dl/v0.33.0/kind-windows-amd64
 Move-Item .\kind-windows-amd64.exe c:\some-dir-in-your-PATH\kind.exe
+# For ARM64
+curl.exe -Lo kind-windows-arm64.exe https://kind.sigs.k8s.io/dl/v0.32.0/kind-windows-arm64
+Move-Item .\kind-windows-arm64.exe c:\some-dir-in-your-PATH\kind.exe
 
 # OR via Chocolatey (https://chocolatey.org/packages/kind)
 choco install kind
