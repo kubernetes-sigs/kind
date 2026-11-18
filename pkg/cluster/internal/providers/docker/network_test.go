@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"testing"
 
+	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/exec"
 	"sigs.k8s.io/kind/pkg/internal/assert"
 )
 
@@ -149,14 +151,111 @@ func Test_sortNetworkInspectEntries(t *testing.T) {
 				},
 			},
 		},
+		{
+			Name: "network with containers listed after one without",
+			Networks: []networkInspectEntry{
+				{
+					ID: "dc7f897c237215c3b73d2c9ba1d4e116d872793a6c1c0e5bf083762998de8b4e",
+					Containers: map[string]map[string]string{
+						"a37779e06f3b694eba491dd450aad18bbbaa0a0fce2952e7c9195ea45ae79d41": {
+							"Name": "kind-control-plane",
+						},
+					},
+				},
+				{
+					ID: "1ed9912325a0d08594ee786de91ebd961e631643877b5ee58ec906b640813eae",
+				},
+			},
+			Sorted: []networkInspectEntry{
+				{
+					ID: "dc7f897c237215c3b73d2c9ba1d4e116d872793a6c1c0e5bf083762998de8b4e",
+					Containers: map[string]map[string]string{
+						"a37779e06f3b694eba491dd450aad18bbbaa0a0fce2952e7c9195ea45ae79d41": {
+							"Name": "kind-control-plane",
+						},
+					},
+				},
+				{
+					ID: "1ed9912325a0d08594ee786de91ebd961e631643877b5ee58ec906b640813eae",
+				},
+			},
+		},
 	}
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.Name, func(t *testing.T) {
-			toSort := make([]networkInspectEntry, len(tc.Networks))
-			copy(toSort, tc.Networks)
-			sortNetworkInspectEntries(toSort)
-			assert.DeepEqual(t, tc.Sorted, toSort)
+			// the result must not depend on the order docker lists networks in
+			for _, networks := range permutations(tc.Networks) {
+				sortNetworkInspectEntries(networks)
+				assert.DeepEqual(t, tc.Sorted, networks)
+			}
+		})
+	}
+}
+
+// permutations returns every ordering of entries, each as a new slice
+func permutations(entries []networkInspectEntry) [][]networkInspectEntry {
+	if len(entries) <= 1 {
+		return [][]networkInspectEntry{append([]networkInspectEntry{}, entries...)}
+	}
+	var result [][]networkInspectEntry
+	for i := range entries {
+		rest := make([]networkInspectEntry, 0, len(entries)-1)
+		rest = append(rest, entries[:i]...)
+		rest = append(rest, entries[i+1:]...)
+		for _, p := range permutations(rest) {
+			result = append(result, append([]networkInspectEntry{entries[i]}, p...))
+		}
+	}
+	return result
+}
+
+func Test_isPoolOverlapError(t *testing.T) {
+	cases := []struct {
+		Name     string
+		Err      error
+		Expected bool
+	}{
+		{
+			Name:     "nil error",
+			Err:      nil,
+			Expected: false,
+		},
+		{
+			Name:     "not a RunError",
+			Err:      errors.New("failed to decode networks list"),
+			Expected: false,
+		},
+		{
+			Name: "pool overlap",
+			Err: errors.WithStack(&exec.RunError{
+				Inner:  errors.New("exit status 1"),
+				Output: []byte("Error response from daemon: Pool overlaps with other one on this address space"),
+			}),
+			Expected: true,
+		},
+		{
+			Name: "networks have overlapping",
+			Err: &exec.RunError{
+				Inner:  errors.New("exit status 1"),
+				Output: []byte("Error response from daemon: invalid pool request: Pool overlaps: networks have overlapping IPv6"),
+			},
+			Expected: true,
+		},
+		{
+			Name: "unrelated RunError",
+			Err: &exec.RunError{
+				Inner:  errors.New("exit status 1"),
+				Output: []byte("Error response from daemon: network with name kind already exists"),
+			},
+			Expected: false,
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+			assert.BoolEqual(t, tc.Expected, isPoolOverlapError(tc.Err))
 		})
 	}
 }

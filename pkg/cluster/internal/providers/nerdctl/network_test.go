@@ -19,6 +19,9 @@ package nerdctl
 import (
 	"fmt"
 	"testing"
+
+	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/exec"
 )
 
 func Test_generateULASubnetFromName(t *testing.T) {
@@ -62,6 +65,58 @@ func Test_generateULASubnetFromName(t *testing.T) {
 			subnet := generateULASubnetFromName(tc.name, tc.attempt)
 			if subnet != tc.subnet {
 				t.Errorf("Wrong subnet from %v: expected %v, received %v", tc.name, tc.subnet, subnet)
+			}
+		})
+	}
+}
+
+func Test_isPoolOverlapError(t *testing.T) {
+	cases := []struct {
+		name     string
+		err      error
+		expected bool
+	}{
+		{
+			name:     "nil error",
+			err:      nil,
+			expected: false,
+		},
+		{
+			name:     "not a RunError",
+			err:      errors.New("something else failed"),
+			expected: false,
+		},
+		{
+			name: "pool overlap",
+			err: errors.WithStack(&exec.RunError{
+				Inner:  errors.New("exit status 1"),
+				Output: []byte("Error response from daemon: Pool overlaps with other one on this address space"),
+			}),
+			expected: true,
+		},
+		{
+			name: "networks have overlapping",
+			err: &exec.RunError{
+				Inner:  errors.New("exit status 1"),
+				Output: []byte("networks have overlapping IPv6"),
+			},
+			expected: true,
+		},
+		{
+			name: "unrelated RunError",
+			err: &exec.RunError{
+				Inner:  errors.New("exit status 1"),
+				Output: []byte("network with name kind already exists"),
+			},
+			expected: false,
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if got := isPoolOverlapError(tc.err); got != tc.expected {
+				t.Errorf("isPoolOverlapError() = %v, expected %v", got, tc.expected)
 			}
 		})
 	}
