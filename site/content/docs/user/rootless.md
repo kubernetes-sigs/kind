@@ -18,7 +18,7 @@ Starting with kind 0.11.0, [Rootless Docker](https://docs.docker.com/go/rootless
 
 ### cgroup v2
 
-The host needs to be running with cgroup v2, which is the default for many Linux disributions:
+The host needs to be running with cgroup v2, which is the default for many Linux distributions:
 
 - Ubuntu: 21.10 and later.
 - Fedora: 31 and later.
