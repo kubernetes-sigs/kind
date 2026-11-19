@@ -31,7 +31,7 @@ func NewCommand(logger log.Logger, streams cmd.IOStreams) *cobra.Command {
 		Use:   "bash",
 		Short: "Output shell completions for bash",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return cmd.Parent().Parent().GenBashCompletion(streams.Out)
+			return cmd.Parent().Parent().GenBashCompletionV2(streams.Out, true)
 		},
 	}
 	return cmd
