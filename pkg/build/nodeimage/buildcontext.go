@@ -176,28 +176,19 @@ func (c *buildContext) prePullImagesAndWriteManifests(bits kube.Bits, parsedVers
 	cmder := docker.ContainerCmder(containerID)
 
 	// For kubernetes v1.15+ (actually 1.16 alpha versions) we may need to
-	// drop the arch suffix from images to get the expected image
-	archSuffix := "-" + c.arch
-	fixRepository := func(repository string) string {
-		if strings.HasSuffix(repository, archSuffix) {
-			fixed := strings.TrimSuffix(repository, archSuffix)
-			c.logger.V(1).Info("fixed: " + repository + " -> " + fixed)
-			repository = fixed
-		}
-		return repository
-	}
-
+	// drop the arch suffix from images to get the expected image.
 	// Determine accurate built tags using the logic that will be applied
-	// when rewriting tags during archive loading
+	// when rewriting tags during archive loading.
 	fixedImages := sets.NewString()
 	fixedImagesMap := make(map[string]string, builtImages.Len()) // key: original images, value: fixed images
 	for _, image := range builtImages.List() {
-		registry, tag, err := docker.SplitImage(image)
+		fixedImage, err := docker.NormalizeBuiltImage(image, c.arch)
 		if err != nil {
 			return nil, err
 		}
-		registry = fixRepository(registry)
-		fixedImage := registry + ":" + tag
+		if fixedImage != image {
+			c.logger.V(1).Info("fixed: " + image + " -> " + fixedImage)
+		}
 		fixedImages.Insert(fixedImage)
 		fixedImagesMap[image] = fixedImage
 	}
