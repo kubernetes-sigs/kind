@@ -96,10 +96,14 @@ jobs:
 
       - name: Export logs
         if: always()
+        continue-on-error: true
         run: |
           mkdir -p /tmp/kind/logs
           sudo KIND_EXPERIMENTAL_PROVIDER=podman kind export logs /tmp/kind/logs
-          sudo chown -R $USER:$USER /tmp/kind/logs
+
+      - name: Fix log ownership
+        if: always()
+        run: sudo chown -R "$USER:$USER" /tmp/kind/logs
 
       - name: Upload logs
         if: always()
