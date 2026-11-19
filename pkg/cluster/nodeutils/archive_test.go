@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -32,6 +33,7 @@ const (
 	dockerImage   = "application/vnd.docker.distribution.manifest.v2+json"
 	linuxAmd64    = `{"os":"linux","architecture":"amd64"}`
 	linuxArm64    = `{"os":"linux","architecture":"arm64","variant":"v8"}`
+	linuxS390x    = `{"os":"linux","architecture":"s390x"}`
 	unknownTarget = `{"os":"unknown","architecture":"unknown"}`
 )
 
@@ -89,83 +91,136 @@ func testArchive(t *testing.T, index string, blobs ...testBlob) *bytes.Buffer {
 	return testTar(t, files...)
 }
 
-func TestMissingPlatformManifests(t *testing.T) {
+func TestCheckImageArchivePlatforms(t *testing.T) {
 	t.Parallel()
-	amd64, arm64 := newTestBlob(`{"schemaVersion":2,"config":{"digest":"amd64"}}`), newTestBlob(`{"schemaVersion":2,"config":{"digest":"arm64"}}`)
+	amd64, arm64, s390x := newTestBlob(`{"schemaVersion":2,"config":{"digest":"amd64"}}`), newTestBlob(`{"schemaVersion":2,"config":{"digest":"arm64"}}`), newTestBlob(`{"schemaVersion":2,"config":{"digest":"s390x"}}`)
 	attestation := newTestBlob(`{"schemaVersion":2,"config":{"digest":"attestation"}}`)
 	index := newTestBlob(testIndex(testDescriptor(ociManifest, amd64, linuxAmd64), testDescriptor(ociManifest, attestation, unknownTarget), testDescriptor(ociManifest, arm64, linuxArm64)))
+	threePlatforms := newTestBlob(testIndex(testDescriptor(ociManifest, amd64, linuxAmd64), testDescriptor(ociManifest, arm64, linuxArm64), testDescriptor(ociManifest, s390x, linuxS390x)))
+	s390xOnly := newTestBlob(testIndex(testDescriptor(ociManifest, s390x, linuxS390x)))
 	list := newTestBlob(testIndex(testDescriptor(dockerImage, amd64, linuxAmd64), testDescriptor(dockerImage, arm64, linuxArm64)))
 	self := testBlob{digest: "sha256:0123"}
 	self.content = testIndex(testDescriptor(ociIndex, self, ""), testDescriptor(ociManifest, amd64, linuxAmd64))
 	notJSON := newTestBlob("not json")
+	full := testArchive(t, testIndex(testDescriptor(ociIndex, index, "")), index, amd64).Bytes()
+	// cut inside the content of the last entry
+	truncated := bytes.NewBuffer(full[:len(full)-1024-512+20])
+	linuxUnknownIndex := newTestBlob(testIndex(testDescriptor(ociManifest, amd64, linuxAmd64), testDescriptor(ociManifest, attestation, `{"os":"linux","architecture":"unknown"}`), testDescriptor(ociManifest, arm64, linuxArm64)))
 
 	cases := []struct {
-		name    string
-		archive *bytes.Buffer
-		want    bool
+		name     string
+		archive  *bytes.Buffer
+		included []string
+		missing  []string
 	}{
 		{
 			name:    "docker archive",
 			archive: testTar(t, testFile{"manifest.json", "[]"}, amd64.file()),
-			want:    false,
 		},
 		{
 			name:    "index.json without oci-layout",
 			archive: testTar(t, testFile{"index.json", testIndex(testDescriptor(ociIndex, index, ""))}, index.file(), amd64.file()),
-			want:    false,
 		},
 		{
 			name:    "index with all manifests",
 			archive: testArchive(t, testIndex(testDescriptor(ociIndex, index, "")), index, amd64, attestation, arm64),
-			want:    false,
 		},
 		{
-			name:    "index with platform manifests missing",
-			archive: testArchive(t, testIndex(testDescriptor(ociIndex, index, "")), index, amd64),
-			want:    true,
+			name:     "index with platform manifests missing",
+			archive:  testArchive(t, testIndex(testDescriptor(ociIndex, index, "")), index, amd64),
+			included: []string{"linux/amd64"},
+			missing:  []string{"linux/arm64/v8", "unknown/unknown"},
 		},
 		{
-			name:    "docker manifest list with a platform manifest missing",
-			archive: testArchive(t, testIndex(testDescriptor(dockerList, list, "")), list, amd64),
-			want:    true,
+			name:     "several platforms included",
+			archive:  testArchive(t, testIndex(testDescriptor(ociIndex, threePlatforms, "")), threePlatforms, amd64, arm64),
+			included: []string{"linux/amd64", "linux/arm64/v8"},
+			missing:  []string{"linux/s390x"},
+		},
+		{
+			name:     "only attestations missing",
+			archive:  testArchive(t, testIndex(testDescriptor(ociIndex, index, "")), index, amd64, arm64),
+			included: []string{"linux/amd64", "linux/arm64/v8"},
+			missing:  []string{"unknown/unknown"},
+		},
+		{
+			name:     "docker manifest list with a platform manifest missing",
+			archive:  testArchive(t, testIndex(testDescriptor(dockerList, list, "")), list, amd64),
+			included: []string{"linux/amd64"},
+			missing:  []string{"linux/arm64/v8"},
+		},
+		{
+			name:     "one image without an included platform",
+			archive:  testArchive(t, testIndex(testDescriptor(ociIndex, index, ""), testDescriptor(ociIndex, s390xOnly, "")), index, s390xOnly, amd64),
+			included: []string{"linux/amd64"},
+			missing:  []string{"linux/arm64/v8", "linux/s390x", "unknown/unknown"},
+		},
+		{
+			name:     "entries with ./ prefix",
+			archive:  testTar(t, testFile{"./oci-layout", `{"imageLayoutVersion":"1.0.0"}`}, testFile{"./index.json", testIndex(testDescriptor(ociIndex, index, ""))}, testFile{"./" + index.file().name, index.content}, testFile{"./" + amd64.file().name, amd64.content}),
+			included: []string{"linux/amd64"},
+			missing:  []string{"linux/arm64/v8", "unknown/unknown"},
+		},
+		{
+			name:     "platform with only unknown architecture is not included",
+			archive:  testArchive(t, testIndex(testDescriptor(ociIndex, linuxUnknownIndex, "")), linuxUnknownIndex, amd64, attestation),
+			included: []string{"linux/amd64"},
+			missing:  []string{"linux/arm64/v8"},
+		},
+		{
+			name:    "truncated archive",
+			archive: truncated,
+		},
+		{
+			name:    "no platform included",
+			archive: testArchive(t, testIndex(testDescriptor(ociIndex, s390xOnly, "")), s390xOnly),
+		},
+		{
+			name:     "present attestation is not a platform",
+			archive:  testArchive(t, testIndex(testDescriptor(ociIndex, index, "")), index, amd64, attestation),
+			included: []string{"linux/amd64"},
+			missing:  []string{"linux/arm64/v8"},
+		},
+		{
+			name:     "index listed twice",
+			archive:  testArchive(t, testIndex(testDescriptor(ociIndex, index, ""), testDescriptor(ociIndex, index, "")), index, amd64),
+			included: []string{"linux/amd64"},
+			missing:  []string{"linux/arm64/v8", "unknown/unknown"},
 		},
 		{
 			name:    "index without platform missing",
 			archive: testArchive(t, testIndex(testDescriptor(ociIndex, index, ""), testDescriptor(ociManifest, arm64, linuxArm64)), amd64),
-			want:    false,
 		},
 		{
 			name:    "manifest without platform missing",
 			archive: testArchive(t, testIndex(testDescriptor(ociManifest, amd64, linuxAmd64), testDescriptor(ociManifest, arm64, linuxArm64), testDescriptor(ociManifest, attestation, "")), amd64),
-			want:    false,
 		},
 		{
 			name:    "index that is not JSON",
 			archive: testArchive(t, testIndex(testDescriptor(ociIndex, index, ""), testDescriptor(ociIndex, notJSON, "")), index, amd64, notJSON),
-			want:    false,
 		},
 		{
-			name:    "missing descriptor of another media type is ignored",
-			archive: testArchive(t, testIndex(testDescriptor(ociIndex, index, ""), testDescriptor("application/vnd.oci.image.layer.v1.tar", newTestBlob("layer"), "")), index, amd64),
-			want:    true,
+			name:     "missing descriptor of another media type is ignored",
+			archive:  testArchive(t, testIndex(testDescriptor(ociIndex, index, ""), testDescriptor("application/vnd.oci.image.layer.v1.tar", newTestBlob("layer"), "")), index, amd64),
+			included: []string{"linux/amd64"},
+			missing:  []string{"linux/arm64/v8", "unknown/unknown"},
 		},
 		{
 			name:    "same manifest missing with and without platform",
 			archive: testArchive(t, testIndex(testDescriptor(ociIndex, index, ""), testDescriptor(ociManifest, attestation, "")), index, amd64),
-			want:    false,
 		},
 		{
 			name:    "index listing itself",
 			archive: testArchive(t, testIndex(testDescriptor(ociIndex, self, "")), self, amd64),
-			want:    false,
 		},
 	}
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			if got := missingPlatformManifests(tc.archive); got != tc.want {
-				t.Errorf("got %v, want %v", got, tc.want)
+			included, missing := CheckImageArchivePlatforms(tc.archive)
+			if !reflect.DeepEqual(included, tc.included) || !reflect.DeepEqual(missing, tc.missing) {
+				t.Errorf("got %v and %v missing, want %v and %v missing", included, missing, tc.included, tc.missing)
 			}
 		})
 	}

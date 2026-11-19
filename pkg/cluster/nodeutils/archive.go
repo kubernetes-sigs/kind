@@ -21,9 +21,9 @@ import (
 	"encoding/json"
 	"io"
 	"path"
+	"sort"
 	"strings"
 
-	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
 )
 
@@ -32,30 +32,33 @@ const (
 	maxJSONManifestSize = 4 << 20
 )
 
-// LoadImageArchiveSkipMissing is LoadImageArchive that loads only the node platform from archives missing some platforms, and reports whether it did.
-func LoadImageArchiveSkipMissing(n nodes.Node, image io.ReadSeeker) (bool, error) {
-	start, err := image.Seek(0, io.SeekCurrent)
-	if err != nil {
-		return false, loadImageArchive(n, image, true)
-	}
-	partial := missingPlatformManifests(image)
-	if _, err := image.Seek(start, io.SeekStart); err != nil {
-		return false, errors.Wrap(err, "failed to rewind image archive")
-	}
-	if !partial {
-		return false, loadImageArchive(n, image, true)
-	}
-	return true, loadImageArchive(n, image, false)
-}
-
 type descriptor struct {
 	MediaType string    `json:"mediaType"`
 	Digest    string    `json:"digest"`
-	Platform  *struct{} `json:"platform"`
+	Platform  *platform `json:"platform"`
 }
 
-// missingPlatformManifests reports whether some index or manifest blobs are missing, all of them with a platform; unreadable archives report false.
-func missingPlatformManifests(r io.Reader) bool {
+type platform struct {
+	OS           string `json:"os"`
+	Architecture string `json:"architecture"`
+	Variant      string `json:"variant"`
+}
+
+// isUnknown reports whether the platform is the unknown/unknown of attestation manifests
+func (p platform) isUnknown() bool {
+	return p.OS == "unknown" || p.Architecture == "unknown"
+}
+
+// String returns the platform as os/arch[/variant]
+func (p platform) String() string {
+	if p.Variant == "" {
+		return p.OS + "/" + p.Architecture
+	}
+	return p.OS + "/" + p.Architecture + "/" + p.Variant
+}
+
+// CheckImageArchivePlatforms returns the included and missing platforms of an image archive that misses only platform manifests, or nothing when LoadImageArchive applies.
+func CheckImageArchivePlatforms(r io.Reader) (included, missing []string) {
 	var (
 		present = map[string]bool{}
 		indexes = map[string][]descriptor{}
@@ -68,7 +71,7 @@ func missingPlatformManifests(r io.Reader) bool {
 			break
 		}
 		if err != nil {
-			return false
+			return nil, nil
 		}
 		if hdr.Typeflag != tar.TypeReg {
 			continue
@@ -86,15 +89,18 @@ func missingPlatformManifests(r io.Reader) bool {
 
 	top, ok := indexes["index.json"]
 	if !present["oci-layout"] || !ok {
-		return false
+		return nil, nil
 	}
 
-	w := archiveWalker{present: present, indexes: indexes, seen: map[string]bool{}}
+	w := archiveWalker{present: present, indexes: indexes, seen: map[string]bool{}, included: map[string]bool{}, missing: map[string]bool{}}
 	if err := w.walkIndex(top); err != nil {
-		return false
+		return nil, nil
+	}
+	if len(w.missing) == 0 || w.missingWithoutPlatform || len(w.included) == 0 {
+		return nil, nil
 	}
 
-	return w.missingWithPlatform && !w.missingWithoutPlatform
+	return sortedKeys(w.included), sortedKeys(w.missing)
 }
 
 // readIndex returns the manifests of r if it is an image index.
@@ -112,7 +118,8 @@ type archiveWalker struct {
 	present                map[string]bool
 	indexes                map[string][]descriptor
 	seen                   map[string]bool
-	missingWithPlatform    bool
+	included               map[string]bool
+	missing                map[string]bool
 	missingWithoutPlatform bool
 }
 
@@ -136,9 +143,12 @@ func (w *archiveWalker) walk(d descriptor) error {
 		if d.Platform == nil {
 			w.missingWithoutPlatform = true
 		} else {
-			w.missingWithPlatform = true
+			w.missing[d.Platform.String()] = true
 		}
 		return nil
+	}
+	if isManifest && d.Platform != nil && !d.Platform.isUnknown() {
+		w.included[d.Platform.String()] = true
 	}
 	if !isIndex || w.seen[d.Digest] {
 		return nil
@@ -149,6 +159,15 @@ func (w *archiveWalker) walk(d descriptor) error {
 		return errors.Errorf("failed to parse image index %s", d.Digest)
 	}
 	return w.walkIndex(manifests)
+}
+
+func sortedKeys(m map[string]bool) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 // blobPath returns the path of a blob in an OCI image layout

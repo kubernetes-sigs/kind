@@ -82,6 +82,11 @@ func LoadImageArchive(n nodes.Node, image io.Reader) error {
 	return loadImageArchive(n, image, true)
 }
 
+// LoadImageArchiveNodePlatform is LoadImageArchive that loads only the node platform, for archives where CheckImageArchivePlatforms returns platforms.
+func LoadImageArchiveNodePlatform(n nodes.Node, image io.Reader) error {
+	return loadImageArchive(n, image, false)
+}
+
 func loadImageArchive(n nodes.Node, image io.Reader, allPlatforms bool) error {
 	snapshotter, err := getSnapshotter(n)
 	if err != nil {

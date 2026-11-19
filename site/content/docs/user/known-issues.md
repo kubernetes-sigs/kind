@@ -445,16 +445,20 @@ but only the content of the platforms that were pulled.
 When the image archive is an uncompressed file, `kind load` then loads only the node platform and prints a warning:
 
 ```text
-WARNING: Image archive does not include all platforms of a multi-platform image, loading only the node platform onto node "kind-control-plane"
+WARNING: Image archive does not include all manifests of a multi-platform image, loading only the node platform (included: linux/amd64)
 ```
 
-Older kind versions, and node images using containerd 1.x, may fail instead with an error similar to:
+Run with `-v 1` to list the missing platforms.
+
+Older kind versions fail instead with an error similar to:
 
 ```text
 ERROR: failed to load image: command "docker exec --privileged -i kind-control-plane ctr --namespace=k8s.io images import --all-platforms --digests --snapshotter=overlayfs -" failed with error: exit status 1
 
 Command Output: ctr: content digest sha256:...: not found
 ```
+
+With node images using containerd 1.x, loading only the node platform may still fail with a similar `not found` error.
 
 See [kind#3795] for additional details.
 
