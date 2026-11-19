@@ -23,6 +23,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"time"
 
 	"al.essio.dev/pkg/shellescape"
 
@@ -32,8 +33,23 @@ import (
 	"sigs.k8s.io/kind/pkg/log"
 )
 
+// dumpDirRetries is how many times DumpDir retries a failed dump. Some
+// providers (nerdctl) occasionally close the exec stdout stream early, which
+// surfaces as an unexpected EOF while untarring.
+const dumpDirRetries = 2
+
 // DumpDir dumps the dir nodeDir on the node to the dir hostDir on the host
 func DumpDir(logger log.Logger, node nodes.Node, nodeDir, hostDir string) (err error) {
+	err = dumpDir(logger, node, nodeDir, hostDir)
+	for i := 0; err != nil && i < dumpDirRetries; i++ {
+		time.Sleep(time.Second * time.Duration(i+1))
+		logger.V(1).Infof("Trying again to dump %q ... %v", nodeDir, err)
+		err = dumpDir(logger, node, nodeDir, hostDir)
+	}
+	return err
+}
+
+func dumpDir(logger log.Logger, node nodes.Node, nodeDir, hostDir string) error {
 	cmd := node.Command(
 		"sh", "-c",
 		// Tar will exit 1 if a file changed during the archival.
@@ -78,7 +94,7 @@ func untar(logger log.Logger, r io.Reader, dir string) (err error) {
 
 		switch f.Typeflag {
 		case tar.TypeReg:
-			wf, err := os.OpenFile(abs, os.O_CREATE|os.O_RDWR, os.FileMode(f.Mode))
+			wf, err := os.OpenFile(abs, os.O_CREATE|os.O_RDWR|os.O_TRUNC, os.FileMode(f.Mode))
 			if err != nil {
 				return err
 			}
