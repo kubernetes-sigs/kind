@@ -182,12 +182,23 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 	if err != nil {
 		return err
 	}
+	f, err := os.Open(imagesTarPath)
+	if err != nil {
+		return errors.Wrap(err, "failed to open image")
+	}
+	included, missing := nodeutils.CheckImageArchivePlatforms(f)
+	f.Close()
+	allPlatforms := len(included) == 0
+	if !allPlatforms {
+		logger.Warnf("WARNING: Image archive does not include all manifests of a multi-platform image, loading only the node platform (included: %s)", strings.Join(included, ", "))
+		logger.V(1).Infof("Platforms missing from the image archive: %s", strings.Join(missing, ", "))
+	}
 
 	// Load the images on the selected nodes
 	for _, selectedNode := range selectedNodes {
 		selectedNode := selectedNode // capture loop variable
 		fns = append(fns, func() error {
-			return loadImage(imagesTarPath, selectedNode)
+			return loadImage(imagesTarPath, selectedNode, allPlatforms)
 		})
 	}
 	return errors.UntilErrorConcurrent(fns)
@@ -196,12 +207,15 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 // TODO: we should consider having a cluster method to load images
 
 // loads an image tarball onto a node
-func loadImage(imageTarName string, node nodes.Node) error {
+func loadImage(imageTarName string, node nodes.Node, allPlatforms bool) error {
 	f, err := os.Open(imageTarName)
 	if err != nil {
 		return errors.Wrap(err, "failed to open image")
 	}
 	defer f.Close()
+	if !allPlatforms {
+		return nodeutils.LoadImageArchiveNodePlatform(node, f)
+	}
 	return nodeutils.LoadImageArchive(node, f)
 }
 
