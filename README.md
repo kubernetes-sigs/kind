@@ -123,7 +123,7 @@ reach out if you have any questions!
 Pull Requests are very welcome!
 If you're planning a new feature, please file an issue to discuss first.
 
-Check the [issue tracker] for `help wanted` issues if you're unsure where to
+Check the [issue tracker] for `help wanted` or `good first issue` issues if you're unsure where to
 start, or feel free to reach out to discuss. 🙂
 
 See also: our own [contributor guide] and the Kubernetes [community page].
