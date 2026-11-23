@@ -103,6 +103,12 @@ The kind community has enabled installation via the following package managers.
 > **NOTE**: The following are community supported efforts. The `kind` maintainers are not involved in the creation
 > of these packages, and the upstream community makes no claims on the validity, safety, or content of them.
 
+On Fedora:
+
+{{< codeFromInline lang="bash" >}}
+dnf install kind
+{{< /codeFromInline >}}
+
 On macOS via Homebrew:
 
 {{< codeFromInline lang="bash" >}}
