@@ -17,6 +17,8 @@ limitations under the License.
 package patch
 
 import (
+	"strings"
+
 	"sigs.k8s.io/yaml"
 
 	"sigs.k8s.io/kind/pkg/errors"
@@ -50,4 +52,12 @@ func groupVersionToAPIVersion(group, version string) string {
 		return version
 	}
 	return group + "/" + version
+}
+
+func apiVersionToGroupVersion(apiVersion string) (group, version string) {
+	i := strings.LastIndex(apiVersion, "/")
+	if i == -1 {
+		return "", apiVersion
+	}
+	return apiVersion[:i], apiVersion[i+1:]
 }
