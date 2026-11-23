@@ -1,0 +1,21 @@
+name: "Build node image"
+description: "Builds a kind node image from official Kubernetes release artifacts and uploads it as an artifact. Requires kind and docker on the runner (run setup-env first)."
+runs:
+  using: "composite"
+  steps:
+    - name: Build node image from release artifacts
+      shell: bash
+      run: |
+        # Build for the same Kubernetes version the default published image targets,
+        # so this exercises the current source's node-image contents (kindnet manifest,
+        # etc.) rather than the baked-in published image. --type release downloads the
+        # official server tarball from dl.k8s.io; no Kubernetes compile.
+        ver="$(grep -oE 'kindest/node:v[0-9.]+' pkg/apis/config/defaults/image.go | head -1 | cut -d: -f2)"
+        kind build node-image --type release "$ver" --image kindest/node:pr
+        docker save kindest/node:pr -o "${RUNNER_TEMP}/node.tar"
+
+    - name: Upload node image
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: node-image
+        path: ${{ runner.temp }}/node.tar
