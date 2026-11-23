@@ -15,3 +15,17 @@ updates:
         update-types:
           - "minor"
           - "patch"
+  - package-ecosystem: "gomod"
+    directory: "/hack/tools"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "area/dependency"
+      - "release-note-none"
+      - "ok-to-test"
+    open-pull-requests-limit: 10
+    groups:
+      tools:
+        update-types:
+          - "minor"
+          - "patch"
