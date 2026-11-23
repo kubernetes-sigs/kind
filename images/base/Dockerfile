@@ -107,7 +107,7 @@ RUN echo "Ensuring /etc/kubernetes/manifests" \
 FROM --platform=$BUILDPLATFORM $BASE_IMAGE AS go-build
 COPY --chmod=0755 files/usr/local/bin/* /usr/local/bin/
 COPY --chmod=0755 scripts/third_party/gimme/gimme /usr/local/bin/
-COPY --chmod=0755 scripts/target-cc /usr/local/bin/
+COPY --chmod=0755 scripts/target-cc scripts/target-rust /usr/local/bin/
 # tools needed at build-time only
 # first ensure we can install packages for both architectures
 RUN dpkg --add-architecture arm64 && dpkg --add-architecture amd64 \
@@ -124,7 +124,7 @@ RUN eval "$(gimme "${GO_VERSION}")" \
 # stage for building containerd
 FROM go-build AS build-containerd
 ARG TARGETARCH GO_VERSION
-ARG CONTAINERD_VERSION="v2.3.4"
+ARG CONTAINERD_VERSION="v2.3.7"
 ARG CONTAINERD_CLONE_URL="https://github.com/containerd/containerd"
 # we don't build with optional snapshotters, we never select any of these
 # they're not ideal inside kind anyhow, and we save some disk space
@@ -139,19 +139,42 @@ RUN git clone --filter=tree:0 "${CONTAINERD_CLONE_URL}" /containerd \
     && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES \
         ./cmd/ctr ./cmd/containerd ./cmd/containerd-shim-runc-v2
 
+# stage for building libpathrs, runc >= 1.5 uses this rust library by default
+# for safer path resolution, it is not packaged in debian trixie so we build it
+# from source as a static library and link it into runc
+# NOTE: we use libpathrs under the MPL-2.0, see README.md#licensing
+FROM go-build AS build-libpathrs
+ARG TARGETARCH
+# NOTE: keep this in sync with LIBPATHRS_VERSION in runc's Dockerfile
+ARG LIBPATHRS_VERSION="v0.2.6"
+ARG LIBPATHRS_CLONE_URL="https://github.com/cyphar/libpathrs"
+RUN clean-install cargo libstd-rust-dev:amd64 libstd-rust-dev:arm64
+COPY --chmod=0755 scripts/libpathrs-licenses /usr/local/bin/
+RUN git clone --filter=tree:0 "${LIBPATHRS_CLONE_URL}" /libpathrs \
+    && cd /libpathrs \
+    && git checkout "${LIBPATHRS_VERSION}" \
+    && export RUST_TARGET=$(target-rust) \
+    && make target/release/libpathrs.a \
+        EXTRA_CARGO_FLAGS="--release --locked --target=${RUST_TARGET}" \
+    && ./install.sh --rust-target="${RUST_TARGET}" --disable-shared \
+        --prefix=/opt/libpathrs --libdir=/opt/libpathrs/lib \
+    && libpathrs-licenses /_LICENSES
+
 # stage for building runc
 FROM go-build AS build-runc
 ARG TARGETARCH GO_VERSION
-ARG RUNC_VERSION="v1.4.3"
+ARG RUNC_VERSION="v1.5.2"
 ARG RUNC_CLONE_URL="https://github.com/opencontainers/runc"
+COPY --from=build-libpathrs /opt/libpathrs /opt/libpathrs
 RUN git clone --filter=tree:0 "${RUNC_CLONE_URL}" /runc \
     && cd /runc \
     && git checkout "${RUNC_VERSION}" \
     && eval "$(gimme "${GO_VERSION}")" \
     && export GOTOOLCHAIN="go${GO_VERSION}" \
     && export GOARCH=$TARGETARCH && export CC=$(target-cc) && export CGO_ENABLED=1 \
+    && export PKG_CONFIG_PATH=/opt/libpathrs/lib/pkgconfig \
     && make runc \
-    && GOARCH=$TARGETARCH go-licenses save --save_path=/_LICENSES .
+    && GOARCH=$TARGETARCH GOFLAGS=-tags=libpathrs go-licenses save --save_path=/_LICENSES .
 
 # stage for building crictl
 FROM go-build AS build-crictl
@@ -217,8 +240,9 @@ RUN ctr oci spec \
 COPY --from=build-containerd /_LICENSES/* /LICENSES/
 # copy over runc build and install
 COPY --from=build-runc /runc/runc /usr/local/sbin/runc
-RUN runc --version
+RUN runc --version && runc --version | grep -q libpathrs
 COPY --from=build-runc /_LICENSES/* /LICENSES/
+COPY --from=build-libpathrs /_LICENSES/* /LICENSES/
 # copy over crictl build and install
 COPY --from=build-crictl /cri-tools/build/crictl /usr/local/bin/
 COPY --from=build-crictl /_LICENSES/* /LICENSES/
