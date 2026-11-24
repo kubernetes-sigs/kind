@@ -34,10 +34,10 @@ set -o pipefail
 export PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
 
 # OCI hooks do not inherit the node environment, so mirror the entrypoint's
-# configure_libmount here: inside a user namespace, force classic mount(2).
+# configure_libmount here: inside sysbox, force classic mount(2).
 #
 # See: images/base/files/usr/local/bin/entrypoint
-if grep -Eqv "0[[:space:]]+0[[:space:]]+4294967295" /proc/self/uid_map; then
+if grep -q ' - fuse sysboxfs ' /proc/self/mountinfo; then
   export LIBMOUNT_FORCE_MOUNT2=always
 fi
 

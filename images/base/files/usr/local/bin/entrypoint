@@ -164,10 +164,11 @@ configure_libmount() {
   # script, in kubelet (projected volumes), and in mount-product-files.sh.
   # Force classic mount(2) for this script and for everything systemd starts.
   # This must run before configure_containerd, whose overlayfs probe mounts.
-  if [[ -z "${userns}" ]]; then
+  # sysbox is detected by the sysbox-fs FUSE mounts over /proc and /sys.
+  if ! grep -q ' - fuse sysboxfs ' /proc/self/mountinfo; then
     return
   fi
-  log_info 'UserNS: forcing classic mount(2) for libmount (LIBMOUNT_FORCE_MOUNT2=always)'
+  log_info 'detected sysbox, forcing classic mount(2) for libmount (LIBMOUNT_FORCE_MOUNT2=always)'
   export LIBMOUNT_FORCE_MOUNT2=always
   mkdir -p /etc/systemd/system.conf.d/
   cat <<EOF >/etc/systemd/system.conf.d/libmount-default-environment.conf
