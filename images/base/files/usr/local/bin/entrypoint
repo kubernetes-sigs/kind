@@ -159,7 +159,7 @@ EOF
 
 configure_libmount() {
   # util-linux >= 2.39 mounts via the new fd-based mount API (fsopen, open_tree,
-  # mount_setattr, ...). In some nested user namespaces those syscalls fail with
+  # mount_setattr, ...). In sysbox those syscalls fail with
   # EACCES/EPERM where classic mount(2) succeeds, which breaks mounts in this
   # script, in kubelet (projected volumes), and in mount-product-files.sh.
   # Force classic mount(2) for this script and for everything systemd starts.
