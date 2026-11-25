@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster/constants"
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
 	"sigs.k8s.io/kind/pkg/errors"
+	"sigs.k8s.io/kind/pkg/log"
 
 	"sigs.k8s.io/kind/pkg/cluster/internal/create/actions"
 	"sigs.k8s.io/kind/pkg/cluster/internal/kubeadm"
@@ -87,7 +88,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 	kubeadmConfigPlusPatches := func(node nodes.Node, data kubeadm.ConfigData) func() error {
 		return func() error {
 			data.NodeName = node.String()
-			kubeadmConfig, err := getKubeadmConfig(ctx.Config, data, node, provider)
+			kubeadmConfig, err := getKubeadmConfig(ctx.Config, data, node, provider, ctx.Logger)
 			if err != nil {
 				// TODO(bentheelder): logging here
 				return errors.Wrap(err, "failed to generate kubeadm config content")
@@ -154,7 +155,7 @@ func (a *Action) Execute(ctx *actions.ActionContext) error {
 
 // getKubeadmConfig generates the kubeadm config contents for the cluster
 // by running data through the template and applying patches as needed.
-func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.Node, provider string) (path string, err error) {
+func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.Node, provider string, logger log.Logger) (path string, err error) {
 	kubeVersion, err := nodeutils.KubeVersion(node)
 	if err != nil {
 		// TODO(bentheelder): logging here
@@ -224,14 +225,14 @@ func getKubeadmConfig(cfg *config.Cluster, data kubeadm.ConfigData, node nodes.N
 
 	clusterPatches, clusterJSONPatches := allPatchesFromConfig(cfg)
 	// apply cluster-level patches first
-	patchedConfig, err := patch.KubeYAML(cf, clusterPatches, clusterJSONPatches)
+	patchedConfig, err := patch.KubeYAML(cf, clusterPatches, clusterJSONPatches, logger)
 	if err != nil {
 		return "", err
 	}
 
 	// if needed, apply current node's patches
 	if len(configNode.KubeadmConfigPatches) > 0 || len(configNode.KubeadmConfigPatchesJSON6902) > 0 {
-		patchedConfig, err = patch.KubeYAML(patchedConfig, configNode.KubeadmConfigPatches, configNode.KubeadmConfigPatchesJSON6902)
+		patchedConfig, err = patch.KubeYAML(patchedConfig, configNode.KubeadmConfigPatches, configNode.KubeadmConfigPatchesJSON6902, logger)
 		if err != nil {
 			return "", err
 		}
