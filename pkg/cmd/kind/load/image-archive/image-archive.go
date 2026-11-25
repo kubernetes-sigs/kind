@@ -20,6 +20,7 @@ package load
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/kind/pkg/errors"
@@ -130,24 +131,47 @@ func loadArchiveToNodes(logger log.Logger, provider *cluster.Provider, clusterNa
 		}
 	}
 
+	included, missing := archivePlatforms(imageArchivePath)
+	allPlatforms := len(missing) == 0
+	if !allPlatforms {
+		logger.Warnf("WARNING: Image archive %s does not include all manifests of a multi-platform image, loading only the node platform (included: %s)", imageArchivePath, strings.Join(included, ", "))
+		logger.V(1).Infof("Platforms missing from the image archive %s: %s", imageArchivePath, strings.Join(missing, ", "))
+	}
+
 	// Load the image on the selected nodes
 	fns := []func() error{}
 	for _, selectedNode := range selectedNodes {
 		selectedNode := selectedNode // capture loop variable
 		fns = append(fns, func() error {
-			return loadImage(logger, imageArchivePath, selectedNode)
+			return loadImage(logger, imageArchivePath, selectedNode, allPlatforms)
 		})
 	}
 	return errors.UntilErrorConcurrent(fns)
 }
 
+// archivePlatforms returns nodeutils.CheckImageArchivePlatforms for regular files, pipes can be read only once
+func archivePlatforms(imageArchivePath string) (included, missing []string) {
+	if info, err := os.Stat(imageArchivePath); err != nil || !info.Mode().IsRegular() {
+		return nil, nil
+	}
+	f, err := os.Open(imageArchivePath)
+	if err != nil {
+		return nil, nil
+	}
+	defer f.Close()
+	return nodeutils.CheckImageArchivePlatforms(f)
+}
+
 // loads an image tarball onto a node
-func loadImage(logger log.Logger, imageTarName string, node nodes.Node) error {
+func loadImage(logger log.Logger, imageTarName string, node nodes.Node, allPlatforms bool) error {
 	f, err := os.Open(imageTarName)
 	if err != nil {
 		return errors.Wrap(err, "failed to open image")
 	}
 	defer f.Close()
 	logger.V(2).Infof("Loading Docker Image from archive %s to node %s", imageTarName, node.String())
+	if !allPlatforms {
+		return nodeutils.LoadImageArchiveNodePlatform(node, f)
+	}
 	return nodeutils.LoadImageArchive(node, f)
 }
