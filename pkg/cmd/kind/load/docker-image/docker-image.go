@@ -40,6 +40,8 @@ import (
 
 type (
 	imageTagFetcher func(nodes.Node, string) (map[string]bool, error)
+	imageIDFetcher  func(nodes.Node, string) (string, error)
+	imageReTagger   func(nodes.Node, string, string) error
 )
 
 type flagpole struct {
@@ -129,43 +131,13 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 		}
 	}
 
-	// pick only the nodes that don't have the image
-	selectedNodes := map[string]nodes.Node{}
-	fns := []func() error{}
-	for i, imageName := range imageNames {
-		imageID := imageIDs[i]
-		processed := false
-		for _, node := range candidateNodes {
-			exists, reTagRequired, sanitizedImageName := checkIfImageReTagRequired(node, imageID, imageName, nodeutils.ImageTags)
-			if exists && !reTagRequired {
-				continue
-			}
+	// pick only the images that are missing somewhere and the nodes missing them
+	imagesToLoad, selectedNodes := selectImagesAndNodes(
+		logger, candidateNodes, imageNames, imageIDs,
+		nodeutils.ImageTags, nodeutils.ImageID, nodeutils.ReTagImage,
+	)
 
-			if reTagRequired {
-				// We will try to re-tag the image. If the re-tag fails, we will fall back to the default behavior of loading
-				// the images into the nodes again
-				logger.V(0).Infof("Image with ID: %s already present on the node %s but is missing the tag %s. re-tagging...", imageID, node.String(), sanitizedImageName)
-				if err := nodeutils.ReTagImage(node, imageID, sanitizedImageName); err != nil {
-					logger.Errorf("failed to re-tag image on the node %s due to an error %s. Will load it instead...", node.String(), err)
-					selectedNodes[node.String()] = node
-				} else {
-					processed = true
-				}
-				continue
-			}
-			id, err := nodeutils.ImageID(node, imageName)
-			if err != nil || id != imageID {
-				selectedNodes[node.String()] = node
-				logger.V(0).Infof("Image: %q with ID %q not yet present on node %q, loading...", imageName, imageID, node.String())
-			}
-			continue
-		}
-		if len(selectedNodes) == 0 && !processed {
-			logger.V(0).Infof("Image: %q with ID %q found to be already present on all nodes.", imageName, imageID)
-		}
-	}
-
-	// return early if no node needs the image
+	// return early if no node needs any of the images
 	if len(selectedNodes) == 0 {
 		return nil
 	}
@@ -178,12 +150,13 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 	defer os.RemoveAll(dir)
 	imagesTarPath := filepath.Join(dir, "images.tar")
 	// Save the images into a tar
-	err = save(imageNames, imagesTarPath)
+	err = save(imagesToLoad, imagesTarPath)
 	if err != nil {
 		return err
 	}
 
 	// Load the images on the selected nodes
+	fns := []func() error{}
 	for _, selectedNode := range selectedNodes {
 		selectedNode := selectedNode // capture loop variable
 		fns = append(fns, func() error {
@@ -191,6 +164,63 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 		})
 	}
 	return errors.UntilErrorConcurrent(fns)
+}
+
+// selectImagesAndNodes returns the images that are not present on all of the
+// candidate nodes yet, along with the nodes missing at least one of them.
+//
+// Images are considered individually, so that an image that is already present
+// everywhere is not saved and re-loaded just because another image in the same
+// invocation is missing somewhere.
+func selectImagesAndNodes(
+	logger log.Logger,
+	candidateNodes []nodes.Node,
+	imageNames, imageIDs []string,
+	tagFetcher imageTagFetcher,
+	idFetcher imageIDFetcher,
+	reTagger imageReTagger,
+) (imagesToLoad []string, selectedNodes map[string]nodes.Node) {
+	selectedNodes = map[string]nodes.Node{}
+	for i, imageName := range imageNames {
+		imageID := imageIDs[i]
+		nodesMissingImage := []nodes.Node{}
+		reTagged := false
+		for _, node := range candidateNodes {
+			exists, reTagRequired, sanitizedImageName := checkIfImageReTagRequired(node, imageID, imageName, tagFetcher)
+			if exists && !reTagRequired {
+				continue
+			}
+
+			if reTagRequired {
+				// We will try to re-tag the image. If the re-tag fails, we will fall back to the default behavior of loading
+				// the images into the nodes again
+				logger.V(0).Infof("Image with ID: %s already present on the node %s but is missing the tag %s. re-tagging...", imageID, node.String(), sanitizedImageName)
+				if err := reTagger(node, imageID, sanitizedImageName); err != nil {
+					logger.Errorf("failed to re-tag image on the node %s due to an error %s. Will load it instead...", node.String(), err)
+					nodesMissingImage = append(nodesMissingImage, node)
+				} else {
+					reTagged = true
+				}
+				continue
+			}
+			id, err := idFetcher(node, imageName)
+			if err != nil || id != imageID {
+				nodesMissingImage = append(nodesMissingImage, node)
+				logger.V(0).Infof("Image: %q with ID %q not yet present on node %q, loading...", imageName, imageID, node.String())
+			}
+		}
+		if len(nodesMissingImage) == 0 {
+			if !reTagged {
+				logger.V(0).Infof("Image: %q with ID %q found to be already present on all nodes.", imageName, imageID)
+			}
+			continue
+		}
+		imagesToLoad = append(imagesToLoad, imageName)
+		for _, node := range nodesMissingImage {
+			selectedNodes[node.String()] = node
+		}
+	}
+	return imagesToLoad, selectedNodes
 }
 
 // TODO: we should consider having a cluster method to load images
