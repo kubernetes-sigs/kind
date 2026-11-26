@@ -534,5 +534,54 @@ This example was for changing the manager in the control plane. To use a patch
 for a worker node, use a `JoinConfiguration` patch and an `extraMounts` stanza
 for the `worker` role.
 
+### Containerd Config Patches
+
+KIND can patch the containerd configuration of every node with
+`containerdConfigPatches`, which are TOML merge patches applied in the order
+listed.
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+containerdConfigPatches:
+- |-
+  version = 2
+  [plugins."io.containerd.grpc.v1.cri".registry]
+    config_path = "/etc/containerd/certs.d"
+{{< /codeFromInline >}}
+
+Containerd has multiple config versions and the layout of the config differs
+between them, e.g. the CRI plugin is `plugins."io.containerd.grpc.v1.cri"` in
+version 2 but is split into `plugins."io.containerd.cri.v1.runtime"` and
+`plugins."io.containerd.cri.v1.images"` in version 3 and newer.
+
+A patch that sets the `version` key is only applied when it matches the version
+of the node's containerd config, so you can supply one patch per version and
+have your config work across node images shipping different containerd config
+versions:
+
+{{< codeFromInline lang="yaml" >}}
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+containerdConfigPatches:
+# applied only to nodes whose containerd config is version 2
+- |-
+  version = 2
+  [plugins."io.containerd.grpc.v1.cri"]
+    sandbox_image = "registry.k8s.io/pause:3.10"
+# applied only to nodes whose containerd config is version 3
+- |-
+  version = 3
+  [plugins."io.containerd.cri.v1.images".pinned_images]
+    sandbox = "registry.k8s.io/pause:3.10"
+{{< /codeFromInline >}}
+
+A patch that does not set `version` is applied to every node regardless of the
+config version, which is appropriate only for keys that are identical across
+versions.
+
+> **NOTE**: `containerdConfigPatchesJSON6902` is not version-aware, patches
+> there are always applied.
+
 [YAML]: https://yaml.org/
 [feature gates]: https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/
