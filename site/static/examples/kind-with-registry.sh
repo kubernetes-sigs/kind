@@ -30,6 +30,10 @@ fi
 # It may enable some older images to work similarly.
 # If you're only supporting newer relases, you can just use `kind create cluster` here.
 #
+# The version key limits the patch to nodes using containerd config version 2,
+# which is what those older images shipped, see:
+# https://kind.sigs.k8s.io/docs/user/configuration/#containerd-config-patches
+#
 # See:
 # https://github.com/kubernetes-sigs/kind/issues/2875
 # https://github.com/containerd/containerd/blob/main/docs/cri/config.md#registry-configuration
@@ -39,6 +43,7 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 containerdConfigPatches:
 - |-
+  version = 2
   [plugins."io.containerd.grpc.v1.cri".registry]
     config_path = "/etc/containerd/certs.d"
 EOF
