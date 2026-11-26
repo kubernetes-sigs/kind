@@ -74,6 +74,43 @@ To enable cgroup delegation for all the controllers, do the following:
    systemctl --user restart docker
    ```
 
+### Filesystem ACL support
+
+The filesystem backing your container storage must support POSIX ACLs.
+
+In rootless mode the node's containerd typically uses the `fuse-overlayfs`
+snapshotter, and fuse-overlayfs exposes POSIX ACLs. If the underlying filesystem
+does not implement them, starting a cluster fails while the control plane
+containers are being created, with this message in the node's journal:
+
+```txt
+stat /pause: operation not supported
+```
+
+The same cluster usually works in rootful mode, because that path uses the
+kernel's overlayfs instead of fuse-overlayfs.
+
+Most Linux filesystems support POSIX ACLs out of the box, but ZFS datasets
+default to `acltype=off`. To enable them for the dataset holding your container
+storage:
+
+```sh
+sudo zfs set acltype=posix <dataset>
+```
+
+Already-extracted image layers do not gain ACL data retroactively, so remove the
+node image afterwards to force the layers to be unpacked again, for example:
+
+```sh
+podman rmi docker.io/kindest/node:<tag>
+```
+
+Alternatively, back your container storage with a filesystem that supports ACLs,
+such as ext4 or xfs.
+
+See [kind#4025](https://github.com/kubernetes-sigs/kind/issues/4025) and
+[podman#11213](https://github.com/containers/podman/issues/11213) for discussion.
+
 ### Networking
 
 Containers running in rootless mode may not loaded with host-level iptable modules.

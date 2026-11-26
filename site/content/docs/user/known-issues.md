@@ -38,6 +38,7 @@ description: |-
 * [Couldn't find an alternative telinit implementation to spawn](#docker-init-daemon-config)
 * [Fedora](#fedora) (various)
 * [Failed to get rootfs info](#failed-to-get-rootfs-info--stat-failed-on-dev)
+* [`stat /pause: operation not supported`](#stat-pause-operation-not-supported) (rootless on a filesystem without POSIX ACLs)
 * [Docker Desktop for macOS and Windows](#docker-desktop-for-macos-and-windows)
 * [Older Linux Distributions](#older-linux-distributions)
 * [Failure to Create Cluster on WSL2](#failure-to-create-cluster-on-wsl2)
@@ -349,6 +350,28 @@ To identify the device that must be listed, two variations have been observed.
 
 See Previous Discussion: [kind#2411]
 
+## `stat /pause: operation not supported`
+
+With a rootless provider, cluster creation may time out waiting for the API
+server, with this error in the node's journal:
+
+```txt
+stat /pause: operation not supported
+```
+
+This happens when the filesystem backing your container storage does not support
+POSIX ACLs. In rootless mode the node's containerd typically uses the
+`fuse-overlayfs` snapshotter, which exposes POSIX ACLs, so the control plane
+containers fail to start if the underlying filesystem does not implement them.
+The same cluster usually works rootful, since that path uses the kernel's
+overlayfs instead.
+
+ZFS datasets are the common case, as they default to `acltype=off`. See
+[filesystem ACL support](/docs/user/rootless/#filesystem-acl-support) in the
+rootless guide for how to enable ACLs.
+
+See Previous Discussion: [kind#4025]
+
 ## Fedora
 
 ### Firewalld
@@ -486,6 +509,7 @@ Docker Desktop also exposes a setting for enabling or disabling the containerd i
 [kind#2296]: https://github.com/kubernetes-sigs/kind/issues/2296
 [kind#2411]: https://github.com/kubernetes-sigs/kind/issues/2411
 [kind#3795]: https://github.com/kubernetes-sigs/kind/issues/3795
+[kind#4025]: https://github.com/kubernetes-sigs/kind/issues/4025
 [moby#17666]: https://github.com/moby/moby/issues/17666
 [Docker resource lims]: https://docs.docker.com/docker-for-mac/#advanced
 [snap]: https://snapcraft.io/
