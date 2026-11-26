@@ -18,6 +18,8 @@ limitations under the License.
 package delete
 
 import (
+	"time"
+
 	"sigs.k8s.io/kind/pkg/errors"
 	"sigs.k8s.io/kind/pkg/log"
 
@@ -34,7 +36,9 @@ func Cluster(logger log.Logger, p providers.Provider, name, explicitKubeconfigPa
 		return errors.Wrap(err, "error listing nodes")
 	}
 
-	kerr := kubeconfig.Remove(name, explicitKubeconfigPath)
+	kerr := retryKubeconfigUpdate(func() error {
+		return kubeconfig.Remove(name, explicitKubeconfigPath)
+	})
 	if kerr != nil {
 		logger.Errorf("failed to update kubeconfig: %v", kerr)
 	}
@@ -52,4 +56,22 @@ func Cluster(logger log.Logger, p providers.Provider, name, explicitKubeconfigPa
 	}
 
 	return nil
+}
+
+// kubeconfigUpdateBackoff matches the backoff used when exporting the
+// kubeconfig during cluster creation
+var kubeconfigUpdateBackoff = []time.Duration{0, time.Millisecond, time.Millisecond * 50, time.Millisecond * 100}
+
+// retryKubeconfigUpdate calls update with a bounded backoff so that concurrent
+// kind invocations contending for the KUBECONFIG lock file do not fail
+// immediately
+func retryKubeconfigUpdate(update func() error) error {
+	var err error
+	for _, b := range kubeconfigUpdateBackoff {
+		time.Sleep(b)
+		if err = update(); err == nil {
+			return nil
+		}
+	}
+	return err
 }
