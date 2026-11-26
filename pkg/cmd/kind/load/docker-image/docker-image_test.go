@@ -17,13 +17,145 @@ limitations under the License.
 package load
 
 import (
+	"context"
 	"errors"
+	"io"
 	"reflect"
 	"sort"
 	"testing"
 
 	"sigs.k8s.io/kind/pkg/cluster/nodes"
+	"sigs.k8s.io/kind/pkg/exec"
+	"sigs.k8s.io/kind/pkg/log"
 )
+
+// fakeNode is a nodes.Node that only implements String()
+type fakeNode string
+
+func (f fakeNode) Command(string, ...string) exec.Cmd { return nil }
+func (f fakeNode) CommandContext(context.Context, string, ...string) exec.Cmd {
+	return nil
+}
+func (f fakeNode) String() string              { return string(f) }
+func (f fakeNode) Role() (string, error)       { return "", nil }
+func (f fakeNode) IP() (string, string, error) { return "", "", nil }
+func (f fakeNode) SerialLogs(io.Writer) error  { return nil }
+
+func Test_selectImagesAndNodes(t *testing.T) {
+	const (
+		image1 = "docker.io/library/image1:tag1"
+		image2 = "docker.io/library/image2:tag1"
+		id1    = "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+		id2    = "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+	)
+	node1, node2 := fakeNode("node1"), fakeNode("node2")
+
+	tests := []struct {
+		name string
+		// tags present per node, keyed by node name then image ID
+		tags              map[string]map[string][]string
+		imageNames        []string
+		imageIDs          []string
+		wantImagesToLoad  []string
+		wantSelectedNodes []string
+		wantReTagged      []string
+	}{
+		{
+			name: "all images present on all nodes",
+			tags: map[string]map[string][]string{
+				"node1": {id1: {image1}, id2: {image2}},
+				"node2": {id1: {image1}, id2: {image2}},
+			},
+			imageNames:        []string{image1, image2},
+			imageIDs:          []string{id1, id2},
+			wantImagesToLoad:  nil,
+			wantSelectedNodes: []string{},
+		},
+		{
+			name: "only the missing image is loaded",
+			tags: map[string]map[string][]string{
+				"node1": {id1: {image1}},
+				"node2": {id1: {image1}},
+			},
+			imageNames:        []string{image1, image2},
+			imageIDs:          []string{id1, id2},
+			wantImagesToLoad:  []string{image2},
+			wantSelectedNodes: []string{"node1", "node2"},
+		},
+		{
+			name: "only the nodes missing an image are selected",
+			tags: map[string]map[string][]string{
+				"node1": {id1: {image1}, id2: {image2}},
+				"node2": {id1: {image1}},
+			},
+			imageNames:        []string{image1, image2},
+			imageIDs:          []string{id1, id2},
+			wantImagesToLoad:  []string{image2},
+			wantSelectedNodes: []string{"node2"},
+		},
+		{
+			name: "present with another tag is re-tagged instead of loaded",
+			tags: map[string]map[string][]string{
+				"node1": {id1: {"docker.io/library/image1:other"}},
+				"node2": {id1: {"docker.io/library/image1:other"}},
+			},
+			imageNames:        []string{image1},
+			imageIDs:          []string{id1},
+			wantImagesToLoad:  nil,
+			wantSelectedNodes: []string{},
+			wantReTagged:      []string{"node1", "node2"},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			tagFetcher := func(n nodes.Node, imageID string) (map[string]bool, error) {
+				tags := map[string]bool{}
+				for _, tag := range tt.tags[n.String()][imageID] {
+					tags[tag] = true
+				}
+				return tags, nil
+			}
+			idFetcher := func(n nodes.Node, imageName string) (string, error) {
+				for id, tags := range tt.tags[n.String()] {
+					for _, tag := range tags {
+						if tag == imageName {
+							return id, nil
+						}
+					}
+				}
+				return "", errors.New("image not present")
+			}
+			reTagged := []string{}
+			reTagger := func(n nodes.Node, _, _ string) error {
+				reTagged = append(reTagged, n.String())
+				return nil
+			}
+
+			imagesToLoad, selectedNodes := selectImagesAndNodes(
+				log.NoopLogger{}, []nodes.Node{node1, node2},
+				tt.imageNames, tt.imageIDs,
+				tagFetcher, idFetcher, reTagger,
+			)
+
+			selected := []string{}
+			for name := range selectedNodes {
+				selected = append(selected, name)
+			}
+			sort.Strings(selected)
+			sort.Strings(reTagged)
+			if !reflect.DeepEqual(imagesToLoad, tt.wantImagesToLoad) {
+				t.Errorf("imagesToLoad = %v, want %v", imagesToLoad, tt.wantImagesToLoad)
+			}
+			if !reflect.DeepEqual(selected, tt.wantSelectedNodes) {
+				t.Errorf("selectedNodes = %v, want %v", selected, tt.wantSelectedNodes)
+			}
+			if len(reTagged) != len(tt.wantReTagged) {
+				t.Errorf("reTagged = %v, want %v", reTagged, tt.wantReTagged)
+			}
+		})
+	}
+}
 
 func Test_removeDuplicates(t *testing.T) {
 	tests := []struct {
