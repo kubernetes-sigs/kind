@@ -33,6 +33,14 @@ set -o pipefail
 # the full normal PATH for this image with pretty standard linux paths.
 export PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
 
+# OCI hooks do not inherit the node environment, so mirror the entrypoint's
+# configure_libmount here: inside sysbox, force classic mount(2).
+#
+# See: images/base/files/usr/local/bin/entrypoint
+if grep -q ' - fuse sysboxfs ' /proc/self/mountinfo; then
+  export LIBMOUNT_FORCE_MOUNT2=always
+fi
+
 # The bundle represents the dir path to container filesystem, container runtime state [1] is
 # passed to the hook's stdin
 #
