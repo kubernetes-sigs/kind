@@ -78,7 +78,7 @@ func untar(logger log.Logger, r io.Reader, dir string) (err error) {
 
 		switch f.Typeflag {
 		case tar.TypeReg:
-			wf, err := os.OpenFile(abs, os.O_CREATE|os.O_RDWR, os.FileMode(f.Mode))
+			wf, err := os.OpenFile(abs, os.O_CREATE|os.O_RDWR|os.O_TRUNC, os.FileMode(f.Mode))
 			if err != nil {
 				return err
 			}
