@@ -61,7 +61,7 @@ func Run(logger log.Logger, streams cmd.IOStreams, args []string) error {
 // checkQuiet returns true if -q / --quiet was set in args
 func checkQuiet(args []string) bool {
 	flags := pflag.NewFlagSet("persistent-quiet", pflag.ContinueOnError)
-	flags.ParseErrorsWhitelist.UnknownFlags = true
+	flags.ParseErrorsAllowlist.UnknownFlags = true
 	quiet := false
 	flags.BoolVarP(
 		&quiet,

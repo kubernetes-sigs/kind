@@ -106,10 +106,10 @@ func tomlToJSON(t []byte) ([]byte, error) {
 
 // jsonToTOMLString converts arbitrary JSON to TOML
 func jsonToTOMLString(j []byte) (string, error) {
-	var unstruct interface{}
+	var unstruct any
 	// We are using yaml.Unmarshal here (instead of json.Unmarshal) because the
 	// Go JSON library doesn't try to pick the right number type (int, float,
-	// etc.) when unmarshalling to interface{}, it just picks float64
+	// etc.) when unmarshalling to any, it just picks float64
 	// universally. go-yaml does go through the effort of picking the right
 	// number type, so we can preserve number type throughout this process.
 	if err := yaml.Unmarshal(j, &unstruct); err != nil {

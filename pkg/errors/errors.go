@@ -37,7 +37,7 @@ func NewWithoutStack(message string) error {
 // Errorf formats according to a format specifier and returns the string as a
 // value that satisfies error. Errorf also records the stack trace at the
 // point it was called.
-func Errorf(format string, args ...interface{}) error {
+func Errorf(format string, args ...any) error {
 	return pkgerrors.Errorf(format, args...)
 }
 
@@ -49,7 +49,7 @@ func Wrap(err error, message string) error {
 
 // Wrapf returns an error annotating err with a stack trace at the point Wrapf
 // is called, and the format specifier. If err is nil, Wrapf returns nil.
-func Wrapf(err error, format string, args ...interface{}) error {
+func Wrapf(err error, format string, args ...any) error {
 	return pkgerrors.Wrapf(err, format, args...)
 }
 
